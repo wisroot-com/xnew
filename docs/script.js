@@ -54,7 +54,7 @@ function setFrame(path) {
         data = data.replace('../matter.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js');
         data = data.replace('../three.min.js', 'https://unpkg.com/three@0.142.x/build/three.min.js');
         data = data.replace('../pixi.min.js', 'https://pixijs.download/v7.0.5/pixi.min.js');
-        data = data.replace('../xnew.js', 'https://unpkg.com/xnew@1.0.x/dist/xnew.js');
+        data = data.replace('../xnew.js', 'https://unpkg.com/xnew@1.6.x/dist/xnew.js');
 
         $('#code').empty();
         const $pre = $('<pre>');
