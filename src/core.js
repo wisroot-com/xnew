@@ -1,5 +1,5 @@
 import { isString, isNumber, isObject, isFunction, ERRORS } from './common';
-
+import { XNode } from './xnode';
 export { XNode } from './xnode';
 
 //----------------------------------------------------------------------------------------------------

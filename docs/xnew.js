@@ -69,7 +69,7 @@
         return element;
     }
 
-    let XNode$1 = class XNode {
+    class XNode {
 
         static current = null;
 
@@ -503,7 +503,7 @@
                 }
             }
         }
-    };
+    }
 
 
     //----------------------------------------------------------------------------------------------------
@@ -511,17 +511,17 @@
     //----------------------------------------------------------------------------------------------------
 
     function xwrap$1(node, func, ...args) {
-        if (node === XNode$1.current) {
+        if (node === XNode.current) {
             return func(...args);
         } else {
-            const backup = XNode$1.current;
+            const backup = XNode.current;
             try {
-                XNode$1.current = node;
+                XNode.current = node;
                 return func(...args);
             } catch (error) {
                 throw error;
             } finally {
-                XNode$1.current = backup;
+                XNode.current = backup;
             }
         }
     }
@@ -648,10 +648,10 @@
         const keyState = {};
         window.addEventListener('keydown', (event) => {
             if (event.repeat === true) return;
-            keyState[event.code] = { down: XNode$1.updateCounter, up: null };
+            keyState[event.code] = { down: XNode.updateCounter, up: null };
         }, true);
         window.addEventListener('keyup', (event) => {
-            if (keyState[event.code]) keyState[event.code].up = XNode$1.updateCounter;
+            if (keyState[event.code]) keyState[event.code].up = XNode.updateCounter;
         }, true);
         
         return {
@@ -669,7 +669,7 @@
 
                 let ret = false;
                 code.split(' ').forEach((c) => {
-                    if (isString(c) && keyState[c]?.down === XNode$1.updateCounter) ret = true;
+                    if (isString(c) && keyState[c]?.down === XNode.updateCounter) ret = true;
                 });
                 return ret;
             },
@@ -678,7 +678,7 @@
 
                 let ret = false;
                 code.split(' ').forEach((c) => {
-                    if (isString(c) && keyState[c]?.up === XNode$1.updateCounter) ret = true;
+                    if (isString(c) && keyState[c]?.up === XNode.updateCounter) ret = true;
                 });
                 return ret;
             },
