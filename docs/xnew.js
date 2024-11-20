@@ -4,6 +4,19 @@
     (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.window = global.window || {}));
 })(this, (function (exports) { 'use strict';
 
+    //----------------------------------------------------------------------------------------------------
+    // errors
+    //----------------------------------------------------------------------------------------------------
+
+    const ERRORS = {
+        ARGUMENT: 'The arguments are invalid.',
+        BASIC_STRING: 'The arguments are invalid because it contains characters can not be used. Only [A-Z, a-z, 0-9, _, .] are available.', 
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    // type check
+    //----------------------------------------------------------------------------------------------------
+
     function isString(value) {
         return typeof value === 'string';
     }
@@ -21,104 +34,42 @@
     }
 
     //----------------------------------------------------------------------------------------------------
-    // errors
+    // create element
     //----------------------------------------------------------------------------------------------------
 
-    const ERRORS = {
-        ARGUMENT: 'The arguments are invalid.',
-        BASIC_STRING: 'The arguments are invalid because it contains characters can not be used. Only [A-Z, a-z, 0-9, _, .] are available.', 
-    };
+    function createElement(attributes) {
 
-    //----------------------------------------------------------------------------------------------------
-    // xnew
-    //----------------------------------------------------------------------------------------------------
-
-    function xnew(...args) {
-
-        // a parent node
-        const parent = (args[0] instanceof XNode || args[0] === null || args[0] === undefined) ? args.shift() : undefined;
-
-        // an existing html element or attributes to create a html element
-        const element = (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) ? args.shift() : undefined;
-
-        // Component function (+args), or innerHTML
-        const content = args;
-
-        return new XNode(parent, element, ...content);
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    // xwrap
-    //----------------------------------------------------------------------------------------------------
-
-    function xwrap(node, func, ...args) {
-        if (node === XNode.current) {
-            return func(...args);
-        } else {
-            const backup = XNode.current;
-            try {
-                XNode.current = node;
-                return func(...args);
-            } catch (error) {
-                throw error;
-            } finally {
-                XNode.current = backup;
+        const element = (() => {
+            if (attributes.tag == 'svg') {
+                return document.createElementNS('http://www.w3.org/2000/svg', attributes.tag);
+            } else {
+                return document.createElement(attributes.tag ?? 'div');
             }
-        }
-    }
+        })();
 
-    //----------------------------------------------------------------------------------------------------
-    // xfind
-    //----------------------------------------------------------------------------------------------------
-
-    function xfind(key) {
-        if (isString(key) === false) {
-            console.error('xfind: ' + ERRORS.ARGUMENT);
-        } else {
-            const set = new Set();
-            key.split(' ').filter((key) => XNode.keyMap.has(key)).forEach((key) => {
-                XNode.keyMap.get(key).forEach((node) => set.add(node));
-            });
-            return [...set];
-        }
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    // xtimer
-    //----------------------------------------------------------------------------------------------------
-
-    function xtimer$1(callback, delay, repeat = false) {
-        
-        return xnew((node) => {
-            let id = null;
-            
-            setTimeout(func, delay);
-
-            return {
-                finalize() {
-                    if (id !== null) {
-                        clearTimeout(id);
-                        id = null;
-                    }
-                },
-            }
-
-            function func() {
-                xwrap(node.parent, callback);
-                if (repeat === true) {
-                    id = setTimeout(func, delay);
-                } else {
-                    node.finalize();
+        Object.keys(attributes).forEach((key) => {
+            const value = attributes[key];
+            if (key === 'style') {
+                if (isString(value) === true) {
+                    element.style = value;
+                } else if (isObject(value) === true){
+                    Object.assign(element.style, value);
                 }
+            } else if (key === 'class') {
+                if (isString(value) === true) {
+                    element.classList.add(...value.split(' '));
+                }
+            } else if (['checked', 'disabled', 'readonly'].includes(key)) {
+                const remap = { checked: 'checked', disabled: 'disabled', readonly: 'readOnly', };
+                element[remap[key]] = value;
+            } else if (key !== 'tag') {
+                element.setAttribute(key, value);
             }
         });
+        return element;
     }
 
-    //----------------------------------------------------------------------------------------------------
-    // node
-    //----------------------------------------------------------------------------------------------------
-
-    class XNode {
+    let XNode$1 = class XNode {
 
         static current = null;
 
@@ -138,8 +89,8 @@
 
             this._.root = this._.parent !== null ? this._.parent.root : this;
 
-            // phase [pre initialized ->stopped ->started ->... ->stopped ->pre finalized ->finalized]
-            this._.phase = 'pre initialized';  
+            // state [pre initialized ->stopped ->started ->... ->stopped ->pre finalized ->finalized]
+            this._.state = 'pre initialized';  
 
             // properties defined in the component function
             this._.defines = {};
@@ -159,12 +110,12 @@
             // shared data between nodes connected by parent-child relationship
             this._.shared = this._.parent?._.shared ?? {};
 
-            if (this._.parent === null || this._.parent._.phase === 'pre initialized' || this._.parent._.phase === 'stopped' || this._.parent._.phase === 'started') {
+            if (this._.parent === null || this._.parent._.state === 'pre initialized' || this._.parent._.state === 'stopped' || this._.parent._.state === 'started') {
                 this._initialize();
 
-                this._.phase = 'stopped';
+                this._.state = 'stopped';
             } else {
-                this._.phase = 'finalized';
+                this._.state = 'finalized';
             }
         }
 
@@ -197,7 +148,7 @@
         nestElement(attributes) {
             if (isObject(attributes) === false) {
                 console.error('XNode nestElement: ' + ERRORS.ARGUMENT);
-            } else if (this._.phase !== 'pre initialized') {
+            } else if (this._.state !== 'pre initialized') {
                 console.error('XNode nestElement: ' + 'This can not be called after initialized.');
             } else {
                 this.off();
@@ -226,7 +177,7 @@
         //----------------------------------------------------------------------------------------------------
      
         _extend(Component, ...args) {
-            const defines = xwrap(this, Component, this, ...args) ?? {};
+            const defines = xwrap$1(this, Component, this, ...args) ?? {};
             
             Object.keys(defines).forEach((key) => {
                 const descripter = Object.getOwnPropertyDescriptor(defines, key);
@@ -250,15 +201,15 @@
                         const dest = { configurable: true, enumerable: true };
 
                         if (isFunction(descripter.value)) {
-                            dest.value = (...args) => xwrap(this, descripter.value, ...args);
+                            dest.value = (...args) => xwrap$1(this, descripter.value, ...args);
                         } else if (descripter.value !== undefined) {
                             dest.value = descripter.value;
                         }
                         if (isFunction(descripter.get)) {
-                            dest.get = (...args) => xwrap(this, descripter.get, ...args);
+                            dest.get = (...args) => xwrap$1(this, descripter.get, ...args);
                         }
                         if (isFunction(descripter.set)) {
-                            dest.set = (...args) => xwrap(this, descripter.set, ...args);
+                            dest.set = (...args) => xwrap$1(this, descripter.set, ...args);
                         }
 
                         Object.defineProperty(this._.defines, key, dest);
@@ -276,7 +227,7 @@
         extend(Component, ...args) {
             if (isFunction(Component) === false) {
                 console.error('XNode extend: ' + ERRORS.ARGUMENT);
-            } else if (this._.phase !== 'pre initialized') {
+            } else if (this._.state !== 'pre initialized') {
                 console.error('XNode extend: ' + 'This can not be called after initialized.');
             } else if (this._.ComponentSet.has(Component) === false) {
                 this._.ComponentSet .add(Component);
@@ -306,37 +257,37 @@
         }
 
         _start() {
-            if (this._.phase === 'stopped' && (this._.parent === null || this._.parent.isStarted()) && this._.resolve === true && this._.tostart === true) {
+            if (this._.state === 'stopped' && (this._.parent === null || this._.parent.isStarted()) && this._.resolve === true && this._.tostart === true) {
                 this._.startTime = XNode.updateTime;
-                this._.phase = 'started';
+                this._.state = 'started';
                 this._.children.forEach((node) => node._start());
             
-                if (this._.phase === 'started' && isFunction(this._.defines.start)) {
-                    xwrap(this, this._.defines.start);
+                if (this._.state === 'started' && isFunction(this._.defines.start)) {
+                    xwrap$1(this, this._.defines.start);
                 }
             }
         }
 
         _stop() {
-            if (this._.phase === 'started') {
-                this._.phase = 'stopped';
+            if (this._.state === 'started') {
+                this._.state = 'stopped';
                 this._.children.forEach((node) => node._stop());
 
-                if (this._.phase === 'stopped' && isFunction(this._.defines.stop)) {
-                    xwrap(this, this._.defines.stop);
+                if (this._.state === 'stopped' && isFunction(this._.defines.stop)) {
+                    xwrap$1(this, this._.defines.stop);
                 }
             }
         }
 
         _update() {
 
-            if (this._.phase === 'started' || this._.phase === 'stopped') {
+            if (this._.state === 'started' || this._.state === 'stopped') {
                 if (this._.tostart === true) this._start();
 
                 this._.children.forEach((node) => node._update());
 
-                if (this._.phase === 'started' && isFunction(this._.defines.update) === true) {
-                    xwrap(this, this._.defines.update, XNode.updateTime - this._.startTime);
+                if (this._.state === 'started' && isFunction(this._.defines.update) === true) {
+                    xwrap$1(this, this._.defines.update, XNode.updateTime - this._.startTime);
                 }
             }
         }
@@ -344,15 +295,15 @@
         finalize() {
             this._stop();
 
-            if (this._.phase === 'stopped') {
-                this._.phase = 'pre finalized';
+            if (this._.state === 'stopped') {
+                this._.state = 'pre finalized';
 
                 this._finalize();
                 
                 // relation
                 (this._.parent?._.children ?? XNode.roots).delete(this);
 
-                this._.phase = 'finalized';
+                this._.state = 'finalized';
             }
         }
 
@@ -360,7 +311,7 @@
             [...this._.children].forEach((node) => node.finalize());
                 
             if (isFunction(this._.defines.finalize)) {
-                xwrap(this, this._.defines.finalize);
+                xwrap$1(this, this._.defines.finalize);
             }
 
             // key
@@ -389,50 +340,41 @@
             }
         }
 
-        isStarted() {
-            return this._.phase === 'started';
+        get state() {
+            return this._.state
         }
-
-        isStopped() {
-            return this._.phase !== 'started';
-        }
-
-        isFinalized() {
-            return this._.phase === 'finalized';
-        }
-
 
         //----------------------------------------------------------------------------------------------------
         // context property
         //----------------------------------------------------------------------------------------------------        
 
-        setContext(name, value) {
-            if (isString(name) === false) {
-                console.error('XNode setContext: ' + ERRORS.ARGUMENT);
-            } else if (isBasicString(name) === false) {
-                console.error('XNode setContext: ' + ERRORS.BASIC_STRING);
-            } else {
-                this._.context = this._.context ?? new Map();
-                this._.context.set(name, value ?? null);
-            }
-        }
-
-        getContext(name) {
-            if (isString(name) === false) {
-                console.error('XNode getContext: ' + ERRORS.ARGUMENT);
-            } else if (isBasicString(name) === false) {
-                console.error('XNode getContext: ' + ERRORS.BASIC_STRING);
-            } else {
-                let value = undefined;
-                let node = this;
-                while (node !== null) {
-                    if (node._.context?.has(name)) {
-                        value = node._.context.get(name);
-                        break;
+        context(name, value = undefined) {
+            if (value === undefined) {
+                if (isString(name) === false) {
+                    console.error('XNode getContext: ' + ERRORS.ARGUMENT);
+                } else if (isBasicString(name) === false) {
+                    console.error('XNode getContext: ' + ERRORS.BASIC_STRING);
+                } else {
+                    let value = undefined;
+                    let node = this;
+                    while (node !== null) {
+                        if (node._.context?.has(name)) {
+                            value = node._.context.get(name);
+                            break;
+                        }
+                        node = node.parent;
                     }
-                    node = node.parent;
+                    return value;
                 }
-                return value;
+            } else {
+                if (isString(name) === false) {
+                    console.error('XNode setContext: ' + ERRORS.ARGUMENT);
+                } else if (isBasicString(name) === false) {
+                    console.error('XNode setContext: ' + ERRORS.BASIC_STRING);
+                } else {
+                    this._.context = this._.context ?? new Map();
+                    this._.context.set(name, value ?? null);
+                }
             }
         }
 
@@ -493,7 +435,7 @@
             function addEventListener(type, listener, options) {
                 if (this._.listeners.has(type) === false) this._.listeners.set(type, new Map());
                 if (this._.listeners.get(type).has(listener) === false) {
-                    const wrapListener = (...args) => xwrap(this, listener, ...args);
+                    const wrapListener = (...args) => xwrap$1(this, listener, ...args);
 
                     this._.listeners.get(type).set(listener, wrapListener);
                     this._.nestElement.addEventListener(type, wrapListener, options);
@@ -541,7 +483,7 @@
         emit(type, ...args) {
             if (isString(type) === false) {
                 console.error('XNode emit: ' + ERRORS.ARGUMENT);
-            } else if (this._.phase === 'finalized') {
+            } else if (this._.state === 'finalized') {
                 console.error('XNode emit: ' + 'This can not be called after finalized.');
             } else {
                 type.split(' ').filter((type) => type !== '').forEach((type) => {
@@ -561,58 +503,27 @@
                 }
             }
         }
-    }
+    };
+
 
     //----------------------------------------------------------------------------------------------------
-    // iterative update
+    // xwrap
     //----------------------------------------------------------------------------------------------------
 
-    (() => {
-        requestAnimationFrame(ticker);
-
-        function ticker() {
-            XNode.updateTime = Date.now();
-            XNode.roots.forEach((node) => node._update());
-            requestAnimationFrame(ticker);
-            XNode.updateCounter++;
+    function xwrap$1(node, func, ...args) {
+        if (node === XNode$1.current) {
+            return func(...args);
+        } else {
+            const backup = XNode$1.current;
+            try {
+                XNode$1.current = node;
+                return func(...args);
+            } catch (error) {
+                throw error;
+            } finally {
+                XNode$1.current = backup;
+            }
         }
-    })();
-
-
-    //----------------------------------------------------------------------------------------------------
-    // create element
-    //----------------------------------------------------------------------------------------------------
-
-    function createElement(attributes) {
-
-        const element = (() => {
-            if (attributes.tag == 'svg') {
-                return document.createElementNS('http://www.w3.org/2000/svg', attributes.tag);
-            } else {
-                return document.createElement(attributes.tag ?? 'div');
-            }
-        })();
-
-        Object.keys(attributes).forEach((key) => {
-            const value = attributes[key];
-            if (key === 'style') {
-                if (isString(value) === true) {
-                    element.style = value;
-                } else if (isObject(value) === true){
-                    Object.assign(element.style, value);
-                }
-            } else if (key === 'class') {
-                if (isString(value) === true) {
-                    element.classList.add(...value.split(' '));
-                }
-            } else if (['checked', 'disabled', 'readonly'].includes(key)) {
-                const remap = { checked: 'checked', disabled: 'disabled', readonly: 'readOnly', };
-                element[remap[key]] = value;
-            } else if (key !== 'tag') {
-                element.setAttribute(key, value);
-            }
-        });
-        return element;
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -629,6 +540,106 @@
     }
 
     //----------------------------------------------------------------------------------------------------
+    // xnew
+    //----------------------------------------------------------------------------------------------------
+
+    function xnew(...args) {
+
+        // a parent xnode
+        const parent = (args[0] instanceof XNode || args[0] === null || args[0] === undefined) ? args.shift() : undefined;
+
+        // an existing html element or attributes to create a html element
+        const element = (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) ? args.shift() : undefined;
+
+        // Component function (+args), or innerHTML
+        const content = args;
+
+        return new XNode(parent, element, ...content);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    // xwrap
+    //----------------------------------------------------------------------------------------------------
+
+    function xwrap(xnode, func, ...args) {
+        if (xnode === XNode.current) {
+            return func(...args);
+        } else {
+            const backup = XNode.current;
+            try {
+                XNode.current = xnode;
+                return func(...args);
+            } catch (error) {
+                throw error;
+            } finally {
+                XNode.current = backup;
+            }
+        }
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    // xfind
+    //----------------------------------------------------------------------------------------------------
+
+    function xfind(key) {
+        if (isString(key) === false) {
+            console.error('xfind: ' + ERRORS.ARGUMENT);
+        } else {
+            const set = new Set();
+            key.split(' ').filter((key) => XNode.keyMap.has(key)).forEach((key) => {
+                XNode.keyMap.get(key).forEach((xnode) => set.add(xnode));
+            });
+            return [...set];
+        }
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    // xtimer
+    //----------------------------------------------------------------------------------------------------
+
+    function xtimer$1(callback, delay, repeat = false) {
+        
+        return xnew((xnode) => {
+            let id = null;
+            
+            setTimeout(func, delay);
+
+            return {
+                finalize() {
+                    if (id !== null) {
+                        clearTimeout(id);
+                        id = null;
+                    }
+                },
+            }
+
+            function func() {
+                xwrap(xnode.parent, callback);
+                if (repeat === true) {
+                    id = setTimeout(func, delay);
+                } else {
+                    xnode.finalize();
+                }
+            }
+        });
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    // iterative update
+    //----------------------------------------------------------------------------------------------------
+
+    (() => {
+        requestAnimationFrame(ticker);
+
+        function ticker() {
+            XNode.updateTime = Date.now();
+            XNode.roots.forEach((xnode) => xnode._update());
+            requestAnimationFrame(ticker);
+            XNode.updateCounter++;
+        }
+    })();
+
+    //----------------------------------------------------------------------------------------------------
     // input 
     //----------------------------------------------------------------------------------------------------
 
@@ -637,10 +648,10 @@
         const keyState = {};
         window.addEventListener('keydown', (event) => {
             if (event.repeat === true) return;
-            keyState[event.code] = { down: XNode.updateCounter, up: null };
+            keyState[event.code] = { down: XNode$1.updateCounter, up: null };
         }, true);
         window.addEventListener('keyup', (event) => {
-            if (keyState[event.code]) keyState[event.code].up = XNode.updateCounter;
+            if (keyState[event.code]) keyState[event.code].up = XNode$1.updateCounter;
         }, true);
         
         return {
@@ -658,7 +669,7 @@
 
                 let ret = false;
                 code.split(' ').forEach((c) => {
-                    if (isString(c) && keyState[c]?.down === XNode.updateCounter) ret = true;
+                    if (isString(c) && keyState[c]?.down === XNode$1.updateCounter) ret = true;
                 });
                 return ret;
             },
@@ -667,7 +678,7 @@
 
                 let ret = false;
                 code.split(' ').forEach((c) => {
-                    if (isString(c) && keyState[c]?.up === XNode.updateCounter) ret = true;
+                    if (isString(c) && keyState[c]?.up === XNode$1.updateCounter) ret = true;
                 });
                 return ret;
             },
@@ -687,11 +698,11 @@
     // screen
     //----------------------------------------------------------------------------------------------------
 
-    function Screen(node, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
-        node.nestElement({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
-        node.nestElement({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
-        node.nestElement({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
-        const absolute = node.element.parentElement;
+    function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
+        xnode.nestElement({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
+        xnode.nestElement({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
+        xnode.nestElement({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
+        const absolute = xnode.element.parentElement;
 
         const canvas = xnew({ tag: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
         
@@ -753,13 +764,13 @@
     // transition
     //----------------------------------------------------------------------------------------------------
 
-    function Transition(node, callback, interval = 1000) {
+    function Transition(xnode, callback, interval = 1000) {
 
         return {
             update(time) {
                 const value = time / interval;
-                xwrap(node.parent, callback, Math.min(1.0, value));
-                if (value >= 1.0) node.finalize();
+                xwrap(xnode.parent, callback, Math.min(1.0, value));
+                if (value >= 1.0) xnode.finalize();
             }
         }
     }
@@ -768,7 +779,7 @@
     // drag event
     //----------------------------------------------------------------------------------------------------
 
-    function DragEvent(node) {
+    function DragEvent(xnode) {
         const base = xnew();
 
         let id = null;
@@ -786,7 +797,7 @@
             current = position;
 
             const type = 'down';
-            node.emit(type, event, { type, position, });
+            xnode.emit(type, event, { type, position, });
             window.addEventListener('pointermove', move);
             window.addEventListener('pointerup', up);
         }    function move(event) {
@@ -797,13 +808,13 @@
             current = position;
 
             const type = 'move';
-            node.emit(type, event, { type, position, delta, });
+            xnode.emit(type, event, { type, position, delta, });
         }    function up(event) {
             const position = getPosition(event, id);
             if (position === null) return;
             
             const type = 'up';
-            node.emit(type, event, { type, position, });
+            xnode.emit(type, event, { type, position, });
             id = null;
             current = null;
             window.removeEventListener('pointermove', move);
@@ -831,13 +842,13 @@
             }
             if (original === null) return null;
 
-            const rect = node.element.getBoundingClientRect();
+            const rect = xnode.element.getBoundingClientRect();
            
             let scaleX = 1.0;
             let scaleY = 1.0;
-            if (node.element.tagName.toLowerCase() === 'canvas' && isNumber(node.element.width) && isNumber(node.element.height)) {
-                scaleX = node.element.width / rect.width;
-                scaleY = node.element.height / rect.height;
+            if (xnode.element.tagName.toLowerCase() === 'canvas' && isNumber(xnode.element.width) && isNumber(xnode.element.height)) {
+                scaleX = xnode.element.width / rect.width;
+                scaleY = xnode.element.height / rect.height;
             }
 
             return { x: scaleX * (original.clientX - rect.left), y: scaleY * (original.clientY - rect.top) };
@@ -855,8 +866,8 @@
     // d-pad
     //----------------------------------------------------------------------------------------------------
 
-    function DPad(node, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-        node.nestElement({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
+    function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+        xnode.nestElement({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
 
         const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
         const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -901,7 +912,7 @@
             targets[2].element.style.filter = (vector.x < 0) ? 'brightness(90%)' : '';
             targets[3].element.style.filter = (vector.x > 0) ? 'brightness(90%)' : '';
 
-            node.emit(type, event, { type, vector });
+            xnode.emit(type, event, { type, vector });
         });
 
         drag.on('up', (event, { type }) => {
@@ -909,7 +920,7 @@
                 targets[i].element.style.filter = '';
             }
             const vector = { x: 0, y: 0 };
-            node.emit(type, event, { type, vector });
+            xnode.emit(type, event, { type, vector });
         });
     }
 
@@ -917,8 +928,8 @@
     // analog stick
     //----------------------------------------------------------------------------------------------------
 
-    function AnalogStick(node, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-        node.nestElement({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
+    function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+        xnode.nestElement({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
 
         const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
         const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -942,7 +953,7 @@
             const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
             const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
             const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-            node.emit(type, event, { type, vector });
+            xnode.emit(type, event, { type, vector });
             [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
         });
 
@@ -950,7 +961,7 @@
             target.element.style.filter = '';
 
             const vector = { x: 0, y: 0 };
-            node.emit(type, event, { type, vector });
+            xnode.emit(type, event, { type, vector });
             [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
         });
     }
@@ -960,8 +971,8 @@
     // circle button
     //----------------------------------------------------------------------------------------------------
 
-    function CircleButton(node, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-        node.nestElement({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
+    function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+        xnode.nestElement({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
 
         const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
         const strokeStyle = `stroke-linejoin: round; stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)};`;
@@ -980,14 +991,14 @@
         function down(event) {
             target.element.style.filter = 'brightness(90%)';
             const type = 'down';
-            node.emit(type, event, { type });
+            xnode.emit(type, event, { type });
 
             window.addEventListener('pointerup', up);
         }
         function up(event) {
             target.element.style.filter = '';
             const type = 'up';
-            node.emit(type, event, { type });
+            xnode.emit(type, event, { type });
 
             window.removeEventListener('pointerup', up);
         }

@@ -1,4 +1,4 @@
-import { isString, isNumber, isObject, isFunction, clamp } from './common';
+import { isString, isNumber, isObject, isFunction } from './common';
 import { xnew, XNode } from './core';
 
 //----------------------------------------------------------------------------------------------------
