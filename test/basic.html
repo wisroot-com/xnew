@@ -62,6 +62,26 @@
                 }
             });
         });
+
+        xnew((xnode) => {
+            xnode.context('hoge', 1);
+            console.log(xnode.context('hoge')); // 1
+
+            xnew((xnode) => {
+                console.log(xnode.context('hoge')); // 1
+
+                xnew((xnode) => {
+                    xnode.context('hoge', 2);
+                    console.log(xnode.context('hoge')); // 2
+
+                    xnew((xnode) => {
+                        console.log(xnode.context('hoge')); // 2
+                    });
+                });
+                
+                console.log(xnode.context('hoge')); // 1
+            });
+        });
     </script>
 </body>
 </html>

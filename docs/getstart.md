@@ -8,7 +8,7 @@
 ## Setup
 ### cdn
 ```
-<script src="https://unpkg.com/xnew@1.5.x/dist/xnew.js"></script>;
+<script src="https://unpkg.com/xnew@1.x/dist/xnew.js"></script>;
 ```
 
 ### npm
@@ -19,13 +19,13 @@ npm install xnew
 import { xnew } from 'xnew'
 ```
 ## Basic usage
-The library contains a function `xnew`.  
-By setting a component function, it will create an instance(`node`) of the component.  
+xnew contains a function `xnew`.  
+By setting a component function, it will create an instance(`xnode`) of the component.  
 ```
-const node = xnew(Component, ...args);    
+const xnode = xnew(Component, ...args);    
 ```
 ```
-function Component(node, ...args) {
+function Component(xnode, ...args) {
     // implement features
 }
 ```
@@ -33,7 +33,7 @@ function Component(node, ...args) {
 
 You can also use an function literal.  
 ```
-const node = xnew((node) => {
+const xnode = xnew((xnode) => {
     // ...
 });
 ```
@@ -41,7 +41,7 @@ const node = xnew((node) => {
 Inside the component function, you can implement initializing and repeated updating, finalizing process et al. 
 And you can define your own functions and properties here and use them later.  
 ```
-function Component(node) {
+function Component(xnode) {
     // initialize
     // ...
 
@@ -51,13 +51,13 @@ function Component(node) {
             // ...
         },
         finalize() {
-            // fires when node.finalize() is called.
-            // note that it is also called automatically when the parent node finalizes.
+            // fires when xnode.finalize() is called.
+            // note that it is also called automatically when the parent xnode finalizes.
             // ...
         },
 
         hoge() {
-            // original function (accessed by node.hoge())
+            // original function (accessed by xnode.hoge())
             // ...
         },
     }
@@ -67,22 +67,22 @@ function Component(node) {
 If you call `xnew` inside a component function, a parent-child relationship is connected.
 ![](parent-child.png)
 ```
-xnew((node) => {
+xnew((xnode) => {
     xnew(A);
     xnew(B);
     // ...
 });
 
-function A(node) {
+function A(xnode) {
     xnew(C);
     // ...
 }
 
-function B(node) {
+function B(xnode) {
     // ...
 }
 
-function C(node) {
+function C(xnode) {
     // ...
 }
 ```
