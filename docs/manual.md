@@ -170,7 +170,7 @@ xnode.start();    // start update loop
 xnode.stop();     // stop update loop
 xnode.finalize(); // current xnode and the child xnodes will be finalized 
 
-xnode.state();    // return state [pre initialized ->stopped ->started ->... ->stopped ->pre finalized ->finalized] 
+xnode.state;    // return state [pre initialized ->stopped ->started ->... ->stopped ->pre finalized ->finalized] 
 ```
 - By default, xnodes automatically calls `xnode.start()`.  
     If you want to avoid it, call `xnode.stop()` inside the component function.  
@@ -440,34 +440,35 @@ xnew((xnode1) =>  {
 ```
 ## Context
 You can use context property when you want to get properties on higher xnode.
-### `xnode.setContext`
+
+### `xnode.context`
 ```
-xnode.setContext(name, value);
-```
-### `xnode.getContext`
-```
-xnode.getContext(name);
+// set
+xnode.context(name, value);
+// get
+xnode.context(name);
+
 ```
 
 ### example
 ```
 xnew((xnode) => {
-    xnode.setContext('hoge', 1);
-    xnode.getContext('hoge'); // 1
+    xnode.context('hoge', 1);
+    xnode.context('hoge'); // 1
 
     xnew((xnode) => {
-        xnode.getContext('hoge'); // 1
+        xnode.context('hoge'); // 1
 
         xnew((xnode) => {
-            xnode.setContext('hoge', 2);
-            xnode.getContext('hoge'); // 2
+            xnode.context('hoge', 2);
+            xnode.context('hoge'); // 2
 
             xnew((xnode) => {
-                xnode.getContext('hoge'); // 2
+                xnode.context('hoge'); // 2
             });
         });
         
-        xnode.getContext('hoge'); // 1
+        xnode.context('hoge'); // 1
     });
 });
 ```

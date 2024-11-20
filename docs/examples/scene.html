@@ -92,8 +92,8 @@
         //----------------------------------------------------------------------
         
         function PixiObject(xnode, object) {
-            const parent = xnode.getContext('PIXI.DisplayObject');
-            xnode.setContext('PIXI.DisplayObject', object);
+            const parent = xnode.context('PIXI.DisplayObject');
+            xnode.context('PIXI.DisplayObject', object);
             
             // if the parent object exists
             if (parent) {

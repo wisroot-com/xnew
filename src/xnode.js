@@ -188,7 +188,7 @@ export class XNode {
     }
 
     _start() {
-        if (this._.state === 'stopped' && (this._.parent === null || this._.parent.isStarted()) && this._.resolve === true && this._.tostart === true) {
+        if (this._.state === 'stopped' && (this._.parent === null || this._.parent.state === 'started') && this._.resolve === true && this._.tostart === true) {
             this._.startTime = XNode.updateTime;
             this._.state = 'started';
             this._.children.forEach((node) => node._start());
