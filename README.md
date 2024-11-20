@@ -9,7 +9,7 @@ Suitable for creating apps and games with dynamic scenes.
 ### via cdn  
   
 ```
-<script src="https://unpkg.com/xnew@1.5.x/dist/xnew.js"></script>
+<script src="https://unpkg.com/xnew@1.0.x/dist/xnew.js"></script>
 ```
 
 ### via npm
