@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="../three.min.js"></script>
+    <script src="../xnew.js"></script>
+
+    <style>
+        html {
+            height: -webkit-fill-available;
+        }
+        body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            position: absolute;
+            margin: 0;
+            inset: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        xnew((xnode) => {
+            const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
+        
+            const three = {};
+            three.renderer = new THREE.WebGLRenderer({ canvas: screen.canvas });
+            three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
+            three.camera.position.set(0, 0, +100);
+
+            three.scene = new THREE.Scene();
+            xnode.extend(ThreeObject, three.scene);
+
+            xnew(View, three.scene, three.camera);
+            xnew(Content);
+
+            return {
+                update() {
+                    three.renderer.render(three.scene, three.camera);
+                },
+            };
+        });
+
+        function Content() {
+            xnew(Cube, 0, 0, 0, 40);
+        }
+
+        function View(xnode, scene, camera) {
+            const drag = xnew(xcomponents.DragEvent);
+            drag.on('move', (event, { current, delta }) => {
+                if (event.buttons & 1 || !event.buttons) {
+                    scene.rotation.x += delta.y * 0.01;
+                    scene.rotation.y += delta.x * 0.01;
+                }
+                if (event.buttons & 2) {
+                    camera.position.x -= delta.x * camera.position.z * 0.001;
+                    camera.position.y += delta.y * camera.position.z * 0.001;
+                } 
+                xnode.stop();
+            });
+            xnode.on('wheel', (event) => {
+                event.preventDefault();
+                camera.position.z += camera.position.z * (event.deltaY > 0 ? +0.05 : -0.05);
+            });
+            xnode.on('contextmenu', (event) => event.preventDefault());
+        }
+
+        function Cube(xnode, x, y, z, size) {
+            const geometry = new THREE.BoxGeometry(size, size, size);
+            const material = new THREE.MeshNormalMaterial();
+            const object = new THREE.Mesh(geometry, material);
+            xnode.extend(ThreeObject, object);
+
+            return {
+                update() {
+                    object.rotation.y += 0.01;
+                },
+            };
+        }
+
+
+        //----------------------------------------------------------------------
+        // base component
+        //----------------------------------------------------------------------
+        
+        function ThreeObject(xnode, object) {
+            const parent = xnode.getContext('THREE.Object3D');
+            xnode.setContext('THREE.Object3D', object);
+
+            // if the parent object exists
+            if (parent) {
+                parent.add(object);
+
+                return {
+                    finalize() {
+                        parent.remove(object);
+                    },
+                }
+            }
+        }
+
+
+    </script>
+</body>
+</html>

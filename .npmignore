@@ -1,0 +1,11 @@
+/node_modules
+/dist
+/wip
+/src
+/docs
+/test
+/rollup.config.js
+/package-lock.json
+/tailwind.config.js
+/index.js
+/.vscode

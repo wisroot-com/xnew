@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="../xnew.js"></script>
+    <style>
+        html {
+            height: -webkit-fill-available;
+        }
+        body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            position: absolute;
+            margin: 0;
+            inset: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+
+    <script>
+        const status = xnew({ style: 'position: absolute; margin: 8px;' }, 'click box');
+
+        xnew(Parent);
+
+        function Parent(xnode) {
+            xnode.nestElement({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
+            xnew({ tag: 'span' }, 'parent: ');
+            const text = xnew({ tag: 'span' }, 'start');
+
+            xnew(Child);
+
+            xnode.on('pointerdown', () => {
+                xnode.isStopped() ? xnode.start() : xnode.stop();
+            });
+
+            let counter = 0;
+            return {
+                start: () => {
+                    text.element.textContent = 'start';
+                    console.log('parent start');
+                },
+                update: (time) => {
+                    xnode.element.style.transform = `rotate(${counter++ / 2}deg)`;
+                },
+                stop: () => {
+                    text.element.textContent = 'stop';
+                    console.log('parent stop');
+                },
+            };
+        }
+
+        function Child(xnode) {
+            xnode.nestElement({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
+            xnew({ tag: 'span' }, 'child: ');
+            const text = xnew({ tag: 'span' }, 'start');
+     
+            xnode.on('pointerdown', (event) => {
+                event.stopPropagation();
+                xnode.isStopped() ? xnode.start() : xnode.stop();
+            });
+
+            let counter = 0;
+            return {
+                start: () => {
+                    text.element.textContent = 'start';
+                    console.log('child start');
+                },
+                update: (time) => {
+                    xnode.element.style.transform = `rotate(${counter++ / 2}deg)`;
+                },
+                stop: () => {
+                    text.element.textContent = 'stop';
+                    console.log('child stop');
+                },
+            };
+        }
+
+    </script>
+</body>
+
+</html>

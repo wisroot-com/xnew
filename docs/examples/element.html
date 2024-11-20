@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="../xnew.js"></script>
+</head>
+
+<body>
+    <script>
+        xnew(() => {
+            // { style: ... } = { tag: 'div', style: ... }
+            xnew({ style: 'margin: 4px; padding: 4px; border: solid 1px #222;'}, Div1);
+            xnew({ style: 'margin: 4px; padding: 4px; border: solid 1px #222;'}, Div2);
+            xnew({ style: 'margin: 4px; padding: 4px; border: solid 1px #222;'}, Div3);
+            xnew({ style: 'margin: 4px; padding: 4px; border: solid 1px #222;'}, Div4);
+        });
+
+        function Div1(xnode) {
+            xnew('<p>my div</p>');
+            xnew({ style: 'display: flex;'}, () => {
+                xnew({ style: 'width: 160px; height: 36px; background: #d66;'}, '1');
+                xnew({ style: 'width: 160px; height: 36px; background: #6d6;'}, '2');
+                xnew({ style: 'width: 160px; height: 36px; background: #66d;'}, '3');
+            });
+        }
+
+        function Div2(xnode) {
+            xnew('<p>my button</p>');
+
+            const button = xnew({ tag: 'button' }, 'click me');
+
+            let counter = 0;
+            button.on('click', () => {
+                button.element.textContent = `counter: ${counter++}`;
+            })
+        }
+
+        function Div3(xnode) {
+            xnew('<p>my input text</p>');
+
+            const input = xnew({ tag: 'input', type: 'text' });
+            const span = xnew({ tag: 'span' });
+
+            input.on('change input', () => {
+                span.element.textContent = input.element.value;
+            })
+        }
+
+        function Div4(xnode) {
+            xnew('<p>my canvas</p>');
+            const canvas = xnew({ tag: 'canvas', width: 200, height: 100 });
+            xnew(Content, canvas.element);
+        }
+
+        function Content(xnode, canvas) {
+            const context = canvas.getContext('2d');
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const s = Math.min(cx, cy) * 0.5;
+
+            context.fillStyle = "rgb(0,0,0)";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            context.fillStyle = "rgb(200,0,100)";
+            context.fillRect(cx - 0.6 * cx - s, cy - s, s * 2, s * 2);
+
+            context.fillStyle = "rgb(100,200,0)";
+            context.fillRect(cx + 0.0 * cx - s, cy - s, s * 2, s * 2);
+
+            context.fillStyle = "rgb(0,100,200)";
+            context.fillRect(cx + 0.6 * cx - s, cy - s, s * 2, s * 2);
+        }
+
+    </script>
+</body>
+</html>

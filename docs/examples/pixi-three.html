@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="../pixi.min.js"></script>
+    <script src="../three.min.js"></script>
+    <script src="../xnew.js"></script>
+    <style>
+        html {
+            height: -webkit-fill-available;
+        }
+        body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            position: absolute;
+            margin: 0;
+            inset: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        xnew((xnode) => {
+            // create a screen (xcomponents.Screen is a component function that defines a canvas)
+            const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
+
+            xnode.shared.width = screen.width;
+            xnode.shared.height = screen.height;
+
+            // setting for three.js
+            const three = {};
+            three.renderer = new THREE.WebGLRenderer({}); // not set canvas
+            three.renderer.setSize(screen.width, screen.height);
+
+            three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
+            three.camera.position.set(0, 0, +100);
+            three.scene = new THREE.Scene();
+            xnode.extend(ThreeObject, three.scene);
+
+            // setting for pixi.js
+            const pixi = {};
+            pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height });
+            pixi.scene = new PIXI.Container();
+            xnode.extend(PixiObject, pixi.scene);
+            
+            // setting pixi texture for three.renderer
+            const texture = PIXI.Texture.from(three.renderer.domElement);
+            const sprite = new PIXI.Sprite(texture);
+            pixi.scene.addChild(sprite);
+
+            xnew(Content);
+
+            return {
+                update() {
+                    three.renderer.render(three.scene, three.camera);
+                    sprite.texture.update()
+                    pixi.renderer.render(pixi.scene)
+                },
+            };
+        });
+
+        function Content(xnode) {
+            xnew(Box, xnode.shared.width / 2, xnode.shared.height / 2, 160, 0xEA1E63);
+            xnew(Cube, 0, 0, 0, 40);
+        }
+
+        function Box(xnode, x, y, size, color) {
+            const object = new PIXI.Container();
+            xnode.extend(PixiObject, object);
+            
+            object.x = x;
+            object.y = y;
+            
+            const graphics = object.addChild(new PIXI.Graphics());
+            graphics.beginFill(color);
+            graphics.drawRect(-size / 2, -size / 2, size, size);
+            graphics.endFill();
+           
+            return {
+                update() {
+                    object.rotation += 0.01;
+                },
+            };
+        }
+
+        function Cube(xnode, x, y, z, size) {
+            const geometry = new THREE.BoxGeometry(size, size, size);
+            const material = new THREE.MeshNormalMaterial();
+            const object = new THREE.Mesh(geometry, material);
+            xnode.extend(ThreeObject, object);
+
+            return {
+                update() {
+                    object.rotation.y += 0.01;
+                },
+            };
+        }
+
+        //----------------------------------------------------------------------
+        // base component
+        //----------------------------------------------------------------------
+        
+        function PixiObject(xnode, object) {
+            const parent = xnode.getContext('PIXI.DisplayObject');
+            xnode.setContext('PIXI.DisplayObject', object);
+            
+            // if the parent object exists
+            if (parent) {
+                parent.addChild(object);
+
+                return {
+                    finalize() {
+                        parent.removeChild(object);
+                    },
+                }
+            }
+
+        }
+
+        function ThreeObject(xnode, object) {
+            const parent = xnode.getContext('THREE.Object3D');
+            xnode.setContext('THREE.Object3D', object);
+
+            // if the parent object exists
+            if (parent) {
+                parent.add(object);
+
+                return {
+                    finalize() {
+                        parent.remove(object);
+                    },
+                }
+            }
+        }
+    </script>
+</body>
+</html>

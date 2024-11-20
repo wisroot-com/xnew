@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="../pixi.min.js"></script>
+    <script src="../xnew.js"></script>
+    <style>
+        html {
+            height: -webkit-fill-available;
+        }
+        body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            position: absolute;
+            margin: 0;
+            inset: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        xnew((xnode) => {
+
+            const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
+
+            xnode.shared.width = screen.width;
+            xnode.shared.height = screen.height;
+
+            const pixi = {};
+            pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height });
+            pixi.scene = new PIXI.Container();
+            xnode.extend(PixiObject, pixi.scene);
+            
+            xnew(Controller);
+            xnew(Content);
+
+            return {
+                update() {
+                    pixi.renderer.render(pixi.scene)
+                },
+            };
+        });
+
+        function Content(xnode) {
+            xnew(Box, xnode.shared.width / 2, xnode.shared.height / 2, 160, 0xEA1E63);
+        }
+
+        function Controller(xnode) {
+            const stick = xnew({ style: 'position: absolute; left: 10px; bottom: 10px; z-index: 10;' }, xcomponents.AnalogStick, { size: 130 });
+            stick.on('down move up', (event, ex) => {
+                stick.emit('#move', ex);
+            })
+            const dpad = xnew({ style: 'position: absolute; left: 10px; bottom: 150px; z-index: 10;' }, xcomponents.DPad, { size: 130 });
+            dpad.on('down move up', (event, ex) => {
+                stick.emit('#move', ex);
+            })
+            const button = xnew({ style: 'position: absolute; right: 20px; bottom: 20px; z-index: 10;' }, xcomponents.CircleButton);
+            button.on('down', (event, ex) => {
+                button.emit('#action');
+            })
+        }
+
+        function Box(xnode, x, y, size, color) {
+            const object = new PIXI.Container();
+            xnode.extend(PixiObject, object);
+            
+            object.x = x;
+            object.y = y;
+            
+            const graphics = object.addChild(new PIXI.Graphics());
+            graphics.beginFill(color);
+            graphics.drawRect(-size / 2, -size / 2, size, size);
+            graphics.endFill();
+
+            let move = null;
+            let direction = +1;
+            xnode.on('#move', ({ vector }) => {
+                move = vector;
+            });
+            xnode.on('#action', () => {
+                direction *= -1;
+            });
+
+            return {
+                update() {
+                    object.rotation += 0.01 * direction;
+                    if (move) {
+                        object.x += move.x * 5;
+                        object.y += move.y * 5;
+                    }
+                },
+            };
+        }
+
+        //----------------------------------------------------------------------
+        // base component
+        //----------------------------------------------------------------------
+        
+        function PixiObject(xnode, object) {
+            const parent = xnode.getContext('PIXI.DisplayObject');
+            xnode.setContext('PIXI.DisplayObject', object);
+            
+            // if the parent object exists
+            if (parent) {
+                parent.addChild(object);
+
+                return {
+                    finalize() {
+                        parent.removeChild(object);
+                    },
+                }
+            }
+        }
+
+    </script>
+</body>
+</html>

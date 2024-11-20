@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="../pixi.min.js"></script>
+    <script src="../xnew.js"></script>
+    <style>
+        html {
+            height: -webkit-fill-available;
+        }
+        body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            position: absolute;
+            margin: 0;
+            inset: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        xnew((xnode) => {
+            const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
+
+            xnode.shared.width = screen.width;
+            xnode.shared.height = screen.height;
+
+            const pixi = {};
+            pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height });
+            pixi.scene = new PIXI.Container();
+            xnode.extend(PixiObject, pixi.scene);
+
+            xnew(Scene1);
+            return {
+                update() {
+                    pixi.renderer.render(pixi.scene)
+                },
+            };
+        });
+
+        function Scene1(xnode) {
+            xnew(Text, 'Scene1');
+            xnew(Box, xnode.shared.width / 2, xnode.shared.height / 2, 160, 0xff2266);
+            
+            xnode.on('pointerdown', () =>  {
+                xnew(xnode.parent, Scene2);
+                xnode.finalize();
+            });
+        }
+
+        function Scene2(xnode) {
+            xnew(Text, 'Scene2');
+            xnew(Box, xnode.shared.width / 2, xnode.shared.height / 2, 160, 0x6622ff);
+
+            xnode.on('pointerdown', () =>  {
+                xnew(xnode.parent, Scene1);
+                xnode.finalize();
+            });
+        }
+        
+        function Text(xnode, value) {
+            const text = new PIXI.Text(value, new PIXI.TextStyle({ fontSize: 24, fill: '#00ffff' }));
+            xnode.extend(PixiObject, text);
+            text.x = 10;
+            text.y = 10;
+        }
+
+        function Box(xnode, x, y, size, color) {
+            const object = new PIXI.Container();
+            xnode.extend(PixiObject, object);
+
+            object.x = x;
+            object.y = y;
+
+            const graphics = object.addChild(new PIXI.Graphics());
+            graphics.beginFill(color);
+            graphics.drawRect(-size / 2, -size / 2, size, size);
+            graphics.endFill();
+
+            return {
+                update() {
+                    object.rotation += 0.01;
+                },
+            };
+        }
+
+        //----------------------------------------------------------------------
+        // base component
+        //----------------------------------------------------------------------
+        
+        function PixiObject(xnode, object) {
+            const parent = xnode.getContext('PIXI.DisplayObject');
+            xnode.setContext('PIXI.DisplayObject', object);
+            
+            // if the parent object exists
+            if (parent) {
+                parent.addChild(object);
+
+                return {
+                    finalize() {
+                        parent.removeChild(object);
+                    },
+                }
+            }
+        }
+
+    </script>
+</body>
+</html>

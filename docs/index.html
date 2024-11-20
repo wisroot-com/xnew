@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"
+        integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.2.12/marked.min.js"></script>
+
+    <script src="./pixi.min.js"></script>
+    <script src="./three.min.js"></script>
+    <script src="./xnew.js"></script>
+
+    <script src="./script.js"></script>
+    <link href="style.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100">
+    <div class="text-gray-100 bg-black fixed left-0 top-0 right-0 z-10">
+        <div class="max-w-[900px] h-16 mx-auto p-2 flex flex-row items-baseline">
+            <div>
+                <a href="#" class="text-4xl mx-1 font-bold"><span class="text-sky-500">x</span><span class="text-green-500">new</span></a>
+            </div>
+            <div>
+                <a href="#manual" class="text-xl mx-1">manual</a>
+            </div>
+            <div>
+                <a href="#examples" class="text-xl mx-1">examples</a>
+            </div>
+            <div>
+                <a href="#xutil" class="text-xl mx-1">xutil</a>
+            </div>
+            <div>
+                <a class="text-xl mx-1" href="https://github.com/wizroot-dev/xnew">github</a>
+            </div>
+        </div>
+    </div>
+    <div class="h-16"></div>
+
+    <div name="getstart" class="section" style="display: none;">
+        <div id="top" class="w-full max-w-[1200px] h-[400px] my-8 mx-auto"></div>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                createTop(document.querySelector('#top'));
+            });
+        </script>
+        <div class="markdown max-w-[900px] mx-auto"></div>
+    </div>
+
+    <div name="manual" class="section" style="display: none;">
+        <div class="markdown max-w-[900px] mx-auto"></div>
+    </div>
+
+    <div name="examples" class="section" style="display: none;">
+        <div class="max-w-[900px] mx-auto">
+            <h1>examples</h1>
+            <div class="flex flex-row w-full h-[500px]">
+                <div class="flex-none w-48 h-full p-2" name="example-items">
+                    <p class="clickable" name="element" >element</p>
+                    <p class="clickable" name="screen" >screen</p>
+                    <p class="clickable" name="pixi" >with pixi</p>
+                    <p class="clickable" name="three" >with three</p>
+                    <p class="clickable" name="pixi-three" >with pixi+three</p>
+                    <p class="clickable" name="matter" >with matter</p>
+                    <p class="clickable" name="timer" >timer</p>
+                    <p class="clickable" name="dragevent" >drag event</p>
+                    <p class="clickable" name="controller" >controller</p>
+                    <p class="clickable" name="scene" >scene change</p>
+                </div>
+                <div class="flex-auto h-full border border-gray-300 rounded-lg">
+                    <iframe id="iframe" class="w-full h-full"></iframe>
+                </div>
+            </div>
+            <div id="code">
+            </div>
+        </div>
+    </div>
+
+    <div name="xutil" class="section" style="display: none;">
+        <div class="markdown max-w-[900px] mx-auto"></div>
+
+        <div class="max-w-[900px] mx-auto">
+            <div id="synthesizer" style="user-select: none;"></div>
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    createSynth(document.querySelector('#synthesizer'));
+                });
+            </script>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', main);
+    </script>
+</body>
+
+</html>

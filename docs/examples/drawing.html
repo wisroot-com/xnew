@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="../three.min.js"></script>
+    <script src="../xnew.js"></script>
+
+    <style>
+        html {
+            height: -webkit-fill-available;
+        }
+        body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            position: absolute;
+            margin: 0;
+            inset: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="screen" style="width: 200px; height: 200px;"></div>
+    <script>
+        xnew((xnode) => {
+            const screen = xnew(document.querySelector('#screen'), xcomponents.Screen, { width: 28, height: 28 });
+        
+            xnew(screen, Content, screen.canvas);
+
+            return {
+                update() {
+                },
+            };
+        });
+        function Content(xnode, canvas) {
+            const context = canvas.getContext('2d');
+            context.fillStyle = "rgb(0,0,0)";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const draw = xnew(xcomponents.DrawEvent);
+
+            draw.on('down move', (event, { start, end, delta }) => {
+                const scaleX = canvas.width / xnode.element.clientWidth;
+                const scaleY = canvas.height / xnode.element.clientHeight;
+
+                context.beginPath();
+                context.fillStyle = 'white';
+                if (delta) {
+                    const length = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+                    for (let i = 0; i < length; i++) {
+                        context.arc((end.x - delta.x * i / length) * scaleX, (end.y - delta.y * i / length) * scaleY, 1, 0, Math.PI * 2, true);
+                    }
+                } else {
+                    context.arc(start.x * scaleX, start.y * scaleY, 1, 0, Math.PI * 2, true);
+                }
+                context.fill();
+            });
+        }
+
+
+    </script>
+</body>
+</html>

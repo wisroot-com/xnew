@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="../three.min.js"></script>
+    <script src="../xnew.js"></script>
+    <style>
+        html {
+            height: -webkit-fill-available;
+        }
+        body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            position: absolute;
+            margin: 0;
+            inset: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        xnew((xnode) => {
+            // create a screen (xcomponents.Screen is a component function that defines a canvas)
+            const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
+
+            // setting for three.js
+            const three = {};
+            three.renderer = new THREE.WebGLRenderer({ canvas: screen.canvas, alpha: true, });
+            three.renderer.setClearColor(0x000000, 0);
+            
+            three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
+            three.camera.position.set(0, 0, +100);
+
+            three.scene = new THREE.Scene();
+            xnode.extend(ThreeObject, three.scene);
+
+            xnew(Light);
+            xnew(Content);
+
+            return {
+                update() {
+                    three.renderer.render(three.scene, three.camera);
+                },
+            };
+        });
+
+        function Light(xnode) {
+            const light = new THREE.PointLight(0xFFFFFF, 1);
+            xnode.extend(ThreeObject, light);
+
+            light.position.set(0, 0, +100);
+        }
+
+        function Content(xnode) {
+            // call iteratively (100ms, loop=true)
+            xtimer(() => {
+                xnew(Cube, 100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5), 0xFFFFFF * Math.random());
+            }, 100, true);
+        }
+
+        // create a cube and update
+        function Cube(xnode, x, y, z, color) {
+            // create a cube object
+            const size = 10 * Math.random() + 5;
+            const geometry = new THREE.BoxGeometry(size, size, size);
+            const material = new THREE.MeshLambertMaterial({ color });
+            const object = new THREE.Mesh(geometry, material);
+            xnode.extend(ThreeObject, object);
+
+            object.position.x = x;
+            object.position.y = y;
+            object.position.z = z;
+
+            const velocity = {};
+            velocity.x = Math.random() - 0.5;
+            velocity.y = Math.random() - 0.5;
+            velocity.z = Math.random() - 0.5;
+
+            // finalize after 5000ms
+            xtimer(() => xnode.finalize(), 5 * 1000);
+
+            return {
+                update() {
+                    // move cube
+                    object.position.x += velocity.x;
+                    object.position.y += velocity.y;
+                    object.position.z += velocity.z;
+                    object.rotation.y += 0.01;
+                    object.rotation.x += 0.01;
+                },
+            };
+        }
+
+        //----------------------------------------------------------------------
+        // base component
+        //----------------------------------------------------------------------
+        
+        function ThreeObject(xnode, object) {
+            const parent = xnode.getContext('THREE.Object3D');
+            xnode.setContext('THREE.Object3D', object);
+
+            // if the parent object exists
+            if (parent) {
+                parent.add(object);
+
+                return {
+                    finalize() {
+                        parent.remove(object);
+                    },
+                }
+            }
+        }
+
+    </script>
+</body>
+</html>

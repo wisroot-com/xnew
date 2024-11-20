@@ -1,0 +1,23 @@
+{
+  "name": "xnew",
+  "description": "simple component based library",
+  "version": "1.5.0",
+  "main": "dist/xnew.js",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/wizroot-dev/xnew.js/issues"
+  },
+  "homepage": "https://github.com/wizroot-dev/xnew.js#readme",
+  "scripts": {
+    "server": "npx http-server",
+    "build": "npx rollup --config --bundleConfigAsCjs",
+    "watch": "npx rollup --config --watch --bundleConfigAsCjs",
+    "build-docs": "npx tailwindcss -i ./docs/tailwind.css -o ./docs/style.css",
+    "watch-docs": "npx tailwindcss -i ./docs/tailwind.css -o ./docs/style.css --watch"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "rollup": "^3.3.0",
+    "tailwindcss": "^3.2.4"
+  }
+}
