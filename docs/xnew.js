@@ -1050,8 +1050,8 @@
 
     var util = {
         __proto__: null,
-        input: input,
-        audio: audio
+        audio: audio,
+        input: input
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1372,12 +1372,12 @@
 
     var components = {
         __proto__: null,
-        Screen: Screen,
-        Transition: Transition,
-        DragEvent: DragEvent,
-        DPad: DPad,
         AnalogStick: AnalogStick,
         CircleButton: CircleButton,
+        DPad: DPad,
+        DragEvent: DragEvent,
+        Screen: Screen,
+        Transition: Transition,
         xutil: util
     };
 
