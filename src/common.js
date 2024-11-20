@@ -14,7 +14,3 @@ export function isNumber(value) {
 export function isObject(value) {
     return value !== null && typeof value === 'object' && value.constructor === Object;
 }
-
-export function clamp(value, min, max) {
-    return Math.min(Math.max(value, min), max);
-}

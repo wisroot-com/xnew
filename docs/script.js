@@ -374,7 +374,7 @@ function createTop(element) {
 
     function Content(xnode) {
         // call iteratively (100ms, loop=true)
-        xnode.setTimer(() => {
+        xtimer(() => {
             xnew(Cube, 100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5), 0xFFFFFF * Math.random());
         }, 100, true);
     }
@@ -398,7 +398,7 @@ function createTop(element) {
         velocity.z = Math.random() - 0.5;
 
         // finalize after 5000ms
-        xnode.setTimer(() => xnode.finalize(), 5 * 1000);
+        xtimer(() => xnode.finalize(), 5 * 1000);
 
         return {
             update() {

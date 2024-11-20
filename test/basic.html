@@ -18,9 +18,9 @@
                 xnode.emit('#countup');
             });
             xnode.on('#countup countup', () => {
+                console.log(counter);
                 xnode.element.textContent = ++counter + ' clicked';
             })
-            xnode.off('#countup countup',);
         });
 
         xnew((xnode) => {
@@ -28,24 +28,15 @@
             xnode.element.textContent = 'counter: 0';
 
             let counter = 0;
-            const timer = xnode.setTimer(() => {
+            const timer = xtimer(() => {
                 xnode.element.textContent = 'counter: ' + (++counter);
             }, 1000, true);
 
-            xnode.setTimer(() => {
-                timer.clear();
+            xtimer(() => {
+                timer.finalize();
             }, 5000);
         });
-        xnew((xnode) => {
-            return {
-                promise: 1,
-                start: 1,
-                update: 1,
-                stop: 1,
-                finalize: 1,
-            }
-        });
-        
+    
         xnew((xnode) => {
             xnew((xnode) => {
                 xnode.key = 'aaa';
