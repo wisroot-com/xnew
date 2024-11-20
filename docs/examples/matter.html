@@ -68,8 +68,8 @@
     //----------------------------------------------------------------------
 
     function MatterObject(xnode, object) {
-        const composite = xnode.getContext('Matter.Composite');
-        xnode.setContext('Matter.Composite', object);
+        const composite = xnode.context('Matter.Composite');
+        xnode.context('Matter.Composite', object);
             
         // if the parent object exists
         if (composite) {
