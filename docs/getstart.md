@@ -29,7 +29,7 @@ function Component(xnode, ...args) {
     // implement features
 }
 ```
-`...args` is arguments for the component function. (not necessary)
+`...args` are arguments for the component function. (not necessary)
 
 You can also use an function literal.  
 ```

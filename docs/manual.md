@@ -86,11 +86,11 @@ function xnew (parent, element, innerHTML);
         
 ## Element
 There are various ways to create elements. Here are some patterns.
-### `xnode.nestElement`
+### `xnode.nest`
 This create a new element as a child of the current element. and replace `xnode.element`.
 ```
-xnode.nestElement(attributes);
-// e.g.: xnode.nestElement({ tag: 'div', type: 'aaa', class: 'bbb', style: 'color: #000;' });
+xnode.nest(attributes);
+// e.g.: xnode.nest({ tag: 'div', type: 'aaa', class: 'bbb', style: 'color: #000;' });
 ```
 ### example
 ```
@@ -101,12 +101,12 @@ xnode.nestElement(attributes);
         });
 
         xnew((xnode2) => {
-            xnode2.nestElement({ tag: 'div', name: 'B' });
+            xnode2.nest({ tag: 'div', name: 'B' });
             // xnode2.element: (div B)
         }
 
         xnew({ tag: 'div', name: 'C' }, (xnode3) => { 
-            xnode3.nestElement({ tag: 'div', name: 'D' }); // inner div
+            xnode3.nest({ tag: 'div', name: 'D' }); // inner div
             // xnode3.element: (div D)
             // xnode3.element.parentElement: (div C)
             // ...

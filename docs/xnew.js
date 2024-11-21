@@ -5,15 +5,6 @@
 })(this, (function (exports) { 'use strict';
 
     //----------------------------------------------------------------------------------------------------
-    // errors
-    //----------------------------------------------------------------------------------------------------
-
-    const ERRORS = {
-        ARGUMENT: 'The arguments are invalid.',
-        BASIC_STRING: 'The arguments are invalid because it contains characters can not be used. Only [A-Z, a-z, 0-9, _, .] are available.', 
-    };
-
-    //----------------------------------------------------------------------------------------------------
     // type check
     //----------------------------------------------------------------------------------------------------
 
@@ -25,48 +16,8 @@
         return typeof value === 'function';
     }
 
-    function isNumber(value) {
-        return Number.isFinite(value);
-    }
-
     function isObject(value) {
         return value !== null && typeof value === 'object' && value.constructor === Object;
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    // create element
-    //----------------------------------------------------------------------------------------------------
-
-    function createElement(attributes) {
-
-        const element = (() => {
-            if (attributes.tag == 'svg') {
-                return document.createElementNS('http://www.w3.org/2000/svg', attributes.tag);
-            } else {
-                return document.createElement(attributes.tag ?? 'div');
-            }
-        })();
-
-        Object.keys(attributes).forEach((key) => {
-            const value = attributes[key];
-            if (key === 'style') {
-                if (isString(value) === true) {
-                    element.style = value;
-                } else if (isObject(value) === true){
-                    Object.assign(element.style, value);
-                }
-            } else if (key === 'class') {
-                if (isString(value) === true) {
-                    element.classList.add(...value.split(' '));
-                }
-            } else if (['checked', 'disabled', 'readonly'].includes(key)) {
-                const remap = { checked: 'checked', disabled: 'disabled', readonly: 'readOnly', };
-                element[remap[key]] = value;
-            } else if (key !== 'tag') {
-                element.setAttribute(key, value);
-            }
-        });
-        return element;
     }
 
     class XNode {
@@ -74,7 +25,37 @@
         static current = null;
 
         static roots = new Set();
-      
+        
+        static wrap(node, func, ...args) {
+            if (node === XNode.current) {
+                return func(...args);
+            } else {
+                const backup = XNode.current;
+                try {
+                    XNode.current = node;
+                    return func(...args);
+                } catch (error) {
+                    throw error;
+                } finally {
+                    XNode.current = backup;
+                }
+            }
+        }
+
+        static updateTime = null;
+
+        static {
+            (() => {
+                requestAnimationFrame(ticker);
+            
+                function ticker() {
+                    XNode.updateTime = Date.now();
+                    XNode.roots.forEach((xnode) => xnode._update());
+                    requestAnimationFrame(ticker);
+                }
+            })();
+        }
+
         constructor(parent, element, ...content) {
             // internal data
             this._ = {};
@@ -105,7 +86,7 @@
             this._.keySet = new Set();
 
             // base ellement (fixed)
-            this._.baseElement = (this._.element instanceof Element) ? this._.element : (this._.parent ? this._.parent._.nestElement : document.body);
+            this._.baseElement = (this._.element instanceof Element) ? this._.element : (this._.parent ? this._.parent._.nest : document.body);
 
             // shared data between nodes connected by parent-child relationship
             this._.shared = this._.parent?._.shared ?? {};
@@ -120,10 +101,10 @@
         }
 
         _initialize() {
-            this._.nestElement = this._.baseElement;
+            this._.nest = this._.baseElement;
 
             if (isString(this._.content[0]) || isObject(this._.element)) {
-                this.nestElement(isObject(this._.element) ? this._.element : {});
+                this.nest(isObject(this._.element) ? this._.element : {});
             }
 
             // auto start
@@ -133,7 +114,7 @@
             if (isFunction(this._.content[0])) {
                 this._extend(...this._.content);
             } else if (isString(this._.content[0])) {
-                this._.nestElement.innerHTML = this._.content[0];
+                this._.nest.innerHTML = this._.content[0];
             }
 
             // whether the node promise was resolved
@@ -145,15 +126,41 @@
             }
         }
 
-        nestElement(attributes) {
+        nest(attributes) {
             if (isObject(attributes) === false) {
-                console.error('XNode nestElement: ' + ERRORS.ARGUMENT);
+                console.error('xnode nest: The arguments are invalid.');
             } else if (this._.state !== 'pre initialized') {
-                console.error('XNode nestElement: ' + 'This can not be called after initialized.');
+                console.error('xnode nest: This can not be called after initialized.');
             } else {
                 this.off();
-                this._.nestElement = this._.nestElement.appendChild(createElement(attributes));
+
+                const element = attributes.tag === 'svg' ? 
+                    document.createElementNS('http://www.w3.org/2000/svg', attributes.tag) : 
+                    document.createElement(attributes.tag ?? 'div');
+            
+                Object.keys(attributes).forEach((key) => {
+                    const value = attributes[key];
+                    if (key === 'style') {
+                        if (isString(value) === true) {
+                            element.style = value;
+                        } else if (isObject(value) === true){
+                            Object.assign(element.style, value);
+                        }
+                    } else if (key === 'class') {
+                        if (isString(value) === true) {
+                            element.classList.add(...value.split(' '));
+                        }
+                    } else if (['checked', 'disabled', 'readonly'].includes(key)) {
+                        const remap = { checked: 'checked', disabled: 'disabled', readonly: 'readOnly', };
+                        element[remap[key]] = value;
+                    } else if (key !== 'tag') {
+                        element.setAttribute(key, value);
+                    }
+                });
+
+                this._.nest = this._.nest.appendChild(element);
             }
+
         }
 
         //----------------------------------------------------------------------------------------------------
@@ -165,11 +172,19 @@
         }
 
         get element() {
-            return this._.nestElement;
+            return this._.nest;
         }
 
         get shared() {
             return this._.shared;
+        }
+
+        get promise() {
+            return this._.defines.promise ?? Promise.resolve();
+        }
+
+        get state() {
+            return this._.state
         }
 
         //----------------------------------------------------------------------------------------------------
@@ -177,7 +192,7 @@
         //----------------------------------------------------------------------------------------------------
      
         _extend(Component, ...args) {
-            const defines = xwrap$1(this, Component, this, ...args) ?? {};
+            const defines = XNode.wrap(this, Component, this, ...args) ?? {};
             
             Object.keys(defines).forEach((key) => {
                 const descripter = Object.getOwnPropertyDescriptor(defines, key);
@@ -187,35 +202,35 @@
                         const previous = this._.defines[key];
                         this._.defines[key] = previous ? Promise.all([previous, descripter.value]) : descripter.value;
                     } else {
-                        console.error('XNode define: ' + 'the type of "promise" is invalid.');
+                        console.error('xnode extend: The type of "promise" is invalid.');
                     }
                 } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
                     if (isFunction(descripter.value)) {
                         const previous = this._.defines[key];
                         this._.defines[key] = previous ? (...args) => { previous(...args); descripter.value(...args); } : descripter.value;
                     } else {
-                        console.error('XNode define: ' + `the type of "${key}" is invalid.`);
+                        console.error(`xnode extend: The type of "${key}" is invalid.`);
                     }
                 } else {
                     if (this._.defines[key] !== undefined || this[key] === undefined) {
                         const dest = { configurable: true, enumerable: true };
 
                         if (isFunction(descripter.value)) {
-                            dest.value = (...args) => xwrap$1(this, descripter.value, ...args);
+                            dest.value = (...args) => XNode.wrap(this, descripter.value, ...args);
                         } else if (descripter.value !== undefined) {
                             dest.value = descripter.value;
                         }
                         if (isFunction(descripter.get)) {
-                            dest.get = (...args) => xwrap$1(this, descripter.get, ...args);
+                            dest.get = (...args) => XNode.wrap(this, descripter.get, ...args);
                         }
                         if (isFunction(descripter.set)) {
-                            dest.set = (...args) => xwrap$1(this, descripter.set, ...args);
+                            dest.set = (...args) => XNode.wrap(this, descripter.set, ...args);
                         }
 
                         Object.defineProperty(this._.defines, key, dest);
                         Object.defineProperty(this, key, dest);
                     } else {
-                        console.error('XNode define: ' + `"${key}" already exists, can not be redefined.`);
+                        console.error(`xnode extend: "${key}" already exists, can not be redefined.`);
                     }
                 }
             });
@@ -226,9 +241,9 @@
 
         extend(Component, ...args) {
             if (isFunction(Component) === false) {
-                console.error('XNode extend: ' + ERRORS.ARGUMENT);
+                console.error('xnode extend: The arguments are invalid.');
             } else if (this._.state !== 'pre initialized') {
-                console.error('XNode extend: ' + 'This can not be called after initialized.');
+                console.error('xnode extend: This can not be called after initialized.');
             } else if (this._.ComponentSet.has(Component) === false) {
                 this._.ComponentSet .add(Component);
                 return this._extend(Component, ...args);
@@ -239,14 +254,6 @@
         // system properties
         //----------------------------------------------------------------------------------------------------
      
-        static updateCounter = 0;
-
-        static updateTime = null;
-
-        get promise() {
-            return this._.defines.promise ?? Promise.resolve();
-        }
-
         start() {
             this._.tostart = true;
         }
@@ -263,7 +270,7 @@
                 this._.children.forEach((node) => node._start());
             
                 if (this._.state === 'started' && isFunction(this._.defines.start)) {
-                    xwrap$1(this, this._.defines.start);
+                    XNode.wrap(this, this._.defines.start);
                 }
             }
         }
@@ -274,7 +281,7 @@
                 this._.children.forEach((node) => node._stop());
 
                 if (this._.state === 'stopped' && isFunction(this._.defines.stop)) {
-                    xwrap$1(this, this._.defines.stop);
+                    XNode.wrap(this, this._.defines.stop);
                 }
             }
         }
@@ -287,7 +294,7 @@
                 this._.children.forEach((node) => node._update());
 
                 if (this._.state === 'started' && isFunction(this._.defines.update) === true) {
-                    xwrap$1(this, this._.defines.update, XNode.updateTime - this._.startTime);
+                    XNode.wrap(this, this._.defines.update, XNode.updateTime - this._.startTime);
                 }
             }
         }
@@ -311,7 +318,7 @@
             [...this._.children].forEach((node) => node.finalize());
                 
             if (isFunction(this._.defines.finalize)) {
-                xwrap$1(this, this._.defines.finalize);
+                XNode.wrap(this, this._.defines.finalize);
             }
 
             // key
@@ -331,8 +338,8 @@
             });
 
             // element
-            if (this._.nestElement !== null && this._.nestElement !== this._.baseElement) {
-                let target = this._.nestElement;
+            if (this._.nest !== null && this._.nest !== this._.baseElement) {
+                let target = this._.nest;
                 while (target.parentElement !== null && target.parentElement !== this._.baseElement) { target = target.parentElement; }
                 if (target.parentElement === this._.baseElement) {
                     this._.baseElement.removeChild(target);
@@ -340,40 +347,26 @@
             }
         }
 
-        get state() {
-            return this._.state
-        }
-
         //----------------------------------------------------------------------------------------------------
         // context property
         //----------------------------------------------------------------------------------------------------        
 
         context(name, value = undefined) {
-            if (value === undefined) {
-                if (isString(name) === false) {
-                    console.error('XNode getContext: ' + ERRORS.ARGUMENT);
-                } else if (isBasicString(name) === false) {
-                    console.error('XNode getContext: ' + ERRORS.BASIC_STRING);
-                } else {
-                    let value = undefined;
+            if (isString(name) === false) {
+                console.error('xnode context: The arguments are invalid.');
+            } else {
+                if (value === undefined) {
                     let node = this;
                     while (node !== null) {
                         if (node._.context?.has(name)) {
-                            value = node._.context.get(name);
-                            break;
+                            return node._.context.get(name);
                         }
                         node = node.parent;
                     }
-                    return value;
-                }
-            } else {
-                if (isString(name) === false) {
-                    console.error('XNode setContext: ' + ERRORS.ARGUMENT);
-                } else if (isBasicString(name) === false) {
-                    console.error('XNode setContext: ' + ERRORS.BASIC_STRING);
+                    return undefined;
                 } else {
                     this._.context = this._.context ?? new Map();
-                    this._.context.set(name, value ?? null);
+                    this._.context.set(name, value);
                 }
             }
         }
@@ -386,7 +379,7 @@
 
         set key(key) {
             if (isString(key) === false) {
-                console.error('XNode key: ' + ERRORS.ARGUMENT);
+                console.error('xnode key: The arguments are invalid.');
             } else {
                 // clear all
                 this._.keySet.forEach((key) => {
@@ -417,9 +410,7 @@
         
         on(type, listener, options) {
             if (isString(type) === false || isFunction(listener) === false) {
-                console.error('XNode on: ' + ERRORS.ARGUMENT);
-            } else if (isEventType(type) === false) {
-                console.error('XNode on: ' + ERRORS.BASIC_STRING);
+                console.error('xnode on: The arguments are invalid.');
             } else {
                 type.split(' ').filter((type) => type !== '').forEach((type) => {
 
@@ -435,19 +426,17 @@
             function addEventListener(type, listener, options) {
                 if (this._.listeners.has(type) === false) this._.listeners.set(type, new Map());
                 if (this._.listeners.get(type).has(listener) === false) {
-                    const wrapListener = (...args) => xwrap$1(this, listener, ...args);
+                    const wrapListener = (...args) => XNode.wrap(this, listener, ...args);
 
                     this._.listeners.get(type).set(listener, wrapListener);
-                    this._.nestElement.addEventListener(type, wrapListener, options);
+                    this._.nest.addEventListener(type, wrapListener, options);
                 }
             }
         }
 
         off(type, listener) {
             if ((type !== undefined && isString(type) === false) || (listener !== undefined && isFunction(listener) === false)) {
-                console.error('XNode off: ' + ERRORS.ARGUMENT);
-            } else if (type !== undefined && isEventType(type) === false) {
-                console.error('XNode off: ' + ERRORS.BASIC_STRING);
+                console.error('xnode off: The arguments are invalid.');
             } else {
                 type = type ?? [...this._.listeners.keys()].join(' ');
 
@@ -475,16 +464,16 @@
                     this._.listeners.get(type).delete(listener);
                     if (this._.listeners.get(type).size === 0) this._.listeners.delete(type);
 
-                    this._.nestElement.removeEventListener(type, wrapListener);
+                    this._.nest.removeEventListener(type, wrapListener);
                 }
             }
         }
 
         emit(type, ...args) {
             if (isString(type) === false) {
-                console.error('XNode emit: ' + ERRORS.ARGUMENT);
+                console.error('xnode emit: The arguments are invalid.');
             } else if (this._.state === 'finalized') {
-                console.error('XNode emit: ' + 'This can not be called after finalized.');
+                console.error('xnode emit: This can not be called after finalized.');
             } else {
                 type.split(' ').filter((type) => type !== '').forEach((type) => {
                     if (type[0] === '#') {
@@ -505,44 +494,6 @@
         }
     }
 
-
-    //----------------------------------------------------------------------------------------------------
-    // xwrap
-    //----------------------------------------------------------------------------------------------------
-
-    function xwrap$1(node, func, ...args) {
-        if (node === XNode.current) {
-            return func(...args);
-        } else {
-            const backup = XNode.current;
-            try {
-                XNode.current = node;
-                return func(...args);
-            } catch (error) {
-                throw error;
-            } finally {
-                XNode.current = backup;
-            }
-        }
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    // util
-    //----------------------------------------------------------------------------------------------------
-
-    function isBasicString(value) {
-        return isString(value) === true && value.match(/^[A-Za-z0-9_.]*$/) !== null;
-    }
-
-    function isEventType(type) {
-        const types = type.split(' ').filter((type) => type !== '');
-        return types.find((type) => isBasicString(type[0] === '#' ? type.slice(1) : type) === false) === undefined;
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    // xnew
-    //----------------------------------------------------------------------------------------------------
-
     function xnew(...args) {
 
         // a parent xnode
@@ -557,33 +508,9 @@
         return new XNode(parent, element, ...content);
     }
 
-    //----------------------------------------------------------------------------------------------------
-    // xwrap
-    //----------------------------------------------------------------------------------------------------
-
-    function xwrap(xnode, func, ...args) {
-        if (xnode === XNode.current) {
-            return func(...args);
-        } else {
-            const backup = XNode.current;
-            try {
-                XNode.current = xnode;
-                return func(...args);
-            } catch (error) {
-                throw error;
-            } finally {
-                XNode.current = backup;
-            }
-        }
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    // xfind
-    //----------------------------------------------------------------------------------------------------
-
     function xfind(key) {
         if (isString(key) === false) {
-            console.error('xfind: ' + ERRORS.ARGUMENT);
+            console.error('xfind: The arguments are invalid.');
         } else {
             const set = new Set();
             key.split(' ').filter((key) => XNode.keyMap.has(key)).forEach((key) => {
@@ -592,10 +519,6 @@
             return [...set];
         }
     }
-
-    //----------------------------------------------------------------------------------------------------
-    // xtimer
-    //----------------------------------------------------------------------------------------------------
 
     function xtimer$1(callback, delay, repeat = false) {
         
@@ -614,7 +537,7 @@
             }
 
             function func() {
-                xwrap(xnode.parent, callback);
+                XNode.wrap(xnode.parent, callback);
                 if (repeat === true) {
                     id = setTimeout(func, delay);
                 } else {
@@ -623,161 +546,6 @@
             }
         });
     }
-
-    //----------------------------------------------------------------------------------------------------
-    // iterative update
-    //----------------------------------------------------------------------------------------------------
-
-    (() => {
-        requestAnimationFrame(ticker);
-
-        function ticker() {
-            XNode.updateTime = Date.now();
-            XNode.roots.forEach((xnode) => xnode._update());
-            requestAnimationFrame(ticker);
-            XNode.updateCounter++;
-        }
-    })();
-
-    //----------------------------------------------------------------------------------------------------
-    // input 
-    //----------------------------------------------------------------------------------------------------
-
-    const input = (() => {
-
-        const keyState = {};
-        window.addEventListener('keydown', (event) => {
-            if (event.repeat === true) return;
-            keyState[event.code] = { down: XNode.updateCounter, up: null };
-        }, true);
-        window.addEventListener('keyup', (event) => {
-            if (keyState[event.code]) keyState[event.code].up = XNode.updateCounter;
-        }, true);
-        
-        return {
-            getKey(code) {
-                if (isString(code) === false) return false;
-
-                let ret = false;
-                code.split(' ').forEach((c) => {
-                    if (isString(c) && keyState[c]?.up === null) ret = true;
-                });
-                return ret;
-            },
-            getKeyDown(code) {
-                if (isString(code) === false) return false;
-
-                let ret = false;
-                code.split(' ').forEach((c) => {
-                    if (isString(c) && keyState[c]?.down === XNode.updateCounter) ret = true;
-                });
-                return ret;
-            },
-            getKeyUp(code) {
-                if (isString(code) === false) return false;
-
-                let ret = false;
-                code.split(' ').forEach((c) => {
-                    if (isString(c) && keyState[c]?.up === XNode.updateCounter) ret = true;
-                });
-                return ret;
-            },
-
-            // hasTouch() {
-            //     return window.ontouchstart !== undefined && navigator.maxTouchPoints > 0;
-            // },
-        };
-    })();
-
-    var util = {
-        __proto__: null,
-        input: input
-    };
-
-    //----------------------------------------------------------------------------------------------------
-    // screen
-    //----------------------------------------------------------------------------------------------------
-
-    function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
-        xnode.nestElement({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
-        xnode.nestElement({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
-        xnode.nestElement({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
-        const absolute = xnode.element.parentElement;
-
-        const canvas = xnew({ tag: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
-        
-        if (pixelated === true) {
-            canvas.element.style.imageRendering = 'pixelated';
-        }
-        
-        let parentWidth = null;
-        let parentHeight = null;
-
-        objectFit = ['fill', 'contain', 'cover'].includes(objectFit) ? objectFit : 'contain';
-      
-        window.addEventListener('resize', resize);
-
-        xtimer(() => resize());
-        xtimer(() => resize(), 1000, true);
-        resize();
-
-        function resize() {
-            if (parentWidth === absolute.parentElement.clientWidt && parentHeight === absolute.parentElement.clientHeight) return;
-         
-            parentWidth = absolute.parentElement.clientWidth;
-            parentHeight = absolute.parentElement.clientHeight;
-
-            const aspect = width / height;
-           
-            let style = { width: '100%', height: '100%', top: '0', left: '0', bottom: '0', right: '0' };
-            if (objectFit === 'fill') ; else if (objectFit === 'contain') {
-                if (parentWidth < parentHeight * aspect) {
-                    style.height = Math.floor(parentWidth / aspect) + 'px';
-                } else {
-                    style.width = Math.floor(parentHeight * aspect) + 'px';
-                }
-            } else if (objectFit === 'cover') {
-                if (parentWidth < parentHeight * aspect) {
-                    style.width = Math.floor(parentHeight * aspect) + 'px';
-                    style.left = Math.floor((parentWidth - parentHeight * aspect) / 2) + 'px';
-                    style.right = 'auto';
-                } else {
-                    style.height = Math.floor(parentWidth / aspect) + 'px';
-                    style.top = Math.floor((parentHeight - parentWidth / aspect) / 2) + 'px';
-                    style.bottom = 'auto';
-                }
-            }
-            Object.assign(absolute.style, style);
-        }
-
-        return {
-            finalize() {
-                window.removeEventListener('resize', resize);  
-            },
-            width,
-            height,
-            canvas: canvas.element,
-        }
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    // transition
-    //----------------------------------------------------------------------------------------------------
-
-    function Transition(xnode, callback, interval = 1000) {
-
-        return {
-            update(time) {
-                const value = time / interval;
-                xwrap(xnode.parent, callback, Math.min(1.0, value));
-                if (value >= 1.0) xnode.finalize();
-            }
-        }
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    // drag event
-    //----------------------------------------------------------------------------------------------------
 
     function DragEvent(xnode) {
         const base = xnew();
@@ -846,7 +614,7 @@
            
             let scaleX = 1.0;
             let scaleY = 1.0;
-            if (xnode.element.tagName.toLowerCase() === 'canvas' && isNumber(xnode.element.width) && isNumber(xnode.element.height)) {
+            if (xnode.element.tagName.toLowerCase() === 'canvas' && Number.isFinite(xnode.element.width) && Number.isFinite(xnode.element.height)) {
                 scaleX = xnode.element.width / rect.width;
                 scaleY = xnode.element.height / rect.height;
             }
@@ -862,12 +630,85 @@
         }
     }
 
-    //----------------------------------------------------------------------------------------------------
-    // d-pad
-    //----------------------------------------------------------------------------------------------------
+    function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+        xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
+
+        const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
+        const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
+
+        xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
+        <polygon points="50  7 40 18 60 18"></polygon>
+        <polygon points="50 93 40 83 60 83"></polygon>
+        <polygon points=" 7 50 18 40 18 60"></polygon>
+        <polygon points="93 50 83 40 83 60"></polygon>
+    `);
+        const target = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
+        <circle cx="50" cy="50" r="23"></circle>
+    `);
+
+        const drag = xnew(DragEvent);
+
+        drag.on('down move', (event, { type, position }) => {
+            target.element.style.filter = 'brightness(90%)';
+
+            const [x, y] = [position.x - size / 2, position.y - size / 2];
+            const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
+            const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
+            const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
+            xnode.emit(type, event, { type, vector });
+            [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
+        });
+
+        drag.on('up', (event, { type }) => {
+            target.element.style.filter = '';
+
+            const vector = { x: 0, y: 0 };
+            xnode.emit(type, event, { type, vector });
+            [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
+        });
+    }
+
+    function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+        xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
+
+        const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
+        const strokeStyle = `stroke-linejoin: round; stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)};`;
+
+        const target = xnew({ tag: 'svg', name: 'target', style: `width: 100%; height: 100%; cursor: pointer; user-select: none; ${fillStyle} ${strokeStyle}`, viewBox: '0 0 100 100' }, `
+        <circle cx="50" cy="50" r="40"></circle>
+    `);
+
+        target.on('pointerdown', down);
+
+        // prevent touch default event
+        target.on('touchstart', (event) => {
+            event.preventDefault();
+        });
+
+        function down(event) {
+            target.element.style.filter = 'brightness(90%)';
+            const type = 'down';
+            xnode.emit(type, event, { type });
+
+            window.addEventListener('pointerup', up);
+        }
+        function up(event) {
+            target.element.style.filter = '';
+            const type = 'up';
+            xnode.emit(type, event, { type });
+
+            window.removeEventListener('pointerup', up);
+        }
+
+        return {
+            finalize() {
+                window.removeEventListener('pointerup', up);
+            },
+        }
+    }
 
     function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-        xnode.nestElement({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
+        xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
 
         const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
         const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -924,107 +765,79 @@
         });
     }
 
-    //----------------------------------------------------------------------------------------------------
-    // analog stick
-    //----------------------------------------------------------------------------------------------------
+    function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
+        xnode.nest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
+        xnode.nest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
+        xnode.nest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
+        const absolute = xnode.element.parentElement;
 
-    function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-        xnode.nestElement({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
-
-        const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
-        const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
-
-        xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50  7 40 18 60 18"></polygon>
-        <polygon points="50 93 40 83 60 83"></polygon>
-        <polygon points=" 7 50 18 40 18 60"></polygon>
-        <polygon points="93 50 83 40 83 60"></polygon>
-    `);
-        const target = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
-        <circle cx="50" cy="50" r="23"></circle>
-    `);
-
-        const drag = xnew(DragEvent);
-
-        drag.on('down move', (event, { type, position }) => {
-            target.element.style.filter = 'brightness(90%)';
-
-            const [x, y] = [position.x - size / 2, position.y - size / 2];
-            const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
-            const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
-            const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-            xnode.emit(type, event, { type, vector });
-            [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
-        });
-
-        drag.on('up', (event, { type }) => {
-            target.element.style.filter = '';
-
-            const vector = { x: 0, y: 0 };
-            xnode.emit(type, event, { type, vector });
-            [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
-        });
-    }
-
-
-    //----------------------------------------------------------------------------------------------------
-    // circle button
-    //----------------------------------------------------------------------------------------------------
-
-    function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-        xnode.nestElement({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
-
-        const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
-        const strokeStyle = `stroke-linejoin: round; stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)};`;
-
-        const target = xnew({ tag: 'svg', name: 'target', style: `width: 100%; height: 100%; cursor: pointer; user-select: none; ${fillStyle} ${strokeStyle}`, viewBox: '0 0 100 100' }, `
-        <circle cx="50" cy="50" r="40"></circle>
-    `);
-
-        target.on('pointerdown', down);
-
-        // prevent touch default event
-        target.on('touchstart', (event) => {
-            event.preventDefault();
-        });
-
-        function down(event) {
-            target.element.style.filter = 'brightness(90%)';
-            const type = 'down';
-            xnode.emit(type, event, { type });
-
-            window.addEventListener('pointerup', up);
+        const canvas = xnew({ tag: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
+        
+        if (pixelated === true) {
+            canvas.element.style.imageRendering = 'pixelated';
         }
-        function up(event) {
-            target.element.style.filter = '';
-            const type = 'up';
-            xnode.emit(type, event, { type });
+        
+        let parentWidth = null;
+        let parentHeight = null;
 
-            window.removeEventListener('pointerup', up);
+        objectFit = ['fill', 'contain', 'cover'].includes(objectFit) ? objectFit : 'contain';
+      
+        window.addEventListener('resize', resize);
+
+        xtimer(() => resize());
+        xtimer(() => resize(), 1000, true);
+        resize();
+
+        function resize() {
+            if (parentWidth === absolute.parentElement.clientWidt && parentHeight === absolute.parentElement.clientHeight) return;
+         
+            parentWidth = absolute.parentElement.clientWidth;
+            parentHeight = absolute.parentElement.clientHeight;
+
+            const aspect = width / height;
+           
+            let style = { width: '100%', height: '100%', top: '0', left: '0', bottom: '0', right: '0' };
+            if (objectFit === 'fill') ; else if (objectFit === 'contain') {
+                if (parentWidth < parentHeight * aspect) {
+                    style.height = Math.floor(parentWidth / aspect) + 'px';
+                } else {
+                    style.width = Math.floor(parentHeight * aspect) + 'px';
+                }
+            } else if (objectFit === 'cover') {
+                if (parentWidth < parentHeight * aspect) {
+                    style.width = Math.floor(parentHeight * aspect) + 'px';
+                    style.left = Math.floor((parentWidth - parentHeight * aspect) / 2) + 'px';
+                    style.right = 'auto';
+                } else {
+                    style.height = Math.floor(parentWidth / aspect) + 'px';
+                    style.top = Math.floor((parentHeight - parentWidth / aspect) / 2) + 'px';
+                    style.bottom = 'auto';
+                }
+            }
+            Object.assign(absolute.style, style);
         }
 
         return {
             finalize() {
-                window.removeEventListener('pointerup', up);
+                window.removeEventListener('resize', resize);  
             },
+            width,
+            height,
+            canvas: canvas.element,
         }
     }
 
-    var components = {
-        __proto__: null,
-        AnalogStick: AnalogStick,
-        CircleButton: CircleButton,
-        DPad: DPad,
-        DragEvent: DragEvent,
-        Screen: Screen,
-        Transition: Transition,
-        xutil: util
+    const xcomponents = {
+        AnalogStick,
+        CircleButton,
+        DPad,
+        DragEvent,
+        Screen
     };
 
-    exports.xcomponents = components;
+    exports.xcomponents = xcomponents;
     exports.xfind = xfind;
     exports.xnew = xnew;
     exports.xtimer = xtimer$1;
-    exports.xutil = util;
 
 }));
