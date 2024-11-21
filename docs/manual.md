@@ -25,7 +25,7 @@ function xnew (parent, element, Component, ...args);
         // xnode1.parent: null 
         // This means that xnode1 is a root xnode
 
-        xnew((xnode2) => {
+        const xnode2 = xnew((xnode2) => {
             // xnode2.parent: xnode1
         });
 

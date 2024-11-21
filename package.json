@@ -1,13 +1,13 @@
 {
   "name": "xnew",
   "description": "Simple component based library for dynamic scene.",
-  "version": "1.6.11",
+  "version": "1.6.12",
   "main": "dist/xnew.js",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/wisroot-com/xnew.js/issues"
+    "url": "https://github.com/wisroot-com/xnew/issues"
   },
-  "homepage": "https://github.com/wisroot-com/xnew.js#readme",
+  "homepage": "https://github.com/wisroot-com/xnew#readme",
   "scripts": {
     "server": "npx http-server",
     "build": "npx rollup --config --bundleConfigAsCjs",
