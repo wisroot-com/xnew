@@ -352,17 +352,17 @@ function createTop(element) {
         three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
         three.camera.position.set(0, 0, +100);
 
-        // three.scene = new THREE.Scene();
-        // xnode.extend(ThreeObject, three.scene);
+        three.scene = new THREE.Scene();
+        xnode.extend(ThreeObject, three.scene);
 
-        // xnew(Light);
-        // xnew(Content);
+        xnew(Light);
+        xnew(Content);
 
-        // return {
-        //     update() {
-        //         three.renderer.render(three.scene, three.camera);
-        //     },
-        // };
+        return {
+            update() {
+                three.renderer.render(three.scene, three.camera);
+            },
+        };
     });
 
     function Light(xnode) {

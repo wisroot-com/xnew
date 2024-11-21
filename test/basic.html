@@ -10,7 +10,7 @@
 <body>
     <script>
         xnew((xnode) => {
-            xnode.nestElement({ tag: 'button', style: 'padding: 8px;' });
+            xnode.nest({ tag: 'button', style: 'padding: 8px;' });
             xnode.element.textContent = 'click'
 
             let counter = 0;
@@ -24,7 +24,7 @@
         });
 
         xnew((xnode) => {
-            xnode.nestElement({ style: 'padding: 8px;' });
+            xnode.nest({ style: 'padding: 8px;' });
             xnode.element.textContent = 'counter: 0';
 
             let counter = 0;
