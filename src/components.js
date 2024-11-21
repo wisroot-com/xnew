@@ -6,11 +6,11 @@ export * as xutil from './util';
 // screen
 //----------------------------------------------------------------------------------------------------
 
-export function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
-    xnode.nest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
-    xnode.nest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
-    xnode.nest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
-    const absolute = xnode.element.parentElement;
+export function Screen(node, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
+    node.nest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
+    node.nest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
+    node.nest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
+    const absolute = node.element.parentElement;
 
     const canvas = xnew({ tag: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
     
@@ -73,13 +73,13 @@ export function Screen(xnode, { width = 640, height = 480, objectFit = 'contain'
 // transition
 //----------------------------------------------------------------------------------------------------
 
-export function Transition(xnode, callback, interval = 1000) {
+export function Transition(node, callback, interval = 1000) {
 
     return {
         update(time) {
             const value = time / interval;
-            xwrap(xnode.parent, callback, Math.min(1.0, value));
-            if (value >= 1.0) xnode.finalize();
+            xwrap(node.parent, callback, Math.min(1.0, value));
+            if (value >= 1.0) node.finalize();
         }
     }
 }
@@ -88,7 +88,7 @@ export function Transition(xnode, callback, interval = 1000) {
 // drag event
 //----------------------------------------------------------------------------------------------------
 
-export function DragEvent(xnode) {
+export function DragEvent(node) {
     const base = xnew();
 
     let id = null;
@@ -106,7 +106,7 @@ export function DragEvent(xnode) {
         current = position;
 
         const type = 'down';
-        xnode.emit(type, event, { type, position, });
+        node.emit(type, event, { type, position, });
         window.addEventListener('pointermove', move);
         window.addEventListener('pointerup', up);
     };
@@ -118,14 +118,14 @@ export function DragEvent(xnode) {
         current = position;
 
         const type = 'move';
-        xnode.emit(type, event, { type, position, delta, });
+        node.emit(type, event, { type, position, delta, });
     };
     function up(event) {
         const position = getPosition(event, id);
         if (position === null) return;
         
         const type = 'up';
-        xnode.emit(type, event, { type, position, });
+        node.emit(type, event, { type, position, });
         id = null;
         current = null;
         window.removeEventListener('pointermove', move);
@@ -154,13 +154,13 @@ export function DragEvent(xnode) {
         }
         if (original === null) return null;
 
-        const rect = xnode.element.getBoundingClientRect();
+        const rect = node.element.getBoundingClientRect();
        
         let scaleX = 1.0;
         let scaleY = 1.0;
-        if (xnode.element.tagName.toLowerCase() === 'canvas' && isNumber(xnode.element.width) && isNumber(xnode.element.height)) {
-            scaleX = xnode.element.width / rect.width;
-            scaleY = xnode.element.height / rect.height;
+        if (node.element.tagName.toLowerCase() === 'canvas' && isNumber(node.element.width) && isNumber(node.element.height)) {
+            scaleX = node.element.width / rect.width;
+            scaleY = node.element.height / rect.height;
         }
 
         return { x: scaleX * (original.clientX - rect.left), y: scaleY * (original.clientY - rect.top) };
@@ -178,8 +178,8 @@ export function DragEvent(xnode) {
 // d-pad
 //----------------------------------------------------------------------------------------------------
 
-export function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-    xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
+export function DPad(node, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+    node.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
 
     const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
     const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -224,7 +224,7 @@ export function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stro
         targets[2].element.style.filter = (vector.x < 0) ? 'brightness(90%)' : '';
         targets[3].element.style.filter = (vector.x > 0) ? 'brightness(90%)' : '';
 
-        xnode.emit(type, event, { type, vector });
+        node.emit(type, event, { type, vector });
     });
 
     drag.on('up', (event, { type }) => {
@@ -232,7 +232,7 @@ export function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stro
             targets[i].element.style.filter = '';
         }
         const vector = { x: 0, y: 0 };
-        xnode.emit(type, event, { type, vector });
+        node.emit(type, event, { type, vector });
     });
 }
 
@@ -240,8 +240,8 @@ export function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stro
 // analog stick
 //----------------------------------------------------------------------------------------------------
 
-export function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-    xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
+export function AnalogStick(node, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+    node.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
 
     const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
     const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -265,7 +265,7 @@ export function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.
         const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
         const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
         const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-        xnode.emit(type, event, { type, vector });
+        node.emit(type, event, { type, vector });
         [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
     });
 
@@ -273,7 +273,7 @@ export function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.
         target.element.style.filter = '';
 
         const vector = { x: 0, y: 0 };
-        xnode.emit(type, event, { type, vector });
+        node.emit(type, event, { type, vector });
         [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
     });
 }
@@ -283,8 +283,8 @@ export function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.
 // circle button
 //----------------------------------------------------------------------------------------------------
 
-export function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-    xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
+export function CircleButton(node, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+    node.nest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
 
     const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
     const strokeStyle = `stroke-linejoin: round; stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)};`;
@@ -303,14 +303,14 @@ export function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.
     function down(event) {
         target.element.style.filter = 'brightness(90%)';
         const type = 'down';
-        xnode.emit(type, event, { type });
+        node.emit(type, event, { type });
 
         window.addEventListener('pointerup', up);
     }
     function up(event) {
         target.element.style.filter = '';
         const type = 'up';
-        xnode.emit(type, event, { type });
+        node.emit(type, event, { type });
 
         window.removeEventListener('pointerup', up);
     }

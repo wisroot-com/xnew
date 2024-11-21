@@ -29,9 +29,9 @@
             <div>
                 <a href="#examples" class="text-xl mx-1">examples</a>
             </div>
-            <div>
+            <!-- <div>
                 <a href="#xutil" class="text-xl mx-1">xutil</a>
-            </div>
+            </div> -->
             <div>
                 <a class="text-xl mx-1" href="https://github.com/wisroot-com/xnew">github</a>
             </div>
@@ -56,8 +56,7 @@
     <div name="examples" class="section" style="display: none;">
         <div class="max-w-[1200px] mx-auto">
             <h1>examples</h1>
-            <div class="flex flex-row max-w-[900px] h-[500px] mx-auto">
-                <div class="flex-none w-48 h-full p-2" name="example-items">
+                <div class="max-w-[900px] mx-auto p-2 flex flex-row flex-wrap" name="example-items">
                     <p class="clickable" name="element" >element</p>
                     <p class="clickable" name="screen" >screen</p>
                     <p class="clickable" name="pixi" >with pixi</p>
@@ -69,10 +68,11 @@
                     <p class="clickable" name="controller" >controller</p>
                     <p class="clickable" name="scene" >scene change</p>
                 </div>
-                <div class="flex-auto h-full border border-gray-300 rounded-lg">
-                    <iframe id="iframe" class="w-full h-full"></iframe>
+                <div class="flex flex-col max-w-[900px] h-[500px] mx-auto">
+                    <div class="flex-auto h-full border border-gray-300 rounded-lg">
+                        <iframe id="iframe" class="w-full h-full"></iframe>
+                    </div>
                 </div>
-            </div>
             <div id="code">
             </div>
         </div>
