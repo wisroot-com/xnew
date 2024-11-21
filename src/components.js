@@ -7,9 +7,9 @@ export * as xutil from './util';
 //----------------------------------------------------------------------------------------------------
 
 export function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
-    xnode.nestElement({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
-    xnode.nestElement({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
-    xnode.nestElement({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
+    xnode.nest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
+    xnode.nest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
+    xnode.nest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
     const absolute = xnode.element.parentElement;
 
     const canvas = xnew({ tag: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
@@ -179,7 +179,7 @@ export function DragEvent(xnode) {
 //----------------------------------------------------------------------------------------------------
 
 export function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-    xnode.nestElement({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
+    xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
 
     const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
     const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -241,7 +241,7 @@ export function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stro
 //----------------------------------------------------------------------------------------------------
 
 export function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-    xnode.nestElement({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
+    xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
 
     const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
     const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -284,7 +284,7 @@ export function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.
 //----------------------------------------------------------------------------------------------------
 
 export function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-    xnode.nestElement({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
+    xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
 
     const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
     const strokeStyle = `stroke-linejoin: round; stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)};`;

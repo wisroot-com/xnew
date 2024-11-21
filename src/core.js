@@ -1,5 +1,5 @@
 import { isString, isNumber, isObject, isFunction, ERRORS } from './common';
-import { XNode } from './xnode';
+import { XNode, xwrap } from './xnode';
 export { XNode } from './xnode';
 
 //----------------------------------------------------------------------------------------------------
@@ -18,26 +18,6 @@ export function xnew(...args) {
     const content = args;
 
     return new XNode(parent, element, ...content);
-}
-
-//----------------------------------------------------------------------------------------------------
-// xwrap
-//----------------------------------------------------------------------------------------------------
-
-export function xwrap(xnode, func, ...args) {
-    if (xnode === XNode.current) {
-        return func(...args);
-    } else {
-        const backup = XNode.current;
-        try {
-            XNode.current = xnode;
-            return func(...args);
-        } catch (error) {
-            throw error;
-        } finally {
-            XNode.current = backup;
-        }
-    }
 }
 
 //----------------------------------------------------------------------------------------------------

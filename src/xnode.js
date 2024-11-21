@@ -36,7 +36,7 @@ export class XNode {
         this._.keySet = new Set();
 
         // base ellement (fixed)
-        this._.baseElement = (this._.element instanceof Element) ? this._.element : (this._.parent ? this._.parent._.nestElement : document.body);
+        this._.base = (this._.element instanceof Element) ? this._.element : (this._.parent ? this._.parent._.nest : document.body);
 
         // shared data between nodes connected by parent-child relationship
         this._.shared = this._.parent?._.shared ?? {};
@@ -51,10 +51,10 @@ export class XNode {
     }
 
     _initialize() {
-        this._.nestElement = this._.baseElement;
+        this._.nest = this._.base;
 
         if (isString(this._.content[0]) || isObject(this._.element)) {
-            this.nestElement(isObject(this._.element) ? this._.element : {})
+            this.nest(isObject(this._.element) ? this._.element : {})
         }
 
         // auto start
@@ -64,7 +64,7 @@ export class XNode {
         if (isFunction(this._.content[0])) {
             this._extend(...this._.content);
         } else if (isString(this._.content[0])) {
-            this._.nestElement.innerHTML = this._.content[0];
+            this._.nest.innerHTML = this._.content[0];
         }
 
         // whether the node promise was resolved
@@ -76,14 +76,14 @@ export class XNode {
         }
     }
 
-    nestElement(attributes) {
+    nest(attributes) {
         if (isObject(attributes) === false) {
-            console.error('XNode nestElement: ' + ERRORS.ARGUMENT);
+            console.error('XNode nest: ' + ERRORS.ARGUMENT);
         } else if (this._.state !== 'pre initialized') {
-            console.error('XNode nestElement: ' + 'This can not be called after initialized.');
+            console.error('XNode nest: ' + 'This can not be called after initialized.');
         } else {
             this.off();
-            this._.nestElement = this._.nestElement.appendChild(createElement(attributes));
+            this._.nest = this._.nest.appendChild(createElement(attributes));
         }
     }
 
@@ -96,7 +96,7 @@ export class XNode {
     }
 
     get element() {
-        return this._.nestElement;
+        return this._.nest;
     }
 
     get shared() {
@@ -262,11 +262,11 @@ export class XNode {
         });
 
         // element
-        if (this._.nestElement !== null && this._.nestElement !== this._.baseElement) {
-            let target = this._.nestElement;
-            while (target.parentElement !== null && target.parentElement !== this._.baseElement) { target = target.parentElement; }
-            if (target.parentElement === this._.baseElement) {
-                this._.baseElement.removeChild(target);
+        if (this._.nest !== null && this._.nest !== this._.base) {
+            let target = this._.nest;
+            while (target.parentElement !== null && target.parentElement !== this._.base) { target = target.parentElement; }
+            if (target.parentElement === this._.base) {
+                this._.base.removeChild(target);
             }
         }
     }
@@ -369,7 +369,7 @@ export class XNode {
                 const wrapListener = (...args) => xwrap(this, listener, ...args);
 
                 this._.listeners.get(type).set(listener, wrapListener);
-                this._.nestElement.addEventListener(type, wrapListener, options);
+                this._.nest.addEventListener(type, wrapListener, options);
             }
         }
     }
@@ -406,7 +406,7 @@ export class XNode {
                 this._.listeners.get(type).delete(listener);
                 if (this._.listeners.get(type).size === 0) this._.listeners.delete(type);
 
-                this._.nestElement.removeEventListener(type, wrapListener);
+                this._.nest.removeEventListener(type, wrapListener);
             }
         }
     }
@@ -441,7 +441,7 @@ export class XNode {
 // xwrap
 //----------------------------------------------------------------------------------------------------
 
-function xwrap(node, func, ...args) {
+export function xwrap(node, func, ...args) {
     if (node === XNode.current) {
         return func(...args);
     } else {
