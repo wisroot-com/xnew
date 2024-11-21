@@ -494,7 +494,7 @@
         }
     }
 
-    function xnew$1(...args) {
+    function xnew(...args) {
 
         // a parent xnode
         const parent = (args[0] instanceof XNode || args[0] === null || args[0] === undefined) ? args.shift() : undefined;
@@ -508,13 +508,9 @@
         return new XNode(parent, element, ...content);
     }
 
-    //----------------------------------------------------------------------------------------------------
-    // xfind
-    //----------------------------------------------------------------------------------------------------
-
     function xfind(key) {
         if (isString(key) === false) {
-            throw new Error('xfind: The arguments are invalid.');
+            console.error('xfind: The arguments are invalid.');
         } else {
             const set = new Set();
             key.split(' ').filter((key) => XNode.keyMap.has(key)).forEach((key) => {
@@ -523,10 +519,6 @@
             return [...set];
         }
     }
-
-    //----------------------------------------------------------------------------------------------------
-    // xtimer
-    //----------------------------------------------------------------------------------------------------
 
     function xtimer$1(callback, delay, repeat = false) {
         
@@ -555,143 +547,8 @@
         });
     }
 
-    function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-        xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
-
-        const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
-        const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
-
-        xnew$1({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50  7 40 18 60 18"></polygon>
-        <polygon points="50 93 40 83 60 83"></polygon>
-        <polygon points=" 7 50 18 40 18 60"></polygon>
-        <polygon points="93 50 83 40 83 60"></polygon>
-    `);
-        const target = xnew$1({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
-        <circle cx="50" cy="50" r="23"></circle>
-    `);
-
-        const drag = xnew$1(DragEvent);
-
-        drag.on('down move', (event, { type, position }) => {
-            target.element.style.filter = 'brightness(90%)';
-
-            const [x, y] = [position.x - size / 2, position.y - size / 2];
-            const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
-            const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
-            const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-            xnode.emit(type, event, { type, vector });
-            [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
-        });
-
-        drag.on('up', (event, { type }) => {
-            target.element.style.filter = '';
-
-            const vector = { x: 0, y: 0 };
-            xnode.emit(type, event, { type, vector });
-            [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
-        });
-    }
-
-    function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-        xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
-
-        const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
-        const strokeStyle = `stroke-linejoin: round; stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)};`;
-
-        const target = xnew$1({ tag: 'svg', name: 'target', style: `width: 100%; height: 100%; cursor: pointer; user-select: none; ${fillStyle} ${strokeStyle}`, viewBox: '0 0 100 100' }, `
-        <circle cx="50" cy="50" r="40"></circle>
-    `);
-
-        target.on('pointerdown', down);
-
-        // prevent touch default event
-        target.on('touchstart', (event) => {
-            event.preventDefault();
-        });
-
-        function down(event) {
-            target.element.style.filter = 'brightness(90%)';
-            const type = 'down';
-            xnode.emit(type, event, { type });
-
-            window.addEventListener('pointerup', up);
-        }
-        function up(event) {
-            target.element.style.filter = '';
-            const type = 'up';
-            xnode.emit(type, event, { type });
-
-            window.removeEventListener('pointerup', up);
-        }
-
-        return {
-            finalize() {
-                window.removeEventListener('pointerup', up);
-            },
-        }
-    }
-
-    function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-        xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
-
-        const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
-        const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
-
-        const targets = new Array(4);
-        targets[0] = xnew$1({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50 50 35 35 35  5 37  3 63  3 65  5 65 35"></polygon>
-    `);
-        targets[1] = xnew$1({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50 50 35 65 35 95 37 97 63 97 65 95 65 65"></polygon>
-    `);
-        targets[2] = xnew$1({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50 50 35 35  5 35  3 37  3 63  5 65 35 65"></polygon>
-    `);
-        targets[3] = xnew$1({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50 50 65 35 95 35 97 37 97 63 95 65 65 65"></polygon>
-    `);
-
-        xnew$1({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; fill: none; ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
-        <polyline points="35 35 35  5 37  3 63  3 65  5 65 35"></polyline>
-        <polyline points="35 65 35 95 37 97 63 97 65 95 65 65"></polyline>
-        <polyline points="35 35  5 35  3 37  3 63  5 65 35 65"></polyline>
-        <polyline points="65 35 95 35 97 37 97 63 95 65 65 65"></polyline>
-        <polygon points="50 11 42 20 58 20"></polygon>
-        <polygon points="50 89 42 80 58 80"></polygon>
-        <polygon points="11 50 20 42 20 58"></polygon>
-        <polygon points="89 50 80 42 80 58"></polygon>
-    `);
-
-        const drag = xnew$1(DragEvent);
-
-        drag.on('down move', (event, { type, position }) => {
-            const [x, y] = [position.x - size / 2, position.y - size / 2];
-            const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
-            const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
-            const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-            vector.x = vector.x > +0.4 ? +1 : (vector.x < -0.4 ? -1 : 0);
-            vector.y = vector.y > +0.4 ? +1 : (vector.y < -0.4 ? -1 : 0);
-
-            targets[0].element.style.filter = (vector.y < 0) ? 'brightness(90%)' : '';
-            targets[1].element.style.filter = (vector.y > 0) ? 'brightness(90%)' : '';
-            targets[2].element.style.filter = (vector.x < 0) ? 'brightness(90%)' : '';
-            targets[3].element.style.filter = (vector.x > 0) ? 'brightness(90%)' : '';
-
-            xnode.emit(type, event, { type, vector });
-        });
-
-        drag.on('up', (event, { type }) => {
-            for(let i = 0; i < 4; i++) {
-                targets[i].element.style.filter = '';
-            }
-            const vector = { x: 0, y: 0 };
-            xnode.emit(type, event, { type, vector });
-        });
-    }
-
-    function DragEvent$1(xnode) {
-        const base = xnew$1();
+    function DragEvent(xnode) {
+        const base = xnew();
 
         let id = null;
         let current = null;
@@ -773,13 +630,148 @@
         }
     }
 
+    function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+        xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
+
+        const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
+        const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
+
+        xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
+        <polygon points="50  7 40 18 60 18"></polygon>
+        <polygon points="50 93 40 83 60 83"></polygon>
+        <polygon points=" 7 50 18 40 18 60"></polygon>
+        <polygon points="93 50 83 40 83 60"></polygon>
+    `);
+        const target = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
+        <circle cx="50" cy="50" r="23"></circle>
+    `);
+
+        const drag = xnew(DragEvent);
+
+        drag.on('down move', (event, { type, position }) => {
+            target.element.style.filter = 'brightness(90%)';
+
+            const [x, y] = [position.x - size / 2, position.y - size / 2];
+            const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
+            const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
+            const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
+            xnode.emit(type, event, { type, vector });
+            [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
+        });
+
+        drag.on('up', (event, { type }) => {
+            target.element.style.filter = '';
+
+            const vector = { x: 0, y: 0 };
+            xnode.emit(type, event, { type, vector });
+            [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
+        });
+    }
+
+    function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+        xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
+
+        const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
+        const strokeStyle = `stroke-linejoin: round; stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)};`;
+
+        const target = xnew({ tag: 'svg', name: 'target', style: `width: 100%; height: 100%; cursor: pointer; user-select: none; ${fillStyle} ${strokeStyle}`, viewBox: '0 0 100 100' }, `
+        <circle cx="50" cy="50" r="40"></circle>
+    `);
+
+        target.on('pointerdown', down);
+
+        // prevent touch default event
+        target.on('touchstart', (event) => {
+            event.preventDefault();
+        });
+
+        function down(event) {
+            target.element.style.filter = 'brightness(90%)';
+            const type = 'down';
+            xnode.emit(type, event, { type });
+
+            window.addEventListener('pointerup', up);
+        }
+        function up(event) {
+            target.element.style.filter = '';
+            const type = 'up';
+            xnode.emit(type, event, { type });
+
+            window.removeEventListener('pointerup', up);
+        }
+
+        return {
+            finalize() {
+                window.removeEventListener('pointerup', up);
+            },
+        }
+    }
+
+    function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+        xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
+
+        const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
+        const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
+
+        const targets = new Array(4);
+        targets[0] = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
+        <polygon points="50 50 35 35 35  5 37  3 63  3 65  5 65 35"></polygon>
+    `);
+        targets[1] = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
+        <polygon points="50 50 35 65 35 95 37 97 63 97 65 95 65 65"></polygon>
+    `);
+        targets[2] = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
+        <polygon points="50 50 35 35  5 35  3 37  3 63  5 65 35 65"></polygon>
+    `);
+        targets[3] = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
+        <polygon points="50 50 65 35 95 35 97 37 97 63 95 65 65 65"></polygon>
+    `);
+
+        xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; fill: none; ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
+        <polyline points="35 35 35  5 37  3 63  3 65  5 65 35"></polyline>
+        <polyline points="35 65 35 95 37 97 63 97 65 95 65 65"></polyline>
+        <polyline points="35 35  5 35  3 37  3 63  5 65 35 65"></polyline>
+        <polyline points="65 35 95 35 97 37 97 63 95 65 65 65"></polyline>
+        <polygon points="50 11 42 20 58 20"></polygon>
+        <polygon points="50 89 42 80 58 80"></polygon>
+        <polygon points="11 50 20 42 20 58"></polygon>
+        <polygon points="89 50 80 42 80 58"></polygon>
+    `);
+
+        const drag = xnew(DragEvent);
+
+        drag.on('down move', (event, { type, position }) => {
+            const [x, y] = [position.x - size / 2, position.y - size / 2];
+            const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
+            const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
+            const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
+            vector.x = vector.x > +0.4 ? +1 : (vector.x < -0.4 ? -1 : 0);
+            vector.y = vector.y > +0.4 ? +1 : (vector.y < -0.4 ? -1 : 0);
+
+            targets[0].element.style.filter = (vector.y < 0) ? 'brightness(90%)' : '';
+            targets[1].element.style.filter = (vector.y > 0) ? 'brightness(90%)' : '';
+            targets[2].element.style.filter = (vector.x < 0) ? 'brightness(90%)' : '';
+            targets[3].element.style.filter = (vector.x > 0) ? 'brightness(90%)' : '';
+
+            xnode.emit(type, event, { type, vector });
+        });
+
+        drag.on('up', (event, { type }) => {
+            for(let i = 0; i < 4; i++) {
+                targets[i].element.style.filter = '';
+            }
+            const vector = { x: 0, y: 0 };
+            xnode.emit(type, event, { type, vector });
+        });
+    }
+
     function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
         xnode.nest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
         xnode.nest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
         xnode.nest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
         const absolute = xnode.element.parentElement;
 
-        const canvas = xnew$1({ tag: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
+        const canvas = xnew({ tag: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
         
         if (pixelated === true) {
             canvas.element.style.imageRendering = 'pixelated';
@@ -839,13 +831,13 @@
         AnalogStick,
         CircleButton,
         DPad,
-        DragEvent: DragEvent$1,
+        DragEvent,
         Screen
     };
 
     exports.xcomponents = xcomponents;
     exports.xfind = xfind;
-    exports.xnew = xnew$1;
+    exports.xnew = xnew;
     exports.xtimer = xtimer$1;
 
 }));

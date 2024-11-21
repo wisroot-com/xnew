@@ -1,9 +1,5 @@
-import { isString, isNumber, isObject, isFunction } from './common';
 import { XNode } from './xnode';
-
-//----------------------------------------------------------------------------------------------------
-// xtimer
-//----------------------------------------------------------------------------------------------------
+import { xnew } from './xnew';
 
 export function xtimer(callback, delay, repeat = false) {
     
