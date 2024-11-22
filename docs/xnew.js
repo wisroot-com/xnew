@@ -1,8 +1,3 @@
-(function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-    typeof define === 'function' && define.amd ? define(['exports'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.window = global.window || {}));
-})(this, (function (exports) { 'use strict';
 
     //----------------------------------------------------------------------------------------------------
     // type check
@@ -525,7 +520,7 @@
         }
     }
 
-    function xtimer$1(callback, delay) {
+    function xtimer(callback, delay) {
         
         return xnew((xnode) => {
             let id = null;
@@ -859,9 +854,4 @@
         Screen
     };
 
-    exports.xcomponents = xcomponents;
-    exports.xfind = xfind;
-    exports.xnew = xnew;
-    exports.xtimer = xtimer$1;
-
-}));
+ 
