@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="../dist/xnew.js"></script>
+</head>
+
+<body>
+    <script>
+        xnew((xnode) => {
+            xnode.nest({ tag: 'button', style: 'padding: 8px;' });
+            xnode.element.textContent = 'click'
+
+            let counter = 0;
+            xnode.on('click', () => {
+                xnode.emit('#countup');
+            });
+            xnode.on('#countup countup', () => {
+                console.log(counter);
+                xnode.element.textContent = ++counter + ' clicked';
+            })
+        });
+
+        xnew((xnode) => {
+            xnode.nest({ style: 'padding: 8px;' });
+            xnode.element.textContent = 'counter: 0';
+
+            let counter = 0;
+            const timer = xtimer(() => {
+                // xnode.element.textContent = 'counter: ' + (++counter);
+                return true;
+            }, 1000);
+
+            xnode.on('click', () => {
+                timer.state === 'running' ? timer.stop() : timer.start();
+            });
+            // xtimer(() => {
+            //     timer.finalize();
+            // }, 5000);
+
+            return {
+                update() {
+                    if (timer.state === 'running') {
+                        xnode.element.textContent = 'timer: ' + timer.time;
+
+                    }
+                }
+            }
+        });
+    
+        xnew((xnode) => {
+            xnew((xnode) => {
+                xnode.key = 'aaa';
+                return { name: 'node1',}
+            });
+            xnew((xnode) => {
+                xnode.key ='bbb';
+                return { name: 'node2', }
+            });
+            xnew((xnode) => {
+                xnode.key = 'bbb ccc';
+                return { name: 'node3', }
+            });
+
+            xnew((xnode) => {
+                xnew(`xfind('aaa') : ` + names(xfind('aaa')));
+                xnew(`xfind('bbb') : ` + names(xfind('bbb')));
+                xnew(`xfind('ccc') : ` + names(xfind('ccc')));
+                xnew(`xfind('aaa bbb') : ` + names(xfind('aaa bbb')));
+
+                function names(xnodes) {
+                    return xnodes.reduce((a, c) => a + c.name + ',', '');
+                }
+            });
+        });
+
+        xnew((xnode) => {
+            xnode.context('hoge', 1);
+            console.log(xnode.context('hoge')); // 1
+
+            xnew((xnode) => {
+                console.log(xnode.context('hoge')); // 1
+
+                xnew((xnode) => {
+                    xnode.context('hoge', 2);
+                    console.log(xnode.context('hoge')); // 2
+
+                    xnew((xnode) => {
+                        console.log(xnode.context('hoge')); // 2
+                    });
+                });
+                
+                console.log(xnode.context('hoge')); // 1
+            });
+        });
+    </script>
+</body>
+</html>
