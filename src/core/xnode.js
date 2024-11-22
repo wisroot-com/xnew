@@ -107,7 +107,7 @@ export class XNode {
     nest(attributes) {
         if (isObject(attributes) === false) {
             console.error('xnode nest: The arguments are invalid.');
-        } else if (this._.state !== 'pre initialized') {
+        } else if (this._.state !== 'pending') {
             console.error('xnode nest: This can not be called after initialized.');
         } else {
             this.off();
@@ -220,7 +220,7 @@ export class XNode {
     extend(Component, ...args) {
         if (isFunction(Component) === false) {
             console.error('xnode extend: The arguments are invalid.');
-        } else if (this._.state !== 'pre initialized') {
+        } else if (this._.state !== 'pending') {
             console.error('xnode extend: This can not be called after initialized.');
         } else if (this._.ComponentSet.has(Component) === false) {
             this._.ComponentSet .add(Component);
