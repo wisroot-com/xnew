@@ -8,14 +8,13 @@
 </head>
 
 <body>
-    test8
+    test5
     <script>
-   
-
         const e = document.createElement('div');
         e.innerText = 'xxx';
         document.body.appendChild(e);
         xnew((xnode) => {
+            xnode.nest({ tag: 'button', style: 'padding: 8px;' });
         });
     </script>
 </body>
