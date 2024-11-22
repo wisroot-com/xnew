@@ -4,17 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="../xnew.js"></script>
+    <script src="./xnew.js"></script>
 </head>
 
 <body>
-    test5
+    test6
     <script>
         const e = document.createElement('div');
         e.innerText = 'xxx';
         document.body.appendChild(e);
         xnew((xnode) => {
-            xnode.nest({ tag: 'button', style: 'padding: 8px;' });
         });
     </script>
 </body>
