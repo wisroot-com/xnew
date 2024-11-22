@@ -91,75 +91,75 @@
             // shared data between nodes connected by parent-child relationship
             this._.shared = this._.parent?._.shared ?? {};
 
-            if (this._.parent === null || ['pending', 'running', 'stopped'].includes(this._.parent._.state)) {
-                this._initialize();
-            } else {
-                this._.state = 'finalized';
-            }
+            // if (this._.parent === null || ['pending', 'running', 'stopped'].includes(this._.parent._.state)) {
+            //     this._initialize();
+            // } else {
+            //     this._.state = 'finalized';
+            // }
         }
 
-        _initialize() {
-            this._.nest = this._.base;
+        // _initialize() {
+        //     this._.nest = this._.base;
 
-            if (isString(this._.content[0]) || isObject(this._.element)) {
-                this.nest(isObject(this._.element) ? this._.element : {});
-            }
+        //     if (isString(this._.content[0]) || isObject(this._.element)) {
+        //         this.nest(isObject(this._.element) ? this._.element : {});
+        //     }
 
-            // auto start
-            this.start();
+        //     // auto start
+        //     this.start();
 
-            // content
-            if (isFunction(this._.content[0])) {
-                this._extend(...this._.content);
-            } else if (isString(this._.content[0])) {
-                this._.nest.innerHTML = this._.content[0];
-            }
+        //     // content
+        //     if (isFunction(this._.content[0])) {
+        //         this._extend(...this._.content);
+        //     } else if (isString(this._.content[0])) {
+        //         this._.nest.innerHTML = this._.content[0];
+        //     }
 
-            // whether the node promise was resolved
-            if (this._.defines.promise) {
-                this._.resolve = false;
-                this._.defines.promise?.then((response) => { this._.resolve = true; return response; });
-            } else {
-                this._.resolve = true;
-            }
-        }
+        //     // whether the node promise was resolved
+        //     if (this._.defines.promise) {
+        //         this._.resolve = false;
+        //         this._.defines.promise?.then((response) => { this._.resolve = true; return response; });
+        //     } else {
+        //         this._.resolve = true;
+        //     }
+        // }
 
-        nest(attributes) {
-            if (isObject(attributes) === false) {
-                console.error('xnode nest: The arguments are invalid.');
-            } else if (this._.state !== 'pending') {
-                console.error('xnode nest: This can not be called after initialized.');
-            } else {
-                this.off();
+        // nest(attributes) {
+        //     if (isObject(attributes) === false) {
+        //         console.error('xnode nest: The arguments are invalid.');
+        //     } else if (this._.state !== 'pending') {
+        //         console.error('xnode nest: This can not be called after initialized.');
+        //     } else {
+        //         this.off();
 
-                const element = attributes.tag === 'svg' ? 
-                    document.createElementNS('http://www.w3.org/2000/svg', attributes.tag) : 
-                    document.createElement(attributes.tag ?? 'div');
+        //         const element = attributes.tag === 'svg' ? 
+        //             document.createElementNS('http://www.w3.org/2000/svg', attributes.tag) : 
+        //             document.createElement(attributes.tag ?? 'div');
             
-                Object.keys(attributes).forEach((key) => {
-                    const value = attributes[key];
-                    if (key === 'style') {
-                        if (isString(value) === true) {
-                            element.style = value;
-                        } else if (isObject(value) === true){
-                            Object.assign(element.style, value);
-                        }
-                    } else if (key === 'class') {
-                        if (isString(value) === true) {
-                            element.classList.add(...value.split(' '));
-                        }
-                    } else if (['checked', 'disabled', 'readonly'].includes(key)) {
-                        const remap = { checked: 'checked', disabled: 'disabled', readonly: 'readOnly', };
-                        element[remap[key]] = value;
-                    } else if (key !== 'tag') {
-                        element.setAttribute(key, value);
-                    }
-                });
+        //         Object.keys(attributes).forEach((key) => {
+        //             const value = attributes[key];
+        //             if (key === 'style') {
+        //                 if (isString(value) === true) {
+        //                     element.style = value;
+        //                 } else if (isObject(value) === true){
+        //                     Object.assign(element.style, value);
+        //                 }
+        //             } else if (key === 'class') {
+        //                 if (isString(value) === true) {
+        //                     element.classList.add(...value.split(' '));
+        //                 }
+        //             } else if (['checked', 'disabled', 'readonly'].includes(key)) {
+        //                 const remap = { checked: 'checked', disabled: 'disabled', readonly: 'readOnly', };
+        //                 element[remap[key]] = value;
+        //             } else if (key !== 'tag') {
+        //                 element.setAttribute(key, value);
+        //             }
+        //         });
 
-                this._.nest = this._.nest.appendChild(element);
-            }
+        //         this._.nest = this._.nest.appendChild(element);
+        //     }
 
-        }
+        // }
 
         // //----------------------------------------------------------------------------------------------------
         // // basic
