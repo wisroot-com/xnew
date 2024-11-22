@@ -24,18 +24,6 @@ export class XNode {
 
     static updateTime = null;
 
-    static {
-        (() => {
-            requestAnimationFrame(ticker);
-        
-            function ticker() {
-                XNode.updateTime = Date.now();
-                XNode.roots.forEach((xnode) => xnode._update());
-                requestAnimationFrame(ticker);
-            }
-        })();
-    }
-
     constructor(parent, element, ...content) {
         // internal data
         this._ = {};
@@ -470,3 +458,13 @@ export class XNode {
         }
     }
 }
+
+(() => {
+    requestAnimationFrame(ticker);
+
+    function ticker() {
+        XNode.updateTime = Date.now();
+        XNode.roots.forEach((xnode) => xnode._update());
+        requestAnimationFrame(ticker);
+    }
+})();
