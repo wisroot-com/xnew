@@ -4,10 +4,15 @@ import { XNode } from './xnode';
 export function xnew(...args) {
 
     // a parent xnode
-    const parent = (args[0] instanceof XNode || args[0] === null || args[0] === undefined) ? args.shift() : undefined;
+    let parent = undefined;
+    if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
+        parent = args.shift();
+    }
 
-    // an existing html element or attributes to create a html element
-    const element = (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) ? args.shift() : undefined;
+    let element = undefined;
+    if (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) {
+        element = args.shift();
+    }
 
     // Component function (+args), or innerHTML
     const content = args;
