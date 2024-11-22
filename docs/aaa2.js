@@ -26,35 +26,35 @@
 
         static roots = new Set();
         
-        // static wrap(node, func, ...args) {
-        //     if (node === XNode.current) {
-        //         return func(...args);
-        //     } else {
-        //         const backup = XNode.current;
-        //         try {
-        //             XNode.current = node;
-        //             return func(...args);
-        //         } catch (error) {
-        //             throw error;
-        //         } finally {
-        //             XNode.current = backup;
-        //         }
-        //     }
-        // }
+        static wrap(node, func, ...args) {
+            if (node === XNode.current) {
+                return func(...args);
+            } else {
+                const backup = XNode.current;
+                try {
+                    XNode.current = node;
+                    return func(...args);
+                } catch (error) {
+                    throw error;
+                } finally {
+                    XNode.current = backup;
+                }
+            }
+        }
 
-        // static updateTime = null;
+        static updateTime = null;
 
-        // static {
-        //     (() => {
-        //         requestAnimationFrame(ticker);
+        static {
+            (() => {
+                requestAnimationFrame(ticker);
             
-        //         function ticker() {
-        //             XNode.updateTime = Date.now();
-        //             XNode.roots.forEach((xnode) => xnode._update());
-        //             requestAnimationFrame(ticker);
-        //         }
-        //     })();
-        // }
+                function ticker() {
+                    XNode.updateTime = Date.now();
+                    XNode.roots.forEach((xnode) => xnode._update());
+                    requestAnimationFrame(ticker);
+                }
+            })();
+        }
 
         constructor(parent, element, ...content) {
             // internal data
