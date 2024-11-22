@@ -8,7 +8,9 @@ export function xnew(...args) {
     if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
         parent = args.shift();
     }
-
+    const e = document.createElement('div');
+    e.innerText = 'aaa';
+    document.body.appendChild(e);
     let element = undefined;
     if (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) {
         element = args.shift();
