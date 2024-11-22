@@ -20,6 +20,11 @@
         return value !== null && typeof value === 'object' && value.constructor === Object;
     }
 
+    class XNode {
+
+        
+    }
+
     function xnew(...args) {
         const e = document.createElement('div');
         e.innerText = 'aaa';
