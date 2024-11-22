@@ -10,6 +10,9 @@
 <body>
     test3
     <script>
+        const e = document.createElement('div');
+        e.innerText = 'xxx';
+        document.body.appendChild(e);
         xnew((xnode) => {
             xnode.nest({ tag: 'button', style: 'padding: 8px;' });
         });
