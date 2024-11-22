@@ -4,12 +4,19 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="./xnew.js"></script>
+    <!-- <script src="./xnew.js"></script> -->
 </head>
 
 <body>
     test7
     <script>
+   
+        function xnew(...args) {
+            const e = document.createElement('div');
+            e.innerText = 'aaa';
+            document.body.appendChild(e);
+            
+        }
         const e = document.createElement('div');
         e.innerText = 'xxx';
         document.body.appendChild(e);
