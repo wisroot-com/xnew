@@ -11,15 +11,15 @@
         }
 
 
-        // let element = undefined;
-        // if (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) {
-        //     element = args.shift();
-        // }
+        let element = undefined;
+        if (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) {
+            element = args.shift();
+        }
 
-        // // Component function (+args), or innerHTML
-        // const content = args;
+        // Component function (+args), or innerHTML
+        const content = args;
 
-        // return new XNode(parent, element, ...content);
+        return new XNode(parent, element, ...content);
     }
 
  
