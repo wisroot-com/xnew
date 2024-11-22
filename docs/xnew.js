@@ -70,8 +70,8 @@
 
             this._.root = this._.parent !== null ? this._.parent.root : this;
 
-            // state [pre initialized ->stopped ->started ->... ->stopped ->pre finalized ->finalized]
-            this._.state = 'pre initialized';  
+            // state [pending -> running <-> stopped -> finalized]
+            this._.state = 'pending';  
 
             // properties defined in the component function
             this._.defines = {};
@@ -86,22 +86,20 @@
             this._.keySet = new Set();
 
             // base ellement (fixed)
-            this._.baseElement = (this._.element instanceof Element) ? this._.element : (this._.parent ? this._.parent._.nest : document.body);
+            this._.base = (this._.element instanceof Element) ? this._.element : (this._.parent ? this._.parent._.nest : document.body);
 
             // shared data between nodes connected by parent-child relationship
             this._.shared = this._.parent?._.shared ?? {};
 
-            if (this._.parent === null || this._.parent._.state === 'pre initialized' || this._.parent._.state === 'stopped' || this._.parent._.state === 'started') {
+            if (this._.parent === null || ['pending', 'running', 'stopped'].includes(this._.parent._.state)) {
                 this._initialize();
-
-                this._.state = 'stopped';
             } else {
                 this._.state = 'finalized';
             }
         }
 
         _initialize() {
-            this._.nest = this._.baseElement;
+            this._.nest = this._.base;
 
             if (isString(this._.content[0]) || isObject(this._.element)) {
                 this.nest(isObject(this._.element) ? this._.element : {});
@@ -264,19 +262,19 @@
         }
 
         _start() {
-            if (this._.state === 'stopped' && (this._.parent === null || this._.parent.state === 'started') && this._.resolve === true && this._.tostart === true) {
+            if (this._.state === 'stopped' && (this._.parent === null || this._.parent.state === 'running') && this._.resolve === true && this._.tostart === true) {
                 this._.startTime = XNode.updateTime;
-                this._.state = 'started';
+                this._.state = 'running';
                 this._.children.forEach((node) => node._start());
             
-                if (this._.state === 'started' && isFunction(this._.defines.start)) {
+                if (this._.state === 'running' && isFunction(this._.defines.start)) {
                     XNode.wrap(this, this._.defines.start);
                 }
             }
         }
 
         _stop() {
-            if (this._.state === 'started') {
+            if (this._.state === 'running') {
                 this._.state = 'stopped';
                 this._.children.forEach((node) => node._stop());
 
@@ -288,12 +286,12 @@
 
         _update() {
 
-            if (this._.state === 'started' || this._.state === 'stopped') {
+            if (this._.state === 'running' || this._.state === 'stopped') {
                 if (this._.tostart === true) this._start();
 
                 this._.children.forEach((node) => node._update());
 
-                if (this._.state === 'started' && isFunction(this._.defines.update) === true) {
+                if (this._.state === 'running' && isFunction(this._.defines.update) === true) {
                     XNode.wrap(this, this._.defines.update, XNode.updateTime - this._.startTime);
                 }
             }
@@ -303,8 +301,6 @@
             this._stop();
 
             if (this._.state === 'stopped') {
-                this._.state = 'pre finalized';
-
                 this._finalize();
                 
                 // relation
@@ -338,11 +334,11 @@
             });
 
             // element
-            if (this._.nest !== null && this._.nest !== this._.baseElement) {
+            if (this._.nest !== null && this._.nest !== this._.base) {
                 let target = this._.nest;
-                while (target.parentElement !== null && target.parentElement !== this._.baseElement) { target = target.parentElement; }
-                if (target.parentElement === this._.baseElement) {
-                    this._.baseElement.removeChild(target);
+                while (target.parentElement !== null && target.parentElement !== this._.base) { target = target.parentElement; }
+                if (target.parentElement === this._.base) {
+                    this._.base.removeChild(target);
                 }
             }
         }
@@ -355,19 +351,19 @@
             if (isString(name) === false) {
                 console.error('xnode context: The arguments are invalid.');
             } else {
-                if (value === undefined) {
-                    let node = this;
-                    while (node !== null) {
-                        if (node._.context?.has(name)) {
-                            return node._.context.get(name);
-                        }
-                        node = node.parent;
+                let ret = undefined;
+                let node = this;
+                while (node !== null) {
+                    if (node._.context?.has(name)) {
+                        ret = node._.context.get(name);
                     }
-                    return undefined;
-                } else {
+                    node = node.parent;
+                }
+                if (value !== undefined) {
                     this._.context = this._.context ?? new Map();
                     this._.context.set(name, value);
                 }
+                return ret;
             }
         }
 
@@ -520,26 +516,45 @@
         }
     }
 
-    function xtimer$1(callback, delay, repeat = false) {
+    function xtimer$1(callback, delay) {
         
         return xnew((xnode) => {
             let id = null;
-            
-            setTimeout(func, delay);
+            let timeout = delay;
+            let offset = 0.0;
+            let start = 0.0;
+            let time = 0.0;
 
             return {
+                get time() {
+                    return time;
+                },
+                start() {
+                    start = Date.now();
+                    time = offset;
+                    id = setTimeout(wcallback, timeout - time);
+                },
+                update() {
+                    time = Date.now() - start + offset;
+                },
+                stop() {
+                    offset = Date.now() - start + offset;
+                    clearTimeout(id);
+                    id = null;
+                },
                 finalize() {
                     if (id !== null) {
                         clearTimeout(id);
-                        id = null;
                     }
                 },
             }
 
-            function func() {
-                XNode.wrap(xnode.parent, callback);
+            function wcallback() {
+                const repeat = XNode.wrap(xnode.parent, callback);
                 if (repeat === true) {
-                    id = setTimeout(func, delay);
+                    xnode.stop();
+                    offset = 0.0;
+                    xnode.start();
                 } else {
                     xnode.finalize();
                 }

@@ -71,8 +71,7 @@
         //----------------------------------------------------------------------
         
         function ThreeObject(xnode, object) {
-            const parent = xnode.context('THREE.Object3D');
-            xnode.context('THREE.Object3D', object);
+            const parent = xnode.context('THREE.Object3D', object);
 
             // if the parent object exists
             if (parent) {

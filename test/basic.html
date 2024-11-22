@@ -29,12 +29,25 @@
 
             let counter = 0;
             const timer = xtimer(() => {
-                xnode.element.textContent = 'counter: ' + (++counter);
-            }, 1000, true);
+                // xnode.element.textContent = 'counter: ' + (++counter);
+                return true;
+            }, 1000);
 
-            xtimer(() => {
-                timer.finalize();
-            }, 5000);
+            xnode.on('click', () => {
+                timer.state === 'running' ? timer.stop() : timer.start();
+            });
+            // xtimer(() => {
+            //     timer.finalize();
+            // }, 5000);
+
+            return {
+                update() {
+                    if (timer.state === 'running') {
+                        xnode.element.textContent = 'timer: ' + timer.time;
+
+                    }
+                }
+            }
         });
     
         xnew((xnode) => {

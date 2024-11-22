@@ -1,28 +1,45 @@
 import { XNode } from './xnode';
 import { xnew } from './xnew';
 
-export function xtimer(callback, delay, repeat = false) {
+export function xtimer(callback, delay) {
     
     return xnew((xnode) => {
         let id = null;
-        let counter = 0;
-        
-        setTimeout(func, delay);
+        let timeout = delay;
+        let offset = 0.0;
+        let start = 0.0;
+        let time = 0.0;
 
         return {
+            get time() {
+                return time;
+            },
+            start() {
+                start = Date.now();
+                time = offset;
+                id = setTimeout(wcallback, timeout - time)
+            },
+            update() {
+                time = Date.now() - start + offset;
+            },
+            stop() {
+                offset = Date.now() - start + offset;
+                clearTimeout(id);
+                id = null;
+            },
             finalize() {
                 if (id !== null) {
                     clearTimeout(id);
-                    id = null;
                 }
             },
         }
 
-        function func() {
-            XNode.wrap(xnode.parent, callback);
-            counter++;
+        function wcallback() {
+            const repeat = XNode.wrap(xnode.parent, callback);
             if (repeat === true) {
-                id = setTimeout(func, delay)
+                xnode.stop();
+                offset = 0.0;
+                xnode.start();
             } else {
                 xnode.finalize();
             }
