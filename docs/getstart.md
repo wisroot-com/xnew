@@ -29,7 +29,7 @@ function Component(xnode) {
 }
 ```
 
-You can also use an function literal.  
+You can also use a function literal.  
 ```
 const xnode = xnew((xnode) => {
     // ...
@@ -75,7 +75,7 @@ Inside the component function, you can implement various process.
 </body>
 </html>
 ```
-## parent-child relationship
+## Parent-Child relationship
 If you call `xnew` inside a component function, a parent-child relationship is connected.
 
 <iframe src="./examples/basic2.html" style="width: 400px; height: 300px; border: solid 1px #AAA; margin: auto;"></iframe>
