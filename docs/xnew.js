@@ -262,19 +262,21 @@
         }
 
         _start() {
-            if (this._.state === 'stopped' && (this._.parent === null || this._.parent.state === 'running') && this._.resolve === true && this._.tostart === true) {
-                this._.startTime = XNode.updateTime;
-                this._.state = 'running';
-                this._.children.forEach((node) => node._start());
-            
-                if (this._.state === 'running' && isFunction(this._.defines.start)) {
-                    XNode.wrap(this, this._.defines.start);
+            if (['pending', 'stopped'].includes(this._.state)) {
+                if ((this._.parent === null || this._.parent.state === 'running') && this._.resolve === true && this._.tostart === true) {
+                    this._.startTime = XNode.updateTime;
+                    this._.state = 'running';
+                    this._.children.forEach((node) => node._start());
+                
+                    if (this._.state === 'running' && isFunction(this._.defines.start)) {
+                        XNode.wrap(this, this._.defines.start);
+                    }
                 }
             }
         }
 
         _stop() {
-            if (this._.state === 'running') {
+            if (['running'].includes(this._.state)) {
                 this._.state = 'stopped';
                 this._.children.forEach((node) => node._stop());
 
@@ -285,8 +287,7 @@
         }
 
         _update() {
-
-            if (this._.state === 'running' || this._.state === 'stopped') {
+            if (['pending', 'running', 'stopped'].includes(this._.state)) {
                 if (this._.tostart === true) this._start();
 
                 this._.children.forEach((node) => node._update());
@@ -300,7 +301,7 @@
         finalize() {
             this._stop();
 
-            if (this._.state === 'stopped') {
+            if (['pending', 'stopped'].includes(this._.state)) {
                 this._finalize();
                 
                 // relation
