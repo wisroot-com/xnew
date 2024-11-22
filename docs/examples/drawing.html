@@ -26,6 +26,7 @@
     <script>
         xnew(document.querySelector('#main'), (xnode) => {
             const screen = xnew(xcomponents.Screen, { width: 512, height: 512, objectFit: 'contain' });
+            
             xnew(screen, Content, screen.canvas);
         });
 
