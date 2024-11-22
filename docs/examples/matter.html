@@ -22,67 +22,67 @@
 </head>
 
 <body>
+    <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
-    xnew((xnode) => {
-        // create a screen (xcomponents.Screen is a component function that defines a canvas)
-        const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
+        xnew(document.querySelector('#main'), (xnode) => {
+            // create a screen (xcomponents.Screen is a component function that defines a canvas)
+            const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
 
-        xnode.shared.width = screen.width;
-        xnode.shared.height = screen.height;
+            xnode.shared.width = screen.width;
+            xnode.shared.height = screen.height;
 
-        // setting for matter.js
-        const matter = {};
-        matter.engine = Matter.Engine.create();
-        matter.runner = Matter.Runner.create();
-        Matter.Runner.run(matter.runner, matter.engine);
-        matter.render = Matter.Render.create({ canvas: screen.canvas, engine: matter.engine, options: { width: screen.width, height: screen.height } });
-        Matter.Render.run(matter.render);
-        xnode.extend(MatterObject, matter.engine.world);
+            // setting for matter.js
+            const matter = {};
+            matter.engine = Matter.Engine.create();
+            matter.runner = Matter.Runner.create();
+            Matter.Runner.run(matter.runner, matter.engine);
+            matter.render = Matter.Render.create({ canvas: screen.canvas, engine: matter.engine, options: { width: screen.width, height: screen.height } });
+            Matter.Render.run(matter.render);
+            xnode.extend(MatterObject, matter.engine.world);
 
-        xnew(MatterObject, Matter.MouseConstraint.create(matter.engine, { element: screen.canvas }));
-        xnew(Content);
-    });
-    
-    function Content(xnode) {
-        xnew(Rectangle, 400, 200, 80, 80);
-        xnew(Polygon, 450, 50, 6, 40);
-        xnew(Circle, 350, 50, 40);
-        xnew(Rectangle, 400, 400, 800, 20, { isStatic: true });
-    }
+            xnew(MatterObject, Matter.MouseConstraint.create(matter.engine, { element: screen.canvas }));
+            xnew(Content);
+        });
+        
+        function Content(xnode) {
+            xnew(Rectangle, 400, 200, 80, 80);
+            xnew(Polygon, 450, 50, 6, 40);
+            xnew(Circle, 350, 50, 40);
+            xnew(Rectangle, 400, 400, 800, 20, { isStatic: true });
+        }
 
-    function Rectangle(xnode, ...args) {
-        const object = Matter.Bodies.rectangle(...args)
-        xnew(MatterObject, object);
-    }
-    function Circle(xnode, ...args) {
-        const object = Matter.Bodies.circle(...args)
-        xnew(MatterObject, object);
-    }
-    function Polygon(xnode, ...args) {
-        const object = Matter.Bodies.polygon(...args)
-        xnew(MatterObject, object);
-    }
+        function Rectangle(xnode, ...args) {
+            const object = Matter.Bodies.rectangle(...args)
+            xnew(MatterObject, object);
+        }
+        function Circle(xnode, ...args) {
+            const object = Matter.Bodies.circle(...args)
+            xnew(MatterObject, object);
+        }
+        function Polygon(xnode, ...args) {
+            const object = Matter.Bodies.polygon(...args)
+            xnew(MatterObject, object);
+        }
 
-    //----------------------------------------------------------------------
-    // base component
-    //----------------------------------------------------------------------
+        //----------------------------------------------------------------------
+        // base component
+        //----------------------------------------------------------------------
 
-    function MatterObject(xnode, object) {
-        const composite = xnode.context('Matter.Composite');
-        xnode.context('Matter.Composite', object);
-            
-        // if the parent object exists
-        if (composite) {
-            Matter.Composite.add(composite, object);
+        function MatterObject(xnode, object) {
+            const composite = xnode.context('Matter.Composite');
+            xnode.context('Matter.Composite', object);
+                
+            // if the parent object exists
+            if (composite) {
+                Matter.Composite.add(composite, object);
 
-            return {
-                finalize() {
-                    Matter.Composite.remove(composite, object);
-                },
+                return {
+                    finalize() {
+                        Matter.Composite.remove(composite, object);
+                    },
+                }
             }
         }
-    }
-
     </script>
 </body>
 </html>

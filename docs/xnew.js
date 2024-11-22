@@ -44,18 +44,6 @@
 
         static updateTime = null;
 
-        static {
-            (() => {
-                requestAnimationFrame(ticker);
-            
-                function ticker() {
-                    XNode.updateTime = Date.now();
-                    XNode.roots.forEach((xnode) => xnode._update());
-                    requestAnimationFrame(ticker);
-                }
-            })();
-        }
-
         constructor(parent, element, ...content) {
             // internal data
             this._ = {};
@@ -491,18 +479,32 @@
         }
     }
 
+    (() => {
+        requestAnimationFrame(ticker);
+
+        function ticker() {
+            XNode.updateTime = Date.now();
+            XNode.roots.forEach((xnode) => xnode._update());
+            requestAnimationFrame(ticker);
+        }
+    })();
+
     function xnew(...args) {
 
-        // a parent xnode
-        const parent = (args[0] instanceof XNode || args[0] === null || args[0] === undefined) ? args.shift() : undefined;
+        // parent xnode
+        let parent = undefined;
+        if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
+            parent = args.shift();
+        }
 
-        // an existing html element or attributes to create a html element
-        const element = (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) ? args.shift() : undefined;
+        // base element
+        let element = undefined;
+        if (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) {
+            element = args.shift();
+        }
 
         // Component function (+args), or innerHTML
-        const content = args;
-
-        return new XNode(parent, element, ...content);
+        return new XNode(parent, element, ...args);
     }
 
     function xfind(key) {
