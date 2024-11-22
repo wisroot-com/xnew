@@ -170,7 +170,7 @@ xnode.start();    // start update loop
 xnode.stop();     // stop update loop
 xnode.finalize(); // current xnode and the child xnodes will be finalized 
 
-xnode.state;    // return state [pre initialized ->stopped ->started ->... ->stopped ->pre finalized ->finalized] 
+xnode.state;    // return state [pending -> running <-> stopped -> finalized] 
 ```
 - By default, xnodes automatically calls `xnode.start()`.  
     If you want to avoid it, call `xnode.stop()` inside the component function.  
@@ -321,7 +321,7 @@ xnode.emit('myevent', data);
 By setting timer, you can execute time delay functions.
 ### `xtimer`
 ```
-const timer = xtimer(callback, delay, repeat);
+const timer = xtimer(callback, delay);
 ```
 ### example
 
@@ -335,7 +335,8 @@ xnew((xnode) =>  {
     // call repeatedly (1000ms interval)
     const timer2 = xtimer(() => {
         // ...
-    }, 1000, true);
+        return true;
+    }, 1000);
 });
 ```
 - Timers can be canceled by calling `timer.finalize()`.

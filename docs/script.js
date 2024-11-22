@@ -373,10 +373,11 @@ function createTop(element) {
     }
 
     function Content(xnode) {
-        // call iteratively (100ms, loop=true)
+        // call iteratively (100ms)
         xtimer(() => {
             xnew(Cube, 100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5), 0xFFFFFF * Math.random());
-        }, 100, true);
+            return true; // loop
+        }, 100);
     }
 
     // create a cube and update

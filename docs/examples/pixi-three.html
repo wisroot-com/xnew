@@ -105,8 +105,7 @@
         //----------------------------------------------------------------------
         
         function PixiObject(xnode, object) {
-            const parent = xnode.context('PIXI.DisplayObject');
-            xnode.context('PIXI.DisplayObject', object);
+            const parent = xnode.context('PIXI.DisplayObject', object);
             
             // if the parent object exists
             if (parent) {
@@ -122,8 +121,7 @@
         }
 
         function ThreeObject(xnode, object) {
-            const parent = xnode.context('THREE.Object3D');
-            xnode.context('THREE.Object3D', object);
+            const parent = xnode.context('THREE.Object3D', object);
 
             // if the parent object exists
             if (parent) {
