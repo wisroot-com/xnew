@@ -498,7 +498,10 @@
 
         // an existing html element or attributes to create a html element
         const element = (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) ? args.shift() : undefined;
-
+        
+        const e = document.createElement(attributes.tag ?? 'div');
+        e.innerText = 'aaa';
+        element.appendChild(e);
         // Component function (+args), or innerHTML
         const content = args;
 
