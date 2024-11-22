@@ -19,17 +19,15 @@ npm install xnew
 import { xnew } from 'xnew'
 ```
 ## Basic usage
-xnew contains a function `xnew`.  
-By setting a component function, it will create an instance(`xnode`) of the component.  
+By setting a component function to `xnew`, an instance(`xnode`) of the component will be created.  
 ```
-const xnode = xnew(Component, ...args);    
+const xnode = xnew(Component);    
 ```
 ```
-function Component(xnode, ...args) {
+function Component(xnode) {
     // implement features
 }
 ```
-`...args` are arguments for the component function. (not necessary)
 
 You can also use an function literal.  
 ```

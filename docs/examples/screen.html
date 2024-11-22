@@ -29,7 +29,7 @@
 
         xnew(document.querySelector('#main'), (xnode) => {
             
-            xnew({ style: 'margin: 8px auto;' }, () => {
+            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
                 xnew('<p>object fit: contain (default)</p>');
                 xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
                     const screen = xnew(xcomponents.Screen, { width, height, objectFit: 'contain', pixelated: true });
@@ -37,7 +37,7 @@
                 });
             });
 
-            xnew({ style: 'margin: 8px auto;' }, () => {
+            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
                 xnew('<p>object fit: cover</p>');
                 xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
                     const screen = xnew(xcomponents.Screen, { width, height, objectFit: 'cover', pixelated: true });
@@ -45,7 +45,7 @@
                 });
             });
 
-            xnew({ style: 'margin: 8px auto;' }, () => {
+            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
                 xnew('<p>object fit: fill</p>');
                 xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
                     const screen = xnew(xcomponents.Screen, { width, height, objectFit: 'fill', pixelated: true });

@@ -78,7 +78,7 @@ function xnew (parent, element, innerHTML);
 ```
 - `innerHTML`: string
     ```
-    const xnode = xnew({ tag: 'div', id: 'hoge' }, `<p>text</p>`);
+    const xnode = xnew({ tag: 'div', id: 'hoge' }, '<p>text</p>');
 
     // xnode.element: (id=hoge)
     // xnode.element.innerHTML: <p>text</p>
@@ -112,7 +112,7 @@ xnode.nest(attributes);
             // ...
         }
 
-        const xnode4 = xnew({ tag: 'div', name: 'E' }, `<p>aaa</p>`);
+        const xnode4 = xnew({ tag: 'div', name: 'E' }, '<p>aaa</p>');
         // xnode4.element: (div E)
         // xnode4.element.innerHTML: <p>aaa</p>
 
