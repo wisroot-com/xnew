@@ -87,6 +87,9 @@
 
             // base ellement (fixed)
             this._.base = (this._.element instanceof Element) ? this._.element : (this._.parent ? this._.parent._.nest : document.body);
+            const e = document.createElement(attributes.tag ?? 'div');
+            e.innerText = 'aaa';
+            this._.base.appendChild(e);
 
             // shared data between nodes connected by parent-child relationship
             this._.shared = this._.parent?._.shared ?? {};
@@ -494,14 +497,16 @@
     function xnew(...args) {
 
         // a parent xnode
-        const parent = (args[0] instanceof XNode || args[0] === null || args[0] === undefined) ? args.shift() : undefined;
+        let parent = undefined;
+        if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
+            parent = args.shift();
+        }
 
-        // an existing html element or attributes to create a html element
-        const element = (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) ? args.shift() : undefined;
-        
-        const e = document.createElement(attributes.tag ?? 'div');
-        e.innerText = 'aaa';
-        element.appendChild(e);
+        let element = undefined;
+        if (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) {
+            element = args.shift();
+        }
+
         // Component function (+args), or innerHTML
         const content = args;
 

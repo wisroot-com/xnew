@@ -67,6 +67,9 @@ export class XNode {
 
         // base ellement (fixed)
         this._.base = (this._.element instanceof Element) ? this._.element : (this._.parent ? this._.parent._.nest : document.body);
+        const e = document.createElement(attributes.tag ?? 'div');
+        e.innerText = 'aaa';
+        this._.base.appendChild(e);
 
         // shared data between nodes connected by parent-child relationship
         this._.shared = this._.parent?._.shared ?? {};
