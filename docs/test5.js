@@ -513,6 +513,6 @@
         return new XNode(parent, element, ...content);
     }
 
-    exports.xfind = xfind;
+    exports.xnew = xnew;
 
 }));
