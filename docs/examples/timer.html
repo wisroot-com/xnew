@@ -32,15 +32,11 @@
             const three = {};
             three.renderer = new THREE.WebGLRenderer({ canvas: screen.canvas, alpha: true, });
             three.renderer.setClearColor(0x000000, 0);
-            
             three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
             three.camera.position.set(0, 0, +100);
-
             three.scene = new THREE.Scene();
-            xnode.extend(ThreeObject, three.scene);
 
-            xnew(Light);
-            xnew(Content);
+            xnew(Content, three);
 
             return {
                 update() {
@@ -49,14 +45,10 @@
             };
         });
 
-        function Light(xnode) {
-            const light = new THREE.PointLight(0xFFFFFF, 1);
-            xnode.extend(ThreeObject, light);
-
-            light.position.set(0, 0, +100);
-        }
-
-        function Content(xnode) {
+        function Content(xnode, three) {
+            xnode.extend(ThreeObject, three.scene);
+            xnew(Light);
+        
             // call iteratively (100ms)
             xtimer(() => {
                 xnew(Cube, 100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5), 0xFFFFFF * Math.random());
@@ -64,9 +56,14 @@
             }, 100);
         }
 
-        // create a cube and update
+        function Light(xnode) {
+            const light = new THREE.PointLight(0xFFFFFF, 1);
+            xnode.extend(ThreeObject, light);
+
+            light.position.set(0, 0, +100);
+        }
+
         function Cube(xnode, x, y, z, color) {
-            // create a cube object
             const size = 10 * Math.random() + 5;
             const geometry = new THREE.BoxGeometry(size, size, size);
             const material = new THREE.MeshLambertMaterial({ color });
@@ -87,7 +84,6 @@
 
             return {
                 update() {
-                    // move cube
                     object.position.x += velocity.x;
                     object.position.y += velocity.y;
                     object.position.z += velocity.z;
@@ -104,15 +100,11 @@
         function ThreeObject(xnode, object) {
             const parent = xnode.context('THREE.Object3D', object);
 
-            // if the parent object exists
-            if (parent) {
-                parent.add(object);
-
-                return {
-                    finalize() {
-                        parent.remove(object);
-                    },
-                }
+            parent?.add(object);
+            return {
+                finalize() {
+                    parent?.remove(object);
+                },
             }
         }
 

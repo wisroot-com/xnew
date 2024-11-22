@@ -28,16 +28,12 @@
             // create a screen (xcomponents.Screen is a component function that defines a canvas)
             const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
 
-            xnode.shared.width = screen.width;
-            xnode.shared.height = screen.height;
-
             // setting for pixi.js
             const pixi = {};
             pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height });
             pixi.scene = new PIXI.Container();
-            xnode.extend(PixiObject, pixi.scene);
 
-            xnew(Content);
+            xnew(Content, pixi);
 
             return {
                 update() {
@@ -46,8 +42,9 @@
             };
         });
 
-        function Content(xnode) {
-            xnew(Box, xnode.shared.width / 2, xnode.shared.height / 2, 160, 0xEA1E63);
+        function Content(xnode, pixi) {
+            xnode.extend(PixiObject, pixi.scene);
+            xnew(Box, 800 / 2, 450 / 2, 160, 0xEA1E63);
         }
 
         function Box(xnode, x, y, size, color) {
@@ -76,15 +73,12 @@
         function PixiObject(xnode, object) {
             const parent = xnode.context('PIXI.DisplayObject', object);
             
-            // if the parent object exists
-            if (parent) {
-                parent.addChild(object);
+            parent?.addChild(object);
 
-                return {
-                    finalize() {
-                        parent.removeChild(object);
-                    },
-                }
+            return {
+                finalize() {
+                    parent?.removeChild(object);
+                },
             }
         }
 

@@ -29,18 +29,14 @@
             // create a screen (xcomponents.Screen is a component function that defines a canvas)
             const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
 
-            xnode.shared.width = screen.width;
-            xnode.shared.height = screen.height;
             // setting for three.js
             const three = {};
             three.renderer = new THREE.WebGLRenderer({ canvas: screen.canvas });
             three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
             three.camera.position.set(0, 0, +100);
-
             three.scene = new THREE.Scene();
-            xnode.extend(ThreeObject, three.scene);
 
-            xnew(Content);
+            xnew(Content, three);
 
             return {
                 update() {
@@ -49,7 +45,8 @@
             };
         });
 
-        function Content() {
+        function Content(xnode, three) {
+            xnode.extend(ThreeObject, three.sceen);
             xnew(Cube, 0, 0, 0, 40);
         }
 
@@ -74,15 +71,11 @@
         function ThreeObject(xnode, object) {
             const parent = xnode.context('THREE.Object3D', object);
 
-            // if the parent object exists
-            if (parent) {
-                parent.add(object);
-
-                return {
-                    finalize() {
-                        parent.remove(object);
-                    },
-                }
+            parent?.add(object);
+            return {
+                finalize() {
+                    parent?.remove(object);
+                },
             }
         }
 
