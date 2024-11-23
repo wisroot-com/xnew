@@ -116,7 +116,7 @@ xnode.nest(attributes);
         // xnode4.element: (div E)
         // xnode4.element.innerHTML: <p>aaa</p>
 
-        const xnode5 = xnew(`<p>bbb</p>`); 
+        const xnode5 = xnew('<p>bbb</p>'); 
         // xnode5.element: (div)
     </script>
 </body>       
@@ -228,7 +228,6 @@ function Base(xnode) {
 ```
 ```
 const xnode = xnew((xnode) => {
-    // extend base component function
     xnode.extend(Base);
 
     return {
@@ -253,8 +252,7 @@ xnode.hoge();
 
 ```
 const xnode = xnew((xnode) => {
-    // extend Base component
-    const defines = xnode.extend(Base);
+    const props = xnode.extend(Base);
 
     return {
         update() {
@@ -262,7 +260,7 @@ const xnode = xnew((xnode) => {
             xnode.stop();
         },
         hoge() {
-            defines.hoge(); // execute Base component hoge
+            props.hoge(); // execute Base component hoge
             console.log('derived hoge');
         },
     }

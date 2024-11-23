@@ -22,10 +22,22 @@
 
     class XNode {
 
+        static roots = new Set();
+      
+        static updateTime = null;
+
+        static animate() {
+            requestAnimationFrame(ticker);
+
+            function ticker() {
+                XNode.updateTime = Date.now();
+                XNode.roots.forEach((xnode) => xnode._update());
+                requestAnimationFrame(ticker);
+            }
+        }
+
         static current = null;
 
-        static roots = new Set();
-        
         static wrap(node, func, ...args) {
             if (node === XNode.current) {
                 return func(...args);
@@ -41,8 +53,6 @@
                 }
             }
         }
-
-        static updateTime = null;
 
         constructor(parent, element, ...content) {
             // internal data
@@ -290,6 +300,7 @@
             this._stop();
 
             if (['pending', 'stopped'].includes(this._.state)) {
+                this._.state = 'pre finalized';
                 this._finalize();
                 
                 // relation
@@ -479,15 +490,7 @@
         }
     }
 
-    (() => {
-        requestAnimationFrame(ticker);
-
-        function ticker() {
-            XNode.updateTime = Date.now();
-            XNode.roots.forEach((xnode) => xnode._update());
-            requestAnimationFrame(ticker);
-        }
-    })();
+    XNode.animate();
 
     function xnew(...args) {
 

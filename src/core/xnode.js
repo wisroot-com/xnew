@@ -2,10 +2,20 @@ import { isString, isNumber, isObject, isFunction } from './common';
 
 export class XNode {
 
+    static roots = new Set();
+  
+    static animate() {
+        requestAnimationFrame(ticker);
+
+        function ticker() {
+            const time = Date.now();
+            XNode.roots.forEach((xnode) => xnode._update(time));
+            requestAnimationFrame(ticker);
+        }
+    }
+
     static current = null;
 
-    static roots = new Set();
-    
     static wrap(node, func, ...args) {
         if (node === XNode.current) {
             return func(...args);
@@ -21,8 +31,6 @@ export class XNode {
             }
         }
     }
-
-    static updateTime = null;
 
     constructor(parent, element, ...content) {
         // internal data
@@ -41,8 +49,8 @@ export class XNode {
         // state [pending -> running <-> stopped -> finalized]
         this._.state = 'pending';  
 
-        // properties defined in the component function
-        this._.defines = {};
+        // properties in the component function
+        this._.props = {};
 
         // conponent functions
         this._.ComponentSet = new Set();
@@ -84,9 +92,9 @@ export class XNode {
         }
 
         // whether the node promise was resolved
-        if (this._.defines.promise) {
+        if (this._.props.promise) {
             this._.resolve = false;
-            this._.defines.promise?.then((response) => { this._.resolve = true; return response; });
+            this._.props.promise?.then((response) => { this._.resolve = true; return response; });
         } else {
             this._.resolve = true;
         }
@@ -136,19 +144,15 @@ export class XNode {
     get parent() {
         return this._.parent;
     }
-
     get element() {
         return this._.nest;
     }
-
     get shared() {
         return this._.shared;
     }
-
     get promise() {
-        return this._.defines.promise ?? Promise.resolve();
+        return this._.props.promise ?? Promise.resolve();
     }
-
     get state() {
         return this._.state
     }
@@ -158,27 +162,27 @@ export class XNode {
     //----------------------------------------------------------------------------------------------------
  
     _extend(Component, ...args) {
-        const defines = XNode.wrap(this, Component, this, ...args) ?? {};
+        const props = XNode.wrap(this, Component, this, ...args) ?? {};
         
-        Object.keys(defines).forEach((key) => {
-            const descripter = Object.getOwnPropertyDescriptor(defines, key);
+        Object.keys(props).forEach((key) => {
+            const descripter = Object.getOwnPropertyDescriptor(props, key);
 
             if (key === 'promise') {
                 if (descripter.value instanceof Promise) {
-                    const previous = this._.defines[key];
-                    this._.defines[key] = previous ? Promise.all([previous, descripter.value]) : descripter.value;
+                    const previous = this._.props[key];
+                    this._.props[key] = previous ? Promise.all([previous, descripter.value]) : descripter.value;
                 } else {
                     console.error('xnode extend: The type of "promise" is invalid.');
                 }
             } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
                 if (isFunction(descripter.value)) {
-                    const previous = this._.defines[key];
-                    this._.defines[key] = previous ? (...args) => { previous(...args); descripter.value(...args); } : descripter.value;
+                    const previous = this._.props[key];
+                    this._.props[key] = previous ? (...args) => { previous(...args); descripter.value(...args); } : descripter.value;
                 } else {
                     console.error(`xnode extend: The type of "${key}" is invalid.`);
                 }
             } else {
-                if (this._.defines[key] !== undefined || this[key] === undefined) {
+                if (this._.props[key] !== undefined || this[key] === undefined) {
                     const dest = { configurable: true, enumerable: true };
 
                     if (isFunction(descripter.value)) {
@@ -193,7 +197,7 @@ export class XNode {
                         dest.set = (...args) => XNode.wrap(this, descripter.set, ...args);
                     }
 
-                    Object.defineProperty(this._.defines, key, dest);
+                    Object.defineProperty(this._.props, key, dest);
                     Object.defineProperty(this, key, dest);
                 } else {
                     console.error(`xnode extend: "${key}" already exists, can not be redefined.`);
@@ -201,7 +205,7 @@ export class XNode {
             }
         });
 
-        const { promise, start, update, stop, finalize, ...others } = defines;
+        const { promise, start, update, stop, finalize, ...others } = props;
         return others;
     }
 
@@ -229,39 +233,39 @@ export class XNode {
         this._stop();
     }
 
-    _start() {
-        if (['pending', 'stopped'].includes(this._.state)) {
-            if ((this._.parent === null || this._.parent.state === 'running') && this._.resolve === true && this._.tostart === true) {
-                this._.startTime = XNode.updateTime;
+    _start(time) {
+        if (['pending', 'stopped'].includes(this._.state) && this._.resolve === true && this._.tostart === true) {
+            if (this._.parent === null || ['running'].includes(this._.parent.state)) {
+                this._.startTime = time;
                 this._.state = 'running';
-                this._.children.forEach((node) => node._start());
+                this._.children.forEach((node) => node._start(time));
             
-                if (this._.state === 'running' && isFunction(this._.defines.start)) {
-                    XNode.wrap(this, this._.defines.start);
+                if (this._.state === 'running' && isFunction(this._.props.start)) {
+                    XNode.wrap(this, this._.props.start);
                 }
             }
         }
     }
 
     _stop() {
-        if (['running'].includes(this._.state)) {
+        if (['running'].includes(this._.state) && this._.resolve === true && this._.tostart === false) {
             this._.state = 'stopped';
             this._.children.forEach((node) => node._stop());
 
-            if (this._.state === 'stopped' && isFunction(this._.defines.stop)) {
-                XNode.wrap(this, this._.defines.stop);
+            if (this._.state === 'stopped' && isFunction(this._.props.stop)) {
+                XNode.wrap(this, this._.props.stop);
             }
         }
     }
 
-    _update() {
+    _update(time) {
         if (['pending', 'running', 'stopped'].includes(this._.state)) {
-            if (this._.tostart === true) this._start();
+            if (this._.tostart === true) this._start(time);
 
-            this._.children.forEach((node) => node._update());
+            this._.children.forEach((node) => node._update(time));
 
-            if (this._.state === 'running' && isFunction(this._.defines.update) === true) {
-                XNode.wrap(this, this._.defines.update, XNode.updateTime - this._.startTime);
+            if (this._.state === 'running' && isFunction(this._.props.update) === true) {
+                XNode.wrap(this, this._.props.update, time - this._.startTime);
             }
         }
     }
@@ -270,6 +274,7 @@ export class XNode {
         this._stop();
 
         if (['pending', 'stopped'].includes(this._.state)) {
+            this._.state = 'pre finalized';
             this._finalize();
             
             // relation
@@ -282,8 +287,8 @@ export class XNode {
     _finalize() {
         [...this._.children].forEach((node) => node.finalize());
             
-        if (isFunction(this._.defines.finalize)) {
-            XNode.wrap(this, this._.defines.finalize);
+        if (isFunction(this._.props.finalize)) {
+            XNode.wrap(this, this._.props.finalize);
         }
 
         // key
@@ -293,11 +298,11 @@ export class XNode {
         this.off();
         
         // reset define
-        Object.keys(this._.defines).forEach((key) => {
+        Object.keys(this._.props).forEach((key) => {
             if (['promise', 'start', 'update', 'stop', 'finalize'].includes(key)) {
-                delete this._.defines[key];
+                delete this._.props[key];
             } else {
-                delete this._.defines[key];
+                delete this._.props[key];
                 delete this[key];
             }
         });
@@ -459,12 +464,4 @@ export class XNode {
     }
 }
 
-(() => {
-    requestAnimationFrame(ticker);
-
-    function ticker() {
-        XNode.updateTime = Date.now();
-        XNode.roots.forEach((xnode) => xnode._update());
-        requestAnimationFrame(ticker);
-    }
-})();
+XNode.animate();
