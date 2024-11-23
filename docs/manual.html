@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.2.12/marked.min.js"></script>
+    <script src="script.js"></script>
+    <link href="style.css" rel="stylesheet">
+</head>
+<body class="max-w-[1200px] h-full mx-auto">
+    <div class="markdown max-w-[1200px] mx-auto"></div>
+
+    <script>
+        loadMarkdown(document.querySelector('.markdown'), 'manual.md');
+    </script>
+</body>
+</html>

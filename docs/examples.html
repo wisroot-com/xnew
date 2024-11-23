@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.2.12/marked.min.js"></script>
+    <link href="style.css" rel="stylesheet">
+</head>
+<body class="max-w-[1200px] h-full mx-auto">
+    <h1>examples</h1>
+    <div class="max-w-[900px] mx-auto p-2 flex flex-row flex-wrap gap-x-2 text-purple-600">
+        <a href="#element" class="hover:opacity-70 cursor-pointer">element</a>
+        <a href="#screen" class="hover:opacity-70 cursor-pointer">screen</a>
+        <a href="#pixi" class="hover:opacity-70 cursor-pointer">with pixi</a>
+        <a href="#three" class="hover:opacity-70 cursor-pointer">with three</a>
+        <a href="#pixi-three" class="hover:opacity-70 cursor-pointer">with pixi+three</a>
+        <a href="#matter" class="hover:opacity-70 cursor-pointer">with matter</a>
+        <a href="#timer" class="hover:opacity-70 cursor-pointer">timer</a>
+        <a href="#dragevent" class="hover:opacity-70 cursor-pointer">drag eventr</a>
+        <a href="#controller" class="hover:opacity-70 cursor-pointer">controller</a>
+        <a href="#drawing" class="hover:opacity-70 cursor-pointer">drawing</a>
+        <a href="#scene" class="hover:opacity-70 cursor-pointer">scene change</a>
+    </div>
+    <div class="flex flex-col max-w-[900px] h-[500px] mx-auto">
+        <div class="flex-auto h-full border border-gray-300 rounded-lg">
+            <iframe id="iframe" class="w-full h-full"></iframe>
+        </div>
+    </div>
+    <div class="mb-8 markdown">
+        <pre id="code"></pre>
+    </div>
+
+    <script>
+        function update() {
+            const i = window.location.href.indexOf('#');
+            const anchor = i > 0 ? decodeURIComponent(window.location.href.substring(i + 1)) : '';
+
+            const name = anchor ? anchor : 'element';
+            const path = 'examples/' + name + '.html';
+
+            document.querySelector('#iframe').setAttribute('src', path);
+            fetch(path).then((response) => response.text()).then((data) => {
+                data = data.replace('../thirdparty/matter.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js');
+                data = data.replace('../thirdparty/three.min.js', 'https://unpkg.com/three@0.142.x/build/three.min.js');
+                data = data.replace('../thirdparty/pixi.min.js', 'https://pixijs.download/v7.0.5/pixi.min.js');
+                data = data.replace('../xnew.js', 'https://unpkg.com/xnew@1.x/dist/xnew.js');
+
+                const code = document.querySelector('#code');
+                code.textContent = data;
+                code.className = 'prettyprint lang-html';
+                PR.prettyPrint();
+            });
+        }
+        window.addEventListener('hashchange', (event) => {
+            update();
+        });
+        update();
+    </script>
+</body>
+</html>

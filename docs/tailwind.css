@@ -2,12 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-.section {
-    @apply mb-32 ;
-}
-.section a {
-    @apply text-purple-500;
-}
 h1, h2, h3 {
     @apply mt-8 my-4 font-semibold leading-tight;
 }
@@ -23,18 +17,12 @@ h3 {
 p {
     @apply m-2 leading-7;
 }
-
-a:hover, .clickable {
-    @apply opacity-70 cursor-pointer;
-}
 li {
     @apply my-2 leading-7;
 }
-
 pre, img, hr {
     @apply my-6;
 }
-
 ul, ol {
     @apply ml-6;
 }
@@ -44,19 +32,17 @@ ul > li {
 ol > li {
     @apply list-decimal;
 }
-
+.markdown a {
+    @apply text-purple-600;
+}
 img {
     @apply block mx-auto max-w-[90%];
 }
-
 code {
-    @apply px-2 bg-gray-200 rounded;
+    @apply px-0 bg-gray-200 bg-opacity-0;;
 }
 pre {
-    @apply mx-1 p-6 bg-gray-200 rounded border-opacity-50 overflow-auto;
-}
-pre > code {
-    @apply px-0 bg-opacity-0;
+    @apply p-1 bg-gray-200 rounded border-opacity-50 overflow-auto;
 }
 pre.prettyprint {
     border: none;
