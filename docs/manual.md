@@ -13,8 +13,8 @@ function xnew (parent, element, Component, ...args);
     In that case they will be set automatically.
     ```
     xnew(Component, ...args);           // parent and element are omitted
-    xnew(parent, Component, ...args);   // element are omitted
-    xnew(element, Component, ...args);  // parent are omitted
+    xnew(parent, Component, ...args);   // element is omitted
+    xnew(element, Component, ...args);  // parent is omitted
     ```
 
 - `parent`: object (a xnode) or null  

@@ -28,6 +28,7 @@
         xnew(document.querySelector('#main'), (xnode) => {
             const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
         
+            // setting for three.js
             const three = {};
             three.renderer = new THREE.WebGLRenderer({ canvas: screen.canvas });
             three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);

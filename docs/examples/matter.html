@@ -35,13 +35,15 @@
             Matter.Runner.run(matter.runner, matter.engine);
             matter.render = Matter.Render.create({ canvas: screen.canvas, engine: matter.engine, options: { width: screen.width, height: screen.height } });
             Matter.Render.run(matter.render);
-
-            xnew(MatterObject, Matter.MouseConstraint.create(matter.engine, { element: screen.canvas }));
-            xnew(Content, matter);
+            
+            xnew(Content, matter, screen.canvas);
         });
         
-        function Content(xnode, matter) {
+        function Content(xnode, matter, canvas) {
             xnode.extend(MatterObject, matter.engine.world);
+
+            xnew(MatterObject, Matter.MouseConstraint.create(matter.engine, { element: canvas }));
+
             xnew(Rectangle, 400, 200, 80, 80);
             xnew(Polygon, 450, 50, 6, 40);
             xnew(Circle, 350, 50, 40);
@@ -66,16 +68,12 @@
         //----------------------------------------------------------------------
 
         function MatterObject(xnode, object) {
-            const composite = xnode.context('Matter.Composite', object);
+            const parent = xnode.context('Matter.Composite', object);
                 
-            if (composite) {
-                Matter.Composite.add(composite, object);
-            }
+            parent && Matter.Composite.add(parent, object);
             return {
                 finalize() {
-                    if (composite) {
-                        Matter.Composite.remove(composite, object);
-                    }
+                    parent && Matter.Composite.remove(parent, object);
                 },
             }
         }
