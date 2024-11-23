@@ -41,7 +41,6 @@ function update() {
     }
 
     function convert(markdown, data) {
-        console.log(markdown, data);
         markdown.innerHTML = marked.parse(data);
         updatePretty(markdown, 'prettyprint lang-javascript')
     }
