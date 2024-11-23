@@ -1,4 +1,4 @@
-import { isString, isNumber, isObject, isFunction, isKeyName, isEventType } from './common';
+import { isString, isNumber, isObject, isFunction } from './common';
 
 export class XNode {
 
