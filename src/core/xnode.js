@@ -4,12 +4,19 @@ export class XNode {
 
     static roots = new Set();
   
-    static animate() {
-        requestAnimationFrame(ticker);
+    static animation = null;
+
+    static initialize() {
+        XNode.roots.forEach((xnode) => xnode.finalize());
+
+        if (XNode.animation) {
+            cancelAnimationFrame(XNode.animation);
+        }
+        XNode.animation = requestAnimationFrame(ticker);
         function ticker() {
             const time = Date.now();
             XNode.roots.forEach((xnode) => xnode._update(time));
-            requestAnimationFrame(ticker);
+            XNode.animation = requestAnimationFrame(ticker);
         }
     }
 
@@ -27,63 +34,45 @@ export class XNode {
         }
     }
 
-    constructor(parent, element, ...content) {
-        // internal data
-        this._ = {};
+    constructor(parent, element, ...args) {
+        parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
+        (parent?._.children ?? XNode.roots).add(this);
 
-        this._.parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
-        this._.element = element;
-        this._.content = content;
+        const root = parent !== null ? parent.root : this;
+        const base = element instanceof Element ? element : (parent ? parent._.nest : document.body);
 
-        // relation
-        (this._.parent?._.children ?? XNode.roots).add(this);
-        this._.children = new Set();
+        this._ = {
+            root,                           // root xnode
+            base,                           // base element
+            nest: base,                     // nest element
+            parent,                         // parent xnode
+            children: new Set(),            // xhildren xnodes
+            state: 'pending',               // [pending -> running <-> stopped -> finalized]
+            props: {},                      // properties in the component function
+            components: new Set(),          // conponent functions
+            listeners: new Map(),           // event listners
+            keys: new Set(),                // keys
+            shared: parent?._.shared ?? {}, // shared data between nodes connected
+        };
 
-        this._.root = this._.parent !== null ? this._.parent.root : this;
-
-        // state [pending -> running <-> stopped -> finalized]
-        this._.state = 'pending';  
-
-        // properties in the component function
-        this._.props = {};
-
-        // conponent functions
-        this._.ComponentSet = new Set();
-
-        // event listners
-        this._.listeners = new Map();
-
-        // keys
-        this._.keySet = new Set();
-
-        // base ellement (fixed)
-        this._.base = (this._.element instanceof Element) ? this._.element : (this._.parent ? this._.parent._.nest : document.body);
-
-        // shared data between nodes connected by parent-child relationship
-        this._.shared = this._.parent?._.shared ?? {};
-
-        if (this._.parent === null || ['pending', 'running', 'stopped'].includes(this._.parent._.state)) {
-            this._initialize();
+        if (parent === null || ['pending', 'running', 'stopped'].includes(parent._.state)) {
+            this._initialize(element, args);
         } else {
             this._.state = 'finalized';
         }
     }
 
-    _initialize() {
-        this._.nest = this._.base;
-
-        if (isString(this._.content[0]) || isObject(this._.element)) {
-            this.nest(isObject(this._.element) ? this._.element : {})
+    _initialize(element, args) {
+        if (isObject(element) || isString(args[0])) {
+            this.nest(isObject(element) ? element : {})
         }
 
-        // auto start
-        this.start();
+        this.start(); // auto start
 
-        // content
-        if (isFunction(this._.content[0])) {
-            this._extend(...this._.content);
-        } else if (isString(this._.content[0])) {
-            this._.nest.innerHTML = this._.content[0];
+        if (isFunction(args[0])) {
+            this._extend(...args);
+        } else if (isString(args[0])) {
+            this._.nest.innerHTML = args[0];
         }
 
         // whether the node promise was resolved
@@ -104,7 +93,7 @@ export class XNode {
             this.off();
 
             const element = attributes.tag === 'svg' ? 
-                document.createElementNS('http://www.w3.org/2000/svg', attributes.tag) : 
+                document.createElementNS('http://www.w3.org/2000/svg', 'svg') : 
                 document.createElement(attributes.tag ?? 'div');
         
             Object.keys(attributes).forEach((key) => {
@@ -209,8 +198,8 @@ export class XNode {
             console.error('xnode extend: The arguments are invalid.');
         } else if (this._.state !== 'pending') {
             console.error('xnode extend: This can not be called after initialized.');
-        } else if (this._.ComponentSet.has(Component) === false) {
-            this._.ComponentSet .add(Component);
+        } else if (this._.components.has(Component) === false) {
+            this._.components .add(Component);
             return this._extend(Component, ...args);
         }
     }
@@ -243,7 +232,7 @@ export class XNode {
     }
 
     _stop() {
-        if (['running'].includes(this._.state) && this._.resolve === true && this._.tostart === false) {
+        if (['running'].includes(this._.state)) {
             this._.state = 'stopped';
             this._.children.forEach((node) => node._stop());
 
@@ -269,7 +258,6 @@ export class XNode {
         this._stop();
 
         if (['pending', 'stopped'].includes(this._.state)) {
-            this._.state = 'pre finalized';
             this._finalize();
             
             // relation
@@ -286,13 +274,10 @@ export class XNode {
             XNode.wrap(this, this._.props.finalize);
         }
 
-        // key
         this.key = '';
-
-        // event
         this.off();
         
-        // reset define
+        // reset props
         Object.keys(this._.props).forEach((key) => {
             if (['promise', 'start', 'update', 'stop', 'finalize'].includes(key)) {
                 delete this._.props[key];
@@ -302,8 +287,8 @@ export class XNode {
             }
         });
 
-        // element
-        if (this._.nest !== null && this._.nest !== this._.base) {
+        // delete nest element
+        if (this._.nest !== this._.base) {
             let target = this._.nest;
             while (target.parentElement !== null && target.parentElement !== this._.base) { target = target.parentElement; }
             if (target.parentElement === this._.base) {
@@ -313,7 +298,7 @@ export class XNode {
     }
 
     //----------------------------------------------------------------------------------------------------
-    // context property
+    // context value
     //----------------------------------------------------------------------------------------------------        
 
     context(name, value = undefined) {
@@ -347,24 +332,24 @@ export class XNode {
             console.error('xnode key: The arguments are invalid.');
         } else {
             // clear all
-            this._.keySet.forEach((key) => {
+            this._.keys.forEach((key) => {
                 if (XNode.keyMap.has(key) === false) return;
                 XNode.keyMap.get(key).delete(this);
                 if (XNode.keyMap.get(key).size === 0) XNode.keyMap.delete(key);
-                this._.keySet.delete(key);
+                this._.keys.delete(key);
             });
 
             // set keys
             key.split(' ').filter((key) => key !== '').forEach((key) => {
                 if (XNode.keyMap.has(key) === false) XNode.keyMap.set(key, new Set());
                 XNode.keyMap.get(key).add(this);
-                this._.keySet.add(key);
+                this._.keys.add(key);
             });
         }
     }
 
     get key() {
-        return [...this._.keySet].join(' ');
+        return [...this._.keys].join(' ');
     }
     
     //----------------------------------------------------------------------------------------------------
@@ -459,4 +444,4 @@ export class XNode {
     }
 }
 
-XNode.animate();
+XNode.initialize();

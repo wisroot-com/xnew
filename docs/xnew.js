@@ -24,99 +24,81 @@
 
         static roots = new Set();
       
-        static updateTime = null;
+        static animation = null;
 
-        static animate() {
-            requestAnimationFrame(ticker);
+        static initialize() {
+            XNode.roots.forEach((xnode) => xnode.finalize());
 
+            if (XNode.animation) {
+                cancelAnimationFrame(XNode.animation);
+            }
+            XNode.animation = requestAnimationFrame(ticker);
             function ticker() {
-                XNode.updateTime = Date.now();
-                XNode.roots.forEach((xnode) => xnode._update());
-                requestAnimationFrame(ticker);
+                const time = Date.now();
+                XNode.roots.forEach((xnode) => xnode._update(time));
+                XNode.animation = requestAnimationFrame(ticker);
             }
         }
 
         static current = null;
 
         static wrap(node, func, ...args) {
-            if (node === XNode.current) {
+            const backup = XNode.current;
+            try {
+                XNode.current = node;
                 return func(...args);
-            } else {
-                const backup = XNode.current;
-                try {
-                    XNode.current = node;
-                    return func(...args);
-                } catch (error) {
-                    throw error;
-                } finally {
-                    XNode.current = backup;
-                }
+            } catch (error) {
+                throw error;
+            } finally {
+                XNode.current = backup;
             }
         }
 
-        constructor(parent, element, ...content) {
-            // internal data
-            this._ = {};
+        constructor(parent, element, ...args) {
+            parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
+            (parent?._.children ?? XNode.roots).add(this);
 
-            this._.parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
-            this._.element = element;
-            this._.content = content;
+            const root = parent !== null ? parent.root : this;
+            const base = element instanceof Element ? element : (parent ? parent._.nest : document.body);
 
-            // relation
-            (this._.parent?._.children ?? XNode.roots).add(this);
-            this._.children = new Set();
+            this._ = {
+                root,                           // root xnode
+                base,                           // base element
+                nest: base,                     // nest element
+                parent,                         // parent xnode
+                children: new Set(),            // xhildren xnodes
+                state: 'pending',               // [pending -> running <-> stopped -> finalized]
+                props: {},                      // properties in the component function
+                components: new Set(),          // conponent functions
+                listeners: new Map(),           // event listners
+                keys: new Set(),                // keys
+                shared: parent?._.shared ?? {}, // shared data between nodes connected
+            };
 
-            this._.root = this._.parent !== null ? this._.parent.root : this;
-
-            // state [pending -> running <-> stopped -> finalized]
-            this._.state = 'pending';  
-
-            // properties defined in the component function
-            this._.defines = {};
-
-            // conponent functions
-            this._.ComponentSet = new Set();
-
-            // event listners
-            this._.listeners = new Map();
-
-            // keys
-            this._.keySet = new Set();
-
-            // base ellement (fixed)
-            this._.base = (this._.element instanceof Element) ? this._.element : (this._.parent ? this._.parent._.nest : document.body);
-
-            // shared data between nodes connected by parent-child relationship
-            this._.shared = this._.parent?._.shared ?? {};
-
-            if (this._.parent === null || ['pending', 'running', 'stopped'].includes(this._.parent._.state)) {
-                this._initialize();
+            if (parent === null || ['pending', 'running', 'stopped'].includes(parent._.state)) {
+                this._initialize(element, args);
             } else {
                 this._.state = 'finalized';
             }
         }
 
-        _initialize() {
-            this._.nest = this._.base;
-
-            if (isString(this._.content[0]) || isObject(this._.element)) {
-                this.nest(isObject(this._.element) ? this._.element : {});
+        _initialize(element, args) {
+            if (isObject(element) || isString(args[0])) {
+                this.nest(isObject(element) ? element : {});
             }
 
-            // auto start
-            this.start();
+            this.start(); // auto start
 
-            // content
-            if (isFunction(this._.content[0])) {
-                this._extend(...this._.content);
-            } else if (isString(this._.content[0])) {
-                this._.nest.innerHTML = this._.content[0];
+            if (isFunction(args[0])) {
+                this._extend(...args);
+            } else if (isString(args[0])) {
+                this._.nest.innerHTML = args[0];
             }
 
             // whether the node promise was resolved
-            if (this._.defines.promise) {
+            if (this._.props.promise) {
                 this._.resolve = false;
-                this._.defines.promise?.then((response) => { this._.resolve = true; return response; });
+                this._.props.promise?.then((response) => { this._.resolve = true; return response; });
             } else {
                 this._.resolve = true;
             }
@@ -131,7 +113,7 @@
                 this.off();
 
                 const element = attributes.tag === 'svg' ? 
-                    document.createElementNS('http://www.w3.org/2000/svg', attributes.tag) : 
+                    document.createElementNS('http://www.w3.org/2000/svg', 'svg') : 
                     document.createElement(attributes.tag ?? 'div');
             
                 Object.keys(attributes).forEach((key) => {
@@ -166,19 +148,15 @@
         get parent() {
             return this._.parent;
         }
-
         get element() {
             return this._.nest;
         }
-
         get shared() {
             return this._.shared;
         }
-
         get promise() {
-            return this._.defines.promise ?? Promise.resolve();
+            return this._.props.promise ?? Promise.resolve();
         }
-
         get state() {
             return this._.state
         }
@@ -188,27 +166,27 @@
         //----------------------------------------------------------------------------------------------------
      
         _extend(Component, ...args) {
-            const defines = XNode.wrap(this, Component, this, ...args) ?? {};
+            const props = XNode.wrap(this, Component, this, ...args) ?? {};
             
-            Object.keys(defines).forEach((key) => {
-                const descripter = Object.getOwnPropertyDescriptor(defines, key);
+            Object.keys(props).forEach((key) => {
+                const descripter = Object.getOwnPropertyDescriptor(props, key);
 
                 if (key === 'promise') {
                     if (descripter.value instanceof Promise) {
-                        const previous = this._.defines[key];
-                        this._.defines[key] = previous ? Promise.all([previous, descripter.value]) : descripter.value;
+                        const previous = this._.props[key];
+                        this._.props[key] = previous ? Promise.all([previous, descripter.value]) : descripter.value;
                     } else {
                         console.error('xnode extend: The type of "promise" is invalid.');
                     }
                 } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
                     if (isFunction(descripter.value)) {
-                        const previous = this._.defines[key];
-                        this._.defines[key] = previous ? (...args) => { previous(...args); descripter.value(...args); } : descripter.value;
+                        const previous = this._.props[key];
+                        this._.props[key] = previous ? (...args) => { previous(...args); descripter.value(...args); } : descripter.value;
                     } else {
                         console.error(`xnode extend: The type of "${key}" is invalid.`);
                     }
                 } else {
-                    if (this._.defines[key] !== undefined || this[key] === undefined) {
+                    if (this._.props[key] !== undefined || this[key] === undefined) {
                         const dest = { configurable: true, enumerable: true };
 
                         if (isFunction(descripter.value)) {
@@ -223,7 +201,7 @@
                             dest.set = (...args) => XNode.wrap(this, descripter.set, ...args);
                         }
 
-                        Object.defineProperty(this._.defines, key, dest);
+                        Object.defineProperty(this._.props, key, dest);
                         Object.defineProperty(this, key, dest);
                     } else {
                         console.error(`xnode extend: "${key}" already exists, can not be redefined.`);
@@ -231,7 +209,7 @@
                 }
             });
 
-            const { promise, start, update, stop, finalize, ...others } = defines;
+            const { promise, start, update, stop, finalize, ...others } = props;
             return others;
         }
 
@@ -240,8 +218,8 @@
                 console.error('xnode extend: The arguments are invalid.');
             } else if (this._.state !== 'pending') {
                 console.error('xnode extend: This can not be called after initialized.');
-            } else if (this._.ComponentSet.has(Component) === false) {
-                this._.ComponentSet .add(Component);
+            } else if (this._.components.has(Component) === false) {
+                this._.components .add(Component);
                 return this._extend(Component, ...args);
             }
         }
@@ -259,15 +237,15 @@
             this._stop();
         }
 
-        _start() {
-            if (['pending', 'stopped'].includes(this._.state)) {
-                if ((this._.parent === null || this._.parent.state === 'running') && this._.resolve === true && this._.tostart === true) {
-                    this._.startTime = XNode.updateTime;
+        _start(time) {
+            if (['pending', 'stopped'].includes(this._.state) && this._.resolve === true && this._.tostart === true) {
+                if (this._.parent === null || ['running'].includes(this._.parent.state)) {
+                    this._.startTime = time;
                     this._.state = 'running';
-                    this._.children.forEach((node) => node._start());
+                    this._.children.forEach((node) => node._start(time));
                 
-                    if (this._.state === 'running' && isFunction(this._.defines.start)) {
-                        XNode.wrap(this, this._.defines.start);
+                    if (this._.state === 'running' && isFunction(this._.props.start)) {
+                        XNode.wrap(this, this._.props.start);
                     }
                 }
             }
@@ -278,20 +256,20 @@
                 this._.state = 'stopped';
                 this._.children.forEach((node) => node._stop());
 
-                if (this._.state === 'stopped' && isFunction(this._.defines.stop)) {
-                    XNode.wrap(this, this._.defines.stop);
+                if (this._.state === 'stopped' && isFunction(this._.props.stop)) {
+                    XNode.wrap(this, this._.props.stop);
                 }
             }
         }
 
-        _update() {
+        _update(time) {
             if (['pending', 'running', 'stopped'].includes(this._.state)) {
-                if (this._.tostart === true) this._start();
+                if (this._.tostart === true) this._start(time);
 
-                this._.children.forEach((node) => node._update());
+                this._.children.forEach((node) => node._update(time));
 
-                if (this._.state === 'running' && isFunction(this._.defines.update) === true) {
-                    XNode.wrap(this, this._.defines.update, XNode.updateTime - this._.startTime);
+                if (this._.state === 'running' && isFunction(this._.props.update) === true) {
+                    XNode.wrap(this, this._.props.update, time - this._.startTime);
                 }
             }
         }
@@ -300,7 +278,6 @@
             this._stop();
 
             if (['pending', 'stopped'].includes(this._.state)) {
-                this._.state = 'pre finalized';
                 this._finalize();
                 
                 // relation
@@ -313,28 +290,25 @@
         _finalize() {
             [...this._.children].forEach((node) => node.finalize());
                 
-            if (isFunction(this._.defines.finalize)) {
-                XNode.wrap(this, this._.defines.finalize);
+            if (isFunction(this._.props.finalize)) {
+                XNode.wrap(this, this._.props.finalize);
             }
 
-            // key
             this.key = '';
-
-            // event
             this.off();
             
-            // reset define
-            Object.keys(this._.defines).forEach((key) => {
+            // reset props
+            Object.keys(this._.props).forEach((key) => {
                 if (['promise', 'start', 'update', 'stop', 'finalize'].includes(key)) {
-                    delete this._.defines[key];
+                    delete this._.props[key];
                 } else {
-                    delete this._.defines[key];
+                    delete this._.props[key];
                     delete this[key];
                 }
             });
 
-            // element
-            if (this._.nest !== null && this._.nest !== this._.base) {
+            // delete nest element
+            if (this._.nest !== this._.base) {
                 let target = this._.nest;
                 while (target.parentElement !== null && target.parentElement !== this._.base) { target = target.parentElement; }
                 if (target.parentElement === this._.base) {
@@ -344,7 +318,7 @@
         }
 
         //----------------------------------------------------------------------------------------------------
-        // context property
+        // context value
         //----------------------------------------------------------------------------------------------------        
 
         context(name, value = undefined) {
@@ -378,24 +352,24 @@
                 console.error('xnode key: The arguments are invalid.');
             } else {
                 // clear all
-                this._.keySet.forEach((key) => {
+                this._.keys.forEach((key) => {
                     if (XNode.keyMap.has(key) === false) return;
                     XNode.keyMap.get(key).delete(this);
                     if (XNode.keyMap.get(key).size === 0) XNode.keyMap.delete(key);
-                    this._.keySet.delete(key);
+                    this._.keys.delete(key);
                 });
 
                 // set keys
                 key.split(' ').filter((key) => key !== '').forEach((key) => {
                     if (XNode.keyMap.has(key) === false) XNode.keyMap.set(key, new Set());
                     XNode.keyMap.get(key).add(this);
-                    this._.keySet.add(key);
+                    this._.keys.add(key);
                 });
             }
         }
 
         get key() {
-            return [...this._.keySet].join(' ');
+            return [...this._.keys].join(' ');
         }
         
         //----------------------------------------------------------------------------------------------------
@@ -490,7 +464,7 @@
         }
     }
 
-    XNode.animate();
+    XNode.initialize();
 
     function xnew(...args) {
 

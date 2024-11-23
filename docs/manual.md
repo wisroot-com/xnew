@@ -10,79 +10,78 @@ function xnew (parent, element, Component, ...args);
 ```
 
 - `parent` and `element` are often omitted.  
-    In that case they will be set automatically.
-    ```
-    xnew(Component, ...args);           // parent and element are omitted
-    xnew(parent, Component, ...args);   // element is omitted
-    xnew(element, Component, ...args);  // parent is omitted
-    ```
+In that case they will be set automatically.
 
-- `parent`: object (a xnode) or null  
-    This is set as the parent xnode of the new xnode. (accessed by `xnode.parent`)  
-    If you omit this `parent` parameter, the nesting higher xnode or otherwise `null` is assigned.   
-    ```
-    xnew((xnode1) => {
-        // xnode1.parent: null 
-        // This means that xnode1 is a root xnode
+```
+xnew(Component, ...args);           // parent and element are omitted
+xnew(parent, Component, ...args);   // element is omitted
+xnew(element, Component, ...args);  // parent is omitted
+```
 
-        const xnode2 = xnew((xnode2) => {
-            // xnode2.parent: xnode1
-        });
+- `parent`: object (`xnode`) or null  
+This is set as the parent xnode of the new xnode. (accessed by `xnode.parent`)  
+If you omit this `parent` parameter, the nesting higher xnode or otherwise `null` is assigned.   
+    
+```
+xnew((xnode1) => {
+    // xnode1.parent: null 
+    // This means that xnode1 is a root xnode
 
-        xnew(xnode2, (xnode3) => {
-            // xnode3.parent: xnode2
-        });
-    })
-    ```
+    const xnode2 = xnew((xnode2) => {
+        // xnode2.parent: xnode1
+    });
+
+    xnew(xnode2, (xnode3) => {
+        // xnode3.parent: xnode2
+    });
+})
+```
 
 - `element`: object (an existing html element or attributes to create a html element)  
-    This is set for the html element of the new xnode. (accessed by `xnode.element`)  
-    e.g. `xnew(document.querySelector('#hoge'), Component)`  
-    e.g. `xnew({ tag: 'div', style: '', ... }, Component)` (a new element is created)  
-    If you omit this `element` parameter, the parent xnode's element or otherwise `document.body` is assigned. 
-    ```
-    <body>
-        <div id="hoge"></div>;
+This is set for the html element of the new xnode. (accessed by `xnode.element`)  
+e.g. `xnew(document.querySelector('#hoge'), Component)`  
+e.g. `xnew({ tag: 'div', style: '', ... }, Component)` (a new element is created)  
+If you omit this `element` parameter, the parent xnode's element or otherwise `document.body` is assigned. 
+    
+```
+<body>
+    <div id="hoge"></div>;
 
-        <script>
-            xnew((xnode1) => {
-                // xnode1.element: document.body
+    <script>
+        xnew((xnode1) => {
+            // xnode1.element: document.body
+        });
+
+        xnew(document.querySelector('#hoge'), (xnode2) => {
+            // xnode2.element: (id=hoge)
+
+            xnew((xnode3) => {
+                // xnode3.element: (id=hoge)
             });
 
-            xnew(document.querySelector('#hoge'), (xnode2) => {
-                // xnode2.element: (id=hoge)
-
-                xnew((xnode3) => {
-                    // xnode3.element: (id=hoge)
-                });
-
-                xnew({ tag: 'div', id: 'fuga' }, (xnode4) => {
-                    // xnode4.element: (id=fuga) (as a child element of hoge)
-                });
+            xnew({ tag: 'div', id: 'fuga' }, (xnode4) => {
+                // xnode4.element: (id=fuga) (as a child element of hoge)
             });
-        </script>;
-    </body;
-    ```
-    You can set any attributes parameter like below.  
-    `e.g. { tag: 'div', type: 'aaa', class: 'bbb', style: 'color: #000;' }`  
-    If you omit tag property, `tag: 'div'` will be set automatically.  
-- `Component`: function  
-    Inside this function, the new xnode features are implemented.  
+        });
+    </script>;
+</body;
+```
+You can set any attributes parameter like below.  
+`e.g. { tag: 'div', type: 'aaa', class: 'bbb', style: 'color: #000;' }`  
+If you omit tag property, `tag: 'div'` will be set automatically.  
 
+- `Component`: function or string  
 - `...args`: arguments for Component function
-<br>
+Inside this function, the new xnode features are implemented.  
+if you set string as Component, html element will be added.
 
-You can also use the following format as a supplementary usage.
 ```
-function xnew (parent, element, innerHTML);
-```
-- `innerHTML`: string
-    ```
-    const xnode = xnew({ tag: 'div', id: 'hoge' }, '<p>text</p>');
+const xnode = xnew({ tag: 'div', id: 'hoge' }, '<p>text</p>');
 
-    // xnode.element: (id=hoge)
-    // xnode.element.innerHTML: <p>text</p>
-    ```
+// xnode.element: (id=hoge)
+// xnode.element.innerHTML: <p>text</p>
+```
+
         
 ## Element
 There are various ways to create elements. Here are some patterns.
