@@ -25,13 +25,13 @@
 
             let counter = 0;
             return {
-                start: () => {
+                start() {
                     text.element.textContent = 'parent: start';
                 },
-                update: () => {
+                update() {
                     xnode.element.style.transform = `rotate(${counter++}deg)`;
                 },
-                stop: () => {
+                stop() {
                     text.element.textContent = 'parent: stop';
                 },
             };
@@ -48,13 +48,13 @@
 
             let counter = 0;
             return {
-                start: () => {
+                start() {
                     text.element.textContent = 'child: start';
                 },
-                update: () => {
+                update() {
                     xnode.element.style.transform = `rotate(${counter++}deg)`;
                 },
-                stop: () => {
+                stop() {
                     text.element.textContent = 'child: stop';
                 },
             };

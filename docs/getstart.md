@@ -38,7 +38,7 @@ const xnode = xnew((xnode) => {
 ## Basic example
 Inside the component function, you can implement various process. 
 
-<iframe src="./examples/basic.html" style="width: 400px; height: 300px; border: solid 1px #AAA; margin: auto;"></iframe>
+<iframe src="./examples/box.html" style="width: 400px; height: 300px; border: solid 1px #AAA; margin: auto;"></iframe>
 
 ```
 <!DOCTYPE html>
@@ -60,13 +60,13 @@ Inside the component function, you can implement various process.
 
             let counter = 0;
             return {
-                start: () => {
+                start() {
                     text.element.textContent = 'start';
                 },
-                update: () => {
+                update() {
                     xnode.element.style.transform = `rotate(${counter++}deg)`;
                 },
-                stop: () => {
+                stop() {
                     text.element.textContent = 'stop';
                 },
             };
@@ -78,7 +78,7 @@ Inside the component function, you can implement various process.
 ## Parent-Child relationship
 If you call `xnew` inside a component function, a parent-child relationship is connected.
 
-<iframe src="./examples/basic2.html" style="width: 400px; height: 300px; border: solid 1px #AAA; margin: auto;"></iframe>
+<iframe src="./examples/boxinbox.html" style="width: 400px; height: 300px; border: solid 1px #AAA; margin: auto;"></iframe>
 
 ```
 <!DOCTYPE html>
@@ -106,13 +106,13 @@ If you call `xnew` inside a component function, a parent-child relationship is c
 
             let counter = 0;
             return {
-                start: () => {
+                start() {
                     text.element.textContent = 'parent: start';
                 },
-                update: () => {
+                update() {
                     xnode.element.style.transform = `rotate(${counter++}deg)`;
                 },
-                stop: () => {
+                stop() {
                     text.element.textContent = 'parent: stop';
                 },
             };
@@ -129,13 +129,13 @@ If you call `xnew` inside a component function, a parent-child relationship is c
 
             let counter = 0;
             return {
-                start: () => {
+                start() {
                     text.element.textContent = 'child: start';
                 },
-                update: () => {
+                update() {
                     xnode.element.style.transform = `rotate(${counter++}deg)`;
                 },
-                stop: () => {
+                stop() {
                     text.element.textContent = 'child: stop';
                 },
             };
