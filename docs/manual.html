@@ -6,7 +6,6 @@
 
     <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.2.12/marked.min.js"></script>
-    <script src="script.js"></script>
     <link href="style.css" rel="stylesheet">
 </head>
 <body class="max-w-[1200px] h-full mx-auto">
@@ -14,6 +13,23 @@
 
     <script>
         loadMarkdown(document.querySelector('.markdown'), 'manual.md');
+        function loadMarkdown(element, path) {
+            fetch(path).then((response) => response.text()).then((data) => {
+                element.innerHTML = marked.parse(data);
+
+                element.querySelectorAll('pre').forEach((element) => {
+                    const text = element.textContent;
+                    let pretty = '';
+                    if (text.indexOf('DOCTYPE html') > 0) {
+                        pretty = 'lang-html';
+                    } else {
+                        pretty = 'lang-javascript';
+                    }
+                    element.className = 'prettyprint ' + pretty;
+                });
+                PR.prettyPrint();
+            });
+        }
     </script>
 </body>
 </html>

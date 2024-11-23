@@ -14,7 +14,7 @@ Suitable for creating apps and games with dynamic scenes.
 
 ### via npm
 ```
-npm install xnew
+npm install xnew@1.6.x
 ```
 ```
 import { xnew, xfind, xtimer, xcomponents } from 'xnew'
