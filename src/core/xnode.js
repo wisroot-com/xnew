@@ -6,7 +6,6 @@ export class XNode {
   
     static animate() {
         requestAnimationFrame(ticker);
-
         function ticker() {
             const time = Date.now();
             XNode.roots.forEach((xnode) => xnode._update(time));
@@ -17,18 +16,14 @@ export class XNode {
     static current = null;
 
     static wrap(node, func, ...args) {
-        if (node === XNode.current) {
+        const backup = XNode.current;
+        try {
+            XNode.current = node;
             return func(...args);
-        } else {
-            const backup = XNode.current;
-            try {
-                XNode.current = node;
-                return func(...args);
-            } catch (error) {
-                throw error;
-            } finally {
-                XNode.current = backup;
-            }
+        } catch (error) {
+            throw error;
+        } finally {
+            XNode.current = backup;
         }
     }
 
