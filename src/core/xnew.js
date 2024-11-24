@@ -11,7 +11,7 @@ export function xnew(...args) {
 
     // base element
     let element = undefined;
-    if (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) {
+    if (args[0] instanceof Element || args[0] === window || isObject(args[0]) || args[0] === null || args[0] === undefined) {
         element = args.shift();
     }
 

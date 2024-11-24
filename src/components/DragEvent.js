@@ -2,47 +2,37 @@ import { xnew } from '../core/xnew';
 
 export function DragEvent(xnode) {
     const base = xnew();
-
-    let id = null;
-    let current = null;
-    
-    base.on('pointerdown', down);
+    const xwin = xnew(window);
 
     // prevent touch default event
     base.on('touchstart', (event) => {
         event.preventDefault();
     });
 
-    function down(event) {
-        const position = getPosition(event, id = getId(event));
-        current = position;
+    base.on('pointerdown', (event) => {
+        const id = getId(event);
+        let position = getPosition(event, id);
+        let prev = position;
 
-        const type = 'down';
-        xnode.emit(type, event, { type, position, });
-        window.addEventListener('pointermove', move);
-        window.addEventListener('pointerup', up);
-    };
-    function move(event) {
-        const position = getPosition(event, id);
-        if (position === null) return;
+        xnode.emit('down', event, { type: 'down', position, });
 
-        const delta = { x: position.x - current.x, y: position.y - current.y };
-        current = position;
+        xwin.on('pointermove', (event) => {
+            position = getPosition(event, id);
+            if (position !== null) {
+                const delta = { x: position.x - prev.x, y: position.y - prev.y };
+                xnode.emit('move', event, { type: 'move', position, delta, });
+                prev = position;
+            }
+        });
 
-        const type = 'move';
-        xnode.emit(type, event, { type, position, delta, });
-    };
-    function up(event) {
-        const position = getPosition(event, id);
-        if (position === null) return;
-        
-        const type = 'up';
-        xnode.emit(type, event, { type, position, });
-        id = null;
-        current = null;
-        window.removeEventListener('pointermove', move);
-        window.removeEventListener('pointerup', up);
-    };
+        xwin.on('pointerup', (event) => {
+            position = getPosition(event, id);
+            if (position !== null) {
+                xnode.emit('up', event, { type: 'up', position, });
+                xwin.off();
+            }
+        });
+    });
 
     function getId(event) {
         if (event.pointerId !== undefined) {
@@ -53,6 +43,7 @@ export function DragEvent(xnode) {
             return null;
         }
     }
+
     function getPosition(event, id) {
         let original = null;
         if (event.pointerId !== undefined) {
@@ -74,14 +65,6 @@ export function DragEvent(xnode) {
             scaleX = xnode.element.width / rect.width;
             scaleY = xnode.element.height / rect.height;
         }
-
         return { x: scaleX * (original.clientX - rect.left), y: scaleY * (original.clientY - rect.top) };
-    }
-
-    return {
-        finalize() {
-            window.removeEventListener('pointermove', move);
-            window.removeEventListener('pointerup', up);
-        }
     }
 }
