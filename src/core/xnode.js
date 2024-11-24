@@ -39,7 +39,7 @@ export class XNode {
         (parent?._.children ?? XNode.roots).add(this);
 
         const root = parent !== null ? parent.root : this;
-        const base = element instanceof Element ? element : (parent ? parent._.nest : document.body);
+        const base = (element instanceof Element || element === window) ? element : (parent ? parent._.nest : document.body);
 
         this._ = {
             root,                           // root xnode
@@ -65,15 +65,13 @@ export class XNode {
     _initialize(element, args) {
         this.start(); // auto start
     
-        if (isObject(element) === true && (element instanceof Element) === false) {
+        if (isObject(element) === true) {
             this.nest(element)
-        } else if (isString(args[0]) === true) {
-            this.nest(isObject(element) ? element : {})
         }
 
         if (isFunction(args[0])) {
             this._extend(...args);
-        } else if (isString(args[0])) {
+        } else if (isObject(element) === true && isString(args[0]) === true) {
             this._.nest.innerHTML = args[0];
         }
 
@@ -87,7 +85,9 @@ export class XNode {
     }
 
     nest(attributes) {
-        if (isObject(attributes) === false) {
+        if (this._.nest === window) {
+            console.error('xnode nest: Cannot be added to window element.');
+        } else if (isObject(attributes) === false) {
             console.error('xnode nest: The arguments are invalid.');
         } else if (this._.state !== 'pending') {
             console.error('xnode nest: This can not be called after initialized.');
@@ -120,7 +120,6 @@ export class XNode {
 
             this._.nest = this._.nest.appendChild(element);
         }
-
     }
 
     //----------------------------------------------------------------------------------------------------

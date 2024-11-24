@@ -59,7 +59,7 @@
             (parent?._.children ?? XNode.roots).add(this);
 
             const root = parent !== null ? parent.root : this;
-            const base = element instanceof Element ? element : (parent ? parent._.nest : document.body);
+            const base = (element instanceof Element || element === window) ? element : (parent ? parent._.nest : document.body);
 
             this._ = {
                 root,                           // root xnode
@@ -85,15 +85,13 @@
         _initialize(element, args) {
             this.start(); // auto start
         
-            if (isObject(element) === true && (element instanceof Element) === false) {
+            if (isObject(element) === true) {
                 this.nest(element);
-            } else if (isString(args[0]) === true) {
-                this.nest(isObject(element) ? element : {});
             }
 
             if (isFunction(args[0])) {
                 this._extend(...args);
-            } else if (isString(args[0])) {
+            } else if (isObject(element) === true && isString(args[0]) === true) {
                 this._.nest.innerHTML = args[0];
             }
 
@@ -107,7 +105,9 @@
         }
 
         nest(attributes) {
-            if (isObject(attributes) === false) {
+            if (this._.nest === window) {
+                console.error('xnode nest: Cannot be added to window element.');
+            } else if (isObject(attributes) === false) {
                 console.error('xnode nest: The arguments are invalid.');
             } else if (this._.state !== 'pending') {
                 console.error('xnode nest: This can not be called after initialized.');
@@ -140,7 +140,6 @@
 
                 this._.nest = this._.nest.appendChild(element);
             }
-
         }
 
         //----------------------------------------------------------------------------------------------------
@@ -478,7 +477,7 @@
 
         // base element
         let element = undefined;
-        if (args[0] instanceof Element || isObject(args[0]) || args[0] === null || args[0] === undefined) {
+        if (args[0] instanceof Element || args[0] === window || isObject(args[0]) || args[0] === null || args[0] === undefined) {
             element = args.shift();
         }
 
@@ -549,45 +548,38 @@
 
     function DragEvent(xnode) {
         const base = xnew();
-
-        let id = null;
-        let current = null;
-        
-        base.on('pointerdown', down);
+        const xwin = xnew(window);
 
         // prevent touch default event
         base.on('touchstart', (event) => {
             event.preventDefault();
         });
 
-        function down(event) {
-            const position = getPosition(event, id = getId(event));
-            current = position;
+        base.on('pointerdown', (event) => {
+            const id = getId(event);
+            let position = getPosition(event, id);
+            let prev = position;
 
-            const type = 'down';
-            xnode.emit(type, event, { type, position, });
-            window.addEventListener('pointermove', move);
-            window.addEventListener('pointerup', up);
-        }    function move(event) {
-            const position = getPosition(event, id);
-            if (position === null) return;
+            xnode.emit('down', event, { type: 'down', position, });
 
-            const delta = { x: position.x - current.x, y: position.y - current.y };
-            current = position;
+            xwin.on('pointermove', (event) => {
+                position = getPosition(event, id);
+                if (position !== null) {
+                    const delta = { x: position.x - prev.x, y: position.y - prev.y };
+                    xnode.emit('move', event, { type: 'move', position, delta, });
+                    prev = position;
+                }
+            });
 
-            const type = 'move';
-            xnode.emit(type, event, { type, position, delta, });
-        }    function up(event) {
-            const position = getPosition(event, id);
-            if (position === null) return;
-            
-            const type = 'up';
-            xnode.emit(type, event, { type, position, });
-            id = null;
-            current = null;
-            window.removeEventListener('pointermove', move);
-            window.removeEventListener('pointerup', up);
-        }
+            xwin.on('pointerup', (event) => {
+                position = getPosition(event, id);
+                if (position !== null) {
+                    xnode.emit('up', event, { type: 'up', position, });
+                    xwin.off();
+                }
+            });
+        });
+
         function getId(event) {
             if (event.pointerId !== undefined) {
                 return event.pointerId;
@@ -597,6 +589,7 @@
                 return null;
             }
         }
+
         function getPosition(event, id) {
             let original = null;
             if (event.pointerId !== undefined) {
@@ -618,15 +611,7 @@
                 scaleX = xnode.element.width / rect.width;
                 scaleY = xnode.element.height / rect.height;
             }
-
             return { x: scaleX * (original.clientX - rect.left), y: scaleY * (original.clientY - rect.top) };
-        }
-
-        return {
-            finalize() {
-                window.removeEventListener('pointermove', move);
-                window.removeEventListener('pointerup', up);
-            }
         }
     }
 
@@ -768,8 +753,8 @@
     function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
         xnode.nest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
         xnode.nest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
+        const absolute = xnode.element;
         xnode.nest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
-        const absolute = xnode.element.parentElement;
 
         const canvas = xnew({ tag: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
         
@@ -821,9 +806,15 @@
             finalize() {
                 window.removeEventListener('resize', resize);  
             },
-            width,
-            height,
-            canvas: canvas.element,
+            get width() {
+                return width;
+            },
+            get height() {
+                return height;
+            },
+            get canvas() {
+                return canvas.element;
+            }
         }
     }
 
