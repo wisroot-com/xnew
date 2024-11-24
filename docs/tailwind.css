@@ -39,10 +39,13 @@ img {
     @apply block mx-auto max-w-[90%];
 }
 code {
-    @apply px-0 bg-gray-200 bg-opacity-0;;
+    @apply px-1 bg-gray-200 rounded;
 }
 pre {
     @apply p-1 bg-gray-200 rounded border-opacity-50 overflow-auto;
+}
+pre code {
+    @apply px-0;
 }
 pre.prettyprint {
     border: none;

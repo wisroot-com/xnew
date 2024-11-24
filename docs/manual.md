@@ -2,30 +2,34 @@
 
 Read [Basic usage](#) first
 
-## Arguments of xnew
+## Arguments
 As shown below, `xnew` accepts some arguments.
 
 ```
-function xnew (parent, element, Component, ...args);
-```
+// parent:    xnode object or null
+// element:   an existing html element or attributes to create a html element  
+// component: an component function or an inner text for a created html element  
+// ...args:   arguments for the component function
 
-- `parent` and `element` are often omitted.  
-In that case they will be set automatically.
+xnew(parent, element, component, ...args);
 
 ```
-xnew(Component, ...args);           // parent and element are omitted
-xnew(parent, Component, ...args);   // element is omitted
-xnew(element, Component, ...args);  // parent is omitted
-```
+<br>
 
-- `parent`: object (`xnode`) or null  
-This is set as the parent xnode of the new xnode. (accessed by `xnode.parent`)  
-If you omit this `parent` parameter, the nesting higher xnode or otherwise `null` is assigned.   
+`parent` and `element` are often omitted.  
+
+```
+xnew(component, ...args);           // parent and element are omitted
+xnew(parent, component, ...args);   // element is omitted
+xnew(element, component, ...args);  // parent is omitted
+```
+<br>
+
+If you omit the `parent` parameter, the nesting higher xnode or otherwise `null` is assigned.   
     
 ```
 xnew((xnode1) => {
-    // xnode1.parent: null 
-    // This means that xnode1 is a root xnode
+    // xnode1.parent: null
 
     const xnode2 = xnew((xnode2) => {
         // xnode2.parent: xnode1
@@ -36,55 +40,50 @@ xnew((xnode1) => {
     });
 })
 ```
+<br>
 
-- `element`: object (an existing html element or attributes to create a html element)  
-This is set for the html element of the new xnode. (accessed by `xnode.element`)  
-e.g. `xnew(document.querySelector('#hoge'), Component)`  
-e.g. `xnew({ tag: 'div', style: '', ... }, Component)` (a new element is created)  
-If you omit this `element` parameter, the parent xnode's element or otherwise `document.body` is assigned. 
+`element` is set for the html element of the new xnode. (accessed by `xnode.element`)  
+e.g. `xnew(document.querySelector('#hoge'), component)`  
+e.g. `xnew({ tag: 'div', style: '', ... }, component)`   
+If you omit the tag property, `tag: 'div'` will be set automatically.  
+
+If you omit the `element` parameter, the parent xnode's element or otherwise `document.body` is assigned. 
     
 ```
-<body>
-    <div id="hoge"></div>;
+<div id="hoge"></div>;
 
-    <script>
-        xnew((xnode1) => {
-            // xnode1.element: document.body
+<script>
+    xnew((xnode1) => {
+        // xnode1.element: document.body
+    });
+
+    xnew(document.querySelector('#hoge'), (xnode2) => {
+        // xnode2.element: (id=hoge)
+
+        xnew((xnode3) => {
+            // xnode3.element: (id=hoge)
         });
 
-        xnew(document.querySelector('#hoge'), (xnode2) => {
-            // xnode2.element: (id=hoge)
-
-            xnew((xnode3) => {
-                // xnode3.element: (id=hoge)
-            });
-
-            xnew({ tag: 'div', id: 'fuga' }, (xnode4) => {
-                // xnode4.element: (id=fuga) (as a child element of hoge)
-            });
+        xnew({ tag: 'div', id: 'fuga' }, (xnode4) => {
+            // xnode4.element: (id=fuga) (as a child element of hoge)
         });
-    </script>;
-</body;
+    });
+</script>;
 ```
-You can set any attributes parameter like below.  
-`e.g. { tag: 'div', type: 'aaa', class: 'bbb', style: 'color: #000;' }`  
-If you omit tag property, `tag: 'div'` will be set automatically.  
+<br>
 
-- `Component`: function or string  
-- `...args`: arguments for Component function
-Inside this function, the new xnode features are implemented.  
-if you set string as Component, html element will be added.
+If you set string as `component`, text content will be added in a created element.
 
 ```
-const xnode = xnew({ tag: 'div', id: 'hoge' }, '<p>text</p>');
+const xnode = xnew({ tag: 'p', id: 'hoge' }, 'aaa');
 
 // xnode.element: (id=hoge)
-// xnode.element.innerHTML: <p>text</p>
+// xnode.element.textContent: aaa
 ```
 
         
 ## Element
-There are various ways to create elements. Here are some patterns.
+There are various ways to create elements.
 ### `xnode.nest`
 This create a new element as a child of the current element. and replace `xnode.element`.
 ```
@@ -93,32 +92,26 @@ xnode.nest(attributes);
 ```
 ### example
 ```
-<body>
-    <script>
-        xnew({ tag: 'div', name: 'A'}, (xnode1) =>{
-            // xnode1.element: (div A)
-        });
+<script>
+    xnew({ tag: 'div', name: 'A'}, (xnode1) =>{
+        // xnode1.element: (div A)
+    });
 
-        xnew((xnode2) => {
-            xnode2.nest({ tag: 'div', name: 'B' });
-            // xnode2.element: (div B)
-        }
+    xnew((xnode2) => {
+        xnode2.nest({ tag: 'div', name: 'B' });
+        // xnode2.element: (div B)
+    }
 
-        xnew({ tag: 'div', name: 'C' }, (xnode3) => { 
-            xnode3.nest({ tag: 'div', name: 'D' }); // inner div
-            // xnode3.element: (div D)
-            // xnode3.element.parentElement: (div C)
-            // ...
-        }
+    xnew({ tag: 'div', name: 'C' }, (xnode3) => { 
+        xnode3.nest({ tag: 'div', name: 'D' }); // inner div
+        // xnode3.element: (div D)
+        // xnode3.element.parentElement: (div C)
+    }
 
-        const xnode4 = xnew({ tag: 'div', name: 'E' }, '<p>aaa</p>');
-        // xnode4.element: (div E)
-        // xnode4.element.innerHTML: <p>aaa</p>
-
-        const xnode5 = xnew('<p>bbb</p>'); 
-        // xnode5.element: (div)
-    </script>
-</body>       
+    const xnode4 = xnew({ tag: 'div', name: 'E' }, 'aaa');
+    // xnode4.element: (div E)
+    // xnode4.element.textContent: aaa
+</script>
 ```
 The above code leads to the following result.
 ```
@@ -129,14 +122,11 @@ The above code leads to the following result.
         <div name="D"></div>
     </div>
     <div name="E">
-        <p>aaa</p>
-    </div>
-    <div>
-        <p>bbb</p>
+        aaa
     </div>
 </body>
 ```
-- Note that the created elements are removed when the xnodes finalize.
+Note that the created elements are removed when the xnodes finalize.
             
 ## System properties
 xnodes has some system properties for basic control. You can define the detail in the response of the component function.
@@ -169,13 +159,12 @@ xnode.start();    // start update loop
 xnode.stop();     // stop update loop
 xnode.finalize(); // current xnode and the child xnodes will be finalized 
 
-xnode.state;    // return state [pending -> running <-> stopped -> finalized] 
+xnode.state;      // [pending -> running <-> stopped -> finalized] 
 ```
-- By default, xnodes automatically calls `xnode.start()`.  
-    If you want to avoid it, call `xnode.stop()` inside the component function.  
-- connected xnodes(parent-child relationship) work together.  
-    - When the parent component finalizes, its children also finalizes.  
-    - `start`, `update`, `stop` process works in the order of [child] -> [parent].  
+- xnodes automatically calls `xnode.start()`.  
+  If you want to avoid it, call `xnode.stop()` inside the component function.  
+- connected xnodes(parent-child relationship) work together. 
+  e.g. the parent component finalizes, its children also finalizes.  
     
 ## Original properties
 You can define original properties unless the properties are already defined.
@@ -208,7 +197,7 @@ const x = xnode.counter; // getter
 You can create a component function that extends another component function.
 ### `xnode.extend`
 ```
-xnode.extend(Component, ...args);
+xnode.extend(component, ...args);
 ```
 ### example
 
@@ -385,16 +374,16 @@ xnew((xnode1) => {
     // ----------------------------------------
 
     // parent: xnode1; 
-    xnew(Component);
+    xnew(component);
 
     xnode1.on('click', () => {
         // parent: xnode1; 
-        xnew(Component);
+        xnew(component);
     });
 
     xtimer(() => {
         // parent: xnode1; 
-        xnew(Component);
+        xnew(component);
     }, 1000);
 
 
@@ -405,27 +394,29 @@ xnew((xnode1) => {
     // not xnode method
     window.addEventListener('click', () => {
         // parent: null; 
-        xnew(Component);
+        xnew(component);
     });
 
     // not xtimer
     setTimeout(() => {
         // parent: null; 
-        xnew(Component);
+        xnew(component);
     }, 1000);
 
 
-    const xnode2 = xnew(Component);
+    const xnode2 = xnew(component);
 
     xnode2.on('click', () => {
         // parent: xnode2; 
-        xnew(Component);
+        xnew(component);
     });
 })
 ```
 
 ## Shared data
 You can use `xnode.shared` when you want to share data among xnodes connected by parent-child relationship.
+### `xnode.shared`
+
 ### example
 ```
 xnew((xnode1) =>  {
