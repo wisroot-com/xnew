@@ -4,21 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="../three.min.js"></script>
+    <script src="../thirdparty/three.min.js"></script>
     <script src="../xnew.js"></script>
-    <style>
-        html {
-            height: -webkit-fill-available;
-        }
-        body {
-            min-height: 100vh;
-            min-height: -webkit-fill-available;
-            position: absolute;
-            margin: 0;
-            inset: 0;
-            overflow: y-scroll;
-        }
-    </style>
 </head>
 
 <body>
@@ -28,8 +15,9 @@
         const height = 200;
 
         xnew(document.querySelector('#main'), (xnode) => {
+            // xcomponents.Screen is a component function that defines a canvas
             
-            xnew({ style: 'margin: 8px auto;' }, () => {
+            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
                 xnew('<p>object fit: contain (default)</p>');
                 xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
                     const screen = xnew(xcomponents.Screen, { width, height, objectFit: 'contain', pixelated: true });
@@ -37,7 +25,7 @@
                 });
             });
 
-            xnew({ style: 'margin: 8px auto;' }, () => {
+            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
                 xnew('<p>object fit: cover</p>');
                 xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
                     const screen = xnew(xcomponents.Screen, { width, height, objectFit: 'cover', pixelated: true });
@@ -45,7 +33,7 @@
                 });
             });
 
-            xnew({ style: 'margin: 8px auto;' }, () => {
+            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
                 xnew('<p>object fit: fill</p>');
                 xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
                     const screen = xnew(xcomponents.Screen, { width, height, objectFit: 'fill', pixelated: true });

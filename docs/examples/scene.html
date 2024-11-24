@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="../pixi.min.js"></script>
+    <script src="../thirdparty/pixi.min.js"></script>
     <script src="../xnew.js"></script>
     <style>
         html {
@@ -26,15 +26,11 @@
         xnew(document.querySelector('#main'), (xnode) => {
             const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
 
-            xnode.shared.width = screen.width;
-            xnode.shared.height = screen.height;
-
             const pixi = {};
             pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height });
             pixi.scene = new PIXI.Container();
-            xnode.extend(PixiObject, pixi.scene);
 
-            xnew(Scene1);
+            xnew(Content, pixi);
             return {
                 update() {
                     pixi.renderer.render(pixi.scene)
@@ -42,9 +38,15 @@
             };
         });
 
+        function Content(xnode, pixi) {
+            xnode.extend(PixiObject, pixi.scene);
+
+            xnew(Scene1);
+        }
+
         function Scene1(xnode) {
             xnew(Text, 'Scene1');
-            xnew(Box, xnode.shared.width / 2, xnode.shared.height / 2, 160, 0xff2266);
+            xnew(Box, 800 / 2, 450 / 2, 160, 0xff2266);
             
             xnode.on('pointerdown', () =>  {
                 xnew(xnode.parent, Scene2);
@@ -54,7 +56,7 @@
 
         function Scene2(xnode) {
             xnew(Text, 'Scene2');
-            xnew(Box, xnode.shared.width / 2, xnode.shared.height / 2, 160, 0x6622ff);
+            xnew(Box, 800 / 2, 450 / 2, 160, 0x6622ff);
 
             xnode.on('pointerdown', () =>  {
                 xnew(xnode.parent, Scene1);
@@ -93,18 +95,13 @@
         //----------------------------------------------------------------------
         
         function PixiObject(xnode, object) {
-            const parent = xnode.context('PIXI.DisplayObject');
-            xnode.context('PIXI.DisplayObject', object);
+            const parent = xnode.context('PIXI.DisplayObject', object);
             
-            // if the parent object exists
-            if (parent) {
-                parent.addChild(object);
-
-                return {
-                    finalize() {
-                        parent.removeChild(object);
-                    },
-                }
+            parent?.addChild(object);
+            return {
+                finalize() {
+                    parent?.removeChild(object);
+                },
             }
         }
 

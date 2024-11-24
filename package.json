@@ -1,7 +1,7 @@
 {
   "name": "xnew",
   "description": "Simple component based library for dynamic scene.",
-  "version": "1.6.15",
+  "version": "1.6.17",
   "main": "dist/xnew.js",
   "license": "MIT",
   "bugs": {
@@ -9,6 +9,7 @@
   },
   "homepage": "https://github.com/wisroot-com/xnew#readme",
   "scripts": {
+    "test": "jest",
     "server": "npx http-server",
     "build": "npx rollup --config --bundleConfigAsCjs",
     "watch": "npx rollup --config --watch --bundleConfigAsCjs",
@@ -16,7 +17,13 @@
     "watch-docs": "npx tailwindcss -i ./docs/tailwind.css -o ./docs/style.css --watch"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@types/jest": "^29.5.14",
+    "babel-jest": "^29.7.0",
     "http-server": "^14.1.1",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "rollup": "^3.3.0",
     "tailwindcss": "^3.2.4"
   }

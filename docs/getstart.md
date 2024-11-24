@@ -8,7 +8,7 @@
 ## Setup
 ### cdn
 ```
-<script src="https://unpkg.com/xnew@1.x/dist/xnew.js"></script>;
+<script src="https://unpkg.com/xnew@1.6.x/dist/xnew.js"></script>;
 ```
 
 ### npm
@@ -19,75 +19,133 @@ npm install xnew
 import { xnew } from 'xnew'
 ```
 ## Basic usage
-xnew contains a function `xnew`.  
-By setting a component function, it will create an instance(`xnode`) of the component.  
+By setting a component function to `xnew`, an instance(`xnode`) of the component will be created.  
 ```
-const xnode = xnew(Component, ...args);    
+const xnode = xnew(Component);    
 ```
 ```
-function Component(xnode, ...args) {
+function Component(xnode) {
     // implement features
 }
 ```
-`...args` are arguments for the component function. (not necessary)
 
-You can also use an function literal.  
+You can also use a function literal.  
 ```
 const xnode = xnew((xnode) => {
     // ...
 });
 ```
-### impementation of the component function
-Inside the component function, you can implement initializing and repeated updating, finalizing process et al. 
-And you can define your own functions and properties here and use them later.  
-```
-function Component(xnode) {
-    // initialize
-    // ...
+## Basic example
+Inside the component function, you can implement various process. 
 
-    return {
-        update() {
-            // executed repeatedly at the rate available for rendering.
-            // ...
-        },
-        finalize() {
-            // fires when xnode.finalize() is called.
-            // note that it is also called automatically when the parent xnode finalizes.
-            // ...
-        },
+<iframe src="./examples/box.html" style="width: 400px; height: 300px; border: solid 1px #AAA; margin: auto;"></iframe>
 
-        hoge() {
-            // original function (accessed by xnode.hoge())
-            // ...
-        },
-    }
-}
 ```
-### parent-child relationship
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://unpkg.com/xnew@1.x/dist/xnew.js"></script>
+</head>
+<body>
+    <script>
+        xnew((xnode) => {
+            xnode.nest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
+            const text = xnew({ tag: 'span' }, 'start');
+
+            xnode.on('pointerdown', () => {
+                xnode.state === 'running' ? xnode.stop() : xnode.start();
+            });
+
+            let counter = 0;
+            return {
+                start() {
+                    text.element.textContent = 'start';
+                },
+                update() {
+                    xnode.element.style.transform = `rotate(${counter++}deg)`;
+                },
+                stop() {
+                    text.element.textContent = 'stop';
+                },
+            };
+        });
+    </script>
+</body>
+</html>
+```
+## Parent-Child relationship
 If you call `xnew` inside a component function, a parent-child relationship is connected.
-![](parent-child.png)
+
+<iframe src="./examples/boxinbox.html" style="width: 400px; height: 300px; border: solid 1px #AAA; margin: auto;"></iframe>
+
 ```
-xnew((xnode) => {
-    xnew(A);
-    xnew(B);
-    // ...
-});
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://unpkg.com/xnew@1.x/dist/xnew.js"></script>
+</head>
+<body>
+    <script>
+        xnew((xnode) => {
+            xnew(Parent);
+        });
 
-function A(xnode) {
-    xnew(C);
-    // ...
-}
+        function Parent(xnode) {
+            xnode.nest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
+            const text = xnew({ tag: 'span' }, 'parent: start');
 
-function B(xnode) {
-    // ...
-}
+            xnew(Child);
 
-function C(xnode) {
-    // ...
-}
+            xnode.on('pointerdown', () => {
+                xnode.state === 'running' ? xnode.stop() : xnode.start();
+            });
+
+            let counter = 0;
+            return {
+                start() {
+                    text.element.textContent = 'parent: start';
+                },
+                update() {
+                    xnode.element.style.transform = `rotate(${counter++}deg)`;
+                },
+                stop() {
+                    text.element.textContent = 'parent: stop';
+                },
+            };
+        }
+
+        function Child(xnode) {
+            xnode.nest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
+            const text = xnew({ tag: 'span' }, 'child: start');
+     
+            xnode.on('pointerdown', (event) => {
+                event.stopPropagation();
+                xnode.state === 'running' ? xnode.stop() : xnode.start();
+            });
+
+            let counter = 0;
+            return {
+                start() {
+                    text.element.textContent = 'child: start';
+                },
+                update() {
+                    xnode.element.style.transform = `rotate(${counter++}deg)`;
+                },
+                stop() {
+                    text.element.textContent = 'child: stop';
+                },
+            };
+        }
+    </script>
+</body>
+</html>
 ```
 The conencted xnodes will work together.
-For example, when the parent component finalizes, its children also finalizes.   
+For example, when the parent component stop, its children also stop.   
 The updating process works in the order of [child] -> [parent].
 
 <br>

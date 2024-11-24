@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="../pixi.min.js"></script>
-    <script src="../three.min.js"></script>
+    <script src="../thirdparty/pixi.min.js"></script>
+    <script src="../thirdparty/three.min.js"></script>
     <script src="../xnew.js"></script>
     <style>
         html {
@@ -26,11 +26,7 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew(document.querySelector('#main'), (xnode) => {
-            // create a screen (xcomponents.Screen is a component function that defines a canvas)
             const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
-
-            xnode.shared.width = screen.width;
-            xnode.shared.height = screen.height;
 
             // setting for three.js
             const three = {};
@@ -40,20 +36,18 @@
             three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
             three.camera.position.set(0, 0, +100);
             three.scene = new THREE.Scene();
-            xnode.extend(ThreeObject, three.scene);
 
             // setting for pixi.js
             const pixi = {};
             pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height });
             pixi.scene = new PIXI.Container();
-            xnode.extend(PixiObject, pixi.scene);
             
             // setting pixi texture for three.renderer
             const texture = PIXI.Texture.from(three.renderer.domElement);
             const sprite = new PIXI.Sprite(texture);
             pixi.scene.addChild(sprite);
 
-            xnew(Content);
+            xnew(Content, three, pixi);
 
             return {
                 update() {
@@ -64,8 +58,11 @@
             };
         });
 
-        function Content(xnode) {
-            xnew(Box, xnode.shared.width / 2, xnode.shared.height / 2, 160, 0xEA1E63);
+        function Content(xnode, three, pixi) {
+            xnode.extend(ThreeObject, three.scene);
+            xnode.extend(PixiObject, pixi.scene);
+
+            xnew(Box, 800 / 2, 450 / 2, 160, 0xEA1E63);
             xnew(Cube, 0, 0, 0, 40);
         }
 
@@ -108,31 +105,22 @@
         function PixiObject(xnode, object) {
             const parent = xnode.context('PIXI.DisplayObject', object);
             
-            // if the parent object exists
-            if (parent) {
-                parent.addChild(object);
-
-                return {
-                    finalize() {
-                        parent.removeChild(object);
-                    },
-                }
+            parent?.addChild(object);
+            return {
+                finalize() {
+                    parent?.removeChild(object);
+                },
             }
-
         }
 
         function ThreeObject(xnode, object) {
             const parent = xnode.context('THREE.Object3D', object);
 
-            // if the parent object exists
-            if (parent) {
-                parent.add(object);
-
-                return {
-                    finalize() {
-                        parent.remove(object);
-                    },
-                }
+            parent?.add(object);
+            return {
+                finalize() {
+                    parent?.remove(object);
+                },
             }
         }
     </script>

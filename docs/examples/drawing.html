@@ -4,7 +4,6 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="../three.min.js"></script>
     <script src="../xnew.js"></script>
 
     <style>
@@ -28,6 +27,7 @@
         xnew(document.querySelector('#main'), (xnode) => {
             const screen = xnew(xcomponents.Screen, { width: 512, height: 512, objectFit: 'contain' });
             
+            // screen -> content for get event on screen canvas
             xnew(screen, Content, screen.canvas);
         });
 

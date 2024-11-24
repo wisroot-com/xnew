@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="../matter.min.js"></script>
+    <script src="../thirdparty/matter.min.js"></script>
     <script src="../xnew.js"></script>
     <style>
         html {
@@ -28,9 +28,6 @@
             // create a screen (xcomponents.Screen is a component function that defines a canvas)
             const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
 
-            xnode.shared.width = screen.width;
-            xnode.shared.height = screen.height;
-
             // setting for matter.js
             const matter = {};
             matter.engine = Matter.Engine.create();
@@ -38,13 +35,15 @@
             Matter.Runner.run(matter.runner, matter.engine);
             matter.render = Matter.Render.create({ canvas: screen.canvas, engine: matter.engine, options: { width: screen.width, height: screen.height } });
             Matter.Render.run(matter.render);
-            xnode.extend(MatterObject, matter.engine.world);
-
-            xnew(MatterObject, Matter.MouseConstraint.create(matter.engine, { element: screen.canvas }));
-            xnew(Content);
+            
+            xnew(Content, matter, screen.canvas);
         });
         
-        function Content(xnode) {
+        function Content(xnode, matter, canvas) {
+            xnode.extend(MatterObject, matter.engine.world);
+
+            xnew(MatterObject, Matter.MouseConstraint.create(matter.engine, { element: canvas }));
+
             xnew(Rectangle, 400, 200, 80, 80);
             xnew(Polygon, 450, 50, 6, 40);
             xnew(Circle, 350, 50, 40);
@@ -53,15 +52,15 @@
 
         function Rectangle(xnode, ...args) {
             const object = Matter.Bodies.rectangle(...args)
-            xnew(MatterObject, object);
+            xnode.extend(MatterObject, object);
         }
         function Circle(xnode, ...args) {
             const object = Matter.Bodies.circle(...args)
-            xnew(MatterObject, object);
+            xnode.extend(MatterObject, object);
         }
         function Polygon(xnode, ...args) {
             const object = Matter.Bodies.polygon(...args)
-            xnew(MatterObject, object);
+            xnode.extend(MatterObject, object);
         }
 
         //----------------------------------------------------------------------
@@ -69,18 +68,13 @@
         //----------------------------------------------------------------------
 
         function MatterObject(xnode, object) {
-            const composite = xnode.context('Matter.Composite');
-            xnode.context('Matter.Composite', object);
+            const parent = xnode.context('Matter.Composite', object);
                 
-            // if the parent object exists
-            if (composite) {
-                Matter.Composite.add(composite, object);
-
-                return {
-                    finalize() {
-                        Matter.Composite.remove(composite, object);
-                    },
-                }
+            parent && Matter.Composite.add(parent, object);
+            return {
+                finalize() {
+                    parent && Matter.Composite.remove(parent, object);
+                },
             }
         }
     </script>
