@@ -95,9 +95,9 @@ export class XNode {
             this.off();
 
             const element = attributes.tag === 'svg' ? 
-                document.createElementNS('http://www.w3.org/2000/svg', 'svg') : 
+                document.createElementNS('http://www.w3.org/2000/svg', attributes.tag) : 
                 document.createElement(attributes.tag ?? 'div');
-        
+            
             Object.keys(attributes).forEach((key) => {
                 const value = attributes[key];
                 if (key === 'style') {
