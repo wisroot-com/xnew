@@ -94,7 +94,7 @@
             if (isFunction(args[0])) {
                 this._extend(...args);
             } else if (isString(args[0])) {
-                this._.nest.innerHTML = args[0];
+                this._.nest.textContent = args[0];
             }
 
             // whether the node promise was resolved
