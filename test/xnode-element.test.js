@@ -5,22 +5,9 @@ beforeEach(() => {
     XNode.initialize();
 });
 
-describe('xnode', () => {
-    it('xnode relation', () => {
-        const xnode1 = xnew();
-        const xnode2 = xnew(xnode1);
-        expect(xnode1.parent).toBe(null);
-        expect(xnode2.parent).toBe(xnode1);
-    });
-    it('xnode relation nest', () => {
-        xnew((xnode1) => {
-            const xnode2 = xnew();
-            expect(xnode1.parent).toBe(null);
-            expect(xnode2.parent).toBe(xnode1);
-        })
-    });
+describe('xnode element', () => {
 
-    it('element', () => {
+    it('basic', () => {
         xnew((xnode1) => {
             const xnode2 = xnew();
             expect(xnode1.element).toBe(document.body);
@@ -28,7 +15,7 @@ describe('xnode', () => {
         })
     });
 
-    it('element nest', () => {
+    it('nest', () => {
         xnew((xnode1) => {
             xnode1.nest({ tag: 'div', name: 'test' });
             const xnode2 = xnew();
@@ -37,7 +24,7 @@ describe('xnode', () => {
         })
     });
 
-    it('element delete', () => {
+    it('delete', () => {
         const xnode1 = xnew((xnode1) => {
             xnode1.nest({ tag: 'div', name: 'test' });
         })
