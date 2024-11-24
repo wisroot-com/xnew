@@ -17,10 +17,10 @@ export function Screen(xnode, { width = 640, height = 480, objectFit = 'contain'
 
     objectFit = ['fill', 'contain', 'cover'].includes(objectFit) ? objectFit : 'contain';
   
-    window.addEventListener('resize', resize);
+    const xwin = xnew(window);
+    xwin.on('resize', resize);
 
     xtimer(() => resize());
-    xtimer(() => resize(), 1000, true);
     resize();
 
     function resize() {
@@ -54,17 +54,8 @@ export function Screen(xnode, { width = 640, height = 480, objectFit = 'contain'
     }
 
     return {
-        finalize() {
-            window.removeEventListener('resize', resize);  
-        },
-        get width() {
-            return width;
-        },
-        get height() {
-            return height;
-        },
-        get canvas() {
-            return canvas.element;
-        }
+        get width() { return width; },
+        get height() { return height; },
+        get canvas() { return canvas.element; }
     }
 }

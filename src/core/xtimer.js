@@ -1,7 +1,7 @@
 import { XNode } from './xnode';
 import { xnew } from './xnew';
 
-export function xtimer(callback, delay) {
+export function xtimer(callback, delay = 0) {
     
     return xnew((xnode) => {
         let id = null;
