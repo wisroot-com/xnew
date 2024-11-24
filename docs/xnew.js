@@ -94,7 +94,7 @@
             if (isFunction(args[0])) {
                 this._extend(...args);
             } else if (isString(args[0])) {
-                this._.nest.textContent = args[0];
+                this._.nest.innerHTML = args[0];
             }
 
             // whether the node promise was resolved
@@ -115,9 +115,9 @@
                 this.off();
 
                 const element = attributes.tag === 'svg' ? 
-                    document.createElementNS('http://www.w3.org/2000/svg', 'svg') : 
+                    document.createElementNS('http://www.w3.org/2000/svg', attributes.tag) : 
                     document.createElement(attributes.tag ?? 'div');
-            
+                
                 Object.keys(attributes).forEach((key) => {
                     const value = attributes[key];
                     if (key === 'style') {
