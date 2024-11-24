@@ -83,11 +83,13 @@
         }
 
         _initialize(element, args) {
-            if (isObject(element) || isString(args[0])) {
+            this.start(); // auto start
+        
+            if (isObject(element) === true && (element instanceof Element) === false) {
+                this.nest(element);
+            } else if (isString(args[0]) === true) {
                 this.nest(isObject(element) ? element : {});
             }
-
-            this.start(); // auto start
 
             if (isFunction(args[0])) {
                 this._extend(...args);
@@ -480,8 +482,11 @@
             element = args.shift();
         }
 
-        // Component function (+args), or innerHTML
-        return new XNode(parent, element, ...args);
+        if (args.length === 0 || isFunction(args[0]) || (isObject(element) && isString(args[0]))) {
+            return new XNode(parent, element, ...args);
+        } else {
+            console.error('xnew: The arguments are invalid.');
+        }
     }
 
     function xfind(key) {
