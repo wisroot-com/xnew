@@ -63,11 +63,13 @@ export class XNode {
     }
 
     _initialize(element, args) {
-        if (isObject(element) || isString(args[0])) {
+        this.start(); // auto start
+    
+        if (isObject(element) && (element instanceof Element) === false) {
+            this.nest(element)
+        } else if (isString(args[0])) {
             this.nest(isObject(element) ? element : {})
         }
-
-        this.start(); // auto start
 
         if (isFunction(args[0])) {
             this._extend(...args);
