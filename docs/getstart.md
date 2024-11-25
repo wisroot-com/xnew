@@ -2,7 +2,7 @@
 ![](introduction.png)  
 <center>
 <p>xnew is a javascript library for component based programming.</p>
-<p>Suitable for creating apps and games with dynamic scenes.</p>
+<p>Suitable for a dynamic web site, web games and animation.</p>
 </center>
 
 ## Setup
