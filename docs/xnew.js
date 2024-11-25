@@ -500,7 +500,7 @@
         }
     }
 
-    function xtimer$1(callback, delay) {
+    function xtimer$1(callback, delay = 0) {
         
         return xnew((xnode) => {
             let id = null;
@@ -767,10 +767,10 @@
 
         objectFit = ['fill', 'contain', 'cover'].includes(objectFit) ? objectFit : 'contain';
       
-        window.addEventListener('resize', resize);
+        const xwin = xnew(window);
+        xwin.on('resize', resize);
 
         xtimer(() => resize());
-        xtimer(() => resize(), 1000, true);
         resize();
 
         function resize() {
@@ -803,18 +803,9 @@
         }
 
         return {
-            finalize() {
-                window.removeEventListener('resize', resize);  
-            },
-            get width() {
-                return width;
-            },
-            get height() {
-                return height;
-            },
-            get canvas() {
-                return canvas.element;
-            }
+            get width() { return width; },
+            get height() { return height; },
+            get canvas() { return canvas.element; }
         }
     }
 

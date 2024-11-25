@@ -1,7 +1,5 @@
 # manual
 
-Read [Basic usage](#) first
-
 ## Arguments
 As shown below, `xnew` accepts some arguments.
 
@@ -92,26 +90,24 @@ xnode.nest(attributes);
 ```
 ### example
 ```
-<script>
-    xnew({ tag: 'div', name: 'A'}, (xnode1) =>{
-        // xnode1.element: (div A)
-    });
+xnew({ tag: 'div', name: 'A'}, (xnode1) =>{
+    // xnode1.element: (div A)
+});
 
-    xnew((xnode2) => {
-        xnode2.nest({ tag: 'div', name: 'B' });
-        // xnode2.element: (div B)
-    }
+xnew((xnode2) => {
+    xnode2.nest({ tag: 'div', name: 'B' });
+    // xnode2.element: (div B)
+}
 
-    xnew({ tag: 'div', name: 'C' }, (xnode3) => { 
-        xnode3.nest({ tag: 'div', name: 'D' }); // inner div
-        // xnode3.element: (div D)
-        // xnode3.element.parentElement: (div C)
-    }
+xnew({ tag: 'div', name: 'C' }, (xnode3) => { 
+    xnode3.nest({ tag: 'div', name: 'D' }); // inner div
+    // xnode3.element: (div D)
+    // xnode3.element.parentElement: (div C)
+}
 
-    const xnode4 = xnew({ tag: 'div', name: 'E' }, 'aaa');
-    // xnode4.element: (div E)
-    // xnode4.element.textContent: aaa
-</script>
+const xnode4 = xnew({ tag: 'div', name: 'E' }, 'aaa');
+// xnode4.element: (div E)
+// xnode4.element.textContent: aaa
 ```
 The above code leads to the following result.
 ```
@@ -174,7 +170,7 @@ const xnode = xnew((xnode) =>  {
     let counter = 0;
 
     return {
-        countUp () {
+        countup () {
             counter++;
         },
         // setter
@@ -188,7 +184,7 @@ const xnode = xnew((xnode) =>  {
     }
 });
 
-xnode.countUp(); // 0 -> 1
+xnode.countup();         // 0 -> 1
 xnode.counter = 2;       // setter
 const x = xnode.counter; // getter
 ```
@@ -442,15 +438,15 @@ xnode.context(name);
 ### example
 ```
 xnew((xnode) => {
-    xnode.context('hoge', 1);
-    xnode.context('hoge'); // 1
+    xnode.context('hoge', 1); // undefined (return previus value)
+    xnode.context('hoge');    // 1
 
     xnew((xnode) => {
         xnode.context('hoge'); // 1
 
         xnew((xnode) => {
-            xnode.context('hoge', 2);
-            xnode.context('hoge'); // 2
+            xnode.context('hoge', 2); // 1 (return previus value)
+            xnode.context('hoge');    // 2
 
             xnew((xnode) => {
                 xnode.context('hoge'); // 2

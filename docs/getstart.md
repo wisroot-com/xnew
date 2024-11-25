@@ -147,7 +147,3 @@ If you call `xnew` inside a component function, a parent-child relationship is c
 The conencted xnodes will work together.
 For example, when the parent component stop, its children also stop.   
 The updating process works in the order of [child] -> [parent].
-
-<br>
-
-Next: [manual](#manual) for detailed explanation.
