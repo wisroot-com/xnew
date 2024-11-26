@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="../thirdparty/pixi.min.js"></script>
+    <script src="../thirdparty/three.min.js"></script>
+    <script src="../xnew.js"></script>
+    <style>
+        html {
+            height: -webkit-fill-available;
+        }
+        body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            position: absolute;
+            margin: 0;
+            inset: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main" style="width: 100%; height: 100%;"></div>
+    <script>
+        xnew(document.querySelector('#main'), (xnode) => {
+            const screen = xnew(xcomponents.Screen, { width: 800, height: 400 });
+            xnode.context('screen', screen);
+
+            xnew(Reset);
+
+            let counter = 0;
+            xtimer(() => {
+                xnew(Wave, counter++ / 12 * Math.PI);
+                return true;
+            }, 500);
+        });
+
+        function Reset(xnode) {
+            const screen = xnode.context('screen');
+            const ctx = screen.canvas.getContext('2d');
+            return {
+                update() {
+                    ctx.clearRect(0, 0, screen.width, screen.height)
+                    ctx.fillStyle="rgba(0,0,0,0)";
+                    ctx.fillRect(0, 0, screen.width, screen.height);  
+                }
+            }
+        }
+
+        function Wave(xnode, shift) {
+            const screen = xnode.context('screen');
+            const ctx = screen.canvas.getContext('2d');
+            
+            const num = 200;
+            return {
+                update(time) {
+                    const n = Math.floor(1 + time / 10);
+                    for (let i = Math.max(0, n - num); i < n; i++) {
+                        const s = i / num * 100;
+                        const t = time / 30 + s;
+                        const u = Math.pow(0.5 + i / num, 2) * 100;
+                        const x = (Math.cos(t / 17 + shift) + Math.cos(t / 15 + shift)) * u;
+                        const y = (Math.sin(t / 15 + shift) + Math.sin(t / 17 + shift)) * u;
+
+                        const r = ((i / num * 180 + shift / Math.PI * 180)| 0) % 360;
+                        ctx.fillStyle = `hsla(${r}, 50%, 50%, 0.5)`;
+                        ctx.beginPath();
+                        ctx.arc(x + screen.width / 2, y + screen.height / 2, 15, 0, 2 * Math.PI);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    if (n > 4 * num) {
+                        xnode.finalize();
+                    }
+                }
+            }
+        } 
+    </script>
+</body>
+</html>
+

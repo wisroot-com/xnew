@@ -26,7 +26,7 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew(document.querySelector('#main'), (xnode) => {
-            const screen = xnew(xcomponents.Screen, { width: 800, height: 450 });
+            const screen = xnew(xcomponents.Screen, { width: 800, height: 400 });
 
             // setting for three.js
             const three = {};
@@ -45,7 +45,7 @@
         });
 
         function Content(xnode, three) {
-            xnode.extend(ThreeObject, three.scene);
+            xnode.extend(ThreeObject3D, three.scene);
 
             xnew(Cube, 0, 0, 0, 40);
         }
@@ -54,7 +54,7 @@
             const geometry = new THREE.BoxGeometry(size, size, size);
             const material = new THREE.MeshNormalMaterial();
             const object = new THREE.Mesh(geometry, material);
-            xnode.extend(ThreeObject, object);
+            xnode.extend(ThreeObject3D, object);
 
             return {
                 update() {
@@ -68,7 +68,7 @@
         // base component
         //----------------------------------------------------------------------
         
-        function ThreeObject(xnode, object) {
+        function ThreeObject3D(xnode, object) {
             const parent = xnode.context('THREE.Object3D', object);
 
             parent?.add(object);

@@ -22,11 +22,13 @@
 
     class XNode {
 
+        static id = 0;
+
         static roots = new Set();
       
         static animation = null;
 
-        static initialize() {
+        static reset() {
             XNode.roots.forEach((xnode) => xnode.finalize());
 
             if (XNode.animation) {
@@ -58,10 +60,11 @@
             parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
             (parent?._.children ?? XNode.roots).add(this);
 
-            const root = parent !== null ? parent.root : this;
-            const base = (element instanceof Element || element === window) ? element : (parent ? parent._.nest : document.body);
+            const root = parent !== null ? parent._.root : this;
+            const base = (element instanceof Element || element === window) ? element : (parent?._.nest ?? document.body ?? null);
 
             this._ = {
+                id: XNode.id++,
                 root,                           // root xnode
                 base,                           // base element
                 nest: base,                     // nest element
@@ -447,12 +450,17 @@
                 console.error('xnode emit: This can not be called after finalized.');
             } else {
                 type.split(' ').filter((type) => type !== '').forEach((type) => {
-                    if (type[0] === '#') {
-                        if (XNode.eventTypeMap.has(type)) {
-                            XNode.eventTypeMap.get(type).forEach((node) => emit.call(node, type, ...args));
+                    if (XNode.eventTypeMap.has(type)) {
+                        if (['#', '+'].includes(type[0])) {
+                            const root = this._.root;
+                            XNode.eventTypeMap.get(type).forEach((xnode) => {
+                                if (type[0] === '#' || xnode._.root === root) {
+                                    emit.call(xnode, type, ...args);
+                                }
+                            });
+                        } else {
+                            emit.call(this, type, ...args);
                         }
-                    } else {
-                        emit.call(this, type, ...args);
                     }
                 });
             }
@@ -465,7 +473,7 @@
         }
     }
 
-    XNode.initialize();
+    XNode.reset();
 
     function xnew(...args) {
 

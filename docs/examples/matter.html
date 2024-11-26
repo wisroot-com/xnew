@@ -40,9 +40,9 @@
         });
         
         function Content(xnode, matter, canvas) {
-            xnode.extend(MatterObject, matter.engine.world);
+            xnode.extend(MatterComposite, matter.engine.world);
 
-            xnew(MatterObject, Matter.MouseConstraint.create(matter.engine, { element: canvas }));
+            xnew(MatterComposite, Matter.MouseConstraint.create(matter.engine, { element: canvas }));
 
             xnew(Rectangle, 400, 200, 80, 80);
             xnew(Polygon, 450, 50, 6, 40);
@@ -52,22 +52,22 @@
 
         function Rectangle(xnode, ...args) {
             const object = Matter.Bodies.rectangle(...args)
-            xnode.extend(MatterObject, object);
+            xnode.extend(MatterComposite, object);
         }
         function Circle(xnode, ...args) {
             const object = Matter.Bodies.circle(...args)
-            xnode.extend(MatterObject, object);
+            xnode.extend(MatterComposite, object);
         }
         function Polygon(xnode, ...args) {
             const object = Matter.Bodies.polygon(...args)
-            xnode.extend(MatterObject, object);
+            xnode.extend(MatterComposite, object);
         }
 
         //----------------------------------------------------------------------
         // base component
         //----------------------------------------------------------------------
 
-        function MatterObject(xnode, object) {
+        function MatterComposite(xnode, object) {
             const parent = xnode.context('Matter.Composite', object);
                 
             parent && Matter.Composite.add(parent, object);
