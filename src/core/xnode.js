@@ -2,6 +2,8 @@ import { isString, isNumber, isObject, isFunction } from './common';
 
 export class XNode {
 
+    static id = 0;
+
     static roots = new Set();
   
     static animation = null;
@@ -38,10 +40,11 @@ export class XNode {
         parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
         (parent?._.children ?? XNode.roots).add(this);
 
-        const root = parent !== null ? parent.root : this;
+        const root = parent !== null ? parent._.root : this;
         const base = (element instanceof Element || element === window) ? element : (parent?._.nest ?? document.body ?? null);
 
         this._ = {
+            id: XNode.id++,
             root,                           // root xnode
             base,                           // base element
             nest: base,                     // nest element
