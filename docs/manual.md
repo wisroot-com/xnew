@@ -4,10 +4,10 @@
 As shown below, `xnew` accepts some arguments.
 
 ```
-// parent:    xnode object or null
-// element:   an existing html element or attributes to create a html element  
-// component: an component function or an inner text for a created html element  
-// ...args:   arguments for the component function
+// parent:    [a xnode object]
+// element:   [an existing html element] or [attributes to create a html element]  
+// component: [an component function] or [an inner html for a created html element]  
+// ...args:   [arguments for the component function]
 
 xnew(parent, element, component, ...args);
 
@@ -48,7 +48,7 @@ If you omit the tag property, `tag: 'div'` will be set automatically.
 If you omit the `element` parameter, the parent xnode's element or otherwise `document.body` is assigned. 
     
 ```
-<div id="hoge"></div>;
+<div id="hoge"></div>
 
 <script>
     xnew((xnode1) => {
