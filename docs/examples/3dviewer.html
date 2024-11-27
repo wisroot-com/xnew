@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="../thirdparty/three.min.js"></script>
+    <script src="../xnew.js"></script>
+
+    <style>
+        html {
+            height: -webkit-fill-available;
+        }
+        body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            position: absolute;
+            margin: 0;
+            inset: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main" style="width: 100%; height: 100%;"></div>
+    <script>
+        xnew(document.querySelector('#main'), (xnode) => {
+            const screen = xnew(xcomponents.Screen, { width: 800, height: 400 });
+        
+            // setting for three.js
+            const three = {};
+            three.renderer = new THREE.WebGLRenderer({ canvas: screen.canvas });
+            three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
+            three.camera.position.set(0, 0, +100);
+            three.scene = new THREE.Scene();
+            three.scene.background = new THREE.Color(0xFFFFFF);
+            three.renderer.shadowMap.enabled = true;
+            three.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            xnew(Event, three);
+            xnew(Content, three);
+
+            return {
+                update() {
+                    three.renderer.render(three.scene, three.camera);
+                },
+            };
+        });
+
+        function Event(xnode, three) {
+            xnode.extend(xcomponents.DragEvent);
+            xnode.on('move', (event, { position, delta }) => {
+                if (event.buttons & 1 || !event.buttons) {
+                    three.scene.rotation.x += delta.y * 0.01;
+                    three.scene.rotation.z += delta.x * 0.01;
+                }
+                if (event.buttons & 2) {
+                    three.camera.position.x -= delta.x * three.camera.position.z * 0.001;
+                    three.camera.position.y += delta.y * three.camera.position.z * 0.001;
+                } 
+            });
+            xnode.on('wheel', (event) => {
+                event.preventDefault();
+                three.camera.position.z += three.camera.position.z * (event.deltaY > 0 ? +0.05 : -0.05);
+            }, { passive: false });
+            xnode.on('contextmenu', (event) => event.preventDefault());
+        }
+        
+        function Content(xnode, three) {
+            xnode.extend(ThreeObject3D, three.scene);
+            three.scene.rotation.x = -60 / 180 * Math.PI
+
+            xnew(DirectionaLight, 20, -50, 100);
+            xnew(AmbientLight);
+            
+            xnew(Ground, 1000, 0xF8F8FF);
+            xnew(Dorm, 500);
+            xnew(Cube, 0, 0, 0, 40, 0xAAAAFF);
+        }
+
+        function DirectionaLight(xnode, x, y, z) {
+            const object = new THREE.DirectionalLight(0xFFFFFF, 0.40);
+            xnode.extend(ThreeObject3D, object);
+            
+            object.position.set(x, y, z);
+            const s = object.position.length();
+            object.castShadow = true;
+            object.shadow.mapSize.width = 2048;
+            object.shadow.mapSize.height = 2048;
+            object.shadow.camera.left = -s * 1.0;
+            object.shadow.camera.right = +s * 1.0;
+            object.shadow.camera.top = -s * 1.0;
+            object.shadow.camera.bottom = +s * 1.0;
+            object.shadow.camera.near = +s * 0.1;
+            object.shadow.camera.far = +s * 10.0;
+            object.shadow.camera.updateProjectionMatrix ();
+        }
+
+        function AmbientLight(xnode) {
+            const object = new THREE.AmbientLight(0xFFFFFF, 0.50);
+            xnode.extend(ThreeObject3D, object);
+        }
+
+        function Dorm(xnode, size) {
+            const geometry = new THREE.SphereGeometry(size, 25, 25);
+            const material = new THREE.MeshBasicMaterial({ color: 0xEEEEFF, side: THREE.BackSide });
+            const object = new THREE.Mesh(geometry, material);
+            xnode.extend(ThreeObject3D, object);
+        }
+
+        function Ground(xnode, size, color) {
+            const geometry = new THREE.PlaneGeometry(size, size, 1, 1);
+            const material = new THREE.MeshStandardMaterial({ color, transparent: true, });
+            const object = new THREE.Mesh(geometry, material);
+            object.receiveShadow = true;
+            object.material.opacity = 0.7;
+            xnode.extend(ThreeObject3D, object);
+        }
+
+        function Cube(xnode, x, y, z, size, color) {
+            const geometry = new THREE.BoxGeometry(size, size, size);
+            const material = new THREE.MeshLambertMaterial({ color, });
+            const object = new THREE.Mesh(geometry, material);
+            xnode.extend(ThreeObject3D, object);
+
+            object.castShadow = true;
+            object.position.z = size / 2;
+        }
+
+        function ThreeObject3D(xnode, object) {
+            const parent = xnode.context('THREE.Object3D', object);
+
+            parent?.add(object);
+            return {
+                finalize() {
+                    parent?.remove(object);
+                },
+            }
+        }
+
+    </script>
+</body>
+</html>
