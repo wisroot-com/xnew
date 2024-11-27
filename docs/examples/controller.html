@@ -28,7 +28,7 @@
             const screen = xnew(xcomponents.Screen, { width: 800, height: 400 });
 
             const pixi = {};
-            pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height });
+            pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height, backgroundColor: '#FFF' });
             pixi.scene = new PIXI.Container();
             
             xnew(Controller);

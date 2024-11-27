@@ -32,14 +32,14 @@
             const three = {};
             three.renderer = new THREE.WebGLRenderer({}); // not set canvas
             three.renderer.setSize(screen.width, screen.height);
-
             three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
             three.camera.position.set(0, 0, +100);
             three.scene = new THREE.Scene();
+            three.scene.background = new THREE.Color(0xFFFFFF);
 
             // setting for pixi.js
             const pixi = {};
-            pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height });
+            pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height, backgroundColor: '#FFF' });
             pixi.scene = new PIXI.Container();
             
             // setting pixi texture for three.renderer
