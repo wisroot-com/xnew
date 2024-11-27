@@ -15,6 +15,16 @@ describe('xnode element', () => {
         })
     });
 
+    it('create', () => {
+        xnew((xnode1) => {
+            xnode1.nest({ tag: 'div', name: 'A' });
+            expect(xnode1.element).toBe(document.querySelector('div[name=A]'));
+        })
+        xnew({ tag: 'div', name: 'B' }, (xnode1) => {
+            expect(xnode1.element).toBe(document.querySelector('div[name=B]'));
+        })
+    });
+
     it('nest', () => {
         xnew((xnode1) => {
             xnode1.nest({ tag: 'div', name: 'test' });

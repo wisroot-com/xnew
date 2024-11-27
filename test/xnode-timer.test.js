@@ -9,16 +9,16 @@ beforeEach(() => {
 describe('xnode timer', () => {
     it('basic', () => {
         return new Promise((resolve, reject) => {
-            let state = false;
-            const start = Date.now();
+            let state = 0;
+            let start = Date.now();
             const margin = 50;
             xtimer(() => {
                 const d = Date.now() - start;
                 expect(d).toBeGreaterThan(500 - margin);
                 expect(d).toBeLessThan(500 + margin);
-                state = true;
+                state++;
             }, 500);
-            setTimeout(() => state ? resolve() : reject(), 500 + margin);
+            setTimeout(() => state === 1 ? resolve() : reject(), 500 + margin);
         });
     });
 
