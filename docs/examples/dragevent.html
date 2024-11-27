@@ -36,7 +36,7 @@
             three.scene = new THREE.Scene();
             three.scene.background = new THREE.Color(0xFFFFFF);
 
-            xnew(Drag, three);
+            xnew(Event, three);
             xnew(Content, three);
 
             return {
@@ -47,14 +47,14 @@
         });
 
         function Content(xnode, three) {
-            xnode.extend(ThreeObject, three.scene);
+            xnode.extend(ThreeObject3D, three.scene);
 
             xnew(Cube, 0, 0, 0, 40);
         }
 
-        function Drag(xnode, three) {
-            const drag = xnew(xcomponents.DragEvent);
-            drag.on('move', (event, { position, delta }) => {
+        function Event(xnode, three) {
+            xnode.extend(xcomponents.DragEvent);
+            xnode.on('move', (event, { position, delta }) => {
                 if (event.buttons & 1 || !event.buttons) {
                     three.scene.rotation.x += delta.y * 0.01;
                     three.scene.rotation.y += delta.x * 0.01;
@@ -63,7 +63,6 @@
                     three.camera.position.x -= delta.x * three.camera.position.z * 0.001;
                     three.camera.position.y += delta.y * three.camera.position.z * 0.001;
                 } 
-                xnode.stop();
             });
 
             xnode.on('wheel', (event) => {
@@ -78,7 +77,7 @@
             const geometry = new THREE.BoxGeometry(size, size, size);
             const material = new THREE.MeshNormalMaterial();
             const object = new THREE.Mesh(geometry, material);
-            xnode.extend(ThreeObject, object);
+            xnode.extend(ThreeObject3D, object);
 
             return {
                 update() {
@@ -92,7 +91,7 @@
         // base component
         //----------------------------------------------------------------------
         
-        function ThreeObject(xnode, object) {
+        function ThreeObject3D(xnode, object) {
             const parent = xnode.context('THREE.Object3D', object);
 
             parent?.add(object);
