@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <script src="../thirdparty/pixi.min.js"></script>
     <script src="../thirdparty/three.min.js"></script>
     <script src="../xnew.js"></script>
-
     <style>
         html {
             height: -webkit-fill-available;
@@ -27,7 +27,7 @@
     <script>
         xnew(document.querySelector('#main'), (xnode) => {
             const screen = xnew(xcomponents.Screen, { width: 800, height: 400 });
-        
+
             // setting for three.js
             const three = {};
             three.renderer = new THREE.WebGLRenderer({ canvas: screen.canvas });
@@ -36,7 +36,6 @@
             three.scene = new THREE.Scene();
             three.scene.background = new THREE.Color(0xFFFFFF);
 
-            xnew(Event, three);
             xnew(Content, three);
 
             return {
@@ -50,27 +49,6 @@
             xnode.extend(ThreeObject3D, three.scene);
 
             xnew(Cube, 0, 0, 0, 40);
-        }
-
-        function Event(xnode, three) {
-            xnode.extend(xcomponents.DragEvent);
-            xnode.on('move', (event, { position, delta }) => {
-                if (event.buttons & 1 || !event.buttons) {
-                    three.scene.rotation.x += delta.y * 0.01;
-                    three.scene.rotation.y += delta.x * 0.01;
-                }
-                if (event.buttons & 2) {
-                    three.camera.position.x -= delta.x * three.camera.position.z * 0.001;
-                    three.camera.position.y += delta.y * three.camera.position.z * 0.001;
-                } 
-            });
-
-            xnode.on('wheel', (event) => {
-                event.preventDefault();
-                three.camera.position.z += three.camera.position.z * (event.deltaY > 0 ? +0.05 : -0.05);
-            }, { passive: false });
-
-            xnode.on('contextmenu', (event) => event.preventDefault());
         }
 
         function Cube(xnode, x, y, z, size) {
