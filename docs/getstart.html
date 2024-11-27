@@ -12,10 +12,11 @@
     <div class="w-full h-[400px] mx-auto my-8">
         <iframe src="examples/cube.html" class="w-full h-full"></iframe>
     </div>
-    <div class="markdown max-w-[1200px] mx-auto"></div>
+
+    <div id="target" class="markdown max-w-[1200px] mx-auto"></div>
 
     <script>
-        loadMarkdown(document.querySelector('.markdown'), 'getstart.md');
+        loadMarkdown(document.querySelector('#target'), 'getstart.md');
         function loadMarkdown(element, path) {
             fetch(path).then((response) => response.text()).then((data) => {
                 element.innerHTML = marked.parse(data);
