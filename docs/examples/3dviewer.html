@@ -74,8 +74,9 @@
             xnew(DirectionaLight, 20, -50, 100);
             xnew(AmbientLight);
             
-            xnew(Cube, 0, 0, 0, 40, 0xAAAAFF);
             xnew(Ground, 1000, 0xF8F8FF);
+            xnew(Dorm, 500);
+            xnew(Cube, 0, 0, 0, 40, 0xAAAAFF);
         }
 
         function DirectionaLight(xnode, x, y, z) {
@@ -87,7 +88,6 @@
             object.castShadow = true;
             object.shadow.mapSize.width = 2048;
             object.shadow.mapSize.height = 2048;
-            object.shadow.bias = -0.0001;
             object.shadow.camera.left = -s * 1.0;
             object.shadow.camera.right = +s * 1.0;
             object.shadow.camera.top = -s * 1.0;
@@ -102,6 +102,13 @@
             xnode.extend(ThreeObject3D, object);
         }
 
+        function Dorm(xnode, size) {
+            const geometry = new THREE.SphereGeometry(size, 25, 25);
+            const material = new THREE.MeshBasicMaterial({ color: 0xEEEEFF, side: THREE.BackSide });
+            const object = new THREE.Mesh(geometry, material);
+            xnode.extend(ThreeObject3D, object);
+        }
+
         function Ground(xnode, size, color) {
             const geometry = new THREE.PlaneGeometry(size, size, 1, 1);
             const material = new THREE.MeshStandardMaterial({ color, transparent: true, });
@@ -110,7 +117,6 @@
             object.material.opacity = 0.7;
             xnode.extend(ThreeObject3D, object);
         }
-
 
         function Cube(xnode, x, y, z, size, color) {
             const geometry = new THREE.BoxGeometry(size, size, size);
@@ -122,11 +128,6 @@
             object.position.z = size / 2;
         }
 
-
-        //----------------------------------------------------------------------
-        // base component
-        //----------------------------------------------------------------------
-        
         function ThreeObject3D(xnode, object) {
             const parent = xnode.context('THREE.Object3D', object);
 
