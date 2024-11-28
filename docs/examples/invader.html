@@ -114,13 +114,14 @@
         function Blocks(xnode) {
             xnode.extend(ThreeObject3D, new THREE.Group());
 
-            xnew(Block, [-30, 0]);
+            xnew(Block, [-130, 20]);
             // xnew(Block, [-10, 0]);
             // xnew(Block, [+10, 0]);
             // xnew(Block, [+30, 0]);
         }
         function Block(xnode, [x, y]) {
             const object = new THREE.Group();
+            object.test = 1;
             xnode.extend(ThreeObject3D, object);
             object.position.set(x, y, 0);
             const data = [
@@ -140,12 +141,19 @@
                     }
                 }
             }
+            return {
+                update() {
+                    object.rotation.x += 1
+                }
+            }
         }
 
         function Cube(xnode, [x, y, z], [sx, sy, sz], color) {
             const geometry = new THREE.BoxGeometry(sx, sy, sz);
             const material = new THREE.MeshLambertMaterial({ color, });
             const object = new THREE.Mesh(geometry, material);
+            const t = xnode.context('THREE.Object3D');
+            console.log(t.test);
             xnode.extend(ThreeObject3D, object);
             object.position.set(x, y, z);
 
