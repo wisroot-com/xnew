@@ -25,7 +25,7 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew(document.querySelector('#main'), (xnode) => {
-            const screen = xnew(xcomponents.Screen, { width: 800, height: 400 });
+            const screen = xnew(xcomponents.Screen, { width: 1200, height: 800 });
         
             // setting for three.js
             const three = {};
@@ -74,8 +74,7 @@
             xnew(AmbientLight);
             
             xnew(Ground, 1000, 0x555555);
-            xnew(Dorm, 500);
-            xnew(Cube, 0, 0, 0, 40, 0xAAAAFF);
+            //xnew(Cube, [0, 0, 20], [40, 40, 40], 0xAAAAFF);
 
             xnew(Blocks);
         }
@@ -103,13 +102,6 @@
             xnode.extend(ThreeObject3D, object);
         }
 
-        function Dorm(xnode, size) {
-            const geometry = new THREE.SphereGeometry(size, 25, 25);
-            const material = new THREE.MeshBasicMaterial({ color: 0xEEEEFF, side: THREE.BackSide });
-            const object = new THREE.Mesh(geometry, material);
-            xnode.extend(ThreeObject3D, object);
-        }
-
         function Ground(xnode, size, color) {
             const geometry = new THREE.PlaneGeometry(size, size, 1, 1);
             const material = new THREE.MeshStandardMaterial({ color, transparent: true, });
@@ -122,23 +114,42 @@
         function Blocks(xnode) {
             xnode.extend(ThreeObject3D, new THREE.Group());
 
-            xnew(Block, -30, 0);
-            xnew(Block, -10, 0);
-            xnew(Block, +10, 0);
-            xnew(Block, +30, 0);
+            xnew(Block, [-30, 0]);
+            // xnew(Block, [-10, 0]);
+            // xnew(Block, [+10, 0]);
+            // xnew(Block, [+30, 0]);
         }
-        function Block(xnode) {
-
+        function Block(xnode, [x, y]) {
+            const object = new THREE.Group();
+            xnode.extend(ThreeObject3D, object);
+            object.position.set(x, y, 0);
+            const data = [
+                [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+                [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+                [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1],
+                [1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            ];
+            const offset = [5, 4];
+            for (let y = 0; y < data.length; y++) {
+                for (let x = 0; x < data[y].length; x++) {
+                    if (data[y][x]) {
+                        xnew(Cube, [x - offset[0], offset[1] - y, 5], [1, 1, 10], 0xFFAAAA);
+                    }
+                }
+            }
         }
 
-        function Cube(xnode, x, y, z, size, color) {
-            const geometry = new THREE.BoxGeometry(size, size, size);
+        function Cube(xnode, [x, y, z], [sx, sy, sz], color) {
+            const geometry = new THREE.BoxGeometry(sx, sy, sz);
             const material = new THREE.MeshLambertMaterial({ color, });
             const object = new THREE.Mesh(geometry, material);
             xnode.extend(ThreeObject3D, object);
+            object.position.set(x, y, z);
 
             object.castShadow = true;
-            object.position.z = size / 2;
         }
 
         function ThreeObject3D(xnode, object) {

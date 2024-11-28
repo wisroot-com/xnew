@@ -48,14 +48,15 @@
         function Content(xnode, three) {
             xnode.extend(ThreeObject3D, three.scene);
 
-            xnew(Cube, 0, 0, 0, 40);
+            xnew(Cube, [0, 0, 0], [40, 40, 40]);
         }
 
-        function Cube(xnode, x, y, z, size) {
-            const geometry = new THREE.BoxGeometry(size, size, size);
+        function Cube(xnode, [x, y, z], [sx, sy, sz]) {
+            const geometry = new THREE.BoxGeometry(sx, sy, sz);
             const material = new THREE.MeshNormalMaterial();
             const object = new THREE.Mesh(geometry, material);
             xnode.extend(ThreeObject3D, object);
+            object.position.set(x, y, z);
 
             return {
                 update() {

@@ -44,7 +44,7 @@
         function Content(xnode, pixi) {
             xnode.extend(PixiDisplayObject, pixi.scene);
        
-            xnew(Box, 800 / 2, 400 / 2, 160, 0xEA1E63);
+            xnew(Box, [800 / 2, 400 / 2], [160, 160], 0xEA1E63);
         }
 
         function Controller(xnode) {
@@ -62,7 +62,7 @@
             })
         }
 
-        function Box(xnode, x, y, size, color) {
+        function Box(xnode, [x, y], [sx, sy], color) {
             const object = new PIXI.Container();
             xnode.extend(PixiDisplayObject, object);
             
@@ -71,7 +71,7 @@
             
             const graphics = object.addChild(new PIXI.Graphics());
             graphics.beginFill(color);
-            graphics.drawRect(-size / 2, -size / 2, size, size);
+            graphics.drawRect(-sx / 2, -sy / 2, sx, sy);
             graphics.endFill();
 
             let move = null;

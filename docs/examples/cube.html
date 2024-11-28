@@ -51,7 +51,8 @@
         
             // call iteratively (100ms)
             xtimer(() => {
-                xnew(Cube, 100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5), 0xFFFFFF * Math.random());
+                const position = [100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5)];
+                xnew(Cube, position, 0xFFFFFF * Math.random());
                 return true;
             }, 100);
         }
@@ -63,7 +64,7 @@
             light.position.set(0, 0, +100);
         }
 
-        function Cube(xnode, x, y, z, color) {
+        function Cube(xnode, [x, y, z], color) {
             const size = 10 * Math.random() + 5;
             const geometry = new THREE.BoxGeometry(size, size, size);
             const material = new THREE.MeshLambertMaterial({ color });
