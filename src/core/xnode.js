@@ -314,6 +314,7 @@ export class XNode {
             while (node !== null) {
                 if (node._.context?.has(name)) {
                     ret = node._.context.get(name);
+                    break;
                 }
                 node = node.parent;
             }

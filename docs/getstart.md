@@ -46,12 +46,12 @@ Inside the component function, you can implement various process.
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://unpkg.com/xnew@1.x/dist/xnew.js"></script>
+    <script src="https://unpkg.com/xnew@1.6.x/dist/xnew.js"></script>
 </head>
 <body>
     <script>
         xnew((xnode) => {
-            xnode.nest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
+            xnode.nest({ tag: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
             const text = xnew({ tag: 'span' }, 'start');
 
             xnode.on('pointerdown', () => {
@@ -86,7 +86,7 @@ If you call `xnew` inside a component function, a parent-child relationship is c
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://unpkg.com/xnew@1.x/dist/xnew.js"></script>
+    <script src="https://unpkg.com/xnew@1.6.x/dist/xnew.js"></script>
 </head>
 <body>
     <script>
@@ -95,7 +95,7 @@ If you call `xnew` inside a component function, a parent-child relationship is c
         });
 
         function Parent(xnode) {
-            xnode.nest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
+            xnode.nest({ tag: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
             const text = xnew({ tag: 'span' }, 'parent: start');
 
             xnew(Child);
@@ -119,7 +119,7 @@ If you call `xnew` inside a component function, a parent-child relationship is c
         }
 
         function Child(xnode) {
-            xnode.nest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
+            xnode.nest({ tag: 'div', style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
             const text = xnew({ tag: 'span' }, 'child: start');
      
             xnode.on('pointerdown', (event) => {
