@@ -46,7 +46,7 @@ Inside the component function, you can implement various process.
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://unpkg.com/xnew@1.x/dist/xnew.js"></script>
+    <script src="https://unpkg.com/xnew@1.6.x/dist/xnew.js"></script>
 </head>
 <body>
     <script>
@@ -86,7 +86,7 @@ If you call `xnew` inside a component function, a parent-child relationship is c
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://unpkg.com/xnew@1.x/dist/xnew.js"></script>
+    <script src="https://unpkg.com/xnew@1.6.x/dist/xnew.js"></script>
 </head>
 <body>
     <script>
