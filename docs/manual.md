@@ -70,13 +70,13 @@ If you omit the `element` parameter, the parent xnode's element or otherwise `do
 ```
 <br>
 
-If you set string as `component`, text content will be added in a created element.
+If you set string as `component`, innerHTML will be added in a created element.
 
 ```
 const xnode = xnew({ tag: 'p', id: 'hoge' }, 'aaa');
 
 // xnode.element: (id=hoge)
-// xnode.element.textContent: aaa
+// xnode.element.innerHTML: aaa
 ```
 
         
