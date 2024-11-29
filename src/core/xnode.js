@@ -2,14 +2,13 @@ import { isString, isNumber, isObject, isFunction } from './common';
 
 export class XNode {
 
-    static id = 0;
-
     static roots = new Set();
   
     static animation = null;
 
     static reset() {
         XNode.roots.forEach((xnode) => xnode.finalize());
+        XNode.roots.clear();
 
         if (XNode.animation) {
             cancelAnimationFrame(XNode.animation);
@@ -36,15 +35,14 @@ export class XNode {
         }
     }
 
-    constructor(parent, element, ...args) {
+    constructor(parent, element, component, ...args) {
         parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
         (parent?._.children ?? XNode.roots).add(this);
 
         const root = parent !== null ? parent._.root : this;
-        const base = (element instanceof Element || element === window) ? element : (parent?._.nest ?? document.body ?? null);
+        const base = (element instanceof Element || element instanceof Window) ? element : (parent?._.nest ?? document.body ?? null);
 
         this._ = {
-            id: XNode.id++,
             root,                           // root xnode
             base,                           // base element
             nest: base,                     // nest element
@@ -52,30 +50,30 @@ export class XNode {
             children: new Set(),            // xhildren xnodes
             state: 'pending',               // [pending -> running <-> stopped -> finalized]
             props: {},                      // properties in the component function
-            components: new Set(),          // conponent functions
+            components: new Set(),          // component functions
             listeners: new Map(),           // event listners
             keys: new Set(),                // keys
-            shared: parent?._.shared ?? {}, // shared data between nodes connected
+            shared: parent?._.shared ?? {}, // shared data
         };
 
         if (parent === null || ['pending', 'running', 'stopped'].includes(parent._.state)) {
-            this._initialize(element, args);
+            this._initialize(element, component, args);
         } else {
             this._.state = 'finalized';
         }
     }
 
-    _initialize(element, args) {
+    _initialize(element, component, args) {
         this.start(); // auto start
     
         if (isObject(element) === true) {
             this.nest(element)
         }
 
-        if (isFunction(args[0])) {
-            this._extend(...args);
-        } else if (isObject(element) === true && isString(args[0]) === true) {
-            this._.nest.innerHTML = args[0];
+        if (isFunction(component)) {
+            this._extend(component, ...args);
+        } else if (isObject(element) === true && isString(component) === true) {
+            this._.nest.innerHTML = component;
         }
 
         // whether the node promise was resolved
@@ -88,7 +86,7 @@ export class XNode {
     }
 
     nest(attributes) {
-        if (this._.nest === window) {
+        if (this._.nest instanceof Window) {
             console.error('xnode nest: Cannot be added to window element.');
         } else if (isObject(attributes) === false) {
             console.error('xnode nest: The arguments are invalid.');
@@ -149,8 +147,8 @@ export class XNode {
     // setup
     //----------------------------------------------------------------------------------------------------
  
-    _extend(Component, ...args) {
-        const props = XNode.wrap(this, Component, this, ...args) ?? {};
+    _extend(component, ...args) {
+        const props = XNode.wrap(this, component, this, ...args) ?? {};
         
         Object.keys(props).forEach((key) => {
             const descripter = Object.getOwnPropertyDescriptor(props, key);
@@ -197,14 +195,14 @@ export class XNode {
         return others;
     }
 
-    extend(Component, ...args) {
-        if (isFunction(Component) === false) {
+    extend(component, ...args) {
+        if (isFunction(component) === false) {
             console.error('xnode extend: The arguments are invalid.');
         } else if (this._.state !== 'pending') {
             console.error('xnode extend: This can not be called after initialized.');
-        } else if (this._.components.has(Component) === false) {
-            this._.components .add(Component);
-            return this._extend(Component, ...args);
+        } else if (this._.components.has(component) === false) {
+            this._.components .add(component);
+            return this._extend(component, ...args);
         }
     }
   
