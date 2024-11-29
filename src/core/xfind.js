@@ -6,7 +6,7 @@ export function xfind(key) {
         console.error('xfind: The arguments are invalid.');
     } else {
         const set = new Set();
-        key.split('/\s+/').filter((key) => XNode.keys.has(key)).forEach((key) => {
+        key.trim().split(/\s+/).filter((key) => XNode.keys.has(key)).forEach((key) => {
             XNode.keys.get(key).forEach((xnode) => set.add(xnode));
         });
         return [...set];

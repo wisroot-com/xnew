@@ -83,6 +83,7 @@
                 state: 'pending',               // [pending -> running <-> stopped -> finalized]
                 tostart: false,                 // flag for start
                 resolve: false,                 // promise
+                start: null,                    // start time
                 props: {},                      // properties in the component function
                 components: new Set(),          // component functions
                 listeners: new Map(),           // event listners
@@ -209,7 +210,7 @@
                 });
 
                 // set keys
-                key.split('/\s+/').forEach((key) => {
+                key.trim().split(/\s+/).forEach((key) => {
                     if (XNode.keys.has(key) === false) XNode.keys.set(key, new Set());
                     XNode.keys.get(key).add(this);
                     this._.keys.add(key);
@@ -227,7 +228,7 @@
             } else if (isFunction(listener) === false) {
                 error('xnode on', 'The arguments are invalid.', 'listener');
             } else {
-                type.split(/\s+/).forEach((type) => XNode.on.call(this, type, listener, options));
+                type.trim().split(/\s+/).forEach((type) => XNode.on.call(this, type, listener, options));
             }
         }
 
@@ -237,7 +238,7 @@
             } else if (listener !== undefined && isFunction(listener) === false) {
                 error('xnode off', 'The argument is invalid.', 'listener');
             } else if (isString(type) === true) {
-                type.split(/\s+/).forEach((type) => XNode.off.call(this, type, listener));
+                type.trim().split(/\s+/).forEach((type) => XNode.off.call(this, type, listener));
             } else if (type === undefined && this._.listeners.size !== 0) {
                 [...this._.listeners.keys()].forEach((type) => XNode.off.call(this, type, listener));
             }
@@ -249,7 +250,7 @@
             } else if (this._.state === 'finalized') {
                 error('xnode emit', 'This function can not be called after finalized.');
             } else {
-                type.split(/\s+/).forEach((type) => XNode.emit.call(this, type, ...args));
+                type.trim().split(/\s+/).forEach((type) => XNode.emit.call(this, type, ...args));
             }
         }
 
@@ -341,7 +342,7 @@
         static start(time) {
             if (['pending', 'stopped'].includes(this._.state) && this._.resolve === true && this._.tostart === true) {
                 if (this._.parent === null || ['running'].includes(this._.parent.state)) {
-                    this._.startTime = time;
+                    this._.start = time;
                     this._.state = 'running';
                     this._.children.forEach((xnode) => XNode.start.call(xnode, time));
                 
@@ -370,7 +371,7 @@
                 this._.children.forEach((xnode) => XNode.update.call(xnode, time));
 
                 if (this._.state === 'running' && isFunction(this._.props.update) === true) {
-                    XNode.wrap.call(this, this._.props.update, time - this._.startTime);
+                    XNode.wrap.call(this, this._.props.update, time - this._.start);
                 }
             }
         }
@@ -500,7 +501,7 @@
             console.error('xfind: The arguments are invalid.');
         } else {
             const set = new Set();
-            key.split('/\s+/').filter((key) => XNode.keys.has(key)).forEach((key) => {
+            key.trim().split(/\s+/).filter((key) => XNode.keys.has(key)).forEach((key) => {
                 XNode.keys.get(key).forEach((xnode) => set.add(xnode));
             });
             return [...set];
