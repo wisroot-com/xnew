@@ -39,8 +39,7 @@
         });
 
         function Content(xnode, pixi) {
-            xnode.extend(PixiDisplayObject, pixi.scene);
-
+            xextend(PixiDisplayObject, pixi.scene);
             xnew(Scene1);
         }
 
@@ -66,14 +65,14 @@
         
         function Text(xnode, value) {
             const text = new PIXI.Text(value, new PIXI.TextStyle({ fontSize: 24, fill: '#000000' }));
-            xnode.extend(PixiDisplayObject, text);
+            xextend(PixiDisplayObject, text);
             text.x = 10;
             text.y = 10;
         }
 
         function Box(xnode, x, y, size, color) {
             const object = new PIXI.Container();
-            xnode.extend(PixiDisplayObject, object);
+            xextend(PixiDisplayObject, object);
 
             object.x = x;
             object.y = y;
@@ -95,7 +94,7 @@
         //----------------------------------------------------------------------
         
         function PixiDisplayObject(xnode, object) {
-            const parent = xnode.context('PIXI.DisplayObject', object);
+            const parent = xcontext('PIXI.DisplayObject', object);
             
             parent?.addChild(object);
             return {

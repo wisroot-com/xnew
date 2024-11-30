@@ -1,6 +1,5 @@
 import { XNode } from '../src/core/xnode';
 import { xnew } from '../src/core/xnew';
-import { xtimer } from '../src/core/xtimer';
 
 beforeEach(() => {
     XNode.reset();

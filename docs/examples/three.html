@@ -46,7 +46,7 @@
         });
 
         function Content(xnode, three) {
-            xnode.extend(ThreeObject3D, three.scene);
+            xextend(ThreeObject3D, three.scene);
 
             xnew(Cube, [0, 0, 0], [40, 40, 40]);
         }
@@ -55,7 +55,7 @@
             const geometry = new THREE.BoxGeometry(sx, sy, sz);
             const material = new THREE.MeshNormalMaterial();
             const object = new THREE.Mesh(geometry, material);
-            xnode.extend(ThreeObject3D, object);
+            xextend(ThreeObject3D, object);
             object.position.set(x, y, z);
 
             return {
@@ -71,7 +71,7 @@
         //----------------------------------------------------------------------
         
         function ThreeObject3D(xnode, object) {
-            const parent = xnode.context('THREE.Object3D', object);
+            const parent = xcontext('THREE.Object3D', object);
 
             parent?.add(object);
             return {

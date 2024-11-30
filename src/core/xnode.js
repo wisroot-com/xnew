@@ -15,7 +15,7 @@ export class XNode {
     
             // initialize component
             if (isFunction(component) === true) {
-                this.extend(component, ...args);
+                XNode.extend.call(this, component, ...args);
             } else if (isObject(element) === true && isString(component) === true) {
                 this.element.innerHTML = component;
             }
@@ -68,17 +68,6 @@ export class XNode {
         }
     }
 
-    extend(component, ...args)
-    {
-        if (isFunction(component) === false) {
-            error('xnode extend', 'The argument is invalid.', 'component');
-        } else if (this._.state !== 'pending') {
-            error('xnode extend', 'This function can not be called after initialized.');
-        } else {
-            return XNode.extend.call(this, component, ...args);
-        }
-    }
-
     start()
     {
         this._.tostart = true;
@@ -99,15 +88,6 @@ export class XNode {
     //----------------------------------------------------------------------------------------------------
     // auxiliary
     //----------------------------------------------------------------------------------------------------        
-
-    context(name, value = undefined)
-    {
-        if (isString(name) === false) {
-            error('xnode context', 'The argument is invalid.', 'name');
-        } else {
-            return XNode.context.call(this, name, value);
-        }
-    }
 
     set key(key)
     {

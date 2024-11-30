@@ -40,7 +40,7 @@
         });
         
         function Content(xnode, matter, canvas) {
-            xnode.extend(MatterComposite, matter.engine.world);
+            xextend(MatterComposite, matter.engine.world);
 
             xnew(MatterComposite, Matter.MouseConstraint.create(matter.engine, { element: canvas }));
 
@@ -52,15 +52,15 @@
 
         function Rectangle(xnode, ...args) {
             const object = Matter.Bodies.rectangle(...args)
-            xnode.extend(MatterComposite, object);
+            xextend(MatterComposite, object);
         }
         function Circle(xnode, ...args) {
             const object = Matter.Bodies.circle(...args)
-            xnode.extend(MatterComposite, object);
+            xextend(MatterComposite, object);
         }
         function Polygon(xnode, ...args) {
             const object = Matter.Bodies.polygon(...args)
-            xnode.extend(MatterComposite, object);
+            xextend(MatterComposite, object);
         }
 
         //----------------------------------------------------------------------
@@ -68,7 +68,7 @@
         //----------------------------------------------------------------------
 
         function MatterComposite(xnode, object) {
-            const parent = xnode.context('Matter.Composite', object);
+            const parent = xcontext('Matter.Composite', object);
                 
             parent && Matter.Composite.add(parent, object);
             return {

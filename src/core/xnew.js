@@ -1,4 +1,4 @@
-import { isObject, isString, isFunction } from './common';
+import { isObject, isString, isFunction, error } from './common';
 import { XNode } from './xnode';
 
 export function xnew(...args) {
@@ -15,9 +15,9 @@ export function xnew(...args) {
         element = args.shift();
     }
 
-    if (args.length === 0 || isFunction(args[0]) || (isObject(element) && isString(args[0]))) {
-        return new XNode(parent, element, ...args);
+    if (isObject(element) === false && args.length > 0 && isFunction(args[0]) === false && isString(args[0]) === false) {
+        error('xnew', 'The argument is invalid.', 'component');
     } else {
-        console.error('xnew: The arguments are invalid.');
+        return new XNode(parent, element, ...args);
     }
 }

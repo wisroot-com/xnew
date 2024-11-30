@@ -43,7 +43,7 @@
         
                 // initialize component
                 if (isFunction(component) === true) {
-                    this.extend(component, ...args);
+                    XNode.extend.call(this, component, ...args);
                 } else if (isObject(element) === true && isString(component) === true) {
                     this.element.innerHTML = component;
                 }
@@ -96,17 +96,6 @@
             }
         }
 
-        extend(component, ...args)
-        {
-            if (isFunction(component) === false) {
-                error('xnode extend', 'The argument is invalid.', 'component');
-            } else if (this._.state !== 'pending') {
-                error('xnode extend', 'This function can not be called after initialized.');
-            } else {
-                return XNode.extend.call(this, component, ...args);
-            }
-        }
-
         start()
         {
             this._.tostart = true;
@@ -127,15 +116,6 @@
         //----------------------------------------------------------------------------------------------------
         // auxiliary
         //----------------------------------------------------------------------------------------------------        
-
-        context(name, value = undefined)
-        {
-            if (isString(name) === false) {
-                error('xnode context', 'The argument is invalid.', 'name');
-            } else {
-                return XNode.context.call(this, name, value);
-            }
-        }
 
         set key(key)
         {
@@ -541,10 +521,10 @@
             element = args.shift();
         }
 
-        if (args.length === 0 || isFunction(args[0]) || (isObject(element) && isString(args[0]))) {
-            return new XNode(parent, element, ...args);
+        if (isObject(element) === false && args.length > 0 && isFunction(args[0]) === false && isString(args[0]) === false) {
+            error('xnew', 'The argument is invalid.', 'component');
         } else {
-            console.error('xnew: The arguments are invalid.');
+            return new XNode(parent, element, ...args);
         }
     }
 
@@ -561,6 +541,30 @@
         }
     }
 
+    function xextend(component, ...args) {
+
+        const xnode = XNode.current;
+
+        if (isFunction(component) === false) {
+            error('xextend', 'The argument is invalid.', 'component');
+        } else if (xnode._.state !== 'pending') {
+            error('xextend', 'This function can not be called after initialized.');
+        } else {
+            return XNode.extend.call(xnode, component, ...args);
+        }
+    }
+
+    function xcontext(name, value) {
+
+        const xnode = XNode.current;
+
+        if (isString(name) === false) {
+            error('xcontext', 'The argument is invalid.', 'name');
+        } else {
+            return XNode.context.call(xnode, name, value);
+        }
+    }
+
     function xscope(...args) {
 
         // parent xnode
@@ -570,10 +574,10 @@
         }
 
         // callback function
-        if (isFunction(args[0])) {
-            return XNode.scope(parent, ...args);
-        } else {
+        if (isFunction(args[0]) === false) {
             error('xscope', 'The argument is invalid.', 'component');
+        } else {
+            return XNode.scope(parent, ...args);
         }
     }
 
@@ -847,6 +851,8 @@
     };
 
     exports.xcomponents = xcomponents;
+    exports.xcontext = xcontext;
+    exports.xextend = xextend;
     exports.xfind = xfind;
     exports.xnew = xnew;
     exports.xscope = xscope;
