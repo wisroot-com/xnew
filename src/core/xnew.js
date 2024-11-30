@@ -21,3 +21,76 @@ export function xnew(...args) {
         return new XNode(parent, element, ...args);
     }
 }
+
+export function xnest(attributes)
+{
+    const xnode = XNode.current;
+
+    if (xnode === null) {
+        error('xnest', 'This function can not be called outside a component function.');
+    } else if (xnode.element instanceof Window) {
+        error('xnest', 'No elements are added to window.');
+    } else if (isObject(attributes) === false) {
+        error('xnest', 'The argument is invalid.', 'attributes');
+    } else if (xnode._.state !== 'pending') {
+        error('xnest', 'This function can not be called after initialized.');
+    } else {
+        xnode.off();
+        XNode.nest.call(xnode, attributes);
+    }
+}
+
+export function xextend(component, ...args) {
+
+    const xnode = XNode.current;
+
+    if (xnode === null) {
+        error('xextend', 'This function can not be called outside a component function.');
+    } else if (isFunction(component) === false) {
+        error('xextend', 'The argument is invalid.', 'component');
+    } else if (xnode._.state !== 'pending') {
+        error('xextend', 'This function can not be called after initialized.');
+    } else {
+        return XNode.extend.call(xnode, component, ...args);
+    }
+}
+
+export function xcontext(name, value) {
+
+    const xnode = XNode.current;
+
+    if (isString(name) === false) {
+        error('xcontext', 'The argument is invalid.', 'name');
+    } else {
+        return XNode.context.call(xnode, name, value);
+    }
+}
+
+export function xfind(key)
+{
+    if (isString(key) === false) {
+        console.error('xfind: The arguments are invalid.');
+    } else {
+        const set = new Set();
+        key.trim().split(/\s+/).forEach((key) => {
+            XNode.keys.get(key)?.forEach((xnode) => set.add(xnode));
+        });
+        return [...set];
+    }
+}
+
+export function xscope(...args) {
+
+    // parent xnode
+    let parent = undefined;
+    if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
+        parent = args.shift();
+    }
+
+    // callback function
+    if (isFunction(args[0]) === false) {
+        error('xscope', 'The argument is invalid.', 'component');
+    } else {
+        return XNode.scope(parent, ...args);
+    }
+}

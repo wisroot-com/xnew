@@ -1,6 +1,5 @@
 import { XNode } from '../src/core/xnode';
-import { xnew } from '../src/core/xnew';
-import { xfind } from '../src/core/xfind';
+import { xnew, xfind } from '../src/core/xnew';
 
 beforeEach(() => {
     XNode.reset();

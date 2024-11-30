@@ -528,16 +528,21 @@
         }
     }
 
-    function xfind(key)
+    function xnest$1(attributes)
     {
-        if (isString(key) === false) {
-            console.error('xfind: The arguments are invalid.');
+        const xnode = XNode.current;
+
+        if (xnode === null) {
+            error('xnest', 'This function can not be called outside a component function.');
+        } else if (xnode.element instanceof Window) {
+            error('xnest', 'No elements are added to window.');
+        } else if (isObject(attributes) === false) {
+            error('xnest', 'The argument is invalid.', 'attributes');
+        } else if (xnode._.state !== 'pending') {
+            error('xnest', 'This function can not be called after initialized.');
         } else {
-            const set = new Set();
-            key.trim().split(/\s+/).forEach((key) => {
-                XNode.keys.get(key)?.forEach((xnode) => set.add(xnode));
-            });
-            return [...set];
+            xnode.off();
+            XNode.nest.call(xnode, attributes);
         }
     }
 
@@ -545,7 +550,9 @@
 
         const xnode = XNode.current;
 
-        if (isFunction(component) === false) {
+        if (xnode === null) {
+            error('xextend', 'This function can not be called outside a component function.');
+        } else if (isFunction(component) === false) {
             error('xextend', 'The argument is invalid.', 'component');
         } else if (xnode._.state !== 'pending') {
             error('xextend', 'This function can not be called after initialized.');
@@ -562,6 +569,19 @@
             error('xcontext', 'The argument is invalid.', 'name');
         } else {
             return XNode.context.call(xnode, name, value);
+        }
+    }
+
+    function xfind(key)
+    {
+        if (isString(key) === false) {
+            console.error('xfind: The arguments are invalid.');
+        } else {
+            const set = new Set();
+            key.trim().split(/\s+/).forEach((key) => {
+                XNode.keys.get(key)?.forEach((xnode) => set.add(xnode));
+            });
+            return [...set];
         }
     }
 
@@ -651,7 +671,7 @@
     }
 
     function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-        xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
+        xnest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
 
         const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
         const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -689,7 +709,7 @@
     }
 
     function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-        xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
+        xnest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
         const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
         const strokeStyle = `stroke-linejoin: round; stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)};`;
 
@@ -717,7 +737,7 @@
     }
 
     function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-        xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
+        xnest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
 
         const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
         const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -775,10 +795,10 @@
     }
 
     function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
-        xnode.nest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
-        xnode.nest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
+        xnest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
+        xnest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
         const absolute = xnode.element;
-        xnode.nest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
+        xnest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
 
         const canvas = xnew({ tag: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
         
@@ -854,6 +874,7 @@
     exports.xcontext = xcontext;
     exports.xextend = xextend;
     exports.xfind = xfind;
+    exports.xnest = xnest$1;
     exports.xnew = xnew;
     exports.xscope = xscope;
 
