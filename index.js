@@ -1,5 +1,7 @@
 export { xnew } from './src/core/xnew';
 export { xfind } from './src/core/xfind';
+export { xextend } from './src/core/xextend';
+export { xcontext } from './src/core/xcontext';
 export { xscope } from './src/core/xscope';
 
 import { AnalogStick } from './src/components/AnalogStick';

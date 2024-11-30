@@ -10,9 +10,9 @@ export function xscope(...args) {
     }
 
     // callback function
-    if (isFunction(args[0])) {
-        return XNode.scope(parent, ...args);
-    } else {
+    if (isFunction(args[0]) === false) {
         error('xscope', 'The argument is invalid.', 'component');
+    } else {
+        return XNode.scope(parent, ...args);
     }
 }

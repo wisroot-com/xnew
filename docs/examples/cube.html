@@ -46,7 +46,7 @@
         });
 
         function Content(xnode, three) {
-            xnode.extend(ThreeObject, three.scene);
+            xextend(ThreeObject, three.scene);
             xnew(Light);
         
             // call iteratively (100ms)
@@ -59,7 +59,7 @@
 
         function Light(xnode) {
             const light = new THREE.PointLight(0xFFFFFF, 1);
-            xnode.extend(ThreeObject, light);
+            xextend(ThreeObject, light);
 
             light.position.set(0, 0, +100);
         }
@@ -69,7 +69,7 @@
             const geometry = new THREE.BoxGeometry(size, size, size);
             const material = new THREE.MeshLambertMaterial({ color });
             const object = new THREE.Mesh(geometry, material);
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
 
             object.position.x = x;
             object.position.y = y;
@@ -101,7 +101,7 @@
         //----------------------------------------------------------------------
         
         function ThreeObject(xnode, object) {
-            const parent = xnode.context('THREE.Object3D', object);
+            const parent = xcontext('THREE.Object3D', object);
 
             parent?.add(object);
             return {

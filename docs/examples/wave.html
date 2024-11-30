@@ -27,7 +27,7 @@
     <script>
         xnew(document.querySelector('#main'), (xnode) => {
             const screen = xnew(xcomponents.Screen, { width: 800, height: 400 });
-            xnode.context('screen', screen);
+            xcontext('screen', screen);
 
             xnew(Reset);
 
@@ -39,7 +39,7 @@
         });
 
         function Reset(xnode) {
-            const screen = xnode.context('screen');
+            const screen = xcontext('screen');
             const ctx = screen.canvas.getContext('2d');
             return {
                 update() {
@@ -51,7 +51,7 @@
         }
 
         function Wave(xnode, shift) {
-            const screen = xnode.context('screen');
+            const screen = xcontext('screen');
             const ctx = screen.canvas.getContext('2d');
             
             const num = 200;

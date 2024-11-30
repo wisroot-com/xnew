@@ -59,8 +59,8 @@
         });
 
         function Content(xnode, three, pixi) {
-            xnode.extend(ThreeObject3D, three.scene);
-            xnode.extend(PixiDisplayObject, pixi.scene);
+            xextend(ThreeObject3D, three.scene);
+            xextend(PixiDisplayObject, pixi.scene);
 
             xnew(Box, [800 / 2, 400 / 2], [160, 160], 0xEA1E63);
             xnew(Cube, [0, 0, 0], [40, 40, 40]);
@@ -68,7 +68,7 @@
 
         function Box(xnode, [x, y], [sx, sy], color) {
             const object = new PIXI.Container();
-            xnode.extend(PixiDisplayObject, object);
+            xextend(PixiDisplayObject, object);
             
             object.x = x;
             object.y = y;
@@ -89,7 +89,7 @@
             const geometry = new THREE.BoxGeometry(sx, sy, sz);
             const material = new THREE.MeshNormalMaterial();
             const object = new THREE.Mesh(geometry, material);
-            xnode.extend(ThreeObject3D, object);
+            xextend(ThreeObject3D, object);
 
             return {
                 update() {
@@ -103,7 +103,7 @@
         //----------------------------------------------------------------------
         
         function PixiDisplayObject(xnode, object) {
-            const parent = xnode.context('PIXI.DisplayObject', object);
+            const parent = xcontext('PIXI.DisplayObject', object);
             
             parent?.addChild(object);
             return {
@@ -114,7 +114,7 @@
         }
 
         function ThreeObject3D(xnode, object) {
-            const parent = xnode.context('THREE.Object3D', object);
+            const parent = xcontext('THREE.Object3D', object);
 
             parent?.add(object);
             return {

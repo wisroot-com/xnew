@@ -6,7 +6,7 @@ As shown below, `xnew` accepts some arguments.
 ```
 // parent:    [a xnode object]
 // element:   [an existing html element] or [attributes to create a html element]  
-// component: [an component function] or [an inner html for a created html element]  
+// component: [an component function] or [an inner html for the created html element]  
 // ...args:   [arguments for the component function]
 
 xnew(parent, element, component, ...args);
@@ -191,9 +191,9 @@ const x = xnode.counter; // getter
 
 ## Extend
 You can create a component function that extends another component function.
-### `xnode.extend`
+### `xextend`
 ```
-xnode.extend(component, ...args);
+xextend(component, ...args);
 ```
 ### example
 
@@ -212,7 +212,7 @@ function Base(xnode) {
 ```
 ```
 const xnode = xnew((xnode) => {
-    xnode.extend(Base);
+    xextend(Base);
 
     return {
         update() {
@@ -232,11 +232,11 @@ xnode.hoge();
 ```
 - System properties defined in both component functions are automatically merged.
 - Original properties defined in both component functions are overridden.
-    However, By using the return value of `xnode.extend`, you can change it to execute both.
+    However, By using the return value of `xextend`, you can change it to execute both.
 
 ```
 const xnode = xnew((xnode) => {
-    const props = xnode.extend(Base);
+    const props = xextend(Base);
 
     return {
         update() {
@@ -404,34 +404,34 @@ xnew((xnode1) =>  {
 ## Context
 You can use context property when you want to get properties on higher xnode.
 
-### `xnode.context`
+### `xcontext`
 ```
 // set
-xnode.context(name, value);
+xcontext(name, value);
 // get
-xnode.context(name);
+xcontext(name);
 
 ```
 
 ### example
 ```
 xnew((xnode) => {
-    xnode.context('hoge', 1); // undefined (return previus value)
-    xnode.context('hoge');    // 1
+    xcontext('hoge', 1); // undefined (return previus value)
+    xcontext('hoge');    // 1
 
     xnew((xnode) => {
-        xnode.context('hoge'); // 1
+        xcontext('hoge'); // 1
 
         xnew((xnode) => {
-            xnode.context('hoge', 2); // 1 (return previus value)
-            xnode.context('hoge');    // 2
+            xcontext('hoge', 2); // 1 (return previus value)
+            xcontext('hoge');    // 2
 
             xnew((xnode) => {
-                xnode.context('hoge'); // 2
+                xcontext('hoge'); // 2
             });
         });
         
-        xnode.context('hoge'); // 1
+        xcontext('hoge'); // 1
     });
 });
 ```
