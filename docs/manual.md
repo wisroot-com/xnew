@@ -82,11 +82,11 @@ const xnode = xnew({ tag: 'p', id: 'hoge' }, 'aaa');
         
 ## Element
 There are various ways to create elements.
-### `xnode.nest`
+### `xnest`
 This create a new element as a child of the current element. and replace `xnode.element`.
 ```
-xnode.nest(attributes);
-// e.g.: xnode.nest({ tag: 'div', type: 'aaa', class: 'bbb', style: 'color: #000;' });
+xnest(attributes);
+// e.g.: xnest({ tag: 'div', type: 'aaa', class: 'bbb', style: 'color: #000;' });
 ```
 ### example
 ```
@@ -95,12 +95,12 @@ xnew({ tag: 'div', name: 'A'}, (xnode1) =>{
 });
 
 xnew((xnode2) => {
-    xnode2.nest({ tag: 'div', name: 'B' });
+    xnest({ tag: 'div', name: 'B' });
     // xnode2.element: (div B)
 }
 
 xnew({ tag: 'div', name: 'C' }, (xnode3) => { 
-    xnode3.nest({ tag: 'div', name: 'D' }); // inner div
+    xnest({ tag: 'div', name: 'D' }); // inner div
     // xnode3.element: (div D)
     // xnode3.element.parentElement: (div C)
 }

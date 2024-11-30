@@ -1,7 +1,7 @@
 import { xnew } from '../core/xnew';
 
 export function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-    xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
+    xnest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
     const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
     const strokeStyle = `stroke-linejoin: round; stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)};`;
 
