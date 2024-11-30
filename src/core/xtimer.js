@@ -35,7 +35,7 @@ export function xtimer(callback, delay = 0) {
         }
 
         function wcallback() {
-            const repeat = XNode.wrap(xnode.parent, callback);
+            const repeat = XNode.wrap.call(xnode.parent, callback);
             if (repeat === true) {
                 xnode.stop();
                 offset = 0.0;
