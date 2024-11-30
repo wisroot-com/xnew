@@ -20,7 +20,6 @@ export function Screen(xnode, { width = 640, height = 480, objectFit = 'contain'
     const xwin = xnew(window);
     xwin.on('resize', resize);
 
-    xtimer(() => resize());
     resize();
 
     function resize() {
@@ -54,8 +53,18 @@ export function Screen(xnode, { width = 640, height = 480, objectFit = 'contain'
     }
 
     return {
-        get width() { return width; },
-        get height() { return height; },
-        get canvas() { return canvas.element; }
+        start() {
+            resize();
+        },
+        get width() {
+            return width;
+        },
+        get height() {
+            return height;
+
+        },
+        get canvas() {
+            return canvas.element;
+        }
     }
 }

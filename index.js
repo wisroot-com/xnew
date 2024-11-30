@@ -1,6 +1,6 @@
 export { xnew } from './src/core/xnew';
 export { xfind } from './src/core/xfind';
-export { xtimer } from './src/core/xtimer';
+export { xscope } from './src/core/xscope';
 
 import { AnalogStick } from './src/components/AnalogStick';
 import { CircleButton } from './src/components/CircleButton';

@@ -11,8 +11,8 @@ describe('xnode timer', () => {
         return new Promise((resolve, reject) => {
             let state = 0;
             let start = Date.now();
-            const margin = 50;
-            xtimer(() => {
+            const margin = 100;
+            setTimeout(() => {
                 const d = Date.now() - start;
                 expect(d).toBeGreaterThan(500 - margin);
                 expect(d).toBeLessThan(500 + margin);

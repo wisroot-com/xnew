@@ -50,9 +50,9 @@
             xnew(Light);
         
             // call iteratively (100ms)
-            xtimer(() => {
+            setInterval(() => {
                 const position = [100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5)];
-                xnew(Cube, position, 0xFFFFFF * Math.random());
+                xnew(xnode, Cube, position, 0xFFFFFF * Math.random());
                 return true;
             }, 100);
         }
@@ -81,7 +81,9 @@
             velocity.z = Math.random() - 0.5;
 
             // finalize after 5000ms
-            xtimer(() => xnode.finalize(), 5 * 1000);
+            setTimeout(() => {
+                xnode.finalize()
+            }, 5 * 1000);
 
             return {
                 update() {

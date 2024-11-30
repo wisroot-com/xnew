@@ -32,8 +32,8 @@
             xnew(Reset);
 
             let counter = 0;
-            xtimer(() => {
-                xnew(Wave, counter++ / 12 * Math.PI);
+            setInterval(() => {
+                xnew(xnode, Wave, counter++ / 12 * Math.PI);
                 return true;
             }, 500);
         });
