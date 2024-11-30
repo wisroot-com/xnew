@@ -67,11 +67,6 @@
             return this._.nest;
         }
 
-        get shared()
-        {
-            return this._.shared;
-        }
-
         get promise()
         {
             return this._.promises.length > 0 ? Promise.all(this._.promises) : Promise.resolve();
@@ -206,7 +201,6 @@
                 listeners: new Map(),           // event listners
                 context: new Map(),             // context value
                 keys: new Set(),                // keys
-                shared: parent?._.shared ?? {}, // shared data
             };
 
             if (parent !== null && ['finalized'].includes(parent._.state)) {

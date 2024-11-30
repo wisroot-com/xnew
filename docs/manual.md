@@ -382,20 +382,6 @@ xnew((xnode1) => {
 })
 ```
 
-## Shared data
-You can use `xnode.shared` when you want to share data among xnodes connected by parent-child relationship.
-### `xnode.shared`
-
-### example
-```
-xnew((xnode1) =>  {
-    xnode1.shared.hoge = 1;
-
-    xnew((xnode2) =>  {
-        xnode2.shared.hoge; // 1
-    });
-});
-```
 ## Context
 You can use context property when you want to get properties on higher xnode.
 
