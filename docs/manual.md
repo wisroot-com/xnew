@@ -299,31 +299,6 @@ xnode.emit('myevent', data);
 - `xnode.emit('myevent')` emits only to self xnode, and not to other xnodes.
 - If you add `#` token (e.g. `xnode.emit('#myevent')`), it emit to all xnodes. this message can be received by using xnode.on('#myevent').
 
-## Timer
-By setting timer, you can execute time delay functions.
-### `xtimer`
-```
-const timer = xtimer(callback, delay);
-```
-### example
-
-```
-xnew((xnode) =>  {
-    // call only once (1000ms delay)
-    const timer1 = xtimer(() => {
-        // ...
-    }, 1000);
-
-    // call repeatedly (1000ms interval)
-    const timer2 = xtimer(() => {
-        // ...
-        return true;
-    }, 1000);
-});
-```
-- Timers can be canceled by calling `timer.finalize()`.
-- Timers are automatically canceled when `xnode.finalize()` is called.
-
 ## Find xnode
 Once an xnode has a key, you can look it up anywhere.
 
@@ -358,7 +333,7 @@ xfind('ccc'); // [xnode3]
 xfind('aaa bbb'); // [xnode1, xnode2, xnode3]         
 ```
 
-## Notes for parent xnode 
+## Scope 
 `parent`(the first argument of xnew) can be omitted.  
 However, in callback functions, appropriate parent xnode may not be automatically set.  
 In such cases, the first argument should be set intentionally.  
@@ -377,7 +352,12 @@ xnew((xnode1) => {
         xnew(component);
     });
 
-    xtimer(() => {
+    setTimeout(() => {
+        // parent: xnode1; 
+        xnew(xnode1, component);
+    }, 1000);
+
+    xscope(xnode1, setTimeout, () => {
         // parent: xnode1; 
         xnew(component);
     }, 1000);
@@ -393,15 +373,13 @@ xnew((xnode1) => {
         xnew(component);
     });
 
-    // not xtimer
+    // parent xnode is not set
     setTimeout(() => {
         // parent: null; 
         xnew(component);
     }, 1000);
 
-
     const xnode2 = xnew(component);
-
     xnode2.on('click', () => {
         // parent: xnode2; 
         xnew(component);
