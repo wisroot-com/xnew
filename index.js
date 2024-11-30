@@ -1,4 +1,4 @@
-export { xnew, xnest, xfind, xextend, xcontext, xscope } from './src/core/xnew';
+export { xnew, xnest, xfind, xextend, xcontext } from './src/core/xnew';
 
 import { AnalogStick } from './src/components/AnalogStick';
 import { CircleButton } from './src/components/CircleButton';
