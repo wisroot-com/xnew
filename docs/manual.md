@@ -357,11 +357,6 @@ xnew((xnode1) => {
         xnew(xnode1, component);
     }, 1000);
 
-    xscope(xnode1, setTimeout, () => {
-        // parent: xnode1; 
-        xnew(component);
-    }, 1000);
-
 
     // ----------------------------------------
     // appropriate parent is not(?) set

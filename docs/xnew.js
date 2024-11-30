@@ -38,7 +38,7 @@
         
                 // nest html element
                 if (isObject(element) === true) {
-                    this.nest(element);
+                    XNode.nest.call(this, element);
                 }
         
                 // initialize component
@@ -80,20 +80,6 @@
         get state()
         {
             return this._.state
-        }
-
-        nest(attributes)
-        {
-            if (this.element instanceof Window) {
-                error('xnode nest', 'No elements are added to window.');
-            } else if (isObject(attributes) === false) {
-                error('xnode nest', 'The argument is invalid.', 'attributes');
-            } else if (this.state !== 'pending') {
-                error('xnode nest', 'This function can not be called after initialized.');
-            } else {
-                this.off();
-                XNode.nest.call(this, attributes);
-            }
         }
 
         start()
@@ -585,22 +571,6 @@
         }
     }
 
-    function xscope(...args) {
-
-        // parent xnode
-        let parent = undefined;
-        if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
-            parent = args.shift();
-        }
-
-        // callback function
-        if (isFunction(args[0]) === false) {
-            error('xscope', 'The argument is invalid.', 'component');
-        } else {
-            return XNode.scope(parent, ...args);
-        }
-    }
-
     function DragEvent(xnode) {
         const base = xnew();
         const xwin = xnew(window);
@@ -876,6 +846,5 @@
     exports.xfind = xfind;
     exports.xnest = xnest$1;
     exports.xnew = xnew;
-    exports.xscope = xscope;
 
 }));

@@ -10,7 +10,7 @@ export class XNode {
     
             // nest html element
             if (isObject(element) === true) {
-                this.nest(element)
+                XNode.nest.call(this, element);
             }
     
             // initialize component
@@ -52,20 +52,6 @@ export class XNode {
     get state()
     {
         return this._.state
-    }
-
-    nest(attributes)
-    {
-        if (this.element instanceof Window) {
-            error('xnode nest', 'No elements are added to window.');
-        } else if (isObject(attributes) === false) {
-            error('xnode nest', 'The argument is invalid.', 'attributes');
-        } else if (this.state !== 'pending') {
-            error('xnode nest', 'This function can not be called after initialized.');
-        } else {
-            this.off();
-            XNode.nest.call(this, attributes);
-        }
     }
 
     start()
