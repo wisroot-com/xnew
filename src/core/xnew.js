@@ -1,8 +1,8 @@
 import { isObject, isString, isFunction, error } from './common';
 import { XNode } from './xnode';
 
-export function xnew(...args) {
-
+export function xnew(...args)
+{
     // parent xnode
     let parent = undefined;
     if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
@@ -40,8 +40,8 @@ export function xnest(attributes)
     }
 }
 
-export function xextend(component, ...args) {
-
+export function xextend(component, ...args)
+{
     const xnode = XNode.current;
 
     if (xnode === null) {
@@ -55,8 +55,8 @@ export function xextend(component, ...args) {
     }
 }
 
-export function xcontext(name, value) {
-
+export function xcontext(name, value)
+{
     const xnode = XNode.current;
 
     if (isString(name) === false) {
@@ -69,7 +69,7 @@ export function xcontext(name, value) {
 export function xfind(key)
 {
     if (isString(key) === false) {
-        console.error('xfind: The arguments are invalid.');
+        error('xfind', 'The argument is invalid.', 'key');
     } else {
         const set = new Set();
         key.trim().split(/\s+/).forEach((key) => {
@@ -79,8 +79,8 @@ export function xfind(key)
     }
 }
 
-export function xscope(...args) {
-
+export function xscope(...args)
+{
     // parent xnode
     let parent = undefined;
     if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {

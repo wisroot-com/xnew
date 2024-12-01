@@ -59,7 +59,7 @@
                 update(time) {
                     const n = Math.floor(1 + time / 10);
                     for (let i = Math.max(0, n - num); i < n; i++) {
-                        const s = i / num * 100;
+                        const s = i / num * 50;
                         const t = time / 30 + s;
                         const u = Math.pow(0.5 + i / num, 2) * 100;
                         const x = (Math.cos(t / 17 + shift) + Math.cos(t / 15 + shift)) * u;
@@ -72,7 +72,7 @@
                         ctx.closePath();
                         ctx.fill();
                     }
-                    if (n > 4 * num) {
+                    if (n > 3 * num) {
                         xnode.finalize();
                     }
                 }
