@@ -87,9 +87,9 @@ export class XNode {
     on(type, listener, options)
     {
         if (isString(type) === false) {
-            error('xnode on', 'The arguments are invalid.', 'type');
+            error('xnode on', 'The argument is invalid.', 'type');
         } else if (isFunction(listener) === false) {
-            error('xnode on', 'The arguments are invalid.', 'listener');
+            error('xnode on', 'The argument is invalid.', 'listener');
         } else {
             type.trim().split(/\s+/).forEach((type) => XNode.on.call(this, type, listener, options));
         }
@@ -242,7 +242,7 @@ export class XNode {
                     if (descripter.value instanceof Promise) {
                         this._.promises.push(descripter.value);
                     } else {
-                        error('xnode extend', 'The property is invalid.', 'promise');
+                        error('xnode extend', 'The property is invalid.', key);
                     }
                 } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
                     if (isFunction(descripter.value)) {

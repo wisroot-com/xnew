@@ -3,8 +3,8 @@ import { xnew } from '../core/xnew';
 export function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
     xnest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
     xnest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
-    const absolute = xnode.element;
     xnest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
+    const absolute = xnode.element.parentElement;
 
     const canvas = xnew({ tag: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
     
