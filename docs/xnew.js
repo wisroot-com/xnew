@@ -115,9 +115,9 @@
         on(type, listener, options)
         {
             if (isString(type) === false) {
-                error('xnode on', 'The arguments are invalid.', 'type');
+                error('xnode on', 'The argument is invalid.', 'type');
             } else if (isFunction(listener) === false) {
-                error('xnode on', 'The arguments are invalid.', 'listener');
+                error('xnode on', 'The argument is invalid.', 'listener');
             } else {
                 type.trim().split(/\s+/).forEach((type) => XNode.on.call(this, type, listener, options));
             }
@@ -270,7 +270,7 @@
                         if (descripter.value instanceof Promise) {
                             this._.promises.push(descripter.value);
                         } else {
-                            error('xnode extend', 'The property is invalid.', 'promise');
+                            error('xnode extend', 'The property is invalid.', key);
                         }
                     } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
                         if (isFunction(descripter.value)) {
@@ -339,7 +339,9 @@
                 this._.children.forEach((xnode) => XNode.update.call(xnode, time));
 
                 if (this._.state === 'running' && isFunction(this._.props.update) === true) {
-                    XNode.scope.call(this, this._.props.update, time - this._.start);
+                    // time: elapsed time from start
+                    time - this._.start;
+                    XNode.scope.call(this, this._.props.update);
                 }
             }
         }
@@ -487,8 +489,8 @@
 
     XNode.reset();
 
-    function xnew(...args) {
-
+    function xnew(...args)
+    {
         // parent xnode
         let parent = undefined;
         if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
@@ -526,8 +528,8 @@
         }
     }
 
-    function xextend(component, ...args) {
-
+    function xextend(component, ...args)
+    {
         const xnode = XNode.current;
 
         if (xnode === null) {
@@ -541,8 +543,8 @@
         }
     }
 
-    function xcontext(name, value) {
-
+    function xcontext(name, value)
+    {
         const xnode = XNode.current;
 
         if (isString(name) === false) {
@@ -555,7 +557,7 @@
     function xfind(key)
     {
         if (isString(key) === false) {
-            console.error('xfind: The arguments are invalid.');
+            error('xfind', 'The argument is invalid.', 'key');
         } else {
             const set = new Set();
             key.trim().split(/\s+/).forEach((key) => {
@@ -761,8 +763,8 @@
     function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
         xnest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
         xnest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
-        const absolute = xnode.element;
         xnest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
+        const absolute = xnode.element.parentElement;
 
         const canvas = xnew({ tag: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
         

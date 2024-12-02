@@ -55,8 +55,10 @@
             const ctx = screen.canvas.getContext('2d');
             
             const num = 200;
+            let counter = 0;
             return {
-                update(time) {
+                update() {
+                    const time = 1000.0 / 60.0 * counter++;
                     const n = Math.floor(1 + time / 10);
                     for (let i = Math.max(0, n - num); i < n; i++) {
                         const s = i / num * 50;

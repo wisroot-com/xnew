@@ -137,9 +137,8 @@ const xnode = xnew((xnode) => {
         start() {
             // fires before first update.
         },
-        update(time) {
+        update() {
             // executed repeatedly at the rate available for rendering.
-            // time: elapsed time from start
         },
         stop() {
             // fires when xnode.stop is called.
