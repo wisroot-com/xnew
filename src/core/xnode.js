@@ -311,7 +311,9 @@ export class XNode {
             this._.children.forEach((xnode) => XNode.update.call(xnode, time));
 
             if (this._.state === 'running' && isFunction(this._.props.update) === true) {
-                XNode.scope.call(this, this._.props.update, time - this._.start);
+                // time: elapsed time from start
+                const e = time - this._.start;
+                XNode.scope.call(this, this._.props.update);
             }
         }
     }
