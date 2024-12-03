@@ -47,7 +47,7 @@
             const sprite = new PIXI.Sprite(texture);
             pixi.scene.addChild(sprite);
 
-            xnew(Content, three, pixi);
+            xnew(Contents, three, pixi);
 
             return {
                 update() {
@@ -58,7 +58,7 @@
             };
         });
 
-        function Content(xnode, three, pixi) {
+        function Contents(xnode, three, pixi) {
             xextend(ThreeObject3D, three.scene);
             xextend(PixiDisplayObject, pixi.scene);
 

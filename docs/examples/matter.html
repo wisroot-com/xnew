@@ -36,10 +36,10 @@
             matter.render = Matter.Render.create({ canvas: screen.canvas, engine: matter.engine, options: { width: screen.width, height: screen.height } });
             Matter.Render.run(matter.render);
             
-            xnew(Content, matter, screen.canvas);
+            xnew(Contents, matter, screen.canvas);
         });
         
-        function Content(xnode, matter, canvas) {
+        function Contents(xnode, matter, canvas) {
             xextend(MatterComposite, matter.engine.world);
 
             xnew(MatterComposite, Matter.MouseConstraint.create(matter.engine, { element: canvas }));

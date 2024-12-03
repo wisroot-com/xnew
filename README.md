@@ -17,5 +17,5 @@ Suitable for a dynamic web site, web games and animation.
 npm install xnew@1.6.x
 ```
 ```
-import { xnew, xnest, xextend, xcontext, xfind, xcomponents } from 'xnew'
+import { xnew, xnest, xextend } from 'xnew'
 ```

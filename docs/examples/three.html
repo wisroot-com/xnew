@@ -36,7 +36,7 @@
             three.scene = new THREE.Scene();
             three.scene.background = new THREE.Color(0xFFFFFF);
 
-            xnew(Content, three);
+            xnew(Contents, three);
 
             return {
                 update() {
@@ -45,7 +45,7 @@
             };
         });
 
-        function Content(xnode, three) {
+        function Contents(xnode, three) {
             xextend(ThreeObject3D, three.scene);
 
             xnew(Cube, [0, 0, 0], [40, 40, 40]);

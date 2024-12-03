@@ -11,35 +11,24 @@
 <body>
     <div id="main" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap;"></div>
     <script>
-        xnew(document.querySelector('#main'), (xnode) => {
-            // xcomponents.Screen is a component function that defines a canvas
-            
-            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
-                xnew({ tag: 'p' }, 'object fit: contain (default)');
-                xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
-                    const screen = xnew(xcomponents.Screen, { width: 400, height: 200, objectFit: 'contain', pixelated: true });
-                    xnew(Content, screen.canvas);
-                });
-            });
-
-            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
-                xnew({ tag: 'p' }, 'object fit: cover');
-                xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
-                    const screen = xnew(xcomponents.Screen, { width: 400, height: 200, objectFit: 'cover', pixelated: true });
-                    xnew(Content, screen.canvas);
-                });
-            });
-
-            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
-                xnew({ tag: 'p' }, 'object fit: fill');
-                xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
-                    const screen = xnew(xcomponents.Screen, { width: 400, height: 200, objectFit: 'fill', pixelated: true });
-                    xnew(Content, screen.canvas);
-                });
-            });
+        xnew(document.querySelector('#main'), (xnode) => {            
+            xnew(Screen, 'object fit: contain (default)', 'contain');
+            xnew(Screen, 'object fit: cover', 'cover');
+            xnew(Screen, 'object fit: fill', 'fill');
         });
 
-        function Content(xnode, canvas) {
+        function Screen(xnode, text, objectFit) {
+            xnest({ style: 'margin: 8px auto;' });
+
+            xnew({ tag: 'p' }, text);
+            xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
+                // xcomponents.Screen is a component function that defines a canvas
+                const screen = xnew(xcomponents.Screen, { width: 400, height: 200, objectFit, pixelated: true });
+                xnew(Draw, screen.canvas);
+            });
+        }
+
+        function Draw(xnode, canvas) {
             const context = canvas.getContext('2d');
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
