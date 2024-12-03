@@ -42,8 +42,8 @@ xnew((xnode1) => {
 
 `element` is set for the html element of the new xnode. (accessed by `xnode.element`)  
 e.g. `xnew(document.querySelector('#hoge'), component)`  
-e.g. `xnew({ tag: 'div', style: '', ... }, component)`   
-If you omit the tag property, `tag: 'div'` will be set automatically.  
+e.g. `xnew({ tagName: 'div', style: '', ... }, component)`   
+If you omit the tagName property, `tagName: 'div'` will be set automatically.  
 
 If you omit the `element` parameter, the parent xnode's element or otherwise `document.body` is assigned. 
     
@@ -62,7 +62,7 @@ If you omit the `element` parameter, the parent xnode's element or otherwise `do
             // xnode3.element: (id=hoge)
         });
 
-        xnew({ tag: 'div', id: 'fuga' }, (xnode4) => {
+        xnew({ tagName: 'div', id: 'fuga' }, (xnode4) => {
             // xnode4.element: (id=fuga) (as a child element of hoge)
         });
     });
@@ -73,7 +73,7 @@ If you omit the `element` parameter, the parent xnode's element or otherwise `do
 If you set string as `component`, innerHTML will be added in a created element.
 
 ```
-const xnode = xnew({ tag: 'p', id: 'hoge' }, 'aaa');
+const xnode = xnew({ tagName: 'p', id: 'hoge' }, 'aaa');
 
 // xnode.element: (id=hoge)
 // xnode.element.innerHTML: aaa
@@ -86,26 +86,26 @@ There are various ways to create elements.
 This create a new element as a child of the current element. and replace `xnode.element`.
 ```
 xnest(attributes);
-// e.g.: xnest({ tag: 'div', type: 'aaa', class: 'bbb', style: 'color: #000;' });
+// e.g.: xnest({ tagName: 'div', type: 'aaa', className: 'bbb', style: 'color: #000;' });
 ```
 ### example
 ```
-xnew({ tag: 'div', name: 'A'}, (xnode1) =>{
+xnew({ tagName: 'div', name: 'A'}, (xnode1) =>{
     // xnode1.element: (div A)
 });
 
 xnew((xnode2) => {
-    xnest({ tag: 'div', name: 'B' });
+    xnest({ tagName: 'div', name: 'B' });
     // xnode2.element: (div B)
 }
 
-xnew({ tag: 'div', name: 'C' }, (xnode3) => { 
-    xnest({ tag: 'div', name: 'D' }); // inner div
+xnew({ tagName: 'div', name: 'C' }, (xnode3) => { 
+    xnest({ tagName: 'div', name: 'D' }); // inner div
     // xnode3.element: (div D)
     // xnode3.element.parentElement: (div C)
 }
 
-const xnode4 = xnew({ tag: 'div', name: 'E' }, 'aaa');
+const xnode4 = xnew({ tagName: 'div', name: 'E' }, 'aaa');
 // xnode4.element: (div E)
 // xnode4.element.textContent: aaa
 ```

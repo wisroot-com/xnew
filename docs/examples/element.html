@@ -19,9 +19,9 @@
         });
 
         function Div1(xnode) {
-            xnest({ tag: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
+            xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
 
-            xnew({ tag: 'p' }, 'my div');
+            xnew({ tagName: 'p' }, 'my div');
             xnew({ style: 'display: flex;'}, () => {
                 xnew({ style: 'width: 160px; height: 36px; background: #d66;'}, '1');
                 xnew({ style: 'width: 160px; height: 36px; background: #6d6;'}, '2');
@@ -30,11 +30,11 @@
         }
 
         function Div2(xnode) {
-            xnest({ tag: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
+            xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
           
-            xnew({ tag: 'p' }, 'my button');
+            xnew({ tagName: 'p' }, 'my button');
 
-            const button = xnew({ tag: 'button' }, 'click me');
+            const button = xnew({ tagName: 'button' }, 'click me');
 
             let counter = 0;
             button.on('click', () => {
@@ -43,12 +43,12 @@
         }
 
         function Div3(xnode) {
-            xnest({ tag: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
+            xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
          
-            xnew({ tag: 'p' }, 'my input text');
+            xnew({ tagName: 'p' }, 'my input text');
 
-            const input = xnew({ tag: 'input', type: 'text' });
-            const span = xnew({ tag: 'span' });
+            const input = xnew({ tagName: 'input', type: 'text' });
+            const span = xnew({ tagName: 'span' });
 
             input.on('change input', () => {
                 span.element.textContent = input.element.value;
@@ -56,11 +56,11 @@
         }
 
         function Div4(xnode) {
-            xnest({ tag: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
+            xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
         
-            xnew({ tag: 'p' }, 'my canvas');
+            xnew({ tagName: 'p' }, 'my canvas');
 
-            const canvas = xnew({ tag: 'canvas', width: 200, height: 100 });
+            const canvas = xnew({ tagName: 'canvas', width: 200, height: 100 });
             xnew(Content, canvas.element);
         }
 

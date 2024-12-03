@@ -226,8 +226,10 @@
 
         static nest(attributes)
         {
-            const { tag, ...others } = attributes;
-            const element = tag === 'svg' ? document.createElementNS('http://www.w3.org/2000/svg', tag) : document.createElement(tag ?? 'div');
+            const { tagName, ...others } = attributes;
+            const element = tagName?.toLowerCase() === 'svg' ? 
+                document.createElementNS('http://www.w3.org/2000/svg', tagName) : 
+                document.createElement(tagName ?? 'div');
             
             const inputs = [
                 'checked',
@@ -243,11 +245,11 @@
                     } else if (isObject(value) === true){
                         Object.assign(element.style, value);
                     }
-                } else if (key === 'class') {
+                } else if (key === 'className') {
                     if (isString(value) === true) {
                         element.classList.add(...value.split(' '));
                     }
-                } else if (inputs.includes(key)) {
+                } else if (key === 'class') ; else if (inputs.includes(key)) {
                     element[inputs[key]] = value;
                 } else {
                     element.setAttribute(key, value);
@@ -510,7 +512,7 @@
         }
     }
 
-    function xnest$1(attributes)
+    function xnest(attributes)
     {
         const xnode = XNode.current;
 
@@ -642,13 +644,13 @@
         const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
         const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
 
-        xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
+        xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
         <polygon points="50  7 40 18 60 18"></polygon>
         <polygon points="50 93 40 83 60 83"></polygon>
         <polygon points=" 7 50 18 40 18 60"></polygon>
         <polygon points="93 50 83 40 83 60"></polygon>
     `);
-        const target = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
+        const target = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
         <circle cx="50" cy="50" r="23"></circle>
     `);
 
@@ -679,7 +681,7 @@
         const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
         const strokeStyle = `stroke-linejoin: round; stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)};`;
 
-        const target = xnew({ tag: 'svg', style: `width: 100%; height: 100%; cursor: pointer; user-select: none; ${fillStyle} ${strokeStyle}`, viewBox: '0 0 100 100' }, `
+        const target = xnew({ tagName: 'svg', style: `width: 100%; height: 100%; cursor: pointer; user-select: none; ${fillStyle} ${strokeStyle}`, viewBox: '0 0 100 100' }, `
         <circle cx="50" cy="50" r="40"></circle>
     `);
 
@@ -709,20 +711,20 @@
         const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
 
         const targets = new Array(4);
-        targets[0] = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
+        targets[0] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
         <polygon points="50 50 35 35 35  5 37  3 63  3 65  5 65 35"></polygon>
     `);
-        targets[1] = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
+        targets[1] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
         <polygon points="50 50 35 65 35 95 37 97 63 97 65 95 65 65"></polygon>
     `);
-        targets[2] = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
+        targets[2] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
         <polygon points="50 50 35 35  5 35  3 37  3 63  5 65 35 65"></polygon>
     `);
-        targets[3] = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
+        targets[3] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
         <polygon points="50 50 65 35 95 35 97 37 97 63 95 65 65 65"></polygon>
     `);
 
-        xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; fill: none; ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
+        xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; fill: none; ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
         <polyline points="35 35 35  5 37  3 63  3 65  5 65 35"></polyline>
         <polyline points="35 65 35 95 37 97 63 97 65 95 65 65"></polyline>
         <polyline points="35 35  5 35  3 37  3 63  5 65 35 65"></polyline>
@@ -766,7 +768,7 @@
         xnest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
         const absolute = xnode.element.parentElement;
 
-        const canvas = xnew({ tag: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
+        const canvas = xnew({ tagName: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
         
         if (pixelated === true) {
             canvas.element.style.imageRendering = 'pixelated';
@@ -840,7 +842,7 @@
     exports.xcontext = xcontext;
     exports.xextend = xextend;
     exports.xfind = xfind;
-    exports.xnest = xnest$1;
+    exports.xnest = xnest;
     exports.xnew = xnew;
 
 }));

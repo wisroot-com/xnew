@@ -198,8 +198,10 @@ export class XNode {
 
     static nest(attributes)
     {
-        const { tag, ...others } = attributes;
-        const element = tag === 'svg' ? document.createElementNS('http://www.w3.org/2000/svg', tag) : document.createElement(tag ?? 'div');
+        const { tagName, ...others } = attributes;
+        const element = tagName?.toLowerCase() === 'svg' ? 
+            document.createElementNS('http://www.w3.org/2000/svg', tagName) : 
+            document.createElement(tagName ?? 'div');
         
         const inputs = [
             'checked',
@@ -215,10 +217,11 @@ export class XNode {
                 } else if (isObject(value) === true){
                     Object.assign(element.style, value);
                 }
-            } else if (key === 'class') {
+            } else if (key === 'className') {
                 if (isString(value) === true) {
                     element.classList.add(...value.split(' '));
                 }
+            } else if (key === 'class') {
             } else if (inputs.includes(key)) {
                 element[inputs[key]] = value;
             } else {
