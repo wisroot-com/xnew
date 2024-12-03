@@ -1,4 +1,4 @@
-import { xnew } from '../core/xnew';
+import { xnew, xnest } from '../core/xnew';
 import { DragEvent } from './DragEvent';
 
 export function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
@@ -7,13 +7,13 @@ export function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.
     const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
     const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
 
-    xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
+    xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
         <polygon points="50  7 40 18 60 18"></polygon>
         <polygon points="50 93 40 83 60 83"></polygon>
         <polygon points=" 7 50 18 40 18 60"></polygon>
         <polygon points="93 50 83 40 83 60"></polygon>
     `);
-    const target = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
+    const target = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle} ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
         <circle cx="50" cy="50" r="23"></circle>
     `);
 

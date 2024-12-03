@@ -1,5 +1,4 @@
-import { xnew } from '../core/xnew';
-import { xscope } from '../core/xscope';
+import { xnew, xscope } from '../core/xnew';
 
 export function Timer(xnode, callback, delay) {
     let id = null;

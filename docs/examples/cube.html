@@ -36,7 +36,7 @@
             three.camera.position.set(0, 0, +100);
             three.scene = new THREE.Scene();
 
-            xnew(Content, three);
+            xnew(Contents, three);
 
             return {
                 update() {
@@ -45,7 +45,7 @@
             };
         });
 
-        function Content(xnode, three) {
+        function Contents(xnode, three) {
             xextend(ThreeObject, three.scene);
             xnew(Light);
         

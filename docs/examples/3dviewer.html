@@ -39,7 +39,7 @@
             three.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
             xnew(Event, three);
-            xnew(Content, three);
+            xnew(Contents, three);
 
             return {
                 update() {
@@ -67,7 +67,7 @@
             xnode.on('contextmenu', (event) => event.preventDefault());
         }
         
-        function Content(xnode, three) {
+        function Contents(xnode, three) {
             xextend(ThreeObject3D, three.scene);
             three.scene.rotation.x = -60 / 180 * Math.PI
 

@@ -16,7 +16,7 @@
 npm install xnew
 ```
 ```
-import { xnew } from 'xnew'
+import { xnew, xnest, xextend } from 'xnew'
 ```
 ## Basic usage
 By setting a component function to `xnew`, an instance(`xnode`) of the component will be created.  
@@ -51,8 +51,8 @@ Inside the component function, you can implement various process.
 <body>
     <script>
         xnew((xnode) => {
-            xnest({ tag: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
-            const text = xnew({ tag: 'span' }, 'start');
+            xnest({ tagName: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
+            const text = xnew({ tagName: 'span' }, 'start');
 
             xnode.on('pointerdown', () => {
                 xnode.state === 'running' ? xnode.stop() : xnode.start();
@@ -95,8 +95,8 @@ If you call `xnew` inside a component function, a parent-child relationship is c
         });
 
         function Parent(xnode) {
-            xnest({ tag: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
-            const text = xnew({ tag: 'span' }, 'parent: start');
+            xnest({ tagName: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
+            const text = xnew({ tagName: 'span' }, 'parent: start');
 
             xnew(Child);
 
@@ -119,8 +119,8 @@ If you call `xnew` inside a component function, a parent-child relationship is c
         }
 
         function Child(xnode) {
-            xnest({ tag: 'div', style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
-            const text = xnew({ tag: 'span' }, 'child: start');
+            xnest({ tagName: 'div', style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
+            const text = xnew({ tagName: 'span' }, 'child: start');
      
             xnode.on('pointerdown', (event) => {
                 event.stopPropagation();

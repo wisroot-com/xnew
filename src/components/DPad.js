@@ -1,4 +1,4 @@
-import { xnew } from '../core/xnew';
+import { xnew, xnest } from '../core/xnew';
 import { DragEvent } from './DragEvent';
 
 export function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
@@ -8,20 +8,20 @@ export function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stro
     const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
 
     const targets = new Array(4);
-    targets[0] = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
+    targets[0] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
         <polygon points="50 50 35 35 35  5 37  3 63  3 65  5 65 35"></polygon>
     `);
-    targets[1] = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
+    targets[1] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
         <polygon points="50 50 35 65 35 95 37 97 63 97 65 95 65 65"></polygon>
     `);
-    targets[2] = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
+    targets[2] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
         <polygon points="50 50 35 35  5 35  3 37  3 63  5 65 35 65"></polygon>
     `);
-    targets[3] = xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
+    targets[3] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
         <polygon points="50 50 65 35 95 35 97 37 97 63 95 65 65 65"></polygon>
     `);
 
-    xnew({ tag: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; fill: none; ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
+    xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; fill: none; ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
         <polyline points="35 35 35  5 37  3 63  3 65  5 65 35"></polyline>
         <polyline points="35 65 35 95 37 97 63 97 65 95 65 65"></polyline>
         <polyline points="35 35  5 35  3 37  3 63  5 65 35 65"></polyline>

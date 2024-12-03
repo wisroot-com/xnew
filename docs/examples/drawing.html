@@ -28,10 +28,10 @@
             const screen = xnew(xcomponents.Screen, { width: 512, height: 512, objectFit: 'contain' });
             
             // screen -> content for get event on screen canvas
-            xnew(screen, Content, screen.canvas);
+            xnew(screen, Contents, screen.canvas);
         });
 
-        function Content(xnode, canvas) {
+        function Contents(xnode, canvas) {
             const context = canvas.getContext('2d');
             context.fillStyle = "rgb(0,0,0)";
             context.fillRect(0, 0, canvas.width, canvas.height);

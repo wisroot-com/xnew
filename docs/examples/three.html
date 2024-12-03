@@ -4,7 +4,6 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="../thirdparty/pixi.min.js"></script>
     <script src="../thirdparty/three.min.js"></script>
     <script src="../xnew.js"></script>
     <style>
@@ -36,7 +35,7 @@
             three.scene = new THREE.Scene();
             three.scene.background = new THREE.Color(0xFFFFFF);
 
-            xnew(Content, three);
+            xnew(Contents, three);
 
             return {
                 update() {
@@ -45,7 +44,7 @@
             };
         });
 
-        function Content(xnode, three) {
+        function Contents(xnode, three) {
             xextend(ThreeObject3D, three.scene);
 
             xnew(Cube, [0, 0, 0], [40, 40, 40]);
