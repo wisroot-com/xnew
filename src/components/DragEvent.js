@@ -9,41 +9,42 @@ export function DragEvent(xnode) {
     });
 
     const pmap = new Map();
+    let valid = false;
     base.on('pointerdown', (event) => {
         const id = event.pointerId;
-        if (pmap.size < 1) {
-            const position = getPosition(event);
-            pmap.set(id, position);
-    
-            xnode.emit('down', event, { type: 'down', position, });
-    
-            const xwin = xnew(window);
-            xwin.on('pointermove', (event) => {
-                if (event.pointerId === id) {
-                    const position = getPosition(event);
-                    if (pmap.size === 1) {
-                        const delta = { x: position.x - pmap.get(id).x, y: position.y - pmap.get(id).y };
-                        xnode.emit('move', event, { type: 'move', position, delta, });
-                    }
-                    pmap.set(id, position);
+        valid = pmap.size === 0 ? true : false;
+
+        const position = getPosition(event);
+        pmap.set(id, position);
+
+        xnode.emit('down', event, { type: 'down', position, });
+
+        const xwin = xnew(window);
+        xwin.on('pointermove', (event) => {
+            if (event.pointerId === id) {
+                const position = getPosition(event);
+                if (valid === true) {
+                    const delta = { x: position.x - pmap.get(id).x, y: position.y - pmap.get(id).y };
+                    xnode.emit('move', event, { type: 'move', position, delta, });
                 }
-            });
-    
-            xwin.on('pointerup', (event) => {
-                if (event.pointerId === id) {
-                    const position = getPosition(event);
-                    xnode.emit('up', event, { type: 'up', position, });
-                    xwin.off();
-                    pmap.delete(id);
-                }
-            });
-            xwin.on('pointercancel', (event) => {
-                if (event.pointerId === id) {
-                    xwin.off();
-                    pmap.delete(id);
-                }
-            });
-        }
+                pmap.set(id, position);
+            }
+        });
+
+        xwin.on('pointerup', (event) => {
+            if (event.pointerId === id) {
+                const position = getPosition(event);
+                xnode.emit('up', event, { type: 'up', position, });
+                xwin.finalize();
+                pmap.delete(id);
+            }
+        });
+        xwin.on('pointercancel', (event) => {
+            if (event.pointerId === id) {
+                xwin.finalize();
+                pmap.delete(id);
+            }
+        });
     });
 
     function getPosition(event) {

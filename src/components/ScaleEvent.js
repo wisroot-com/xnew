@@ -13,40 +13,41 @@ export function ScaleEvent(xnode) {
     }, { passive: false });
 
     const pmap = new Map();
+    let valie = false;
     base.on('pointerdown', (event) => {
         const id = event.pointerId;
-        if (pmap.size < 2) {
-            const position = getPosition(event);
-            pmap.set(id, position);
-    
-            const xwin = xnew(window);
-            xwin.on('pointermove', (event) => {
-                if (event.pointerId === id) {
-                    const position = getPosition(event);
-                    if (pmap.size === 2) {
-                        const prev = pmap.get(id);
-                        pmap.delete(id);
-                        const zero = pmap.values()[0]; 
-                        const a = { x: prev.x - zero.x, y: prev.y - zero.y };
-                        const b = { x: position.x - prev.x, y: position.y - prev.y };
-                        const s =  a.x * a.x + a.y * a.y;
-                        document.querySelector('#log').textContent = 'debug'+ s;
-                        if (s > 0.0) {
-                            const scale = (a.x * b.x + a.y * b.y) / s;
-                            xnode.emit('scale', event, { type: 'scale', scale, });
-                        }
-                    }
-                    pmap.set(id, position);
-                }
-            });
-    
-            xwin.on('pointerup pointercancel', (event) => {
-                if (event.pointerId === id) {
-                    xwin.off();
+        valid = pmap.size === 1 ? true : false;
+
+        const position = getPosition(event);
+        pmap.set(id, position);
+
+        const xwin = xnew(window);
+        xwin.on('pointermove', (event) => {
+            if (event.pointerId === id) {
+                const position = getPosition(event);
+                if (valid === true) {
+                    const prev = pmap.get(id);
                     pmap.delete(id);
+                    const zero = pmap.values()[0]; 
+                    const a = { x: prev.x - zero.x, y: prev.y - zero.y };
+                    const b = { x: position.x - prev.x, y: position.y - prev.y };
+                    const s =  a.x * a.x + a.y * a.y;
+                    document.querySelector('#log').textContent = 'debug'+ s;
+                    if (s > 0.0) {
+                        const scale = (a.x * b.x + a.y * b.y) / s;
+                        xnode.emit('scale', event, { type: 'scale', scale, });
+                    }
                 }
-            });
-        }
+                pmap.set(id, position);
+            }
+        });
+
+        xwin.on('pointerup pointercancel', (event) => {
+            if (event.pointerId === id) {
+                xwin.off();
+                pmap.delete(id);
+            }
+        });
     });
 
     function getPosition(event) {
