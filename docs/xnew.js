@@ -799,6 +799,7 @@
 
             xwin.on('pointerup pointercancel', (event) => {
                 if (event.pointerId === id) {
+                    document.querySelector('#log2').textContent = 'id '+ id + ' up';
                     xwin.finalize();
                     pmap.delete(id);
                 }
