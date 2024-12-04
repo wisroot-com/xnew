@@ -17,6 +17,7 @@ export function ScaleEvent(xnode) {
     base.on('pointerdown', (event) => {
         const id = event.pointerId;
         valid = pmap.size === 1 ? true : false;
+        document.querySelector('#log2').textContent = 'id '+ id;
 
         const position = getPosition(event);
         pmap.set(id, position);
@@ -43,7 +44,6 @@ export function ScaleEvent(xnode) {
         });
 
         xwin.on('pointerup pointercancel', (event) => {
-            document.querySelector('#log2').textContent = 'debug'+ event.type;
             if (event.pointerId === id) {
                 xwin.finalize();
                 pmap.delete(id);
