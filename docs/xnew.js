@@ -763,7 +763,7 @@
         });
 
         base.on('wheel', (event) => {
-            xnode.emit('scale', event, { type: 'scale', scale: (event.deltaY > 0 ? +0.1 : -0.1), });
+            xnode.emit('scale', event, { type: 'scale', scale: (event.deltaY > 0 ? -0.1 : +0.1), });
         }, { passive: false });
 
         const pmap = new Map();
@@ -787,7 +787,7 @@
                             const b = { x: position.x - prev.x, y: position.y - prev.y };
                             const s =  a.x * a.x + a.y * a.y;
                             if (s > 0.0) {
-                                const scale = -(a.x * b.x + a.y * b.y) / s;
+                                const scale = (a.x * b.x + a.y * b.y) / s;
                                 xnode.emit('scale', event, { type: 'scale', scale, });
                             }
 
