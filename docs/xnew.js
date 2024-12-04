@@ -779,7 +779,7 @@
             xwin.on('pointermove', (event) => {
                 if (event.pointerId === id) {
                     const position = getPosition(event);
-                    document.querySelector('#log').textContent = 'debug'+ pmap.size;
+                    document.querySelector('#log1').textContent = 'debug'+ pmap.size;
                     if (valid === true) {
                         const prev = pmap.get(id);
                         pmap.delete(id);
@@ -797,6 +797,7 @@
             });
 
             xwin.on('pointerup pointercancel', (event) => {
+                document.querySelector('#log2').textContent = 'debug'+ event.type;
                 if (event.pointerId === id) {
                     xwin.finalize();
                     pmap.delete(id);
