@@ -39,6 +39,7 @@ export function ScaleEvent(xnode) {
                             const scale = (a.x * b.x + a.y * b.y) / s;
                             xnode.emit('scale', event, { type: 'scale', scale, });
                         }
+                        
                     }
                 }
                 pmap.set(id, position);
