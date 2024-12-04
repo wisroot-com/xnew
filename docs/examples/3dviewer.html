@@ -64,7 +64,7 @@
             const scale = xnew(xcomponents.ScaleEvent);
             scale.on('scale', (event, { scale }) => {
                 event.preventDefault();
-                three.camera.position.z -= three.camera.position.z * scale;
+                three.camera.position.z /= scale;
             });
             xnode.on('contextmenu', (event) => event.preventDefault());
         }
