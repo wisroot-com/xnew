@@ -223,7 +223,7 @@ export class XNode {
                 }
             } else if (key === 'class') {
             } else if (inputs.includes(key)) {
-                element[inputs[key]] = value;
+                element[key] = value;
             } else {
                 element.setAttribute(key, value);
             }

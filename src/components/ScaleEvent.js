@@ -1,6 +1,6 @@
 import { xnew } from '../core/xnew';
 
-export function DragEvent(xnode) {
+export function ScaleEvent(xnode) {
     const base = xnew();
 
     // prevent touch default event
@@ -8,34 +8,38 @@ export function DragEvent(xnode) {
         event.preventDefault();
     });
 
+    base.on('wheel', (event) => {
+        xnode.emit('scale', event, { scale: (event.deltaY > 0 ? +0.1 : -0.1), });
+    }, { passive: false });
+
     const pmap = new Map();
     base.on('pointerdown', (event) => {
         const id = event.pointerId;
-        if (pmap.size < 1) {
+        if (pmap.size < 2) {
             const position = getPosition(event);
             pmap.set(id, position);
-    
-            xnode.emit('down', event, { type: 'down', position, });
     
             const xwin = xnew(window);
             xwin.on('pointermove', (event) => {
                 if (event.pointerId === id) {
                     const position = getPosition(event);
-                    const delta = { x: position.x - pmap.get(id).x, y: position.y - pmap.get(id).y };
-                    xnode.emit('move', event, { type: 'move', position, delta, });
+                    if (pmap.size === 2) {
+                        const prev = pmap.get(id);
+                        pmap.delete(id);
+                        const zero = pmap.values()[0]; 
+                        const a = { x: prev.x - zero.x, y: prev.y - zero.y };
+                        const b = { x: position.x - prev.x, y: position.y - prev.y };
+                        const s =  Math.sqrt(a.x * a.x + a.y * a.y);
+                        if (s > 0.0) {
+                            const scale = (a.x * b.x + a.y * b.y) / (s * s);
+                            xnode.emit('scale', event, { type: 'scale', scale, });
+                        }
+                    }
                     pmap.set(id, position);
                 }
             });
     
-            xwin.on('pointerup', (event) => {
-                if (event.pointerId === id) {
-                    const position = getPosition(event);
-                    xnode.emit('up', event, { type: 'up', position, });
-                    xwin.off();
-                    pmap.delete(id);
-                }
-            });
-            xwin.on('pointercancel', (event) => {
+            xwin.on('pointerup pointercancel', (event) => {
                 if (event.pointerId === id) {
                     xwin.off();
                     pmap.delete(id);

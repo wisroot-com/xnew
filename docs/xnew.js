@@ -250,7 +250,7 @@
                         element.classList.add(...value.split(' '));
                     }
                 } else if (key === 'class') ; else if (inputs.includes(key)) {
-                    element[inputs[key]] = value;
+                    element[key] = value;
                 } else {
                     element.setAttribute(key, value);
                 }
@@ -571,70 +571,59 @@
 
     function DragEvent(xnode) {
         const base = xnew();
-        const xwin = xnew(window);
 
         // prevent touch default event
         base.on('touchstart', (event) => {
             event.preventDefault();
         });
 
+        const pmap = new Map();
         base.on('pointerdown', (event) => {
-            const id = getId(event);
-            let position = getPosition(event, id);
-            let prev = position;
-
-            xnode.emit('down', event, { type: 'down', position, });
-
-            xwin.on('pointermove', (event) => {
-                position = getPosition(event, id);
-                if (position !== null) {
-                    const delta = { x: position.x - prev.x, y: position.y - prev.y };
-                    xnode.emit('move', event, { type: 'move', position, delta, });
-                    prev = position;
-                }
-            });
-
-            xwin.on('pointerup', (event) => {
-                position = getPosition(event, id);
-                if (position !== null) {
-                    xnode.emit('up', event, { type: 'up', position, });
-                    xwin.off();
-                }
-            });
+            const id = event.pointerId;
+            if (pmap.size < 1) {
+                const position = getPosition(event);
+                pmap.set(id, position);
+        
+                xnode.emit('down', event, { type: 'down', position, });
+        
+                const xwin = xnew(window);
+                xwin.on('pointermove', (event) => {
+                    if (event.pointerId === id) {
+                        const position = getPosition(event);
+                        const delta = { x: position.x - pmap.get(id).x, y: position.y - pmap.get(id).y };
+                        xnode.emit('move', event, { type: 'move', position, delta, });
+                        pmap.set(id, position);
+                    }
+                });
+        
+                xwin.on('pointerup', (event) => {
+                    if (event.pointerId === id) {
+                        const position = getPosition(event);
+                        xnode.emit('up', event, { type: 'up', position, });
+                        xwin.off();
+                        pmap.delete(id);
+                    }
+                });
+                xwin.on('pointercancel', (event) => {
+                    if (event.pointerId === id) {
+                        xwin.off();
+                        pmap.delete(id);
+                    }
+                });
+            }
         });
 
-        function getId(event) {
-            if (event.pointerId !== undefined) {
-                return event.pointerId;
-            } else if (event.changedTouches !== undefined) {
-                return event.changedTouches[event.changedTouches.length - 1].identifier;
-            } else {
-                return null;
-            }
-        }
-
-        function getPosition(event, id) {
-            let original = null;
-            if (event.pointerId !== undefined) {
-                if (id === event.pointerId) original = event;
-            } else if (event.changedTouches !== undefined) {
-                for (let i = 0; i < event.changedTouches.length; i++) {
-                    if (id === event.changedTouches[i].identifier) original = event.changedTouches[i];
-                }
-            } else {
-                original = event;
-            }
-            if (original === null) return null;
-
-            const rect = xnode.element.getBoundingClientRect();
+        function getPosition(event) {
+            const element = xnode.element;
+            const rect = element.getBoundingClientRect();
            
             let scaleX = 1.0;
             let scaleY = 1.0;
-            if (xnode.element.tagName.toLowerCase() === 'canvas' && Number.isFinite(xnode.element.width) && Number.isFinite(xnode.element.height)) {
-                scaleX = xnode.element.width / rect.width;
-                scaleY = xnode.element.height / rect.height;
+            if (element.tagName.toLowerCase() === 'canvas' && Number.isFinite(element.width) && Number.isFinite(element.height)) {
+                scaleX = element.width / rect.width;
+                scaleY = element.height / rect.height;
             }
-            return { x: scaleX * (original.clientX - rect.left), y: scaleY * (original.clientY - rect.top) };
+            return { x: scaleX * (event.clientX - rect.left), y: scaleY * (event.clientY - rect.top) };
         }
     }
 
@@ -762,6 +751,68 @@
         });
     }
 
+    function ScaleEvent(xnode) {
+        const base = xnew();
+
+        // prevent touch default event
+        base.on('touchstart', (event) => {
+            event.preventDefault();
+        });
+
+        base.on('wheel', (event) => {
+            xnode.emit('scale', event, { scale: (event.deltaY > 0 ? +0.1 : -0.1), });
+        }, { passive: false });
+
+        const pmap = new Map();
+        base.on('pointerdown', (event) => {
+            const id = event.pointerId;
+            if (pmap.size < 2) {
+                const position = getPosition(event);
+                pmap.set(id, position);
+        
+                const xwin = xnew(window);
+                xwin.on('pointermove', (event) => {
+                    if (event.pointerId === id) {
+                        const position = getPosition(event);
+                        if (pmap.size === 2) {
+                            const prev = pmap.get(id);
+                            pmap.delete(id);
+                            const zero = pmap.values()[0]; 
+                            const a = { x: prev.x - zero.x, y: prev.y - zero.y };
+                            const b = { x: position.x - prev.x, y: position.y - prev.y };
+                            const s =  Math.sqrt(a.x * a.x + a.y * a.y);
+                            if (s > 0.0) {
+                                const scale = (a.x * b.x + a.y * b.y) / (s * s);
+                                xnode.emit('scale', event, { type: 'scale', scale, });
+                            }
+                        }
+                        pmap.set(id, position);
+                    }
+                });
+        
+                xwin.on('pointerup pointercancel', (event) => {
+                    if (event.pointerId === id) {
+                        xwin.off();
+                        pmap.delete(id);
+                    }
+                });
+            }
+        });
+
+        function getPosition(event) {
+            const element = xnode.element;
+            const rect = element.getBoundingClientRect();
+           
+            let scaleX = 1.0;
+            let scaleY = 1.0;
+            if (element.tagName.toLowerCase() === 'canvas' && Number.isFinite(element.width) && Number.isFinite(element.height)) {
+                scaleX = element.width / rect.width;
+                scaleY = element.height / rect.height;
+            }
+            return { x: scaleX * (event.clientX - rect.left), y: scaleY * (event.clientY - rect.top) };
+        }
+    }
+
     function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
         xnest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
         xnest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
@@ -835,6 +886,7 @@
         CircleButton,
         DPad,
         DragEvent,
+        ScaleEvent,
         Screen
     };
 
