@@ -31,7 +31,7 @@ export function ScaleEvent(xnode) {
                     const prev = pmap.get(id);
                     pmap.delete(id);
                     if (pmap.size === 1) {
-                        const zero = pmap.values()[0]; 
+                        const zero = [...pmap.values()][0]; 
                         const a = { x: prev.x - zero.x, y: prev.y - zero.y };
                         const b = { x: position.x - prev.x, y: position.y - prev.y };
                         const s =  a.x * a.x + a.y * a.y;
@@ -39,7 +39,7 @@ export function ScaleEvent(xnode) {
                             const scale = (a.x * b.x + a.y * b.y) / s;
                             xnode.emit('scale', event, { type: 'scale', scale, });
                         }
-                        
+
                     }
                 }
                 pmap.set(id, position);
