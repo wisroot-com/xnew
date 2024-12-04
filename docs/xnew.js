@@ -767,6 +767,7 @@
         }, { passive: false });
 
         const pmap = new Map();
+        let valid = false;
         base.on('pointerdown', (event) => {
             const id = event.pointerId;
             valid = pmap.size === 1 ? true : false;
