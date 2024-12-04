@@ -9,7 +9,7 @@ export function ScaleEvent(xnode) {
     });
 
     base.on('wheel', (event) => {
-        xnode.emit('scale', event, { type: 'scale', scale: (event.deltaY > 0 ? -0.1 : +0.1), });
+        xnode.emit('scale', event, { type: 'scale', scale: (event.deltaY > 0 ? +0.1 : -0.1), });
     }, { passive: false });
 
     const pmap = new Map();
@@ -27,6 +27,7 @@ export function ScaleEvent(xnode) {
                 const position = getPosition(event);
                 if (valid === true) {
                     const prev = pmap.get(id);
+                    pmap.delete(id);
                     if (pmap.size === 1) {
                         const zero = [...pmap.values()][0]; 
                         const a = { x: prev.x - zero.x, y: prev.y - zero.y };
@@ -45,7 +46,6 @@ export function ScaleEvent(xnode) {
 
         xwin.on('pointerup pointercancel', (event) => {
             if (event.pointerId === id) {
-                document.querySelector('#log2').textContent = 'id '+ id + ' up';
                 xwin.finalize();
                 pmap.delete(id);
             }
