@@ -21,8 +21,10 @@ export function DragEvent(xnode) {
             xwin.on('pointermove', (event) => {
                 if (event.pointerId === id) {
                     const position = getPosition(event);
-                    const delta = { x: position.x - pmap.get(id).x, y: position.y - pmap.get(id).y };
-                    xnode.emit('move', event, { type: 'move', position, delta, });
+                    if (pmap.size === 1) {
+                        const delta = { x: position.x - pmap.get(id).x, y: position.y - pmap.get(id).y };
+                        xnode.emit('move', event, { type: 'move', position, delta, });
+                    }
                     pmap.set(id, position);
                 }
             });
