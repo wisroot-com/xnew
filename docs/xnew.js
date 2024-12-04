@@ -771,7 +771,6 @@
             if (pmap.size < 2) {
                 const position = getPosition(event);
                 pmap.set(id, position);
-                document.querySelector('#log').textContent = pmap.size;
         
                 const xwin = xnew(window);
                 xwin.on('pointermove', (event) => {
@@ -784,6 +783,7 @@
                             const a = { x: prev.x - zero.x, y: prev.y - zero.y };
                             const b = { x: position.x - prev.x, y: position.y - prev.y };
                             const s =  a.x * a.x + a.y * a.y;
+                            document.querySelector('#log').textContent = 'debug'+ s;
                             if (s > 0.0) {
                                 const scale = (a.x * b.x + a.y * b.y) / s;
                                 xnode.emit('scale', event, { type: 'scale', scale, });
