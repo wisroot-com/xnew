@@ -9,7 +9,7 @@ export function ScaleEvent(xnode) {
     });
 
     base.on('wheel', (event) => {
-        xnode.emit('scale', event, { scale: (event.deltaY > 0 ? +0.1 : -0.1), });
+        xnode.emit('scale', event, { type: 'scale', scale: (event.deltaY > 0 ? +0.1 : -0.1), });
     }, { passive: false });
 
     const pmap = new Map();
@@ -18,6 +18,7 @@ export function ScaleEvent(xnode) {
         if (pmap.size < 2) {
             const position = getPosition(event);
             pmap.set(id, position);
+            document.querySelector('#log').textContent = pmap.size
     
             const xwin = xnew(window);
             xwin.on('pointermove', (event) => {
@@ -29,9 +30,9 @@ export function ScaleEvent(xnode) {
                         const zero = pmap.values()[0]; 
                         const a = { x: prev.x - zero.x, y: prev.y - zero.y };
                         const b = { x: position.x - prev.x, y: position.y - prev.y };
-                        const s =  Math.sqrt(a.x * a.x + a.y * a.y);
+                        const s =  a.x * a.x + a.y * a.y;
                         if (s > 0.0) {
-                            const scale = (a.x * b.x + a.y * b.y) / (s * s);
+                            const scale = (a.x * b.x + a.y * b.y) / s;
                             xnode.emit('scale', event, { type: 'scale', scale, });
                         }
                     }
