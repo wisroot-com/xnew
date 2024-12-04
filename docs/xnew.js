@@ -771,7 +771,7 @@
         base.on('pointerdown', (event) => {
             const id = event.pointerId;
             valid = pmap.size === 1 ? true : false;
-            document.querySelector('#log2').textContent = 'id '+ id;
+            document.querySelector('#log2').textContent = 'id '+ id + ' valie ' + pmap.size;
 
             const position = getPosition(event);
             pmap.set(id, position);
