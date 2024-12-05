@@ -9,7 +9,7 @@ export function ScaleEvent(xnode) {
     });
 
     base.on('wheel', (event) => {
-        xnode.emit('scale', event, { type: 'scale', scale: (event.deltaY > 0 ? +1.1 : -1.1), });
+        xnode.emit('scale', event, { type: 'scale', scale: (event.deltaY > 0 ? 0.9 : 1.1), });
     }, { passive: false });
 
     const pmap = new Map();

@@ -14,26 +14,11 @@
         xnew(document.querySelector('#main'), (xnode) => {
             // xcomponents.Screen is a component function that defines a canvas
             
-            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
+            xnew((xnode) => {
+                xextend(xcomponents.SubWindow,)                
                 xnew({ tag: 'p' }, 'object fit: contain (default)');
                 xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
                     const screen = xnew(xcomponents.Screen, { width: 400, height: 200, objectFit: 'contain', pixelated: true });
-                    xnew(Content, screen.canvas);
-                });
-            });
-
-            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
-                xnew({ tag: 'p' }, 'object fit: cover');
-                xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
-                    const screen = xnew(xcomponents.Screen, { width: 400, height: 200, objectFit: 'cover', pixelated: true });
-                    xnew(Content, screen.canvas);
-                });
-            });
-
-            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
-                xnew({ tag: 'p' }, 'object fit: fill');
-                xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
-                    const screen = xnew(xcomponents.Screen, { width: 400, height: 200, objectFit: 'fill', pixelated: true });
                     xnew(Content, screen.canvas);
                 });
             });
