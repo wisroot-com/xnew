@@ -26,7 +26,7 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew(document.querySelector('#main'), (xnode) => {
-            const screen = xnew(xcomponents.Screen, { width: 800, height: 400 });
+            const screen = xnew(xcomps.Screen, { width: 800, height: 400 });
         
             // setting for three.js
             const three = {};
@@ -49,7 +49,7 @@
         });
 
         function Event(xnode, three) {
-            const drag = xnew(xcomponents.DragEvent);
+            const drag = xnew(xcomps.DragEvent);
             drag.on('move', (event, { position, delta }) => {
                 if (event.buttons & 1 || !event.buttons) {
                     three.scene.rotation.x += delta.y * 0.01;
@@ -61,7 +61,7 @@
                 } 
             });
 
-            const scale = xnew(xcomponents.ScaleEvent);
+            const scale = xnew(xcomps.ScaleEvent);
             scale.on('scale', (event, { scale }) => {
                 event.preventDefault();
                 three.camera.position.z /= scale;

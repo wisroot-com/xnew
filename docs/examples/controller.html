@@ -25,7 +25,7 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew(document.querySelector('#main'), (xnode) => {
-            const screen = xnew(xcomponents.Screen, { width: 800, height: 400 });
+            const screen = xnew(xcomps.Screen, { width: 800, height: 400 });
 
             const pixi = {};
             pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height, backgroundColor: '#FFF' });
@@ -48,15 +48,15 @@
         }
 
         function Controller(xnode) {
-            const stick = xnew({ style: 'position: absolute; left: 10px; bottom: 10px; z-index: 10;' }, xcomponents.AnalogStick, { size: 130 });
+            const stick = xnew({ style: 'position: absolute; left: 10px; bottom: 10px; z-index: 10;' }, xcomps.AnalogStick, { size: 130 });
             stick.on('down move up', (event, ex) => {
                 stick.emit('#move', ex);
             })
-            const dpad = xnew({ style: 'position: absolute; left: 10px; bottom: 150px; z-index: 10;' }, xcomponents.DPad, { size: 130 });
+            const dpad = xnew({ style: 'position: absolute; left: 10px; bottom: 150px; z-index: 10;' }, xcomps.DPad, { size: 130 });
             dpad.on('down move up', (event, ex) => {
                 dpad.emit('#move', ex);
             })
-            const button = xnew({ style: 'position: absolute; right: 20px; bottom: 20px; z-index: 10;' }, xcomponents.CircleButton);
+            const button = xnew({ style: 'position: absolute; right: 20px; bottom: 20px; z-index: 10;' }, xcomps.CircleButton);
             button.on('down', (event, ex) => {
                 button.emit('#action');
             })

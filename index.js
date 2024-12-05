@@ -15,3 +15,4 @@ export const xcomponents = {
     ScaleEvent,
     Screen
 };
+export const xcomps = xcomponents;

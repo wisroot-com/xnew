@@ -896,8 +896,10 @@
         ScaleEvent,
         Screen
     };
+    const xcomps = xcomponents;
 
     exports.xcomponents = xcomponents;
+    exports.xcomps = xcomps;
     exports.xcontext = xcontext;
     exports.xextend = xextend;
     exports.xfind = xfind;
