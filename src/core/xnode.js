@@ -13,13 +13,13 @@ export class XNode {
                 XNode.nest.call(this, element);
             }
     
-            // initialize component
+            // setup component
             if (isFunction(component) === true) {
                 XNode.extend.call(this, component, ...args);
             } else if (isObject(element) === true && isString(component) === true) {
                 this.element.innerHTML = component;
             }
-    
+
             // whether the xnode promise was resolved
             this.promise.then((response) => { this._.resolve = true; return response; });
         }

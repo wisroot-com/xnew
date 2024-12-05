@@ -6,6 +6,7 @@ import { DPad } from './src/components/DPad';
 import { DragEvent } from './src/components/DragEvent';
 import { ScaleEvent } from './src/components/ScaleEvent';
 import { Screen } from './src/components/Screen';
+import { SubWindow } from './src/components/SubWindow';
 
 export const xcomponents = {
     AnalogStick,
@@ -13,6 +14,7 @@ export const xcomponents = {
     DPad,
     DragEvent,
     ScaleEvent,
-    Screen
+    Screen,
+    SubWindow
 };
 export const xcomps = xcomponents;

@@ -41,13 +41,13 @@
                     XNode.nest.call(this, element);
                 }
         
-                // initialize component
+                // setup component
                 if (isFunction(component) === true) {
                     XNode.extend.call(this, component, ...args);
                 } else if (isObject(element) === true && isString(component) === true) {
                     this.element.innerHTML = component;
                 }
-        
+
                 // whether the xnode promise was resolved
                 this.promise.then((response) => { this._.resolve = true; return response; });
             }
@@ -617,16 +617,8 @@
         });
 
         function getPosition(event) {
-            const element = xnode.element;
-            const rect = element.getBoundingClientRect();
-           
-            let scaleX = 1.0;
-            let scaleY = 1.0;
-            if (element.tagName.toLowerCase() === 'canvas' && Number.isFinite(element.width) && Number.isFinite(element.height)) {
-                scaleX = element.width / rect.width;
-                scaleY = element.height / rect.height;
-            }
-            return { x: scaleX * (event.clientX - rect.left), y: scaleY * (event.clientY - rect.top) };
+            const rect = xnode.element.getBoundingClientRect();
+            return { x: (event.clientX - rect.left), y: (event.clientY - rect.top) };
         }
     }
 
@@ -888,13 +880,26 @@
         }
     }
 
+    function SubWindow(xnode) {
+        xnest({ style: 'position: absolute;' });
+        xnest({ style: 'position: relative;' });
+
+        return {
+            locate() {
+                console.log(xnode.element.parentElement.clientWidth);
+                console.log(xnode.element.parentElement.clientHeight);
+            }
+        }
+    }
+
     const xcomponents = {
         AnalogStick,
         CircleButton,
         DPad,
         DragEvent,
         ScaleEvent,
-        Screen
+        Screen,
+        SubWindow
     };
     const xcomps = xcomponents;
 

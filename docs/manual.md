@@ -129,6 +129,7 @@ xnodes has some system properties for basic control. You can define the detail i
 
 ```
 const xnode = xnew((xnode) => {
+    // initialize
 
     return {
         promise: new Promise((resolve, reject) => {

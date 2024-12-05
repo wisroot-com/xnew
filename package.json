@@ -1,7 +1,7 @@
 {
   "name": "xnew",
   "description": "Simple component based library for dynamic scene.",
-  "version": "1.6.35",
+  "version": "1.6.36",
   "main": "dist/xnew.js",
   "license": "MIT",
   "bugs": {
@@ -12,8 +12,8 @@
     "test": "jest",
     "build": "npx rollup --config --bundleConfigAsCjs",
     "watch": "npx rollup --config --watch --bundleConfigAsCjs",
-    "build-docs": "npx tailwindcss -i ./docs/tailwind.css -o ./docs/style.css",
-    "watch-docs": "npx tailwindcss -i ./docs/tailwind.css -o ./docs/style.css --watch"
+    "tw-build": "npx tailwindcss -i ./docs/tailwind.css -o ./docs/style.css",
+    "tw-watch": "npx tailwindcss -i ./docs/tailwind.css -o ./docs/style.css --watch"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

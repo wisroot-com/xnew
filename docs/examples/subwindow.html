@@ -12,15 +12,13 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew(document.querySelector('#main'), (xnode) => {
-            // xcomps.Screen is a component function that defines a canvas
-            
             xnew((xnode) => {
-                xextend(xcomps.SubWindow,)                
-                xnew({ tag: 'p' }, 'object fit: contain (default)');
-                xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
-                    const screen = xnew(xcomps.Screen, { width: 400, height: 200, objectFit: 'contain', pixelated: true });
-                    xnew(Content, screen.canvas);
+                xextend(xcomps.SubWindow);
+
+                xnew({ style: 'width: 100px; height: 200px; background: #AAA; border-radius: 4px;' }, (xnode) => {
+
                 });
+                xnode.locate();
             });
         });
 
