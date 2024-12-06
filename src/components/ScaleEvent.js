@@ -12,24 +12,25 @@ export function ScaleEvent(xnode) {
         xnode.emit('scale', event, { type: 'scale', scale: (event.deltaY > 0 ? 0.9 : 1.1), });
     }, { passive: false });
 
-    const pmap = new Map();
+    const map = new Map();
     let valid = false;
     base.on('pointerdown', (event) => {
         const id = event.pointerId;
-        valid = pmap.size === 1 ? true : false;
+        valid = map.size === 1 ? true : false;
 
-        const position = getPosition(event);
-        pmap.set(id, position);
+        const rect = xnode.element.getBoundingClientRect();
+        const position = getPosition(event, rect);
+        map.set(id, position);
 
         const xwin = xnew(window);
         xwin.on('pointermove', (event) => {
             if (event.pointerId === id) {
-                const position = getPosition(event);
+                const position = getPosition(event, rect);
                 if (valid === true) {
-                    const prev = pmap.get(id);
-                    pmap.delete(id);
-                    if (pmap.size === 1) {
-                        const zero = [...pmap.values()][0]; 
+                    const prev = map.get(id);
+                    map.delete(id);
+                    if (map.size === 1) {
+                        const zero = [...map.values()][0]; 
                         const a = { x: prev.x - zero.x, y: prev.y - zero.y };
                         const b = { x: position.x - prev.x, y: position.y - prev.y };
                         const s =  a.x * a.x + a.y * a.y;
@@ -40,28 +41,19 @@ export function ScaleEvent(xnode) {
 
                     }
                 }
-                pmap.set(id, position);
+                map.set(id, position);
             }
         });
 
         xwin.on('pointerup pointercancel', (event) => {
             if (event.pointerId === id) {
                 xwin.finalize();
-                pmap.delete(id);
+                map.delete(id);
             }
         });
     });
 
-    function getPosition(event) {
-        const element = xnode.element;
-        const rect = element.getBoundingClientRect();
-       
-        let scaleX = 1.0;
-        let scaleY = 1.0;
-        if (element.tagName.toLowerCase() === 'canvas' && Number.isFinite(element.width) && Number.isFinite(element.height)) {
-            scaleX = element.width / rect.width;
-            scaleY = element.height / rect.height;
-        }
-        return { x: scaleX * (event.clientX - rect.left), y: scaleY * (event.clientY - rect.top) };
+    function getPosition(event, rect) {
+        return { x: event.clientX - rect.left, y: event.clientY - rect.top };
     }
 }

@@ -2,33 +2,15 @@ import { isString, isNumber, isObject, isFunction, error } from './common';
 
 export class XNode {
 
-    constructor(parent, element, component, ...args)
-    {
-        if (XNode.initialize.call(this, parent, element) === true) {
-            // auto start
-            this.start();
-    
-            // nest html element
-            if (isObject(element) === true) {
-                XNode.nest.call(this, element);
-            }
-    
-            // setup component
-            if (isFunction(component) === true) {
-                XNode.extend.call(this, component, ...args);
-            } else if (isObject(element) === true && isString(component) === true) {
-                this.element.innerHTML = component;
-            }
-
-            // whether the xnode promise was resolved
-            this.promise.then((response) => { this._.resolve = true; return response; });
-        }
-    }
-
     //----------------------------------------------------------------------------------------------------
     // basic
     //----------------------------------------------------------------------------------------------------
     
+    constructor(parent, element, component, ...args)
+    {
+        XNode.initialize.call(this, parent, element, component, ...args);
+    }
+
     get parent()
     {
         return this._.parent;
@@ -64,6 +46,13 @@ export class XNode {
     {
         XNode.stop.call(this);
         XNode.finalize.call(this);
+    }
+
+    reload()
+    {
+        XNode.stop.call(this);
+        XNode.finalize.call(this);
+        XNode.initialize.call(this, this._.parent, this._.base, ...this._.backup);
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -149,24 +138,26 @@ export class XNode {
         }
     }
 
-    static initialize(parent, element)
+    static initialize(parent, element, component, ...args)
     {
         parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
         (parent?._.children ?? XNode.roots).add(this);
 
-        const root = parent !== null ? parent._.root : this;
+        const root = parent?._.root ?? this;
         const base = (element instanceof Element || element instanceof Window) ? element : (parent?._.nest ?? document?.body ?? null);
 
         this._ = {
             root,                           // root xnode
+            parent,                         // parent xnode
+            children: new Set(),            // children xnodes
             base,                           // base element
             nest: base,                     // nest element
-            parent,                         // parent xnode
-            children: new Set(),            // xhildren xnodes
+            backup: [component, ...args],   // backup
+
             state: 'pending',               // [pending -> running <-> stopped -> finalized]
             tostart: false,                 // flag for start
             promises: [],                   // promises
-            resolve: false,                 // promise
+            resolve: false,                 // promise check
             start: null,                    // start time
             props: {},                      // properties in the component function
             components: new Set(),          // component functions
@@ -177,9 +168,23 @@ export class XNode {
 
         if (parent !== null && ['finalized'].includes(parent._.state)) {
             this._.state = 'finalized';
-            return false;
         } else {
-            return true;
+            this._.tostart = true;
+
+            // nest html element
+            if (isObject(element) === true) {
+                XNode.nest.call(this, element);
+            }
+
+            // setup component
+            if (isFunction(component) === true) {
+                XNode.extend.call(this, component, ...args);
+            } else if (isObject(element) === true && isString(component) === true) {
+                this.element.innerHTML = component;
+            }
+
+            // whether the xnode promise was resolved
+            this.promise.then((response) => { this._.resolve = true; return response; });
         }
     }
 
@@ -203,11 +208,7 @@ export class XNode {
             document.createElementNS('http://www.w3.org/2000/svg', tagName) : 
             document.createElement(tagName ?? 'div');
         
-        const inputs = [
-            'checked',
-            'disabled',
-            'readOnly',
-        ];
+        const bools = ['checked', 'disabled', 'readOnly',];
     
         Object.keys(others).forEach((key) => {
             const value = others[key];
@@ -219,10 +220,10 @@ export class XNode {
                 }
             } else if (key === 'className') {
                 if (isString(value) === true) {
-                    element.classList.add(...value.split(' '));
+                    element.classList.add(...value.trim().split(/\s+/));
                 }
             } else if (key === 'class') {
-            } else if (inputs.includes(key)) {
+            } else if (bools.includes(key) === true) {
                 element[key] = value;
             } else {
                 element.setAttribute(key, value);
@@ -391,10 +392,11 @@ export class XNode {
         if (this._.listeners.has(type) === false) {
             this._.listeners.set(type, new Map());
         }
+
         if (this._.listeners.get(type).has(listener) === false) {
             const scope = (...args) => XNode.scope.call(this, listener, ...args);
 
-            this._.listeners.get(type).set(listener, scope);
+            this._.listeners.get(type).set(listener, [this._.nest, scope]);
             this._.nest.addEventListener(type, scope, options);
         }
         
@@ -410,15 +412,16 @@ export class XNode {
         if (this._.listeners.has(type) === false) {
             return;
         }
+
         const listners = listener ? [listener] : [...this._.listeners.get(type).keys()];
         listners.forEach((listener) => {
             if (this._.listeners.has(type) === true && this._.listeners.get(type).has(listener) === true) {
-                const scope = this._.listeners.get(type).get(listener);
+                const [element, scope] = this._.listeners.get(type).get(listener);
     
                 this._.listeners.get(type).delete(listener);
                 if (this._.listeners.get(type).size === 0) this._.listeners.delete(type);
     
-                this._.nest.removeEventListener(type, scope);
+                element.removeEventListener(type, scope);
             }
             if (this._.listeners.has(type) === false && XNode.etypes.has(type) === true) {
                 XNode.etypes.get(type).delete(this);
@@ -442,7 +445,7 @@ export class XNode {
         }
         function emit(type, ...args) {
             if (this._.listeners.has(type) === true) {
-                this._.listeners.get(type).forEach((listener) => listener(...args));
+                this._.listeners.get(type).forEach(([element, listener]) => listener(...args));
             }
         }
     }

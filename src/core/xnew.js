@@ -35,8 +35,8 @@ export function xnest(attributes)
     } else if (xnode._.state !== 'pending') {
         error('xnest', 'This function can not be called after initialized.');
     } else {
-        xnode.off();
         XNode.nest.call(xnode, attributes);
+        return xnode.element;
     }
 }
 

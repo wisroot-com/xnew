@@ -20,43 +20,26 @@
         return value !== null && typeof value === 'object' && value.constructor === Object;
     }
 
+
     //----------------------------------------------------------------------------------------------------
     // error 
     //----------------------------------------------------------------------------------------------------
 
     function error(name, text, target = undefined) {
-        console.error(`${name}${target !== undefined ? `[${target}]` : ''}: ` + text);
+        console.error(name + (target !== undefined ? ` [${target}]` : '') + ': ' + text);
     }
 
     class XNode {
-
-        constructor(parent, element, component, ...args)
-        {
-            if (XNode.initialize.call(this, parent, element) === true) {
-                // auto start
-                this.start();
-        
-                // nest html element
-                if (isObject(element) === true) {
-                    XNode.nest.call(this, element);
-                }
-        
-                // setup component
-                if (isFunction(component) === true) {
-                    XNode.extend.call(this, component, ...args);
-                } else if (isObject(element) === true && isString(component) === true) {
-                    this.element.innerHTML = component;
-                }
-
-                // whether the xnode promise was resolved
-                this.promise.then((response) => { this._.resolve = true; return response; });
-            }
-        }
 
         //----------------------------------------------------------------------------------------------------
         // basic
         //----------------------------------------------------------------------------------------------------
         
+        constructor(parent, element, component, ...args)
+        {
+            XNode.initialize.call(this, parent, element, component, ...args);
+        }
+
         get parent()
         {
             return this._.parent;
@@ -92,6 +75,13 @@
         {
             XNode.stop.call(this);
             XNode.finalize.call(this);
+        }
+
+        reload()
+        {
+            XNode.stop.call(this);
+            XNode.finalize.call(this);
+            XNode.initialize.call(this, this._.parent, this._.base, ...this._.backup);
         }
 
         //----------------------------------------------------------------------------------------------------
@@ -177,24 +167,26 @@
             }
         }
 
-        static initialize(parent, element)
+        static initialize(parent, element, component, ...args)
         {
             parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
             (parent?._.children ?? XNode.roots).add(this);
 
-            const root = parent !== null ? parent._.root : this;
+            const root = parent?._.root ?? this;
             const base = (element instanceof Element || element instanceof Window) ? element : (parent?._.nest ?? document?.body ?? null);
 
             this._ = {
                 root,                           // root xnode
+                parent,                         // parent xnode
+                children: new Set(),            // children xnodes
                 base,                           // base element
                 nest: base,                     // nest element
-                parent,                         // parent xnode
-                children: new Set(),            // xhildren xnodes
+                backup: [component, ...args],   // backup
+
                 state: 'pending',               // [pending -> running <-> stopped -> finalized]
                 tostart: false,                 // flag for start
                 promises: [],                   // promises
-                resolve: false,                 // promise
+                resolve: false,                 // promise check
                 start: null,                    // start time
                 props: {},                      // properties in the component function
                 components: new Set(),          // component functions
@@ -205,9 +197,23 @@
 
             if (parent !== null && ['finalized'].includes(parent._.state)) {
                 this._.state = 'finalized';
-                return false;
             } else {
-                return true;
+                this._.tostart = true;
+
+                // nest html element
+                if (isObject(element) === true) {
+                    XNode.nest.call(this, element);
+                }
+
+                // setup component
+                if (isFunction(component) === true) {
+                    XNode.extend.call(this, component, ...args);
+                } else if (isObject(element) === true && isString(component) === true) {
+                    this.element.innerHTML = component;
+                }
+
+                // whether the xnode promise was resolved
+                this.promise.then((response) => { this._.resolve = true; return response; });
             }
         }
 
@@ -231,11 +237,7 @@
                 document.createElementNS('http://www.w3.org/2000/svg', tagName) : 
                 document.createElement(tagName ?? 'div');
             
-            const inputs = [
-                'checked',
-                'disabled',
-                'readOnly',
-            ];
+            const bools = ['checked', 'disabled', 'readOnly',];
         
             Object.keys(others).forEach((key) => {
                 const value = others[key];
@@ -247,9 +249,9 @@
                     }
                 } else if (key === 'className') {
                     if (isString(value) === true) {
-                        element.classList.add(...value.split(' '));
+                        element.classList.add(...value.trim().split(/\s+/));
                     }
-                } else if (key === 'class') ; else if (inputs.includes(key)) {
+                } else if (key === 'class') ; else if (bools.includes(key) === true) {
                     element[key] = value;
                 } else {
                     element.setAttribute(key, value);
@@ -418,10 +420,11 @@
             if (this._.listeners.has(type) === false) {
                 this._.listeners.set(type, new Map());
             }
+
             if (this._.listeners.get(type).has(listener) === false) {
                 const scope = (...args) => XNode.scope.call(this, listener, ...args);
 
-                this._.listeners.get(type).set(listener, scope);
+                this._.listeners.get(type).set(listener, [this._.nest, scope]);
                 this._.nest.addEventListener(type, scope, options);
             }
             
@@ -437,15 +440,16 @@
             if (this._.listeners.has(type) === false) {
                 return;
             }
+
             const listners = listener ? [listener] : [...this._.listeners.get(type).keys()];
             listners.forEach((listener) => {
                 if (this._.listeners.has(type) === true && this._.listeners.get(type).has(listener) === true) {
-                    const scope = this._.listeners.get(type).get(listener);
+                    const [element, scope] = this._.listeners.get(type).get(listener);
         
                     this._.listeners.get(type).delete(listener);
                     if (this._.listeners.get(type).size === 0) this._.listeners.delete(type);
         
-                    this._.nest.removeEventListener(type, scope);
+                    element.removeEventListener(type, scope);
                 }
                 if (this._.listeners.has(type) === false && XNode.etypes.has(type) === true) {
                     XNode.etypes.get(type).delete(this);
@@ -469,7 +473,7 @@
             }
             function emit(type, ...args) {
                 if (this._.listeners.has(type) === true) {
-                    this._.listeners.get(type).forEach((listener) => listener(...args));
+                    this._.listeners.get(type).forEach(([element, listener]) => listener(...args));
                 }
             }
         }
@@ -525,8 +529,8 @@
         } else if (xnode._.state !== 'pending') {
             error('xnest', 'This function can not be called after initialized.');
         } else {
-            xnode.off();
             XNode.nest.call(xnode, attributes);
+            return xnode.element;
         }
     }
 
@@ -577,48 +581,48 @@
             event.preventDefault();
         });
 
-        const pmap = new Map();
+        const map = new Map();
         let valid = false;
         base.on('pointerdown', (event) => {
             const id = event.pointerId;
-            valid = pmap.size === 0 ? true : false;
-
-            const position = getPosition(event);
-            pmap.set(id, position);
+            valid = map.size === 0 ? true : false;
+            
+            const rect = xnode.element.getBoundingClientRect();
+            const position = getPosition(event, rect);
+            map.set(id, position);
 
             xnode.emit('down', event, { type: 'down', position, });
 
             const xwin = xnew(window);
             xwin.on('pointermove', (event) => {
                 if (event.pointerId === id) {
-                    const position = getPosition(event);
+                    const position = getPosition(event, rect);
                     if (valid === true) {
-                        const delta = { x: position.x - pmap.get(id).x, y: position.y - pmap.get(id).y };
+                        const delta = { x: position.x - map.get(id).x, y: position.y - map.get(id).y };
                         xnode.emit('move', event, { type: 'move', position, delta, });
                     }
-                    pmap.set(id, position);
+                    map.set(id, position);
                 }
             });
 
             xwin.on('pointerup', (event) => {
                 if (event.pointerId === id) {
-                    const position = getPosition(event);
+                    const position = getPosition(event, rect);
                     xnode.emit('up', event, { type: 'up', position, });
                     xwin.finalize();
-                    pmap.delete(id);
+                    map.delete(id);
                 }
             });
             xwin.on('pointercancel', (event) => {
                 if (event.pointerId === id) {
                     xwin.finalize();
-                    pmap.delete(id);
+                    map.delete(id);
                 }
             });
         });
 
-        function getPosition(event) {
-            const rect = xnode.element.getBoundingClientRect();
-            return { x: (event.clientX - rect.left), y: (event.clientY - rect.top) };
+        function getPosition(event, rect) {
+            return { x: event.clientX - rect.left, y: event.clientY - rect.top };
         }
     }
 
@@ -758,24 +762,25 @@
             xnode.emit('scale', event, { type: 'scale', scale: (event.deltaY > 0 ? 0.9 : 1.1), });
         }, { passive: false });
 
-        const pmap = new Map();
+        const map = new Map();
         let valid = false;
         base.on('pointerdown', (event) => {
             const id = event.pointerId;
-            valid = pmap.size === 1 ? true : false;
+            valid = map.size === 1 ? true : false;
 
-            const position = getPosition(event);
-            pmap.set(id, position);
+            const rect = xnode.element.getBoundingClientRect();
+            const position = getPosition(event, rect);
+            map.set(id, position);
 
             const xwin = xnew(window);
             xwin.on('pointermove', (event) => {
                 if (event.pointerId === id) {
-                    const position = getPosition(event);
+                    const position = getPosition(event, rect);
                     if (valid === true) {
-                        const prev = pmap.get(id);
-                        pmap.delete(id);
-                        if (pmap.size === 1) {
-                            const zero = [...pmap.values()][0]; 
+                        const prev = map.get(id);
+                        map.delete(id);
+                        if (map.size === 1) {
+                            const zero = [...map.values()][0]; 
                             const a = { x: prev.x - zero.x, y: prev.y - zero.y };
                             const b = { x: position.x - prev.x, y: position.y - prev.y };
                             const s =  a.x * a.x + a.y * a.y;
@@ -786,29 +791,20 @@
 
                         }
                     }
-                    pmap.set(id, position);
+                    map.set(id, position);
                 }
             });
 
             xwin.on('pointerup pointercancel', (event) => {
                 if (event.pointerId === id) {
                     xwin.finalize();
-                    pmap.delete(id);
+                    map.delete(id);
                 }
             });
         });
 
-        function getPosition(event) {
-            const element = xnode.element;
-            const rect = element.getBoundingClientRect();
-           
-            let scaleX = 1.0;
-            let scaleY = 1.0;
-            if (element.tagName.toLowerCase() === 'canvas' && Number.isFinite(element.width) && Number.isFinite(element.height)) {
-                scaleX = element.width / rect.width;
-                scaleY = element.height / rect.height;
-            }
-            return { x: scaleX * (event.clientX - rect.left), y: scaleY * (event.clientY - rect.top) };
+        function getPosition(event, rect) {
+            return { x: event.clientX - rect.left, y: event.clientY - rect.top };
         }
     }
 
@@ -881,14 +877,28 @@
     }
 
     function SubWindow(xnode) {
-        xnest({ style: 'position: absolute;' });
-        xnest({ style: 'position: relative;' });
+        const absolute = xnest({ style: 'position: absolute;' });
+        
+        const drag = xnew(DragEvent);
+
+        let offset = { x: 0, y: 0 };
+        drag.on('down', (event, { position }) => {
+            offset.x = xnode.getPosition().x - position.x;
+            offset.y = xnode.getPosition().y - position.y;
+        });
+        drag.on('move', (event, { position }) => {
+            const moveto = { x: position.x + offset.x, y: position.y + offset.y };
+            xnode.emit('move', event, { position: moveto });
+        });
 
         return {
-            locate() {
-                console.log(xnode.element.parentElement.clientWidth);
-                console.log(xnode.element.parentElement.clientHeight);
-            }
+            setPosition(x, y) {
+                absolute.style.left = x + 'px';
+                absolute.style.top = y + 'px';
+            },
+            getPosition() {
+                return { x: absolute.offsetLeft, y: absolute.offsetTop };
+            },
         }
     }
 

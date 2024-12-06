@@ -18,10 +18,11 @@ export function isObject(value) {
     return value !== null && typeof value === 'object' && value.constructor === Object;
 }
 
+
 //----------------------------------------------------------------------------------------------------
 // error 
 //----------------------------------------------------------------------------------------------------
 
 export function error(name, text, target = undefined) {
-    console.error(`${name}${target !== undefined ? `[${target}]` : ''}: ` + text);
+    console.error(name + (target !== undefined ? ` [${target}]` : '') + ': ' + text);
 }
