@@ -1,5 +1,5 @@
 import { xnew, xnest } from '../core/xnew';
-import { PointerEvent } from './PointerEvent';
+import { MoveEvent } from './MoveEvent';
 
 export function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
     xnest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
@@ -10,13 +10,13 @@ export function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.
         <circle cx="50" cy="50" r="40"></circle>
     `);
 
-    const pointer = xnew(target, PointerEvent);
+    const move = xnew(target, MoveEvent);
 
-    pointer.on('down', (event, ex) => {
+    move.on('down', (event, ex) => {
         target.element.style.filter = 'brightness(90%)';
         xnode.emit('down', event, ex);
     });
-    pointer.on('up', (event, ex) => {
+    move.on('up', (event, ex) => {
         target.element.style.filter = '';
         xnode.emit('up', event, ex);
     });

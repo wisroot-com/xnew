@@ -1,19 +1,19 @@
 import { xnew, xnest } from '../core/xnew';
-import { PointerEvent } from './PointerEvent';
+import { MoveEvent } from './MoveEvent';
 
 export function SubWindow(xnode) {
     const absolute = xnest({ style: 'position: absolute;' });
     
-    const pointer = xnew(PointerEvent);
+    const move = xnew(MoveEvent);
 
     let offset = { x: 0, y: 0 };
-    pointer.on('down', (event, { position }) => {
+    move.on('down', (event, { position }) => {
         offset.x = xnode.getPosition().x - position.x;
         offset.y = xnode.getPosition().y - position.y;
     });
-    pointer.on('move', (event, { position }) => {
+    move.on('drag', (event, { position }) => {
         const moveto = { x: position.x + offset.x, y: position.y + offset.y };
-        xnode.emit('move', event, { position: moveto });
+        xnode.emit('drag', event, { position: moveto });
     });
 
     return {

@@ -1,6 +1,6 @@
 import { xnew } from '../core/xnew';
 
-export function PointerEvent(xnode) {
+export function MoveEvent(xnode) {
     const base = xnew();
 
     // prevent touch default event
@@ -26,7 +26,6 @@ export function PointerEvent(xnode) {
         map.set(id, position);
 
         xnode.emit('down', event, { type: 'down', position, });
-
         const xwin = xnew(window);
         xwin.on('pointermove', (event) => {
             if (event.pointerId === id) {

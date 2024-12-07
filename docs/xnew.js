@@ -573,7 +573,7 @@
         }
     }
 
-    function PointerEvent(xnode) {
+    function MoveEvent(xnode) {
         const base = xnew();
 
         // prevent touch default event
@@ -599,7 +599,6 @@
             map.set(id, position);
 
             xnode.emit('down', event, { type: 'down', position, });
-
             const xwin = xnew(window);
             xwin.on('pointermove', (event) => {
                 if (event.pointerId === id) {
@@ -663,9 +662,9 @@
         <circle cx="50" cy="50" r="23"></circle>
     `);
 
-        const pointer = xnew(PointerEvent);
+        const move = xnew(MoveEvent);
 
-        pointer.on('down drag', (event, { type, position }) => {
+        move.on('down drag', (event, { type, position }) => {
             target.element.style.filter = 'brightness(90%)';
 
             const x = position.x - size / 2;
@@ -678,7 +677,7 @@
             target.element.style.top = vector.y * size / 4 + 'px';
         });
 
-        pointer.on('up', (event, { type }) => {
+        move.on('up', (event, { type }) => {
             target.element.style.filter = '';
 
             const vector = { x: 0, y: 0 };
@@ -697,13 +696,13 @@
         <circle cx="50" cy="50" r="40"></circle>
     `);
 
-        const pointer = xnew(target, PointerEvent);
+        const move = xnew(target, MoveEvent);
 
-        pointer.on('down', (event, ex) => {
+        move.on('down', (event, ex) => {
             target.element.style.filter = 'brightness(90%)';
             xnode.emit('down', event, ex);
         });
-        pointer.on('up', (event, ex) => {
+        move.on('up', (event, ex) => {
             target.element.style.filter = '';
             xnode.emit('up', event, ex);
         });
@@ -740,9 +739,9 @@
         <polygon points="89 50 80 42 80 58"></polygon>
     `);
 
-        const pointer = xnew(PointerEvent);
+        const move = xnew(MoveEvent);
 
-        pointer.on('down drag', (event, { type, position }) => {
+        move.on('down drag', (event, { type, position }) => {
             const x = position.x - size / 2;
             const y = position.y - size / 2;
             const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
@@ -759,7 +758,7 @@
             xnode.emit(type, event, { type, vector });
         });
 
-        pointer.on('up', (event, { type }) => {
+        move.on('up', (event, { type }) => {
             for(let i = 0; i < 4; i++) {
                 targets[i].element.style.filter = '';
             }
@@ -839,16 +838,16 @@
     function SubWindow(xnode) {
         const absolute = xnest({ style: 'position: absolute;' });
         
-        const pointer = xnew(PointerEvent);
+        const move = xnew(MoveEvent);
 
         let offset = { x: 0, y: 0 };
-        pointer.on('down', (event, { position }) => {
+        move.on('down', (event, { position }) => {
             offset.x = xnode.getPosition().x - position.x;
             offset.y = xnode.getPosition().y - position.y;
         });
-        pointer.on('move', (event, { position }) => {
+        move.on('drag', (event, { position }) => {
             const moveto = { x: position.x + offset.x, y: position.y + offset.y };
-            xnode.emit('move', event, { position: moveto });
+            xnode.emit('drag', event, { position: moveto });
         });
 
         return {
@@ -863,7 +862,7 @@
     }
 
     const xcomponents = {
-        PointerEvent,
+        MoveEvent,
         AnalogStick,
         DPad,
         CircleButton,
