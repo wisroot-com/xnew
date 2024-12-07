@@ -1,19 +1,17 @@
 export { xnew, xnest, xfind, xextend, xcontext } from './src/core/xnew';
 
+import { PointerEvent } from './src/components/PointerEvent';
 import { AnalogStick } from './src/components/AnalogStick';
 import { CircleButton } from './src/components/CircleButton';
 import { DPad } from './src/components/DPad';
-import { DragEvent } from './src/components/DragEvent';
-import { ScaleEvent } from './src/components/ScaleEvent';
 import { Screen } from './src/components/Screen';
 import { SubWindow } from './src/components/SubWindow';
 
 export const xcomponents = {
+    PointerEvent,
     AnalogStick,
-    CircleButton,
     DPad,
-    DragEvent,
-    ScaleEvent,
+    CircleButton,
     Screen,
     SubWindow
 };

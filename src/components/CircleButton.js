@@ -1,4 +1,5 @@
 import { xnew, xnest } from '../core/xnew';
+import { PointerEvent } from './PointerEvent';
 
 export function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
     xnest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
@@ -9,22 +10,15 @@ export function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.
         <circle cx="50" cy="50" r="40"></circle>
     `);
 
-    const xwin = xnew(window);
+    const pointer = xnew(target, PointerEvent);
 
-    // prevent touch default event
-    target.on('touchstart', (event) => {
-        event.preventDefault();
-    });
-    
-    target.on('pointerdown', (event) => {
+    pointer.on('down', (event, ex) => {
         target.element.style.filter = 'brightness(90%)';
-        xnode.emit('down', event, { type: 'down' });
-
-        xwin.on('pointerup', () => {
-            target.element.style.filter = '';
-            xnode.emit('up', event, { type: 'up' });
-            xwin.off();
-        });
+        xnode.emit('down', event, ex);
+    });
+    pointer.on('up', (event, ex) => {
+        target.element.style.filter = '';
+        xnode.emit('up', event, ex);
     });
 }
 

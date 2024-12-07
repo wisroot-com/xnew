@@ -573,7 +573,7 @@
         }
     }
 
-    function DragEvent(xnode) {
+    function PointerEvent(xnode) {
         const base = xnew();
 
         // prevent touch default event
@@ -581,11 +581,18 @@
             event.preventDefault();
         });
 
+        base.on('wheel', (event) => {
+            xnode.emit('scale', event, { type: 'scale', scale: 1 + 0.001 * event.wheelDeltaY });
+        }, { passive: false });
+
         const map = new Map();
-        let valid = false;
+        let drag = false;
+        let scale = false;
+
         base.on('pointerdown', (event) => {
             const id = event.pointerId;
-            valid = map.size === 0 ? true : false;
+            drag = map.size === 0 ? true : false;
+            scale = map.size === 1 ? true : false;
             
             const rect = xnode.element.getBoundingClientRect();
             const position = getPosition(event, rect);
@@ -597,9 +604,23 @@
             xwin.on('pointermove', (event) => {
                 if (event.pointerId === id) {
                     const position = getPosition(event, rect);
-                    if (valid === true) {
+                    if (drag === true) {
                         const delta = { x: position.x - map.get(id).x, y: position.y - map.get(id).y };
-                        xnode.emit('move', event, { type: 'move', position, delta, });
+                        xnode.emit('drag', event, { type: 'drag', position, delta, });
+                    }
+                    if (scale === true) {
+                        const prev = map.get(id);
+                        map.delete(id);
+                        if (map.size === 1) {
+                            const zero = [...map.values()][0]; 
+                            const a = { x: prev.x - zero.x, y: prev.y - zero.y };
+                            const b = { x: position.x - prev.x, y: position.y - prev.y };
+                            const s =  a.x * a.x + a.y * a.y;
+                            if (s > 0.0) {
+                                xnode.emit('scale', event, { type: 'scale', scale: 1 + (a.x * b.x + a.y * b.y) / s, });
+                            }
+
+                        }
                     }
                     map.set(id, position);
                 }
@@ -620,7 +641,7 @@
                 }
             });
         });
-
+       
         function getPosition(event, rect) {
             return { x: event.clientX - rect.left, y: event.clientY - rect.top };
         }
@@ -642,25 +663,28 @@
         <circle cx="50" cy="50" r="23"></circle>
     `);
 
-        const drag = xnew(DragEvent);
+        const pointer = xnew(PointerEvent);
 
-        drag.on('down move', (event, { type, position }) => {
+        pointer.on('down drag', (event, { type, position }) => {
             target.element.style.filter = 'brightness(90%)';
 
-            const [x, y] = [position.x - size / 2, position.y - size / 2];
+            const x = position.x - size / 2;
+            const y = position.y - size / 2;
             const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
             const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
             const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
             xnode.emit(type, event, { type, vector });
-            [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
+            target.element.style.left = vector.x * size / 4 + 'px';
+            target.element.style.top = vector.y * size / 4 + 'px';
         });
 
-        drag.on('up', (event, { type }) => {
+        pointer.on('up', (event, { type }) => {
             target.element.style.filter = '';
 
             const vector = { x: 0, y: 0 };
             xnode.emit(type, event, { type, vector });
-            [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
+            target.element.style.left = vector.x * size / 4 + 'px';
+            target.element.style.top = vector.y * size / 4 + 'px';
         });
     }
 
@@ -673,22 +697,15 @@
         <circle cx="50" cy="50" r="40"></circle>
     `);
 
-        const xwin = xnew(window);
+        const pointer = xnew(target, PointerEvent);
 
-        // prevent touch default event
-        target.on('touchstart', (event) => {
-            event.preventDefault();
-        });
-        
-        target.on('pointerdown', (event) => {
+        pointer.on('down', (event, ex) => {
             target.element.style.filter = 'brightness(90%)';
-            xnode.emit('down', event, { type: 'down' });
-
-            xwin.on('pointerup', () => {
-                target.element.style.filter = '';
-                xnode.emit('up', event, { type: 'up' });
-                xwin.off();
-            });
+            xnode.emit('down', event, ex);
+        });
+        pointer.on('up', (event, ex) => {
+            target.element.style.filter = '';
+            xnode.emit('up', event, ex);
         });
     }
 
@@ -723,10 +740,11 @@
         <polygon points="89 50 80 42 80 58"></polygon>
     `);
 
-        const drag = xnew(DragEvent);
+        const pointer = xnew(PointerEvent);
 
-        drag.on('down move', (event, { type, position }) => {
-            const [x, y] = [position.x - size / 2, position.y - size / 2];
+        pointer.on('down drag', (event, { type, position }) => {
+            const x = position.x - size / 2;
+            const y = position.y - size / 2;
             const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
             const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
             const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
@@ -741,71 +759,13 @@
             xnode.emit(type, event, { type, vector });
         });
 
-        drag.on('up', (event, { type }) => {
+        pointer.on('up', (event, { type }) => {
             for(let i = 0; i < 4; i++) {
                 targets[i].element.style.filter = '';
             }
             const vector = { x: 0, y: 0 };
             xnode.emit(type, event, { type, vector });
         });
-    }
-
-    function ScaleEvent(xnode) {
-        const base = xnew();
-
-        // prevent touch default event
-        base.on('touchstart', (event) => {
-            event.preventDefault();
-        });
-
-        base.on('wheel', (event) => {
-            xnode.emit('scale', event, { type: 'scale', scale: (event.deltaY > 0 ? 0.9 : 1.1), });
-        }, { passive: false });
-
-        const map = new Map();
-        let valid = false;
-        base.on('pointerdown', (event) => {
-            const id = event.pointerId;
-            valid = map.size === 1 ? true : false;
-
-            const rect = xnode.element.getBoundingClientRect();
-            const position = getPosition(event, rect);
-            map.set(id, position);
-
-            const xwin = xnew(window);
-            xwin.on('pointermove', (event) => {
-                if (event.pointerId === id) {
-                    const position = getPosition(event, rect);
-                    if (valid === true) {
-                        const prev = map.get(id);
-                        map.delete(id);
-                        if (map.size === 1) {
-                            const zero = [...map.values()][0]; 
-                            const a = { x: prev.x - zero.x, y: prev.y - zero.y };
-                            const b = { x: position.x - prev.x, y: position.y - prev.y };
-                            const s =  a.x * a.x + a.y * a.y;
-                            if (s > 0.0) {
-                                const scale = 1 + (a.x * b.x + a.y * b.y) / s;
-                                xnode.emit('scale', event, { type: 'scale', scale, });
-                            }
-
-                        }
-                    }
-                    map.set(id, position);
-                }
-            });
-
-            xwin.on('pointerup pointercancel', (event) => {
-                if (event.pointerId === id) {
-                    xwin.finalize();
-                    map.delete(id);
-                }
-            });
-        });
-
-        function getPosition(event, rect) {
-            return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-        }
     }
 
     function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
@@ -879,14 +839,14 @@
     function SubWindow(xnode) {
         const absolute = xnest({ style: 'position: absolute;' });
         
-        const drag = xnew(DragEvent);
+        const pointer = xnew(PointerEvent);
 
         let offset = { x: 0, y: 0 };
-        drag.on('down', (event, { position }) => {
+        pointer.on('down', (event, { position }) => {
             offset.x = xnode.getPosition().x - position.x;
             offset.y = xnode.getPosition().y - position.y;
         });
-        drag.on('move', (event, { position }) => {
+        pointer.on('move', (event, { position }) => {
             const moveto = { x: position.x + offset.x, y: position.y + offset.y };
             xnode.emit('move', event, { position: moveto });
         });
@@ -903,11 +863,10 @@
     }
 
     const xcomponents = {
+        PointerEvent,
         AnalogStick,
-        CircleButton,
         DPad,
-        DragEvent,
-        ScaleEvent,
+        CircleButton,
         Screen,
         SubWindow
     };

@@ -1,5 +1,5 @@
 import { xnew, xnest } from '../core/xnew';
-import { DragEvent } from './DragEvent';
+import { PointerEvent } from './PointerEvent';
 
 export function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
     xnest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
@@ -32,10 +32,11 @@ export function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stro
         <polygon points="89 50 80 42 80 58"></polygon>
     `);
 
-    const drag = xnew(DragEvent);
+    const pointer = xnew(PointerEvent);
 
-    drag.on('down move', (event, { type, position }) => {
-        const [x, y] = [position.x - size / 2, position.y - size / 2];
+    pointer.on('down drag', (event, { type, position }) => {
+        const x = position.x - size / 2;
+        const y = position.y - size / 2;
         const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
         const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
         const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
@@ -50,7 +51,7 @@ export function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stro
         xnode.emit(type, event, { type, vector });
     });
 
-    drag.on('up', (event, { type }) => {
+    pointer.on('up', (event, { type }) => {
         for(let i = 0; i < 4; i++) {
             targets[i].element.style.filter = '';
         }

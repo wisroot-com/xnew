@@ -1,5 +1,5 @@
 import { xnew, xnest } from '../core/xnew';
-import { DragEvent } from './DragEvent';
+import { PointerEvent } from './PointerEvent';
 
 export function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
     xnest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
@@ -17,24 +17,27 @@ export function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.
         <circle cx="50" cy="50" r="23"></circle>
     `);
 
-    const drag = xnew(DragEvent);
+    const pointer = xnew(PointerEvent);
 
-    drag.on('down move', (event, { type, position }) => {
+    pointer.on('down drag', (event, { type, position }) => {
         target.element.style.filter = 'brightness(90%)';
 
-        const [x, y] = [position.x - size / 2, position.y - size / 2];
+        const x = position.x - size / 2;
+        const y = position.y - size / 2;
         const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
         const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
         const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
         xnode.emit(type, event, { type, vector });
-        [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
+        target.element.style.left = vector.x * size / 4 + 'px';
+        target.element.style.top = vector.y * size / 4 + 'px';
     });
 
-    drag.on('up', (event, { type }) => {
+    pointer.on('up', (event, { type }) => {
         target.element.style.filter = '';
 
         const vector = { x: 0, y: 0 };
         xnode.emit(type, event, { type, vector });
-        [target.element.style.left, target.element.style.top] = [vector.x * size / 4 + 'px', vector.y * size / 4 + 'px'];
+        target.element.style.left = vector.x * size / 4 + 'px';
+        target.element.style.top = vector.y * size / 4 + 'px';
     });
 }
