@@ -1,6 +1,6 @@
 export { xnew, xnest, xfind, xextend, xcontext } from './src/core/xnew';
 
-import { MoveEvent } from './src/components/MoveEvent';
+import { MouseEvent } from './src/components/MouseEvent';
 import { AnalogStick } from './src/components/AnalogStick';
 import { CircleButton } from './src/components/CircleButton';
 import { DPad } from './src/components/DPad';
@@ -8,7 +8,7 @@ import { Screen } from './src/components/Screen';
 import { SubWindow } from './src/components/SubWindow';
 
 export const xcomponents = {
-    MoveEvent,
+    MouseEvent,
     AnalogStick,
     DPad,
     CircleButton,
