@@ -52,7 +52,7 @@ export class XNode {
     {
         XNode.stop.call(this);
         XNode.finalize.call(this);
-        XNode.initialize.call(this, this._.parent, this._.base, ...this._.backup);
+        XNode.initialize.call(this, ...this._.backup);
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -140,19 +140,19 @@ export class XNode {
 
     static initialize(parent, element, component, ...args)
     {
-        parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
         (parent?._.children ?? XNode.roots).add(this);
 
         const root = parent?._.root ?? this;
         const base = (element instanceof Element || element instanceof Window) ? element : (parent?._.nest ?? document?.body ?? null);
 
         this._ = {
+            backup: [parent, element, component, ...args],
+          
             root,                           // root xnode
             parent,                         // parent xnode
             children: new Set(),            // children xnodes
             base,                           // base element
             nest: base,                     // nest element
-            backup: [component, ...args],   // backup
 
             state: 'pending',               // [pending -> running <-> stopped -> finalized]
             tostart: false,                 // flag for start

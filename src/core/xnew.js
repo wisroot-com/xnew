@@ -8,6 +8,7 @@ export function xnew(...args)
     if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
         parent = args.shift();
     }
+    parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
 
     // base element
     let element = undefined;

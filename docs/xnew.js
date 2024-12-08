@@ -81,7 +81,7 @@
         {
             XNode.stop.call(this);
             XNode.finalize.call(this);
-            XNode.initialize.call(this, this._.parent, this._.base, ...this._.backup);
+            XNode.initialize.call(this, ...this._.backup);
         }
 
         //----------------------------------------------------------------------------------------------------
@@ -169,19 +169,19 @@
 
         static initialize(parent, element, component, ...args)
         {
-            parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
             (parent?._.children ?? XNode.roots).add(this);
 
             const root = parent?._.root ?? this;
             const base = (element instanceof Element || element instanceof Window) ? element : (parent?._.nest ?? document?.body ?? null);
 
             this._ = {
+                backup: [parent, element, component, ...args],
+              
                 root,                           // root xnode
                 parent,                         // parent xnode
                 children: new Set(),            // children xnodes
                 base,                           // base element
                 nest: base,                     // nest element
-                backup: [component, ...args],   // backup
 
                 state: 'pending',               // [pending -> running <-> stopped -> finalized]
                 tostart: false,                 // flag for start
@@ -502,6 +502,7 @@
         if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
             parent = args.shift();
         }
+        parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
 
         // base element
         let element = undefined;
@@ -576,16 +577,10 @@
     function PointerEvent(xnode) {
         const base = xnew();
 
-        // prevent touch default event
-        // base.on('touchstart', (event) => {
-        //     event.preventDefault();
-        // });
-
         const map = new Map();
-
+        
         base.on('pointerdown', (event) => {
             const id = event.pointerId;
-            
             const rect = xnode.element.getBoundingClientRect();
             const position = getPosition(event, rect);
 
@@ -594,25 +589,35 @@
 
             const xwin = xnew(window);
             xwin.on('pointermove', (event) => {
-                if (event.pointerId === id) {
-                    const position = getPosition(event, rect);
-                    const prev = map.get(id);
-                    map.delete(id);
-                    const delta = { x: position.x - prev.x, y: position.y - prev.y };
+                const position = getPosition(event, rect);
+                const previous = map.get(id);
+                map.delete(id);
+                const delta = { x: position.x - previous.x, y: position.y - previous.y };
 
-                    xnode.emit('dragmove', event, { type: 'dragmove', position, delta });
-                    map.set(id, position);
-                }
+                xnode.emit('dragmove', event, { type: 'dragmove', position, delta });
+                map.set(id, position);
             });
 
             xwin.on('pointerup', (event) => {
-                if (event.pointerId === id) {
-                    const position = getPosition(event, rect);
-                    xnode.emit('dragup', event, { type: 'dragup', position, });
-                    xwin.finalize();
-                    map.delete(id);
-                }
+                const position = getPosition(event, rect);
+                xnode.emit('dragup', event, { type: 'dragup', position, });
+                xwin.finalize();
+                map.delete(id);
             });
+        });
+
+        base.on('pointermove', (event) => {
+            const rect = xnode.element.getBoundingClientRect();
+            const position = getPosition(event, rect);
+
+            xnode.emit('move', event, { type: 'move', position });
+        });
+
+        base.on('pointerup', (event) => {
+            const rect = xnode.element.getBoundingClientRect();
+            const position = getPosition(event, rect);
+
+            xnode.emit('up', event, { type: 'up', position });
         });
 
         function getPosition(event, rect) {
@@ -664,7 +669,7 @@
     function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
         xnest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
         const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
-        const strokeStyle = `stroke-linejoin: round; stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)};`;
+        const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
 
         const target = xnew({ tagName: 'svg', style: `width: 100%; height: 100%; cursor: pointer; user-select: none; ${fillStyle} ${strokeStyle}`, viewBox: '0 0 100 100' }, `
         <circle cx="50" cy="50" r="40"></circle>
@@ -678,7 +683,7 @@
         });
         pointer.on('dragup', (event, ex) => {
             target.element.style.filter = '';
-            xnode.emit('up', event, ex);
+            xnode.emit('dragup', event, ex);
         });
     }
 
@@ -688,20 +693,21 @@
         const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
         const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
 
-        const targets = new Array(4);
-        targets[0] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50 50 35 35 35  5 37  3 63  3 65  5 65 35"></polygon>
-    `);
-        targets[1] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50 50 35 65 35 95 37 97 63 97 65 95 65 65"></polygon>
-    `);
-        targets[2] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50 50 35 35  5 35  3 37  3 63  5 65 35 65"></polygon>
-    `);
-        targets[3] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50 50 65 35 95 35 97 37 97 63 95 65 65 65"></polygon>
-    `);
+        const polygons = [
+            '<polygon points="50 50 35 35 35  5 37  3 63  3 65  5 65 35"></polygon>',
+            '<polygon points="50 50 35 65 35 95 37 97 63 97 65 95 65 65"></polygon>',
+            '<polygon points="50 50 35 35  5 35  3 37  3 63  5 65 35 65"></polygon>',
+            '<polygon points="50 50 65 35 95 35 97 37 97 63 95 65 65 65"></polygon>'
+        ];
 
+        const targets = polygons.map((polygon) => {
+            return xnew({
+                tagName: 'svg',
+                style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`,
+                viewBox: '0 0 100 100'
+            }, polygon);
+        });
+        
         xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; fill: none; ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
         <polyline points="35 35 35  5 37  3 63  3 65  5 65 35"></polyline>
         <polyline points="35 65 35 95 37 97 63 97 65 95 65 65"></polyline>
@@ -720,23 +726,23 @@
             const y = position.y - size / 2;
             const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
             const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
-            const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-            vector.x = vector.x > +0.4 ? +1 : (vector.x < -0.4 ? -1 : 0);
-            vector.y = vector.y > +0.4 ? +1 : (vector.y < -0.4 ? -1 : 0);
 
+            const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
+            vector.x = Math.abs(vector.x) > 0.5 ? Math.sign(vector.x) : 0;
+            vector.y = Math.abs(vector.y) > 0.5 ? Math.sign(vector.y) : 0;
             targets[0].element.style.filter = (vector.y < 0) ? 'brightness(90%)' : '';
             targets[1].element.style.filter = (vector.y > 0) ? 'brightness(90%)' : '';
             targets[2].element.style.filter = (vector.x < 0) ? 'brightness(90%)' : '';
             targets[3].element.style.filter = (vector.x > 0) ? 'brightness(90%)' : '';
-
             xnode.emit(type, event, { type, vector });
         });
 
         pointer.on('dragup', (event, { type }) => {
-            for(let i = 0; i < 4; i++) {
-                targets[i].element.style.filter = '';
-            }
             const vector = { x: 0, y: 0 };
+            targets[0].element.style.filter = '';
+            targets[1].element.style.filter = '';
+            targets[2].element.style.filter = '';
+            targets[3].element.style.filter = '';
             xnode.emit(type, event, { type, vector });
         });
     }

@@ -7,20 +7,21 @@ export function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stro
     const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
     const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
 
-    const targets = new Array(4);
-    targets[0] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50 50 35 35 35  5 37  3 63  3 65  5 65 35"></polygon>
-    `);
-    targets[1] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50 50 35 65 35 95 37 97 63 97 65 95 65 65"></polygon>
-    `);
-    targets[2] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50 50 35 35  5 35  3 37  3 63  5 65 35 65"></polygon>
-    `);
-    targets[3] = xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`, viewBox: '0 0 100 100' }, `
-        <polygon points="50 50 65 35 95 35 97 37 97 63 95 65 65 65"></polygon>
-    `);
+    const polygons = [
+        '<polygon points="50 50 35 35 35  5 37  3 63  3 65  5 65 35"></polygon>',
+        '<polygon points="50 50 35 65 35 95 37 97 63 97 65 95 65 65"></polygon>',
+        '<polygon points="50 50 35 35  5 35  3 37  3 63  5 65 35 65"></polygon>',
+        '<polygon points="50 50 65 35 95 35 97 37 97 63 95 65 65 65"></polygon>'
+    ];
 
+    const targets = polygons.map((polygon) => {
+        return xnew({
+            tagName: 'svg',
+            style: `position: absolute; width: 100%; height: 100%; user-select: none; ${fillStyle}"`,
+            viewBox: '0 0 100 100'
+        }, polygon);
+    });
+    
     xnew({ tagName: 'svg', style: `position: absolute; width: 100%; height: 100%; user-select: none; fill: none; ${strokeStyle}"`, viewBox: '0 0 100 100' }, `
         <polyline points="35 35 35  5 37  3 63  3 65  5 65 35"></polyline>
         <polyline points="35 65 35 95 37 97 63 97 65 95 65 65"></polyline>
@@ -39,23 +40,23 @@ export function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stro
         const y = position.y - size / 2;
         const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
         const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
-        const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-        vector.x = vector.x > +0.4 ? +1 : (vector.x < -0.4 ? -1 : 0);
-        vector.y = vector.y > +0.4 ? +1 : (vector.y < -0.4 ? -1 : 0);
 
+        const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
+        vector.x = Math.abs(vector.x) > 0.5 ? Math.sign(vector.x) : 0;
+        vector.y = Math.abs(vector.y) > 0.5 ? Math.sign(vector.y) : 0;
         targets[0].element.style.filter = (vector.y < 0) ? 'brightness(90%)' : '';
         targets[1].element.style.filter = (vector.y > 0) ? 'brightness(90%)' : '';
         targets[2].element.style.filter = (vector.x < 0) ? 'brightness(90%)' : '';
         targets[3].element.style.filter = (vector.x > 0) ? 'brightness(90%)' : '';
-
         xnode.emit(type, event, { type, vector });
     });
 
     pointer.on('dragup', (event, { type }) => {
-        for(let i = 0; i < 4; i++) {
-            targets[i].element.style.filter = '';
-        }
         const vector = { x: 0, y: 0 };
+        targets[0].element.style.filter = '';
+        targets[1].element.style.filter = '';
+        targets[2].element.style.filter = '';
+        targets[3].element.style.filter = '';
         xnode.emit(type, event, { type, vector });
     });
 }

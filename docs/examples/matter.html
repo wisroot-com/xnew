@@ -22,21 +22,31 @@
 </head>
 
 <body>
-    <div id="main" style="width: 100%; height: 100%;"></div>
+    <div id="main" style="position: relative; width: 100%; height: 100%;"></div>
     <script>
         xnew(document.querySelector('#main'), (xnode) => {
-            // create a screen (xcomps.Screen is a component function that defines a canvas)
             const screen = xnew(xcomps.Screen, { width: 800, height: 450 });
 
             // setting for matter.js
             const matter = {};
             matter.engine = Matter.Engine.create();
-            matter.runner = Matter.Runner.create();
-            Matter.Runner.run(matter.runner, matter.engine);
-            matter.render = Matter.Render.create({ canvas: screen.canvas, engine: matter.engine, options: { width: screen.width, height: screen.height } });
-            Matter.Render.run(matter.render);
+            matter.render = Matter.Render.create({ canvas: screen.canvas, engine: matter.engine, options: { width: screen.width, height: screen.height, hasBounds: true } });
             
-            xnew(Contents, matter, screen.canvas);
+            const contents = xnew(Contents, matter, screen.canvas);
+
+            const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
+            button.on('click', () => {
+                Matter.World.clear(matter.engine.world);
+                Matter.Engine.clear(matter.engine);
+                contents.reload();
+            });
+            
+            return {
+                update() {
+                    Matter.Engine.update(matter.engine);
+                    Matter.Render.world(matter.render);
+                }
+            }
         });
         
         function Contents(xnode, matter, canvas) {
