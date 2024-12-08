@@ -18,7 +18,7 @@
                 xnew({ style: 'width: 100px; height: 100px; background: #AAA; border: solid 10px #000; border-radius: 4px;' }, (xnode) => {
 
                 });
-                xnode.on('move', (event, { position }) => {
+                xnode.on('dragmove', (event, { position }) => {
                     xnode.setPosition(position.x, position.y);
                 })
                 

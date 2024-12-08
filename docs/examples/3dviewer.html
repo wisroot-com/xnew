@@ -49,8 +49,8 @@
         });
 
         function Event(xnode, three) {
-            const mouse = xnew(xcomps.PointerEvent);
-            mouse.on('dragmove', (event, { position, delta }) => {
+            const pointer = xnew(xcomps.PointerEvent);
+            pointer.on('dragmove', (event, { position, delta }) => {
                 if (event.buttons & 1 || !event.buttons) {
                     three.scene.rotation.x += delta.y * 0.01;
                     three.scene.rotation.z += delta.x * 0.01;
@@ -60,9 +60,9 @@
                     three.camera.position.y += delta.y * three.camera.position.z * 0.001;
                 } 
             });
-            mouse.on('scale', (event, { scale }) => {
+            xnode.on('wheel', (event) => {
                 event.preventDefault();
-                three.camera.position.z /= scale;
+                three.camera.position.z /= (1 + 0.001 * event.wheelDeltaY);
             });
             xnode.on('contextmenu', (event) => event.preventDefault());
         }
