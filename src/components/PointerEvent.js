@@ -1,12 +1,12 @@
 import { xnew } from '../core/xnew';
 
-export function MouseEvent(xnode) {
+export function PointerEvent(xnode) {
     const base = xnew();
 
     // prevent touch default event
-    base.on('touchstart', (event) => {
-        event.preventDefault();
-    });
+    // base.on('touchstart', (event) => {
+    //     event.preventDefault();
+    // });
 
     base.on('wheel', (event) => {
         xnode.emit('scale', event, { type: 'scale', scale: 1 + 0.001 * event.wheelDeltaY });
@@ -33,7 +33,7 @@ export function MouseEvent(xnode) {
                 const position = getPosition(event, rect);
                 const delta = { x: position.x - map.get(id).x, y: position.y - map.get(id).y };
                 if (drag === true) {
-                    xnode.emit('drag', event, { type: 'drag', position, delta, });
+                    xnode.emit('dragmove', event, { type: 'dragmove', position, delta, });
                 }
                 if (scale === true) {
                     const prev = map.get(id);
@@ -56,7 +56,7 @@ export function MouseEvent(xnode) {
         xwin.on('pointerup', (event) => {
             if (event.pointerId === id) {
                 const position = getPosition(event, rect);
-                xnode.emit('up', event, { type: 'up', position, });
+                xnode.emit('dragup', event, { type: 'dragup', position, });
                 xwin.finalize();
                 map.delete(id);
             }
