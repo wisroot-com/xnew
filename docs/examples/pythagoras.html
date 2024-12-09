@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="../thirdparty/matter.min.js"></script>
+    <script src="../xnew.js"></script>
+    <style>
+        html {
+            height: -webkit-fill-available;
+        }
+        body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            position: absolute;
+            margin: 0;
+            inset: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main" style="position: relative; width: 100%; height: 100%;"></div>
+    <script>
+        xnew(document.querySelector('#main'), (xnode) => {
+            const screen = xnew(xcomps.Screen, { width: 800, height: 450 });
+
+            // setting for matter.js
+            const matter = {};
+            matter.engine = Matter.Engine.create();
+            matter.render = Matter.Render.create({ canvas: screen.canvas, engine: matter.engine, options: { width: screen.width, height: screen.height, hasBounds: true } });
+            
+            const contents = xnew(Contents, matter, screen.canvas);
+
+            const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
+            button.on('click', () => {
+                Matter.World.clear(matter.engine.world);
+                Matter.Engine.clear(matter.engine);
+                contents.reset(matter, screen.canvas);
+            });
+            // matter.render.bounds.max.x = screen.width * 2;
+            // matter.render.bounds.max.y = screen.height * 2;
+
+            const pointer = xnew(screen.canvas, xcomps.PointerEvent);
+
+            let body = null;
+            pointer.on('down', (event, { position }) => {
+                position.x *= screen.canvas.width / screen.canvas.clientWidth;
+                position.y *= screen.canvas.height / screen.canvas.clientHeight;
+                const bodiesAtPoint = Matter.Query.point(Matter.Composite.allBodies(matter.engine.world), position);
+                body = bodiesAtPoint.length > 0 ? bodiesAtPoint[0] : null;
+            })
+            pointer.on('dragmove', (event, { position, delta }) => {
+                delta.x *= screen.canvas.width / screen.canvas.clientWidth;
+                delta.y *= screen.canvas.height / screen.canvas.clientHeight;
+
+                if (body) {
+                    Matter.Body.setPosition(body, { x: body.position.x + delta.x, y: body.position.y + delta.y });
+                }
+            });
+
+            pointer.on('dragup', (event, { position }) => {
+                body = null;
+            });
+            return {
+                update() {
+                    
+                    //Matter.Engine.update(matter.engine);
+                    Matter.Render.world(matter.render);
+                }
+            }
+        });
+        
+        function Contents(xnode, matter, canvas) {
+            xextend(MatterComposite, matter.engine.world);
+
+            // xnew(MatterComposite, Matter.MouseConstraint.create(matter.engine, { element: canvas }));
+
+            xnew(Rectangle, 400, 200, 80, 80);
+            xnew(Polygon, 450, 50, 6, 40);
+            xnew(Circle, 350, 50, 40);
+            xnew(Rectangle, 400, 400, 800, 20, { isStatic: true });
+        }
+
+        function Rectangle(xnode, ...args) {
+            const object = Matter.Bodies.rectangle(...args)
+            xextend(MatterComposite, object);
+        }
+        function Circle(xnode, ...args) {
+            const object = Matter.Bodies.circle(...args)
+            xextend(MatterComposite, object);
+        }
+        function Polygon(xnode, ...args) {
+            const object = Matter.Bodies.polygon(...args)
+            xextend(MatterComposite, object);
+        }
+
+        //----------------------------------------------------------------------
+        // base component
+        //----------------------------------------------------------------------
+
+        function MatterComposite(xnode, object) {
+            const parent = xcontext('Matter.Composite', object);
+                
+            parent && Matter.Composite.add(parent, object);
+            return {
+                finalize() {
+                    parent && Matter.Composite.remove(parent, object);
+                },
+            }
+        }
+    </script>
+</body>
+</html>

@@ -10,8 +10,8 @@ export function PointerEvent(xnode) {
         const rect = xnode.element.getBoundingClientRect();
         const position = getPosition(event, rect);
 
+        map.set(id, { ...position });
         xnode.emit('down', event, { type: 'down', position });
-        map.set(id, position);
 
         const xwin = xnew(window);
         xwin.on('pointermove', (event) => {
@@ -20,15 +20,15 @@ export function PointerEvent(xnode) {
             map.delete(id);
             const delta = { x: position.x - previous.x, y: position.y - previous.y };
 
+            map.set(id, { ...position });
             xnode.emit('dragmove', event, { type: 'dragmove', position, delta });
-            map.set(id, position);
         });
 
         xwin.on('pointerup', (event) => {
             const position = getPosition(event, rect);
+            map.delete(id);
             xnode.emit('dragup', event, { type: 'dragup', position, });
             xwin.finalize();
-            map.delete(id);
         });
     });
 

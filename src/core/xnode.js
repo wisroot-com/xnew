@@ -48,11 +48,11 @@ export class XNode {
         XNode.finalize.call(this);
     }
 
-    reset()
+    reset(...args)
     {
         XNode.stop.call(this);
         XNode.finalize.call(this);
-        XNode.initialize.call(this, ...this._.backup);
+        XNode.initialize.call(this, ...this._.backup, ...args);
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -146,7 +146,7 @@ export class XNode {
         const base = (element instanceof Element || element instanceof Window) ? element : (parent?._.nest ?? document?.body ?? null);
 
         this._ = {
-            backup: [parent, element, component, ...args],
+            backup: [parent, element, component],
           
             root,                           // root xnode
             parent,                         // parent xnode

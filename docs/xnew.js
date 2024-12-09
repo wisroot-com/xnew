@@ -77,11 +77,11 @@
             XNode.finalize.call(this);
         }
 
-        reset()
+        reset(...args)
         {
             XNode.stop.call(this);
             XNode.finalize.call(this);
-            XNode.initialize.call(this, ...this._.backup);
+            XNode.initialize.call(this, ...this._.backup, ...args);
         }
 
         //----------------------------------------------------------------------------------------------------
@@ -175,7 +175,7 @@
             const base = (element instanceof Element || element instanceof Window) ? element : (parent?._.nest ?? document?.body ?? null);
 
             this._ = {
-                backup: [parent, element, component, ...args],
+                backup: [parent, element, component],
               
                 root,                           // root xnode
                 parent,                         // parent xnode
@@ -584,8 +584,8 @@
             const rect = xnode.element.getBoundingClientRect();
             const position = getPosition(event, rect);
 
+            map.set(id, { ...position });
             xnode.emit('down', event, { type: 'down', position });
-            map.set(id, position);
 
             const xwin = xnew(window);
             xwin.on('pointermove', (event) => {
@@ -594,15 +594,15 @@
                 map.delete(id);
                 const delta = { x: position.x - previous.x, y: position.y - previous.y };
 
+                map.set(id, { ...position });
                 xnode.emit('dragmove', event, { type: 'dragmove', position, delta });
-                map.set(id, position);
             });
 
             xwin.on('pointerup', (event) => {
                 const position = getPosition(event, rect);
+                map.delete(id);
                 xnode.emit('dragup', event, { type: 'dragup', position, });
                 xwin.finalize();
-                map.delete(id);
             });
         });
 
@@ -749,9 +749,8 @@
 
     function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
         xnest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
-        xnest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
+        const absolute = xnest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
         xnest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
-        const absolute = xnode.element.parentElement;
 
         const canvas = xnew({ tagName: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
         
