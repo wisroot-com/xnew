@@ -77,7 +77,7 @@
             XNode.finalize.call(this);
         }
 
-        reload()
+        reset()
         {
             XNode.stop.call(this);
             XNode.finalize.call(this);
@@ -151,7 +151,7 @@
         // current xnode scope
         static current = null;
 
-        static reset()
+        static boot()
         {
             XNode.roots.forEach((xnode) => xnode.finalize());
             XNode.roots.clear();
@@ -493,7 +493,7 @@
         }
     }
 
-    XNode.reset();
+    XNode.boot();
 
     function xnew(...args)
     {

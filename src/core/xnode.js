@@ -48,7 +48,7 @@ export class XNode {
         XNode.finalize.call(this);
     }
 
-    reload()
+    reset()
     {
         XNode.stop.call(this);
         XNode.finalize.call(this);
@@ -122,7 +122,7 @@ export class XNode {
     // current xnode scope
     static current = null;
 
-    static reset()
+    static boot()
     {
         XNode.roots.forEach((xnode) => xnode.finalize());
         XNode.roots.clear();
@@ -465,4 +465,4 @@ export class XNode {
     }
 }
 
-XNode.reset();
+XNode.boot();

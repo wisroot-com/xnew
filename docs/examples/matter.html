@@ -38,7 +38,7 @@
             button.on('click', () => {
                 Matter.World.clear(matter.engine.world);
                 Matter.Engine.clear(matter.engine);
-                contents.reload();
+                contents.reset();
             });
             
             return {
