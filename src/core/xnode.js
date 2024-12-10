@@ -8,6 +8,7 @@ export class XNode {
     
     constructor(parent, element, component, ...args)
     {
+        (parent?._.children ?? XNode.roots).add(this);
         XNode.initialize.call(this, parent, element, component, ...args);
     }
 
@@ -46,9 +47,10 @@ export class XNode {
     {
         XNode.stop.call(this);
         XNode.finalize.call(this);
+        (this._.parent?._.children ?? XNode.roots).delete(this);
     }
 
-    reset(...args)
+    reinitialize(...args)
     {
         XNode.stop.call(this);
         XNode.finalize.call(this);
@@ -140,8 +142,6 @@ export class XNode {
 
     static initialize(parent, element, component, ...args)
     {
-        (parent?._.children ?? XNode.roots).add(this);
-
         const root = parent?._.root ?? this;
         const base = (element instanceof Element || element instanceof Window) ? element : (parent?._.nest ?? document?.body ?? null);
 
@@ -353,8 +353,6 @@ export class XNode {
                     this._.base.removeChild(target);
                 }
             }
-
-            (this._.parent?._.children ?? XNode.roots).delete(this);
         }
     }
 
