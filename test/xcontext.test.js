@@ -2,7 +2,7 @@ import { XNode } from '../src/core/xnode';
 import { xnew, xcontext } from '../src/core/xnew';
 
 beforeEach(() => {
-    XNode.reset();
+    XNode.boot();
 });
 
 describe('xcontext', () => {
