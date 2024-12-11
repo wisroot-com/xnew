@@ -753,6 +753,7 @@
         const absolute = xnest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
         xnest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
 
+        const size = { width, height };
         const canvas = xnew({ tagName: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
         
         if (pixelated === true) {
@@ -775,7 +776,7 @@
             parentWidth = absolute.parentElement.clientWidth;
             parentHeight = absolute.parentElement.clientHeight;
 
-            const aspect = width / height;
+            const aspect = size.width / size.height;
            
             let style = { width: '100%', height: '100%', top: '0', left: '0', bottom: '0', right: '0' };
             if (objectFit === 'fill') ; else if (objectFit === 'contain') {
@@ -807,7 +808,11 @@
             },
             get height() {
                 return height;
-
+            },
+            resize(width, height) {
+                size.width = width;
+                size.height = height;
+                resize();
             },
             get canvas() {
                 return canvas.element;
@@ -818,18 +823,6 @@
     function SubWindow(xnode) {
         const absolute = xnest({ style: 'position: absolute;' });
         
-        const drag = xnew(DragEvent);
-
-        let offset = { x: 0, y: 0 };
-        drag.on('down', (event, { position }) => {
-            offset.x = xnode.getPosition().x - position.x;
-            offset.y = xnode.getPosition().y - position.y;
-        });
-        drag.on('move', (event, { position }) => {
-            const moveto = { x: position.x + offset.x, y: position.y + offset.y };
-            xnode.emit('move', event, { position: moveto });
-        });
-
         return {
             setPosition(x, y) {
                 absolute.style.left = x + 'px';

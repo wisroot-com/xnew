@@ -14,13 +14,21 @@
         xnew('#main', (xnode) => {
             const subwindow = xnew((xnode) => {
                 xextend(xcomps.SubWindow);
-
                 xnew({ style: 'width: 100px; height: 100px; background: #AAA; border: solid 10px #000; border-radius: 4px;' }, (xnode) => {
-                    
+                    xnew({ tagName: 'button' }, 'test');
                 });
-                xnode.on('move', (event, { position }) => {
-                    xnode.setPosition(position.x, position.y);
-                })
+
+                const drag = xnew(xcomps.DragEvent);
+
+                let offset = { x: 0, y: 0 };
+                drag.on('down', (event, { position }) => {
+                    offset.x = xnode.getPosition().x - position.x;
+                    offset.y = xnode.getPosition().y - position.y;
+                });
+                drag.on('move', (event, { position }) => {
+                    const moveto = { x: position.x + offset.x, y: position.y + offset.y };
+                    xnode.setPosition(moveto.x, moveto.y);
+                });
                 
                 xnode.setPosition(100, 100);
                 
