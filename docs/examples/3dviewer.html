@@ -64,9 +64,14 @@
                 } 
             });
 
-            const gesture = xnew(xcomps.GestureEvent);
-            gesture.on('move', (event, { scale }) => {
+            const xwin = xnew(window);
+            xwin.on('touchstart', (event) => {
                 event.preventDefault();
+            });
+            
+            const gesture = xnew(xcomps.GestureEvent);
+            
+            gesture.on('move', (event, { scale }) => {
                 three.camera.position.z /= scale;
             });
 
