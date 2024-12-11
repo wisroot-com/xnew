@@ -23,7 +23,7 @@
 </head>
 
 <body>
-    <div id="main" style="width: 100%; height: 100%;">aaa</div>
+    <div id="main" style="width: 100%; height: 100%;">bbb</div>
     <script>
         xnew('#main', (xnode) => {
             const screen = xnew(xcomps.Screen, { width: 800, height: 400 });
@@ -64,11 +64,7 @@
                 } 
             });
 
-            const xwin = xnew(window);
-            xwin.on('touchstart', (event) => {
-                event.preventDefault();
-            });
-
+            xnode.on('touchstart', (event) => event.preventDefault());
             const gesture = xnew(xcomps.GestureEvent);
             
             gesture.on('move', (event, { scale }) => {
@@ -79,6 +75,8 @@
                 event.preventDefault();
                 three.camera.position.z /= (1 + 0.001 * event.wheelDeltaY);
             });
+            
+
             xnode.on('contextmenu', (event) => event.preventDefault());
         }
         
