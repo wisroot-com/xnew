@@ -36,9 +36,9 @@
             context.fillStyle = "rgb(0,0,0)";
             context.fillRect(0, 0, canvas.width, canvas.height);
             
-            const pointer = xnew(xcomps.PointerEvent);
+            const drag = xnew(xcomps.DragEvent);
 
-            pointer.on('down dragmove', (event, { type, position, delta }) => {
+            drag.on('down move', (event, { type, position, delta }) => {
                 const scaleX = canvas.width / xnode.element.clientWidth;
                 const scaleY = canvas.height / xnode.element.clientHeight;
 
@@ -46,7 +46,7 @@
                 context.fillStyle = 'white';
                 if (type === 'down') {
                     context.arc(position.x * scaleX, position.y * scaleY, 1, 0, Math.PI * 2, true);
-                } else if (type === 'dragmove') {
+                } else if (type === 'move') {
                     const length = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
                     for (let i = 0; i < length; i++) {
                         context.arc((position.x - delta.x * i / length) * scaleX, (position.y - delta.y * i / length) * scaleY, 1, 0, Math.PI * 2, true);

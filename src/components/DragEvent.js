@@ -1,6 +1,6 @@
 import { xnew } from '../core/xnew';
 
-export function PointerEvent(xnode) {
+export function DragEvent(xnode) {
     const base = xnew();
 
     const map = new Map();
@@ -21,29 +21,15 @@ export function PointerEvent(xnode) {
             const delta = { x: position.x - previous.x, y: position.y - previous.y };
 
             map.set(id, { ...position });
-            xnode.emit('dragmove', event, { type: 'dragmove', position, delta });
+            xnode.emit('move', event, { type: 'move', position, delta });
         });
 
         xwin.on('pointerup', (event) => {
             const position = getPosition(event, rect);
             map.delete(id);
-            xnode.emit('dragup', event, { type: 'dragup', position, });
+            xnode.emit('up', event, { type: 'up', position, });
             xwin.finalize();
         });
-    });
-
-    base.on('pointermove', (event) => {
-        const rect = xnode.element.getBoundingClientRect();
-        const position = getPosition(event, rect);
-
-        xnode.emit('move', event, { type: 'move', position });
-    });
-
-    base.on('pointerup', (event) => {
-        const rect = xnode.element.getBoundingClientRect();
-        const position = getPosition(event, rect);
-
-        xnode.emit('up', event, { type: 'up', position });
     });
 
     function getPosition(event, rect) {
