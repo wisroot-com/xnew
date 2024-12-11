@@ -12,8 +12,10 @@ export function xnew(...args)
 
     // base element
     let element = undefined;
-    if (args[0] instanceof Element || args[0] === window || isObject(args[0]) || args[0] === null || args[0] === undefined) {
+    if (args[0] instanceof Element || args[0] === window || isObject(args[0]) === true || args[0] === null || args[0] === undefined) {
         element = args.shift();
+    } else if (isString(args[0]) === true) {
+        element = document.querySelector(args.shift());
     }
 
     if (isObject(element) === false && args.length > 0 && isFunction(args[0]) === false && isString(args[0]) === false) {

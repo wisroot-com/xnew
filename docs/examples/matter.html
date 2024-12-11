@@ -26,19 +26,22 @@
     <script>
         xnew(document.querySelector('#main'), (xnode) => {
             const screen = xnew(xcomps.Screen, { width: 800, height: 450 });
+            xcontext('screen', screen);
+
+            const matter = {};
+            xcontext('matter', matter);
 
             // setting for matter.js
-            const matter = {};
             matter.engine = Matter.Engine.create();
             matter.render = Matter.Render.create({ canvas: screen.canvas, engine: matter.engine, options: { width: screen.width, height: screen.height, hasBounds: true } });
             
-            const contents = xnew(Contents, matter, screen.canvas);
+            const contents = xnew(Contents);
 
             const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
             button.on('click', () => {
                 Matter.World.clear(matter.engine.world);
                 Matter.Engine.clear(matter.engine);
-                contents.reboot(matter, screen.canvas);
+                contents.reboot();
             });
             
             return {
@@ -49,10 +52,13 @@
             }
         });
         
-        function Contents(xnode, matter, canvas) {
+        function Contents(xnode) {
+            const screen = xcontext('screen');
+            const matter = xcontext('matter');
+
             xextend(MatterComposite, matter.engine.world);
 
-            xnew(MatterComposite, Matter.MouseConstraint.create(matter.engine, { element: canvas }));
+            xnew(MatterComposite, Matter.MouseConstraint.create(matter.engine, { element: screen.canvas }));
 
             xnew(Rectangle, 400, 200, 80, 80);
             xnew(Polygon, 450, 50, 6, 40);
@@ -78,7 +84,8 @@
         //----------------------------------------------------------------------
 
         function MatterComposite(xnode, object) {
-            const parent = xcontext('Matter.Composite', object);
+            const parent = xcontext('Matter.Composite');
+            xcontext('Matter.Composite', object);
                 
             parent && Matter.Composite.add(parent, object);
             return {

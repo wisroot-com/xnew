@@ -460,8 +460,9 @@ export class XNode {
         })();
         if (value !== undefined) {
             this._.context.set(name, value);
+        } else {
+            return ret;
         }
-        return ret;
     }
 }
 

@@ -397,14 +397,14 @@ xcontext(name);
 ### example
 ```
 xnew((xnode) => {
-    xcontext('hoge', 1); // undefined (return previus value)
+    xcontext('hoge', 1);
     xcontext('hoge');    // 1
 
     xnew((xnode) => {
         xcontext('hoge'); // 1
 
         xnew((xnode) => {
-            xcontext('hoge', 2); // 1 (return previus value)
+            xcontext('hoge', 2);
             xcontext('hoge');    // 2
 
             xnew((xnode) => {

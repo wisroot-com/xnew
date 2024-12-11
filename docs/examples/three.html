@@ -27,15 +27,17 @@
         xnew(document.querySelector('#main'), (xnode) => {
             const screen = xnew(xcomps.Screen, { width: 800, height: 400 });
 
-            // setting for three.js
             const three = {};
+            xcontext('three', three);
+
+            // setting for three.js
             three.renderer = new THREE.WebGLRenderer({ canvas: screen.canvas });
             three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
             three.camera.position.set(0, 0, +100);
             three.scene = new THREE.Scene();
             three.scene.background = new THREE.Color(0xFFFFFF);
 
-            xnew(Contents, three);
+            xnew(Contents);
 
             return {
                 update() {
@@ -44,7 +46,8 @@
             };
         });
 
-        function Contents(xnode, three) {
+        function Contents(xnode) {
+            const three = xcontext('three');
             xextend(ThreeObject3D, three.scene);
 
             xnew(Cube, [0, 0, 0], [40, 40, 40]);
@@ -70,7 +73,8 @@
         //----------------------------------------------------------------------
         
         function ThreeObject3D(xnode, object) {
-            const parent = xcontext('THREE.Object3D', object);
+            const parent = xcontext('THREE.Object3D');
+            xcontext('THREE.Object3D', object);
 
             parent?.add(object);
             return {
