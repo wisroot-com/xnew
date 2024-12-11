@@ -661,6 +661,11 @@
             map.delete(id);
         });
 
+        return {
+            get active() {
+                return active;
+            }
+        }
     }
 
     function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {

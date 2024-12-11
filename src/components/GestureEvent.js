@@ -40,4 +40,9 @@ export function GestureEvent(xnode) {
         map.delete(id);
     });
 
+    return {
+        get active() {
+            return active;
+        }
+    }
 }
