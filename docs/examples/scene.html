@@ -27,10 +27,12 @@
             const screen = xnew(xcomps.Screen, { width: 800, height: 450 });
 
             const pixi = {};
+            xcontext('pixi', pixi);
+
             pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height, backgroundColor: '#FFF' });
             pixi.scene = new PIXI.Container();
 
-            xnew(Content, pixi);
+            xnew(Content);
             return {
                 update() {
                     pixi.renderer.render(pixi.scene)
@@ -38,7 +40,9 @@
             };
         });
 
-        function Content(xnode, pixi) {
+        function Content(xnode) {
+            const pixi = xcontext('pixi');
+            
             xextend(PixiDisplayObject, pixi.scene);
             xnew(Scene1);
         }
@@ -94,7 +98,8 @@
         //----------------------------------------------------------------------
         
         function PixiDisplayObject(xnode, object) {
-            const parent = xcontext('PIXI.DisplayObject', object);
+            const parent = xcontext('PIXI.DisplayObject');
+            xcontext('PIXI.DisplayObject', object);
             
             parent?.addChild(object);
             return {
