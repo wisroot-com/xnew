@@ -79,7 +79,7 @@
             (this._.parent?._.children ?? XNode.roots).delete(this);
         }
 
-        reinitialize(...args)
+        reboot(...args)
         {
             XNode.stop.call(this);
             XNode.finalize.call(this);
@@ -153,7 +153,7 @@
         // current xnode scope
         static current = null;
 
-        static boot()
+        static reset()
         {
             XNode.roots.forEach((xnode) => xnode.finalize());
             XNode.roots.clear();
@@ -491,7 +491,7 @@
         }
     }
 
-    XNode.boot();
+    XNode.reset();
 
     function xnew(...args)
     {

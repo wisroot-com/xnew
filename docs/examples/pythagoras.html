@@ -38,7 +38,7 @@
             button.on('click', () => {
                 Matter.World.clear(matter.engine.world);
                 Matter.Engine.clear(matter.engine);
-                contents.reinitialize(matter, screen.canvas);
+                contents.reboot(matter, screen.canvas);
             });
             // matter.render.bounds.max.x = screen.width * 2;
             // matter.render.bounds.max.y = screen.height * 2;
