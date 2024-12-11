@@ -580,42 +580,38 @@
     function DragEvent(xnode) {
         const base = xnew();
 
-        const map = new Map();
-        
         base.on('pointerdown', (event) => {
             const id = event.pointerId;
             const rect = xnode.element.getBoundingClientRect();
             const position = getPosition(event, rect);
-
-            map.set(id, { ...position });
+           
             xnode.emit('down', event, { type: 'down', position });
+            let previous = position;
 
             const xwin = xnew(window);
+
             xwin.on('pointermove', (event) => {
                 if (event.pointerId === id) {
                     const position = getPosition(event, rect);
-                    const previous = map.get(id);
-                    map.delete(id);
                     const delta = { x: position.x - previous.x, y: position.y - previous.y };
-        
-                    map.set(id, { ...position });
+                    
                     xnode.emit('move', event, { type: 'move', position, delta });
+                    previous = position;
                 }
             });
 
             xwin.on('pointerup', (event) => {
                 if (event.pointerId === id) {
                     const position = getPosition(event, rect);
-                    map.delete(id);
                     xnode.emit('up', event, { type: 'up', position, });
                     xwin.finalize();
                 }
             });
+
             xwin.on('pointercancel', (event) => {
                 if (event.pointerId === id) {
                     const position = getPosition(event, rect);
-                    map.delete(id);
-                    xnode.emit('up', event, { type: 'up', position, });
+                    xnode.emit('cancel', event, { type: 'cancel', position, });
                     xwin.finalize();
                 }
             });
@@ -624,6 +620,47 @@
         function getPosition(event, rect) {
             return { x: event.clientX - rect.left, y: event.clientY - rect.top };
         }
+    }
+
+    function GestureEvent(xnode) {
+        const drag = xnew(DragEvent);
+
+        let active = false;
+        const map = new Map();
+
+        drag.on('down', (event, { position }) => {
+            const id = event.pointerId;
+            map.set(id, { ...position });
+          
+            active = map.size === 2 ? true : false;
+            if (active === true) {
+                xnode.emit('down', event, { type: 'down', });
+            }
+        });
+
+        drag.on('move', (event, { position, delta }) => {
+            const id = event.pointerId;
+            if (active === true) {
+                const a = map.get(id);
+                map.delete(id);
+                const b = [...map.values()][0]; 
+                const v = { x: a.x - b.x, y: a.y - b.y };
+                const s =  v.x * v.x + v.y * v.y;
+                const scale = 1 + (s > 0.0 ? (v.x * delta.x + v.y * delta.y) / s : 0);
+                xnode.emit('move', event, { type: 'move', scale, });
+            }
+            map.set(id, { ...position });
+        });
+
+        drag.on('up cancel', (event, { type }) => {
+            const id = event.pointerId;
+            if (active === true) {
+                xnode.emit(type, event, { type, });
+            }
+            active = false;
+            map.delete(id);
+        });
+
     }
 
     function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
@@ -836,6 +873,7 @@
 
     const xcomponents = {
         DragEvent,
+        GestureEvent,
         AnalogStick,
         DPad,
         CircleButton,

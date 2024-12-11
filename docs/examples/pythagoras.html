@@ -26,13 +26,16 @@
     <script>
         xnew('#main', (xnode) => {
             const screen = xnew(xcomps.Screen, { width: 800, height: 450 });
+            xcontext('screen', screen);
+
+            const matter = {};
+            xcontext('matter', matter);
 
             // setting for matter.js
-            const matter = {};
             matter.engine = Matter.Engine.create();
             matter.render = Matter.Render.create({ canvas: screen.canvas, engine: matter.engine, options: { width: screen.width, height: screen.height, hasBounds: true } });
-            
-            const contents = xnew(Contents, matter, screen.canvas);
+        
+            const contents = xnew(Contents);
 
             const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
             button.on('click', () => {
@@ -43,16 +46,16 @@
             // matter.render.bounds.max.x = screen.width * 2;
             // matter.render.bounds.max.y = screen.height * 2;
 
-            const pointer = xnew(screen.canvas, xcomps.PointerEvent);
+            const drag = xnew(screen.canvas, xcomps.DragEvent);
 
             let body = null;
-            pointer.on('down', (event, { position }) => {
-                position.x *= screen.canvas.width / screen.canvas.clientWidth;
-                position.y *= screen.canvas.height / screen.canvas.clientHeight;
-                const bodiesAtPoint = Matter.Query.point(Matter.Composite.allBodies(matter.engine.world), position);
+            drag.on('down', (event, { position }) => {
+                const x = position.x * screen.canvas.width / screen.canvas.clientWidth;
+                const y = position.y * screen.canvas.height / screen.canvas.clientHeight;
+                const bodiesAtPoint = Matter.Query.point(Matter.Composite.allBodies(matter.engine.world), { x, y });
                 body = bodiesAtPoint.length > 0 ? bodiesAtPoint[0] : null;
             })
-            pointer.on('dragmove', (event, { position, delta }) => {
+            drag.on('move', (event, { position, delta }) => {
                 delta.x *= screen.canvas.width / screen.canvas.clientWidth;
                 delta.y *= screen.canvas.height / screen.canvas.clientHeight;
 
@@ -61,7 +64,7 @@
                 }
             });
 
-            pointer.on('dragup', (event, { position }) => {
+            drag.on('up', (event, { position }) => {
                 body = null;
             });
             return {
@@ -73,10 +76,13 @@
             }
         });
         
-        function Contents(xnode, matter, canvas) {
+        function Contents(xnode) {
+            const screen = xcontext('screen');
+            const matter = xcontext('matter');
+            
             xextend(MatterComposite, matter.engine.world);
 
-            // xnew(MatterComposite, Matter.MouseConstraint.create(matter.engine, { element: canvas }));
+            // xnew(MatterComposite, Matter.MouseConstraint.create(matter.engine, { element: screen.canvas }));
 
             xnew(Rectangle, 400, 200, 80, 80);
             xnew(Polygon, 450, 50, 6, 40);

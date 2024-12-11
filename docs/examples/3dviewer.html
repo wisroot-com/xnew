@@ -63,6 +63,13 @@
                     three.camera.position.y += delta.y * three.camera.position.z * 0.001;
                 } 
             });
+
+            const gesture = xnew(xcomps.GestureEvent);
+            gesture.on('move', (event, { scale }) => {
+                event.preventDefault();
+                three.camera.position.z /= scale;
+            });
+
             xnode.on('wheel', (event) => {
                 event.preventDefault();
                 three.camera.position.z /= (1 + 0.001 * event.wheelDeltaY);
