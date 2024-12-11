@@ -23,7 +23,7 @@
 </head>
 
 <body>
-    <div id="main" style="width: 100%; height: 100%;"></div>
+    <div id="main" style="width: 100%; height: 100%;">aaa</div>
     <script>
         xnew('#main', (xnode) => {
             const screen = xnew(xcomps.Screen, { width: 800, height: 400 });
@@ -68,7 +68,7 @@
             xwin.on('touchstart', (event) => {
                 event.preventDefault();
             });
-            
+
             const gesture = xnew(xcomps.GestureEvent);
             
             gesture.on('move', (event, { scale }) => {
