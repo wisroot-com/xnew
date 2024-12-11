@@ -49,8 +49,8 @@
         });
 
         function Event(xnode, three) {
-            const pointer = xnew(xcomps.PointerEvent);
-            pointer.on('dragmove', (event, { position, delta }) => {
+            const drag = xnew(xcomps.DragEvent);
+            drag.on('move', (event, { position, delta }) => {
                 if (event.buttons & 1 || !event.buttons) {
                     three.scene.rotation.x += delta.y * 0.01;
                     three.scene.rotation.z += delta.x * 0.01;
