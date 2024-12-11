@@ -55,7 +55,7 @@ export class XNode {
         XNode.stop.call(this);
         XNode.finalize.call(this);
         
-        (parent?._.children ?? XNode.roots).add(this);
+        (this._.parent?._.children ?? XNode.roots).add(this);
         XNode.initialize.call(this, ...this._.backup, ...args);
     }
 

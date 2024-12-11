@@ -41,7 +41,7 @@ xnew((xnode1) => {
 <br>
 
 `element` is set for the html element of the new xnode. (accessed by `xnode.element`)  
-e.g. `xnew(document.querySelector('#hoge'), component)`  
+e.g. `xnew(document.querySelector('#hoge'), component)` or `xnew('#hoge', component)`   
 e.g. `xnew({ tagName: 'div', style: '', ... }, component)`   
 If you omit the tagName property, `tagName: 'div'` will be set automatically.  
 
@@ -55,7 +55,7 @@ If you omit the `element` parameter, the parent xnode's element or otherwise `do
         // xnode1.element: document.body
     });
 
-    xnew(document.querySelector('#hoge'), (xnode2) => {
+    xnew('#hoge', (xnode2) => {
         // xnode2.element: (id=hoge)
 
         xnew((xnode3) => {
@@ -151,21 +151,49 @@ const xnode = xnew((xnode) => {
     }
 });
 
-xnode.start();    // start update loop
-xnode.stop();     // stop update loop
-xnode.finalize(); // current xnode and the child xnodes will be finalized 
-
-xnode.state;      // [pending -> running <-> stopped -> finalized] 
 ```
-- xnodes automatically calls `xnode.start()`.  
-  If you want to avoid it, call `xnode.stop()` inside the component function.  
-- connected xnodes(parent-child relationship) work together. 
+
+### `xnode.start`
+This method start update loop.  
+xnodes automatically calls `xnode.start()`. If you want to avoid it, call `xnode.stop()` inside the component function.  
+```
+xnode.start();
+```
+
+### `xnode.stop`
+This method stop update loop.
+```
+xnode.start();
+```
+
+### `xnode.finalize`
+This method finalize the xnode and the children.  
+Related elements will be deleted and update processing will also stop.
+```
+xnode.finalize();
+```
+
+- `start`, `stop`, `finalize`, Connected xnodes(parent-child relationship) work together. 
   e.g. the parent component finalizes, its children also finalizes.  
-    
+
+### `xnode.reboot`
+This method reboot the xnode using the component function. 
+```
+xnode.reboot(...args); // ...args for the component function.
+```
+
+### `xnode.state`
+A variable that represents the internal state of the xnode.   
+[pending -> running <-> stopped -> finalized] 
+```
+xnode.state.
+```
+
 ## Original properties
 You can define original properties unless the properties are already defined.
 
 ```
+
 const xnode = xnew((xnode) =>  {
     let counter = 0;
 

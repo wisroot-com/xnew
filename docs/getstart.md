@@ -90,9 +90,7 @@ If you call `xnew` inside a component function, a parent-child relationship is c
 </head>
 <body>
     <script>
-        xnew((xnode) => {
-            xnew(Parent);
-        });
+        xnew(Parent);
 
         function Parent(xnode) {
             xnest({ tagName: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
