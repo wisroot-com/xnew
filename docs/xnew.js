@@ -592,20 +592,32 @@
 
             const xwin = xnew(window);
             xwin.on('pointermove', (event) => {
-                const position = getPosition(event, rect);
-                const previous = map.get(id);
-                map.delete(id);
-                const delta = { x: position.x - previous.x, y: position.y - previous.y };
-
-                map.set(id, { ...position });
-                xnode.emit('move', event, { type: 'move', position, delta });
+                if (event.pointerId === id) {
+                    const position = getPosition(event, rect);
+                    const previous = map.get(id);
+                    map.delete(id);
+                    const delta = { x: position.x - previous.x, y: position.y - previous.y };
+        
+                    map.set(id, { ...position });
+                    xnode.emit('move', event, { type: 'move', position, delta });
+                }
             });
 
             xwin.on('pointerup', (event) => {
-                const position = getPosition(event, rect);
-                map.delete(id);
-                xnode.emit('up', event, { type: 'up', position, });
-                xwin.finalize();
+                if (event.pointerId === id) {
+                    const position = getPosition(event, rect);
+                    map.delete(id);
+                    xnode.emit('up', event, { type: 'up', position, });
+                    xwin.finalize();
+                }
+            });
+            xwin.on('pointercancel', (event) => {
+                if (event.pointerId === id) {
+                    const position = getPosition(event, rect);
+                    map.delete(id);
+                    xnode.emit('up', event, { type: 'up', position, });
+                    xwin.finalize();
+                }
             });
         });
 

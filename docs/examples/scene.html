@@ -23,7 +23,7 @@
 <body>
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
-        xnew(document.querySelector('#main'), (xnode) => {
+        xnew('#main', (xnode) => {
             const screen = xnew(xcomps.Screen, { width: 800, height: 450 });
 
             const pixi = {};
@@ -42,7 +42,7 @@
 
         function Content(xnode) {
             const pixi = xcontext('pixi');
-            
+
             xextend(PixiDisplayObject, pixi.scene);
             xnew(Scene1);
         }

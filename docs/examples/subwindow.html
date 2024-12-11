@@ -11,12 +11,12 @@
 <body>
     <div id="main" style="position: relative; height: 400px; margin: 26px; border: solid 1px #00F; overflow: hidden;"></div>
     <script>
-        xnew(document.querySelector('#main'), (xnode) => {
+        xnew('#main', (xnode) => {
             const subwindow = xnew((xnode) => {
                 xextend(xcomps.SubWindow);
 
                 xnew({ style: 'width: 100px; height: 100px; background: #AAA; border: solid 10px #000; border-radius: 4px;' }, (xnode) => {
-
+                    
                 });
                 xnode.on('move', (event, { position }) => {
                     xnode.setPosition(position.x, position.y);
