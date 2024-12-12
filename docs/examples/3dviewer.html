@@ -64,14 +64,21 @@
                 three.camera.position.z /= (1 + 0.001 * event.wheelDeltaY);
             });
 
+            let getsuteIsActive = false;
             const gesture = xnew(xcomps.GestureEvent);
+            gesture.on('down', (event) => {
+                getsuteIsActive = true;
+            });
             gesture.on('move', (event, { scale }) => {
                 three.camera.position.z /= scale;
+            });
+            gesture.on('up cancel', (event) => {
+                getsuteIsActive = false;
             });
 
             const drag = xnew(xcomps.DragEvent);
             drag.on('move', (event, { position, delta }) => {
-                if (gesture.active === true) return;
+                if (getsuteIsActive === true) return;
                 
                 if (event.buttons & 1 || !event.buttons) {
                     three.scene.rotation.x += delta.y * 0.01;
