@@ -11,9 +11,6 @@ import { SubWindow } from './src/components/SubWindow';
 export const xcomponents = {
     DragEvent,
     GestureEvent,
-    AnalogStick,
-    DPad,
-    CircleButton,
     Screen,
     SubWindow
 };
