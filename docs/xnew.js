@@ -649,7 +649,7 @@
                 const a = map.get(id);
                 map.delete(id);
                 const b = [...map.values()][0]; 
-                
+
                 const v = { x: a.x - b.x, y: a.y - b.y };
                 const s =  v.x * v.x + v.y * v.y;
                 const scale = 1 + (s > 0.0 ? (v.x * delta.x + v.y * delta.y) / s : 0);
@@ -666,16 +666,31 @@
             active = false;
             map.delete(id);
         });
+    }
 
+    function ResizeEvent(xnode) {
+
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                xnode.emit('resize');
+                break;
+            }
+        });
+
+        if (xnode.element) {
+            observer.observe(xnode.element);
+        }
         return {
-            get active() {
-                return active;
+            finalize() {
+                if (xnode.element) {
+                    observer.unobserve(xnode.element);
+                }
             }
         }
     }
 
     function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
-        xnest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
+        const wrapper = xnest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
         const absolute = xnest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
         xnest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
 
@@ -686,39 +701,30 @@
             canvas.element.style.imageRendering = 'pixelated';
         }
         
-        let parentWidth = null;
-        let parentHeight = null;
-
         objectFit = ['fill', 'contain', 'cover'].includes(objectFit) ? objectFit : 'contain';
       
-        const xwin = xnew(window);
-        xwin.on('resize', resize);
-
+        const observer = xnew(wrapper, ResizeEvent);
+        observer.on('resize', resize);
         resize();
 
         function resize() {
-            if (parentWidth === absolute.parentElement.clientWidt && parentHeight === absolute.parentElement.clientHeight) return;
-         
-            parentWidth = absolute.parentElement.clientWidth;
-            parentHeight = absolute.parentElement.clientHeight;
-
             const aspect = size.width / size.height;
            
             let style = { width: '100%', height: '100%', top: '0', left: '0', bottom: '0', right: '0' };
             if (objectFit === 'fill') ; else if (objectFit === 'contain') {
-                if (parentWidth < parentHeight * aspect) {
-                    style.height = Math.floor(parentWidth / aspect) + 'px';
+                if (wrapper.clientWidth < wrapper.clientHeight * aspect) {
+                    style.height = Math.floor(wrapper.clientWidth / aspect) + 'px';
                 } else {
-                    style.width = Math.floor(parentHeight * aspect) + 'px';
+                    style.width = Math.floor(wrapper.clientHeight * aspect) + 'px';
                 }
             } else if (objectFit === 'cover') {
-                if (parentWidth < parentHeight * aspect) {
-                    style.width = Math.floor(parentHeight * aspect) + 'px';
-                    style.left = Math.floor((parentWidth - parentHeight * aspect) / 2) + 'px';
+                if (wrapper.clientWidth < wrapper.clientHeight * aspect) {
+                    style.width = Math.floor(wrapper.clientHeight * aspect) + 'px';
+                    style.left = Math.floor((wrapper.clientWidth - wrapper.clientHeight * aspect) / 2) + 'px';
                     style.right = 'auto';
                 } else {
-                    style.height = Math.floor(parentWidth / aspect) + 'px';
-                    style.top = Math.floor((parentHeight - parentWidth / aspect) / 2) + 'px';
+                    style.height = Math.floor(wrapper.clientWidth / aspect) + 'px';
+                    style.top = Math.floor((wrapper.clientHeight - wrapper.clientWidth / aspect) / 2) + 'px';
                     style.bottom = 'auto';
                 }
             }
@@ -726,23 +732,22 @@
         }
 
         return {
-            start() {
-                resize();
-            },
             get width() {
                 return width;
             },
             get height() {
                 return height;
             },
+            get canvas() {
+                return canvas.element;
+            },
             resize(width, height) {
                 size.width = width;
                 size.height = height;
+                canvas.element.width = width;
+                canvas.element.height = height;
                 resize();
             },
-            get canvas() {
-                return canvas.element;
-            }
         }
     }
 
@@ -763,6 +768,7 @@
     const xcomponents = {
         DragEvent,
         GestureEvent,
+        ResizeEvent,
         Screen,
         SubWindow
     };

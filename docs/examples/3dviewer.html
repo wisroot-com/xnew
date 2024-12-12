@@ -39,7 +39,7 @@
             three.scene.background = new THREE.Color(0xFFFFFF);
             three.renderer.shadowMap.enabled = true;
             three.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            
+
             xnew(Event);
             xnew(Contents);
 
@@ -89,6 +89,7 @@
                     three.camera.position.y += delta.y * three.camera.position.z * 0.001;
                 } 
             });
+
          }
         
         function Contents(xnode) {
