@@ -25,7 +25,7 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew('#main', (xnode) => {
-            const screen = xnew(xcomps.Screen, { width: 512, height: 512, objectFit: 'contain' });
+            const screen = xnew(xbasics.Screen, { width: 512, height: 512, objectFit: 'contain' });
             
             // screen -> content for get event on screen canvas
             xnew(screen, Contents, screen.canvas);
@@ -36,7 +36,7 @@
             context.fillStyle = "rgb(0,0,0)";
             context.fillRect(0, 0, canvas.width, canvas.height);
             
-            const drag = xnew(xcomps.DragEvent);
+            const drag = xnew(xbasics.DragEvent);
 
             drag.on('down move', (event, { type, position, delta }) => {
                 const scaleX = canvas.width / xnode.element.clientWidth;

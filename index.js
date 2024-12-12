@@ -14,3 +14,4 @@ export const xcomponents = {
     SubWindow
 };
 export const xcomps = xcomponents;
+export const xbasics = xcomponents;

@@ -26,7 +26,7 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew('#main', (xnode) => {
-            const screen = xnew(xcomps.Screen, { width: 800, height: 400 });
+            const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
         
             const three = {};
             xcontext('three', three);
@@ -65,7 +65,7 @@
             });
 
             let getsuteIsActive = false;
-            const gesture = xnew(xcomps.GestureEvent);
+            const gesture = xnew(xbasics.GestureEvent);
             gesture.on('down', (event) => {
                 getsuteIsActive = true;
             });
@@ -76,7 +76,7 @@
                 getsuteIsActive = false;
             });
 
-            const drag = xnew(xcomps.DragEvent);
+            const drag = xnew(xbasics.DragEvent);
             drag.on('move', (event, { position, delta }) => {
                 if (getsuteIsActive === true) return;
                 

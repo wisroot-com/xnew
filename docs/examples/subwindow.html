@@ -13,12 +13,12 @@
     <script>
         xnew('#main', (xnode) => {
             const subwindow = xnew((xnode) => {
-                xextend(xcomps.SubWindow);
+                xextend(xbasics.SubWindow);
                 xnew({ style: 'width: 100px; height: 100px; background: #AAA; border: solid 10px #000; border-radius: 4px;' }, (xnode) => {
                     xnew({ tagName: 'button' }, 'test');
                 });
 
-                const drag = xnew(xcomps.DragEvent);
+                const drag = xnew(xbasics.DragEvent);
 
                 let offset = { x: 0, y: 0 };
                 drag.on('down', (event, { position }) => {

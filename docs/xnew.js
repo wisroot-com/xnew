@@ -773,7 +773,9 @@
         SubWindow
     };
     const xcomps = xcomponents;
+    const xbasics = xcomponents;
 
+    exports.xbasics = xbasics;
     exports.xcomponents = xcomponents;
     exports.xcomps = xcomps;
     exports.xcontext = xcontext;

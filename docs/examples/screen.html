@@ -22,8 +22,8 @@
 
             xnew({ tagName: 'p' }, text);
             xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
-                // xcomps.Screen is a component function that defines a canvas
-                const screen = xnew(xcomps.Screen, { width: 400, height: 200, objectFit, pixelated: true });
+                // xbasics.Screen is a component function that defines a canvas
+                const screen = xnew(xbasics.Screen, { width: 400, height: 200, objectFit, pixelated: true });
                 xnew(Draw, screen.canvas);
             });
         }
