@@ -459,11 +459,16 @@
         }
 
         static emit(type, ...args) {
+            let token = null;
+            if (['#', '+'].includes(type[0])) {
+                token = type[0];
+                type = type.substring(1);
+            }
             if (XNode.etypes.has(type)) {
-                if (['#', '+'].includes(type[0])) {
+                if (token !== null) {
                     const root = this._.root;
                     XNode.etypes.get(type).forEach((xnode) => {
-                        if (type[0] === '#' || xnode._.root === root) {
+                        if (token === '#' || xnode._.root === root) {
                             emit.call(xnode, type, ...args);
                         }
                     });
@@ -644,6 +649,7 @@
                 const a = map.get(id);
                 map.delete(id);
                 const b = [...map.values()][0]; 
+                
                 const v = { x: a.x - b.x, y: a.y - b.y };
                 const s =  v.x * v.x + v.y * v.y;
                 const scale = 1 + (s > 0.0 ? (v.x * delta.x + v.y * delta.y) / s : 0);

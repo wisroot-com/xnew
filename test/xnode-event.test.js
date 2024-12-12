@@ -23,7 +23,7 @@ describe('xnode event', () => {
         return new Promise((resolve, reject) => {
             let state = 0;
             xnew((xnode) => {
-                xnode.on('#resolve', () => state++);
+                xnode.on('resolve', () => state++);
                 xnode.emit('#resolve');
                 xnew((xnode) => xnode.emit('#resolve'));
             });
@@ -36,7 +36,7 @@ describe('xnode event', () => {
         return new Promise((resolve, reject) => {
             let state = 0;
             xnew((xnode) => {
-                xnode.on('+resolve', () => state++);
+                xnode.on('resolve', () => state++);
                 xnode.emit('+resolve');
                 xnew((xnode) => xnode.emit('+resolve'));
             });

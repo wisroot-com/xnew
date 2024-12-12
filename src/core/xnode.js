@@ -431,11 +431,16 @@ export class XNode {
     }
 
     static emit(type, ...args) {
+        let token = null;
+        if (['#', '+'].includes(type[0])) {
+            token = type[0];
+            type = type.substring(1);
+        }
         if (XNode.etypes.has(type)) {
-            if (['#', '+'].includes(type[0])) {
+            if (token !== null) {
                 const root = this._.root;
                 XNode.etypes.get(type).forEach((xnode) => {
-                    if (type[0] === '#' || xnode._.root === root) {
+                    if (token === '#' || xnode._.root === root) {
                         emit.call(xnode, type, ...args);
                     }
                 });

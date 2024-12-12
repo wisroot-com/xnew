@@ -23,6 +23,7 @@ export function GestureEvent(xnode) {
             const a = map.get(id);
             map.delete(id);
             const b = [...map.values()][0]; 
+            
             const v = { x: a.x - b.x, y: a.y - b.y };
             const s =  v.x * v.x + v.y * v.y;
             const scale = 1 + (s > 0.0 ? (v.x * delta.x + v.y * delta.y) / s : 0);
