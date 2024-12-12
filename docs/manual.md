@@ -33,8 +33,12 @@ xnew((xnode1) => {
         // xnode2.parent: xnode1
     });
 
-    xnew(xnode2, (xnode3) => {
-        // xnode3.parent: xnode2
+    const xnode3 = xnew((xnode3) => {
+        // xnode3.parent: xnode1
+    });
+
+    const xnode4 = xnew(xnode2, (xnode4) => {
+        // xnode4.parent: xnode2
     });
 })
 ```
