@@ -5,17 +5,32 @@ export function xnew(...args)
 {
     // parent xnode
     let parent = undefined;
-    if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
+    if (args[0] instanceof XNode) {
         parent = args.shift();
+    } else if (args[0] === null) {
+        parent = args.shift();
+    } else if (args[0] === undefined) {
+        parent = args.shift();
+        parent = XNode.current
+    } else {
+        parent = XNode.current
     }
-    parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
 
     // base element
     let element = undefined;
-    if (args[0] instanceof Element || args[0] === window || isObject(args[0]) === true || args[0] === null || args[0] === undefined) {
+    if (args[0] instanceof Element || args[0] instanceof Window || args[0] instanceof Document) {
         element = args.shift();
     } else if (isString(args[0]) === true) {
         element = document.querySelector(args.shift());
+    } else if (isObject(args[0]) === true) {
+        element = args.shift();
+    } else if (args[0] === null) {
+        element = args.shift();
+    } else if (args[0] === undefined) {
+        element = args.shift();
+        element = null;
+    } else {
+        element = null;
     }
 
     if (isObject(element) === false && args.length > 0 && isFunction(args[0]) === false && isString(args[0]) === false) {
@@ -33,6 +48,8 @@ export function xnest(attributes)
         error('xnest', 'This function can not be called outside a component function.');
     } else if (xnode.element instanceof Window) {
         error('xnest', 'No elements are added to window.');
+    } else if (xnode.element instanceof Document) {
+        error('xnest', 'No elements are added to document.');
     } else if (isObject(attributes) === false) {
         error('xnest', 'The argument is invalid.', 'attributes');
     } else if (xnode._.state !== 'pending') {
@@ -82,64 +99,51 @@ export function xfind(key)
     }
 }
 
-export function xscope(...args)
-{
-    // parent xnode
-    let parent = undefined;
-    if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
-        parent = args.shift();
-    }
-
-    // callback function
-    if (isFunction(args[0]) === false) {
-        error('xscope', 'The argument is invalid.', 'component');
-    } else {
-        return XNode.scope(parent, ...args);
-    }
-}
-
-export function xtimer(callback, delay = 0) {
+export function xtimer(callback, delay = 0, loop = false) {
     
-    return xnew((xnode) => {
-        let id = null;
+    const current = XNode.current;
+
+    xnew(Timer, delay, loop);
+
+    function Timer(xnode, delay, loop) {
         let timeout = delay;
         let offset = 0.0;
-        let start = 0.0;
-        let time = 0.0;
+        let time = null;
+        let id = null;
 
-        return {
-            get time() {
-                return time;
-            },
-            start() {
-                start = Date.now();
-                time = offset;
-                id = setTimeout(wcallback, timeout - time)
-            },
-            update() {
-                time = Date.now() - start + offset;
-            },
-            stop() {
-                offset = Date.now() - start + offset;
-                clearTimeout(id);
-                id = null;
-            },
-            finalize() {
-                if (id !== null) {
-                    clearTimeout(id);
-                }
-            },
+        if (document.hidden === false) {
+           start();
         }
 
-        function wcallback() {
-            const repeat = XNode.scope.call(xnode.parent, callback);
-            if (repeat === true) {
-                xnode.stop();
-                offset = 0.0;
-                xnode.start();
+        function execute() {
+            XNode.scope.call(current, callback);
+            if (loop) {
+                xnode.reboot(delay, loop);
             } else {
                 xnode.finalize();
             }
         }
-    });
+
+        function start() {
+            time = Date.now();
+            id = setTimeout(execute, timeout - offset)
+        }
+
+        function stop() {
+            offset = Date.now() - time + offset;
+            clearTimeout(id);
+            id = null;
+        }
+
+        const xdoc = xnew(document);
+        xdoc.on('visibilitychange', (event) => {
+            document.hidden === false ? start() : stop();
+        });
+
+        return {
+            finalize() {
+                stop();
+            },
+        }
+    }
 }

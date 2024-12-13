@@ -145,7 +145,7 @@ export class XNode {
     static initialize(parent, element, component, ...args)
     {
         const root = parent?._.root ?? this;
-        const base = (element instanceof Element || element instanceof Window) ? element : (parent?._.nest ?? document?.body ?? null);
+        const base = (element instanceof Element || element instanceof Window || element instanceof Document) ? element : (parent?._.nest ?? document?.body ?? null);
 
         this._ = {
             backup: [parent, element, component],

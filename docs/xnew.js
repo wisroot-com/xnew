@@ -174,7 +174,7 @@
         static initialize(parent, element, component, ...args)
         {
             const root = parent?._.root ?? this;
-            const base = (element instanceof Element || element instanceof Window) ? element : (parent?._.nest ?? document?.body ?? null);
+            const base = (element instanceof Element || element instanceof Window || element instanceof Document) ? element : (parent?._.nest ?? document?.body ?? null);
 
             this._ = {
                 backup: [parent, element, component],
@@ -505,17 +505,32 @@
     {
         // parent xnode
         let parent = undefined;
-        if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
+        if (args[0] instanceof XNode) {
             parent = args.shift();
+        } else if (args[0] === null) {
+            parent = args.shift();
+        } else if (args[0] === undefined) {
+            parent = args.shift();
+            parent = XNode.current;
+        } else {
+            parent = XNode.current;
         }
-        parent = (parent instanceof XNode || parent === null) ? parent : XNode.current;
 
         // base element
         let element = undefined;
-        if (args[0] instanceof Element || args[0] === window || isObject(args[0]) === true || args[0] === null || args[0] === undefined) {
+        if (args[0] instanceof Element || args[0] instanceof Window || args[0] instanceof Document) {
             element = args.shift();
         } else if (isString(args[0]) === true) {
             element = document.querySelector(args.shift());
+        } else if (isObject(args[0]) === true) {
+            element = args.shift();
+        } else if (args[0] === null) {
+            element = args.shift();
+        } else if (args[0] === undefined) {
+            element = args.shift();
+            element = null;
+        } else {
+            element = null;
         }
 
         if (isObject(element) === false && args.length > 0 && isFunction(args[0]) === false && isString(args[0]) === false) {
@@ -533,6 +548,8 @@
             error('xnest', 'This function can not be called outside a component function.');
         } else if (xnode.element instanceof Window) {
             error('xnest', 'No elements are added to window.');
+        } else if (xnode.element instanceof Document) {
+            error('xnest', 'No elements are added to document.');
         } else if (isObject(attributes) === false) {
             error('xnest', 'The argument is invalid.', 'attributes');
         } else if (xnode._.state !== 'pending') {
@@ -579,6 +596,55 @@
                 XNode.keys.get(key)?.forEach((xnode) => set.add(xnode));
             });
             return [...set];
+        }
+    }
+
+    function xtimer(callback, delay = 0, loop = false) {
+        
+        const current = XNode.current;
+
+        xnew(Timer, delay, loop);
+
+        function Timer(xnode, delay, loop) {
+            let timeout = delay;
+            let offset = 0.0;
+            let time = null;
+            let id = null;
+
+            if (document.hidden === false) {
+               start();
+            }
+
+            function execute() {
+                XNode.scope.call(current, callback);
+                if (loop) {
+                    xnode.reboot(delay, loop);
+                } else {
+                    xnode.finalize();
+                }
+            }
+
+            function start() {
+                time = Date.now();
+                id = setTimeout(execute, timeout - offset);
+            }
+
+            function stop() {
+                offset = Date.now() - time + offset;
+                clearTimeout(id);
+                id = null;
+            }
+
+            const xdoc = xnew(document);
+            xdoc.on('visibilitychange', (event) => {
+                document.hidden === false ? start() : stop();
+            });
+
+            return {
+                finalize() {
+                    stop();
+                },
+            }
         }
     }
 
@@ -783,5 +849,6 @@
     exports.xfind = xfind;
     exports.xnest = xnest;
     exports.xnew = xnew;
+    exports.xtimer = xtimer;
 
 }));

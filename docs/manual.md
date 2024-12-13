@@ -45,8 +45,11 @@ xnew((xnode1) => {
 <br>
 
 `element` is set for the html element of the new xnode. (accessed by `xnode.element`)  
-e.g. `xnew(document.querySelector('#hoge'), component)` or `xnew('#hoge', component)`   
+- Setting an existing html element  
+e.g. `xnew(document.querySelector('#hoge'), component)`  or `xnew('#hoge', component)`   
+- Creating a new html element   
 e.g. `xnew({ tagName: 'div', style: '', ... }, component)`   
+
 If you omit the tagName property, `tagName: 'div'` will be set automatically.  
 
 If you omit the `element` parameter, the parent xnode's element or otherwise `document.body` is assigned. 
@@ -167,7 +170,7 @@ xnode.start();
 ### `xnode.stop`
 This method stop update loop.
 ```
-xnode.start();
+xnode.stop();
 ```
 
 ### `xnode.finalize`
@@ -289,6 +292,30 @@ xnode.hoge();
 // base update
 // derived update
 ```
+
+## Timer
+`xtimer` create a timer that execute a callback function for a specified time.
+
+### `xtimer`
+```
+xtimer(callback, delay, loop = false);
+```
+### example
+
+```
+xnew((xnode) => {
+    const timer = xtiemr(() => {
+        // This function is called after 100 ms.
+    }, 100);
+
+    // If you cancel the timer, call bellow.
+    // timer.finalize();
+});
+
+```
+
+- If the parent xnode finalize, the timer automatically finalize.
+
 ## Event listener
 You can set the event listener using `xnode.on`, and fire original event using `xnode.emit`.
 
@@ -329,9 +356,7 @@ const xnode = xnew((xnode) => {
 xnode.emit('myevent', data); 
 ```
 - `xnode.emit('myevent')` emits only to self xnode, and not to other xnodes.
-- If you add `+` or `#` token (e.g. `xnode.emit('+myevent')`, `xnode.emit('#myevent')`), it broadcasts to other xnodes.
-  - `+`: it broadcasts to the group of nodes with the same ancestor xnode.
-  - `#`: it broadcasts to all xnodes.
+- If you add `+` token (e.g. `xnode.emit('+myevent')`), it broadcasts to other xnodes in the group with the same ancestor xnode.
 
 ## Find xnode
 Once an xnode has a key, you can look it up anywhere.
@@ -378,19 +403,23 @@ xnew((xnode1) => {
     // appropriate parent is set
     // ----------------------------------------
 
-    // parent: xnode1; 
+    // parent: xnode1
     xnew(component);
 
     xnode1.on('click', () => {
-        // parent: xnode1; 
+        // parent: xnode1 
         xnew(component);
     });
 
     setTimeout(() => {
-        // parent: xnode1; 
+        // parent: xnode1 (Must be set explicitly)
         xnew(xnode1, component);
     }, 1000);
 
+    xtimer(() => {
+        // parent: xnode1
+        xnew(component);
+    }, 1000);
 
     // ----------------------------------------
     // appropriate parent is not(?) set
@@ -398,19 +427,19 @@ xnew((xnode1) => {
 
     // not xnode method
     window.addEventListener('click', () => {
-        // parent: null; 
+        // parent: null
         xnew(component);
     });
 
     // parent xnode is not set
     setTimeout(() => {
-        // parent: null; 
+        // parent: null
         xnew(component);
     }, 1000);
 
     const xnode2 = xnew(component);
     xnode2.on('click', () => {
-        // parent: xnode2; 
+        // parent: xnode2
         xnew(component);
     });
 })

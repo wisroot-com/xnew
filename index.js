@@ -1,10 +1,10 @@
-export { xnew, xnest, xfind, xextend, xcontext } from './src/core/xnew';
+export { xnew, xnest, xfind, xtimer, xextend, xcontext } from './src/core/xnew';
 
-import { DragEvent } from './src/components/DragEvent';
-import { GestureEvent } from './src/components/GestureEvent';
-import { ResizeEvent } from './src/components/ResizeEvent';
-import { Screen } from './src/components/Screen';
-import { SubWindow } from './src/components/SubWindow';
+import { DragEvent } from './src/basics/DragEvent';
+import { GestureEvent } from './src/basics/GestureEvent';
+import { ResizeEvent } from './src/basics/ResizeEvent';
+import { Screen } from './src/basics/Screen';
+import { SubWindow } from './src/basics/SubWindow';
 
 export const xcomponents = {
     DragEvent,
