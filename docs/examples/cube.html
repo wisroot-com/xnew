@@ -83,8 +83,8 @@
             velocity.z = Math.random() - 0.5;
 
             // finalize after 5000ms
-            setTimeout(() => {
-                xnode.finalize()
+            xtimer(() => {
+                xnode.finalize();
             }, 5 * 1000);
 
             return {
