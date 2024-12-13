@@ -1,7 +1,7 @@
 {
   "name": "xnew",
   "description": "Simple component based library for dynamic scene.",
-  "version": "1.6.55",
+  "version": "1.6.56",
   "main": "dist/xnew.js",
   "license": "MIT",
   "bugs": {

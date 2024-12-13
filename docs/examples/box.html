@@ -10,11 +10,13 @@
 
 <body>
     <script>
-        xnew((xnode) => {
+        xnew(Component);
+
+        function Component(xnode) {
             xnest({ tagName: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
             const text = xnew({ tagName: 'span' }, 'start');
 
-            xnode.on('pointerdown', () => {
+            xnode.on('click', () => {
                 xnode.state === 'running' ? xnode.stop() : xnode.start();
             });
 
@@ -30,7 +32,7 @@
                     text.element.textContent = 'stop';
                 },
             };
-        });
+        }
     </script>
 </body>
 

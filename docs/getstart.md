@@ -50,11 +50,13 @@ Inside the component function, you can implement various process.
 </head>
 <body>
     <script>
-        xnew((xnode) => {
+        xnew(Component);
+
+        function Component(xnode) {
             xnest({ tagName: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
             const text = xnew({ tagName: 'span' }, 'start');
 
-            xnode.on('pointerdown', () => {
+            xnode.on('click', () => {
                 xnode.state === 'running' ? xnode.stop() : xnode.start();
             });
 
@@ -70,7 +72,7 @@ Inside the component function, you can implement various process.
                     text.element.textContent = 'stop';
                 },
             };
-        });
+        }
     </script>
 </body>
 </html>
@@ -93,12 +95,12 @@ If you call `xnew` inside a component function, a parent-child relationship is c
         xnew(Parent);
 
         function Parent(xnode) {
-            xnest({ tagName: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
+            xnest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
             const text = xnew({ tagName: 'span' }, 'parent: start');
 
             xnew(Child);
 
-            xnode.on('pointerdown', () => {
+            xnode.on('click', () => {
                 xnode.state === 'running' ? xnode.stop() : xnode.start();
             });
 
@@ -117,10 +119,10 @@ If you call `xnew` inside a component function, a parent-child relationship is c
         }
 
         function Child(xnode) {
-            xnest({ tagName: 'div', style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
+            xnest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
             const text = xnew({ tagName: 'span' }, 'child: start');
      
-            xnode.on('pointerdown', (event) => {
+            xnode.on('click', (event) => {
                 event.stopPropagation();
                 xnode.state === 'running' ? xnode.stop() : xnode.start();
             });
