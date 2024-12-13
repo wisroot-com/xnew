@@ -32,7 +32,7 @@
             pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height, backgroundColor: '#FFF' });
             pixi.scene = new PIXI.Container();
 
-            xnew(Content);
+            xnew(Contents);
             return {
                 update() {
                     pixi.renderer.render(pixi.scene)
@@ -40,7 +40,7 @@
             };
         });
 
-        function Content(xnode) {
+        function Contents(xnode) {
             const pixi = xcontext('pixi');
 
             xextend(PixiDisplayObject, pixi.scene);
