@@ -16,7 +16,7 @@
 npm install xnew
 ```
 ```
-import { xnew, xnest, xextend } from 'xnew'
+import { xnew, xcontext, xfind, xbasics } from 'xnew'
 ```
 ## Basic usage
 By setting a component function to `xnew`, an instance(`xnode`) of the component will be created.  
@@ -53,7 +53,7 @@ Inside the component function, you can implement various process.
         xnew(Component);
 
         function Component(xnode) {
-            xnest({ tagName: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
+            xnode.nest({ tagName: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
             const text = xnew({ tagName: 'span' }, 'start');
 
             xnode.on('click', () => {
@@ -95,7 +95,7 @@ If you call `xnew` inside a component function, a parent-child relationship is c
         xnew(Parent);
 
         function Parent(xnode) {
-            xnest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
+            xnode.nest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
             const text = xnew({ tagName: 'span' }, 'parent: start');
 
             xnew(Child);
@@ -119,7 +119,7 @@ If you call `xnew` inside a component function, a parent-child relationship is c
         }
 
         function Child(xnode) {
-            xnest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
+            xnode.nest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
             const text = xnew({ tagName: 'span' }, 'child: start');
      
             xnode.on('click', (event) => {

@@ -89,11 +89,11 @@ const xnode = xnew({ tagName: 'p', id: 'hoge' }, 'aaa');
         
 ## Element
 There are various ways to create elements.
-### `xnest`
+### `xnode.nest`
 This create a new element as a child of the current element. and replace `xnode.element`.
 ```
-xnest(attributes);
-// e.g.: xnest({ tagName: 'div', type: 'aaa', className: 'bbb', style: 'color: #000;' });
+xnode.nest(attributes);
+// e.g.: xnode.nest({ tagName: 'div', type: 'aaa', className: 'bbb', style: 'color: #000;' });
 ```
 ### example
 ```
@@ -102,12 +102,12 @@ xnew({ tagName: 'div', name: 'A'}, (xnode1) =>{
 });
 
 xnew((xnode2) => {
-    xnest({ tagName: 'div', name: 'B' });
+    xnode2.nest({ tagName: 'div', name: 'B' });
     // xnode2.element: (div B)
 }
 
 xnew({ tagName: 'div', name: 'C' }, (xnode3) => { 
-    xnest({ tagName: 'div', name: 'D' }); // inner div
+    xnode3.nest({ tagName: 'div', name: 'D' }); // inner div
     // xnode3.element: (div D)
     // xnode3.element.parentElement: (div C)
 }
@@ -226,9 +226,9 @@ const x = xnode.counter; // getter
 
 ## Extend
 You can create a component function that extends another component function.
-### `xextend`
+### `xnode.extend`
 ```
-xextend(component, ...args);
+xnode.extend(component, ...args);
 ```
 ### example
 
@@ -247,7 +247,7 @@ function Base(xnode) {
 ```
 ```
 const xnode = xnew((xnode) => {
-    xextend(Base);
+    xnode.extend(Base);
 
     return {
         update() {
@@ -267,11 +267,11 @@ xnode.hoge();
 ```
 - System properties defined in both component functions are automatically merged.
 - Original properties defined in both component functions are overridden.
-    However, By using the return value of `xextend`, you can change it to execute both.
+    However, By using the return value of `xnode.extend`, you can change it to execute both.
 
 ```
 const xnode = xnew((xnode) => {
-    const props = xextend(Base);
+    const props = xnode.extend(Base);
 
     return {
         update() {
