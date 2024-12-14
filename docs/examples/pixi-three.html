@@ -64,8 +64,8 @@
             const three = xcontext('three');
             const pixi = xcontext('pixi');
 
-            xextend(ThreeObject3D, three.scene);
-            xextend(PixiDisplayObject, pixi.scene);
+            xnode.extend(ThreeObject3D, three.scene);
+            xnode.extend(PixiDisplayObject, pixi.scene);
 
             xnew(Box, [800 / 2, 400 / 2], [160, 160], 0xEA1E63);
             xnew(Cube, [0, 0, 0], [40, 40, 40]);
@@ -73,7 +73,7 @@
 
         function Box(xnode, [x, y], [sx, sy], color) {
             const object = new PIXI.Container();
-            xextend(PixiDisplayObject, object);
+            xnode.extend(PixiDisplayObject, object);
             
             object.x = x;
             object.y = y;
@@ -94,7 +94,7 @@
             const geometry = new THREE.BoxGeometry(sx, sy, sz);
             const material = new THREE.MeshNormalMaterial();
             const object = new THREE.Mesh(geometry, material);
-            xextend(ThreeObject3D, object);
+            xnode.extend(ThreeObject3D, object);
 
             return {
                 update() {

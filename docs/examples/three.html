@@ -48,7 +48,7 @@
 
         function Contents(xnode) {
             const three = xcontext('three');
-            xextend(ThreeObject3D, three.scene);
+            xnode.extend(ThreeObject3D, three.scene);
 
             xnew(Cube, [0, 0, 0], [40, 40, 40]);
         }
@@ -57,7 +57,7 @@
             const geometry = new THREE.BoxGeometry(sx, sy, sz);
             const material = new THREE.MeshNormalMaterial();
             const object = new THREE.Mesh(geometry, material);
-            xextend(ThreeObject3D, object);
+            xnode.extend(ThreeObject3D, object);
             object.position.set(x, y, z);
 
             return {

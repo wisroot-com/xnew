@@ -62,6 +62,33 @@ export class XNode {
     //----------------------------------------------------------------------------------------------------
     // auxiliary
     //----------------------------------------------------------------------------------------------------        
+    
+    nest(attributes)
+    {
+        if (this.element instanceof Window) {
+            error('xnest', 'No elements are added to window.');
+        } else if (this.element instanceof Document) {
+            error('xnest', 'No elements are added to document.');
+        } else if (isObject(attributes) === false) {
+            error('xnest', 'The argument is invalid.', 'attributes');
+        } else if (this._.state !== 'pending') {
+            error('xnest', 'This function can not be called after initialized.');
+        } else {
+            XNode.nest.call(this, attributes);
+            return this.element;
+        }
+    }
+
+    extend(component, ...args)
+    {
+        if (isFunction(component) === false) {
+            error('xextend', 'The argument is invalid.', 'component');
+        } else if (this._.state !== 'pending') {
+            error('xextend', 'This function can not be called after initialized.');
+        } else {
+            return XNode.extend.call(this, component, ...args);
+        }
+    }
 
     set key(key)
     {

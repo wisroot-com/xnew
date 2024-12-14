@@ -50,7 +50,7 @@
         function Contents(xnode) {
             const three = xcontext('three');
 
-            xextend(ThreeObject3D, three.scene);
+            xnode.extend(ThreeObject3D, three.scene);
             xnew(Light);
         
             // call iteratively (delay = 100ms, loop = true)
@@ -61,7 +61,7 @@
 
         function Light(xnode) {
             const light = new THREE.PointLight(0xFFFFFF, 1);
-            xextend(ThreeObject3D, light);
+            xnode.extend(ThreeObject3D, light);
 
             light.position.set(0, 0, +100);
         }
@@ -71,7 +71,7 @@
             const geometry = new THREE.BoxGeometry(size, size, size);
             const material = new THREE.MeshLambertMaterial({ color: 0xFFFFFF * Math.random() });
             const object = new THREE.Mesh(geometry, material);
-            xextend(ThreeObject3D, object);
+            xnode.extend(ThreeObject3D, object);
 
             object.position.x = 100 * (Math.random() - 0.5);
             object.position.y = 100 * (Math.random() - 0.5);

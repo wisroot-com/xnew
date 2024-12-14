@@ -13,7 +13,7 @@
     <script>
         xnew('#main', (xnode) => {
             const subwindow = xnew((xnode) => {
-                xextend(xbasics.SubWindow);
+                xnode.extend(xbasics.SubWindow);
                 xnew({ style: 'width: 100px; height: 100px; background: #AAA; border: solid 10px #000; border-radius: 4px;' }, (xnode) => {
                     xnew({ tagName: 'button' }, 'test');
                 });

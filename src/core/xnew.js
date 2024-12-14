@@ -40,41 +40,6 @@ export function xnew(...args)
     }
 }
 
-export function xnest(attributes)
-{
-    const xnode = XNode.current;
-
-    if (xnode === null) {
-        error('xnest', 'This function can not be called outside a component function.');
-    } else if (xnode.element instanceof Window) {
-        error('xnest', 'No elements are added to window.');
-    } else if (xnode.element instanceof Document) {
-        error('xnest', 'No elements are added to document.');
-    } else if (isObject(attributes) === false) {
-        error('xnest', 'The argument is invalid.', 'attributes');
-    } else if (xnode._.state !== 'pending') {
-        error('xnest', 'This function can not be called after initialized.');
-    } else {
-        XNode.nest.call(xnode, attributes);
-        return xnode.element;
-    }
-}
-
-export function xextend(component, ...args)
-{
-    const xnode = XNode.current;
-
-    if (xnode === null) {
-        error('xextend', 'This function can not be called outside a component function.');
-    } else if (isFunction(component) === false) {
-        error('xextend', 'The argument is invalid.', 'component');
-    } else if (xnode._.state !== 'pending') {
-        error('xextend', 'This function can not be called after initialized.');
-    } else {
-        return XNode.extend.call(xnode, component, ...args);
-    }
-}
-
 export function xcontext(name, value)
 {
     const xnode = XNode.current;

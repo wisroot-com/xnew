@@ -49,7 +49,7 @@
             const screen = xcontext('screen');
             const pixi = xcontext('pixi');
 
-            xextend(PixiDisplayObject, pixi.scene);
+            xnode.extend(PixiDisplayObject, pixi.scene);
        
             xnew(Box, [screen.width / 2, screen.height / 2], [160, 160], 0xEA1E63);
         }
@@ -71,7 +71,7 @@
 
         function Box(xnode, [x, y], [sx, sy], color) {
             const object = new PIXI.Container();
-            xextend(PixiDisplayObject, object);
+            xnode.extend(PixiDisplayObject, object);
             
             object.x = x;
             object.y = y;
@@ -102,7 +102,7 @@
         }
 
         function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-            xnest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
+            xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
 
             const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
             const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -143,7 +143,7 @@
         }
 
         function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-            xnest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
+            xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
 
             const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
             const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -203,7 +203,7 @@
         }
 
         function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-            xnest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
+            xnode.nest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
             const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
             const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
 

@@ -94,7 +94,7 @@
         
         function Contents(xnode) {
             const three = xcontext('three');
-            xextend(ThreeObject3D, three.scene);
+            xnode.extend(ThreeObject3D, three.scene);
             three.scene.rotation.x = -60 / 180 * Math.PI
 
             xnew(DirectionaLight, 20, -50, 100);
@@ -107,7 +107,7 @@
 
         function DirectionaLight(xnode, x, y, z) {
             const object = new THREE.DirectionalLight(0xFFFFFF, 0.40);
-            xextend(ThreeObject3D, object);
+            xnode.extend(ThreeObject3D, object);
             
             object.position.set(x, y, z);
             const s = object.position.length();
@@ -125,14 +125,14 @@
 
         function AmbientLight(xnode) {
             const object = new THREE.AmbientLight(0xFFFFFF, 0.50);
-            xextend(ThreeObject3D, object);
+            xnode.extend(ThreeObject3D, object);
         }
 
         function Dorm(xnode, size) {
             const geometry = new THREE.SphereGeometry(size, 25, 25);
             const material = new THREE.MeshBasicMaterial({ color: 0xEEEEFF, side: THREE.BackSide });
             const object = new THREE.Mesh(geometry, material);
-            xextend(ThreeObject3D, object);
+            xnode.extend(ThreeObject3D, object);
         }
 
         function Ground(xnode, size, color) {
@@ -141,14 +141,14 @@
             const object = new THREE.Mesh(geometry, material);
             object.receiveShadow = true;
             object.material.opacity = 0.7;
-            xextend(ThreeObject3D, object);
+            xnode.extend(ThreeObject3D, object);
         }
 
         function Cube(xnode, x, y, z, size, color) {
             const geometry = new THREE.BoxGeometry(size, size, size);
             const material = new THREE.MeshLambertMaterial({ color, });
             const object = new THREE.Mesh(geometry, material);
-            xextend(ThreeObject3D, object);
+            xnode.extend(ThreeObject3D, object);
 
             object.castShadow = true;
             object.position.z = size / 2;

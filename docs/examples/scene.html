@@ -43,7 +43,7 @@
         function Contents(xnode) {
             const pixi = xcontext('pixi');
 
-            xextend(PixiDisplayObject, pixi.scene);
+            xnode.extend(PixiDisplayObject, pixi.scene);
             xnew(Scene1);
         }
 
@@ -69,14 +69,14 @@
         
         function Text(xnode, value) {
             const text = new PIXI.Text(value, new PIXI.TextStyle({ fontSize: 24, fill: '#000000' }));
-            xextend(PixiDisplayObject, text);
+            xnode.extend(PixiDisplayObject, text);
             text.x = 10;
             text.y = 10;
         }
 
         function Box(xnode, x, y, size, color) {
             const object = new PIXI.Container();
-            xextend(PixiDisplayObject, object);
+            xnode.extend(PixiDisplayObject, object);
 
             object.x = x;
             object.y = y;

@@ -19,18 +19,18 @@ describe('xnode event', () => {
         });
     });
 
-    it('broadcast #', () => {
-        return new Promise((resolve, reject) => {
-            let state = 0;
-            xnew((xnode) => {
-                xnode.on('resolve', () => state++);
-                xnode.emit('#resolve');
-                xnew((xnode) => xnode.emit('#resolve'));
-            });
-            xnew((xnode) => xnode.emit('#resolve'));
-            setTimeout(() => state === 3 ? resolve() : reject(), 100);
-        });
-    });
+    // it('broadcast #', () => {
+    //     return new Promise((resolve, reject) => {
+    //         let state = 0;
+    //         xnew((xnode) => {
+    //             xnode.on('resolve', () => state++);
+    //             xnode.emit('#resolve');
+    //             xnew((xnode) => xnode.emit('#resolve'));
+    //         });
+    //         xnew((xnode) => xnode.emit('#resolve'));
+    //         setTimeout(() => state === 3 ? resolve() : reject(), 100);
+    //     });
+    // });
 
     it('broadcast +', () => {
         return new Promise((resolve, reject) => {

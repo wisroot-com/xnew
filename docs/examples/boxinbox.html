@@ -12,7 +12,7 @@
         xnew(Parent);
 
         function Parent(xnode) {
-            xnest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
+            xnode.nest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
             const text = xnew({ tagName: 'span' }, 'parent: start');
 
             xnew(Child);
@@ -36,7 +36,7 @@
         }
 
         function Child(xnode) {
-            xnest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
+            xnode.nest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
             const text = xnew({ tagName: 'span' }, 'child: start');
      
             xnode.on('click', (event) => {

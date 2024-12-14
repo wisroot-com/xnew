@@ -19,7 +19,7 @@
         });
 
         function Div1(xnode) {
-            xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
+            xnode.nest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
 
             xnew({ tagName: 'p' }, 'my div');
             xnew({ style: 'display: flex;'}, () => {
@@ -30,7 +30,7 @@
         }
 
         function Div2(xnode) {
-            xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
+            xnode.nest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
           
             xnew({ tagName: 'p' }, 'my button');
 
@@ -43,7 +43,7 @@
         }
 
         function Div3(xnode) {
-            xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
+            xnode.nest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
          
             xnew({ tagName: 'p' }, 'my input text');
 
@@ -56,7 +56,7 @@
         }
 
         function Div4(xnode) {
-            xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
+            xnode.nest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
         
             xnew({ tagName: 'p' }, 'my canvas');
 

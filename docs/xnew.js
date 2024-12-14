@@ -91,6 +91,17 @@
         //----------------------------------------------------------------------------------------------------
         // auxiliary
         //----------------------------------------------------------------------------------------------------        
+        
+        extend(component, ...args)
+        {
+            if (isFunction(component) === false) {
+                error('xextend', 'The argument is invalid.', 'component');
+            } else if (this._.state !== 'pending') {
+                error('xextend', 'This function can not be called after initialized.');
+            } else {
+                return XNode.extend.call(this, component, ...args);
+            }
+        }
 
         set key(key)
         {
@@ -560,21 +571,6 @@
         }
     }
 
-    function xextend(component, ...args)
-    {
-        const xnode = XNode.current;
-
-        if (xnode === null) {
-            error('xextend', 'This function can not be called outside a component function.');
-        } else if (isFunction(component) === false) {
-            error('xextend', 'The argument is invalid.', 'component');
-        } else if (xnode._.state !== 'pending') {
-            error('xextend', 'This function can not be called after initialized.');
-        } else {
-            return XNode.extend.call(xnode, component, ...args);
-        }
-    }
-
     function xcontext(name, value)
     {
         const xnode = XNode.current;
@@ -831,23 +827,17 @@
         }
     }
 
-    const xcomponents = {
+    const xbasics = {
         DragEvent,
         GestureEvent,
         ResizeEvent,
         Screen,
         SubWindow
     };
-    const xcomps = xcomponents;
-    const xbasics = xcomponents;
 
     exports.xbasics = xbasics;
-    exports.xcomponents = xcomponents;
-    exports.xcomps = xcomps;
     exports.xcontext = xcontext;
-    exports.xextend = xextend;
     exports.xfind = xfind;
-    exports.xnest = xnest;
     exports.xnew = xnew;
     exports.xtimer = xtimer;
 
