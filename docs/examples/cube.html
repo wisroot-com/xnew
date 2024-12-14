@@ -25,27 +25,41 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew('#main', (xnode) => {
-            // create a screen (xbasics.Screen is a component function that defines a canvas)
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
+            xcontext('screen', screen);
 
-            const three = {};
+            const three = xnew(Three, screen.canvas);
             xcontext('three', three);
-
-            // setting for three.js
-            three.renderer = new THREE.WebGLRenderer({ canvas: screen.canvas, alpha: true, });
-            three.renderer.setClearColor(0x000000, 0);
-            three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
-            three.camera.position.set(0, 0, +100);
-            three.scene = new THREE.Scene();
 
             xnew(Contents);
 
             return {
                 update() {
                     three.renderer.render(three.scene, three.camera);
-                },
-            };
+                }
+            }
         });
+
+        function Three(xnode, canvas) {
+            const renderer = new THREE.WebGLRenderer({ canvas });
+            const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
+            camera.position.set(0, 0, +100);
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xFFFFFF);
+
+            return {
+                get renderer() {
+                    return renderer;
+                },
+                get camera() {
+                    return camera;
+                },
+                get scene() {
+                    return scene;
+                },
+            }
+        }
 
         function Contents(xnode) {
             const three = xcontext('three');
@@ -54,9 +68,7 @@
             xnew(Light);
         
             // call iteratively (delay = 100ms, loop = true)
-            xnode.timer(() => {
-                xnew(xnode, Cube);
-            }, 100, true);
+            xnode.timer(() => { xnew(xnode, Cube); }, 100, true);
         }
 
         function Light(xnode) {

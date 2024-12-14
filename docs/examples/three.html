@@ -24,27 +24,41 @@
 <body>
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
-        xnew(document.querySelector('#main'), (xnode) => {
+        xnew('#main', (xnode) => {
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
+            xcontext('screen', screen);
 
-            const three = {};
+            const three = xnew(Three, screen.canvas);
             xcontext('three', three);
 
-            // setting for three.js
-            three.renderer = new THREE.WebGLRenderer({ canvas: screen.canvas });
-            three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
-            three.camera.position.set(0, 0, +100);
-            three.scene = new THREE.Scene();
-            three.scene.background = new THREE.Color(0xFFFFFF);
-
             xnew(Contents);
+        });
+
+        function Three(xnode, canvas) {
+            const screen = xcontext('screen');
+
+            const renderer = new THREE.WebGLRenderer({ canvas });
+            const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
+            camera.position.set(0, 0, +100);
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xFFFFFF);
 
             return {
-                update() {
-                    three.renderer.render(three.scene, three.camera);
+                get renderer() {
+                    return renderer;
                 },
-            };
-        });
+                get camera() {
+                    return camera;
+                },
+                get scene() {
+                    return scene;
+                },
+                update() {
+                    renderer.render(scene, camera);
+                },
+            }
+        }
 
         function Contents(xnode) {
             const three = xcontext('three');
@@ -66,7 +80,6 @@
                 },
             };
         }
-
 
         //----------------------------------------------------------------------
         // base component

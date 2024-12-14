@@ -117,8 +117,8 @@
 
     class XBase
     {
-        constructor(parent, element) {
-            
+        constructor(parent, element)
+        {
             let base = null;
             if (element instanceof Element || element instanceof Window || element instanceof Document) {
                 base = element;
@@ -134,17 +134,11 @@
                 root: parent?._.root ?? this,   // root xnode
                 parent,                         // parent xnode
                 base,                           // base element
-
                 nest: base,                     // nest element
                 context: new Map(),             // context value
                 keys: new Set(),                // keys
                 listeners: new Map(),           // event listners
             };
-        }
-
-        get root()
-        {
-            return this._.root;
         }
 
         get parent()
@@ -750,22 +744,22 @@
     function GestureEvent(xnode) {
         const drag = xnew(DragEvent);
 
-        let active = false;
+        let isActive = false;
         const map = new Map();
 
         drag.on('down', (event, { position }) => {
             const id = event.pointerId;
             map.set(id, { ...position });
           
-            active = map.size === 2 ? true : false;
-            if (active === true) {
+            isActive = map.size === 2 ? true : false;
+            if (isActive === true) {
                 xnode.emit('down', event, { type: 'down', });
             }
         });
 
         drag.on('move', (event, { position, delta }) => {
             const id = event.pointerId;
-            if (active === true) {
+            if (isActive === true) {
                 const a = map.get(id);
                 map.delete(id);
                 const b = [...map.values()][0]; 
@@ -780,12 +774,18 @@
 
         drag.on('up cancel', (event, { type }) => {
             const id = event.pointerId;
-            if (active === true) {
+            if (isActive === true) {
                 xnode.emit(type, event, { type, });
             }
-            active = false;
+            isActive = false;
             map.delete(id);
         });
+
+        return {
+            get isActive() {
+                return isActive;
+            },
+        }
     }
 
     function ResizeEvent(xnode) {

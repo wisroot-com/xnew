@@ -33,8 +33,17 @@
 
             // setting for matter.js
             matter.engine = Matter.Engine.create();
-            matter.render = Matter.Render.create({ canvas: screen.canvas, engine: matter.engine, options: { width: screen.width, height: screen.height, hasBounds: true } });
-        
+            matter.render = Matter.Render.create({ canvas: screen.canvas, engine: matter.engine,
+                options: {
+                    width: screen.width,
+                    height: screen.height,
+                    hasBounds: true,
+                    wireframes: false,
+                    background: 'rgb(255,255,255)'
+                }
+            });
+
+            xnew(Event);
             const contents = xnew(Contents);
 
             const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
@@ -43,8 +52,30 @@
                 Matter.Engine.clear(matter.engine);
                 contents.reboot(matter, screen.canvas);
             });
+            
+            return {
+                update() {
+                    //Matter.Engine.update(matter.engine);
+                    Matter.Render.world(matter.render);
+                }
+            }
+        });
+             
+        function Event(xnode) {
+            const screen = xcontext('screen');
+            const matter = xcontext('matter');
             // matter.render.bounds.max.x = screen.width * 2;
             // matter.render.bounds.max.y = screen.height * 2;
+            xnode.on('touchstart', (event) => {
+                event.preventDefault();
+            });
+            xnode.on('contextmenu', (event) => {
+                event.preventDefault();
+            });
+            xnode.on('wheel', (event) => {
+                event.preventDefault();
+                // three.camera.position.z /= (1 + 0.001 * event.wheelDeltaY);
+            });
 
             const drag = xnew(screen.canvas, xbasics.DragEvent);
 
@@ -67,15 +98,7 @@
             drag.on('up', (event, { position }) => {
                 body = null;
             });
-            return {
-                update() {
-                    
-                    //Matter.Engine.update(matter.engine);
-                    Matter.Render.world(matter.render);
-                }
-            }
-        });
-        
+        }   
         function Contents(xnode) {
             const screen = xcontext('screen');
             const matter = xcontext('matter');

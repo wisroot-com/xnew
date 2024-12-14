@@ -2,8 +2,8 @@ import { isObject, isString, isFunction, createElement, error } from './util';
 
 export class XBase
 {
-    constructor(parent, element) {
-        
+    constructor(parent, element)
+    {
         let base = null;
         if (element instanceof Element || element instanceof Window || element instanceof Document) {
             base = element;
@@ -19,17 +19,11 @@ export class XBase
             root: parent?._.root ?? this,   // root xnode
             parent,                         // parent xnode
             base,                           // base element
-
             nest: base,                     // nest element
             context: new Map(),             // context value
             keys: new Set(),                // keys
             listeners: new Map(),           // event listners
         };
-    }
-
-    get root()
-    {
-        return this._.root;
     }
 
     get parent()

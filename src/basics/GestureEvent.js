@@ -4,22 +4,22 @@ import { DragEvent } from './DragEvent';
 export function GestureEvent(xnode) {
     const drag = xnew(DragEvent);
 
-    let active = false;
+    let isActive = false;
     const map = new Map();
 
     drag.on('down', (event, { position }) => {
         const id = event.pointerId;
         map.set(id, { ...position });
       
-        active = map.size === 2 ? true : false;
-        if (active === true) {
+        isActive = map.size === 2 ? true : false;
+        if (isActive === true) {
             xnode.emit('down', event, { type: 'down', });
         }
     });
 
     drag.on('move', (event, { position, delta }) => {
         const id = event.pointerId;
-        if (active === true) {
+        if (isActive === true) {
             const a = map.get(id);
             map.delete(id);
             const b = [...map.values()][0]; 
@@ -34,10 +34,16 @@ export function GestureEvent(xnode) {
 
     drag.on('up cancel', (event, { type }) => {
         const id = event.pointerId;
-        if (active === true) {
+        if (isActive === true) {
             xnode.emit(type, event, { type, });
         }
-        active = false;
+        isActive = false;
         map.delete(id);
     });
+
+    return {
+        get isActive() {
+            return isActive;
+        },
+    }
 }

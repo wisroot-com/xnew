@@ -28,22 +28,28 @@
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
             xcontext('screen', screen);
 
-            const pixi = {};
+            const pixi = xnew(Pixi, screen.canvas);
             xcontext('pixi', pixi);
 
-            // setting for pixi.js
-            pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height, backgroundColor: '#FFF' });
-            pixi.scene = new PIXI.Container();
-            
             xnew(Controller);
             xnew(Contents);
+        });
 
+        function Pixi(xnode, canvas) {
+            const renderer = PIXI.autoDetectRenderer({ view: canvas, width: canvas.width, height: canvas.height, backgroundColor: '#FFF' });
+            const scene = new PIXI.Container();
             return {
+                get renderer() {
+                    return renderer;
+                },
+                get scene() {
+                    return scene;
+                },
                 update() {
-                    pixi.renderer.render(pixi.scene)
+                    renderer.render(scene);
                 },
             };
-        });
+        }
 
         function Contents(xnode) {
             const screen = xcontext('screen');
@@ -55,27 +61,21 @@
         }
 
         function Controller(xnode) {
-            xnode.on('touchstart', (event) => {
-                event.preventDefault();
-            });
-            xnode.on('contextmenu', (event) => {
-                event.preventDefault();
-            });
-            xnode.on('wheel', (event) => {
+            xnode.on('touchstart contextmenu wheel', (event) => {
                 event.preventDefault();
             });
 
             const stick = xnew({ style: 'position: absolute; left: 10px; bottom: 10px; z-index: 10;' }, AnalogStick, { size: 130 });
             stick.on('down move up', (event, { vector }) => {
-                stick.emit('+vectormove', { vector });
+                stick.emit('+box.move', vector);
             })
             const dpad = xnew({ style: 'position: absolute; left: 10px; bottom: 150px; z-index: 10;' }, DPad, { size: 130 });
             dpad.on('down move up', (event, { vector }) => {
-                dpad.emit('+vectormove', { vector });
+                dpad.emit('+box.move', vector);
             })
             const button = xnew({ style: 'position: absolute; right: 20px; bottom: 20px; z-index: 10;' }, CircleButton);
             button.on('down', (event) => {
-                button.emit('+buttonaction');
+                button.emit('+box.action');
             })
         }
 
@@ -93,10 +93,10 @@
 
             let move = null;
             let direction = +1;
-            xnode.on('vectormove', ({ vector }) => {
+            xnode.on('box.move', (vector) => {
                 move = vector;
             });
-            xnode.on('buttonaction', () => {
+            xnode.on('box.action', () => {
                 direction *= -1;
             });
 

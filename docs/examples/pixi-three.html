@@ -27,38 +27,69 @@
     <script>
         xnew('#main', (xnode) => {
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
+            xcontext('screen', screen);
 
-            const three = {}, pixi = {};
+            const three = xnew(Three, screen.canvas);
             xcontext('three', three);
-            xcontext('pixi', pixi);
-            
-            // setting for three.js
-            three.renderer = new THREE.WebGLRenderer({}); // not set canvas
-            three.renderer.setSize(screen.width, screen.height);
-            three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
-            three.camera.position.set(0, 0, +100);
-            three.scene = new THREE.Scene();
-            three.scene.background = new THREE.Color(0xFFFFFF);
 
-            // setting for pixi.js
-            pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height, backgroundColor: '#FFF' });
-            pixi.scene = new PIXI.Container();
-            
-            // setting pixi texture for three.renderer
-            const texture = PIXI.Texture.from(three.renderer.domElement);
-            const sprite = new PIXI.Sprite(texture);
-            pixi.scene.addChild(sprite);
+            const pixi = xnew(Pixi, screen.canvas);
+            xcontext('pixi', pixi);
 
             xnew(Contents);
 
             return {
                 update() {
                     three.renderer.render(three.scene, three.camera);
-                    sprite.texture.update()
-                    pixi.renderer.render(pixi.scene)
+                    pixi.background.texture.update()
+                    pixi.renderer.render(pixi.scene);
                 },
-            };
+            }
         });
+
+        function Three(xnode, canvas) {
+            const renderer = new THREE.WebGLRenderer({}); // not set canvas
+            renderer.setSize(canvas.width, canvas.height);
+
+            const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
+            camera.position.set(0, 0, +100);
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xFFFFFF);
+
+            return {
+                get renderer() {
+                    return renderer;
+                },
+                get camera() {
+                    return camera;
+                },
+                get scene() {
+                    return scene;
+                },
+            }
+        }
+
+        function Pixi(xnode, canvas) {
+            const three = xcontext('three');
+         
+            const renderer = PIXI.autoDetectRenderer({ view: canvas, width: canvas.width, height: canvas.height, backgroundColor: '#FFF' });
+            const scene = new PIXI.Container();
+
+            const texture = PIXI.Texture.from(three.renderer.domElement);
+            const background = new PIXI.Sprite(texture);
+            scene.addChild(background);
+            return {
+                get renderer() {
+                    return renderer;
+                },
+                get scene() {
+                    return scene;
+                },
+                get background() {
+                    return background;
+                }
+            };
+        }
 
         function Contents(xnode) {
             const three = xcontext('three');

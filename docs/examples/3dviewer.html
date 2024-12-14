@@ -27,18 +27,10 @@
     <script>
         xnew('#main', (xnode) => {
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
+            xcontext('screen', screen);
         
-            const three = {};
+            const three = xnew(Three, screen.canvas);
             xcontext('three', three);
-
-            // setting for three.js
-            three.renderer = new THREE.WebGLRenderer({ canvas: screen.canvas });
-            three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
-            three.camera.position.set(0, 0, +200);
-            three.scene = new THREE.Scene();
-            three.scene.background = new THREE.Color(0xFFFFFF);
-            three.renderer.shadowMap.enabled = true;
-            three.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
             xnew(Event);
             xnew(Contents);
@@ -46,56 +38,76 @@
             return {
                 update() {
                     three.renderer.render(three.scene, three.camera);
-                },
-            };
+                }
+            }
         });
 
-        function Event(xnode) {
-            const three = xcontext('three');
+        function Three(xnode, canvas) {
+            const renderer = new THREE.WebGLRenderer({ canvas });
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-            xnode.on('touchstart', (event) => {
-                event.preventDefault();
-            });
-            xnode.on('contextmenu', (event) => {
+            const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
+            camera.position.set(0, 0, +200);
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xFFFFFF);
+            scene.rotation.x = -60 / 180 * Math.PI
+
+            xnode.on('camera.zscale', (scale) => {
+                camera.position.z /= scale;
+            })
+            xnode.on('camera.rotate', (move) => {
+                scene.rotation.x += move.y * 0.01;
+                scene.rotation.z += move.x * 0.01;
+            })
+            xnode.on('camera.translate', (move) => {
+                camera.position.x += move.x * camera.position.z * 0.001;
+                camera.position.y += move.y * camera.position.z * 0.001;
+            })
+
+            return {
+                get renderer() {
+                    return renderer;
+                },
+                get camera() {
+                    return camera;
+                },
+                get scene() {
+                    return scene;
+                },
+            }
+        }
+
+        function Event(xnode) {
+            xnode.on('touchstart contextmenu', (event) => {
                 event.preventDefault();
             });
             xnode.on('wheel', (event) => {
                 event.preventDefault();
-                three.camera.position.z /= (1 + 0.001 * event.wheelDeltaY);
+                xnode.emit('+camera.zscale', 1 + 0.001 * event.wheelDeltaY);
             });
 
-            let getsuteIsActive = false;
             const gesture = xnew(xbasics.GestureEvent);
-            gesture.on('down', (event) => {
-                getsuteIsActive = true;
-            });
             gesture.on('move', (event, { scale }) => {
-                three.camera.position.z /= scale;
-            });
-            gesture.on('up cancel', (event) => {
-                getsuteIsActive = false;
+                xnode.emit('+camera.zscale', scale);
             });
 
             const drag = xnew(xbasics.DragEvent);
             drag.on('move', (event, { position, delta }) => {
-                if (getsuteIsActive === true) return;
-                
+                if (gesture.isActive === true) return;
                 if (event.buttons & 1 || !event.buttons) {
-                    three.scene.rotation.x += delta.y * 0.01;
-                    three.scene.rotation.z += delta.x * 0.01;
+                    xnode.emit('+camera.rotate', { x: +delta.x, y: +delta.y });
                 }
                 if (event.buttons & 2) {
-                    three.camera.position.x -= delta.x * three.camera.position.z * 0.001;
-                    three.camera.position.y += delta.y * three.camera.position.z * 0.001;
+                    xnode.emit('+camera.translate', { x: -delta.x, y: +delta.y });
                 } 
             });
-
-         }
+        }
         
         function Contents(xnode) {
             const three = xcontext('three');
             xnode.extend(ThreeObject3D, three.scene);
-            three.scene.rotation.x = -60 / 180 * Math.PI
 
             xnew(DirectionaLight, 20, -50, 100);
             xnew(AmbientLight);
