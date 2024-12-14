@@ -54,8 +54,8 @@
             xnew(Light);
         
             // call iteratively (delay = 100ms, loop = true)
-            xtimer(() => {
-                xnew(Cube);
+            xnode.timer(() => {
+                xnew(xnode, Cube);
             }, 100, true);
         }
 
@@ -83,7 +83,7 @@
             velocity.z = Math.random() - 0.5;
 
             // finalize after 5000ms
-            xtimer(() => xnode.finalize(), 5 * 1000);
+            xnode.timer(() => xnode.finalize(), 5 * 1000);
 
             return {
                 update() {

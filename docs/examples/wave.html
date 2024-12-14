@@ -32,7 +32,7 @@
             xnew(Reset);
 
             let counter = 0;
-            xtimer(() => {
+            xnode.timer(() => {
                 xnew(Wave, counter++ / 12 * Math.PI);
             }, 500, true);
         });

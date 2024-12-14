@@ -294,11 +294,11 @@ xnode.hoge();
 ```
 
 ## Timer
-`xtimer` create a timer that execute a callback function for a specified time.
+`xnode.timer` create a timer that execute a callback function for a specified time.
 
-### `xtimer`
+### `xnode.timer`
 ```
-xtimer(callback, delay, loop = false);
+xnode.timer(callback, delay, loop = false);
 ```
 ### example
 
@@ -309,12 +309,12 @@ xnew((xnode) => {
     }, 100);
 
     // If you cancel the timer, call bellow.
-    // timer.finalize();
+    // timer.clear();
 });
 
 ```
 
-- If the parent xnode finalize, the timer automatically finalize.
+- If the parent xnode finalize, the timer is automatically cleared.
 
 ## Event listener
 You can set the event listener using `xnode.on`, and fire original event using `xnode.emit`.

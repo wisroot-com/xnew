@@ -1,20 +1,14 @@
-import { isString, isNumber, isObject, isFunction, error } from './common';
+import { isString, isNumber, isObject, isFunction, createElement, Timer, error } from './util';
+import { XBase } from './xbase';
 
-export class XNode {
+export class XNode extends XBase {
 
-    //----------------------------------------------------------------------------------------------------
-    // basic
-    //----------------------------------------------------------------------------------------------------
-    
     constructor(parent, element, component, ...args)
     {
+        super(parent, element, component);
+
         (parent?._.children ?? XNode.roots).add(this);
         XNode.initialize.call(this, parent, element, component, ...args);
-    }
-
-    get parent()
-    {
-        return this._.parent;
     }
 
     get element()
@@ -47,6 +41,7 @@ export class XNode {
     {
         XNode.stop.call(this);
         XNode.finalize.call(this);
+
         (this._.parent?._.children ?? XNode.roots).delete(this);
     }
 
@@ -66,15 +61,15 @@ export class XNode {
     nest(attributes)
     {
         if (this.element instanceof Window) {
-            error('xnest', 'No elements are added to window.');
+            error('xnode nest', 'No elements are added to window.');
         } else if (this.element instanceof Document) {
-            error('xnest', 'No elements are added to document.');
+            error('xnode nest', 'No elements are added to document.');
         } else if (isObject(attributes) === false) {
-            error('xnest', 'The argument is invalid.', 'attributes');
+            error('xnode nest', 'The argument is invalid.', 'attributes');
         } else if (this._.state !== 'pending') {
-            error('xnest', 'This function can not be called after initialized.');
+            error('xnode nest', 'This function can not be called after initialized.');
         } else {
-            XNode.nest.call(this, attributes);
+            this._.nest = this._.nest.appendChild(createElement(attributes));
             return this.element;
         }
     }
@@ -82,28 +77,14 @@ export class XNode {
     extend(component, ...args)
     {
         if (isFunction(component) === false) {
-            error('xextend', 'The argument is invalid.', 'component');
+            error('xnode extend', 'The argument is invalid.', 'component');
         } else if (this._.state !== 'pending') {
-            error('xextend', 'This function can not be called after initialized.');
+            error('xnode extend', 'This function can not be called after initialized.');
         } else {
             return XNode.extend.call(this, component, ...args);
         }
     }
 
-    set key(key)
-    {
-        if (isString(key) === false) {
-            error('xnode key', 'The argument is invalid.', 'key');
-        } else {
-            XNode.setkey.call(this, key);
-        }
-    }
-
-    get key()
-    {
-        return XNode.getkey.call(this);
-    }
-    
     on(type, listener, options)
     {
         if (isString(type) === false) {
@@ -139,20 +120,45 @@ export class XNode {
         }
     }
 
+    timer(callback, delay = 0, loop = false)
+    {
+        const current = this;
+
+        function execute() {
+            XBase.scope.call(current, callback);
+        }
+        const timer = new Timer(execute, delay, loop);
+
+        if (document === undefined || document.hidden === false) {
+            Timer.start.call(timer);
+        }
+
+        // manager
+        if (document !== undefined) {
+            const xdoc = new XNode(current, document);
+            xdoc.on('visibilitychange', (event) => {
+                document.hidden === false ? Timer.start.call(timer) : Timer.stop.call(timer);
+            });
+        }
+
+        new XNode(current, current.element, () => {
+            return {
+                finalize() {
+                    timer.clear();
+                }
+            }
+        });
+
+        return timer;
+    }
 
     //----------------------------------------------------------------------------------------------------
     // internal
     //----------------------------------------------------------------------------------------------------
     
-    // root xnodes
-    static roots = new Set();
-
     // animation callback id
     static animation = null;
-
-    // current xnode scope
-    static current = null;
-
+    
     static reset()
     {
         XNode.roots.forEach((xnode) => xnode.finalize());
@@ -171,18 +177,9 @@ export class XNode {
 
     static initialize(parent, element, component, ...args)
     {
-        const root = parent?._.root ?? this;
-        const base = (element instanceof Element || element instanceof Window || element instanceof Document) ? element : (parent?._.nest ?? document?.body ?? null);
-
-        this._ = {
-            backup: [parent, element, component],
-          
-            root,                           // root xnode
-            parent,                         // parent xnode
+        this._ = Object.assign(this._, {
             children: new Set(),            // children xnodes
-            base,                           // base element
-            nest: base,                     // nest element
-
+            nest: this._.base,              // nest element
             state: 'pending',               // [pending -> running <-> stopped -> finalized]
             tostart: false,                 // flag for start
             promises: [],                   // promises
@@ -191,9 +188,7 @@ export class XNode {
             props: {},                      // properties in the component function
             components: new Set(),          // component functions
             listeners: new Map(),           // event listners
-            context: new Map(),             // context value
-            keys: new Set(),                // keys
-        };
+        });
 
         if (parent !== null && ['finalized'].includes(parent._.state)) {
             this._.state = 'finalized';
@@ -202,7 +197,7 @@ export class XNode {
 
             // nest html element
             if (isObject(element) === true) {
-                XNode.nest.call(this, element);
+                this._.nest = this._.nest.appendChild(createElement(element));
             }
 
             // setup component
@@ -217,56 +212,11 @@ export class XNode {
         }
     }
 
-    static scope(func, ...args)
-    {
-        const backup = XNode.current;
-        try {
-            XNode.current = this;
-            return func(...args);
-        } catch (error) {
-            throw error;
-        } finally {
-            XNode.current = backup;
-        }
-    }
-
-    static nest(attributes)
-    {
-        const { tagName, ...others } = attributes;
-        const element = tagName?.toLowerCase() === 'svg' ? 
-            document.createElementNS('http://www.w3.org/2000/svg', tagName) : 
-            document.createElement(tagName ?? 'div');
-        
-        const bools = ['checked', 'disabled', 'readOnly',];
-    
-        Object.keys(others).forEach((key) => {
-            const value = others[key];
-            if (key === 'style') {
-                if (isString(value) === true) {
-                    element.style = value;
-                } else if (isObject(value) === true){
-                    Object.assign(element.style, value);
-                }
-            } else if (key === 'className') {
-                if (isString(value) === true) {
-                    element.classList.add(...value.trim().split(/\s+/));
-                }
-            } else if (key === 'class') {
-            } else if (bools.includes(key) === true) {
-                element[key] = value;
-            } else {
-                element.setAttribute(key, value);
-            }
-        });
-    
-        this._.nest = this._.nest.appendChild(element);
-    }
-
     static extend(component, ...args)
     {
         if (this._.components.has(component) === false) {
             this._.components.add(component);
-            const props = XNode.scope.call(this, component, this, ...args) ?? {};
+            const props = XBase.scope.call(this, component, this, ...args) ?? {};
             
             Object.keys(props).forEach((key) => {
                 const descripter = Object.getOwnPropertyDescriptor(props, key);
@@ -289,15 +239,15 @@ export class XNode {
                         const dest = { configurable: true, enumerable: true };
 
                         if (isFunction(descripter.value) === true) {
-                            dest.value = (...args) => XNode.scope.call(this, descripter.value, ...args);
+                            dest.value = (...args) => XBase.scope.call(this, descripter.value, ...args);
                         } else if (descripter.value !== undefined) {
                             dest.value = descripter.value;
                         }
                         if (isFunction(descripter.get) === true) {
-                            dest.get = (...args) => XNode.scope.call(this, descripter.get, ...args);
+                            dest.get = (...args) => XBase.scope.call(this, descripter.get, ...args);
                         }
                         if (isFunction(descripter.set) === true) {
-                            dest.set = (...args) => XNode.scope.call(this, descripter.set, ...args);
+                            dest.set = (...args) => XBase.scope.call(this, descripter.set, ...args);
                         }
 
                         Object.defineProperty(this._.props, key, dest);
@@ -320,7 +270,7 @@ export class XNode {
                 this._.children.forEach((xnode) => XNode.start.call(xnode, time));
             
                 if (this._.state === 'running' && isFunction(this._.props.start) === true) {
-                    XNode.scope.call(this, this._.props.start);
+                    XBase.scope.call(this, this._.props.start);
                 }
             }
         }
@@ -332,7 +282,7 @@ export class XNode {
             this._.children.forEach((xnode) => XNode.stop.call(xnode));
 
             if (this._.state === 'stopped' && isFunction(this._.props.stop)) {
-                XNode.scope.call(this, this._.props.stop);
+                XBase.scope.call(this, this._.props.stop);
             }
         }
     }
@@ -346,7 +296,7 @@ export class XNode {
             if (this._.state === 'running' && isFunction(this._.props.update) === true) {
                 // time: elapsed time from start
                 const e = time - this._.start;
-                XNode.scope.call(this, this._.props.update);
+                XBase.scope.call(this, this._.props.update);
             }
         }
     }
@@ -358,10 +308,10 @@ export class XNode {
             [...this._.children].forEach((xnode) => xnode.finalize());
             
             if (isFunction(this._.props.finalize)) {
-                XNode.scope.call(this, this._.props.finalize);
+                XBase.scope.call(this, this._.props.finalize);
             }
     
-            this.key = '';
+            XBase.clear.call(this);
             this.off();
             
             // reset props
@@ -385,33 +335,6 @@ export class XNode {
         }
     }
 
-    static keys = new Map();
-    
-    static setkey(key)
-    {
-        // clear all
-        this._.keys.forEach((key) => {
-            XNode.keys.get(key).delete(this);
-            if (XNode.keys.get(key).size === 0) {
-                XNode.keys.delete(key);
-            }
-            this._.keys.delete(key);
-        });
-
-        key.trim().split(/\s+/).forEach((key) => {
-            if (XNode.keys.has(key) === false) {
-                XNode.keys.set(key, new Set());
-            }
-            XNode.keys.get(key).add(this);
-            this._.keys.add(key);
-        });
-    }
-
-    static getkey()
-    {
-        return [...this._.keys].join(' ');
-    }
-
     static etypes = new Map();
   
     static on(type, listener, options)
@@ -421,7 +344,7 @@ export class XNode {
         }
 
         if (this._.listeners.get(type).has(listener) === false) {
-            const scope = (...args) => XNode.scope.call(this, listener, ...args);
+            const scope = (...args) => XBase.scope.call(this, listener, ...args);
 
             this._.listeners.get(type).set(listener, [this._.nest, scope]);
             this._.nest.addEventListener(type, scope, options);
@@ -482,20 +405,6 @@ export class XNode {
         }
     }
 
-    static context(name, value = undefined) {
-        const ret = (() => {
-            for (let xnode = this; xnode instanceof XNode; xnode = xnode.parent) {
-                if (xnode._.context?.has(name)) {
-                    return xnode._.context.get(name);
-                }
-            }
-        })();
-        if (value !== undefined) {
-            this._.context.set(name, value);
-        } else {
-            return ret;
-        }
-    }
 }
 
 XNode.reset();

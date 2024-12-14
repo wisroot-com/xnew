@@ -20,6 +20,92 @@
         return value !== null && typeof value === 'object' && value.constructor === Object;
     }
 
+    //----------------------------------------------------------------------------------------------------
+    // create element 
+    //----------------------------------------------------------------------------------------------------
+
+    function createElement(attributes)
+    {
+        const { tagName, ...others } = attributes;
+        const element = tagName?.toLowerCase() === 'svg' ? 
+            document.createElementNS('http://www.w3.org/2000/svg', tagName) : 
+            document.createElement(tagName ?? 'div');
+        
+        const bools = ['checked', 'disabled', 'readOnly',];
+
+        Object.keys(others).forEach((key) => {
+            const value = others[key];
+            if (key === 'style') {
+                if (isString(value) === true) {
+                    element.style = value;
+                } else if (isObject(value) === true){
+                    Object.assign(element.style, value);
+                }
+            } else if (key === 'className') {
+                if (isString(value) === true) {
+                    element.classList.add(...value.trim().split(/\s+/));
+                }
+            } else if (key === 'class') ; else if (bools.includes(key) === true) {
+                element[key] = value;
+            } else {
+                element.setAttribute(key, value);
+            }
+        });
+
+        return element;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    // timer
+    //----------------------------------------------------------------------------------------------------
+
+    class Timer {
+        constructor(callback, delay, loop) {
+            this.callback = callback;
+            this.delay = delay;
+            this.loop = loop;
+
+            this.id = null;
+            this.time = null;
+            this.offset = 0.0;
+        }
+
+        clear() {
+            if (this.id === null) {
+                clearTimeout(this.id);
+                this.id = null;
+            }
+        }
+
+        static start()
+        {
+            if (this.id === null) {
+                this.id = setTimeout(() => {
+                    this.callback();
+
+                    this.id = null;
+                    this.time = null;
+                    this.offset = 0.0;
+        
+                    if (this.loop) {
+                        Timer.start.call(this);
+                    }
+                }, this.delay - this.offset);
+                this.time = Date.now();
+            }
+        }
+
+        static stop() {
+            if (this.id !== null) {
+                this.offset = Date.now() - this.time + this.offset;
+                clearTimeout(this.id);
+
+                this.id = null;
+                this.time = null;
+            }
+        }
+    }
+
 
     //----------------------------------------------------------------------------------------------------
     // error 
@@ -29,21 +115,122 @@
         console.error(name + (target !== undefined ? ` [${target}]` : '') + ': ' + text);
     }
 
-    class XNode {
+    class XBase {
+        constructor(parent, element, component) {
+            const root = parent?._.root ?? this;
+            const base = (element instanceof Element || element instanceof Window || element instanceof Document) ? element : (parent?._.nest ?? document?.body ?? null);
 
-        //----------------------------------------------------------------------------------------------------
-        // basic
-        //----------------------------------------------------------------------------------------------------
-        
-        constructor(parent, element, component, ...args)
-        {
-            (parent?._.children ?? XNode.roots).add(this);
-            XNode.initialize.call(this, parent, element, component, ...args);
+            this._ = {
+                backup: [parent, element, component],
+
+                root,                           // root xnode
+                parent,                         // parent xnode
+                base,                           // base element
+
+                context: new Map(),             // context value
+                keys: new Set(),                // keys
+            };
         }
 
         get parent()
         {
             return this._.parent;
+        }
+        
+        set key(key)
+        {
+            if (isString(key) === false) {
+                error('xnode key', 'The argument is invalid.', 'key');
+            } else {
+                XBase.setkey.call(this, key);
+            }
+        }
+
+        get key()
+        {
+            return XBase.getkey.call(this);
+        }
+
+        //----------------------------------------------------------------------------------------------------
+        // internal
+        //----------------------------------------------------------------------------------------------------
+        
+        static clear()
+        {
+            this._.keys.clear();
+            this._.context.clear();
+        }
+
+        // root xnodes
+        static roots = new Set();
+
+        // current xnode scope
+        static current = null;
+
+        static scope(func, ...args)
+        {
+            const backup = XBase.current;
+            try {
+                XBase.current = this;
+                return func(...args);
+            } catch (error) {
+                throw error;
+            } finally {
+                XBase.current = backup;
+            }
+        }
+
+        static keys = new Map();
+        
+        static setkey(key)
+        {
+            // clear all
+            this._.keys.forEach((key) => {
+                XBase.keys.get(key).delete(this);
+                if (XBase.keys.get(key).size === 0) {
+                    XBase.keys.delete(key);
+                }
+                this._.keys.delete(key);
+            });
+
+            key.trim().split(/\s+/).forEach((key) => {
+                if (XBase.keys.has(key) === false) {
+                    XBase.keys.set(key, new Set());
+                }
+                XBase.keys.get(key).add(this);
+                this._.keys.add(key);
+            });
+        }
+
+        static getkey()
+        {
+            return [...this._.keys].join(' ');
+        }
+
+        static context(name, value = undefined) {
+            const ret = (() => {
+                for (let xnode = this; xnode instanceof XBase; xnode = xnode.parent) {
+                    if (xnode._.context.has(name)) {
+                        return xnode._.context.get(name);
+                    }
+                }
+            })();
+            if (value !== undefined) {
+                this._.context.set(name, value);
+            } else {
+                return ret;
+            }
+        }
+    }
+
+    class XNode extends XBase {
+
+        constructor(parent, element, component, ...args)
+        {
+            super(parent, element, component);
+
+            (parent?._.children ?? XNode.roots).add(this);
+            XNode.initialize.call(this, parent, element, component, ...args);
         }
 
         get element()
@@ -76,6 +263,7 @@
         {
             XNode.stop.call(this);
             XNode.finalize.call(this);
+
             (this._.parent?._.children ?? XNode.roots).delete(this);
         }
 
@@ -95,15 +283,15 @@
         nest(attributes)
         {
             if (this.element instanceof Window) {
-                error('xnest', 'No elements are added to window.');
+                error('xnode nest', 'No elements are added to window.');
             } else if (this.element instanceof Document) {
-                error('xnest', 'No elements are added to document.');
+                error('xnode nest', 'No elements are added to document.');
             } else if (isObject(attributes) === false) {
-                error('xnest', 'The argument is invalid.', 'attributes');
+                error('xnode nest', 'The argument is invalid.', 'attributes');
             } else if (this._.state !== 'pending') {
-                error('xnest', 'This function can not be called after initialized.');
+                error('xnode nest', 'This function can not be called after initialized.');
             } else {
-                XNode.nest.call(this, attributes);
+                this._.nest = this._.nest.appendChild(createElement(attributes));
                 return this.element;
             }
         }
@@ -111,28 +299,14 @@
         extend(component, ...args)
         {
             if (isFunction(component) === false) {
-                error('xextend', 'The argument is invalid.', 'component');
+                error('xnode extend', 'The argument is invalid.', 'component');
             } else if (this._.state !== 'pending') {
-                error('xextend', 'This function can not be called after initialized.');
+                error('xnode extend', 'This function can not be called after initialized.');
             } else {
                 return XNode.extend.call(this, component, ...args);
             }
         }
 
-        set key(key)
-        {
-            if (isString(key) === false) {
-                error('xnode key', 'The argument is invalid.', 'key');
-            } else {
-                XNode.setkey.call(this, key);
-            }
-        }
-
-        get key()
-        {
-            return XNode.getkey.call(this);
-        }
-        
         on(type, listener, options)
         {
             if (isString(type) === false) {
@@ -168,20 +342,45 @@
             }
         }
 
+        timer(callback, delay = 0, loop = false)
+        {
+            const current = this;
+
+            function execute() {
+                XBase.scope.call(current, callback);
+            }
+            const timer = new Timer(execute, delay, loop);
+
+            if (document === undefined || document.hidden === false) {
+                Timer.start.call(timer);
+            }
+
+            // manager
+            if (document !== undefined) {
+                const xdoc = new XNode(current, document);
+                xdoc.on('visibilitychange', (event) => {
+                    document.hidden === false ? Timer.start.call(timer) : Timer.stop.call(timer);
+                });
+            }
+
+            new XNode(current, current.element, () => {
+                return {
+                    finalize() {
+                        timer.clear();
+                    }
+                }
+            });
+
+            return timer;
+        }
 
         //----------------------------------------------------------------------------------------------------
         // internal
         //----------------------------------------------------------------------------------------------------
         
-        // root xnodes
-        static roots = new Set();
-
         // animation callback id
         static animation = null;
-
-        // current xnode scope
-        static current = null;
-
+        
         static reset()
         {
             XNode.roots.forEach((xnode) => xnode.finalize());
@@ -200,18 +399,9 @@
 
         static initialize(parent, element, component, ...args)
         {
-            const root = parent?._.root ?? this;
-            const base = (element instanceof Element || element instanceof Window || element instanceof Document) ? element : (parent?._.nest ?? document?.body ?? null);
-
-            this._ = {
-                backup: [parent, element, component],
-              
-                root,                           // root xnode
-                parent,                         // parent xnode
+            this._ = Object.assign(this._, {
                 children: new Set(),            // children xnodes
-                base,                           // base element
-                nest: base,                     // nest element
-
+                nest: this._.base,              // nest element
                 state: 'pending',               // [pending -> running <-> stopped -> finalized]
                 tostart: false,                 // flag for start
                 promises: [],                   // promises
@@ -220,9 +410,7 @@
                 props: {},                      // properties in the component function
                 components: new Set(),          // component functions
                 listeners: new Map(),           // event listners
-                context: new Map(),             // context value
-                keys: new Set(),                // keys
-            };
+            });
 
             if (parent !== null && ['finalized'].includes(parent._.state)) {
                 this._.state = 'finalized';
@@ -231,7 +419,7 @@
 
                 // nest html element
                 if (isObject(element) === true) {
-                    XNode.nest.call(this, element);
+                    this._.nest = this._.nest.appendChild(createElement(element));
                 }
 
                 // setup component
@@ -246,55 +434,11 @@
             }
         }
 
-        static scope(func, ...args)
-        {
-            const backup = XNode.current;
-            try {
-                XNode.current = this;
-                return func(...args);
-            } catch (error) {
-                throw error;
-            } finally {
-                XNode.current = backup;
-            }
-        }
-
-        static nest(attributes)
-        {
-            const { tagName, ...others } = attributes;
-            const element = tagName?.toLowerCase() === 'svg' ? 
-                document.createElementNS('http://www.w3.org/2000/svg', tagName) : 
-                document.createElement(tagName ?? 'div');
-            
-            const bools = ['checked', 'disabled', 'readOnly',];
-        
-            Object.keys(others).forEach((key) => {
-                const value = others[key];
-                if (key === 'style') {
-                    if (isString(value) === true) {
-                        element.style = value;
-                    } else if (isObject(value) === true){
-                        Object.assign(element.style, value);
-                    }
-                } else if (key === 'className') {
-                    if (isString(value) === true) {
-                        element.classList.add(...value.trim().split(/\s+/));
-                    }
-                } else if (key === 'class') ; else if (bools.includes(key) === true) {
-                    element[key] = value;
-                } else {
-                    element.setAttribute(key, value);
-                }
-            });
-        
-            this._.nest = this._.nest.appendChild(element);
-        }
-
         static extend(component, ...args)
         {
             if (this._.components.has(component) === false) {
                 this._.components.add(component);
-                const props = XNode.scope.call(this, component, this, ...args) ?? {};
+                const props = XBase.scope.call(this, component, this, ...args) ?? {};
                 
                 Object.keys(props).forEach((key) => {
                     const descripter = Object.getOwnPropertyDescriptor(props, key);
@@ -317,15 +461,15 @@
                             const dest = { configurable: true, enumerable: true };
 
                             if (isFunction(descripter.value) === true) {
-                                dest.value = (...args) => XNode.scope.call(this, descripter.value, ...args);
+                                dest.value = (...args) => XBase.scope.call(this, descripter.value, ...args);
                             } else if (descripter.value !== undefined) {
                                 dest.value = descripter.value;
                             }
                             if (isFunction(descripter.get) === true) {
-                                dest.get = (...args) => XNode.scope.call(this, descripter.get, ...args);
+                                dest.get = (...args) => XBase.scope.call(this, descripter.get, ...args);
                             }
                             if (isFunction(descripter.set) === true) {
-                                dest.set = (...args) => XNode.scope.call(this, descripter.set, ...args);
+                                dest.set = (...args) => XBase.scope.call(this, descripter.set, ...args);
                             }
 
                             Object.defineProperty(this._.props, key, dest);
@@ -348,7 +492,7 @@
                     this._.children.forEach((xnode) => XNode.start.call(xnode, time));
                 
                     if (this._.state === 'running' && isFunction(this._.props.start) === true) {
-                        XNode.scope.call(this, this._.props.start);
+                        XBase.scope.call(this, this._.props.start);
                     }
                 }
             }
@@ -360,7 +504,7 @@
                 this._.children.forEach((xnode) => XNode.stop.call(xnode));
 
                 if (this._.state === 'stopped' && isFunction(this._.props.stop)) {
-                    XNode.scope.call(this, this._.props.stop);
+                    XBase.scope.call(this, this._.props.stop);
                 }
             }
         }
@@ -374,7 +518,7 @@
                 if (this._.state === 'running' && isFunction(this._.props.update) === true) {
                     // time: elapsed time from start
                     time - this._.start;
-                    XNode.scope.call(this, this._.props.update);
+                    XBase.scope.call(this, this._.props.update);
                 }
             }
         }
@@ -386,10 +530,10 @@
                 [...this._.children].forEach((xnode) => xnode.finalize());
                 
                 if (isFunction(this._.props.finalize)) {
-                    XNode.scope.call(this, this._.props.finalize);
+                    XBase.scope.call(this, this._.props.finalize);
                 }
         
-                this.key = '';
+                XBase.clear.call(this);
                 this.off();
                 
                 // reset props
@@ -413,33 +557,6 @@
             }
         }
 
-        static keys = new Map();
-        
-        static setkey(key)
-        {
-            // clear all
-            this._.keys.forEach((key) => {
-                XNode.keys.get(key).delete(this);
-                if (XNode.keys.get(key).size === 0) {
-                    XNode.keys.delete(key);
-                }
-                this._.keys.delete(key);
-            });
-
-            key.trim().split(/\s+/).forEach((key) => {
-                if (XNode.keys.has(key) === false) {
-                    XNode.keys.set(key, new Set());
-                }
-                XNode.keys.get(key).add(this);
-                this._.keys.add(key);
-            });
-        }
-
-        static getkey()
-        {
-            return [...this._.keys].join(' ');
-        }
-
         static etypes = new Map();
       
         static on(type, listener, options)
@@ -449,7 +566,7 @@
             }
 
             if (this._.listeners.get(type).has(listener) === false) {
-                const scope = (...args) => XNode.scope.call(this, listener, ...args);
+                const scope = (...args) => XBase.scope.call(this, listener, ...args);
 
                 this._.listeners.get(type).set(listener, [this._.nest, scope]);
                 this._.nest.addEventListener(type, scope, options);
@@ -510,20 +627,6 @@
             }
         }
 
-        static context(name, value = undefined) {
-            const ret = (() => {
-                for (let xnode = this; xnode instanceof XNode; xnode = xnode.parent) {
-                    if (xnode._.context?.has(name)) {
-                        return xnode._.context.get(name);
-                    }
-                }
-            })();
-            if (value !== undefined) {
-                this._.context.set(name, value);
-            } else {
-                return ret;
-            }
-        }
     }
 
     XNode.reset();
@@ -534,28 +637,36 @@
         let parent = undefined;
         if (args[0] instanceof XNode) {
             parent = args.shift();
+
         } else if (args[0] === null) {
             parent = args.shift();
+        
         } else if (args[0] === undefined) {
             parent = args.shift();
             parent = XNode.current;
+        
         } else {
             parent = XNode.current;
         }
 
-        // base element
+        // input element
         let element = undefined;
         if (args[0] instanceof Element || args[0] instanceof Window || args[0] instanceof Document) {
             element = args.shift();
+
         } else if (isString(args[0]) === true) {
             element = document.querySelector(args.shift());
+        
         } else if (isObject(args[0]) === true) {
+        
             element = args.shift();
         } else if (args[0] === null) {
             element = args.shift();
+        
         } else if (args[0] === undefined) {
             element = args.shift();
             element = null;
+        
         } else {
             element = null;
         }
@@ -588,55 +699,6 @@
                 XNode.keys.get(key)?.forEach((xnode) => set.add(xnode));
             });
             return [...set];
-        }
-    }
-
-    function xtimer(callback, delay = 0, loop = false) {
-        
-        const current = XNode.current;
-
-        xnew(Timer, delay, loop);
-
-        function Timer(xnode, delay, loop) {
-            let timeout = delay;
-            let offset = 0.0;
-            let time = null;
-            let id = null;
-
-            if (document.hidden === false) {
-               start();
-            }
-
-            function execute() {
-                XNode.scope.call(current, callback);
-                if (loop) {
-                    xnode.reboot(delay, loop);
-                } else {
-                    xnode.finalize();
-                }
-            }
-
-            function start() {
-                time = Date.now();
-                id = setTimeout(execute, timeout - offset);
-            }
-
-            function stop() {
-                offset = Date.now() - time + offset;
-                clearTimeout(id);
-                id = null;
-            }
-
-            const xdoc = xnew(document);
-            xdoc.on('visibilitychange', (event) => {
-                document.hidden === false ? start() : stop();
-            });
-
-            return {
-                finalize() {
-                    stop();
-                },
-            }
         }
     }
 
@@ -835,6 +897,5 @@
     exports.xcontext = xcontext;
     exports.xfind = xfind;
     exports.xnew = xnew;
-    exports.xtimer = xtimer;
 
 }));
