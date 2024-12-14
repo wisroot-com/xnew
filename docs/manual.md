@@ -416,7 +416,7 @@ xnew((xnode1) => {
         xnew(xnode1, component);
     }, 1000);
 
-    xtimer(() => {
+    xnode1.timer(() => {
         // parent: xnode1
         xnew(component);
     }, 1000);
