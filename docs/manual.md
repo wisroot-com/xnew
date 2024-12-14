@@ -198,7 +198,7 @@ xnode.state.
 
 ## Original properties
 You can define original properties unless the properties are already defined.  
-(excepting `promise`, `start`, `update`, `stop`, `finalize`, `reboot`, `on`, `off`, `emit`, `key`, `timer`, `element`, `parent`, `nest`, `extend`, `_`)
+(excepting `promise`, `start`, `update`, `stop`, `finalize`, `reboot`, `on`, `off`, `emit`, `key`, `element`, `parent`, `nest`, `extend`, `_`)
 
 ```
 
@@ -295,17 +295,17 @@ xnode.hoge();
 ```
 
 ## Timer
-`xnode.timer` create a timer that execute a callback function for a specified time.
+`xtimer` create a timer that execute a callback function for a specified time.
 
-### `xnode.timer`
+### `xtimer`
 ```
-xnode.timer(callback, delay, loop = false);
+xtimer(callback, delay, loop = false);
 ```
 ### example
 
 ```
 xnew((xnode) => {
-    const timer = xnode.timer(() => {
+    const timer = xtimer(() => {
         // This function is called after 100 ms.
     }, 100);
 
@@ -417,7 +417,7 @@ xnew((xnode1) => {
         xnew(xnode1, component);
     }, 1000);
 
-    xnode1.timer(() => {
+    xtimer(() => {
         // parent: xnode1
         xnew(component);
     }, 1000);

@@ -1,4 +1,4 @@
-import { isObject, isString, isFunction, error } from './util';
+import { isObject, isString, isFunction, Timer, error } from './util';
 import { XNode } from './xnode';
 
 export function xnew(...args)
@@ -68,4 +68,34 @@ export function xfind(key)
         });
         return [...set];
     }
+}
+
+export function xtimer(callback, delay = 0, loop = false)
+{
+    const current = XNode.current;
+
+    const timer = new Timer(() => {
+        XNode.scope.call(current, callback);
+    }, delay, loop);
+
+    if (document !== undefined) {
+        if (document.hidden === false) {
+            Timer.start.call(timer);
+        }
+        const xdoc = xnew(document);
+        xdoc.on('visibilitychange', (event) => {
+            document.hidden === false ? Timer.start.call(timer) : Timer.stop.call(timer);
+        });
+    } else {
+        Timer.start.call(timer);
+    }
+
+    xnew(() => {
+        return {
+            finalize() {
+                timer.clear();
+            }
+        }
+    });
+    return timer;
 }

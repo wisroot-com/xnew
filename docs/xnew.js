@@ -429,34 +429,6 @@
             }
         }
 
-        timer(callback, delay = 0, loop = false)
-        {
-            const timer = new Timer(() => {
-                XBase.scope.call(this, callback);
-            }, delay, loop);
-
-            if (document !== undefined) {
-                if (document.hidden === false) {
-                    Timer.start.call(timer);
-                }
-                const xdoc = new XNode(this, document);
-                xdoc.on('visibilitychange', (event) => {
-                    document.hidden === false ? Timer.start.call(timer) : Timer.stop.call(timer);
-                });
-            } else {
-                Timer.start.call(timer);
-            }
-
-            new XNode(this, this.element, () => {
-                return {
-                    finalize() {
-                        timer.clear();
-                    }
-                }
-            });
-            return timer;
-        }
-
         //----------------------------------------------------------------------------------------------------
         // internal
         //----------------------------------------------------------------------------------------------------
@@ -696,6 +668,36 @@
         }
     }
 
+    function xtimer(callback, delay = 0, loop = false)
+    {
+        const current = XNode.current;
+
+        const timer = new Timer(() => {
+            XNode.scope.call(current, callback);
+        }, delay, loop);
+
+        if (document !== undefined) {
+            if (document.hidden === false) {
+                Timer.start.call(timer);
+            }
+            const xdoc = xnew(document);
+            xdoc.on('visibilitychange', (event) => {
+                document.hidden === false ? Timer.start.call(timer) : Timer.stop.call(timer);
+            });
+        } else {
+            Timer.start.call(timer);
+        }
+
+        xnew(() => {
+            return {
+                finalize() {
+                    timer.clear();
+                }
+            }
+        });
+        return timer;
+    }
+
     function DragEvent(xnode) {
         const base = xnew();
 
@@ -905,5 +907,6 @@
     exports.xcontext = xcontext;
     exports.xfind = xfind;
     exports.xnew = xnew;
+    exports.xtimer = xtimer;
 
 }));

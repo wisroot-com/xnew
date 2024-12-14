@@ -60,7 +60,7 @@
                 },
             }
         }
-        
+
         function ThreeObject3D(xnode, object) {
             const parent = xcontext('THREE.Object3D');
             xcontext('THREE.Object3D', object);
@@ -80,7 +80,7 @@
             xnew(Light);
         
             // call iteratively (delay = 100ms, loop = true)
-            xnode.timer(() => { xnew(xnode, Cube); }, 100, true);
+            xtimer(() => { xnew(xnode, Cube); }, 100, true);
         }
 
         function Light(xnode) {
@@ -107,7 +107,7 @@
             velocity.z = Math.random() - 0.5;
 
             // finalize after 5000ms
-            xnode.timer(() => xnode.finalize(), 5 * 1000);
+            xtimer(() => xnode.finalize(), 5 * 1000);
 
             return {
                 update() {
