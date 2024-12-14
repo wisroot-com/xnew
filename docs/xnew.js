@@ -115,13 +115,14 @@
         console.error(name + (target !== undefined ? ` [${target}]` : '') + ': ' + text);
     }
 
-    class XBase {
-        constructor(parent, element, component) {
+    class XBase
+    {
+        constructor(parent, element) {
             
             let base = null;
             if (element instanceof Element || element instanceof Window || element instanceof Document) {
                 base = element;
-            } else if (parent !== null && parent._.nest !== null) {
+            } else if (parent !== null) {
                 base = parent._.nest;
             } else if (document !== undefined) {
                 base = document.body;
@@ -130,8 +131,6 @@
             }
 
             this._ = {
-                backup: [parent, element, component],
-
                 root: parent?._.root ?? this,   // root xnode
                 parent,                         // parent xnode
                 base,                           // base element
@@ -141,6 +140,11 @@
                 keys: new Set(),                // keys
                 listeners: new Map(),           // event listners
             };
+        }
+
+        get root()
+        {
+            return this._.root;
         }
 
         get parent()
@@ -222,23 +226,6 @@
         // internal
         //----------------------------------------------------------------------------------------------------
         
-        static clear()
-        {
-            this._.keys.clear();
-            this._.context.clear();
-            this.off();
-
-            // delete nest element
-            if (this._.nest !== this._.base) {
-                let target = this._.nest;
-                while (target.parentElement !== null && target.parentElement !== this._.base) { target = target.parentElement; }
-                if (target.parentElement === this._.base) {
-                    this._.base.removeChild(target);
-                }
-                this._.nest = this._.base;
-            }
-        }
-
         // root xnodes
         static roots = new Set();
 
@@ -255,6 +242,23 @@
                 throw error;
             } finally {
                 XBase.current = backup;
+            }
+        }
+
+        static clear()
+        {
+            this._.keys.clear();
+            this._.context.clear();
+            this.off();
+
+            // delete nest element
+            if (this._.nest !== this._.base) {
+                let target = this._.nest;
+                while (target.parentElement !== null && target.parentElement !== this._.base) { target = target.parentElement; }
+                if (target.parentElement === this._.base) {
+                    this._.base.removeChild(target);
+                }
+                this._.nest = this._.base;
             }
         }
 
@@ -372,11 +376,11 @@
 
     }
 
-    class XNode extends XBase {
-
+    class XNode extends XBase
+    {
         constructor(parent, element, component, ...args)
         {
-            super(parent, element, component);
+            super(parent, element);
 
             (parent?._.children ?? XNode.roots).add(this);
             XNode.initialize.call(this, parent, element, component, ...args);
@@ -433,33 +437,29 @@
 
         timer(callback, delay = 0, loop = false)
         {
-            const current = this;
+            const timer = new Timer(() => {
+                XBase.scope.call(this, callback);
+            }, delay, loop);
 
-            function execute() {
-                XBase.scope.call(current, callback);
-            }
-            const timer = new Timer(execute, delay, loop);
-
-            if (document === undefined || document.hidden === false) {
-                Timer.start.call(timer);
-            }
-
-            // manager
             if (document !== undefined) {
-                const xdoc = new XNode(current, document);
+                if (document.hidden === false) {
+                    Timer.start.call(timer);
+                }
+                const xdoc = new XNode(this, document);
                 xdoc.on('visibilitychange', (event) => {
                     document.hidden === false ? Timer.start.call(timer) : Timer.stop.call(timer);
                 });
+            } else {
+                Timer.start.call(timer);
             }
 
-            new XNode(current, current.element, () => {
+            new XNode(this, this.element, () => {
                 return {
                     finalize() {
                         timer.clear();
                     }
                 }
             });
-
             return timer;
         }
 
@@ -481,7 +481,10 @@
             XNode.animation = requestAnimationFrame(ticker);
             function ticker() {
                 const time = Date.now();
-                XNode.roots.forEach((xnode) => XNode.update.call(xnode, time));
+                XNode.roots.forEach((xnode) => {
+                    XNode.start.call(xnode);
+                    XNode.update.call(xnode, time);
+                });
                 XNode.animation = requestAnimationFrame(ticker);
             }
         }
@@ -489,14 +492,14 @@
         static initialize(parent, element, component, ...args)
         {
             this._ = Object.assign(this._, {
+                backup: [parent, element, component],
+
                 children: new Set(),            // children xnodes
                 state: 'pending',               // [pending -> running <-> stopped -> finalized]
                 tostart: false,                 // flag for start
                 promises: [],                   // promises
                 resolve: false,                 // promise check
-                start: null,                    // start time
                 props: {},                      // properties in the component function
-                components: new Set(),          // component functions
             });
 
             if (parent !== null && ['finalized'].includes(parent._.state)) {
@@ -523,95 +526,88 @@
 
         static extend(component, ...args)
         {
-            if (this._.components.has(component) === false) {
-                this._.components.add(component);
-                const props = XBase.scope.call(this, component, this, ...args) ?? {};
-                
-                Object.keys(props).forEach((key) => {
-                    const descripter = Object.getOwnPropertyDescriptor(props, key);
+            const props = XBase.scope.call(this, component, this, ...args) ?? {};
+            
+            Object.keys(props).forEach((key) => {
+                const descripter = Object.getOwnPropertyDescriptor(props, key);
 
-                    if (key === 'promise') {
-                        if (descripter.value instanceof Promise) {
-                            this._.promises.push(descripter.value);
-                        } else {
-                            error('xnode extend', 'The property is invalid.', key);
-                        }
-                    } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
-                        if (isFunction(descripter.value)) {
-                            const previous = this._.props[key];
-                            this._.props[key] = previous ? (...args) => { previous(...args); descripter.value(...args); } : descripter.value;
-                        } else {
-                            error('xnode extend', 'The property is invalid.', key);
-                        }
+                if (key === 'promise') {
+                    if (descripter.value instanceof Promise) {
+                        this._.promises.push(descripter.value);
                     } else {
-                        if (this._.props[key] !== undefined || this[key] === undefined) {
-                            const dest = { configurable: true, enumerable: true };
-
-                            if (isFunction(descripter.value) === true) {
-                                dest.value = (...args) => XBase.scope.call(this, descripter.value, ...args);
-                            } else if (descripter.value !== undefined) {
-                                dest.value = descripter.value;
-                            }
-                            if (isFunction(descripter.get) === true) {
-                                dest.get = (...args) => XBase.scope.call(this, descripter.get, ...args);
-                            }
-                            if (isFunction(descripter.set) === true) {
-                                dest.set = (...args) => XBase.scope.call(this, descripter.set, ...args);
-                            }
-
-                            Object.defineProperty(this._.props, key, dest);
-                            Object.defineProperty(this, key, dest);
-                        } else {
-                            error('xnode extend', 'The property already exists.', key);
-                        }
+                        error('xnode extend', 'The property is invalid.', key);
                     }
-                });
-                const { promise, start, update, stop, finalize, ...others } = props;
-                return others;
-            }
+                } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
+                    if (isFunction(descripter.value)) {
+                        const previous = this._.props[key];
+                        this._.props[key] = previous ? (...args) => { previous(...args); descripter.value(...args); } : descripter.value;
+                    } else {
+                        error('xnode extend', 'The property is invalid.', key);
+                    }
+                } else {
+                    if (this._.props[key] !== undefined || this[key] === undefined) {
+                        const dest = { configurable: true, enumerable: true };
+
+                        if (isFunction(descripter.value) === true) {
+                            dest.value = (...args) => XBase.scope.call(this, descripter.value, ...args);
+                        } else if (descripter.value !== undefined) {
+                            dest.value = descripter.value;
+                        }
+                        if (isFunction(descripter.get) === true) {
+                            dest.get = (...args) => XBase.scope.call(this, descripter.get, ...args);
+                        }
+                        if (isFunction(descripter.set) === true) {
+                            dest.set = (...args) => XBase.scope.call(this, descripter.set, ...args);
+                        }
+
+                        Object.defineProperty(this._.props, key, dest);
+                        Object.defineProperty(this, key, dest);
+                    } else {
+                        error('xnode extend', 'The property already exists.', key);
+                    }
+                }
+            });
+            return props;
         }
 
         static start(time) {
-            if (['pending', 'stopped'].includes(this._.state) && this._.resolve === true && this._.tostart === true) {
-                if (this._.parent === null || ['running'].includes(this._.parent.state)) {
-                    this._.start = time;
-                    this._.state = 'running';
-                    this._.children.forEach((xnode) => XNode.start.call(xnode, time));
-                
-                    if (this._.state === 'running' && isFunction(this._.props.start) === true) {
-                        XBase.scope.call(this, this._.props.start);
-                    }
+            if (this._.resolve === false || this._.tostart === false) return;
+
+            if (['pending', 'stopped'].includes(this._.state) === true) {
+                this._.state = 'running';
+                this._.children.forEach((xnode) => XNode.start.call(xnode, time));
+
+                if (isFunction(this._.props.start) === true) {
+                    XBase.scope.call(this, this._.props.start);
                 }
+            } else if (['running'].includes(this._.state) === true) {
+                this._.children.forEach((xnode) => XNode.start.call(xnode, time));
             }
         }
 
         static stop() {
-            if (['running'].includes(this._.state)) {
+            if (['running'].includes(this._.state) === true) {
                 this._.state = 'stopped';
                 this._.children.forEach((xnode) => XNode.stop.call(xnode));
 
-                if (this._.state === 'stopped' && isFunction(this._.props.stop)) {
+                if (isFunction(this._.props.stop)) {
                     XBase.scope.call(this, this._.props.stop);
                 }
             }
         }
 
         static update(time) {
-            if (['pending', 'running', 'stopped'].includes(this._.state)) {
-                if (this._.tostart === true) XNode.start.call(this, time);
-
+            if (['running'].includes(this._.state) === true) {
                 this._.children.forEach((xnode) => XNode.update.call(xnode, time));
 
-                if (this._.state === 'running' && isFunction(this._.props.update) === true) {
-                    // time: elapsed time from start
-                    time - this._.start;
+                if (['running'].includes(this._.state) && isFunction(this._.props.update) === true) {
                     XBase.scope.call(this, this._.props.update);
                 }
             }
         }
 
         static finalize() {
-            if (['pending', 'stopped'].includes(this._.state)) {
+            if (['finalized'].includes(this._.state) === false) {
                 this._.state = 'finalized';
                 
                 [...this._.children].forEach((xnode) => xnode.finalize());
@@ -620,8 +616,6 @@
                     XBase.scope.call(this, this._.props.finalize);
                 }
         
-                XBase.clear.call(this);
-                
                 // reset props
                 Object.keys(this._.props).forEach((key) => {
                     if (['promise', 'start', 'update', 'stop', 'finalize'].includes(key)) {
@@ -631,6 +625,8 @@
                         delete this[key];
                     }
                 });
+
+                XBase.clear.call(this);
             }
         }
     }

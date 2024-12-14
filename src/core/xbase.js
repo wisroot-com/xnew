@@ -1,12 +1,13 @@
 import { isObject, isString, isFunction, createElement, error } from './util';
 
-export class XBase {
-    constructor(parent, element, component) {
+export class XBase
+{
+    constructor(parent, element) {
         
         let base = null;
         if (element instanceof Element || element instanceof Window || element instanceof Document) {
             base = element;
-        } else if (parent !== null && parent._.nest !== null) {
+        } else if (parent !== null) {
             base = parent._.nest;
         } else if (document !== undefined) {
             base = document.body;
@@ -15,8 +16,6 @@ export class XBase {
         }
 
         this._ = {
-            backup: [parent, element, component],
-
             root: parent?._.root ?? this,   // root xnode
             parent,                         // parent xnode
             base,                           // base element
@@ -26,6 +25,11 @@ export class XBase {
             keys: new Set(),                // keys
             listeners: new Map(),           // event listners
         };
+    }
+
+    get root()
+    {
+        return this._.root;
     }
 
     get parent()
@@ -107,23 +111,6 @@ export class XBase {
     // internal
     //----------------------------------------------------------------------------------------------------
     
-    static clear()
-    {
-        this._.keys.clear();
-        this._.context.clear();
-        this.off();
-
-        // delete nest element
-        if (this._.nest !== this._.base) {
-            let target = this._.nest;
-            while (target.parentElement !== null && target.parentElement !== this._.base) { target = target.parentElement; }
-            if (target.parentElement === this._.base) {
-                this._.base.removeChild(target);
-            }
-            this._.nest = this._.base;
-        }
-    }
-
     // root xnodes
     static roots = new Set();
 
@@ -140,6 +127,23 @@ export class XBase {
             throw error;
         } finally {
             XBase.current = backup;
+        }
+    }
+
+    static clear()
+    {
+        this._.keys.clear();
+        this._.context.clear();
+        this.off();
+
+        // delete nest element
+        if (this._.nest !== this._.base) {
+            let target = this._.nest;
+            while (target.parentElement !== null && target.parentElement !== this._.base) { target = target.parentElement; }
+            if (target.parentElement === this._.base) {
+                this._.base.removeChild(target);
+            }
+            this._.nest = this._.base;
         }
     }
 
