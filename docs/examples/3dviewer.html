@@ -78,6 +78,18 @@
                 },
             }
         }
+        
+        function ThreeObject3D(xnode, object) {
+            const parent = xcontext('THREE.Object3D');
+            xcontext('THREE.Object3D', object);
+
+            parent?.add(object);
+            return {
+                finalize() {
+                    parent?.remove(object);
+                },
+            }
+        }
 
         function Event(xnode) {
             xnode.on('touchstart contextmenu', (event) => {
@@ -165,19 +177,6 @@
             object.castShadow = true;
             object.position.z = size / 2;
         }
-
-        function ThreeObject3D(xnode, object) {
-            const parent = xcontext('THREE.Object3D');
-            xcontext('THREE.Object3D', object);
-
-            parent?.add(object);
-            return {
-                finalize() {
-                    parent?.remove(object);
-                },
-            }
-        }
-
     </script>
 </body>
 </html>

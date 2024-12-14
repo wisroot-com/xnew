@@ -29,24 +29,24 @@
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
             xcontext('screen', screen);
 
-            xnew(Reset);
+            xnew(Contents);
+        });
+
+        function Contents(xnode) {
+            const screen = xcontext('screen');
+
+            xnew(() => {
+                return {
+                    update() {
+                        screen.clear('rgba(0,0,0,0)');
+                    }
+                }
+            });
 
             let counter = 0;
             xnode.timer(() => {
                 xnew(Wave, counter++ / 12 * Math.PI);
             }, 500, true);
-        });
-
-        function Reset(xnode) {
-            const screen = xcontext('screen');
-            const ctx = screen.canvas.getContext('2d');
-            return {
-                update() {
-                    ctx.clearRect(0, 0, screen.width, screen.height)
-                    ctx.fillStyle="rgba(0,0,0,0)";
-                    ctx.fillRect(0, 0, screen.width, screen.height);  
-                }
-            }
         }
 
         function Wave(xnode, shift) {

@@ -28,20 +28,8 @@
             const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
             xcontext('screen', screen);
 
-            const matter = {};
+            const matter = xnew(MatterMgr, screen.canvas);
             xcontext('matter', matter);
-
-            // setting for matter.js
-            matter.engine = Matter.Engine.create();
-            matter.render = Matter.Render.create({ canvas: screen.canvas, engine: matter.engine,
-                options: {
-                    width: screen.width,
-                    height: screen.height,
-                    hasBounds: true,
-                    wireframes: false,
-                    background: 'rgb(255,255,255)'
-                }
-            });
 
             xnew(Event);
             const contents = xnew(Contents);
@@ -52,7 +40,6 @@
                 Matter.Engine.clear(matter.engine);
                 contents.reboot(matter, screen.canvas);
             });
-            
             return {
                 update() {
                     //Matter.Engine.update(matter.engine);
@@ -60,7 +47,47 @@
                 }
             }
         });
-             
+
+        function MatterMgr(xnode, canvas) {
+            const engine = Matter.Engine.create();
+            const render = Matter.Render.create({
+                canvas,
+                engine,
+                options: {
+                    width: canvas.width,
+                    height: canvas.height,
+                    hasBounds: true,
+                    wireframes: false,
+                    background: 'rgb(255,255,255)'
+                }
+            });
+            
+            return {
+                get engine() {
+                    return engine;
+                },
+                get render() {
+                    return render;
+                },
+                clear() {
+                    Matter.World.clear(engine.world);
+                    Matter.Engine.clear(engine);
+                },
+            }
+        }
+
+        function MatterComposite(xnode, object) {
+            const parent = xcontext('Matter.Composite');
+            xcontext('Matter.Composite', object);
+                
+            parent && Matter.Composite.add(parent, object);
+            return {
+                finalize() {
+                    parent && Matter.Composite.remove(parent, object);
+                },
+            }
+        }
+
         function Event(xnode) {
             const screen = xcontext('screen');
             const matter = xcontext('matter');
@@ -124,22 +151,6 @@
         function Polygon(xnode, ...args) {
             const object = Matter.Bodies.polygon(...args)
             xnode.extend(MatterComposite, object);
-        }
-
-        //----------------------------------------------------------------------
-        // base component
-        //----------------------------------------------------------------------
-
-        function MatterComposite(xnode, object) {
-            const parent = xcontext('Matter.Composite');
-            xcontext('Matter.Composite', object);
-                
-            parent && Matter.Composite.add(parent, object);
-            return {
-                finalize() {
-                    parent && Matter.Composite.remove(parent, object);
-                },
-            }
         }
     </script>
 </body>

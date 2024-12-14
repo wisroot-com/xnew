@@ -853,10 +853,10 @@
 
         return {
             get width() {
-                return width;
+                return size.width;
             },
             get height() {
-                return height;
+                return size.height;
             },
             get canvas() {
                 return canvas.element;
@@ -867,6 +867,14 @@
                 canvas.element.width = width;
                 canvas.element.height = height;
                 resize();
+            },
+            clear(color = null) {
+                const ctx = canvas.element.getContext('2d');
+                ctx.clearRect(0, 0, size.width, size.height);
+                if (typeof color === 'string') {
+                    ctx.fillStyle = color;
+                    ctx.fillRect(0, 0, size.width, size.height);  
+                }
             },
         }
     }

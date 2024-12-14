@@ -69,6 +69,18 @@
             }
         }
 
+        function ThreeObject3D(xnode, object) {
+            const parent = xcontext('THREE.Object3D');
+            xcontext('THREE.Object3D', object);
+
+            parent?.add(object);
+            return {
+                finalize() {
+                    parent?.remove(object);
+                },
+            }
+        }
+        
         function Pixi(xnode, canvas) {
             const three = xcontext('three');
          
@@ -89,6 +101,18 @@
                     return background;
                 }
             };
+        }
+
+        function PixiDisplayObject(xnode, object) {
+            const parent = xcontext('PIXI.DisplayObject');
+            xcontext('PIXI.DisplayObject', object);
+            
+            parent?.addChild(object);
+            return {
+                finalize() {
+                    parent?.removeChild(object);
+                },
+            }
         }
 
         function Contents(xnode) {
@@ -132,34 +156,6 @@
                     object.rotation.y += 0.01;
                 },
             };
-        }
-
-        //----------------------------------------------------------------------
-        // base component
-        //----------------------------------------------------------------------
-        
-        function PixiDisplayObject(xnode, object) {
-            const parent = xcontext('PIXI.DisplayObject');
-            xcontext('PIXI.DisplayObject', object);
-            
-            parent?.addChild(object);
-            return {
-                finalize() {
-                    parent?.removeChild(object);
-                },
-            }
-        }
-
-        function ThreeObject3D(xnode, object) {
-            const parent = xcontext('THREE.Object3D');
-            xcontext('THREE.Object3D', object);
-
-            parent?.add(object);
-            return {
-                finalize() {
-                    parent?.remove(object);
-                },
-            }
         }
     </script>
 </body>

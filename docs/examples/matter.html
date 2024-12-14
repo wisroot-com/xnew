@@ -74,6 +74,18 @@
                 },
             }
         }
+        
+        function MatterComposite(xnode, object) {
+            const parent = xcontext('Matter.Composite');
+            xcontext('Matter.Composite', object);
+                
+            parent && Matter.Composite.add(parent, object);
+            return {
+                finalize() {
+                    parent && Matter.Composite.remove(parent, object);
+                },
+            }
+        }
 
         function Contents(xnode) {
             const screen = xcontext('screen');
@@ -100,22 +112,6 @@
         function Polygon(xnode, ...args) {
             const object = Matter.Bodies.polygon(...args)
             xnode.extend(MatterComposite, object);
-        }
-
-        //----------------------------------------------------------------------
-        // base component
-        //----------------------------------------------------------------------
-
-        function MatterComposite(xnode, object) {
-            const parent = xcontext('Matter.Composite');
-            xcontext('Matter.Composite', object);
-                
-            parent && Matter.Composite.add(parent, object);
-            return {
-                finalize() {
-                    parent && Matter.Composite.remove(parent, object);
-                },
-            }
         }
     </script>
 </body>

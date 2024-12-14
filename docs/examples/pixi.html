@@ -53,6 +53,18 @@
             };
         }
 
+        function PixiDisplayObject(xnode, object) {
+            const parent = xcontext('PIXI.DisplayObject');
+            xcontext('PIXI.DisplayObject', object);
+            
+            parent?.addChild(object);
+            return {
+                finalize() {
+                    parent?.removeChild(object);
+                },
+            }
+        }
+        
         function Contents(xnode) {
             const pixi = xcontext('pixi');
             xnode.extend(PixiDisplayObject, pixi.scene);
@@ -76,22 +88,6 @@
                     object.rotation += 0.01;
                 },
             };
-        }
-
-        //----------------------------------------------------------------------
-        // base component
-        //----------------------------------------------------------------------
-        
-        function PixiDisplayObject(xnode, object) {
-            const parent = xcontext('PIXI.DisplayObject');
-            xcontext('PIXI.DisplayObject', object);
-            
-            parent?.addChild(object);
-            return {
-                finalize() {
-                    parent?.removeChild(object);
-                },
-            }
         }
 
     </script>

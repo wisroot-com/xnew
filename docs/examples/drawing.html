@@ -26,21 +26,20 @@
     <script>
         xnew('#main', (xnode) => {
             const screen = xnew(xbasics.Screen, { width: 512, height: 512, objectFit: 'contain' });
-            
-            // screen -> content for get event on screen canvas
-            xnew(screen, Contents, screen.canvas);
+            screen.clear('rgb(0,0,0)');
+
+            // set screen as element for get event on canvas
+            xnew(screen.canvas, Contents);
         });
 
-        function Contents(xnode, canvas) {
-            const context = canvas.getContext('2d');
-            context.fillStyle = "rgb(0,0,0)";
-            context.fillRect(0, 0, canvas.width, canvas.height);
-            
+        function Contents(xnode) {
+            const context = xnode.element.getContext('2d');
+
             const drag = xnew(xbasics.DragEvent);
 
             drag.on('down move', (event, { type, position, delta }) => {
-                const scaleX = canvas.width / xnode.element.clientWidth;
-                const scaleY = canvas.height / xnode.element.clientHeight;
+                const scaleX = xnode.element.width / xnode.element.clientWidth;
+                const scaleY = xnode.element.height / xnode.element.clientHeight;
 
                 context.beginPath();
                 context.fillStyle = 'white';
