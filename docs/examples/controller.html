@@ -55,16 +55,26 @@
         }
 
         function Controller(xnode) {
+            xnode.on('touchstart', (event) => {
+                event.preventDefault();
+            });
+            xnode.on('contextmenu', (event) => {
+                event.preventDefault();
+            });
+            xnode.on('wheel', (event) => {
+                event.preventDefault();
+            });
+
             const stick = xnew({ style: 'position: absolute; left: 10px; bottom: 10px; z-index: 10;' }, AnalogStick, { size: 130 });
-            stick.on('down move up', (event, ex) => {
-                stick.emit('+vectormove', ex);
+            stick.on('down move up', (event, { vector }) => {
+                stick.emit('+vectormove', { vector });
             })
             const dpad = xnew({ style: 'position: absolute; left: 10px; bottom: 150px; z-index: 10;' }, DPad, { size: 130 });
-            dpad.on('down move up', (event, ex) => {
-                dpad.emit('+vectormove', ex);
+            dpad.on('down move up', (event, { vector }) => {
+                dpad.emit('+vectormove', { vector });
             })
             const button = xnew({ style: 'position: absolute; right: 20px; bottom: 20px; z-index: 10;' }, CircleButton);
-            button.on('down', (event, ex) => {
+            button.on('down', (event) => {
                 button.emit('+buttonaction');
             })
         }
@@ -132,7 +142,7 @@
                 target.element.style.top = vector.y * size / 4 + 'px';
             });
 
-            drag.on('up', (event, { type }) => {
+            drag.on('up cancel', (event, { type }) => {
                 target.element.style.filter = '';
 
                 const vector = { x: 0, y: 0 };
@@ -192,7 +202,7 @@
                 xnode.emit(type, event, { type, vector });
             });
 
-            drag.on('up', (event, { type }) => {
+            drag.on('up cancel', (event, { type }) => {
                 const vector = { x: 0, y: 0 };
                 targets[0].element.style.filter = '';
                 targets[1].element.style.filter = '';
