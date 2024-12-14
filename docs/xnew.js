@@ -92,6 +92,22 @@
         // auxiliary
         //----------------------------------------------------------------------------------------------------        
         
+        nest(attributes)
+        {
+            if (this.element instanceof Window) {
+                error('xnest', 'No elements are added to window.');
+            } else if (this.element instanceof Document) {
+                error('xnest', 'No elements are added to document.');
+            } else if (isObject(attributes) === false) {
+                error('xnest', 'The argument is invalid.', 'attributes');
+            } else if (this._.state !== 'pending') {
+                error('xnest', 'This function can not be called after initialized.');
+            } else {
+                XNode.nest.call(this, attributes);
+                return this.element;
+            }
+        }
+
         extend(component, ...args)
         {
             if (isFunction(component) === false) {
@@ -551,26 +567,6 @@
         }
     }
 
-    function xnest(attributes)
-    {
-        const xnode = XNode.current;
-
-        if (xnode === null) {
-            error('xnest', 'This function can not be called outside a component function.');
-        } else if (xnode.element instanceof Window) {
-            error('xnest', 'No elements are added to window.');
-        } else if (xnode.element instanceof Document) {
-            error('xnest', 'No elements are added to document.');
-        } else if (isObject(attributes) === false) {
-            error('xnest', 'The argument is invalid.', 'attributes');
-        } else if (xnode._.state !== 'pending') {
-            error('xnest', 'This function can not be called after initialized.');
-        } else {
-            XNode.nest.call(xnode, attributes);
-            return xnode.element;
-        }
-    }
-
     function xcontext(name, value)
     {
         const xnode = XNode.current;
@@ -752,9 +748,9 @@
     }
 
     function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
-        const wrapper = xnest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
-        const absolute = xnest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
-        xnest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
+        const wrapper = xnode.nest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
+        const absolute = xnode.nest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
+        xnode.nest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
 
         const size = { width, height };
         const canvas = xnew({ tagName: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
@@ -814,7 +810,7 @@
     }
 
     function SubWindow(xnode) {
-        const absolute = xnest({ style: 'position: absolute;' });
+        const absolute = xnode.nest({ style: 'position: absolute;' });
         
         return {
             setPosition(x, y) {
