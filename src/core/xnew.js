@@ -7,14 +7,11 @@ export function xnew(...args)
     let parent = undefined;
     if (args[0] instanceof XNode) {
         parent = args.shift();
-
     } else if (args[0] === null) {
         parent = args.shift();
-    
     } else if (args[0] === undefined) {
         parent = args.shift();
         parent = XNode.current
-    
     } else {
         parent = XNode.current
     }
@@ -22,30 +19,31 @@ export function xnew(...args)
     // input element
     let element = undefined;
     if (args[0] instanceof Element || args[0] instanceof Window || args[0] instanceof Document) {
+        // an existing html element
         element = args.shift();
-
     } else if (isString(args[0]) === true) {
+        // a string for an existing html element
         element = document.querySelector(args.shift());
-    
     } else if (isObject(args[0]) === true) {
-    
+        // an attributes for a new html element
         element = args.shift();
-    } else if (args[0] === null) {
-        element = args.shift();
-    
-    } else if (args[0] === undefined) {
+    } else if (args[0] === null || args[0] === undefined) {
         element = args.shift();
         element = null;
-    
     } else {
-        element = null;
+        element = undefined;
     }
 
-    if (isObject(element) === false && args.length > 0 && isFunction(args[0]) === false && isString(args[0]) === false) {
-        error('xnew', 'The argument is invalid.', 'component');
-    } else {
-        return new XNode(parent, element, ...args);
+    if (args.length > 0) {
+        const component = args[0];
+
+        if (isObject(element) === false && isString(component) === true) {
+            error('xnew', 'The argument is invalid.', 'component');
+            return;
+        }
     }
+
+    return new XNode(parent, element, ...args);
 }
 
 export function xcontext(name, value)
