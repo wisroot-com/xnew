@@ -197,7 +197,8 @@ xnode.state.
 ```
 
 ## Original properties
-You can define original properties unless the properties are already defined.
+You can define original properties unless the properties are already defined.  
+(excepting `promise`, `start`, `update`, `stop`, `finalize`, `reboot`, `on`, `off`, `emit`, `key`, `timer`, `element`, `parent`, `nest`, `extend`, `_`)
 
 ```
 
