@@ -16,7 +16,7 @@
 npm install xnew
 ```
 ```
-import { xnew, xcontext, xfind, xbasics } from 'xnew'
+import { xnew, xcontext, xfind, xtimer, xbasics } from 'xnew'
 ```
 ## Basic usage
 By setting a component function to `xnew`, an instance(`xnode`) of the component will be created.  
