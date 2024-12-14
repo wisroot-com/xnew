@@ -304,7 +304,7 @@ xnode.timer(callback, delay, loop = false);
 
 ```
 xnew((xnode) => {
-    const timer = xtiemr(() => {
+    const timer = xnode.timer(() => {
         // This function is called after 100 ms.
     }, 100);
 
