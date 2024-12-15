@@ -96,6 +96,7 @@ export class XNode extends XBase
             tostart: false,                 // flag for start
             promises: [],                   // promises
             resolve: false,                 // promise check
+            extends: new Set(),             // components functions
             props: {},                      // properties in the component function
         });
 
@@ -121,51 +122,62 @@ export class XNode extends XBase
         }
     }
 
+    static extends = new Map();
+
     static extend(component, ...args)
     {
-        const props = XBase.scope.call(this, component, this, ...args) ?? {};
-        
-        Object.keys(props).forEach((key) => {
-            const descripter = Object.getOwnPropertyDescriptor(props, key);
-
-            if (key === 'promise') {
-                if (descripter.value instanceof Promise) {
-                    this._.promises.push(descripter.value);
-                } else {
-                    error('xnode extend', 'The property is invalid.', key);
-                }
-            } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
-                if (isFunction(descripter.value)) {
-                    const previous = this._.props[key];
-                    this._.props[key] = previous ? (...args) => { previous(...args); descripter.value(...args); } : descripter.value;
-                } else {
-                    error('xnode extend', 'The property is invalid.', key);
-                }
-            } else {
-                if (this._.props[key] !== undefined || this[key] === undefined) {
-                    const dest = { configurable: true, enumerable: true };
-
-                    if (isFunction(descripter.value) === true) {
-                        dest.value = (...args) => XBase.scope.call(this, descripter.value, ...args);
-                    } else if (descripter.value !== undefined) {
-                        dest.value = descripter.value;
-                    }
-                    if (isFunction(descripter.get) === true) {
-                        dest.get = (...args) => XBase.scope.call(this, descripter.get, ...args);
-                    }
-                    if (isFunction(descripter.set) === true) {
-                        dest.set = (...args) => XBase.scope.call(this, descripter.set, ...args);
-                    }
-
-                    Object.defineProperty(this._.props, key, dest);
-                    Object.defineProperty(this, key, dest);
-                } else {
-                    error('xnode extend', 'The property already exists.', key);
-                }
+        if (this._.extends.has(component) === false) {
+            if (XNode.extends.has(component) === false) {
+                XNode.extends.set(component, new Set());
             }
-        });
-        const { promise, start, update, stop, finalize, ...original } = props;
-        return props;
+            XNode.extends.get(component).add(this);
+
+            this._.extends.add(component);
+
+            const props = XBase.scope.call(this, component, this, ...args) ?? {};
+            
+            Object.keys(props).forEach((key) => {
+                const descripter = Object.getOwnPropertyDescriptor(props, key);
+
+                if (key === 'promise') {
+                    if (descripter.value instanceof Promise) {
+                        this._.promises.push(descripter.value);
+                    } else {
+                        error('xnode extend', 'The property is invalid.', key);
+                    }
+                } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
+                    if (isFunction(descripter.value)) {
+                        const previous = this._.props[key];
+                        this._.props[key] = previous ? (...args) => { previous(...args); descripter.value(...args); } : descripter.value;
+                    } else {
+                        error('xnode extend', 'The property is invalid.', key);
+                    }
+                } else {
+                    if (this._.props[key] !== undefined || this[key] === undefined) {
+                        const dest = { configurable: true, enumerable: true };
+
+                        if (isFunction(descripter.value) === true) {
+                            dest.value = (...args) => XBase.scope.call(this, descripter.value, ...args);
+                        } else if (descripter.value !== undefined) {
+                            dest.value = descripter.value;
+                        }
+                        if (isFunction(descripter.get) === true) {
+                            dest.get = (...args) => XBase.scope.call(this, descripter.get, ...args);
+                        }
+                        if (isFunction(descripter.set) === true) {
+                            dest.set = (...args) => XBase.scope.call(this, descripter.set, ...args);
+                        }
+
+                        Object.defineProperty(this._.props, key, dest);
+                        Object.defineProperty(this, key, dest);
+                    } else {
+                        error('xnode extend', 'The property already exists.', key);
+                    }
+                }
+            });
+            const { promise, start, update, stop, finalize, ...original } = props;
+            return props;
+        }
     }
 
     static start(time) {
@@ -224,6 +236,10 @@ export class XNode extends XBase
                 }
             });
 
+            this._.extends.forEach((component) => {
+                XNode.extends.get(component).delete(this);
+            });
+            
             XBase.clear.call(this);
         }
     }

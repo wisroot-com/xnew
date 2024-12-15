@@ -59,13 +59,17 @@ export function xcontext(name, value)
 
 export function xfind(key)
 {
-    if (isString(key) === false) {
+    if (isString(key) === false && isFunction(key) === false) {
         error('xfind', 'The argument is invalid.', 'key');
-    } else {
+    } else if (isString(key) === true) {
         const set = new Set();
         key.trim().split(/\s+/).forEach((key) => {
             XNode.keys.get(key)?.forEach((xnode) => set.add(xnode));
         });
+        return [...set];
+    } else if (isFunction(key) === true) {
+        const set = new Set();
+        XNode.extends.get(key)?.forEach((xnode) => set.add(xnode));
         return [...set];
     }
 }

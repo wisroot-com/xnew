@@ -46,7 +46,7 @@ export class XBase
             error('xnode nest', 'The argument is invalid.', 'attributes');
         } else if (this._.state !== 'pending') {
             error('xnode nest', 'This function can not be called after initialized.');
-        } else {
+        } else if (this._.nest) {
             this._.nest = this._.nest.appendChild(createElement(attributes));
             return this.element;
         }
@@ -126,12 +126,12 @@ export class XBase
 
     static clear()
     {
-        this._.keys.clear();
+        this.key = '';
         this._.context.clear();
         this.off();
 
         // delete nest element
-        if (this._.nest !== this._.base) {
+        if (this._.base !== null && this._.nest !== this._.base) {
             let target = this._.nest;
             while (target.parentElement !== null && target.parentElement !== this._.base) { target = target.parentElement; }
             if (target.parentElement === this._.base) {
