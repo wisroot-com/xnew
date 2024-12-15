@@ -30,7 +30,7 @@
 
             const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
 
-            const matter = xnew(MatterMgr, screen.canvas);
+            const matter = xnew(MatterMain, screen.canvas);
 
             const contents = xnew(world, Contents, matter);
 
@@ -40,7 +40,7 @@
             });
         });
 
-        function MatterMgr(xnode, canvas) {
+        function MatterMain(xnode, canvas) {
             const engine = Matter.Engine.create();
             const render = Matter.Render.create({ canvas, engine,
                 options: {

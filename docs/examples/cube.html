@@ -30,12 +30,12 @@
 
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
 
-            const three = xnew(Three, screen.canvas);
+            const three = xnew(ThreeMain, screen.canvas);
 
             xnew(world, Contents, three);
         });
 
-        function Three(xnode, canvas) {
+        function ThreeMain(xnode, canvas) {
             const renderer = new THREE.WebGLRenderer({ canvas });
             const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
             camera.position.set(0, 0, +100);
@@ -53,9 +53,9 @@
             }
         }
 
-        function ThreeObject3D(xnode, object) {
-            const parent = xcontext('THREE.Object3D');
-            xcontext('THREE.Object3D', object);
+        function ThreeObject(xnode, object) {
+            const parent = xcontext('ThreeObject');
+            xcontext('ThreeObject', object);
 
             parent?.add(object);
             return {
@@ -66,7 +66,7 @@
         }
 
         function Contents(xnode, three) {
-            xnode.extend(ThreeObject3D, three.scene);
+            xnode.extend(ThreeObject, three.scene);
             xnew(Light);
         
             // call iteratively (delay = 100ms, loop = true)
@@ -77,7 +77,7 @@
             const light = new THREE.PointLight(0xFFFFFF, 1);
             light.position.set(0, 0, +100);
             
-            xnode.extend(ThreeObject3D, light);
+            xnode.extend(ThreeObject, light);
         }
 
         function Cube(xnode) {
@@ -89,7 +89,7 @@
             object.position.y = 100 * (Math.random() - 0.5);
             object.position.z = 100 * (Math.random() - 0.5);
           
-            xnode.extend(ThreeObject3D, object);
+            xnode.extend(ThreeObject, object);
 
             const velocity = {};
             velocity.x = Math.random() - 0.5;

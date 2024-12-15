@@ -31,13 +31,13 @@
 
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
         
-            const three = xnew(Three, screen.canvas);
+            const three = xnew(ThreeMain, screen.canvas);
 
             xnew(Event);
             xnew(world, Contents, three);
         });
 
-        function Three(xnode, canvas) {
+        function ThreeMain(xnode, canvas) {
             const renderer = new THREE.WebGLRenderer({ canvas });
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;

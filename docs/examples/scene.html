@@ -29,12 +29,12 @@
 
             const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
 
-            const pixi = xnew(Pixi, screen.canvas);
+            const pixi = xnew(PixiMain, screen.canvas);
 
             xnew(world, Contents, pixi);
         });
 
-        function Pixi(xnode, canvas) {
+        function PixiMain(xnode, canvas) {
             const renderer = PIXI.autoDetectRenderer({ view: canvas, width: canvas.width, height: canvas.height, backgroundColor: '#FFF' });
             const scene = new PIXI.Container();
             return {

@@ -31,13 +31,14 @@
 
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
 
-            const three = xnew(Three, screen.canvas);
-            const pixi = xnew(Pixi, screen.canvas, three);
+            const three = xnew(ThreeMain, screen.canvas);
+            const pixi = xnew(PixiMain, screen.canvas, three);
 
             xnew(world, Contents, three, pixi);
         });
 
-        function Three(xnode, canvas) {
+        function ThreeMain(xnode, canvas) {
+            
             const renderer = new THREE.WebGLRenderer({}); // not set canvas
             renderer.setSize(canvas.width, canvas.height);
 
@@ -72,12 +73,12 @@
             }
         }
         
-        function Pixi(xnode, canvas, three) {
+        function PixiMain(xnode, canvas) {
+            const three = xfind(ThreeMain)[0];
             const renderer = PIXI.autoDetectRenderer({ view: canvas, width: canvas.width, height: canvas.height, backgroundColor: '#FFF' });
 
-            const texture = PIXI.Texture.from(three.canvas);
-            const background = new PIXI.Sprite(texture);
             const scene = new PIXI.Container();
+            const background = new PIXI.Sprite(PIXI.Texture.from(three.canvas));
             scene.addChild(background);
 
             return {

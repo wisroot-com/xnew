@@ -16,7 +16,9 @@
             xnode.nest({ tagName: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
             const text = xnew({ tagName: 'span' }, 'start');
 
-            xnode.on('click', () => {
+            xnode.on('click', (event) => {
+                const rect = xnode.element.getBoundingClientRect();
+                console.log(rect, event.clientX, event.clientY);
                 xnode.state === 'running' ? xnode.stop() : xnode.start();
             });
 

@@ -28,13 +28,13 @@
             const screen = xnew(xbasics.Screen, { width: 1200, height: 800 });
         
             // setting for three.js
-            const three = xnew(Three, screen.canvas);
+            const three = xnew(ThreeMain, screen.canvas);
 
             xnew(Controller, three);
             xnew(Content, three);
         });
 
-        function Three(xnode, canvas) {
+        function ThreeMain(xnode, canvas) {
             const renderer = new THREE.WebGLRenderer({ canvas });
             const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
             camera.position.set(0, -5, +150);
