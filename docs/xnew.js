@@ -56,11 +56,77 @@
     }
 
     //----------------------------------------------------------------------------------------------------
+    // map x
+    //----------------------------------------------------------------------------------------------------
+
+    class MapSet extends Map {
+
+        add(key, value)
+        {
+            if (this.has(key) === false) {
+                this.set(key, new Set());
+            }
+            this.get(key).add(value);
+        }
+
+        delete(key, value)
+        {
+            if (this.has(key) === false) return;
+
+            this.get(key).delete(value);
+            if (this.get(key).size === 0) {
+                super.delete(key);
+            }
+        }
+    }
+
+    class MapMap extends Map {
+
+        has(key, subkey)
+        {
+            if (subkey === undefined) {
+                return super.has(key) === true;
+            } else {
+                return super.has(key) === true && super.get(key).has(subkey) === true;
+            }
+        }
+
+        set(key, subkey, value)
+        {
+            if (super.has(key) === false) {
+                super.set(key, new Map());
+            }
+            super.get(key).set(subkey, value);
+        }
+
+        get(key, subkey)
+        {
+            if (subkey === undefined) {
+                return super.get(key);
+            } else {
+                return super.get(key).get(subkey);
+            }
+        }
+
+        delete(key, subkey)
+        {
+            if (super.has(key) === false) return;
+
+            super.get(key).delete(subkey);
+            if (super.get(key).size === 0) {
+                super.delete(key);
+            }
+        }
+    }
+
+    //----------------------------------------------------------------------------------------------------
     // timer
     //----------------------------------------------------------------------------------------------------
 
-    class Timer {
-        constructor(callback, delay, loop) {
+    class Timer
+    {
+        constructor(callback, delay, loop)
+        {
             this.callback = callback;
             this.delay = delay;
             this.loop = loop;
@@ -70,7 +136,8 @@
             this.offset = 0.0;
         }
 
-        clear() {
+        clear()
+        {
             if (this.id === null) {
                 clearTimeout(this.id);
                 this.id = null;
@@ -95,7 +162,8 @@
             }
         }
 
-        static stop() {
+        static stop()
+        {
             if (this.id !== null) {
                 this.offset = Date.now() - this.time + this.offset;
                 clearTimeout(this.id);
@@ -126,8 +194,6 @@
                 base = parent._.nest;
             } else if (document !== undefined) {
                 base = document.body;
-            } else {
-                base = null;
             }
 
             this._ = {
@@ -137,7 +203,7 @@
                 nest: base,                     // nest element
                 context: new Map(),             // context value
                 keys: new Set(),                // keys
-                listeners: new Map(),           // event listners
+                listeners: new MapMap(),        // event listners
             };
         }
 
@@ -199,9 +265,12 @@
             } else if (listener !== undefined && isFunction(listener) === false) {
                 error('xnode off', 'The argument is invalid.', 'listener');
             } else if (isString(type) === true) {
-                type.trim().split(/\s+/).forEach((type) => XBase.off.call(this, type, listener));
+                type.trim().split(/\s+/).forEach((type) => {
+                    const listners = listener ? [listener] : [...this._.listeners.get(type).keys()];
+                    listners.forEach((listener) => XBase.off.call(this, type, listener));
+                });
             } else if (type === undefined) {
-                [...this._.listeners.keys()].forEach((type) => XBase.off.call(this, type, listener));
+                this._.listeners.forEach((listener, type) => XBase.off.call(this, type, listener));
             }
         }
 
@@ -256,24 +325,16 @@
             }
         }
 
-        static keys = new Map();
+        static keys = new MapSet();
         
         static setkey(key)
         {
-            // clear all
             this._.keys.forEach((key) => {
-                XBase.keys.get(key).delete(this);
-                if (XBase.keys.get(key).size === 0) {
-                    XBase.keys.delete(key);
-                }
+                XBase.keys.delete(key, this);
                 this._.keys.delete(key);
             });
-
             key.trim().split(/\s+/).forEach((key) => {
-                if (XBase.keys.has(key) === false) {
-                    XBase.keys.set(key, new Set());
-                }
-                XBase.keys.get(key).add(this);
+                XBase.keys.add(key, this);
                 this._.keys.add(key);
             });
         }
@@ -298,49 +359,33 @@
             }
         }
 
-        static etypes = new Map();
+        static etypes = new MapSet();
       
         static on(type, listener, options)
         {
-            if (this._.listeners.has(type) === false) {
-                this._.listeners.set(type, new Map());
-            }
+            if (this._.listeners.has(type, listener) === false) {
+                const element = this._.nest;
+                const execute = (...args) => XBase.scope.call(this, listener, ...args);
 
-            if (this._.listeners.get(type).has(listener) === false) {
-                const scope = (...args) => XBase.scope.call(this, listener, ...args);
-
-                this._.listeners.get(type).set(listener, [this._.nest, scope]);
-                this._.nest.addEventListener(type, scope, options);
+                this._.listeners.set(type, listener, [element, execute]);
+                element.addEventListener(type, execute, options);
             }
-            
-            if (XBase.etypes.has(type) === false) {
-                XBase.etypes.set(type, new Set());
-            }
-            if (XBase.etypes.get(type).has(this) === false) {
-                XBase.etypes.get(type).add(this);
+            if (this._.listeners.has(type) === true) {
+                XBase.etypes.add(type, this);
             }
         }
 
-        static off(type, listener) {
-            if (this._.listeners.has(type) === false) {
-                return;
-            }
+        static off(type, listener)
+        {
+            if (this._.listeners.has(type, listener) === true) {
+                const [element, execute] = this._.listeners.get(type, listener);
 
-            const listners = listener ? [listener] : [...this._.listeners.get(type).keys()];
-            listners.forEach((listener) => {
-                if (this._.listeners.has(type) === true && this._.listeners.get(type).has(listener) === true) {
-                    const [element, scope] = this._.listeners.get(type).get(listener);
-        
-                    this._.listeners.get(type).delete(listener);
-                    if (this._.listeners.get(type).size === 0) this._.listeners.delete(type);
-        
-                    element.removeEventListener(type, scope);
-                }
-                if (this._.listeners.has(type) === false && XBase.etypes.has(type) === true) {
-                    XBase.etypes.get(type).delete(this);
-                    if (XBase.etypes.get(type).size === 0) XBase.etypes.delete(type);
-                }
-            });
+                this._.listeners.delete(type, listener);
+                element.removeEventListener(type, execute);
+            }
+            if (this._.listeners.has(type) === false) {
+                XBase.etypes.delete(type, this);
+            }
         }
 
         static emit(type, ...args) {
@@ -363,7 +408,7 @@
             }
             function emit(type, ...args) {
                 if (this._.listeners.has(type) === true) {
-                    this._.listeners.get(type).forEach(([element, listener]) => listener(...args));
+                    this._.listeners.get(type).forEach(([element, execute]) => execute(...args));
                 }
             }
         }
@@ -465,7 +510,7 @@
                 tostart: false,                 // flag for start
                 promises: [],                   // promises
                 resolve: false,                 // promise check
-                extends: new Set(),             // components functions
+                components: new Set(),          // components functions
                 props: {},                      // properties in the component function
             });
 
@@ -491,17 +536,13 @@
             }
         }
 
-        static extends = new Map();
+        static components = new MapSet();
 
         static extend(component, ...args)
         {
-            if (this._.extends.has(component) === false) {
-                if (XNode.extends.has(component) === false) {
-                    XNode.extends.set(component, new Set());
-                }
-                XNode.extends.get(component).add(this);
-
-                this._.extends.add(component);
+            if (this._.components.has(component) === false) {
+                XNode.components.add(component, this);
+                this._.components.add(component);
 
                 const props = XBase.scope.call(this, component, this, ...args) ?? {};
                 
@@ -604,8 +645,8 @@
                     }
                 });
 
-                this._.extends.forEach((component) => {
-                    XNode.extends.get(component).delete(this);
+                this._.components.forEach((component) => {
+                    XNode.components.delete(component, this);
                 });
                 
                 XBase.clear.call(this);
@@ -683,7 +724,7 @@
             return [...set];
         } else if (isFunction(key) === true) {
             const set = new Set();
-            XNode.extends.get(key)?.forEach((xnode) => set.add(xnode));
+            XNode.components.get(key)?.forEach((xnode) => set.add(xnode));
             return [...set];
         }
     }

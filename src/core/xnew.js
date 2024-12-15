@@ -69,7 +69,7 @@ export function xfind(key)
         return [...set];
     } else if (isFunction(key) === true) {
         const set = new Set();
-        XNode.extends.get(key)?.forEach((xnode) => set.add(xnode));
+        XNode.components.get(key)?.forEach((xnode) => set.add(xnode));
         return [...set];
     }
 }

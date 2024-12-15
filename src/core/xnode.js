@@ -1,4 +1,4 @@
-import { isString, isNumber, isObject, isFunction, error } from './util';
+import { isString, isNumber, isObject, isFunction, MapSet, error } from './util';
 import { XBase } from './xbase';
 
 export class XNode extends XBase
@@ -96,7 +96,7 @@ export class XNode extends XBase
             tostart: false,                 // flag for start
             promises: [],                   // promises
             resolve: false,                 // promise check
-            extends: new Set(),             // components functions
+            components: new Set(),          // components functions
             props: {},                      // properties in the component function
         });
 
@@ -122,17 +122,13 @@ export class XNode extends XBase
         }
     }
 
-    static extends = new Map();
+    static components = new MapSet();
 
     static extend(component, ...args)
     {
-        if (this._.extends.has(component) === false) {
-            if (XNode.extends.has(component) === false) {
-                XNode.extends.set(component, new Set());
-            }
-            XNode.extends.get(component).add(this);
-
-            this._.extends.add(component);
+        if (this._.components.has(component) === false) {
+            XNode.components.add(component, this);
+            this._.components.add(component);
 
             const props = XBase.scope.call(this, component, this, ...args) ?? {};
             
@@ -236,8 +232,8 @@ export class XNode extends XBase
                 }
             });
 
-            this._.extends.forEach((component) => {
-                XNode.extends.get(component).delete(this);
+            this._.components.forEach((component) => {
+                XNode.components.delete(component, this);
             });
             
             XBase.clear.call(this);

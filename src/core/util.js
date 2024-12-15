@@ -55,11 +55,77 @@ export function createElement(attributes)
 }
 
 //----------------------------------------------------------------------------------------------------
+// map x
+//----------------------------------------------------------------------------------------------------
+
+export class MapSet extends Map {
+
+    add(key, value)
+    {
+        if (this.has(key) === false) {
+            this.set(key, new Set());
+        }
+        this.get(key).add(value);
+    }
+
+    delete(key, value)
+    {
+        if (this.has(key) === false) return;
+
+        this.get(key).delete(value);
+        if (this.get(key).size === 0) {
+            super.delete(key);
+        }
+    }
+}
+
+export class MapMap extends Map {
+
+    has(key, subkey)
+    {
+        if (subkey === undefined) {
+            return super.has(key) === true;
+        } else {
+            return super.has(key) === true && super.get(key).has(subkey) === true;
+        }
+    }
+
+    set(key, subkey, value)
+    {
+        if (super.has(key) === false) {
+            super.set(key, new Map());
+        }
+        super.get(key).set(subkey, value);
+    }
+
+    get(key, subkey)
+    {
+        if (subkey === undefined) {
+            return super.get(key);
+        } else {
+            return super.get(key).get(subkey);
+        }
+    }
+
+    delete(key, subkey)
+    {
+        if (super.has(key) === false) return;
+
+        super.get(key).delete(subkey);
+        if (super.get(key).size === 0) {
+            super.delete(key);
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------------
 // timer
 //----------------------------------------------------------------------------------------------------
 
-export class Timer {
-    constructor(callback, delay, loop) {
+export class Timer
+{
+    constructor(callback, delay, loop)
+    {
         this.callback = callback;
         this.delay = delay;
         this.loop = loop;
@@ -69,7 +135,8 @@ export class Timer {
         this.offset = 0.0;
     }
 
-    clear() {
+    clear()
+    {
         if (this.id === null) {
             clearTimeout(this.id);
             this.id = null;
@@ -94,7 +161,8 @@ export class Timer {
         }
     }
 
-    static stop() {
+    static stop()
+    {
         if (this.id !== null) {
             this.offset = Date.now() - this.time + this.offset;
             clearTimeout(this.id);
