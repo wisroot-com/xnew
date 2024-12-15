@@ -28,22 +28,26 @@
             const screen = xnew(xbasics.Screen, { width: 512, height: 512, objectFit: 'contain' });
             screen.clear('rgb(0,0,0)');
 
-            // set screen as element for get event on canvas
-            xnew(screen.canvas, Contents);
+            xnew(Contents, screen.canvas);
+
+            const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
+            button.on('click', () => {
+                screen.clear('rgb(0,0,0)');
+            });
         });
 
-        function Contents(xnode) {
+        function Contents(xnode, canvas) {
             xnode.on('touchstart contextmenu wheel', (event) => {
                 event.preventDefault();
             });
             
-            const context = xnode.element.getContext('2d');
+            const context = canvas.getContext('2d');
 
-            const drag = xnew(xbasics.DragEvent);
+            const drag = xnew(canvas, xbasics.DragEvent);
 
             drag.on('down move', (event, { type, position, delta }) => {
-                const scaleX = xnode.element.width / xnode.element.clientWidth;
-                const scaleY = xnode.element.height / xnode.element.clientHeight;
+                const scaleX = canvas.width / canvas.clientWidth;
+                const scaleY = canvas.height / canvas.clientHeight;
 
                 context.beginPath();
                 context.fillStyle = 'white';
