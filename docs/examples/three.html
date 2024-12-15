@@ -25,18 +25,17 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew('#main', (xnode) => {
+            // update function is called in the order of [world -> .. -> three]
+            const world = xnew();
+
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
-            xcontext('screen', screen);
 
             const three = xnew(Three, screen.canvas);
-            xcontext('three', three);
 
-            xnew(Contents);
+            xnew(world, Contents, three);
         });
 
         function Three(xnode, canvas) {
-            const screen = xcontext('screen');
-
             const renderer = new THREE.WebGLRenderer({ canvas });
             const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
             camera.position.set(0, 0, +100);
@@ -72,8 +71,7 @@
             }
         }
 
-        function Contents(xnode) {
-            const three = xcontext('three');
+        function Contents(xnode, three) {
             xnode.extend(ThreeObject3D, three.scene);
 
             xnew(Cube, [0, 0, 0], [40, 40, 40]);

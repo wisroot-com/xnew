@@ -36,9 +36,8 @@
 
             const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
             button.on('click', () => {
-                Matter.World.clear(matter.engine.world);
-                Matter.Engine.clear(matter.engine);
-                contents.reboot(matter, screen.canvas);
+                matter.clear();
+                contents.reboot();
             });
             return {
                 update() {
@@ -61,8 +60,39 @@
                     background: 'rgb(255,255,255)'
                 }
             });
-            
+            xnode.on('matter.scale', (scale) => {
+                render.bounds.max.x *= scale;
+                render.bounds.max.y *= scale;
+            })
+
+            let body = null;
+            xnode.on('matter.select', (position) => {
+                position.x *= xnode.size.x / canvas.width;
+                position.y *= xnode.size.y / canvas.height;
+                const bodiesAtPoint = Matter.Query.point(Matter.Composite.allBodies(engine.world), position);
+                body = bodiesAtPoint.length > 0 ? bodiesAtPoint[0] : null;
+            });
+            xnode.on('matter.move', (move) => {
+                move.x *= xnode.size.x / canvas.width;
+                move.y *= xnode.size.y / canvas.height;
+                if (body) {
+                    Matter.Body.setPosition(body, { x: body.position.x + move.x, y: body.position.y + move.y });
+                }
+            });
+            xnode.on('matter.unselect', (position) => {
+                body = null;
+            });
             return {
+                get size() {
+                    const x = render.bounds.max.x - render.bounds.min.x;
+                    const y = render.bounds.max.y - render.bounds.min.y;
+                    return { x, y };
+                },
+                get offset() {
+                    const x = render.bounds.min.x;
+                    const y = render.bounds.min.y;
+                    return { x, y };
+                },
                 get engine() {
                     return engine;
                 },
@@ -91,39 +121,30 @@
         function Event(xnode) {
             const screen = xcontext('screen');
             const matter = xcontext('matter');
-            // matter.render.bounds.max.x = screen.width * 2;
-            // matter.render.bounds.max.y = screen.height * 2;
-            xnode.on('touchstart', (event) => {
-                event.preventDefault();
-            });
-            xnode.on('contextmenu', (event) => {
+
+            xnode.on('touchstart contextmenu', (event) => {
                 event.preventDefault();
             });
             xnode.on('wheel', (event) => {
                 event.preventDefault();
-                // three.camera.position.z /= (1 + 0.001 * event.wheelDeltaY);
+                xnode.emit('#matter.scale', 1 + 0.001 * event.wheelDeltaY);
             });
 
             const drag = xnew(screen.canvas, xbasics.DragEvent);
 
-            let body = null;
             drag.on('down', (event, { position }) => {
                 const x = position.x * screen.canvas.width / screen.canvas.clientWidth;
                 const y = position.y * screen.canvas.height / screen.canvas.clientHeight;
-                const bodiesAtPoint = Matter.Query.point(Matter.Composite.allBodies(matter.engine.world), { x, y });
-                body = bodiesAtPoint.length > 0 ? bodiesAtPoint[0] : null;
+                xnode.emit('#matter.select', { x, y });
             })
             drag.on('move', (event, { position, delta }) => {
-                delta.x *= screen.canvas.width / screen.canvas.clientWidth;
-                delta.y *= screen.canvas.height / screen.canvas.clientHeight;
-
-                if (body) {
-                    Matter.Body.setPosition(body, { x: body.position.x + delta.x, y: body.position.y + delta.y });
-                }
+                const x = delta.x * screen.canvas.width / screen.canvas.clientWidth;
+                const y = delta.y * screen.canvas.height / screen.canvas.clientHeight;
+                xnode.emit('#matter.move', { x, y });
             });
 
             drag.on('up', (event, { position }) => {
-                body = null;
+                xnode.emit('#matter.unselect');
             });
         }   
         function Contents(xnode) {

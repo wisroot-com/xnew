@@ -33,6 +33,10 @@
         });
 
         function Contents(xnode) {
+            xnode.on('touchstart contextmenu wheel', (event) => {
+                event.preventDefault();
+            });
+            
             const context = xnode.element.getContext('2d');
 
             const drag = xnew(xbasics.DragEvent);

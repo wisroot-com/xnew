@@ -345,7 +345,7 @@
 
         static emit(type, ...args) {
             let token = null;
-            if (['+'].includes(type[0])) {
+            if (['+', '#'].includes(type[0])) {
                 token = type[0];
                 type = type.substring(1);
             }
@@ -353,7 +353,7 @@
                 if (token !== null) {
                     const root = this._.root;
                     XBase.etypes.get(type).forEach((xnode) => {
-                        if (xnode._.root === root) {
+                        if (xnode._.root === root || token === '#') {
                             emit.call(xnode, type, ...args);
                         }
                     });

@@ -25,14 +25,15 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew('#main', (xnode) => {
+            // update function is called in the order of [world -> .. -> pixi]
+            const world = xnew();
+           
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
-            xcontext('screen', screen);
 
             const pixi = xnew(Pixi, screen.canvas);
-            xcontext('pixi', pixi);
 
             xnew(Controller);
-            xnew(Contents);
+            xnew(world, Contents, pixi);
         });
 
         function Pixi(xnode, canvas) {
@@ -64,13 +65,10 @@
             }
         }
 
-        function Contents(xnode) {
-            const screen = xcontext('screen');
-            const pixi = xcontext('pixi');
-
+        function Contents(xnode, pixi) {
             xnode.extend(PixiDisplayObject, pixi.scene);
        
-            xnew(Box, [screen.width / 2, screen.height / 2], [160, 160], 0xEA1E63);
+            xnew(Box, [800 / 2, 400 / 2], [160, 160], 0xEA1E63);
         }
 
         function Controller(xnode) {
@@ -80,15 +78,15 @@
 
             const stick = xnew({ style: 'position: absolute; left: 10px; bottom: 10px; z-index: 10;' }, AnalogStick, { size: 130 });
             stick.on('down move up', (event, { vector }) => {
-                stick.emit('+box.move', vector);
+                stick.emit('#box.move', vector);
             })
             const dpad = xnew({ style: 'position: absolute; left: 10px; bottom: 150px; z-index: 10;' }, DPad, { size: 130 });
             dpad.on('down move up', (event, { vector }) => {
-                dpad.emit('+box.move', vector);
+                dpad.emit('#box.move', vector);
             })
             const button = xnew({ style: 'position: absolute; right: 20px; bottom: 20px; z-index: 10;' }, CircleButton);
             button.on('down', (event) => {
-                button.emit('+box.action');
+                button.emit('#box.action');
             })
         }
 

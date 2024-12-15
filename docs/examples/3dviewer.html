@@ -26,20 +26,15 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew('#main', (xnode) => {
+            // update function is called in the order of [world -> .. -> three]
+            const world = xnew();
+
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
-            xcontext('screen', screen);
         
             const three = xnew(Three, screen.canvas);
-            xcontext('three', three);
 
             xnew(Event);
-            xnew(Contents);
-
-            return {
-                update() {
-                    three.renderer.render(three.scene, three.camera);
-                }
-            }
+            xnew(world, Contents, three);
         });
 
         function Three(xnode, canvas) {
@@ -76,6 +71,9 @@
                 get scene() {
                     return scene;
                 },
+                update() {
+                    renderer.render(scene, camera);
+                },
             }
         }
         
@@ -97,28 +95,27 @@
             });
             xnode.on('wheel', (event) => {
                 event.preventDefault();
-                xnode.emit('+camera.zscale', 1 + 0.001 * event.wheelDeltaY);
+                xnode.emit('#camera.zscale', 1 + 0.001 * event.wheelDeltaY);
             });
 
             const gesture = xnew(xbasics.GestureEvent);
             gesture.on('move', (event, { scale }) => {
-                xnode.emit('+camera.zscale', scale);
+                xnode.emit('#camera.zscale', scale);
             });
 
             const drag = xnew(xbasics.DragEvent);
             drag.on('move', (event, { position, delta }) => {
                 if (gesture.isActive === true) return;
                 if (event.buttons & 1 || !event.buttons) {
-                    xnode.emit('+camera.rotate', { x: +delta.x, y: +delta.y });
+                    xnode.emit('#camera.rotate', { x: +delta.x, y: +delta.y });
                 }
                 if (event.buttons & 2) {
-                    xnode.emit('+camera.translate', { x: -delta.x, y: +delta.y });
+                    xnode.emit('#camera.translate', { x: -delta.x, y: +delta.y });
                 } 
             });
         }
         
-        function Contents(xnode) {
-            const three = xcontext('three');
+        function Contents(xnode, three) {
             xnode.extend(ThreeObject3D, three.scene);
 
             xnew(DirectionaLight, 20, -50, 100);

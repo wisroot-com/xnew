@@ -357,7 +357,7 @@ const xnode = xnew((xnode) => {
 xnode.emit('myevent', data); 
 ```
 - `xnode.emit('myevent')` emits only to self xnode, and not to other xnodes.
-- If you add `+` token (e.g. `xnode.emit('+myevent')`), it broadcasts to other xnodes in the group with the same ancestor xnode.
+- If you add `#` token (e.g. `xnode.emit('#myevent')`), it broadcasts to all xnodes.
 
 ## Find xnode
 Once an xnode has a key, you can look it up anywhere.
