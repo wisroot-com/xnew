@@ -25,7 +25,7 @@
     <div id="main" style="position: relative; width: 100%; height: 100%;"></div>
     <script>
         xnew('#main', (xnode) => {
-            // update function is called in the order of [world -> .. -> pixi]
+            // update function is called in the order of [world -> .. -> matter]
             const world = xnew();
 
             const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
@@ -36,7 +36,6 @@
 
             const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
             button.on('click', () => {
-                matter.reset();
                 contents.reboot(matter);
             });
         });
@@ -63,11 +62,6 @@
                 get render() {
                     return render;
                 },
-                reset() {
-                    Matter.World.clear(engine.world);
-                    Matter.Engine.clear(engine);
-                    Matter.Composite.add(engine.world, Matter.MouseConstraint.create(engine, { element: canvas }));
-                },
                 update() {
                     Matter.Engine.update(engine);
                     Matter.Render.world(render);
@@ -75,9 +69,9 @@
             }
         }
         
-        function MatterComposite(xnode, object) {
-            const parent = xcontext('Matter.Composite');
-            xcontext('Matter.Composite', object);
+        function MatterObject(xnode, object) {
+            const parent = xcontext('MatterObject');
+            xcontext('MatterObject', object);
                 
             parent && Matter.Composite.add(parent, object);
             return {
@@ -88,7 +82,7 @@
         }
 
         function Contents(xnode, matter) {
-            xnode.extend(MatterComposite, matter.engine.world);
+            xnode.extend(MatterObject, matter.engine.world);
 
             xnew(Rectangle, 400, 200, 80, 80);
             xnew(Polygon, 450, 50, 6, 40);
@@ -98,15 +92,15 @@
 
         function Rectangle(xnode, ...args) {
             const object = Matter.Bodies.rectangle(...args)
-            xnode.extend(MatterComposite, object);
+            xnode.extend(MatterObject, object);
         }
         function Circle(xnode, ...args) {
             const object = Matter.Bodies.circle(...args)
-            xnode.extend(MatterComposite, object);
+            xnode.extend(MatterObject, object);
         }
         function Polygon(xnode, ...args) {
             const object = Matter.Bodies.polygon(...args)
-            xnode.extend(MatterComposite, object);
+            xnode.extend(MatterObject, object);
         }
     </script>
 </body>

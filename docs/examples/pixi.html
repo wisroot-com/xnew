@@ -51,9 +51,9 @@
             };
         }
 
-        function PixiDisplayObject(xnode, object) {
-            const parent = xcontext('PIXI.DisplayObject');
-            xcontext('PIXI.DisplayObject', object);
+        function PixiObject(xnode, object) {
+            const parent = xcontext('PixiObject');
+            xcontext('PixiObject', object);
             
             parent?.addChild(object);
             return {
@@ -64,13 +64,13 @@
         }
         
         function Contents(xnode, pixi) {
-            xnode.extend(PixiDisplayObject, pixi.scene);
+            xnode.extend(PixiObject, pixi.scene);
             xnew(Box, [800 / 2, 400 / 2], [160, 160], 0xEA1E63);
         }
 
         function Box(xnode, [x, y], [sx, sy], color) {
             const object = new PIXI.Container();
-            xnode.extend(PixiDisplayObject, object);
+            xnode.extend(PixiObject, object);
             
             object.x = x;
             object.y = y;

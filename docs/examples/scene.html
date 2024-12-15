@@ -24,26 +24,46 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew('#main', (xnode) => {
+            // update function is called in the order of [world -> .. -> pixi]
+            const world = xnew();
+
             const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
 
-            const pixi = {};
-            xcontext('pixi', pixi);
+            const pixi = xnew(Pixi, screen.canvas);
 
-            pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height, backgroundColor: '#FFF' });
-            pixi.scene = new PIXI.Container();
-
-            xnew(Contents);
-            return {
-                update() {
-                    pixi.renderer.render(pixi.scene)
-                },
-            };
+            xnew(world, Contents, pixi);
         });
 
-        function Contents(xnode) {
-            const pixi = xcontext('pixi');
+        function Pixi(xnode, canvas) {
+            const renderer = PIXI.autoDetectRenderer({ view: canvas, width: canvas.width, height: canvas.height, backgroundColor: '#FFF' });
+            const scene = new PIXI.Container();
+            return {
+                get renderer() {
+                    return renderer;
+                },
+                get scene() {
+                    return scene;
+                },
+                update() {
+                    renderer.render(scene);
+                },
+            };
+        }
 
-            xnode.extend(PixiDisplayObject, pixi.scene);
+        function PixiObject(xnode, object) {
+            const parent = xcontext('PixiObject');
+            xcontext('PixiObject', object);
+            
+            parent?.addChild(object);
+            return {
+                finalize() {
+                    parent?.removeChild(object);
+                },
+            }
+        }
+
+        function Contents(xnode, pixi) {
+            xnode.extend(PixiObject, pixi.scene);
             xnew(Scene1);
         }
 
@@ -69,14 +89,14 @@
         
         function Text(xnode, value) {
             const text = new PIXI.Text(value, new PIXI.TextStyle({ fontSize: 24, fill: '#000000' }));
-            xnode.extend(PixiDisplayObject, text);
+            xnode.extend(PixiObject, text);
             text.x = 10;
             text.y = 10;
         }
 
         function Box(xnode, x, y, size, color) {
             const object = new PIXI.Container();
-            xnode.extend(PixiDisplayObject, object);
+            xnode.extend(PixiObject, object);
 
             object.x = x;
             object.y = y;
@@ -97,7 +117,7 @@
         // base component
         //----------------------------------------------------------------------
         
-        function PixiDisplayObject(xnode, object) {
+        function PixiObject(xnode, object) {
             const parent = xcontext('PIXI.DisplayObject');
             xcontext('PIXI.DisplayObject', object);
             

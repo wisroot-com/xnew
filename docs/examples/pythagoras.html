@@ -25,26 +25,20 @@
     <div id="main" style="position: relative; width: 100%; height: 100%;"></div>
     <script>
         xnew('#main', (xnode) => {
+            // update function is called in the order of [world -> .. -> matter]
+            const world = xnew();
+
             const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
-            xcontext('screen', screen);
 
             const matter = xnew(MatterMgr, screen.canvas);
-            xcontext('matter', matter);
 
-            xnew(Event);
-            const contents = xnew(Contents);
+            xnew(Event, screen.canvas);
+            const contents = xnew(world, Contents, matter);
 
             const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
             button.on('click', () => {
-                matter.clear();
-                contents.reboot();
+                contents.reboot(matter);
             });
-            return {
-                update() {
-                    //Matter.Engine.update(matter.engine);
-                    Matter.Render.world(matter.render);
-                }
-            }
         });
 
         function MatterMgr(xnode, canvas) {
@@ -99,10 +93,10 @@
                 get render() {
                     return render;
                 },
-                clear() {
-                    Matter.World.clear(engine.world);
-                    Matter.Engine.clear(engine);
-                },
+                update() {
+                    //Matter.Engine.update(engine);
+                    Matter.Render.world(render);
+                }
             }
         }
 
@@ -118,7 +112,7 @@
             }
         }
 
-        function Event(xnode) {
+        function Event(xnode, canvas) {
             const screen = xcontext('screen');
             const matter = xcontext('matter');
 
@@ -130,16 +124,16 @@
                 xnode.emit('#matter.scale', 1 + 0.001 * event.wheelDeltaY);
             });
 
-            const drag = xnew(screen.canvas, xbasics.DragEvent);
+            const drag = xnew(canvas, xbasics.DragEvent);
 
             drag.on('down', (event, { position }) => {
-                const x = position.x * screen.canvas.width / screen.canvas.clientWidth;
-                const y = position.y * screen.canvas.height / screen.canvas.clientHeight;
+                const x = position.x * canvas.width / canvas.clientWidth;
+                const y = position.y * canvas.height / canvas.clientHeight;
                 xnode.emit('#matter.select', { x, y });
             })
             drag.on('move', (event, { position, delta }) => {
-                const x = delta.x * screen.canvas.width / screen.canvas.clientWidth;
-                const y = delta.y * screen.canvas.height / screen.canvas.clientHeight;
+                const x = delta.x * canvas.width / canvas.clientWidth;
+                const y = delta.y * canvas.height / canvas.clientHeight;
                 xnode.emit('#matter.move', { x, y });
             });
 
@@ -147,13 +141,8 @@
                 xnode.emit('#matter.unselect');
             });
         }   
-        function Contents(xnode) {
-            const screen = xcontext('screen');
-            const matter = xcontext('matter');
-            
+        function Contents(xnode, matter) {
             xnode.extend(MatterComposite, matter.engine.world);
-
-            // xnew(MatterComposite, Matter.MouseConstraint.create(matter.engine, { element: screen.canvas }));
 
             xnew(Rectangle, 400, 200, 80, 80);
             xnew(Polygon, 450, 50, 6, 40);
