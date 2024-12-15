@@ -70,14 +70,14 @@
             xnew(Light);
         
             // call iteratively (delay = 100ms, loop = true)
-            xtimer(() => { xnew(xnode, Cube); }, 100, true);
+            xtimer(() => xnew(xnode, Cube), 100, true);
         }
 
         function Light(xnode) {
             const light = new THREE.PointLight(0xFFFFFF, 1);
-            xnode.extend(ThreeObject3D, light);
-
             light.position.set(0, 0, +100);
+            
+            xnode.extend(ThreeObject3D, light);
         }
 
         function Cube(xnode) {
@@ -85,11 +85,11 @@
             const geometry = new THREE.BoxGeometry(size, size, size);
             const material = new THREE.MeshLambertMaterial({ color: 0xFFFFFF * Math.random() });
             const object = new THREE.Mesh(geometry, material);
-            xnode.extend(ThreeObject3D, object);
-
             object.position.x = 100 * (Math.random() - 0.5);
             object.position.y = 100 * (Math.random() - 0.5);
             object.position.z = 100 * (Math.random() - 0.5);
+          
+            xnode.extend(ThreeObject3D, object);
 
             const velocity = {};
             velocity.x = Math.random() - 0.5;

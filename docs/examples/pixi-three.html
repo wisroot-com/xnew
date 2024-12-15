@@ -74,11 +74,12 @@
         
         function Pixi(xnode, canvas, three) {
             const renderer = PIXI.autoDetectRenderer({ view: canvas, width: canvas.width, height: canvas.height, backgroundColor: '#FFF' });
-            const scene = new PIXI.Container();
 
             const texture = PIXI.Texture.from(three.canvas);
             const background = new PIXI.Sprite(texture);
+            const scene = new PIXI.Container();
             scene.addChild(background);
+
             return {
                 get scene() {
                     return scene;
@@ -112,16 +113,16 @@
 
         function Box(xnode, [x, y], [sx, sy], color) {
             const object = new PIXI.Container();
-            xnode.extend(PixiObject, object);
-            
             object.x = x;
             object.y = y;
-            
+
             const graphics = object.addChild(new PIXI.Graphics());
             graphics.beginFill(color);
             graphics.drawRect(-sx / 2, -sy / 2, sx, sy);
             graphics.endFill();
            
+            xnode.extend(PixiObject, object);
+            
             return {
                 update() {
                     object.rotation += 0.01;
@@ -133,6 +134,7 @@
             const geometry = new THREE.BoxGeometry(sx, sy, sz);
             const material = new THREE.MeshNormalMaterial();
             const object = new THREE.Mesh(geometry, material);
+            
             xnode.extend(ThreeObject, object);
 
             return {

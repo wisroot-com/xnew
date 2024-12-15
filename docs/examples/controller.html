@@ -54,7 +54,6 @@
             xcontext('PixiObject', object);
             
             parent?.addChild(object);
-
             return {
                 finalize() {
                     parent?.removeChild(object);

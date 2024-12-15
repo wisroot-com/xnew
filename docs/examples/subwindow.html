@@ -26,8 +26,7 @@
                     offset.y = xnode.getPosition().y - position.y;
                 });
                 drag.on('move', (event, { position }) => {
-                    const moveto = { x: position.x + offset.x, y: position.y + offset.y };
-                    xnode.setPosition(moveto.x, moveto.y);
+                    xnode.setPosition(position.x + offset.x, position.y + offset.y);
                 });
                 
                 xnode.setPosition(100, 100);

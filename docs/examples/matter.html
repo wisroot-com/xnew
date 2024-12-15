@@ -42,9 +42,7 @@
 
         function MatterMgr(xnode, canvas) {
             const engine = Matter.Engine.create();
-            const render = Matter.Render.create({
-                canvas,
-                engine,
+            const render = Matter.Render.create({ canvas, engine,
                 options: {
                     width: canvas.width,
                     height: canvas.height,

@@ -28,32 +28,51 @@
             const screen = xnew(xbasics.Screen, { width: 1200, height: 800 });
         
             // setting for three.js
-            const three = {};
-            three.renderer = new THREE.WebGLRenderer({ canvas: screen.canvas });
-            three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
-            three.camera.position.set(0, 0, +150);
-            three.scene = new THREE.Scene();
-            three.renderer.shadowMap.enabled = true;
-            three.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            const three = xnew(Three, screen.canvas);
 
             xnew(Controller, three);
             xnew(Content, three);
-
-            return {
-                update() {
-                    three.renderer.render(three.scene, three.camera);
-                },
-            };
         });
 
-        function Controller(xnode, three) {
+        function Three(xnode, canvas) {
+            const renderer = new THREE.WebGLRenderer({ canvas });
+            const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
+            camera.position.set(0, -5, +150);
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xFFFFFF);
+            scene.rotation.x = -60 / 180 * Math.PI;
+
+            return {
+                get scene() {
+                    return scene;
+                },
+                update() {
+                    renderer.render(scene, camera);
+                },
+            }
+        }
+
+        function ThreeObject(xnode, object) {
+            const parent = xcontext('ThreeObject');
+            xcontext('ThreeObject', object);
+
+            parent?.add(object);
+            return {
+                finalize() {
+                    parent?.remove(object);
+                },
+            }
+        }
+        
+        function Controller(xnode) {
             const dpad = xnew({ style: 'position: absolute; left: 10px; bottom: 20px; z-index: 10;' }, xbasics.DPad);
             dpad.on('down move up', (event, ex) => {
-                dpad.emit('#move', ex);
+                dpad.emit('#object.move', ex);
             })
             const button = xnew({ style: 'position: absolute; right: 20px; bottom: 20px; z-index: 10;' }, xbasics.CircleButton);
             button.on('down', (event, ex) => {
-                button.emit('#action');
+                button.emit('#object.action');
             })
 
             const xwin = xnew(window);
@@ -61,14 +80,13 @@
             xwin.on('keydown keyup', (event) => {
                 state[event.code] = event.type === 'keydown' ? 1 : 0;
                 const x = - (state['ArrowLeft'] ? 1 : 0) + (state['ArrowRight'] ? 1 : 0);
-                xwin.emit('#move', { vector: {x, y: 0}});
+                xwin.emit('#object.move', { vector: {x, y: 0}});
             });
         }
         
         function Content(xnode, three) {
-            xnode.extend(ThreeObject3D, three.scene);
-            three.scene.rotation.x = -60 / 180 * Math.PI;
-            three.scene.position.y = 5;
+            xnode.extend(ThreeObject, three.scene);
+
             xnew(DirectionaLight, 20, 50, 100);
             xnew(AmbientLight);
             
@@ -79,8 +97,6 @@
 
         function DirectionaLight(xnode, x, y, z) {
             const object = new THREE.DirectionalLight(0xFFFFFF, 0.40);
-            xnode.extend(ThreeObject3D, object);
-            
             object.position.set(x, y, z);
             const s = object.position.length();
             object.castShadow = true;
@@ -93,11 +109,14 @@
             object.shadow.camera.near = +s * 0.1;
             object.shadow.camera.far = +s * 10.0;
             object.shadow.camera.updateProjectionMatrix ();
+
+            xnode.extend(ThreeObject, object);
         }
 
         function AmbientLight(xnode) {
             const object = new THREE.AmbientLight(0xFFFFFF, 0.50);
-            xnode.extend(ThreeObject3D, object);
+
+            xnode.extend(ThreeObject, object);
         }
 
         function Ground(xnode, size, color) {
@@ -105,11 +124,12 @@
             const material = new THREE.MeshStandardMaterial({ color });
             const object = new THREE.Mesh(geometry, material);
             object.receiveShadow = true;
-            xnode.extend(ThreeObject3D, object);
+
+            xnode.extend(ThreeObject, object);
         }
 
         function Blocks(xnode) {
-            xnode.extend(ThreeObject3D, new THREE.Group());
+            xnode.extend(ThreeObject, new THREE.Group());
 
             xnew(Block, [-36, -50]);
             xnew(Block, [-12, -50]);
@@ -119,8 +139,10 @@
 
         function Player(xnode, [x, y]) {
             const object = new THREE.Group();
-            xnode.extend(ThreeObject3D, object);
             object.position.set(x, y, 0);
+
+            xnode.extend(ThreeObject, object);
+
             const data = [
                 [0, 0, 0, 1, 0, 0, 0],
                 [0, 0, 0, 1, 0, 0, 0],
@@ -131,7 +153,7 @@
             xnew(CubeArray, data, [3, 2], 4, 0xAAFFAA);
 
             let move = null;
-            xnode.on('#move', ({ vector }) => {
+            xnode.on('object.move', ({ vector }) => {
                 move = vector;
             });
             return {
@@ -146,7 +168,7 @@
 
         function Block(xnode, [x, y]) {
             const object = new THREE.Group();
-            xnode.extend(ThreeObject3D, object);
+            xnode.extend(ThreeObject, object);
             object.position.set(x, y, 0);
             const data = [
                 [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
@@ -162,7 +184,7 @@
 
         function CubeArray(xnode, data, offset, size, color) {
             const object = new THREE.Group();
-            xnode.extend(ThreeObject3D, object);
+            xnode.extend(ThreeObject, object);
 
             for (let y = 0; y < data.length; y++) {
                 for (let x = 0; x < data[y].length; x++) {
@@ -179,23 +201,11 @@
             const geometry = new THREE.BoxGeometry(sx, sy, sz);
             const material = new THREE.MeshLambertMaterial({ color, });
             const object = new THREE.Mesh(geometry, material);
-            xnode.extend(ThreeObject3D, object);
+            xnode.extend(ThreeObject, object);
             object.position.set(x, y, z);
 
             object.castShadow = true;
         }
-
-        function ThreeObject3D(xnode, object) {
-            const parent = xcontext('THREE.Object3D', object);
-
-            parent?.add(object);
-            return {
-                finalize() {
-                    parent?.remove(object);
-                },
-            }
-        }
-
     </script>
 </body>
 </html>

@@ -31,7 +31,7 @@
             xnew(Contents, screen.canvas);
 
             const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
-            button.on('click', () => {
+            button.on('pointerdown', () => {
                 screen.clear('rgb(0,0,0)');
             });
         });

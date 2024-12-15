@@ -22,23 +22,31 @@
 </head>
 
 <body>
-    <div id="main" style="position: relative; width: 100%; height: 100%;"></div>
+    <div id="main" style="position: relative; width: 100%; height: 100%; display: flex;">
+        <div id="view" style="flex: auto; position: relative; width: 100%; height: 100%;"></div>
+        <div id="list" style="flex: none; position: relative; width: 200px; height: 100%;"></div>
+    </div>
     <script>
         xnew('#main', (xnode) => {
-            // update function is called in the order of [world -> .. -> matter]
-            const world = xnew();
+            xnew('#view', (xnode) => {
+                // update function is called in the order of [world -> .. -> matter]
+                const world = xnew();
 
-            const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
+                const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
 
-            const matter = xnew(MatterMgr, screen.canvas);
+                const matter = xnew(MatterMgr, screen.canvas);
 
-            xnew(Event, screen.canvas);
-            const contents = xnew(world, Contents, matter);
-
-            const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
-            button.on('click', () => {
-                contents.reboot(matter);
+                const contents = xnew(world, Contents, matter);
+                xnew(Event, screen.canvas);
             });
+
+            xnew('#list', (xnode) => {
+                const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0; font-size: 1.5em;' }, 'reset');
+                button.on('click', () => {
+                    button.emit('#reboot');
+                });
+            });
+            
         });
 
         function MatterMgr(xnode, canvas) {
@@ -85,7 +93,7 @@
                     Matter.Body.setPosition(body, { x: body.position.x + move.x, y: body.position.y + move.y });
                 }
             });
-            xnode.on('matter.object.unselect', (position) => {
+            xnode.on('matter.object.unselect', () => {
                 body = null;
             });
             return {
@@ -122,9 +130,6 @@
         }
 
         function Event(xnode, canvas) {
-            const screen = xcontext('screen');
-            const matter = xcontext('matter');
-
             xnode.on('touchstart contextmenu wheel', (event) => {
                 event.preventDefault();
             });
@@ -155,6 +160,8 @@
         }   
         function Contents(xnode, matter) {
             xnode.extend(MatterObject, matter.engine.world);
+
+            xnode.on('reboot', () => xnode.reboot(matter));
 
             xnew(Rectangle, 400, 200, 80, 80);
             xnew(Polygon, 450, 50, 6, 40);

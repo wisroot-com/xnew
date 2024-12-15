@@ -14,12 +14,15 @@ xnew(parent, element, component, ...args);
 ```
 <br>
 
-`parent` and `element` are often omitted.  
+These arguments are often omitted.  
 
 ```
+// e.g.
 xnew(component, ...args);           // parent and element are omitted
 xnew(parent, component, ...args);   // element is omitted
 xnew(element, component, ...args);  // parent is omitted
+xnew(parent, element);              // component is omitted
+...
 ```
 <br>
 
@@ -32,11 +35,9 @@ xnew((xnode1) => {
     const xnode2 = xnew((xnode2) => {
         // xnode2.parent: xnode1
     });
-
     const xnode3 = xnew((xnode3) => {
         // xnode3.parent: xnode1
     });
-
     const xnode4 = xnew(xnode2, (xnode4) => {
         // xnode4.parent: xnode2
     });
@@ -48,7 +49,7 @@ xnew((xnode1) => {
 - Setting an existing html element  
 e.g. `xnew(document.querySelector('#hoge'), component)`  or `xnew('#hoge', component)`   
 - Creating a new html element   
-e.g. `xnew({ tagName: 'div', style: '', ... }, component)`   
+e.g. `xnew({ tagName: 'div', className: '', style: '', ... }, component)`   
 
 If you omit the tagName property, `tagName: 'div'` will be set automatically.  
 
