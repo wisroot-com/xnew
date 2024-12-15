@@ -54,38 +54,38 @@
                     background: 'rgb(240,240,240)'
                 }
             });
-            xnode.on('matter.scale', (scale) => {
-                const delta = {
-                    x: Math.floor((render.bounds.max.x - render.bounds.min.x) / scale - xnode.size.x),
-                    y: Math.floor((render.bounds.max.y - render.bounds.min.y) / scale - xnode.size.y),
-                };
-                const offset = {
-                    x: Math.floor(delta.x / 2),
-                    y: Math.floor(delta.y / 2),
-                }
-                render.bounds.max.x += delta.x - offset.x;  
-                render.bounds.max.y += delta.y - offset.y;  
-
-                render.bounds.min.x -= offset.x;  
-                render.bounds.min.y -= offset.y;
+            xnode.on('matter.scene.scale', (scale) => {
+                const x = (render.bounds.max.x - render.bounds.min.x) / scale - xnode.size.x;
+                const y = (render.bounds.max.y - render.bounds.min.y) / scale - xnode.size.y;
+                render.bounds.max.x += x / 2;  
+                render.bounds.max.y += y / 2;  
+                render.bounds.min.x -= x / 2;  
+                render.bounds.min.y -= y / 2;  
             })
-
+            xnode.on('matter.scene.move', (move) => {
+                const x = move.x * xnode.size.x / canvas.width;
+                const y = move.y * xnode.size.y / canvas.height;
+                render.bounds.max.x -= x;  
+                render.bounds.max.y -= y;  
+                render.bounds.min.x -= x;  
+                render.bounds.min.y -= y;
+            });
             let body = null;
-            xnode.on('matter.select', (position) => {
+            xnode.on('matter.object.select', (position) => {
                 const x = position.x * xnode.size.x / canvas.width + xnode.offset.x;
                 const y = position.y * xnode.size.y / canvas.height + xnode.offset.y;
 
                 const bodiesAtPoint = Matter.Query.point(Matter.Composite.allBodies(engine.world), { x, y });
                 body = bodiesAtPoint.length > 0 ? bodiesAtPoint[0] : null;
             });
-            xnode.on('matter.move', (move) => {
+            xnode.on('matter.object.move', (move) => {
                 move.x *= xnode.size.x / canvas.width;
                 move.y *= xnode.size.y / canvas.height;
                 if (body) {
                     Matter.Body.setPosition(body, { x: body.position.x + move.x, y: body.position.y + move.y });
                 }
             });
-            xnode.on('matter.unselect', (position) => {
+            xnode.on('matter.object.unselect', (position) => {
                 body = null;
             });
             return {
@@ -129,7 +129,7 @@
                 event.preventDefault();
             });
             xnode.on('wheel', (event) => {
-                xnode.emit('#matter.scale', 1 + 0.001 * event.wheelDeltaY);
+                xnode.emit('#matter.scene.scale', 1 + 0.001 * event.wheelDeltaY);
             });
 
             const drag = xnew(canvas, xbasics.DragEvent);
@@ -137,16 +137,20 @@
             drag.on('down', (event, { position }) => {
                 const x = position.x * canvas.width / canvas.clientWidth;
                 const y = position.y * canvas.height / canvas.clientHeight;
-                xnode.emit('#matter.select', { x, y });
+                xnode.emit('#matter.object.select', { x, y });
             })
             drag.on('move', (event, { position, delta }) => {
                 const x = delta.x * canvas.width / canvas.clientWidth;
                 const y = delta.y * canvas.height / canvas.clientHeight;
-                xnode.emit('#matter.move', { x, y });
+                if (event.buttons & 1 || !event.buttons) {
+                    xnode.emit('#matter.object.move', { x, y });
+                } else if (event.buttons & 2) {
+                    xnode.emit('#matter.scene.move', { x, y });
+                }
             });
 
             drag.on('up', (event, { position }) => {
-                xnode.emit('#matter.unselect');
+                xnode.emit('#matter.object.unselect');
             });
         }   
         function Contents(xnode, matter) {
