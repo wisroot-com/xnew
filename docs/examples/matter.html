@@ -50,7 +50,7 @@
                     height: canvas.height,
                     hasBounds: true,
                     wireframes: false,
-                    background: 'rgb(255,255,255)'
+                    background: 'rgb(240,240,240)'
                 }
             });
             Matter.Composite.add(engine.world, Matter.MouseConstraint.create(engine, { element: canvas }));
@@ -58,9 +58,6 @@
             return {
                 get engine() {
                     return engine;
-                },
-                get render() {
-                    return render;
                 },
                 update() {
                     Matter.Engine.update(engine);

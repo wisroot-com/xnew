@@ -41,7 +41,7 @@
                 event.preventDefault();
             });
             
-            const context = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d');
 
             const drag = xnew(canvas, xbasics.DragEvent);
 
@@ -49,17 +49,17 @@
                 const scaleX = canvas.width / canvas.clientWidth;
                 const scaleY = canvas.height / canvas.clientHeight;
 
-                context.beginPath();
-                context.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.fillStyle = 'white';
                 if (type === 'down') {
-                    context.arc(position.x * scaleX, position.y * scaleY, 1, 0, Math.PI * 2, true);
+                    ctx.arc(position.x * scaleX, position.y * scaleY, 1, 0, Math.PI * 2, true);
                 } else if (type === 'move') {
                     const length = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
                     for (let i = 0; i < length; i++) {
-                        context.arc((position.x - delta.x * i / length) * scaleX, (position.y - delta.y * i / length) * scaleY, 1, 0, Math.PI * 2, true);
+                        ctx.arc((position.x - delta.x * i / length) * scaleX, (position.y - delta.y * i / length) * scaleY, 1, 0, Math.PI * 2, true);
                     }
                 }
-                context.fill();
+                ctx.fill();
             });
         }
 

@@ -52,7 +52,7 @@
             xnode.on('camera.zscale', (scale) => {
                 camera.position.z /= scale;
             })
-            xnode.on('camera.rotate', (move) => {
+            xnode.on('scene.rotate', (move) => {
                 scene.rotation.x += move.y * 0.01;
                 scene.rotation.z += move.x * 0.01;
             })
@@ -62,12 +62,6 @@
             })
 
             return {
-                get renderer() {
-                    return renderer;
-                },
-                get camera() {
-                    return camera;
-                },
                 get scene() {
                     return scene;
                 },
@@ -90,11 +84,10 @@
         }
 
         function Event(xnode) {
-            xnode.on('touchstart contextmenu', (event) => {
+            xnode.on('touchstart contextmenu wheel', (event) => {
                 event.preventDefault();
             });
             xnode.on('wheel', (event) => {
-                event.preventDefault();
                 xnode.emit('#camera.zscale', 1 + 0.001 * event.wheelDeltaY);
             });
 
@@ -107,7 +100,7 @@
             drag.on('move', (event, { position, delta }) => {
                 if (gesture.isActive === true) return;
                 if (event.buttons & 1 || !event.buttons) {
-                    xnode.emit('#camera.rotate', { x: +delta.x, y: +delta.y });
+                    xnode.emit('#scene.rotate', { x: +delta.x, y: +delta.y });
                 }
                 if (event.buttons & 2) {
                     xnode.emit('#camera.translate', { x: -delta.x, y: +delta.y });
@@ -128,8 +121,6 @@
 
         function DirectionaLight(xnode, x, y, z) {
             const object = new THREE.DirectionalLight(0xFFFFFF, 0.40);
-            xnode.extend(ThreeObject, object);
-            
             object.position.set(x, y, z);
             const s = object.position.length();
             object.castShadow = true;
@@ -142,10 +133,13 @@
             object.shadow.camera.near = +s * 0.1;
             object.shadow.camera.far = +s * 10.0;
             object.shadow.camera.updateProjectionMatrix ();
+
+            xnode.extend(ThreeObject, object);
         }
 
         function AmbientLight(xnode) {
             const object = new THREE.AmbientLight(0xFFFFFF, 0.50);
+
             xnode.extend(ThreeObject, object);
         }
 
@@ -153,6 +147,7 @@
             const geometry = new THREE.SphereGeometry(size, 25, 25);
             const material = new THREE.MeshBasicMaterial({ color: 0xEEEEFF, side: THREE.BackSide });
             const object = new THREE.Mesh(geometry, material);
+
             xnode.extend(ThreeObject, object);
         }
 
@@ -162,6 +157,7 @@
             const object = new THREE.Mesh(geometry, material);
             object.receiveShadow = true;
             object.material.opacity = 0.7;
+
             xnode.extend(ThreeObject, object);
         }
 
@@ -169,10 +165,10 @@
             const geometry = new THREE.BoxGeometry(size, size, size);
             const material = new THREE.MeshLambertMaterial({ color, });
             const object = new THREE.Mesh(geometry, material);
-            xnode.extend(ThreeObject, object);
-
             object.castShadow = true;
             object.position.z = size / 2;
+
+            xnode.extend(ThreeObject, object);
         }
     </script>
 </body>

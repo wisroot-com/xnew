@@ -40,9 +40,6 @@
             const renderer = PIXI.autoDetectRenderer({ view: canvas, width: canvas.width, height: canvas.height, backgroundColor: '#FFF' });
             const scene = new PIXI.Container();
             return {
-                get renderer() {
-                    return renderer;
-                },
                 get scene() {
                     return scene;
                 },

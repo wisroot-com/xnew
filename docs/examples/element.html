@@ -65,22 +65,22 @@
         }
 
         function Content(xnode, canvas) {
-            const context = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d');
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
             const s = Math.min(cx, cy) * 0.5;
 
-            context.fillStyle = "rgb(0,0,0)";
-            context.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "rgb(0,0,0)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            context.fillStyle = "rgb(200,0,100)";
-            context.fillRect(cx - 0.6 * cx - s, cy - s, s * 2, s * 2);
+            ctx.fillStyle = "rgb(200,0,100)";
+            ctx.fillRect(cx - 0.6 * cx - s, cy - s, s * 2, s * 2);
 
-            context.fillStyle = "rgb(100,200,0)";
-            context.fillRect(cx + 0.0 * cx - s, cy - s, s * 2, s * 2);
+            ctx.fillStyle = "rgb(100,200,0)";
+            ctx.fillRect(cx + 0.0 * cx - s, cy - s, s * 2, s * 2);
 
-            context.fillStyle = "rgb(0,100,200)";
-            context.fillRect(cx + 0.6 * cx - s, cy - s, s * 2, s * 2);
+            ctx.fillStyle = "rgb(0,100,200)";
+            ctx.fillRect(cx + 0.6 * cx - s, cy - s, s * 2, s * 2);
         }
 
     </script>

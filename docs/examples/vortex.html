@@ -33,20 +33,21 @@
         });
 
         function Contents(xnode) {
-            const screen = xcontext('screen');
-
-            xnew(() => {
-                return {
-                    update() {
-                        screen.clear('rgba(0,0,0,0)');
-                    }
-                }
-            });
+            xnew(Clear);
 
             let counter = 0;
             xtimer(() => {
                 xnew(Wave, counter++ / 12 * Math.PI);
             }, 500, true);
+        }
+
+        function Clear(xnode) {
+            const screen = xcontext('screen');
+            return {
+                update() {
+                    screen.clear('rgba(0,0,0,0)');
+                }
+            }
         }
 
         function Wave(xnode, shift) {

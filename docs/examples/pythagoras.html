@@ -51,19 +51,31 @@
                     height: canvas.height,
                     hasBounds: true,
                     wireframes: false,
-                    background: 'rgb(255,255,255)'
+                    background: 'rgb(240,240,240)'
                 }
             });
             xnode.on('matter.scale', (scale) => {
-                render.bounds.max.x *= scale;
-                render.bounds.max.y *= scale;
+                const delta = {
+                    x: Math.floor((render.bounds.max.x - render.bounds.min.x) / scale - xnode.size.x),
+                    y: Math.floor((render.bounds.max.y - render.bounds.min.y) / scale - xnode.size.y),
+                };
+                const offset = {
+                    x: Math.floor(delta.x / 2),
+                    y: Math.floor(delta.y / 2),
+                }
+                render.bounds.max.x += delta.x - offset.x;  
+                render.bounds.max.y += delta.y - offset.y;  
+
+                render.bounds.min.x -= offset.x;  
+                render.bounds.min.y -= offset.y;
             })
 
             let body = null;
             xnode.on('matter.select', (position) => {
-                position.x *= xnode.size.x / canvas.width;
-                position.y *= xnode.size.y / canvas.height;
-                const bodiesAtPoint = Matter.Query.point(Matter.Composite.allBodies(engine.world), position);
+                const x = position.x * xnode.size.x / canvas.width + xnode.offset.x;
+                const y = position.y * xnode.size.y / canvas.height + xnode.offset.y;
+
+                const bodiesAtPoint = Matter.Query.point(Matter.Composite.allBodies(engine.world), { x, y });
                 body = bodiesAtPoint.length > 0 ? bodiesAtPoint[0] : null;
             });
             xnode.on('matter.move', (move) => {
@@ -90,9 +102,6 @@
                 get engine() {
                     return engine;
                 },
-                get render() {
-                    return render;
-                },
                 update() {
                     //Matter.Engine.update(engine);
                     Matter.Render.world(render);
@@ -100,9 +109,9 @@
             }
         }
 
-        function MatterComposite(xnode, object) {
-            const parent = xcontext('Matter.Composite');
-            xcontext('Matter.Composite', object);
+        function MatterObject(xnode, object) {
+            const parent = xcontext('MatterObject');
+            xcontext('MatterObject', object);
                 
             parent && Matter.Composite.add(parent, object);
             return {
@@ -116,11 +125,10 @@
             const screen = xcontext('screen');
             const matter = xcontext('matter');
 
-            xnode.on('touchstart contextmenu', (event) => {
+            xnode.on('touchstart contextmenu wheel', (event) => {
                 event.preventDefault();
             });
             xnode.on('wheel', (event) => {
-                event.preventDefault();
                 xnode.emit('#matter.scale', 1 + 0.001 * event.wheelDeltaY);
             });
 
@@ -142,7 +150,7 @@
             });
         }   
         function Contents(xnode, matter) {
-            xnode.extend(MatterComposite, matter.engine.world);
+            xnode.extend(MatterObject, matter.engine.world);
 
             xnew(Rectangle, 400, 200, 80, 80);
             xnew(Polygon, 450, 50, 6, 40);
@@ -152,15 +160,15 @@
 
         function Rectangle(xnode, ...args) {
             const object = Matter.Bodies.rectangle(...args)
-            xnode.extend(MatterComposite, object);
+            xnode.extend(MatterObject, object);
         }
         function Circle(xnode, ...args) {
             const object = Matter.Bodies.circle(...args)
-            xnode.extend(MatterComposite, object);
+            xnode.extend(MatterObject, object);
         }
         function Polygon(xnode, ...args) {
             const object = Matter.Bodies.polygon(...args)
-            xnode.extend(MatterComposite, object);
+            xnode.extend(MatterObject, object);
         }
     </script>
 </body>
