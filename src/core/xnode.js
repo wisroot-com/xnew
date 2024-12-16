@@ -1,4 +1,4 @@
-import { isString, isNumber, isObject, isFunction, MapSet, error } from './util';
+import { isString, isNumber, isObject, isFunction, MapSet, error } from './common';
 import { XBase } from './xbase';
 
 export class XNode extends XBase
@@ -79,7 +79,7 @@ export class XNode extends XBase
         function ticker() {
             const time = Date.now();
             XNode.roots.forEach((xnode) => {
-                XNode.start.call(xnode);
+                XNode.start.call(xnode, time);
                 XNode.update.call(xnode, time);
             });
             XNode.animation = requestAnimationFrame(ticker);
@@ -90,7 +90,6 @@ export class XNode extends XBase
     {
         this._ = Object.assign(this._, {
             backup: [parent, element, component],
-
             children: new Set(),            // children xnodes
             state: 'pending',               // [pending -> running <-> stopped -> finalized]
             tostart: false,                 // flag for start
@@ -127,8 +126,8 @@ export class XNode extends XBase
     static extend(component, ...args)
     {
         if (this._.components.has(component) === false) {
-            XNode.components.add(component, this);
             this._.components.add(component);
+            XNode.components.add(component, this);
 
             const props = XBase.scope.call(this, component, this, ...args) ?? {};
             
@@ -172,7 +171,7 @@ export class XNode extends XBase
                 }
             });
             const { promise, start, update, stop, finalize, ...original } = props;
-            return props;
+            return original;
         }
     }
 

@@ -1,4 +1,4 @@
-import { isObject, isString, isFunction, Timer, error } from './util';
+import { isObject, isString, isFunction, Timer, error } from './common';
 import { XNode } from './xnode';
 
 export function xnew(...args)

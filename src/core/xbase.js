@@ -1,23 +1,23 @@
-import { isObject, isString, isFunction, createElement, MapSet, MapMap, error } from './util';
+import { isObject, isString, isFunction, createElement, MapSet, MapMap, error } from './common';
 
 export class XBase
 {
     constructor(parent, element)
     {
-        let base = null;
+        let baseElement = null;
         if (element instanceof Element || element instanceof Window || element instanceof Document) {
-            base = element;
+            baseElement = element;
         } else if (parent !== null) {
-            base = parent._.nest;
+            baseElement = parent._.nestElement;
         } else if (document !== undefined) {
-            base = document.body;
+            baseElement = document.body;
         }
 
         this._ = {
             root: parent?._.root ?? this,   // root xnode
             parent,                         // parent xnode
-            base,                           // base element
-            nest: base,                     // nest element
+            baseElement,                    // base element
+            nestElement: baseElement,       // nest element
             context: new Map(),             // context value
             keys: new Set(),                // keys
             listeners: new MapMap(),        // event listners
@@ -31,7 +31,7 @@ export class XBase
 
     get element()
     {
-        return this._.nest;
+        return this._.nestElement;
     }
 
     nest(attributes)
@@ -44,8 +44,8 @@ export class XBase
             error('xnode nest', 'The argument is invalid.', 'attributes');
         } else if (this._.state !== 'pending') {
             error('xnode nest', 'This function can not be called after initialized.');
-        } else if (this._.nest) {
-            this._.nest = this._.nest.appendChild(createElement(attributes));
+        } else if (this._.nestElement) {
+            this._.nestElement = this._.nestElement.appendChild(createElement(attributes));
             return this.element;
         }
     }
@@ -71,7 +71,9 @@ export class XBase
         } else if (isFunction(listener) === false) {
             error('xnode on', 'The argument is invalid.', 'listener');
         } else {
-            type.trim().split(/\s+/).forEach((type) => XBase.on.call(this, type, listener, options));
+            type.trim().split(/\s+/).forEach((type) => {
+                XBase.on.call(this, type, listener, options);
+            });
         }
     }
 
@@ -81,14 +83,17 @@ export class XBase
             error('xnode off', 'The argument is invalid.', 'type');
         } else if (listener !== undefined && isFunction(listener) === false) {
             error('xnode off', 'The argument is invalid.', 'listener');
-        } else if (isString(type) === true) {
+        } else if (isString(type) === true && listener !== undefined) {
             type.trim().split(/\s+/).forEach((type) => {
-                const listners = listener ? [listener] : [...this._.listeners.get(type).keys()];
-                listners.forEach((listener) => XBase.off.call(this, type, listener));
+                XBase.off.call(this, type, listener);
+            });
+        } else if (isString(type) === true && listener === undefined) {
+            type.trim().split(/\s+/).forEach((type) => {
+                this._.listeners.get(type)?.forEach((_, listener) => XBase.off.call(this, type, listener));
             });
         } else if (type === undefined) {
-            this._.listeners.forEach((listners, type) => {
-                listners.keys().forEach((listener) => XBase.off.call(this, type, listener));
+            this._.listeners.forEach((map, type) => {
+                map.forEach((_, listener) => XBase.off.call(this, type, listener));
             });
         }
     }
@@ -100,7 +105,9 @@ export class XBase
         } else if (this._.state === 'finalized') {
             error('xnode emit', 'This function can not be called after finalized.');
         } else {
-            type.trim().split(/\s+/).forEach((type) => XBase.emit.call(this, type, ...args));
+            type.trim().split(/\s+/).forEach((type) => {
+                XBase.emit.call(this, type, ...args);
+            });
         }
     }
 
@@ -133,14 +140,15 @@ export class XBase
         this._.context.clear();
         this.off();
 
-        // delete nest element
-        if (this._.base !== null && this._.nest !== this._.base) {
-            let target = this._.nest;
-            while (target.parentElement !== null && target.parentElement !== this._.base) { target = target.parentElement; }
-            if (target.parentElement === this._.base) {
-                this._.base.removeChild(target);
+        if (this._.baseElement) {
+            let target = this._.nestElement;
+            while (target.parentElement && target.parentElement !== this._.baseElement) {
+                target = target.parentElement;
             }
-            this._.nest = this._.base;
+            if (target.parentElement === this._.baseElement) {
+                this._.baseElement.removeChild(target);
+            }
+            this._.nestElement = this._.baseElement;
         }
     }
 
@@ -163,18 +171,16 @@ export class XBase
         return [...this._.keys].join(' ');
     }
 
-    static context(name, value = undefined) {
-        const ret = (() => {
+    static context(name, value = undefined)
+    {
+        if (value !== undefined) {
+            this._.context.set(name, value);
+        } else {
             for (let xnode = this; xnode instanceof XBase; xnode = xnode.parent) {
                 if (xnode._.context.has(name)) {
                     return xnode._.context.get(name);
                 }
             }
-        })();
-        if (value !== undefined) {
-            this._.context.set(name, value);
-        } else {
-            return ret;
         }
     }
 
@@ -183,9 +189,7 @@ export class XBase
     static on(type, listener, options)
     {
         if (this._.listeners.has(type, listener) === false) {
-            const element = this._.nest;
-            const execute = (...args) => XBase.scope.call(this, listener, ...args);
-
+            const [element, execute] = [this._.nestElement, (...args) => XBase.scope.call(this, listener, ...args)];
             this._.listeners.set(type, listener, [element, execute]);
             element.addEventListener(type, execute, options);
         }
@@ -198,7 +202,6 @@ export class XBase
     {
         if (this._.listeners.has(type, listener) === true) {
             const [element, execute] = this._.listeners.get(type, listener);
-
             this._.listeners.delete(type, listener);
             element.removeEventListener(type, execute);
         }
@@ -207,24 +210,16 @@ export class XBase
         }
     }
 
-    static emit(type, ...args) {
-        if (XBase.etypes.has(type)) {
-            if (['+', '#'].includes(type[0])) {
-                const root = this._.root;
-                XBase.etypes.get(type).forEach((xnode) => {
-                    if (xnode._.root === root || type[0] === '#') {
-                        emit.call(xnode, type, ...args);
-                    }
-                });
-            } else {
-                emit.call(this, type, ...args);
-            }
-        }
-        function emit(type, ...args) {
-            if (this._.listeners.has(type) === true) {
-                this._.listeners.get(type).forEach(([element, execute]) => execute(...args));
-            }
+    static emit(type, ...args)
+    {
+        if (['+', '#'].includes(type[0])) {
+            XBase.etypes.get(type)?.forEach((xnode) => {
+                if (xnode._.root === this._.root || type[0] === '#') {
+                    xnode._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
+                }
+            });
+        } else {
+            this._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
         }
     }
-
 }
