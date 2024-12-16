@@ -270,7 +270,9 @@
                     listners.forEach((listener) => XBase.off.call(this, type, listener));
                 });
             } else if (type === undefined) {
-                this._.listeners.forEach((listener, type) => XBase.off.call(this, type, listener));
+                this._.listeners.forEach((listners, type) => {
+                    listners.keys().forEach((listener) => XBase.off.call(this, type, listener));
+                });
             }
         }
 
@@ -389,16 +391,11 @@
         }
 
         static emit(type, ...args) {
-            let token = null;
-            if (['+', '#'].includes(type[0])) {
-                token = type[0];
-                type = type.substring(1);
-            }
             if (XBase.etypes.has(type)) {
-                if (token !== null) {
+                if (['+', '#'].includes(type[0])) {
                     const root = this._.root;
                     XBase.etypes.get(type).forEach((xnode) => {
-                        if (xnode._.root === root || token === '#') {
+                        if (xnode._.root === root || type[0] === '#') {
                             emit.call(xnode, type, ...args);
                         }
                     });
@@ -760,6 +757,8 @@
     }
 
     function DragEvent(xnode) {
+        let isActive = false;
+      
         const base = xnew();
 
         base.on('pointerdown', (event) => {
@@ -769,6 +768,7 @@
            
             xnode.emit('down', event, { type: 'down', position });
             let previous = position;
+            isActive = true;
 
             const xwin = xnew(window);
 
@@ -787,6 +787,7 @@
                     const position = getPosition(event, rect);
                     xnode.emit('up', event, { type: 'up', position, });
                     xwin.finalize();
+                    isActive = false;
                 }
             });
 
@@ -795,12 +796,19 @@
                     const position = getPosition(event, rect);
                     xnode.emit('cancel', event, { type: 'cancel', position, });
                     xwin.finalize();
+                    isActive = false;
                 }
             });
         });
 
         function getPosition(event, rect) {
             return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+        }
+
+        return {
+            get isActive() {
+                return isActive;
+            },
         }
     }
 

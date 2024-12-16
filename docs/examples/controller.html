@@ -100,10 +100,10 @@
 
             let move = null;
             let direction = +1;
-            xnode.on('box.move', (vector) => {
+            xnode.on('#box.move', (vector) => {
                 move = vector;
             });
-            xnode.on('box.action', () => {
+            xnode.on('#box.action', () => {
                 direction *= -1;
             });
 

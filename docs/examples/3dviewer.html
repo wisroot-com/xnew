@@ -49,14 +49,14 @@
             scene.background = new THREE.Color(0xFFFFFF);
             scene.rotation.x = -60 / 180 * Math.PI
 
-            xnode.on('camera.zscale', (scale) => {
+            xnode.on('#camera.zscale', (scale) => {
                 camera.position.z /= scale;
             })
-            xnode.on('scene.rotate', (move) => {
+            xnode.on('#scene.rotate', (move) => {
                 scene.rotation.x += move.y * 0.01;
                 scene.rotation.z += move.x * 0.01;
             })
-            xnode.on('camera.translate', (move) => {
+            xnode.on('#camera.translate', (move) => {
                 camera.position.x += move.x * camera.position.z * 0.001;
                 camera.position.y += move.y * camera.position.z * 0.001;
             })

@@ -87,7 +87,9 @@ export class XBase
                 listners.forEach((listener) => XBase.off.call(this, type, listener));
             });
         } else if (type === undefined) {
-            this._.listeners.forEach((listener, type) => XBase.off.call(this, type, listener));
+            this._.listeners.forEach((listners, type) => {
+                listners.keys().forEach((listener) => XBase.off.call(this, type, listener));
+            });
         }
     }
 
@@ -206,16 +208,11 @@ export class XBase
     }
 
     static emit(type, ...args) {
-        let token = null;
-        if (['+', '#'].includes(type[0])) {
-            token = type[0];
-            type = type.substring(1);
-        }
         if (XBase.etypes.has(type)) {
-            if (token !== null) {
+            if (['+', '#'].includes(type[0])) {
                 const root = this._.root;
                 XBase.etypes.get(type).forEach((xnode) => {
-                    if (xnode._.root === root || token === '#') {
+                    if (xnode._.root === root || type[0] === '#') {
                         emit.call(xnode, type, ...args);
                     }
                 });

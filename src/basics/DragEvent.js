@@ -1,6 +1,8 @@
 import { xnew } from '../core/xnew';
 
 export function DragEvent(xnode) {
+    let isActive = false;
+  
     const base = xnew();
 
     base.on('pointerdown', (event) => {
@@ -10,6 +12,7 @@ export function DragEvent(xnode) {
        
         xnode.emit('down', event, { type: 'down', position });
         let previous = position;
+        isActive = true;
 
         const xwin = xnew(window);
 
@@ -28,6 +31,7 @@ export function DragEvent(xnode) {
                 const position = getPosition(event, rect);
                 xnode.emit('up', event, { type: 'up', position, });
                 xwin.finalize();
+                isActive = false;
             }
         });
 
@@ -36,11 +40,18 @@ export function DragEvent(xnode) {
                 const position = getPosition(event, rect);
                 xnode.emit('cancel', event, { type: 'cancel', position, });
                 xwin.finalize();
+                isActive = false;
             }
         });
     });
 
     function getPosition(event, rect) {
         return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+
+    return {
+        get isActive() {
+            return isActive;
+        },
     }
 }
