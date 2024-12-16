@@ -74,15 +74,15 @@
 
             const stick = xnew({ style: 'position: absolute; left: 10px; bottom: 10px; z-index: 10;' }, AnalogStick, { size: 130 });
             stick.on('down move up', (event, { vector }) => {
-                stick.emit('#box.move', vector);
+                stick.emit('~box.move', vector);
             })
             const dpad = xnew({ style: 'position: absolute; left: 10px; bottom: 150px; z-index: 10;' }, DPad, { size: 130 });
             dpad.on('down move up', (event, { vector }) => {
-                dpad.emit('#box.move', vector);
+                dpad.emit('~box.move', vector);
             })
             const button = xnew({ style: 'position: absolute; right: 20px; bottom: 20px; z-index: 10;' }, CircleButton);
             button.on('down', (event) => {
-                button.emit('#box.action');
+                button.emit('~box.action');
             })
         }
 
@@ -100,10 +100,10 @@
 
             let move = null;
             let direction = +1;
-            xnode.on('#box.move', (vector) => {
+            xnode.on('~box.move', (vector) => {
                 move = vector;
             });
-            xnode.on('#box.action', () => {
+            xnode.on('~box.action', () => {
                 direction *= -1;
             });
 

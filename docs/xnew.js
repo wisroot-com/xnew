@@ -407,7 +407,7 @@
 
         static emit(type, ...args)
         {
-            if (['+', '#'].includes(type[0])) {
+            if (['~'].includes(type[0])) {
                 XBase.etypes.get(type)?.forEach((xnode) => {
                     if (xnode._.root === this._.root || type[0] === '#') {
                         xnode._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));

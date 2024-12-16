@@ -27,7 +27,7 @@
         <div id="list" style="flex: none; position: relative; width: 200px; height: 100%;"></div>
     </div>
     <script>
-        xnew('#main', (xnode) => {
+        xnew((xnode) => {
             xnew('#view', (xnode) => {
                 // update function is called in the order of [world -> .. -> matter]
                 const world = xnew();
@@ -43,11 +43,11 @@
             xnew('#list', (xnode) => {
                 xnew({ style: 'text-align: center;' }, () => {
                     const reset = xnew({ tagName: 'button', style: 'font-size: 1.5em;' }, 'reset');
-                    reset.on('click', () => reset.emit('#reboot'));
+                    reset.on('click', () => reset.emit('~reboot'));
                 });
                 xnew({style: 'text-align: center;' }, () => {
                     const toggle = xnew({ tagName: 'button', style: 'font-size: 1.5em;' }, 'toggle');
-                    toggle.on('click', () => toggle.emit('#matter.engine.toggle'));
+                    toggle.on('click', () => toggle.emit('~matter.engine.toggle'));
                 });
 
             });
@@ -102,7 +102,7 @@
         function MatterController(xnode, engine, render) {
             xnew((xnode) => {
                 xnode.stop();
-                xnode.on('matter.engine.toggle', (scale) => {
+                xnode.on('~matter.engine.toggle', (scale) => {
                     xnode.state === 'running' ? xnode.stop() : xnode.start();
                 });
                 return {
@@ -111,7 +111,7 @@
                     }
                 }
             })
-            xnode.on('matter.scene.scale', (scale) => {
+            xnode.on('~matter.scene.scale', (scale) => {
                 const x = (render.bounds.max.x - render.bounds.min.x) * (1 / scale - 1);
                 const y = (render.bounds.max.y - render.bounds.min.y) * (1 / scale - 1);
                 render.bounds.max.x += x / 2;  
@@ -119,7 +119,7 @@
                 render.bounds.min.x -= x / 2;  
                 render.bounds.min.y -= y / 2;  
             })
-            xnode.on('matter.scene.move', (move) => {
+            xnode.on('~matter.scene.move', (move) => {
                 const x = move.x * (render.bounds.max.x - render.bounds.min.x) / render.canvas.width;
                 const y = move.y * (render.bounds.max.y - render.bounds.min.y) / render.canvas.height;
                 render.bounds.max.x -= x;  
@@ -128,21 +128,21 @@
                 render.bounds.min.y -= y;
             });
             let body = null;
-            xnode.on('matter.object.select', (position) => {
+            xnode.on('~matter.object.select', (position) => {
                 const x = position.x * (render.bounds.max.x - render.bounds.min.x) / render.canvas.width + render.bounds.min.x;
                 const y = position.y * (render.bounds.max.y - render.bounds.min.y)  / render.canvas.height + render.bounds.min.y;
 
                 const bodiesAtPoint = Matter.Query.point(Matter.Composite.allBodies(engine.world), { x, y });
                 body = bodiesAtPoint.length > 0 ? bodiesAtPoint[0] : null;
             });
-            xnode.on('matter.object.move', (move) => {
+            xnode.on('~matter.object.move', (move) => {
                 const x = move.x * (render.bounds.max.x - render.bounds.min.x) / render.canvas.width;
                 const y = move.y * (render.bounds.max.y - render.bounds.min.y) / render.canvas.height;
                 if (body) {
                     Matter.Body.setPosition(body, { x: body.position.x + x, y: body.position.y + y });
                 }
             });
-            xnode.on('matter.object.unselect', () => {
+            xnode.on('~matter.object.unselect', () => {
                 body = null;
             });
         }
@@ -164,7 +164,7 @@
                 event.preventDefault();
             });
             xnode.on('wheel', (event) => {
-                xnode.emit('#matter.scene.scale', 1 + 0.001 * event.wheelDeltaY);
+                xnode.emit('~matter.scene.scale', 1 + 0.001 * event.wheelDeltaY);
             });
 
             const drag = xnew(canvas, xbasics.DragEvent);
@@ -172,25 +172,25 @@
             drag.on('down', (event, { position }) => {
                 const x = position.x * canvas.width / canvas.clientWidth;
                 const y = position.y * canvas.height / canvas.clientHeight;
-                xnode.emit('#matter.object.select', { x, y });
+                xnode.emit('~matter.object.select', { x, y });
             })
             drag.on('move', (event, { position, delta }) => {
                 const x = delta.x * canvas.width / canvas.clientWidth;
                 const y = delta.y * canvas.height / canvas.clientHeight;
                 if (event.buttons & 1 || !event.buttons) {
-                    xnode.emit('#matter.object.move', { x, y });
+                    xnode.emit('~matter.object.move', { x, y });
                 } else if (event.buttons & 2) {
-                    xnode.emit('#matter.scene.move', { x, y });
+                    xnode.emit('~matter.scene.move', { x, y });
                 }
             });
 
             drag.on('up', (event, { position }) => {
-                xnode.emit('#matter.object.unselect');
+                xnode.emit('~matter.object.unselect');
             });
         }   
         function Contents(xnode, matter) {
             xnode.extend(MatterObject, matter.engine.world);
-            xnode.on('reboot', () => xnode.reboot(matter));
+            xnode.on('~reboot', () => xnode.reboot(matter));
 
             xnew(Rectangle, 400, 200, 80, 80);
             xnew(Polygon, 450, 50, 6, 40);

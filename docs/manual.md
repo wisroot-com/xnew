@@ -358,10 +358,10 @@ const xnode = xnew((xnode) => {
 xnode.emit('myevent', data); 
 ```
 - `xnode.emit('myevent')` emits only to self xnode, and not to other xnodes.
-- If you add `#` token, it broadcasts to all xnodes. (e.g. `xnode1.emit('#myevent')` -> `xnode2.on('#myevent')`)
+- If you add `~` token, it broadcasts to all xnodes. (e.g. `xnode1.emit('~myevent')` -> `xnode2.on('~myevent')`)
 
 ## Find xnode
-Once an xnode has a key, you can look it up anywhere.
+You can find xnodes using key string or component functions.
 
 ### `xnode.key`
 ```
@@ -369,7 +369,11 @@ xnode.key = 'string';
 ```
             
 ### `xfind`
-`xfind` searches in all xnodes. 
+`xfind` searches in all xnodes.
+```
+xfind(key | component); // key string or component function
+```
+ 
 ```
 const xnodes = xfind(key);
 ```
@@ -391,7 +395,16 @@ xnew((xnode3) => {
 xfind('aaa'); // [xnode1]
 xfind('bbb'); // [xnode2, xnode3]
 xfind('ccc'); // [xnode3]
-xfind('aaa bbb'); // [xnode1, xnode2, xnode3]         
+xfind('aaa bbb'); // [xnode1, xnode2, xnode3]        
+
+const xnode4 = xnew(A);
+
+function A(xnode) {
+}
+
+xfind(A); // [xnode4]        
+
+
 ```
 
 ## Scope 

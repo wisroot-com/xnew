@@ -49,14 +49,14 @@
             scene.background = new THREE.Color(0xFFFFFF);
             scene.rotation.x = -60 / 180 * Math.PI
 
-            xnode.on('#camera.zscale', (scale) => {
+            xnode.on('~camera.zscale', (scale) => {
                 camera.position.z /= scale;
             })
-            xnode.on('#scene.rotate', (move) => {
+            xnode.on('~scene.rotate', (move) => {
                 scene.rotation.x += move.y * 0.01;
                 scene.rotation.z += move.x * 0.01;
             })
-            xnode.on('#camera.translate', (move) => {
+            xnode.on('~camera.translate', (move) => {
                 camera.position.x += move.x * camera.position.z * 0.001;
                 camera.position.y += move.y * camera.position.z * 0.001;
             })
@@ -88,22 +88,22 @@
                 event.preventDefault();
             });
             xnode.on('wheel', (event) => {
-                xnode.emit('#camera.zscale', 1 + 0.001 * event.wheelDeltaY);
+                xnode.emit('~camera.zscale', 1 + 0.001 * event.wheelDeltaY);
             });
 
             const gesture = xnew(xbasics.GestureEvent);
             gesture.on('move', (event, { scale }) => {
-                xnode.emit('#camera.zscale', scale);
+                xnode.emit('~camera.zscale', scale);
             });
 
             const drag = xnew(xbasics.DragEvent);
             drag.on('move', (event, { position, delta }) => {
                 if (gesture.isActive === true) return;
                 if (event.buttons & 1 || !event.buttons) {
-                    xnode.emit('#scene.rotate', { x: +delta.x, y: +delta.y });
+                    xnode.emit('~scene.rotate', { x: +delta.x, y: +delta.y });
                 }
                 if (event.buttons & 2) {
-                    xnode.emit('#camera.translate', { x: -delta.x, y: +delta.y });
+                    xnode.emit('~camera.translate', { x: -delta.x, y: +delta.y });
                 } 
             });
         }
