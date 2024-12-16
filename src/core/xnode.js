@@ -60,10 +60,6 @@ export class XNode extends XBase
         }
     }
 
-    //----------------------------------------------------------------------------------------------------
-    // internal
-    //----------------------------------------------------------------------------------------------------
-    
     // animation callback id
     static animation = null;
     
@@ -143,7 +139,11 @@ export class XNode extends XBase
                 } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
                     if (isFunction(descripter.value)) {
                         const previous = this._.props[key];
-                        this._.props[key] = previous ? (...args) => { previous(...args); descripter.value(...args); } : descripter.value;
+                        if (previous !== undefined) {
+                            this._.props[key] = (...args) => { previous(...args); descripter.value(...args); };
+                        } else {
+                            this._.props[key] = (...args) => { descripter.value(...args); };
+                        }
                     } else {
                         error('xnode extend', 'The property is invalid.', key);
                     }

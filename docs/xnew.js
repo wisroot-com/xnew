@@ -213,7 +213,7 @@
                 parent,                         // parent xnode
                 baseElement,                    // base element
                 nestElement: baseElement,       // nest element
-                context: new Map(),             // context value
+                contexts: new Map(),            // context value
                 keys: new Set(),                // keys
                 listeners: new MapMap(),        // event listners
             };
@@ -306,10 +306,6 @@
             }
         }
 
-        //----------------------------------------------------------------------------------------------------
-        // internal
-        //----------------------------------------------------------------------------------------------------
-        
         // root xnodes
         static roots = new Set();
 
@@ -332,7 +328,7 @@
         static clear()
         {
             this.key = '';
-            this._.context.clear();
+            this._.contexts.clear();
             this.off();
 
             if (this._.baseElement) {
@@ -366,14 +362,14 @@
             return [...this._.keys].join(' ');
         }
 
-        static context(name, value = undefined)
+        static context(key, value = undefined)
         {
             if (value !== undefined) {
-                this._.context.set(name, value);
+                this._.contexts.set(key, value);
             } else {
                 for (let xnode = this; xnode instanceof XBase; xnode = xnode.parent) {
-                    if (xnode._.context.has(name)) {
-                        return xnode._.context.get(name);
+                    if (xnode._.contexts.has(key)) {
+                        return xnode._.contexts.get(key);
                     }
                 }
             }
@@ -407,11 +403,9 @@
 
         static emit(type, ...args)
         {
-            if (['~'].includes(type[0])) {
+            if (type[0] === '~') {
                 XBase.etypes.get(type)?.forEach((xnode) => {
-                    if (xnode._.root === this._.root || type[0] === '#') {
-                        xnode._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
-                    }
+                    xnode._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
                 });
             } else {
                 this._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
@@ -478,10 +472,6 @@
             }
         }
 
-        //----------------------------------------------------------------------------------------------------
-        // internal
-        //----------------------------------------------------------------------------------------------------
-        
         // animation callback id
         static animation = null;
         
@@ -561,7 +551,11 @@
                     } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
                         if (isFunction(descripter.value)) {
                             const previous = this._.props[key];
-                            this._.props[key] = previous ? (...args) => { previous(...args); descripter.value(...args); } : descripter.value;
+                            if (previous !== undefined) {
+                                this._.props[key] = (...args) => { previous(...args); descripter.value(...args); };
+                            } else {
+                                this._.props[key] = (...args) => { descripter.value(...args); };
+                            }
                         } else {
                             error('xnode extend', 'The property is invalid.', key);
                         }
@@ -705,14 +699,14 @@
         return new XNode(parent, element, ...args);
     }
 
-    function xcontext(name, value)
+    function xcontext(key, value)
     {
         const xnode = XNode.current;
 
-        if (isString(name) === false) {
-            error('xcontext', 'The argument is invalid.', 'name');
+        if (isString(key) === false) {
+            error('xcontext', 'The argument is invalid.', 'key');
         } else {
-            return XNode.context.call(xnode, name, value);
+            return XNode.context.call(xnode, key, value);
         }
     }
 

@@ -46,14 +46,14 @@ export function xnew(...args)
     return new XNode(parent, element, ...args);
 }
 
-export function xcontext(name, value)
+export function xcontext(key, value)
 {
     const xnode = XNode.current;
 
-    if (isString(name) === false) {
-        error('xcontext', 'The argument is invalid.', 'name');
+    if (isString(key) === false) {
+        error('xcontext', 'The argument is invalid.', 'key');
     } else {
-        return XNode.context.call(xnode, name, value);
+        return XNode.context.call(xnode, key, value);
     }
 }
 

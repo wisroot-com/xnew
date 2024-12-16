@@ -18,7 +18,7 @@ export class XBase
             parent,                         // parent xnode
             baseElement,                    // base element
             nestElement: baseElement,       // nest element
-            context: new Map(),             // context value
+            contexts: new Map(),            // context value
             keys: new Set(),                // keys
             listeners: new MapMap(),        // event listners
         };
@@ -111,10 +111,6 @@ export class XBase
         }
     }
 
-    //----------------------------------------------------------------------------------------------------
-    // internal
-    //----------------------------------------------------------------------------------------------------
-    
     // root xnodes
     static roots = new Set();
 
@@ -137,7 +133,7 @@ export class XBase
     static clear()
     {
         this.key = '';
-        this._.context.clear();
+        this._.contexts.clear();
         this.off();
 
         if (this._.baseElement) {
@@ -171,14 +167,14 @@ export class XBase
         return [...this._.keys].join(' ');
     }
 
-    static context(name, value = undefined)
+    static context(key, value = undefined)
     {
         if (value !== undefined) {
-            this._.context.set(name, value);
+            this._.contexts.set(key, value);
         } else {
             for (let xnode = this; xnode instanceof XBase; xnode = xnode.parent) {
-                if (xnode._.context.has(name)) {
-                    return xnode._.context.get(name);
+                if (xnode._.contexts.has(key)) {
+                    return xnode._.contexts.get(key);
                 }
             }
         }
@@ -212,11 +208,9 @@ export class XBase
 
     static emit(type, ...args)
     {
-        if (['~'].includes(type[0])) {
+        if (type[0] === '~') {
             XBase.etypes.get(type)?.forEach((xnode) => {
-                if (xnode._.root === this._.root || type[0] === '#') {
-                    xnode._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
-                }
+                xnode._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
             });
         } else {
             this._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
