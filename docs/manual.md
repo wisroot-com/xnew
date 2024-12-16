@@ -318,7 +318,7 @@ xnew((xnode) => {
 
 - If the parent xnode finalize, the timer is automatically cleared.
 
-## Event listener
+## Listener
 You can set the event listener using `xnode.on`, and fire original event using `xnode.emit`.
 
 ### `xnode.on`
@@ -360,7 +360,7 @@ xnode.emit('myevent', data);
 - `xnode.emit('myevent')` emits only to self xnode, and not to other xnodes.
 - If you add `~` token, it broadcasts to all xnodes. (e.g. `xnode1.emit('~myevent')` -> `xnode2.on('~myevent')`)
 
-## Find xnode
+## Find
 You can find xnodes using key string or component functions.
 
 ### `xnode.key`
@@ -408,9 +408,11 @@ xfind(A); // [xnode4]
 ```
 
 ## Scope 
-`parent`(the first argument of xnew) can be omitted.  
+In `xnew` arguments, `parent` can be omitted.
 However, in callback functions, appropriate parent xnode may not be automatically set.  
 In such cases, the first argument should be set intentionally.  
+
+### example
             
 ```
 xnew((xnode1) => {

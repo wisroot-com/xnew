@@ -19,11 +19,10 @@ npm install xnew
 import { xnew, xcontext, xfind, xtimer, xbasics } from 'xnew'
 ```
 ## Basic usage
-By setting a component function to `xnew`, an instance(`xnode`) of the component will be created.  
+By setting a component function to `xnew`, an instance `xnode` will be created.  
 ```
 const xnode = xnew(Component);    
-```
-```
+
 function Component(xnode) {
     // implement features
 }
@@ -32,7 +31,7 @@ function Component(xnode) {
 You can also use a function literal.  
 ```
 const xnode = xnew((xnode) => {
-    // ...
+    // implement features
 });
 ```
 ## Basic example
@@ -54,9 +53,9 @@ Inside the component function, you can implement various process.
 
         function Component(xnode) {
             xnode.nest({ tagName: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
-            const text = xnew({ tagName: 'span' }, 'start');
+            const text = xnew({ tagName: 'span' }, 'parent: start');
 
-            xnode.on('click', () => {
+            xnode.on('click', (event) => {
                 xnode.state === 'running' ? xnode.stop() : xnode.start();
             });
 
@@ -77,7 +76,7 @@ Inside the component function, you can implement various process.
 </body>
 </html>
 ```
-## Parent-Child relationship
+## Relationship
 If you call `xnew` inside a component function, a parent-child relationship is connected.
 
 <iframe src="./examples/boxinbox.html" style="width: 400px; height: 300px; border: solid 1px #AAA; margin: auto;"></iframe>
@@ -146,4 +145,3 @@ If you call `xnew` inside a component function, a parent-child relationship is c
 ```
 The conencted xnodes will work together.
 For example, when the parent component stop, its children also stop.   
-The updating process works in the order of [child] -> [parent].
