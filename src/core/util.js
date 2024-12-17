@@ -1,20 +1,33 @@
 //----------------------------------------------------------------------------------------------------
+// error 
+//----------------------------------------------------------------------------------------------------
+
+export function error(name, text, target = undefined)
+{
+    console.error(name + (target !== undefined ? ` [${target}]` : '') + ': ' + text);
+}
+
+//----------------------------------------------------------------------------------------------------
 // type check
 //----------------------------------------------------------------------------------------------------
 
-export function isString(value) {
+export function isString(value)
+{
     return typeof value === 'string';
 }
 
-export function isFunction(value) {
+export function isFunction(value)
+{
     return typeof value === 'function';
 }
 
-export function isNumber(value) {
+export function isNumber(value)
+{
     return Number.isFinite(value);
 }
 
-export function isObject(value) {
+export function isObject(value)
+{
     return value !== null && typeof value === 'object' && value.constructor === Object;
 }
 
@@ -75,7 +88,7 @@ export class MapSet extends Map
 
     add(key, value)
     {
-        if (super.has(key) === false) {
+        if (this.has(key) === false) {
             this.set(key, new Set());
         }
         this.get(key).add(value);
@@ -83,8 +96,9 @@ export class MapSet extends Map
 
     delete(key, value)
     {
-        if (super.has(key) === false) return;
-
+        if (this.has(key, value) === false) {
+            return;
+        }
         this.get(key).delete(value);
         if (this.get(key).size === 0) {
             super.delete(key);
@@ -113,6 +127,9 @@ export class MapMap extends Map
 
     get(key, subkey)
     {
+        if (this.has(key, subkey) === false) {
+            return;
+        }
         if (subkey === undefined) {
             return super.get(key);
         } else {
@@ -122,8 +139,9 @@ export class MapMap extends Map
 
     delete(key, subkey)
     {
-        if (super.has(key) === false) return;
-
+        if (super.has(key) === false) {
+            return;
+        }
         super.get(key).delete(subkey);
         if (super.get(key).size === 0) {
             super.delete(key);
@@ -187,10 +205,3 @@ export class Timer
 }
 
 
-//----------------------------------------------------------------------------------------------------
-// error 
-//----------------------------------------------------------------------------------------------------
-
-export function error(name, text, target = undefined) {
-    console.error(name + (target !== undefined ? ` [${target}]` : '') + ': ' + text);
-}
