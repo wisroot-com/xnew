@@ -46,6 +46,35 @@ export function xnew(...args)
     return new XNode(parent, element, ...args);
 }
 
+export function xnest(attributes) {
+    const xnode = XNode.current;
+
+    if (xnode.element instanceof Window || xnode.element instanceof Document) {
+        error('xnext', 'No elements are added to window or document.');
+    } else if (isObject(attributes) === false) {
+        error('xnext', 'The argument is invalid.', 'attributes');
+    } else if (xnode._.state !== 'pending') {
+        error('xnext', 'This function can not be called after initialized.');
+    } else {
+        return XNode.nest.call(xnode, attributes);
+    }
+}
+
+export function xextend(component, ...args)
+{
+    const xnode = XNode.current;
+
+    if (isFunction(component) === false) {
+        error('xextend', 'The argument is invalid.', 'component');
+    } else if (xnode._.state !== 'pending') {
+        error('xextend', 'This function can not be called after initialized.');
+    } else if (xnode._.components.has(component) === true) {
+        error('xextend', 'This function has already been added.');
+    } else {
+        XNode.extend.call(xnode, component, ...args);
+    }
+}
+
 export function xcontext(key, value)
 {
     const xnode = XNode.current;

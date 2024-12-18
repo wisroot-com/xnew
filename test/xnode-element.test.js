@@ -17,17 +17,17 @@ describe('xnode element', () => {
 
     it('create', () => {
         xnew((xnode1) => {
-            xnode1.nest({ tag: 'div', name: 'A' });
+            xnode1.nest({ tagName: 'div', name: 'A' });
             expect(xnode1.element).toBe(document.querySelector('div[name=A]'));
         })
-        xnew({ tag: 'div', name: 'B' }, (xnode1) => {
+        xnew({ tagName: 'div', name: 'B' }, (xnode1) => {
             expect(xnode1.element).toBe(document.querySelector('div[name=B]'));
         })
     });
 
     it('nest', () => {
         const xnode1 = xnew((xnode1) => {
-            xnode1.nest({ tag: 'div', name: 'test' });
+            xnode1.nest({ tagName: 'div', name: 'test' });
             const xnode2 = xnew();
             expect(xnode1.element).toBe(document.querySelector('div[name=test]'));
             expect(xnode2.element).toBe(document.querySelector('div[name=test]'));
@@ -37,7 +37,7 @@ describe('xnode element', () => {
 
     it('delete', () => {
         const xnode1 = xnew((xnode1) => {
-            xnode1.nest({ tag: 'div', name: 'test' });
+            xnest({ tagName: 'div', name: 'test' });
         })
  
         expect(xnode1.element).toBe(document.querySelector('div[name=test]'));

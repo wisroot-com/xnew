@@ -14,7 +14,6 @@ export class XBase
         }
 
         this._ = {
-            root: parent?._.root ?? this,   // root xnode
             parent,                         // parent xnode
             baseElement,                    // base element
             nestElements: [],               // nest elements
@@ -40,11 +39,6 @@ export class XBase
         }
     }
 
-    get root()
-    {
-        return this._.root;
-    }
-
     get parent()
     {
         return this._.parent;
@@ -55,19 +49,11 @@ export class XBase
         return this._.nestElements.slice(-1)[0] ?? this._.baseElement;
     }
     
-    nest(attributes)
+    static nest(attributes)
     {
-        if (this.element instanceof Window || this.element instanceof Document) {
-            error('xnode nest', 'No elements are added to window or document.');
-        } else if (isObject(attributes) === false) {
-            error('xnode nest', 'The argument is invalid.', 'attributes');
-        } else if (this._.state === 'finalized') {
-            error('xnode nest', 'This function can not be called after finalized.');
-        } else if (this.element) {
-            const element = this.element.appendChild(createElement(attributes));
-            this._.nestElements.push(element);
-            return element;
-        }
+        const element = this.element.appendChild(createElement(attributes));
+        this._.nestElements.push(element);
+        return element;
     }
 
     static keys = new MapSet();

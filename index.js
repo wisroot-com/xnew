@@ -1,4 +1,4 @@
-export { xnew, xfind, xcontext, xtimer } from './src/core/xnew';
+export { xnew, xnest, xextend, xfind, xcontext, xtimer } from './src/core/xnew';
 
 import { DragEvent } from './src/basics/DragEvent';
 import { GestureEvent } from './src/basics/GestureEvent';

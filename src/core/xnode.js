@@ -49,13 +49,13 @@ export class XNode extends XBase
             this._.tostart = true;
 
             // nest html element
-            if (isObject(element) === true) {
-                this.nest(element);
+            if (isObject(element) === true && this.element instanceof Element) {
+                XNode.nest.call(this, element);
             }
 
             // setup component
             if (isFunction(component) === true) {
-                this.extend(component, ...args);
+                XNode.extend.call(this, component, ...args);
             } else if (isObject(element) === true && isString(component) === true) {
                 this.element.innerHTML = component;
             }
@@ -67,63 +67,55 @@ export class XNode extends XBase
 
     static components = new MapSet();
 
-    extend(component, ...args)
+    static extend(component, ...args)
     {
-        if (isFunction(component) === false) {
-            error('xnode extend', 'The argument is invalid.', 'component');
-        } else if (this._.state !== 'pending') {
-            error('xnode extend', 'This function can not be called after initialized.');
-        } else if (this._.components.has(component) === true) {
-            error('xnode extend', 'This function has already been added.');
-        } else {
-            this._.components.add(component);
-            XNode.components.add(component, this);
+        this._.components.add(component);
+        XNode.components.add(component, this);
 
-            const props = XNode.scope.call(this, component, this, ...args) ?? {};
-            
-            Object.keys(props).forEach((key) => {
-                const descripter = Object.getOwnPropertyDescriptor(props, key);
+        const props = XNode.scope.call(this, component, this, ...args) ?? {};
+        
+        Object.keys(props).forEach((key) => {
+            const descripter = Object.getOwnPropertyDescriptor(props, key);
 
-                if (key === 'promise') {
-                    if (descripter.value instanceof Promise) {
-                        this._.promises.push(descripter.value);
-                    } else {
-                        error('xnode extend', 'The property is invalid.', key);
-                    }
-                } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
-                    if (isFunction(descripter.value)) {
-                        const previous = this._.props[key];
-                        if (previous !== undefined) {
-                            this._.props[key] = (...args) => { previous(...args); descripter.value(...args); };
-                        } else {
-                            this._.props[key] = (...args) => { descripter.value(...args); };
-                        }
-                    } else {
-                        error('xnode extend', 'The property is invalid.', key);
-                    }
-                } else if (this._.props[key] !== undefined || this[key] === undefined) {
-                    const dest = { configurable: true, enumerable: true };
-
-                    if (isFunction(descripter.value) === true) {
-                        dest.value = (...args) => XNode.scope.call(this, descripter.value, ...args);
-                    } else if (descripter.value !== undefined) {
-                        dest.value = descripter.value;
-                    }
-                    if (isFunction(descripter.get) === true) {
-                        dest.get = (...args) => XNode.scope.call(this, descripter.get, ...args);
-                    }
-                    if (isFunction(descripter.set) === true) {
-                        dest.set = (...args) => XNode.scope.call(this, descripter.set, ...args);
-                    }
-                    Object.defineProperty(this._.props, key, dest);
-                    Object.defineProperty(this, key, dest);
+            if (key === 'promise') {
+                if (descripter.value instanceof Promise) {
+                    this._.promises.push(descripter.value);
                 } else {
-                    error('xnode extend', 'The property already exists.', key);
+                    error('xnode extend', 'The property is invalid.', key);
                 }
-            });
-            const { promise, start, update, stop, finalize, ...original } = props;
-            return original;
-        }
+            } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
+                if (isFunction(descripter.value)) {
+                    const previous = this._.props[key];
+                    if (previous !== undefined) {
+                        this._.props[key] = (...args) => { previous(...args); descripter.value(...args); };
+                    } else {
+                        this._.props[key] = (...args) => { descripter.value(...args); };
+                    }
+                } else {
+                    error('xnode extend', 'The property is invalid.', key);
+                }
+            } else if (this._.props[key] !== undefined || this[key] === undefined) {
+                const dest = { configurable: true, enumerable: true };
+
+                if (isFunction(descripter.value) === true) {
+                    dest.value = (...args) => XNode.scope.call(this, descripter.value, ...args);
+                } else if (descripter.value !== undefined) {
+                    dest.value = descripter.value;
+                }
+                if (isFunction(descripter.get) === true) {
+                    dest.get = (...args) => XNode.scope.call(this, descripter.get, ...args);
+                }
+                if (isFunction(descripter.set) === true) {
+                    dest.set = (...args) => XNode.scope.call(this, descripter.set, ...args);
+                }
+                Object.defineProperty(this._.props, key, dest);
+                Object.defineProperty(this, key, dest);
+            } else {
+                error('xnode extend', 'The property already exists.', key);
+            }
+        });
+        const { promise, start, update, stop, finalize, ...original } = props;
+        return original;
     }
 
     get promise()
@@ -166,15 +158,14 @@ export class XNode extends XBase
 
     static ticker(time)
     {
-        if (this._.resolved === true && this._.tostart === true) {
-            XNode.start.call(this, time);
-            XNode.update.call(this, time);
-        }
+        XNode.start.call(this, time);
+        XNode.update.call(this, time);
     }
     
     static start(time)
     {
-        if (['pending', 'stopped'].includes(this._.state) === true) {
+        if (this._.resolved === false || this._.tostart === false) {
+        } else if (['pending', 'stopped'].includes(this._.state) === true) {
             this._.state = 'running';
             this._.children.forEach((xnode) => XNode.start.call(xnode, time));
 

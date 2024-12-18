@@ -214,7 +214,6 @@
             }
 
             this._ = {
-                root: parent?._.root ?? this,   // root xnode
                 parent,                         // parent xnode
                 baseElement,                    // base element
                 nestElements: [],               // nest elements
@@ -240,11 +239,6 @@
             }
         }
 
-        get root()
-        {
-            return this._.root;
-        }
-
         get parent()
         {
             return this._.parent;
@@ -255,19 +249,11 @@
             return this._.nestElements.slice(-1)[0] ?? this._.baseElement;
         }
         
-        nest(attributes)
+        static nest(attributes)
         {
-            if (this.element instanceof Window || this.element instanceof Document) {
-                error('xnode nest', 'No elements are added to window or document.');
-            } else if (isObject(attributes) === false) {
-                error('xnode nest', 'The argument is invalid.', 'attributes');
-            } else if (this._.state === 'finalized') {
-                error('xnode nest', 'This function can not be called after finalized.');
-            } else if (this.element) {
-                const element = this.element.appendChild(createElement(attributes));
-                this._.nestElements.push(element);
-                return element;
-            }
+            const element = this.element.appendChild(createElement(attributes));
+            this._.nestElements.push(element);
+            return element;
         }
 
         static keys = new MapSet();
@@ -445,13 +431,13 @@
                 this._.tostart = true;
 
                 // nest html element
-                if (isObject(element) === true) {
-                    this.nest(element);
+                if (isObject(element) === true && this.element instanceof Element) {
+                    XNode.nest.call(this, element);
                 }
 
                 // setup component
                 if (isFunction(component) === true) {
-                    this.extend(component, ...args);
+                    XNode.extend.call(this, component, ...args);
                 } else if (isObject(element) === true && isString(component) === true) {
                     this.element.innerHTML = component;
                 }
@@ -463,63 +449,55 @@
 
         static components = new MapSet();
 
-        extend(component, ...args)
+        static extend(component, ...args)
         {
-            if (isFunction(component) === false) {
-                error('xnode extend', 'The argument is invalid.', 'component');
-            } else if (this._.state !== 'pending') {
-                error('xnode extend', 'This function can not be called after initialized.');
-            } else if (this._.components.has(component) === true) {
-                error('xnode extend', 'This function has already been added.');
-            } else {
-                this._.components.add(component);
-                XNode.components.add(component, this);
+            this._.components.add(component);
+            XNode.components.add(component, this);
 
-                const props = XNode.scope.call(this, component, this, ...args) ?? {};
-                
-                Object.keys(props).forEach((key) => {
-                    const descripter = Object.getOwnPropertyDescriptor(props, key);
+            const props = XNode.scope.call(this, component, this, ...args) ?? {};
+            
+            Object.keys(props).forEach((key) => {
+                const descripter = Object.getOwnPropertyDescriptor(props, key);
 
-                    if (key === 'promise') {
-                        if (descripter.value instanceof Promise) {
-                            this._.promises.push(descripter.value);
-                        } else {
-                            error('xnode extend', 'The property is invalid.', key);
-                        }
-                    } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
-                        if (isFunction(descripter.value)) {
-                            const previous = this._.props[key];
-                            if (previous !== undefined) {
-                                this._.props[key] = (...args) => { previous(...args); descripter.value(...args); };
-                            } else {
-                                this._.props[key] = (...args) => { descripter.value(...args); };
-                            }
-                        } else {
-                            error('xnode extend', 'The property is invalid.', key);
-                        }
-                    } else if (this._.props[key] !== undefined || this[key] === undefined) {
-                        const dest = { configurable: true, enumerable: true };
-
-                        if (isFunction(descripter.value) === true) {
-                            dest.value = (...args) => XNode.scope.call(this, descripter.value, ...args);
-                        } else if (descripter.value !== undefined) {
-                            dest.value = descripter.value;
-                        }
-                        if (isFunction(descripter.get) === true) {
-                            dest.get = (...args) => XNode.scope.call(this, descripter.get, ...args);
-                        }
-                        if (isFunction(descripter.set) === true) {
-                            dest.set = (...args) => XNode.scope.call(this, descripter.set, ...args);
-                        }
-                        Object.defineProperty(this._.props, key, dest);
-                        Object.defineProperty(this, key, dest);
+                if (key === 'promise') {
+                    if (descripter.value instanceof Promise) {
+                        this._.promises.push(descripter.value);
                     } else {
-                        error('xnode extend', 'The property already exists.', key);
+                        error('xnode extend', 'The property is invalid.', key);
                     }
-                });
-                const { promise, start, update, stop, finalize, ...original } = props;
-                return original;
-            }
+                } else if (['start', 'update', 'stop', 'finalize'].includes(key)) {
+                    if (isFunction(descripter.value)) {
+                        const previous = this._.props[key];
+                        if (previous !== undefined) {
+                            this._.props[key] = (...args) => { previous(...args); descripter.value(...args); };
+                        } else {
+                            this._.props[key] = (...args) => { descripter.value(...args); };
+                        }
+                    } else {
+                        error('xnode extend', 'The property is invalid.', key);
+                    }
+                } else if (this._.props[key] !== undefined || this[key] === undefined) {
+                    const dest = { configurable: true, enumerable: true };
+
+                    if (isFunction(descripter.value) === true) {
+                        dest.value = (...args) => XNode.scope.call(this, descripter.value, ...args);
+                    } else if (descripter.value !== undefined) {
+                        dest.value = descripter.value;
+                    }
+                    if (isFunction(descripter.get) === true) {
+                        dest.get = (...args) => XNode.scope.call(this, descripter.get, ...args);
+                    }
+                    if (isFunction(descripter.set) === true) {
+                        dest.set = (...args) => XNode.scope.call(this, descripter.set, ...args);
+                    }
+                    Object.defineProperty(this._.props, key, dest);
+                    Object.defineProperty(this, key, dest);
+                } else {
+                    error('xnode extend', 'The property already exists.', key);
+                }
+            });
+            const { promise, start, update, stop, finalize, ...original } = props;
+            return original;
         }
 
         get promise()
@@ -562,15 +540,13 @@
 
         static ticker(time)
         {
-            if (this._.resolved === true && this._.tostart === true) {
-                XNode.start.call(this, time);
-                XNode.update.call(this, time);
-            }
+            XNode.start.call(this, time);
+            XNode.update.call(this, time);
         }
         
         static start(time)
         {
-            if (['pending', 'stopped'].includes(this._.state) === true) {
+            if (this._.resolved === false || this._.tostart === false) ; else if (['pending', 'stopped'].includes(this._.state) === true) {
                 this._.state = 'running';
                 this._.children.forEach((xnode) => XNode.start.call(xnode, time));
 
@@ -679,6 +655,35 @@
         }
 
         return new XNode(parent, element, ...args);
+    }
+
+    function xnest$1(attributes) {
+        const xnode = XNode.current;
+
+        if (xnode.element instanceof Window || xnode.element instanceof Document) {
+            error('xnext', 'No elements are added to window or document.');
+        } else if (isObject(attributes) === false) {
+            error('xnext', 'The argument is invalid.', 'attributes');
+        } else if (xnode._.state !== 'pending') {
+            error('xnext', 'This function can not be called after initialized.');
+        } else {
+            return XNode.nest.call(xnode, attributes);
+        }
+    }
+
+    function xextend(component, ...args)
+    {
+        const xnode = XNode.current;
+
+        if (isFunction(component) === false) {
+            error('xextend', 'The argument is invalid.', 'component');
+        } else if (xnode._.state !== 'pending') {
+            error('xextend', 'This function can not be called after initialized.');
+        } else if (xnode._.components.has(component) === true) {
+            error('xextend', 'This function has already been added.');
+        } else {
+            XNode.extend.call(xnode, component, ...args);
+        }
     }
 
     function xcontext(key, value)
@@ -864,9 +869,9 @@
     }
 
     function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
-        const wrapper = xnode.nest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
-        const absolute = xnode.nest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
-        xnode.nest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
+        const wrapper = xnest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
+        const absolute = xnest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
+        xnest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
 
         const size = { width, height };
         const canvas = xnew({ tagName: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
@@ -934,7 +939,7 @@
     }
 
     function SubWindow(xnode) {
-        const absolute = xnode.nest({ style: 'position: absolute;' });
+        const absolute = xnest({ style: 'position: absolute;' });
         
         return {
             setPosition(x, y) {
@@ -957,7 +962,9 @@
 
     exports.xbasics = xbasics;
     exports.xcontext = xcontext;
+    exports.xextend = xextend;
     exports.xfind = xfind;
+    exports.xnest = xnest$1;
     exports.xnew = xnew;
     exports.xtimer = xtimer;
 

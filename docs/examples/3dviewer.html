@@ -109,7 +109,7 @@
         }
         
         function Contents(xnode, three) {
-            xnode.extend(ThreeObject, three.scene);
+            xextend(ThreeObject, three.scene);
 
             xnew(DirectionaLight, 20, -50, 100);
             xnew(AmbientLight);
@@ -134,13 +134,13 @@
             object.shadow.camera.far = +s * 10.0;
             object.shadow.camera.updateProjectionMatrix ();
 
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
         }
 
         function AmbientLight(xnode) {
             const object = new THREE.AmbientLight(0xFFFFFF, 0.50);
 
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
         }
 
         function Dorm(xnode, size) {
@@ -148,7 +148,7 @@
             const material = new THREE.MeshBasicMaterial({ color: 0xEEEEFF, side: THREE.BackSide });
             const object = new THREE.Mesh(geometry, material);
 
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
         }
 
         function Ground(xnode, size, color) {
@@ -158,7 +158,7 @@
             object.receiveShadow = true;
             object.material.opacity = 0.7;
 
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
         }
 
         function Cube(xnode, x, y, z, size, color) {
@@ -168,7 +168,7 @@
             object.castShadow = true;
             object.position.z = size / 2;
 
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
         }
     </script>
 </body>
