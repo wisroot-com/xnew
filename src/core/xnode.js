@@ -11,11 +11,8 @@ export class XNode extends XBase
         XNode.initialize.call(this, parent, element, component, ...args);
     }
 
-    // root xnodes
-    static roots = new Set();
-
-    // animation callback id
-    static animation = null;
+    static roots = new Set();   // root xnodes
+    static animation = null;    // animation callback id
     
     static reset()
     {
