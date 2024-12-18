@@ -104,8 +104,8 @@
         }
 
         function Contents(xnode, three, pixi) {
-            xnode.extend(ThreeObject, three.scene);
-            xnode.extend(PixiObject, pixi.scene);
+            xextend(ThreeObject, three.scene);
+            xextend(PixiObject, pixi.scene);
 
             xnew(Box, [800 / 2, 400 / 2], [160, 160], 0xEA1E63);
             xnew(Cube, [0, 0, 0], [40, 40, 40]);
@@ -121,7 +121,7 @@
             graphics.drawRect(-sx / 2, -sy / 2, sx, sy);
             graphics.endFill();
            
-            xnode.extend(PixiObject, object);
+            xextend(PixiObject, object);
             
             return {
                 update() {
@@ -135,7 +135,7 @@
             const material = new THREE.MeshNormalMaterial();
             const object = new THREE.Mesh(geometry, material);
             
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
 
             return {
                 update() {

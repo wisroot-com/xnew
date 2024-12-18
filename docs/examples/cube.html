@@ -66,7 +66,7 @@
         }
 
         function Contents(xnode, three) {
-            xnode.extend(ThreeObject, three.scene);
+            xextend(ThreeObject, three.scene);
             xnew(Light);
         
             // call iteratively (delay = 100ms, loop = true)
@@ -77,7 +77,7 @@
             const light = new THREE.PointLight(0xFFFFFF, 1);
             light.position.set(0, 0, +100);
             
-            xnode.extend(ThreeObject, light);
+            xextend(ThreeObject, light);
         }
 
         function Cube(xnode) {
@@ -89,7 +89,7 @@
             object.position.y = 100 * (Math.random() - 0.5);
             object.position.z = 100 * (Math.random() - 0.5);
           
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
 
             const velocity = {};
             velocity.x = Math.random() - 0.5;

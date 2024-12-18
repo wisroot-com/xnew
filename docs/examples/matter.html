@@ -77,7 +77,7 @@
         }
 
         function Contents(xnode, matter) {
-            xnode.extend(MatterObject, matter.engine.world);
+            xextend(MatterObject, matter.engine.world);
 
             xnew(Rectangle, 400, 200, 80, 80);
             xnew(Polygon, 450, 50, 6, 40);
@@ -87,15 +87,15 @@
 
         function Rectangle(xnode, ...args) {
             const object = Matter.Bodies.rectangle(...args)
-            xnode.extend(MatterObject, object);
+            xextend(MatterObject, object);
         }
         function Circle(xnode, ...args) {
             const object = Matter.Bodies.circle(...args)
-            xnode.extend(MatterObject, object);
+            xextend(MatterObject, object);
         }
         function Polygon(xnode, ...args) {
             const object = Matter.Bodies.polygon(...args)
-            xnode.extend(MatterObject, object);
+            xextend(MatterObject, object);
         }
     </script>
 </body>

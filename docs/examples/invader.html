@@ -85,7 +85,7 @@
         }
         
         function Content(xnode, three) {
-            xnode.extend(ThreeObject, three.scene);
+            xextend(ThreeObject, three.scene);
 
             xnew(DirectionaLight, 20, 50, 100);
             xnew(AmbientLight);
@@ -110,13 +110,13 @@
             object.shadow.camera.far = +s * 10.0;
             object.shadow.camera.updateProjectionMatrix ();
 
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
         }
 
         function AmbientLight(xnode) {
             const object = new THREE.AmbientLight(0xFFFFFF, 0.50);
 
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
         }
 
         function Ground(xnode, size, color) {
@@ -125,11 +125,11 @@
             const object = new THREE.Mesh(geometry, material);
             object.receiveShadow = true;
 
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
         }
 
         function Blocks(xnode) {
-            xnode.extend(ThreeObject, new THREE.Group());
+            xextend(ThreeObject, new THREE.Group());
 
             xnew(Block, [-36, -50]);
             xnew(Block, [-12, -50]);
@@ -141,7 +141,7 @@
             const object = new THREE.Group();
             object.position.set(x, y, 0);
 
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
 
             const data = [
                 [0, 0, 0, 1, 0, 0, 0],
@@ -168,7 +168,7 @@
 
         function Block(xnode, [x, y]) {
             const object = new THREE.Group();
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
             object.position.set(x, y, 0);
             const data = [
                 [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
@@ -184,7 +184,7 @@
 
         function CubeArray(xnode, data, offset, size, color) {
             const object = new THREE.Group();
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
 
             for (let y = 0; y < data.length; y++) {
                 for (let x = 0; x < data[y].length; x++) {
@@ -201,7 +201,7 @@
             const geometry = new THREE.BoxGeometry(sx, sy, sz);
             const material = new THREE.MeshLambertMaterial({ color, });
             const object = new THREE.Mesh(geometry, material);
-            xnode.extend(ThreeObject, object);
+            xextend(ThreeObject, object);
             object.position.set(x, y, z);
 
             object.castShadow = true;
