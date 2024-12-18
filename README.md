@@ -2,7 +2,7 @@
 xnew is a javascript library for component based programming.  
 Suitable for a dynamic web site, web games and animation.
 
-[**xnew website**](https://wisroot-com.github.io/xnew)
+[**xnew website**](https://wisroot-com.github.io/xnew.js)
 
 ## setup
 
@@ -17,5 +17,5 @@ Suitable for a dynamic web site, web games and animation.
 npm install xnew@1.6.x
 ```
 ```
-import { xnew, xcontext, xfind, xtimer, xbasics } from 'xnew'
+import { xnew, xnest, xextend, xcontext, xfind, xtimer, xbasics } from 'xnew'
 ```
