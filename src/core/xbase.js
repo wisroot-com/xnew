@@ -8,8 +8,8 @@ export class XBase
         if (element instanceof Element || element instanceof Window || element instanceof Document) {
             baseElement = element;
         } else if (parent !== null) {
-            baseElement = parent._.nestElement;
-        } else if (document !== undefined) {
+            baseElement = parent.element;
+        } else if (document instanceof Document) {
             baseElement = document.body;
         }
 
@@ -17,7 +17,7 @@ export class XBase
             root: parent?._.root ?? this,   // root xnode
             parent,                         // parent xnode
             baseElement,                    // base element
-            nestElement: baseElement,       // nest element
+            nestElements: [],               // nest elements
             contexts: new Map(),            // context value
             keys: new Set(),                // keys
             listeners: new MapMap(),        // event listners
@@ -36,7 +36,7 @@ export class XBase
 
     get element()
     {
-        return this._.nestElement;
+        return this._.nestElements.slice(-1)[0] ?? this._.baseElement;
     }
     
     // current xnode scope
@@ -63,9 +63,10 @@ export class XBase
             error('xnode nest', 'The argument is invalid.', 'attributes');
         } else if (this._.state === 'finalized') {
             error('xnode nest', 'This function can not be called after finalized.');
-        } else if (this._.nestElement) {
-            this._.nestElement = this._.nestElement.appendChild(createElement(attributes));
-            return this.element;
+        } else if (this.element) {
+            const element = this.element.appendChild(createElement(attributes));
+            this._.nestElements.push(element);
+            return element;
         }
     }
 
@@ -154,7 +155,7 @@ export class XBase
     static on(type, listener, options)
     {
         if (this._.listeners.has(type, listener) === false) {
-            const [element, execute] = [this._.nestElement, (...args) => XBase.scope.call(this, listener, ...args)];
+            const [element, execute] = [this.element, (...args) => XBase.scope.call(this, listener, ...args)];
             this._.listeners.set(type, listener, [element, execute]);
             element.addEventListener(type, execute, options);
         }
@@ -205,15 +206,9 @@ export class XBase
         this.off();
         this._.contexts.clear();
 
-        if (this._.baseElement) {
-            let target = this._.nestElement;
-            while (target.parentElement && target.parentElement !== this._.baseElement) {
-                target = target.parentElement;
-            }
-            if (target.parentElement === this._.baseElement) {
-                this._.baseElement.removeChild(target);
-            }
-            this._.nestElement = this._.baseElement;
+        if (this._.nestElements.length > 0) {
+            this._.baseElement.removeChild(this._.nestElements[0]);
+            this._.nestElements = [];
         }
     }
 }

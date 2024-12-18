@@ -32,7 +32,7 @@ export function isObject(value)
 }
 
 //----------------------------------------------------------------------------------------------------
-// create element 
+// create element from attributes
 //----------------------------------------------------------------------------------------------------
 
 export function createElement(attributes)
@@ -80,9 +80,9 @@ export class MapSet extends Map
     has(key, value)
     {
         if (value === undefined) {
-            return super.has(key) === true;
+            return super.has(key);
         } else {
-            return super.has(key) === true && super.get(key).has(value) === true;
+            return super.has(key) && super.get(key).has(value);
         }
     }
 
@@ -111,9 +111,9 @@ export class MapMap extends Map
     has(key, subkey)
     {
         if (subkey === undefined) {
-            return super.has(key) === true;
+            return super.has(key);
         } else {
-            return super.has(key) === true && super.get(key).has(subkey) === true;
+            return super.has(key) && super.get(key).has(subkey);
         }
     }
 
@@ -127,23 +127,20 @@ export class MapMap extends Map
 
     get(key, subkey)
     {
-        if (this.has(key, subkey) === false) {
-            return;
-        }
         if (subkey === undefined) {
             return super.get(key);
         } else {
-            return super.get(key).get(subkey);
+            return super.get(key)?.get(subkey);
         }
     }
 
     delete(key, subkey)
     {
-        if (super.has(key) === false) {
+        if (this.has(key) === false) {
             return;
         }
-        super.get(key).delete(subkey);
-        if (super.get(key).size === 0) {
+        this.get(key).delete(subkey);
+        if (this.get(key).size === 0) {
             super.delete(key);
         }
     }
@@ -203,5 +200,3 @@ export class Timer
         }
     }
 }
-
-

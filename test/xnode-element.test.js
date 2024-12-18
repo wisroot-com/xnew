@@ -26,18 +26,20 @@ describe('xnode element', () => {
     });
 
     it('nest', () => {
-        xnew((xnode1) => {
+        const xnode1 = xnew((xnode1) => {
             xnode1.nest({ tag: 'div', name: 'test' });
             const xnode2 = xnew();
             expect(xnode1.element).toBe(document.querySelector('div[name=test]'));
             expect(xnode2.element).toBe(document.querySelector('div[name=test]'));
         })
+        xnode1.finalize();
     });
 
     it('delete', () => {
         const xnode1 = xnew((xnode1) => {
             xnode1.nest({ tag: 'div', name: 'test' });
         })
+ 
         expect(xnode1.element).toBe(document.querySelector('div[name=test]'));
         xnode1.finalize();
         expect(document.querySelector('div[name=test]')).toBe(null);

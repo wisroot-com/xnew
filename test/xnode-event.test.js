@@ -17,12 +17,12 @@ describe('xnode event', () => {
         expect(state).toBe(1);
     });
 
-    it('broadcast +', () => {
+    it('broadcast ~', () => {
         let state = 0;
         xnew((xnode) => {
-            xnode.on('resolve', () => state++);
-            xnode.emit('+resolve');
-            xnew((xnode) => xnode.emit('+resolve'));
+            xnode.on('~resolve', () => state++);
+            xnode.emit('~resolve');
+            xnew((xnode) => xnode.emit('~resolve'));
         });
         expect(state).toBe(2);
     });

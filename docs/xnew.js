@@ -33,7 +33,7 @@
     }
 
     //----------------------------------------------------------------------------------------------------
-    // create element 
+    // create element from attributes
     //----------------------------------------------------------------------------------------------------
 
     function createElement(attributes)
@@ -79,9 +79,9 @@
         has(key, value)
         {
             if (value === undefined) {
-                return super.has(key) === true;
+                return super.has(key);
             } else {
-                return super.has(key) === true && super.get(key).has(value) === true;
+                return super.has(key) && super.get(key).has(value);
             }
         }
 
@@ -110,9 +110,9 @@
         has(key, subkey)
         {
             if (subkey === undefined) {
-                return super.has(key) === true;
+                return super.has(key);
             } else {
-                return super.has(key) === true && super.get(key).has(subkey) === true;
+                return super.has(key) && super.get(key).has(subkey);
             }
         }
 
@@ -126,23 +126,20 @@
 
         get(key, subkey)
         {
-            if (this.has(key, subkey) === false) {
-                return;
-            }
             if (subkey === undefined) {
                 return super.get(key);
             } else {
-                return super.get(key).get(subkey);
+                return super.get(key)?.get(subkey);
             }
         }
 
         delete(key, subkey)
         {
-            if (super.has(key) === false) {
+            if (this.has(key) === false) {
                 return;
             }
-            super.get(key).delete(subkey);
-            if (super.get(key).size === 0) {
+            this.get(key).delete(subkey);
+            if (this.get(key).size === 0) {
                 super.delete(key);
             }
         }
@@ -211,8 +208,8 @@
             if (element instanceof Element || element instanceof Window || element instanceof Document) {
                 baseElement = element;
             } else if (parent !== null) {
-                baseElement = parent._.nestElement;
-            } else if (document !== undefined) {
+                baseElement = parent.element;
+            } else if (document instanceof Document) {
                 baseElement = document.body;
             }
 
@@ -220,7 +217,7 @@
                 root: parent?._.root ?? this,   // root xnode
                 parent,                         // parent xnode
                 baseElement,                    // base element
-                nestElement: baseElement,       // nest element
+                nestElements: [],               // nest elements
                 contexts: new Map(),            // context value
                 keys: new Set(),                // keys
                 listeners: new MapMap(),        // event listners
@@ -239,7 +236,7 @@
 
         get element()
         {
-            return this._.nestElement;
+            return this._.nestElements.slice(-1)[0] ?? this._.baseElement;
         }
         
         // current xnode scope
@@ -266,9 +263,10 @@
                 error('xnode nest', 'The argument is invalid.', 'attributes');
             } else if (this._.state === 'finalized') {
                 error('xnode nest', 'This function can not be called after finalized.');
-            } else if (this._.nestElement) {
-                this._.nestElement = this._.nestElement.appendChild(createElement(attributes));
-                return this.element;
+            } else if (this.element) {
+                const element = this.element.appendChild(createElement(attributes));
+                this._.nestElements.push(element);
+                return element;
             }
         }
 
@@ -357,7 +355,7 @@
         static on(type, listener, options)
         {
             if (this._.listeners.has(type, listener) === false) {
-                const [element, execute] = [this._.nestElement, (...args) => XBase.scope.call(this, listener, ...args)];
+                const [element, execute] = [this.element, (...args) => XBase.scope.call(this, listener, ...args)];
                 this._.listeners.set(type, listener, [element, execute]);
                 element.addEventListener(type, execute, options);
             }
@@ -408,15 +406,9 @@
             this.off();
             this._.contexts.clear();
 
-            if (this._.baseElement) {
-                let target = this._.nestElement;
-                while (target.parentElement && target.parentElement !== this._.baseElement) {
-                    target = target.parentElement;
-                }
-                if (target.parentElement === this._.baseElement) {
-                    this._.baseElement.removeChild(target);
-                }
-                this._.nestElement = this._.baseElement;
+            if (this._.nestElements.length > 0) {
+                this._.baseElement.removeChild(this._.nestElements[0]);
+                this._.nestElements = [];
             }
         }
     }
