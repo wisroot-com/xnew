@@ -224,21 +224,6 @@
             };
         }
 
-        get root()
-        {
-            return this._.root;
-        }
-
-        get parent()
-        {
-            return this._.parent;
-        }
-
-        get element()
-        {
-            return this._.nestElements.slice(-1)[0] ?? this._.baseElement;
-        }
-        
         // current xnode scope
         static current = null;
 
@@ -255,6 +240,21 @@
             }
         }
 
+        get root()
+        {
+            return this._.root;
+        }
+
+        get parent()
+        {
+            return this._.parent;
+        }
+
+        get element()
+        {
+            return this._.nestElements.slice(-1)[0] ?? this._.baseElement;
+        }
+        
         nest(attributes)
         {
             if (this.element instanceof Window || this.element instanceof Document) {
@@ -270,39 +270,31 @@
             }
         }
 
+        static keys = new MapSet();
+     
         set key(key)
         {
             if (isString(key) === false) {
                 error('xnode key', 'The argument is invalid.', 'key');
             } else {
-                XBase.setkey.call(this, key);
+                this._.keys.forEach((key) => {
+                    XBase.keys.delete(key, this);
+                    this._.keys.delete(key);
+                });
+                key.trim().split(/\s+/).forEach((key) => {
+                    XBase.keys.add(key, this);
+                    this._.keys.add(key);
+                });
             }
         }
 
         get key()
         {
-            return XBase.getkey.call(this);
-        }
-
-        static keys = new MapSet();
-        
-        static setkey(key)
-        {
-            this._.keys.forEach((key) => {
-                XBase.keys.delete(key, this);
-                this._.keys.delete(key);
-            });
-            key.trim().split(/\s+/).forEach((key) => {
-                XBase.keys.add(key, this);
-                this._.keys.add(key);
-            });
-        }
-
-        static getkey()
-        {
             return [...this._.keys].join(' ');
         }
 
+        static etypes = new MapSet();
+      
         on(type, listener, options)
         {
             if (isString(type) === false) {
@@ -310,9 +302,19 @@
             } else if (isFunction(listener) === false) {
                 error('xnode on', 'The argument is invalid.', 'listener');
             } else {
-                type.trim().split(/\s+/).forEach((type) => {
-                    XBase.on.call(this, type, listener, options);
-                });
+                type.trim().split(/\s+/).forEach((type) => internal.call(this, type, listener));
+            }
+
+            function internal(type, listener) {
+                if (this._.listeners.has(type, listener) === false) {
+                    const element = this.element;
+                    const execute = (...args) => XBase.scope.call(this, listener, ...args);
+                    this._.listeners.set(type, listener, [element, execute]);
+                    element.addEventListener(type, execute, options);
+                }
+                if (this._.listeners.has(type) === true) {
+                    XBase.etypes.add(type, this);
+                }
             }
         }
 
@@ -323,17 +325,26 @@
             } else if (listener !== undefined && isFunction(listener) === false) {
                 error('xnode off', 'The argument is invalid.', 'listener');
             } else if (isString(type) === true && listener !== undefined) {
-                type.trim().split(/\s+/).forEach((type) => {
-                    XBase.off.call(this, type, listener);
-                });
+                type.trim().split(/\s+/).forEach((type) => internal.call(this, type, listener));
             } else if (isString(type) === true && listener === undefined) {
                 type.trim().split(/\s+/).forEach((type) => {
-                    this._.listeners.get(type)?.forEach((_, listener) => XBase.off.call(this, type, listener));
+                    this._.listeners.get(type)?.forEach((_, listener) => internal.call(this, type, listener));
                 });
             } else if (type === undefined) {
                 this._.listeners.forEach((map, type) => {
-                    map.forEach((_, listener) => XBase.off.call(this, type, listener));
+                    map.forEach((_, listener) => internal.call(this, type, listener));
                 });
+            }
+
+            function internal(type, listener) {
+                if (this._.listeners.has(type, listener) === true) {
+                    const [element, execute] = this._.listeners.get(type, listener);
+                    this._.listeners.delete(type, listener);
+                    element.removeEventListener(type, execute);
+                }
+                if (this._.listeners.has(type) === false) {
+                    XBase.etypes.delete(type, this);
+                }
             }
         }
 
@@ -344,46 +355,16 @@
             } else if (this._.state === 'finalized') {
                 error('xnode emit', 'This function can not be called after finalized.');
             } else {
-                type.trim().split(/\s+/).forEach((type) => {
-                    XBase.emit.call(this, type, ...args);
-                });
+                type.trim().split(/\s+/).forEach((type) => internal.call(this, type));
             }
-        }
-
-        static etypes = new MapSet();
-      
-        static on(type, listener, options)
-        {
-            if (this._.listeners.has(type, listener) === false) {
-                const [element, execute] = [this.element, (...args) => XBase.scope.call(this, listener, ...args)];
-                this._.listeners.set(type, listener, [element, execute]);
-                element.addEventListener(type, execute, options);
-            }
-            if (this._.listeners.has(type) === true) {
-                XBase.etypes.add(type, this);
-            }
-        }
-
-        static off(type, listener)
-        {
-            if (this._.listeners.has(type, listener) === true) {
-                const [element, execute] = this._.listeners.get(type, listener);
-                this._.listeners.delete(type, listener);
-                element.removeEventListener(type, execute);
-            }
-            if (this._.listeners.has(type) === false) {
-                XBase.etypes.delete(type, this);
-            }
-        }
-        
-        static emit(type, ...args)
-        {
-            if (type[0] === '~') {
-                XBase.etypes.get(type)?.forEach((xnode) => {
-                    xnode._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
-                });
-            } else {
-                this._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
+            function internal(type) {
+                if (type[0] === '~') {
+                    XBase.etypes.get(type)?.forEach((xnode) => {
+                        xnode._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
+                    });
+                } else {
+                    this._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
+                }
             }
         }
 
@@ -392,11 +373,14 @@
             if (value !== undefined) {
                 this._.contexts.set(key, value);
             } else {
-                for (let xnode = this; xnode instanceof XBase; xnode = xnode.parent) {
-                    if (xnode._.contexts.has(key)) {
-                        return xnode._.contexts.get(key);
+                let ret = undefined;
+                for (let target = this; target !== null; target = target.parent) {
+                    if (target._.contexts.has(key)) {
+                        ret = target._.contexts.get(key);
+                        break;
                     }
                 }
+                return ret;
             }
         }
 
@@ -470,7 +454,7 @@
 
                 // setup component
                 if (isFunction(component) === true) {
-                    XNode.extend.call(this, component, ...args);
+                    this.extend(component, ...args);
                 } else if (isObject(element) === true && isString(component) === true) {
                     this.element.innerHTML = component;
                 }
@@ -482,13 +466,19 @@
 
         static components = new MapSet();
 
-        static extend(component, ...args)
+        extend(component, ...args)
         {
-            if (this._.components.has(component) === false) {
+            if (isFunction(component) === false) {
+                error('xnode extend', 'The argument is invalid.', 'component');
+            } else if (this._.state !== 'pending') {
+                error('xnode extend', 'This function can not be called after initialized.');
+            } else if (this._.components.has(component) === true) {
+                error('xnode extend', 'This function has already been added.');
+            } else {
                 this._.components.add(component);
                 XNode.components.add(component, this);
 
-                const props = XBase.scope.call(this, component, this, ...args) ?? {};
+                const props = XNode.scope.call(this, component, this, ...args) ?? {};
                 
                 Object.keys(props).forEach((key) => {
                     const descripter = Object.getOwnPropertyDescriptor(props, key);
@@ -514,15 +504,15 @@
                         const dest = { configurable: true, enumerable: true };
 
                         if (isFunction(descripter.value) === true) {
-                            dest.value = (...args) => XBase.scope.call(this, descripter.value, ...args);
+                            dest.value = (...args) => XNode.scope.call(this, descripter.value, ...args);
                         } else if (descripter.value !== undefined) {
                             dest.value = descripter.value;
                         }
                         if (isFunction(descripter.get) === true) {
-                            dest.get = (...args) => XBase.scope.call(this, descripter.get, ...args);
+                            dest.get = (...args) => XNode.scope.call(this, descripter.get, ...args);
                         }
                         if (isFunction(descripter.set) === true) {
-                            dest.set = (...args) => XBase.scope.call(this, descripter.set, ...args);
+                            dest.set = (...args) => XNode.scope.call(this, descripter.set, ...args);
                         }
                         Object.defineProperty(this._.props, key, dest);
                         Object.defineProperty(this, key, dest);
@@ -532,17 +522,6 @@
                 });
                 const { promise, start, update, stop, finalize, ...original } = props;
                 return original;
-            }
-        }
-
-        extend(component, ...args)
-        {
-            if (isFunction(component) === false) {
-                error('xnode extend', 'The argument is invalid.', 'component');
-            } else if (this._.state !== 'pending') {
-                error('xnode extend', 'This function can not be called after initialized.');
-            } else {
-                return XNode.extend.call(this, component, ...args);
             }
         }
 
@@ -586,54 +565,58 @@
 
         static ticker(time)
         {
-            XNode.start.call(this, time);
-            XNode.update.call(this, time);
+            if (this._.resolved === true && this._.tostart === true) {
+                XNode.start.call(this, time);
+                XNode.update.call(this, time);
+            }
         }
         
-        static start(time) {
-            if (this._.resolved === false || this._.tostart === false) return;
-
+        static start(time)
+        {
             if (['pending', 'stopped'].includes(this._.state) === true) {
                 this._.state = 'running';
                 this._.children.forEach((xnode) => XNode.start.call(xnode, time));
 
                 if (isFunction(this._.props.start) === true) {
-                    XBase.scope.call(this, this._.props.start);
+                    XNode.scope.call(this, this._.props.start);
                 }
             } else if (['running'].includes(this._.state) === true) {
                 this._.children.forEach((xnode) => XNode.start.call(xnode, time));
             }
         }
 
-        static stop() {
+        static stop()
+        {
             if (['running'].includes(this._.state) === true) {
                 this._.state = 'stopped';
                 this._.children.forEach((xnode) => XNode.stop.call(xnode));
 
                 if (isFunction(this._.props.stop)) {
-                    XBase.scope.call(this, this._.props.stop);
+                    XNode.scope.call(this, this._.props.stop);
                 }
             }
         }
 
-        static update(time) {
+        static update(time)
+        {
             if (['running'].includes(this._.state) === true) {
                 this._.children.forEach((xnode) => XNode.update.call(xnode, time));
 
                 if (['running'].includes(this._.state) && isFunction(this._.props.update) === true) {
-                    XBase.scope.call(this, this._.props.update);
+                    XNode.scope.call(this, this._.props.update);
                 }
             }
         }
 
-        static finalize() {
+        static finalize()
+        {
             if (['finalized'].includes(this._.state) === false) {
                 this._.state = 'finalized';
                 
                 [...this._.children].forEach((xnode) => xnode.finalize());
                 
                 if (isFunction(this._.props.finalize)) {
-                    XBase.scope.call(this, this._.props.finalize);
+                    XNode.scope.call(this, this._.props.finalize);
                 }
         
                 this._.components.forEach((component) => {

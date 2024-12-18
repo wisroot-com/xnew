@@ -24,21 +24,6 @@ export class XBase
         };
     }
 
-    get root()
-    {
-        return this._.root;
-    }
-
-    get parent()
-    {
-        return this._.parent;
-    }
-
-    get element()
-    {
-        return this._.nestElements.slice(-1)[0] ?? this._.baseElement;
-    }
-    
     // current xnode scope
     static current = null;
 
@@ -55,6 +40,21 @@ export class XBase
         }
     }
 
+    get root()
+    {
+        return this._.root;
+    }
+
+    get parent()
+    {
+        return this._.parent;
+    }
+
+    get element()
+    {
+        return this._.nestElements.slice(-1)[0] ?? this._.baseElement;
+    }
+    
     nest(attributes)
     {
         if (this.element instanceof Window || this.element instanceof Document) {
@@ -70,39 +70,31 @@ export class XBase
         }
     }
 
+    static keys = new MapSet();
+ 
     set key(key)
     {
         if (isString(key) === false) {
             error('xnode key', 'The argument is invalid.', 'key');
         } else {
-            XBase.setkey.call(this, key);
+            this._.keys.forEach((key) => {
+                XBase.keys.delete(key, this);
+                this._.keys.delete(key);
+            });
+            key.trim().split(/\s+/).forEach((key) => {
+                XBase.keys.add(key, this);
+                this._.keys.add(key);
+            });
         }
     }
 
     get key()
     {
-        return XBase.getkey.call(this);
-    }
-
-    static keys = new MapSet();
-    
-    static setkey(key)
-    {
-        this._.keys.forEach((key) => {
-            XBase.keys.delete(key, this);
-            this._.keys.delete(key);
-        });
-        key.trim().split(/\s+/).forEach((key) => {
-            XBase.keys.add(key, this);
-            this._.keys.add(key);
-        });
-    }
-
-    static getkey()
-    {
         return [...this._.keys].join(' ');
     }
 
+    static etypes = new MapSet();
+  
     on(type, listener, options)
     {
         if (isString(type) === false) {
@@ -110,9 +102,19 @@ export class XBase
         } else if (isFunction(listener) === false) {
             error('xnode on', 'The argument is invalid.', 'listener');
         } else {
-            type.trim().split(/\s+/).forEach((type) => {
-                XBase.on.call(this, type, listener, options);
-            });
+            type.trim().split(/\s+/).forEach((type) => internal.call(this, type, listener));
+        }
+
+        function internal(type, listener) {
+            if (this._.listeners.has(type, listener) === false) {
+                const element = this.element;
+                const execute = (...args) => XBase.scope.call(this, listener, ...args);
+                this._.listeners.set(type, listener, [element, execute]);
+                element.addEventListener(type, execute, options);
+            }
+            if (this._.listeners.has(type) === true) {
+                XBase.etypes.add(type, this);
+            }
         }
     }
 
@@ -123,17 +125,26 @@ export class XBase
         } else if (listener !== undefined && isFunction(listener) === false) {
             error('xnode off', 'The argument is invalid.', 'listener');
         } else if (isString(type) === true && listener !== undefined) {
-            type.trim().split(/\s+/).forEach((type) => {
-                XBase.off.call(this, type, listener);
-            });
+            type.trim().split(/\s+/).forEach((type) => internal.call(this, type, listener));
         } else if (isString(type) === true && listener === undefined) {
             type.trim().split(/\s+/).forEach((type) => {
-                this._.listeners.get(type)?.forEach((_, listener) => XBase.off.call(this, type, listener));
+                this._.listeners.get(type)?.forEach((_, listener) => internal.call(this, type, listener));
             });
         } else if (type === undefined) {
             this._.listeners.forEach((map, type) => {
-                map.forEach((_, listener) => XBase.off.call(this, type, listener));
+                map.forEach((_, listener) => internal.call(this, type, listener));
             });
+        }
+
+        function internal(type, listener) {
+            if (this._.listeners.has(type, listener) === true) {
+                const [element, execute] = this._.listeners.get(type, listener);
+                this._.listeners.delete(type, listener);
+                element.removeEventListener(type, execute);
+            }
+            if (this._.listeners.has(type) === false) {
+                XBase.etypes.delete(type, this);
+            }
         }
     }
 
@@ -144,46 +155,16 @@ export class XBase
         } else if (this._.state === 'finalized') {
             error('xnode emit', 'This function can not be called after finalized.');
         } else {
-            type.trim().split(/\s+/).forEach((type) => {
-                XBase.emit.call(this, type, ...args);
-            });
+            type.trim().split(/\s+/).forEach((type) => internal.call(this, type));
         }
-    }
-
-    static etypes = new MapSet();
-  
-    static on(type, listener, options)
-    {
-        if (this._.listeners.has(type, listener) === false) {
-            const [element, execute] = [this.element, (...args) => XBase.scope.call(this, listener, ...args)];
-            this._.listeners.set(type, listener, [element, execute]);
-            element.addEventListener(type, execute, options);
-        }
-        if (this._.listeners.has(type) === true) {
-            XBase.etypes.add(type, this);
-        }
-    }
-
-    static off(type, listener)
-    {
-        if (this._.listeners.has(type, listener) === true) {
-            const [element, execute] = this._.listeners.get(type, listener);
-            this._.listeners.delete(type, listener);
-            element.removeEventListener(type, execute);
-        }
-        if (this._.listeners.has(type) === false) {
-            XBase.etypes.delete(type, this);
-        }
-    }
-    
-    static emit(type, ...args)
-    {
-        if (type[0] === '~') {
-            XBase.etypes.get(type)?.forEach((xnode) => {
-                xnode._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
-            });
-        } else {
-            this._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
+        function internal(type) {
+            if (type[0] === '~') {
+                XBase.etypes.get(type)?.forEach((xnode) => {
+                    xnode._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
+                });
+            } else {
+                this._.listeners.get(type)?.forEach(([element, execute]) => execute(...args));
+            }
         }
     }
 
@@ -192,11 +173,14 @@ export class XBase
         if (value !== undefined) {
             this._.contexts.set(key, value);
         } else {
-            for (let xnode = this; xnode instanceof XBase; xnode = xnode.parent) {
-                if (xnode._.contexts.has(key)) {
-                    return xnode._.contexts.get(key);
+            let ret = undefined;
+            for (let target = this; target !== null; target = target.parent) {
+                if (target._.contexts.has(key)) {
+                    ret = target._.contexts.get(key);
+                    break;
                 }
             }
+            return ret;
         }
     }
 
