@@ -1,4 +1,4 @@
-# xnew
+# xnew.js
 xnew is a javascript library for component based programming.  
 Suitable for a dynamic web site, web games and animation.
 
