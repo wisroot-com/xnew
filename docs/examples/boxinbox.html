@@ -36,7 +36,7 @@
         }
 
         function Child(xnode) {
-            xnode.nest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
+            xnest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
             const text = xnew({ tagName: 'span' }, 'parent: start');
      
             xnode.on('click', (event) => {

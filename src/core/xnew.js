@@ -34,16 +34,11 @@ export function xnew(...args)
         element = undefined;
     }
 
-    if (args.length > 0) {
-        const component = args[0];
-
-        if (isObject(element) === false && isString(component) === true) {
-            error('xnew', 'The argument is invalid.', 'component');
-            return;
-        }
+    if (args.length > 0 && isObject(element) === false && isString(args[0]) === true) {
+        error('xnew', 'The argument is invalid.', 'component');
+    } else {
+        return new XNode(parent, element, ...args);
     }
-
-    return new XNode(parent, element, ...args);
 }
 
 export function xnest(attributes)

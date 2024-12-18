@@ -105,9 +105,7 @@
             xnew((xnode) => {
                 xnode.stop();
                 xnode.on('~matter.engine.toggle', (scale) => {
-                    console.log(xnode.state)
                     xnode.state === 'running' ? xnode.stop() : xnode.start();
-                    console.log(xnode.state)
                 });
                 return {
                     update() {
