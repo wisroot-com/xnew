@@ -90,11 +90,11 @@ const xnode = xnew({ tagName: 'p', id: 'hoge' }, 'aaa');
         
 ## Element
 There are various ways to create elements.
-### `xnode.nest`
+### `xnest`
 This create a new element as a child of the current element. and replace `xnode.element`.
 ```
-xnode.nest(attributes);
-// e.g.: xnode.nest({ tagName: 'div', type: 'aaa', className: 'bbb', style: 'color: #000;' });
+xnest(attributes);
+// e.g.: xnest({ tagName: 'div', type: 'aaa', className: 'bbb', style: 'color: #000;' });
 ```
 ### example
 ```
@@ -103,12 +103,12 @@ xnew({ tagName: 'div', name: 'A'}, (xnode1) =>{
 });
 
 xnew((xnode2) => {
-    xnode2.nest({ tagName: 'div', name: 'B' });
+    xnest({ tagName: 'div', name: 'B' });
     // xnode2.element: (div B)
 }
 
 xnew({ tagName: 'div', name: 'C' }, (xnode3) => { 
-    xnode3.nest({ tagName: 'div', name: 'D' }); // inner div
+    xnest({ tagName: 'div', name: 'D' }); // inner div
     // xnode3.element: (div D)
     // xnode3.element.parentElement: (div C)
 }
@@ -199,7 +199,7 @@ xnode.state.
 
 ## Original properties
 You can define original properties unless the properties are already defined.  
-(excepting `promise`, `start`, `update`, `stop`, `finalize`, `reboot`, `on`, `off`, `emit`, `key`, `element`, `parent`, `nest`, `extend`, `_`)
+(excepting `promise`, `start`, `update`, `stop`, `finalize`, `reboot`, `on`, `off`, `emit`, `key`, `element`, `parent`, `_`)
 
 ```
 
@@ -228,9 +228,9 @@ const x = xnode.counter; // getter
 
 ## Extend
 You can create a component function that extends another component function.
-### `xnode.extend`
+### `xextend`
 ```
-xnode.extend(component, ...args);
+xextend(component, ...args);
 ```
 ### example
 
@@ -249,7 +249,7 @@ function Base(xnode) {
 ```
 ```
 const xnode = xnew((xnode) => {
-    xnode.extend(Base);
+    xextend(Base);
 
     return {
         update() {
@@ -269,11 +269,11 @@ xnode.hoge();
 ```
 - System properties defined in both component functions are automatically merged.
 - Original properties defined in both component functions are overridden.
-    However, By using the return value of `xnode.extend`, you can change it to execute both.
+    However, By using the return value of `xextend`, you can change it to execute both.
 
 ```
 const xnode = xnew((xnode) => {
-    const props = xnode.extend(Base);
+    const props = xextend(Base);
 
     return {
         update() {
