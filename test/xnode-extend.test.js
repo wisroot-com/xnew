@@ -1,5 +1,5 @@
 import { XNode } from '../src/core/xnode';
-import { xnew } from '../src/core/xnew';
+import { xnew, xextend } from '../src/core/xnew';
 
 beforeEach(() => {
     XNode.reset();
@@ -19,7 +19,7 @@ describe('xnode extend', () => {
         }
 
         function Derived(xnode) {
-            const props = xnode.extend(Base);
+            const props = xextend(Base);
             return {
                 test1() {
                     return props.test1() + 1;

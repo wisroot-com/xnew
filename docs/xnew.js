@@ -657,7 +657,8 @@
         return new XNode(parent, element, ...args);
     }
 
-    function xnest$1(attributes) {
+    function xnest$1(attributes)
+    {
         const xnode = XNode.current;
 
         if (xnode.element instanceof Window || xnode.element instanceof Document) {
@@ -682,7 +683,7 @@
         } else if (xnode._.components.has(component) === true) {
             error('xextend', 'This function has already been added.');
         } else {
-            XNode.extend.call(xnode, component, ...args);
+            return XNode.extend.call(xnode, component, ...args);
         }
     }
 

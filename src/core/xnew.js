@@ -46,7 +46,8 @@ export function xnew(...args)
     return new XNode(parent, element, ...args);
 }
 
-export function xnest(attributes) {
+export function xnest(attributes)
+{
     const xnode = XNode.current;
 
     if (xnode.element instanceof Window || xnode.element instanceof Document) {
@@ -71,7 +72,7 @@ export function xextend(component, ...args)
     } else if (xnode._.components.has(component) === true) {
         error('xextend', 'This function has already been added.');
     } else {
-        XNode.extend.call(xnode, component, ...args);
+        return XNode.extend.call(xnode, component, ...args);
     }
 }
 

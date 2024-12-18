@@ -1,5 +1,5 @@
 import { XNode } from '../src/core/xnode';
-import { xnew } from '../src/core/xnew';
+import { xnew, xnest } from '../src/core/xnew';
 
 beforeEach(() => {
     XNode.reset();
@@ -17,7 +17,7 @@ describe('xnode element', () => {
 
     it('create', () => {
         xnew((xnode1) => {
-            xnode1.nest({ tagName: 'div', name: 'A' });
+            xnest({ tagName: 'div', name: 'A' });
             expect(xnode1.element).toBe(document.querySelector('div[name=A]'));
         })
         xnew({ tagName: 'div', name: 'B' }, (xnode1) => {
@@ -27,18 +27,18 @@ describe('xnode element', () => {
 
     it('nest', () => {
         const xnode1 = xnew((xnode1) => {
-            xnode1.nest({ tagName: 'div', name: 'test' });
+            xnest({ tagName: 'div', name: 'test' });
             const xnode2 = xnew();
             expect(xnode1.element).toBe(document.querySelector('div[name=test]'));
             expect(xnode2.element).toBe(document.querySelector('div[name=test]'));
-        })
+        });
         xnode1.finalize();
     });
 
     it('delete', () => {
         const xnode1 = xnew((xnode1) => {
             xnest({ tagName: 'div', name: 'test' });
-        })
+        });
  
         expect(xnode1.element).toBe(document.querySelector('div[name=test]'));
         xnode1.finalize();
