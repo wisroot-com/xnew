@@ -11,11 +11,10 @@
     <script>
         xnew(() => {
             const xnode1 = xnew(() => {
-                xthis().nest({ tag: 'div', name: 'test' });
+                xnest({ tag: 'div', name: 'test' });
             })
     
             xthis().finalize();
-            console.log(xthis());
         });
 
     </script>
