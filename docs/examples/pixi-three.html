@@ -26,15 +26,10 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew('#main', (xnode) => {
-            // update function is called in the order of [world -> .. -> three -> pixi]
-            const world = xnew();
-
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
 
-            const three = xnew(ThreeMain, screen.canvas);
-            const pixi = xnew(PixiMain, screen.canvas);
-
-            xnew(world, Contents, three, pixi);
+            xnew(ThreeMain, screen.canvas);
+            xnew(PixiMain, screen.canvas);
         });
 
         function ThreeMain(xnode, canvas) {
@@ -44,18 +39,14 @@
             const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
             camera.position.set(0, 0, +100);
 
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xFFFFFF);
+            const content = xnew(ThreeContents);
 
             return {
                 get canvas() {
                     return renderer.domElement;
                 },
-                get scene() {
-                    return scene;
-                },
                 update() {
-                    renderer.render(scene, camera);
+                    renderer.render(content.scene, camera);
                 },
             }
         }
@@ -72,21 +63,28 @@
             }
         }
         
-        function PixiMain(xnode, canvas) {
-            const renderer = PIXI.autoDetectRenderer({ view: canvas, width: canvas.width, height: canvas.height, backgroundColor: '#FFF' });
+        function ThreeContents(xnode) {
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xFFFFFF);
 
-            const scene = new PIXI.Container();
-            const three = xfind(ThreeMain)[0];
-            const background = new PIXI.Sprite(PIXI.Texture.from(three.canvas));
-            scene.addChild(background);
+            xextend(ThreeObject, scene);
 
+            xnew(Cube, [0, 0, 0], [40, 40, 40]);
             return {
                 get scene() {
                     return scene;
                 },
+            }
+        }
+
+        function PixiMain(xnode, canvas) {
+            const renderer = PIXI.autoDetectRenderer({ view: canvas, width: canvas.width, height: canvas.height, backgroundColor: '#FFF' });
+
+            const content = xnew(PixiContents);
+
+            return {
                 update() {
-                    background.texture.update()
-                    renderer.render(scene);
+                    renderer.render(content.scene);
                 },
             };
         }
@@ -103,12 +101,26 @@
             }
         }
 
-        function Contents(xnode, three, pixi) {
-            xextend(ThreeObject, three.scene);
-            xextend(PixiObject, pixi.scene);
+        
+        function PixiContents(xnode) {
+            const scene = new PIXI.Container();
+
+            xextend(PixiObject, scene);
+
+            const three = xfind(ThreeMain)[0];
+            const background = new PIXI.Sprite(PIXI.Texture.from(three.canvas));
+            scene.addChild(background);
 
             xnew(Box, [800 / 2, 400 / 2], [160, 160], 0xEA1E63);
-            xnew(Cube, [0, 0, 0], [40, 40, 40]);
+
+            return {
+                get scene() {
+                    return scene;
+                },
+                update() {
+                    background.texture.update()
+                },
+            };
         }
 
         function Box(xnode, [x, y], [sx, sy], color) {

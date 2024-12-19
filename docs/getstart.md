@@ -6,17 +6,35 @@
 </center>
 
 ## Setup
-### cdn
+### via cdn
 ```
 <script src="https://unpkg.com/xnew@1.6.x/dist/xnew.js"></script>;
 ```
 
-### npm
+### via cdn (ESM)
+```
+<script type="importmap">
+{
+    "imports": {
+        "xnew": "https://unpkg.com/xnew@1.6.x/dist/xnew.mjs"
+    }
+}
+</script>
+
+<script type="module">
+import { xnew, xnest, xextend, xcontext, xfind, xtimer, xbasics } from 'xnew'
+
+// ...
+
+</script>
+```
+
+### via npm
 ```
 npm install xnew
 ```
 ```
-import { xnew, xcontext, xfind, xtimer, xbasics } from 'xnew'
+import { xnew, xnest, xextend, xcontext, xfind, xtimer, xbasics } from 'xnew'
 ```
 ## Basic usage
 By setting a component function to `xnew`, an instance `xnode` will be created.  

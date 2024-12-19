@@ -5,11 +5,19 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="../xnew.js"></script>
+    <!-- <script src="../xnew.js"></script> -->
+    <script type="importmap">
+        {
+          "imports": {
+            "xnew": "https://unpkg.com/xnew@1.6.x/dist/xnew.mjs"
+          }
+        }
+      </script>
 </head>
 
 <body>
-    <script>
+    <script type="module">
+        import { xnew, xnest, xextend, xcontext, xfind, xtimer, xbasics } from 'xnew'
         xnew(Component);
 
         function Component(xnode) {

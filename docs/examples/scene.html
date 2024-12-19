@@ -24,25 +24,18 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         xnew('#main', (xnode) => {
-            // update function is called in the order of [world -> .. -> pixi]
-            const world = xnew();
-
             const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
 
-            const pixi = xnew(PixiMain, screen.canvas);
-
-            xnew(world, Contents, pixi);
+            xnew(PixiMain, screen.canvas);
         });
 
         function PixiMain(xnode, canvas) {
             const renderer = PIXI.autoDetectRenderer({ view: canvas, width: canvas.width, height: canvas.height, backgroundColor: '#FFF' });
-            const scene = new PIXI.Container();
+            const contents = xnew(Contents);
+
             return {
-                get scene() {
-                    return scene;
-                },
                 update() {
-                    renderer.render(scene);
+                    renderer.render(contents.scene);
                 },
             };
         }
@@ -59,9 +52,16 @@
             }
         }
 
-        function Contents(xnode, pixi) {
-            xextend(PixiObject, pixi.scene);
+        function Contents(xnode) {
+            const scene = new PIXI.Container();
+            xextend(PixiObject, scene);
+
             xnew(Scene1);
+            return {
+                get scene() {
+                    return scene;
+                },
+            };
         }
 
         function Scene1(xnode) {
