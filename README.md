@@ -33,7 +33,7 @@ import { xnew, xthis, xnest, xextend, xcontext, xfind, xtimer, xbasics } from 'x
 
 ### via npm
 ```
-npm install xnew@1.6.x
+npm install xnew@2.0.x
 ```
 ```
 import { xnew, xnest, xextend, xcontext, xfind, xtimer, xbasics } from 'xnew'
