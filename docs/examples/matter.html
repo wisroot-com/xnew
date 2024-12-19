@@ -28,6 +28,11 @@
             const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
 
             xnew(MatterMain, screen.canvas);
+    
+            const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
+            button.on('click', () => {
+                button.emit('~matter.reset');
+            });
         });
 
         function MatterMain(canvas) {
@@ -44,10 +49,6 @@
             Matter.Composite.add(engine.world, Matter.MouseConstraint.create(engine, { element: canvas }));
             
             const content = xnew(MatterContents, engine);
-            const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
-            button.on('click', () => {
-                content.reboot(engine);
-            });
 
             return {
                 update() {
@@ -71,6 +72,10 @@
 
         function MatterContents(engine) {
             xextend(MatterObject, engine.world);
+
+            xthis().on('~matter.reset', () => {
+                xthis().reboot(engine);
+            })
 
             xnew(Rectangle, 400, 200, 80, 80);
             xnew(Polygon, 450, 50, 6, 40);

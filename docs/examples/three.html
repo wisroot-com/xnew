@@ -30,7 +30,7 @@
             xnew(ThreeMain, screen.canvas);
         });
 
-        function ThreeMain( canvas) {
+        function ThreeMain(canvas) {
             const renderer = new THREE.WebGLRenderer({ canvas });
             const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
             camera.position.set(0, 0, +100);
