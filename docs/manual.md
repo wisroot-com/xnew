@@ -29,17 +29,17 @@ xnew(parent, element);              // component is omitted
 If you omit the `parent` parameter, the nesting higher xnode or otherwise `null` is assigned.   
     
 ```
-xnew((xnode1) => {
-    // xnode1.parent: null
+const xnode1 = xnew(() => {
+    // xthis().parent: null
 
-    const xnode2 = xnew((xnode2) => {
-        // xnode2.parent: xnode1
+    const xnode2 = xnew(() => {
+        // xthis().parent: xnode1
     });
-    const xnode3 = xnew((xnode3) => {
-        // xnode3.parent: xnode1
+    const xnode3 = xnew(() => {
+        // xthis().parent: xnode1
     });
-    const xnode4 = xnew(xnode2, (xnode4) => {
-        // xnode4.parent: xnode2
+    const xnode4 = xnew(xnode2, () => {
+        // xthis().parent: xnode2
     });
 })
 ```
@@ -59,19 +59,19 @@ If you omit the `element` parameter, the parent xnode's element or otherwise `do
 <div id="hoge"></div>
 
 <script>
-    xnew((xnode1) => {
-        // xnode1.element: document.body
+    xnew(() => {
+        // xthis().element: document.body
     });
 
-    xnew('#hoge', (xnode2) => {
-        // xnode2.element: (id=hoge)
+    xnew('#hoge', () => {
+        // xthis().element: (id=hoge)
 
-        xnew((xnode3) => {
-            // xnode3.element: (id=hoge)
+        xnew(() => {
+            // xthis().element: (id=hoge)
         });
 
-        xnew({ tagName: 'div', id: 'fuga' }, (xnode4) => {
-            // xnode4.element: (id=fuga) (as a child element of hoge)
+        xnew({ tagName: 'div', id: 'fuga' }, () => {
+            // xthis().element: (id=fuga) (as a child element of hoge)
         });
     });
 </script>;
@@ -98,19 +98,19 @@ xnest(attributes);
 ```
 ### example
 ```
-xnew({ tagName: 'div', name: 'A'}, (xnode1) =>{
-    // xnode1.element: (div A)
+xnew({ tagName: 'div', name: 'A'}, () =>{
+    // xthis().element: (div A)
 });
 
-xnew((xnode2) => {
+xnew(() => {
     xnest({ tagName: 'div', name: 'B' });
-    // xnode2.element: (div B)
+    // xthis().element: (div B)
 }
 
-xnew({ tagName: 'div', name: 'C' }, (xnode3) => { 
+xnew({ tagName: 'div', name: 'C' }, () => { 
     xnest({ tagName: 'div', name: 'D' }); // inner div
-    // xnode3.element: (div D)
-    // xnode3.element.parentElement: (div C)
+    // xthis().element: (div D)
+    // xthis().element.parentElement: (div C)
 }
 
 const xnode4 = xnew({ tagName: 'div', name: 'E' }, 'aaa');
@@ -133,10 +133,10 @@ The above code leads to the following result.
 Note that the created elements are removed when the xnodes finalize.
             
 ## System properties
-xnodes has some system properties for basic control. You can define the detail in the response of the component function.
+`xnode` has some system properties for basic control. You can define the detail in the response of the component function.
 
 ```
-const xnode = xnew((xnode) => {
+const xnode = xnew(() => {
     // initialize
 
     return {
@@ -150,7 +150,7 @@ const xnode = xnew((xnode) => {
             // executed repeatedly at the rate available for rendering.
         },
         stop() {
-            // fires when xnode.stop is called.
+            // fires when xnode.stop() is called.
         },
         finalize() {
             // fires when xnode.finalize() is called.
@@ -203,7 +203,7 @@ You can define original properties unless the properties are already defined.
 
 ```
 
-const xnode = xnew((xnode) =>  {
+const xnode = xnew(() =>  {
     let counter = 0;
 
     return {
@@ -236,7 +236,7 @@ xextend(component, ...args);
 
 ```
 // base component function
-function Base(xnode) {
+function Base() {
     return {
         update() {
             console.log('base update');
@@ -248,7 +248,7 @@ function Base(xnode) {
 }
 ```
 ```
-const xnode = xnew((xnode) => {
+const xnode = xnew(() => {
     xextend(Base);
 
     return {
@@ -272,13 +272,13 @@ xnode.hoge();
     However, By using the return value of `xextend`, you can change it to execute both.
 
 ```
-const xnode = xnew((xnode) => {
+const xnode = xnew(() => {
     const props = xextend(Base);
 
     return {
         update() {
             console.log('derived update');
-            xnode.stop();
+            xthis().stop();
         },
         hoge() {
             props.hoge(); // execute Base component hoge
@@ -305,7 +305,7 @@ xtimer(callback, delay, loop = false);
 ### example
 
 ```
-xnew((xnode) => {
+xnew(() => {
     const timer = xtimer(() => {
         // This function is called after 100 ms.
     }, 100);
@@ -341,7 +341,8 @@ xnode.emit(type, ...args);
 
 ### example
 ```
-const xnode = xnew((xnode) => {
+const xnode = xnew(() => {
+    const xnode = xthis();
     xnode.on('click', (event) => {
         // fires when the xnode's element is clicked.
     });
@@ -380,16 +381,16 @@ const xnodes = xfind(key);
 
 ### example
 ```
-xnew((xnode1) => {
-    xnode1.key = 'aaa';
+xnew(() => {
+    xthis().key = 'aaa';
 });
 
-xnew((xnode2) => {
-    xnode2.key = 'bbb';
+xnew(() => {
+    xthis().key = 'bbb';
 });
 
-xnew((xnode3) => {
-    xnode3.key = 'bbb ccc';
+xnew(() => {
+    xthis().key = 'bbb ccc';
 });
 
 xfind('aaa'); // [xnode1]
@@ -399,7 +400,7 @@ xfind('aaa bbb'); // [xnode1, xnode2, xnode3]
 
 const xnode4 = xnew(A);
 
-function A(xnode) {
+function A() {
 }
 
 xfind(A); // [xnode4]        
@@ -415,7 +416,9 @@ In such cases, the first argument should be set intentionally.
 ### example
             
 ```
-xnew((xnode1) => {
+xnew(() => {
+    const xnode1 = xthis();
+
     // ----------------------------------------
     // appropriate parent is set
     // ----------------------------------------
@@ -476,18 +479,18 @@ xcontext(name);
 
 ### example
 ```
-xnew((xnode) => {
+xnew(() => {
     xcontext('hoge', 1);
     xcontext('hoge');    // 1
 
-    xnew((xnode) => {
+    xnew(() => {
         xcontext('hoge'); // 1
 
-        xnew((xnode) => {
+        xnew(() => {
             xcontext('hoge', 2);
             xcontext('hoge');    // 2
 
-            xnew((xnode) => {
+            xnew(() => {
                 xcontext('hoge'); // 2
             });
         });

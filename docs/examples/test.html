@@ -9,13 +9,13 @@
 
 <body>
     <script>
-        xnew((xnode) => {
-            const xnode1 = xnew((xnode1) => {
-                xnode1.nest({ tag: 'div', name: 'test' });
+        xnew(() => {
+            const xnode1 = xnew(() => {
+                xthis().nest({ tag: 'div', name: 'test' });
             })
     
-            xnode1.finalize();
-            console.log(xnode1);
+            xthis().finalize();
+            console.log(xthis());
         });
 
     </script>

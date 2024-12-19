@@ -24,7 +24,7 @@
 <body>
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
-        xnew('#main', (xnode) => {
+        xnew('#main', () => {
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
 
             xnew(PixiMain, screen.canvas);
@@ -32,7 +32,7 @@
             xnew(Controller);
         });
 
-        function PixiMain(xnode, canvas) {
+        function PixiMain(canvas) {
             const renderer = PIXI.autoDetectRenderer({ view: canvas, width: canvas.width, height: canvas.height, backgroundColor: '#FFF' });
             const contents = xnew(PixiContents);
             
@@ -43,7 +43,7 @@
             };
         }
         
-        function PixiObject(xnode, object) {
+        function PixiObject(object) {
             const parent = xcontext('PixiObject');
             xcontext('PixiObject', object);
             
@@ -55,7 +55,7 @@
             }
         }
 
-        function PixiContents(xnode) {
+        function PixiContents() {
             const scene = new PIXI.Container();
             xextend(PixiObject, scene);
        
@@ -68,7 +68,8 @@
             };
         }
 
-        function Controller(xnode) {
+        function Controller() {
+            const xnode = xthis();
             xnode.on('touchstart contextmenu wheel', (event) => {
                 event.preventDefault();
             });
@@ -87,7 +88,7 @@
             })
         }
 
-        function Box(xnode, [x, y], [sx, sy], color) {
+        function Box([x, y], [sx, sy], color) {
             const object = new PIXI.Container();
             xextend(PixiObject, object);
             
@@ -101,6 +102,7 @@
 
             let move = null;
             let direction = +1;
+            const xnode = xthis();
             xnode.on('~box.move', (vector) => {
                 move = vector;
             });
@@ -119,7 +121,7 @@
             };
         }
 
-        function AnalogStick(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+        function AnalogStick({ size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
             xnest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
 
             const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
@@ -135,6 +137,7 @@
                 <circle cx="50" cy="50" r="23"></circle>
             `);
 
+            const xnode = xthis();
             const drag = xnew(xbasics.DragEvent);
 
             drag.on('down move', (event, { type, position }) => {
@@ -160,7 +163,7 @@
             });
         }
 
-        function DPad(xnode, { size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+        function DPad({ size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
             xnest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
 
             const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
@@ -192,6 +195,7 @@
                 <polygon points="89 50 80 42 80 58"></polygon>
             `);
 
+            const xnode = xthis();
             const drag = xnew(xbasics.DragEvent);
 
             drag.on('down move', (event, { type, position }) => {
@@ -220,7 +224,7 @@
             });
         }
 
-        function CircleButton(xnode, { size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
+        function CircleButton({ size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
             xnest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
             const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
             const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -229,6 +233,7 @@
                 <circle cx="50" cy="50" r="40"></circle>
             `);
 
+            const xnode = xthis();
             const drag = xnew(target, xbasics.DragEvent);
 
             drag.on('down', (event, ex) => {

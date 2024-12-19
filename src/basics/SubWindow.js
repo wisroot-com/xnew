@@ -1,7 +1,8 @@
-import { xnew } from '../core/xnew';
+import { xnew, xthis } from '../core/xnew';
 import { DragEvent } from './DragEvent';
 
-export function SubWindow(xnode) {
+export function SubWindow() {
+    const xnode = xthis();
     const absolute = xnest({ style: 'position: absolute;' });
     
     return {

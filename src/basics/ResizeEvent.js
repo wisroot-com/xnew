@@ -1,6 +1,7 @@
-import { xnew } from '../core/xnew';
+import { xnew, xthis } from '../core/xnew';
 
-export function ResizeEvent(xnode) {
+export function ResizeEvent() {
+    const xnode = xthis();
 
     const observer = new ResizeObserver((entries) => {
         for (const entry of entries) {

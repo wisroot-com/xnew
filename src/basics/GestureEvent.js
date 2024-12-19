@@ -1,7 +1,8 @@
-import { xnew } from '../core/xnew';
+import { xnew, xthis } from '../core/xnew';
 import { DragEvent } from './DragEvent';
 
-export function GestureEvent(xnode) {
+export function GestureEvent() {
+    const xnode = xthis();
     const drag = xnew(DragEvent);
 
     let isActive = false;

@@ -11,13 +11,13 @@
 <body>
     <div id="main" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap;"></div>
     <script>
-        xnew('#main', (xnode) => {            
+        xnew('#main', () => {            
             xnew(Screen, 'object fit: contain (default)', 'contain');
             xnew(Screen, 'object fit: cover', 'cover');
             xnew(Screen, 'object fit: fill', 'fill');
         });
 
-        function Screen(xnode, text, objectFit) {
+        function Screen(text, objectFit) {
             xnest({ style: 'margin: 8px auto;' });
 
             xnew({ tagName: 'p' }, text);
@@ -27,7 +27,7 @@
             });
         }
 
-        function Draw(xnode, canvas) {
+        function Draw(canvas) {
             const ctx = canvas.getContext('2d');
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;

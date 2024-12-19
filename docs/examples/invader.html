@@ -24,7 +24,7 @@
 <body>
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
-        xnew('#main', (xnode) => {
+        xnew('#main', () => {
             const screen = xnew(xbasics.Screen, { width: 1200, height: 800 });
         
             // setting for three.js
@@ -34,7 +34,7 @@
             xnew(Content, three);
         });
 
-        function ThreeMain(xnode, canvas) {
+        function ThreeMain(canvas) {
             const renderer = new THREE.WebGLRenderer({ canvas });
             const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
             camera.position.set(0, -5, +150);
@@ -53,7 +53,7 @@
             }
         }
 
-        function ThreeObject(xnode, object) {
+        function ThreeObject(object) {
             const parent = xcontext('ThreeObject');
             xcontext('ThreeObject', object);
 
@@ -65,7 +65,7 @@
             }
         }
         
-        function Controller(xnode) {
+        function Controller() {
             const dpad = xnew({ style: 'position: absolute; left: 10px; bottom: 20px; z-index: 10;' }, xbasics.DPad);
             dpad.on('down move up', (event, ex) => {
                 dpad.emit('#object.move', ex);
@@ -84,7 +84,7 @@
             });
         }
         
-        function Content(xnode, three) {
+        function Content(three) {
             xextend(ThreeObject, three.scene);
 
             xnew(DirectionaLight, 20, 50, 100);
@@ -95,7 +95,7 @@
             xnew(Player, [0, -65]);
         }
 
-        function DirectionaLight(xnode, x, y, z) {
+        function DirectionaLight(x, y, z) {
             const object = new THREE.DirectionalLight(0xFFFFFF, 0.40);
             object.position.set(x, y, z);
             const s = object.position.length();
@@ -113,13 +113,13 @@
             xextend(ThreeObject, object);
         }
 
-        function AmbientLight(xnode) {
+        function AmbientLight() {
             const object = new THREE.AmbientLight(0xFFFFFF, 0.50);
 
             xextend(ThreeObject, object);
         }
 
-        function Ground(xnode, size, color) {
+        function Ground(size, color) {
             const geometry = new THREE.PlaneGeometry(size, size, 1, 1);
             const material = new THREE.MeshStandardMaterial({ color });
             const object = new THREE.Mesh(geometry, material);
@@ -128,7 +128,7 @@
             xextend(ThreeObject, object);
         }
 
-        function Blocks(xnode) {
+        function Blocks() {
             xextend(ThreeObject, new THREE.Group());
 
             xnew(Block, [-36, -50]);
@@ -137,7 +137,7 @@
             xnew(Block, [+36, -50]);
         }
 
-        function Player(xnode, [x, y]) {
+        function Player([x, y]) {
             const object = new THREE.Group();
             object.position.set(x, y, 0);
 
@@ -153,7 +153,7 @@
             xnew(CubeArray, data, [3, 2], 4, 0xAAFFAA);
 
             let move = null;
-            xnode.on('object.move', ({ vector }) => {
+            xthis().on('object.move', ({ vector }) => {
                 move = vector;
             });
             return {
@@ -166,7 +166,7 @@
             };
         }
 
-        function Block(xnode, [x, y]) {
+        function Block([x, y]) {
             const object = new THREE.Group();
             xextend(ThreeObject, object);
             object.position.set(x, y, 0);
@@ -182,7 +182,7 @@
             xnew(CubeArray, data, [5, 4], 6, 0xFFAAAA);
         }
 
-        function CubeArray(xnode, data, offset, size, color) {
+        function CubeArray(data, offset, size, color) {
             const object = new THREE.Group();
             xextend(ThreeObject, object);
 
@@ -197,7 +197,7 @@
             }
         }
 
-        function Cube(xnode, [x, y, z], [sx, sy, sz], color) {
+        function Cube([x, y, z], [sx, sy, sz], color) {
             const geometry = new THREE.BoxGeometry(sx, sy, sz);
             const material = new THREE.MeshLambertMaterial({ color, });
             const object = new THREE.Mesh(geometry, material);

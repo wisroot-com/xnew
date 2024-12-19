@@ -24,13 +24,13 @@
 <body>
     <div id="main" style="position: relative; width: 100%; height: 100%;"></div>
     <script>
-        xnew('#main', (xnode) => {
+        xnew('#main', () => {
             const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
 
             xnew(MatterMain, screen.canvas);
         });
 
-        function MatterMain(xnode, canvas) {
+        function MatterMain(canvas) {
             const engine = Matter.Engine.create();
             const render = Matter.Render.create({ canvas, engine,
                 options: {
@@ -57,7 +57,7 @@
             }
         }
         
-        function MatterObject(xnode, object) {
+        function MatterObject(object) {
             const parent = xcontext('Matter.Composite');
             xcontext('Matter.Composite', object);
                 
@@ -69,7 +69,7 @@
             }
         }
 
-        function MatterContents(xnode, engine) {
+        function MatterContents(engine) {
             xextend(MatterObject, engine.world);
 
             xnew(Rectangle, 400, 200, 80, 80);
@@ -78,15 +78,15 @@
             xnew(Rectangle, 400, 400, 800, 20, { isStatic: true });
         }
 
-        function Rectangle(xnode, ...args) {
+        function Rectangle(...args) {
             const object = Matter.Bodies.rectangle(...args)
             xextend(MatterObject, object);
         }
-        function Circle(xnode, ...args) {
+        function Circle(...args) {
             const object = Matter.Bodies.circle(...args)
             xextend(MatterObject, object);
         }
-        function Polygon(xnode, ...args) {
+        function Polygon(...args) {
             const object = Matter.Bodies.polygon(...args)
             xextend(MatterObject, object);
         }

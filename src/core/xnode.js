@@ -72,7 +72,7 @@ export class XNode extends XBase
         this._.components.add(component);
         XNode.components.add(component, this);
 
-        const props = XNode.scope.call(this, component, this, ...args) ?? {};
+        const props = XNode.scope.call(this, component, ...args) ?? {};
         
         Object.keys(props).forEach((key) => {
             const descripter = Object.getOwnPropertyDescriptor(props, key);

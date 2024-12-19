@@ -11,13 +11,13 @@
 <body>
     <div id="main" style="position: relative; height: 400px; margin: 26px; border: solid 1px #00F; overflow: hidden;"></div>
     <script>
-        xnew('#main', (xnode) => {
-            const subwindow = xnew((xnode) => {
+        xnew('#main', () => {
+            const subwindow = xnew(() => {
                 xextend(xbasics.SubWindow);
                 xnew({ style: 'width: 100px; height: 100px; background: #AAA; border: solid 10px #000; border-radius: 4px;' }, (xnode) => {
                     xnew({ tagName: 'button' }, 'test');
                 });
-
+                const xnode = xthis();
                 const drag = xnew(xbasics.DragEvent);
 
                 let offset = { x: 0, y: 0 };

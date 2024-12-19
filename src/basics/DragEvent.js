@@ -1,6 +1,7 @@
-import { xnew } from '../core/xnew';
+import { xnew, xthis } from '../core/xnew';
 
-export function DragEvent(xnode) {
+export function DragEvent() {
+    const xnode = xthis();
     let isActive = false;
   
     const base = xnew();

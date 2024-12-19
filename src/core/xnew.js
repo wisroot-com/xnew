@@ -41,6 +41,11 @@ export function xnew(...args)
     }
 }
 
+export function xthis()
+{
+    return XNode.current;
+}
+
 export function xnest(attributes)
 {
     const xnode = XNode.current;

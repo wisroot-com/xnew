@@ -11,14 +11,14 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         
-        xnew('#main', (xnode) => {
+        xnew('#main', () => {
             xnew(Div1);
             xnew(Div2);
             xnew(Div3);
             xnew(Div4);
         });
 
-        function Div1(xnode) {
+        function Div1() {
             xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
 
             xnew({ tagName: 'p' }, 'my div');
@@ -29,7 +29,7 @@
             });
         }
 
-        function Div2(xnode) {
+        function Div2() {
             xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
           
             xnew({ tagName: 'p' }, 'my button');
@@ -42,7 +42,7 @@
             })
         }
 
-        function Div3(xnode) {
+        function Div3() {
             xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
          
             xnew({ tagName: 'p' }, 'my input text');
@@ -55,7 +55,7 @@
             })
         }
 
-        function Div4(xnode) {
+        function Div4() {
             xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
         
             xnew({ tagName: 'p' }, 'my canvas');
@@ -64,7 +64,7 @@
             xnew(Content, canvas.element);
         }
 
-        function Content(xnode, canvas) {
+        function Content(canvas) {
             const ctx = canvas.getContext('2d');
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;

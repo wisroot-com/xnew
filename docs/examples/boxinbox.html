@@ -11,12 +11,13 @@
     <script>
         xnew(Parent);
 
-        function Parent(xnode) {
+        function Parent() {
             xnest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
             const text = xnew({ tagName: 'span' }, 'parent: start');
 
             xnew(Child);
 
+            const xnode = xthis();
             xnode.on('click', () => {
                 xnode.state === 'running' ? xnode.stop() : xnode.start();
             });
@@ -35,10 +36,11 @@
             };
         }
 
-        function Child(xnode) {
+        function Child() {
             xnest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
             const text = xnew({ tagName: 'span' }, 'parent: start');
      
+            const xnode = xthis();
             xnode.on('click', (event) => {
                 event.stopPropagation(); // cancel propagation to the parent element
                 xnode.state === 'running' ? xnode.stop() : xnode.start();

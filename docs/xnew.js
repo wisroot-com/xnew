@@ -454,7 +454,7 @@
             this._.components.add(component);
             XNode.components.add(component, this);
 
-            const props = XNode.scope.call(this, component, this, ...args) ?? {};
+            const props = XNode.scope.call(this, component, ...args) ?? {};
             
             Object.keys(props).forEach((key) => {
                 const descripter = Object.getOwnPropertyDescriptor(props, key);
@@ -652,6 +652,11 @@
         }
     }
 
+    function xthis()
+    {
+        return XNode.current;
+    }
+
     function xnest$1(attributes)
     {
         const xnode = XNode.current;
@@ -740,7 +745,8 @@
         return timer;
     }
 
-    function DragEvent(xnode) {
+    function DragEvent() {
+        const xnode = xthis();
         let isActive = false;
       
         const base = xnew();
@@ -796,7 +802,8 @@
         }
     }
 
-    function GestureEvent(xnode) {
+    function GestureEvent() {
+        const xnode = xthis();
         const drag = xnew(DragEvent);
 
         let isActive = false;
@@ -843,7 +850,8 @@
         }
     }
 
-    function ResizeEvent(xnode) {
+    function ResizeEvent() {
+        const xnode = xthis();
 
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
@@ -864,7 +872,7 @@
         }
     }
 
-    function Screen(xnode, { width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
+    function Screen({ width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
         const wrapper = xnest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
         const absolute = xnest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
         xnest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
@@ -934,7 +942,8 @@
         }
     }
 
-    function SubWindow(xnode) {
+    function SubWindow() {
+        xthis();
         const absolute = xnest({ style: 'position: absolute;' });
         
         return {
@@ -962,6 +971,7 @@
     exports.xfind = xfind;
     exports.xnest = xnest$1;
     exports.xnew = xnew;
+    exports.xthis = xthis;
     exports.xtimer = xtimer;
 
 }));

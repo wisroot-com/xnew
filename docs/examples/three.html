@@ -24,13 +24,13 @@
 <body>
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
-        xnew('#main', (xnode) => {
+        xnew('#main', () => {
             const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
 
             xnew(ThreeMain, screen.canvas);
         });
 
-        function ThreeMain(xnode, canvas) {
+        function ThreeMain( canvas) {
             const renderer = new THREE.WebGLRenderer({ canvas });
             const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
             camera.position.set(0, 0, +100);
@@ -43,7 +43,7 @@
             }
         }
         
-        function ThreeObject(xnode, object) {
+        function ThreeObject(object) {
             const parent = xcontext('THREE.Object3D');
             xcontext('THREE.Object3D', object);
 
@@ -55,7 +55,7 @@
             }
         }
 
-        function ThreeContents(xnode) {
+        function ThreeContents() {
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0xFFFFFF);
 
