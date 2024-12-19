@@ -49,7 +49,7 @@
                 camera.position.y += move.y * camera.position.z * 0.001;
             })
 
-            const contents = xnew(Contents);
+            const contents = xnew(ThreeContents);
 
             return {
                 update() {
@@ -59,8 +59,8 @@
         }
 
         function ThreeObject(xnode, object) {
-            const parent = xcontext('ThreeObject');
-            xcontext('ThreeObject', object);
+            const parent = xcontext('THREE.Object3D');
+            xcontext('THREE.Object3D', object);
 
             parent?.add(object);
             return {
@@ -95,15 +95,16 @@
             });
         }
 
-        function Contents(xnode) {
+        function ThreeContents(xnode) {
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0xFFFFFF);
             scene.rotation.x = -60 / 180 * Math.PI
+            xextend(ThreeObject, scene);
+         
             xnode.on('~scene.rotate', (move) => {
                 scene.rotation.x += move.y * 0.01;
                 scene.rotation.z += move.x * 0.01;
             })
-            xextend(ThreeObject, scene);
 
             xnew(DirectionaLight, 20, -50, 100);
             xnew(AmbientLight);

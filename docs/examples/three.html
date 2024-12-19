@@ -35,7 +35,7 @@
             const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
             camera.position.set(0, 0, +100);
 
-            const content = xnew(Contents);
+            const content = xnew(ThreeContents);
             return {
                 update() {
                     renderer.render(content.scene, camera);
@@ -44,8 +44,8 @@
         }
         
         function ThreeObject(xnode, object) {
-            const parent = xcontext('ThreeObject');
-            xcontext('ThreeObject', object);
+            const parent = xcontext('THREE.Object3D');
+            xcontext('THREE.Object3D', object);
 
             parent?.add(object);
             return {
@@ -55,7 +55,7 @@
             }
         }
 
-        function Contents(xnode) {
+        function ThreeContents(xnode) {
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0xFFFFFF);
 

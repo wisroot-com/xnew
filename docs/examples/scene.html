@@ -31,7 +31,7 @@
 
         function PixiMain(xnode, canvas) {
             const renderer = PIXI.autoDetectRenderer({ view: canvas, width: canvas.width, height: canvas.height, backgroundColor: '#FFF' });
-            const contents = xnew(Contents);
+            const contents = xnew(PixiContents);
 
             return {
                 update() {
@@ -41,8 +41,8 @@
         }
 
         function PixiObject(xnode, object) {
-            const parent = xcontext('PixiObject');
-            xcontext('PixiObject', object);
+            const parent = xcontext('PIXI.DisplayObject');
+            xcontext('PIXI.DisplayObject', object);
             
             parent?.addChild(object);
             return {
@@ -52,7 +52,7 @@
             }
         }
 
-        function Contents(xnode) {
+        function PixiContents(xnode) {
             const scene = new PIXI.Container();
             xextend(PixiObject, scene);
 

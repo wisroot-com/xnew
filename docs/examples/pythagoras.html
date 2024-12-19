@@ -29,15 +29,10 @@
     <script>
         xnew((xnode) => {
             xnew('#view', (xnode) => {
-                // update function is called in the order of [world -> .. -> matter]
-                const world = xnew();
-
                 const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
 
-                const matter = xnew(MatterMain, screen.canvas);
+                xnew(MatterMain, screen.canvas);
                 xnew(Event, screen.canvas);
-
-                const contents = xnew(world, Contents, matter);
             });
 
             xnew('#list', (xnode) => {
@@ -65,11 +60,9 @@
                 }
             });
             xnew(MatterController, engine, render)
+            const contents = xnew(MatterContents, engine);
 
             return {
-                get engine() {
-                    return engine;
-                },
                 update() {
                     Matter.Render.world(render);
                 }
@@ -150,8 +143,8 @@
         }
 
         function MatterObject(xnode, object) {
-            const parent = xcontext('MatterObject');
-            xcontext('MatterObject', object);
+            const parent = xcontext('Matter.Composite');
+            xcontext('Matter.Composite', object);
                 
             parent && Matter.Composite.add(parent, object);
             return {
@@ -190,9 +183,9 @@
                 xnode.emit('~matter.object.unselect');
             });
         }   
-        function Contents(xnode, matter) {
-            xextend(MatterObject, matter.engine.world);
-            xnode.on('~reboot', () => xnode.reboot(matter));
+        function MatterContents(xnode, engine) {
+            xextend(MatterObject, engine.world);
+            xnode.on('~reboot', () => xnode.reboot(engine));
 
             xnew(Rectangle, 400, 200, 80, 80);
             xnew(Polygon, 450, 50, 6, 40);

@@ -43,8 +43,8 @@
         }
 
         function PixiObject(xnode, object) {
-            const parent = xcontext('PixiObject');
-            xcontext('PixiObject', object);
+            const parent = xcontext('PIXI.DisplayObject');
+            xcontext('PIXI.DisplayObject', object);
             
             parent?.addChild(object);
             return {

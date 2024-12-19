@@ -52,8 +52,8 @@
         }
 
         function ThreeObject(xnode, object) {
-            const parent = xcontext('ThreeObject');
-            xcontext('ThreeObject', object);
+            const parent = xcontext('THREE.Object3D');
+            xcontext('THREE.Object3D', object);
 
             parent?.add(object);
             return {
@@ -90,8 +90,8 @@
         }
 
         function PixiObject(xnode, object) {
-            const parent = xcontext('PixiObject');
-            xcontext('PixiObject', object);
+            const parent = xcontext('PIXI.DisplayObject');
+            xcontext('PIXI.DisplayObject', object);
             
             parent?.addChild(object);
             return {
