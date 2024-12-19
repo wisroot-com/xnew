@@ -1,60 +1,100 @@
-# xnew
+# xnew.js
 ![](introduction.png)  
 <center>
-<p>xnew is a javascript library for component based programming.</p>
+<p>xnew.js is a javascript library for component oriented programming.</p>
 <p>Suitable for a dynamic web site, web games and animation.</p>
 </center>
 
 ## Setup
-### cdn
+### via cdn
 ```
-<script src="https://unpkg.com/xnew@1.6.x/dist/xnew.js"></script>;
+<script src="https://unpkg.com/xnew@2.0.x/dist/xnew.js"></script>;
 ```
 
-### npm
+### via cdn (ESM)
+```
+<script type="importmap">
+{
+    "imports": {
+        "xnew": "https://unpkg.com/xnew@2.0.x/dist/xnew.mjs"
+    }
+}
+</script>
+
+<script type="module">
+import { xnew, xthis, xnest, xextend, xcontext, xfind, xtimer, xbasics } from 'xnew'
+
+// ...
+
+</script>
+```
+
+### via npm
 ```
 npm install xnew
 ```
 ```
-import { xnew, xnest, xextend } from 'xnew'
+import { xnew, xthis, xnest, xextend, xcontext, xfind, xtimer, xbasics } from 'xnew'
 ```
 ## Basic usage
-By setting a component function to `xnew`, an instance(`xnode`) of the component will be created.  
+By setting a component function to `xnew`, an instance `xnode` will be created.  
 ```
 const xnode = xnew(Component);    
-```
-```
-function Component(xnode) {
+
+function Component() {
+    const xnode = xthis(); // you can get xnode from inside.
     // implement features
 }
 ```
 
 You can also use a function literal.  
 ```
-const xnode = xnew((xnode) => {
-    // ...
+const xnode = xnew(() => {
+    const xnode = xthis();
+    // implement features
 });
 ```
-## Basic example
-Inside the component function, you can implement various process. 
+## Basic example 1
+
+Inside the component function, you can create html elements. 
+
+<iframe src="./examples/getstart1.html" style="width: 400px; height: 300px; border: solid 1px #AAA; margin: auto;"></iframe>
+
+```
+<body>
+    <script>
+        xnew(Div);
+
+        function Div() {
+            xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
+
+            xnew({ tagName: 'p' }, 'my div');
+            xnew({ tagName: 'div', style: 'display: flex;'}, () => {
+                xnew({ tagName: 'div', style: 'width: 160px; height: 36px; background: #d66;'}, '1');
+                xnew({ tagName: 'div', style: 'width: 160px; height: 36px; background: #6d6;'}, '2');
+                xnew({ tagName: 'div', style: 'width: 160px; height: 36px; background: #66d;'}, '3');
+            });
+        }
+    </script>
+</body>
+```
+
+## Basic example 2
+And you can implement various process. 
 
 <iframe src="./examples/box.html" style="width: 400px; height: 300px; border: solid 1px #AAA; margin: auto;"></iframe>
 
 ```
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://unpkg.com/xnew@1.6.x/dist/xnew.js"></script>
-</head>
 <body>
     <script>
-        xnew((xnode) => {
-            xnest({ tagName: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
-            const text = xnew({ tagName: 'span' }, 'start');
+        xnew(Component);
 
-            xnode.on('pointerdown', () => {
+        function Component() {
+            xnest({ tagName: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
+            const text = xnew({ tagName: 'span' });
+
+            const xnode = xthis();
+            xnode.on('click', (event) => {
                 xnode.state === 'running' ? xnode.stop() : xnode.start();
             });
 
@@ -70,37 +110,30 @@ Inside the component function, you can implement various process.
                     text.element.textContent = 'stop';
                 },
             };
-        });
+        }
     </script>
 </body>
-</html>
 ```
-## Parent-Child relationship
-If you call `xnew` inside a component function, a parent-child relationship is connected.
+## Basic example 3
+If you call `xnew` inside a component function, a parent-child relationship is connected.  
+The conencted xnodes will work together.
+For example, when the parent component stop, its children also stop.   
 
 <iframe src="./examples/boxinbox.html" style="width: 400px; height: 300px; border: solid 1px #AAA; margin: auto;"></iframe>
 
 ```
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://unpkg.com/xnew@1.6.x/dist/xnew.js"></script>
-</head>
 <body>
     <script>
-        xnew((xnode) => {
-            xnew(Parent);
-        });
+        xnew(Parent);
 
-        function Parent(xnode) {
-            xnest({ tagName: 'div', style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
-            const text = xnew({ tagName: 'span' }, 'parent: start');
+        function Parent() {
+            xnest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
+            const text = xnew({ tagName: 'span' });
 
             xnew(Child);
 
-            xnode.on('pointerdown', () => {
+            const xnode = xthis();
+            xnode.on('click', () => {
                 xnode.state === 'running' ? xnode.stop() : xnode.start();
             });
 
@@ -118,11 +151,12 @@ If you call `xnew` inside a component function, a parent-child relationship is c
             };
         }
 
-        function Child(xnode) {
-            xnest({ tagName: 'div', style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
-            const text = xnew({ tagName: 'span' }, 'child: start');
+        function Child() {
+            xnest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
+            const text = xnew({ tagName: 'span' });
      
-            xnode.on('pointerdown', (event) => {
+            const xnode = xthis();
+            xnode.on('click', (event) => {
                 event.stopPropagation();
                 xnode.state === 'running' ? xnode.stop() : xnode.start();
             });
@@ -142,8 +176,5 @@ If you call `xnew` inside a component function, a parent-child relationship is c
         }
     </script>
 </body>
-</html>
 ```
-The conencted xnodes will work together.
-For example, when the parent component stop, its children also stop.   
-The updating process works in the order of [child] -> [parent].
+

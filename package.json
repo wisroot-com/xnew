@@ -1,19 +1,20 @@
 {
   "name": "xnew",
-  "description": "Simple component based library for dynamic scene.",
-  "version": "1.6.31",
+  "description": "JavaScript Library for Component-Oriented Programming.",
+  "keywords": ["Component-Oriented Programming"],
+  "version": "2.0.0",
   "main": "dist/xnew.js",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/wisroot-com/xnew/issues"
+    "url": "https://github.com/wisroot-com/xnew.js/issues"
   },
-  "homepage": "https://github.com/wisroot-com/xnew#readme",
+  "homepage": "https://github.com/wisroot-com/xnew.js#readme",
   "scripts": {
     "test": "jest",
     "build": "npx rollup --config --bundleConfigAsCjs",
     "watch": "npx rollup --config --watch --bundleConfigAsCjs",
-    "build-docs": "npx tailwindcss -i ./docs/tailwind.css -o ./docs/style.css",
-    "watch-docs": "npx tailwindcss -i ./docs/tailwind.css -o ./docs/style.css --watch"
+    "tw-build": "npx tailwindcss -i ./docs/tailwind.css -o ./docs/style.css",
+    "tw-watch": "npx tailwindcss -i ./docs/tailwind.css -o ./docs/style.css --watch"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

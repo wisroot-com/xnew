@@ -1,5 +1,5 @@
 import { XNode } from '../src/core/xnode';
-import { xnew, xnest } from '../src/core/xnew';
+import { xnew, xthis, xnest } from '../src/core/xnew';
 
 beforeEach(() => {
     XNode.reset();
@@ -8,7 +8,8 @@ beforeEach(() => {
 describe('xnode element', () => {
 
     it('basic', () => {
-        xnew((xnode1) => {
+        xnew(() => {
+            const xnode1 = xthis();
             const xnode2 = xnew();
             expect(xnode1.element).toBe(document.body);
             expect(xnode2.element).toBe(document.body);
@@ -16,28 +17,33 @@ describe('xnode element', () => {
     });
 
     it('create', () => {
-        xnew((xnode1) => {
-            xnest({ tag: 'div', name: 'A' });
+        xnew(() => {
+            const xnode1 = xthis();
+            xnest({ tagName: 'div', name: 'A' });
             expect(xnode1.element).toBe(document.querySelector('div[name=A]'));
         })
-        xnew({ tag: 'div', name: 'B' }, (xnode1) => {
-            expect(xnode1.element).toBe(document.querySelector('div[name=B]'));
+        xnew({ tagName: 'div', name: 'B' }, () => {
+            const xnode2 = xthis();
+            expect(xnode2.element).toBe(document.querySelector('div[name=B]'));
         })
     });
 
     it('nest', () => {
-        xnew((xnode1) => {
-            xnest({ tag: 'div', name: 'test' });
+        const xnode1 = xnew(() => {
+            const xnode1 = xthis();
+            xnest({ tagName: 'div', name: 'test' });
             const xnode2 = xnew();
             expect(xnode1.element).toBe(document.querySelector('div[name=test]'));
             expect(xnode2.element).toBe(document.querySelector('div[name=test]'));
-        })
+        });
+        xnode1.finalize();
     });
 
     it('delete', () => {
-        const xnode1 = xnew((xnode1) => {
-            xnest({ tag: 'div', name: 'test' });
-        })
+        const xnode1 = xnew(() => {
+            xnest({ tagName: 'div', name: 'test' });
+        });
+ 
         expect(xnode1.element).toBe(document.querySelector('div[name=test]'));
         xnode1.finalize();
         expect(document.querySelector('div[name=test]')).toBe(null);

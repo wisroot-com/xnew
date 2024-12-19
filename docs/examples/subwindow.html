@@ -9,34 +9,34 @@
 </head>
 
 <body>
-    <div id="main" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap;"></div>
+    <div id="main" style="position: relative; height: 400px; margin: 26px; border: solid 1px #00F; overflow: hidden;"></div>
     <script>
-        xnew(document.querySelector('#main'), (xnode) => {
-            // xcomponents.Screen is a component function that defines a canvas
-            
-            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
-                xnew({ tag: 'p' }, 'object fit: contain (default)');
-                xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
-                    const screen = xnew(xcomponents.Screen, { width: 400, height: 200, objectFit: 'contain', pixelated: true });
-                    xnew(Content, screen.canvas);
+        xnew('#main', () => {
+            const subwindow = xnew(() => {
+                xextend(xbasics.SubWindow);
+                xnew({ style: 'width: 100px; height: 100px; background: #AAA; border: solid 10px #000; border-radius: 4px;' }, (xnode) => {
+                    xnew({ tagName: 'button' }, 'test');
                 });
+                const xnode = xthis();
+                const drag = xnew(xbasics.DragEvent);
+
+                let offset = { x: 0, y: 0 };
+                drag.on('down', (event, { position }) => {
+                    offset.x = xnode.getPosition().x - position.x;
+                    offset.y = xnode.getPosition().y - position.y;
+                });
+                drag.on('move', (event, { position }) => {
+                    xnode.setPosition(position.x + offset.x, position.y + offset.y);
+                });
+                
+                xnode.setPosition(100, 100);
+                
             });
 
-            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
-                xnew({ tag: 'p' }, 'object fit: cover');
-                xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
-                    const screen = xnew(xcomponents.Screen, { width: 400, height: 200, objectFit: 'cover', pixelated: true });
-                    xnew(Content, screen.canvas);
-                });
-            });
-
-            xnew({ style: 'margin: 8px auto;' }, (xnode) => {
-                xnew({ tag: 'p' }, 'object fit: fill');
-                xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
-                    const screen = xnew(xcomponents.Screen, { width: 400, height: 200, objectFit: 'fill', pixelated: true });
-                    xnew(Content, screen.canvas);
-                });
-            });
+            const button = xnew({ tagName: 'button', style: 'z-index: 10;' }, 'button');
+            button.on('click', () => {
+                subwindow.reboot();
+            })
         });
 
 

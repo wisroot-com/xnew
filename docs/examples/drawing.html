@@ -24,35 +24,43 @@
 <body>
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
-        xnew(document.querySelector('#main'), (xnode) => {
-            const screen = xnew(xcomponents.Screen, { width: 512, height: 512, objectFit: 'contain' });
-            
-            // screen -> content for get event on screen canvas
-            xnew(screen, Contents, screen.canvas);
+        xnew('#main', () => {
+            const screen = xnew(xbasics.Screen, { width: 512, height: 512, objectFit: 'contain' });
+            screen.clear('rgb(0,0,0)');
+
+            xnew(Contents, screen.canvas);
+
+            const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
+            button.on('pointerdown', () => {
+                screen.clear('rgb(0,0,0)');
+            });
         });
 
-        function Contents(xnode, canvas) {
-            const context = canvas.getContext('2d');
-            context.fillStyle = "rgb(0,0,0)";
-            context.fillRect(0, 0, canvas.width, canvas.height);
+        function Contents(canvas) {
+            const xnode = xthis();
+            xnode.on('touchstart contextmenu wheel', (event) => {
+                event.preventDefault();
+            });
             
-            const drag = xnew(xcomponents.DragEvent);
+            const ctx = canvas.getContext('2d');
+
+            const drag = xnew(canvas, xbasics.DragEvent);
 
             drag.on('down move', (event, { type, position, delta }) => {
-                const scaleX = canvas.width / xnode.element.clientWidth;
-                const scaleY = canvas.height / xnode.element.clientHeight;
+                const scaleX = canvas.width / canvas.clientWidth;
+                const scaleY = canvas.height / canvas.clientHeight;
 
-                context.beginPath();
-                context.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.fillStyle = 'white';
                 if (type === 'down') {
-                    context.arc(position.x * scaleX, position.y * scaleY, 1, 0, Math.PI * 2, true);
+                    ctx.arc(position.x * scaleX, position.y * scaleY, 1, 0, Math.PI * 2, true);
                 } else if (type === 'move') {
                     const length = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
                     for (let i = 0; i < length; i++) {
-                        context.arc((position.x - delta.x * i / length) * scaleX, (position.y - delta.y * i / length) * scaleY, 1, 0, Math.PI * 2, true);
+                        ctx.arc((position.x - delta.x * i / length) * scaleX, (position.y - delta.y * i / length) * scaleY, 1, 0, Math.PI * 2, true);
                     }
                 }
-                context.fill();
+                ctx.fill();
             });
         }
 

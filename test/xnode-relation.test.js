@@ -1,5 +1,5 @@
 import { XNode } from '../src/core/xnode';
-import { xnew } from '../src/core/xnew';
+import { xnew, xthis } from '../src/core/xnew';
 
 beforeEach(() => {
     XNode.reset();
@@ -14,7 +14,8 @@ describe('xnode relation', () => {
     });
 
     it('nest', () => {
-        xnew((xnode1) => {
+        xnew(() => {
+            const xnode1 = xthis();
             const xnode2 = xnew();
             expect(xnode1.parent).toBe(null);
             expect(xnode2.parent).toBe(xnode1);
@@ -22,7 +23,8 @@ describe('xnode relation', () => {
     });
 
     it('delete', () => {
-        xnew((xnode1) => {
+        xnew(() => {
+            const xnode1 = xthis();
             const xnode2 = xnew();
             expect(xnode1.parent).toBe(null);
             expect(xnode2.parent).toBe(xnode1);

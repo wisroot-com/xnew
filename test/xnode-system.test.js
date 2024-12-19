@@ -11,7 +11,7 @@ describe('xnode system', () => {
             let state = 0;
             let start = Date.now();
             const margin = 100;
-            xnew((xnode) => {
+            xnew(() => {
                 return {
                     promise: new Promise((resolve, reject) => {
                         setTimeout(() => {

@@ -14,35 +14,43 @@ xnew(parent, element, component, ...args);
 ```
 <br>
 
-`parent` and `element` are often omitted.  
+These arguments are often omitted.  
 
 ```
+// e.g.
 xnew(component, ...args);           // parent and element are omitted
 xnew(parent, component, ...args);   // element is omitted
 xnew(element, component, ...args);  // parent is omitted
+xnew(parent, element);              // component is omitted
+...
 ```
 <br>
 
 If you omit the `parent` parameter, the nesting higher xnode or otherwise `null` is assigned.   
     
 ```
-xnew((xnode1) => {
-    // xnode1.parent: null
+const xnode1 = xnew(() => {
+    // xthis().parent: null
 
-    const xnode2 = xnew((xnode2) => {
-        // xnode2.parent: xnode1
+    const xnode2 = xnew(() => {
+        // xthis().parent: xnode1
     });
-
-    xnew(xnode2, (xnode3) => {
-        // xnode3.parent: xnode2
+    const xnode3 = xnew(() => {
+        // xthis().parent: xnode1
+    });
+    const xnode4 = xnew(xnode2, () => {
+        // xthis().parent: xnode2
     });
 })
 ```
 <br>
 
 `element` is set for the html element of the new xnode. (accessed by `xnode.element`)  
-e.g. `xnew(document.querySelector('#hoge'), component)`  
-e.g. `xnew({ tagName: 'div', style: '', ... }, component)`   
+- Setting an existing html element  
+e.g. `xnew(document.querySelector('#hoge'), component)`  or `xnew('#hoge', component)`   
+- Creating a new html element   
+e.g. `xnew({ tagName: 'div', className: '', style: '', ... }, component)`   
+
 If you omit the tagName property, `tagName: 'div'` will be set automatically.  
 
 If you omit the `element` parameter, the parent xnode's element or otherwise `document.body` is assigned. 
@@ -51,19 +59,19 @@ If you omit the `element` parameter, the parent xnode's element or otherwise `do
 <div id="hoge"></div>
 
 <script>
-    xnew((xnode1) => {
-        // xnode1.element: document.body
+    xnew(() => {
+        // xthis().element: document.body
     });
 
-    xnew(document.querySelector('#hoge'), (xnode2) => {
-        // xnode2.element: (id=hoge)
+    xnew('#hoge', () => {
+        // xthis().element: (id=hoge)
 
-        xnew((xnode3) => {
-            // xnode3.element: (id=hoge)
+        xnew(() => {
+            // xthis().element: (id=hoge)
         });
 
-        xnew({ tagName: 'div', id: 'fuga' }, (xnode4) => {
-            // xnode4.element: (id=fuga) (as a child element of hoge)
+        xnew({ tagName: 'div', id: 'fuga' }, () => {
+            // xthis().element: (id=fuga) (as a child element of hoge)
         });
     });
 </script>;
@@ -90,19 +98,19 @@ xnest(attributes);
 ```
 ### example
 ```
-xnew({ tagName: 'div', name: 'A'}, (xnode1) =>{
-    // xnode1.element: (div A)
+xnew({ tagName: 'div', name: 'A'}, () =>{
+    // xthis().element: (div A)
 });
 
-xnew((xnode2) => {
+xnew(() => {
     xnest({ tagName: 'div', name: 'B' });
-    // xnode2.element: (div B)
+    // xthis().element: (div B)
 }
 
-xnew({ tagName: 'div', name: 'C' }, (xnode3) => { 
+xnew({ tagName: 'div', name: 'C' }, () => { 
     xnest({ tagName: 'div', name: 'D' }); // inner div
-    // xnode3.element: (div D)
-    // xnode3.element.parentElement: (div C)
+    // xthis().element: (div D)
+    // xthis().element.parentElement: (div C)
 }
 
 const xnode4 = xnew({ tagName: 'div', name: 'E' }, 'aaa');
@@ -125,10 +133,11 @@ The above code leads to the following result.
 Note that the created elements are removed when the xnodes finalize.
             
 ## System properties
-xnodes has some system properties for basic control. You can define the detail in the response of the component function.
+`xnode` has some system properties for basic control. You can define the detail in the response of the component function.
 
 ```
-const xnode = xnew((xnode) => {
+const xnode = xnew(() => {
+    // initialize
 
     return {
         promise: new Promise((resolve, reject) => {
@@ -141,7 +150,7 @@ const xnode = xnew((xnode) => {
             // executed repeatedly at the rate available for rendering.
         },
         stop() {
-            // fires when xnode.stop is called.
+            // fires when xnode.stop() is called.
         },
         finalize() {
             // fires when xnode.finalize() is called.
@@ -150,22 +159,51 @@ const xnode = xnew((xnode) => {
     }
 });
 
-xnode.start();    // start update loop
-xnode.stop();     // stop update loop
-xnode.finalize(); // current xnode and the child xnodes will be finalized 
-
-xnode.state;      // [pending -> running <-> stopped -> finalized] 
 ```
-- xnodes automatically calls `xnode.start()`.  
-  If you want to avoid it, call `xnode.stop()` inside the component function.  
-- connected xnodes(parent-child relationship) work together. 
+
+### `xnode.start`
+This method start update loop.  
+xnodes automatically calls `xnode.start()`. If you want to avoid it, call `xnode.stop()` inside the component function.  
+```
+xnode.start();
+```
+
+### `xnode.stop`
+This method stop update loop.
+```
+xnode.stop();
+```
+
+### `xnode.finalize`
+This method finalize the xnode and the children.  
+Related elements will be deleted and update processing will also stop.
+```
+xnode.finalize();
+```
+
+- `start`, `stop`, `finalize`, Connected xnodes(parent-child relationship) work together. 
   e.g. the parent component finalizes, its children also finalizes.  
-    
+
+### `xnode.reboot`
+This method reboot the xnode using the component function. 
+```
+xnode.reboot(...args); // ...args for the component function.
+```
+
+### `xnode.state`
+A variable that represents the internal state of the xnode.   
+[pending -> running <-> stopped -> finalized] 
+```
+xnode.state.
+```
+
 ## Original properties
-You can define original properties unless the properties are already defined.
+You can define original properties unless the properties are already defined.  
+(excepting `promise`, `start`, `update`, `stop`, `finalize`, `reboot`, `on`, `off`, `emit`, `key`, `element`, `parent`, `_`)
 
 ```
-const xnode = xnew((xnode) =>  {
+
+const xnode = xnew(() =>  {
     let counter = 0;
 
     return {
@@ -198,7 +236,7 @@ xextend(component, ...args);
 
 ```
 // base component function
-function Base(xnode) {
+function Base() {
     return {
         update() {
             console.log('base update');
@@ -210,7 +248,7 @@ function Base(xnode) {
 }
 ```
 ```
-const xnode = xnew((xnode) => {
+const xnode = xnew(() => {
     xextend(Base);
 
     return {
@@ -234,13 +272,13 @@ xnode.hoge();
     However, By using the return value of `xextend`, you can change it to execute both.
 
 ```
-const xnode = xnew((xnode) => {
+const xnode = xnew(() => {
     const props = xextend(Base);
 
     return {
         update() {
             console.log('derived update');
-            xnode.stop();
+            xthis().stop();
         },
         hoge() {
             props.hoge(); // execute Base component hoge
@@ -256,7 +294,31 @@ xnode.hoge();
 // base update
 // derived update
 ```
-## Event listener
+
+## Timer
+`xtimer` create a timer that execute a callback function for a specified time.
+
+### `xtimer`
+```
+xtimer(callback, delay, loop = false);
+```
+### example
+
+```
+xnew(() => {
+    const timer = xtimer(() => {
+        // This function is called after 100 ms.
+    }, 100);
+
+    // If you cancel the timer, call bellow.
+    // timer.clear();
+});
+
+```
+
+- If the parent xnode finalize, the timer is automatically cleared.
+
+## Listener
 You can set the event listener using `xnode.on`, and fire original event using `xnode.emit`.
 
 ### `xnode.on`
@@ -279,7 +341,8 @@ xnode.emit(type, ...args);
 
 ### example
 ```
-const xnode = xnew((xnode) => {
+const xnode = xnew(() => {
+    const xnode = xthis();
     xnode.on('click', (event) => {
         // fires when the xnode's element is clicked.
     });
@@ -296,10 +359,10 @@ const xnode = xnew((xnode) => {
 xnode.emit('myevent', data); 
 ```
 - `xnode.emit('myevent')` emits only to self xnode, and not to other xnodes.
-- If you add `#` token (e.g. `xnode.emit('#myevent')`), it emit to all xnodes. this message can be received by using xnode.on('#myevent').
+- If you add `~` token, it broadcasts to all xnodes. (e.g. `xnode1.emit('~myevent')` -> `xnode2.on('~myevent')`)
 
-## Find xnode
-Once an xnode has a key, you can look it up anywhere.
+## Find
+You can find xnodes using key string or component functions.
 
 ### `xnode.key`
 ```
@@ -307,55 +370,76 @@ xnode.key = 'string';
 ```
             
 ### `xfind`
-`xfind` searches in all xnodes. 
+`xfind` searches in all xnodes.
+```
+xfind(key | component); // key string or component function
+```
+ 
 ```
 const xnodes = xfind(key);
 ```
 
 ### example
 ```
-xnew((xnode1) => {
-    xnode1.key = 'aaa';
+xnew(() => {
+    xthis().key = 'aaa';
 });
 
-xnew((xnode2) => {
-    xnode2.key = 'bbb';
+xnew(() => {
+    xthis().key = 'bbb';
 });
 
-xnew((xnode3) => {
-    xnode3.key = 'bbb ccc';
+xnew(() => {
+    xthis().key = 'bbb ccc';
 });
 
 xfind('aaa'); // [xnode1]
 xfind('bbb'); // [xnode2, xnode3]
 xfind('ccc'); // [xnode3]
-xfind('aaa bbb'); // [xnode1, xnode2, xnode3]         
+xfind('aaa bbb'); // [xnode1, xnode2, xnode3]        
+
+const xnode4 = xnew(A);
+
+function A() {
+}
+
+xfind(A); // [xnode4]        
+
+
 ```
 
 ## Scope 
-`parent`(the first argument of xnew) can be omitted.  
+In `xnew` arguments, `parent` can be omitted.
 However, in callback functions, appropriate parent xnode may not be automatically set.  
 In such cases, the first argument should be set intentionally.  
+
+### example
             
 ```
-xnew((xnode1) => {
+xnew(() => {
+    const xnode1 = xthis();
+
     // ----------------------------------------
     // appropriate parent is set
     // ----------------------------------------
 
-    // parent: xnode1; 
+    // parent: xnode1
     xnew(component);
 
     xnode1.on('click', () => {
-        // parent: xnode1; 
+        // parent: xnode1 
         xnew(component);
     });
 
     setTimeout(() => {
-        // parent: xnode1; 
+        // parent: xnode1 (Must be set explicitly)
         xnew(xnode1, component);
     }, 1000);
 
+    xtimer(() => {
+        // parent: xnode1
+        xnew(component);
+    }, 1000);
 
     // ----------------------------------------
     // appropriate parent is not(?) set
@@ -363,19 +447,19 @@ xnew((xnode1) => {
 
     // not xnode method
     window.addEventListener('click', () => {
-        // parent: null; 
+        // parent: null
         xnew(component);
     });
 
     // parent xnode is not set
     setTimeout(() => {
-        // parent: null; 
+        // parent: null
         xnew(component);
     }, 1000);
 
     const xnode2 = xnew(component);
     xnode2.on('click', () => {
-        // parent: xnode2; 
+        // parent: xnode2
         xnew(component);
     });
 })
@@ -395,18 +479,18 @@ xcontext(name);
 
 ### example
 ```
-xnew((xnode) => {
-    xcontext('hoge', 1); // undefined (return previus value)
+xnew(() => {
+    xcontext('hoge', 1);
     xcontext('hoge');    // 1
 
-    xnew((xnode) => {
+    xnew(() => {
         xcontext('hoge'); // 1
 
-        xnew((xnode) => {
-            xcontext('hoge', 2); // 1 (return previus value)
+        xnew(() => {
+            xcontext('hoge', 2);
             xcontext('hoge');    // 2
 
-            xnew((xnode) => {
+            xnew(() => {
                 xcontext('hoge'); // 2
             });
         });

@@ -24,56 +24,71 @@
 <body>
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
-        xnew(document.querySelector('#main'), (xnode) => {
-            // create a screen (xcomponents.Screen is a component function that defines a canvas)
-            const screen = xnew(xcomponents.Screen, { width: 800, height: 400 });
+        xnew('#main', () => {
+            const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
 
-            // setting for three.js
-            const three = {};
-            three.renderer = new THREE.WebGLRenderer({ canvas: screen.canvas, alpha: true, });
-            three.renderer.setClearColor(0x000000, 0);
-            three.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height);
-            three.camera.position.set(0, 0, +100);
-            three.scene = new THREE.Scene();
-
-            xnew(Contents, three);
-
-            return {
-                update() {
-                    three.renderer.render(three.scene, three.camera);
-                },
-            };
+            xnew(ThreeMain, screen.canvas);
         });
 
-        function Contents(xnode, three) {
-            xextend(ThreeObject, three.scene);
+        function ThreeMain(canvas) {
+            const renderer = new THREE.WebGLRenderer({ canvas });
+            const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
+            camera.position.set(0, 0, +100);
+
+            const contents = xnew(ThreeContents);
+            return {
+                update() {
+                    renderer.render(contents.scene, camera);
+                },
+            }
+        }
+
+        function ThreeObject(object) {
+            const parent = xcontext('THREE.Object3D');
+            xcontext('THREE.Object3D', object);
+
+            parent?.add(object);
+            return {
+                finalize() {
+                    parent?.remove(object);
+                },
+            }
+        }
+
+        function ThreeContents() {
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xFFFFFF);
+            xextend(ThreeObject, scene);
+
             xnew(Light);
         
-            // call iteratively (100ms)
-            setInterval(() => {
-                const position = [100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5), 100 * (Math.random() - 0.5)];
-                xnew(xnode, Cube, position, 0xFFFFFF * Math.random());
-                return true;
-            }, 100);
+            // call iteratively (delay = 100ms, loop = true)
+            xtimer(() => xnew(Cube), 100, true);
+
+            return {
+                get scene() {
+                    return scene;
+                },
+            }
         }
 
-        function Light(xnode) {
+        function Light() {
             const light = new THREE.PointLight(0xFFFFFF, 1);
-            xextend(ThreeObject, light);
-
             light.position.set(0, 0, +100);
+            
+            xextend(ThreeObject, light);
         }
 
-        function Cube(xnode, [x, y, z], color) {
+        function Cube() {
             const size = 10 * Math.random() + 5;
             const geometry = new THREE.BoxGeometry(size, size, size);
-            const material = new THREE.MeshLambertMaterial({ color });
+            const material = new THREE.MeshLambertMaterial({ color: 0xFFFFFF * Math.random() });
             const object = new THREE.Mesh(geometry, material);
+            object.position.x = 100 * (Math.random() - 0.5);
+            object.position.y = 100 * (Math.random() - 0.5);
+            object.position.z = 100 * (Math.random() - 0.5);
+          
             xextend(ThreeObject, object);
-
-            object.position.x = x;
-            object.position.y = y;
-            object.position.z = z;
 
             const velocity = {};
             velocity.x = Math.random() - 0.5;
@@ -81,9 +96,7 @@
             velocity.z = Math.random() - 0.5;
 
             // finalize after 5000ms
-            setTimeout(() => {
-                xnode.finalize()
-            }, 5 * 1000);
+            xtimer(() => xthis().finalize(), 5 * 1000);
 
             return {
                 update() {
@@ -95,22 +108,6 @@
                 },
             };
         }
-
-        //----------------------------------------------------------------------
-        // base component
-        //----------------------------------------------------------------------
-        
-        function ThreeObject(xnode, object) {
-            const parent = xcontext('THREE.Object3D', object);
-
-            parent?.add(object);
-            return {
-                finalize() {
-                    parent?.remove(object);
-                },
-            }
-        }
-
     </script>
 </body>
 </html>

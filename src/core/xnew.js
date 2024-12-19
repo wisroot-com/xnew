@@ -1,42 +1,63 @@
-import { isObject, isString, isFunction, error } from './common';
+import { isObject, isString, isFunction, Timer, error } from './util';
 import { XNode } from './xnode';
 
 export function xnew(...args)
 {
     // parent xnode
     let parent = undefined;
-    if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
+    if (args[0] instanceof XNode) {
         parent = args.shift();
+    } else if (args[0] === null) {
+        parent = args.shift();
+    } else if (args[0] === undefined) {
+        parent = args.shift();
+        parent = XNode.current
+    } else {
+        parent = XNode.current
     }
 
-    // base element
+    // input element
     let element = undefined;
-    if (args[0] instanceof Element || args[0] === window || isObject(args[0]) || args[0] === null || args[0] === undefined) {
+    if (args[0] instanceof Element || args[0] instanceof Window || args[0] instanceof Document) {
+        // an existing html element
         element = args.shift();
+    } else if (isString(args[0]) === true) {
+        // a string for an existing html element
+        element = document.querySelector(args.shift());
+    } else if (isObject(args[0]) === true) {
+        // an attributes for a new html element
+        element = args.shift();
+    } else if (args[0] === null || args[0] === undefined) {
+        element = args.shift();
+        element = null;
+    } else {
+        element = undefined;
     }
 
-    if (isObject(element) === false && args.length > 0 && isFunction(args[0]) === false && isString(args[0]) === false) {
+    if (args.length > 0 && isObject(element) === false && isString(args[0]) === true) {
         error('xnew', 'The argument is invalid.', 'component');
     } else {
         return new XNode(parent, element, ...args);
     }
 }
 
+export function xthis()
+{
+    return XNode.current;
+}
+
 export function xnest(attributes)
 {
     const xnode = XNode.current;
 
-    if (xnode === null) {
-        error('xnest', 'This function can not be called outside a component function.');
-    } else if (xnode.element instanceof Window) {
-        error('xnest', 'No elements are added to window.');
+    if (xnode.element instanceof Window || xnode.element instanceof Document) {
+        error('xnext', 'No elements are added to window or document.');
     } else if (isObject(attributes) === false) {
-        error('xnest', 'The argument is invalid.', 'attributes');
+        error('xnext', 'The argument is invalid.', 'attributes');
     } else if (xnode._.state !== 'pending') {
-        error('xnest', 'This function can not be called after initialized.');
+        error('xnext', 'This function can not be called after initialized.');
     } else {
-        xnode.off();
-        XNode.nest.call(xnode, attributes);
+        return XNode.nest.call(xnode, attributes);
     }
 }
 
@@ -44,99 +65,71 @@ export function xextend(component, ...args)
 {
     const xnode = XNode.current;
 
-    if (xnode === null) {
-        error('xextend', 'This function can not be called outside a component function.');
-    } else if (isFunction(component) === false) {
+    if (isFunction(component) === false) {
         error('xextend', 'The argument is invalid.', 'component');
     } else if (xnode._.state !== 'pending') {
         error('xextend', 'This function can not be called after initialized.');
+    } else if (xnode._.components.has(component) === true) {
+        error('xextend', 'This function has already been added.');
     } else {
         return XNode.extend.call(xnode, component, ...args);
     }
 }
 
-export function xcontext(name, value)
+export function xcontext(key, value)
 {
     const xnode = XNode.current;
 
-    if (isString(name) === false) {
-        error('xcontext', 'The argument is invalid.', 'name');
+    if (isString(key) === false) {
+        error('xcontext', 'The argument is invalid.', 'key');
     } else {
-        return XNode.context.call(xnode, name, value);
+        return XNode.context.call(xnode, key, value);
     }
 }
 
 export function xfind(key)
 {
-    if (isString(key) === false) {
+    if (isString(key) === false && isFunction(key) === false) {
         error('xfind', 'The argument is invalid.', 'key');
-    } else {
+    } else if (isString(key) === true) {
         const set = new Set();
         key.trim().split(/\s+/).forEach((key) => {
             XNode.keys.get(key)?.forEach((xnode) => set.add(xnode));
         });
         return [...set];
+    } else if (isFunction(key) === true) {
+        const set = new Set();
+        XNode.components.get(key)?.forEach((xnode) => set.add(xnode));
+        return [...set];
     }
 }
 
-export function xscope(...args)
+export function xtimer(callback, delay = 0, loop = false)
 {
-    // parent xnode
-    let parent = undefined;
-    if (args[0] instanceof XNode || args[0] === null || args[0] === undefined) {
-        parent = args.shift();
-    }
+    const current = XNode.current;
 
-    // callback function
-    if (isFunction(args[0]) === false) {
-        error('xscope', 'The argument is invalid.', 'component');
-    } else {
-        return XNode.scope(parent, ...args);
-    }
-}
+    const timer = new Timer(() => {
+        XNode.scope.call(current, callback);
+    }, delay, loop);
 
-export function xtimer(callback, delay = 0) {
-    
-    return xnew((xnode) => {
-        let id = null;
-        let timeout = delay;
-        let offset = 0.0;
-        let start = 0.0;
-        let time = 0.0;
-
-        return {
-            get time() {
-                return time;
-            },
-            start() {
-                start = Date.now();
-                time = offset;
-                id = setTimeout(wcallback, timeout - time)
-            },
-            update() {
-                time = Date.now() - start + offset;
-            },
-            stop() {
-                offset = Date.now() - start + offset;
-                clearTimeout(id);
-                id = null;
-            },
-            finalize() {
-                if (id !== null) {
-                    clearTimeout(id);
-                }
-            },
+    if (document !== undefined) {
+        if (document.hidden === false) {
+            Timer.start.call(timer);
         }
+        const xdoc = xnew(document);
+        xdoc.on('visibilitychange', (event) => {
+            document.hidden === false ? Timer.start.call(timer) : Timer.stop.call(timer);
+        });
+    } else {
+        Timer.start.call(timer);
+    }
 
-        function wcallback() {
-            const repeat = XNode.scope.call(xnode.parent, callback);
-            if (repeat === true) {
-                xnode.stop();
-                offset = 0.0;
-                xnode.start();
-            } else {
-                xnode.finalize();
+    xnew(() => {
+        return {
+            finalize() {
+                timer.clear();
             }
         }
     });
+    return timer;
 }

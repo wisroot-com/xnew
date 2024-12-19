@@ -11,14 +11,14 @@
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
         
-        xnew(document.querySelector('#main'), (xnode) => {
+        xnew('#main', () => {
             xnew(Div1);
             xnew(Div2);
             xnew(Div3);
             xnew(Div4);
         });
 
-        function Div1(xnode) {
+        function Div1() {
             xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
 
             xnew({ tagName: 'p' }, 'my div');
@@ -29,7 +29,7 @@
             });
         }
 
-        function Div2(xnode) {
+        function Div2() {
             xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
           
             xnew({ tagName: 'p' }, 'my button');
@@ -42,7 +42,7 @@
             })
         }
 
-        function Div3(xnode) {
+        function Div3() {
             xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
          
             xnew({ tagName: 'p' }, 'my input text');
@@ -55,7 +55,7 @@
             })
         }
 
-        function Div4(xnode) {
+        function Div4() {
             xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
         
             xnew({ tagName: 'p' }, 'my canvas');
@@ -64,23 +64,23 @@
             xnew(Content, canvas.element);
         }
 
-        function Content(xnode, canvas) {
-            const context = canvas.getContext('2d');
+        function Content(canvas) {
+            const ctx = canvas.getContext('2d');
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
             const s = Math.min(cx, cy) * 0.5;
 
-            context.fillStyle = "rgb(0,0,0)";
-            context.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "rgb(0,0,0)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            context.fillStyle = "rgb(200,0,100)";
-            context.fillRect(cx - 0.6 * cx - s, cy - s, s * 2, s * 2);
+            ctx.fillStyle = "rgb(200,0,100)";
+            ctx.fillRect(cx - 0.6 * cx - s, cy - s, s * 2, s * 2);
 
-            context.fillStyle = "rgb(100,200,0)";
-            context.fillRect(cx + 0.0 * cx - s, cy - s, s * 2, s * 2);
+            ctx.fillStyle = "rgb(100,200,0)";
+            ctx.fillRect(cx + 0.0 * cx - s, cy - s, s * 2, s * 2);
 
-            context.fillStyle = "rgb(0,100,200)";
-            context.fillRect(cx + 0.6 * cx - s, cy - s, s * 2, s * 2);
+            ctx.fillStyle = "rgb(0,100,200)";
+            ctx.fillRect(cx + 0.6 * cx - s, cy - s, s * 2, s * 2);
         }
 
     </script>

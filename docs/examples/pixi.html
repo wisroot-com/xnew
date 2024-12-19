@@ -24,31 +24,52 @@
 <body>
     <div id="main" style="width: 100%; height: 100%;"></div>
     <script>
-        xnew(document.querySelector('#main'), (xnode) => {
-            const screen = xnew(xcomponents.Screen, { width: 800, height: 400 });
+        xnew('#main', () => {
+            const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
 
-            // setting for pixi.js
-            const pixi = {};
-            pixi.renderer = PIXI.autoDetectRenderer({ view: screen.canvas, width: screen.width, height: screen.height, backgroundColor: '#FFF' });
-            pixi.scene = new PIXI.Container();
-
-            xnew(Contents, pixi);
+            xnew(PixiMain, screen.canvas);
+        });
+        
+        function PixiMain(canvas) {
+            const renderer = PIXI.autoDetectRenderer({ view: canvas, width: canvas.width, height: canvas.height, backgroundColor: '#FFF' });
+          
+            const contents = xnew(Contents);
 
             return {
                 update() {
-                    pixi.renderer.render(pixi.scene)
+                    renderer.render(contents.scene);
                 },
             };
-        });
-
-        function Contents(xnode, pixi) {
-            xextend(PixiDisplayObject, pixi.scene);
-            xnew(Box, [800 / 2, 400 / 2], [160, 160], 0xEA1E63);
         }
 
-        function Box(xnode, [x, y], [sx, sy], color) {
+        function PixiObject(object) {
+            const parent = xcontext('PIXI.DisplayObject');
+            xcontext('PIXI.DisplayObject', object);
+            
+            parent?.addChild(object);
+            return {
+                finalize() {
+                    parent?.removeChild(object);
+                },
+            }
+        }
+        
+        function Contents() {
+            const scene = new PIXI.Container();
+            xextend(PixiObject, scene);
+
+            xnew(Box, [800 / 2, 400 / 2], [160, 160], 0xEA1E63);
+
+            return {
+                get scene() {
+                    return scene;
+                },
+            };
+        }
+
+        function Box([x, y], [sx, sy], color) {
             const object = new PIXI.Container();
-            xextend(PixiDisplayObject, object);
+            xextend(PixiObject, object);
             
             object.x = x;
             object.y = y;
@@ -63,21 +84,6 @@
                     object.rotation += 0.01;
                 },
             };
-        }
-
-        //----------------------------------------------------------------------
-        // base component
-        //----------------------------------------------------------------------
-        
-        function PixiDisplayObject(xnode, object) {
-            const parent = xcontext('PIXI.DisplayObject', object);
-            
-            parent?.addChild(object);
-            return {
-                finalize() {
-                    parent?.removeChild(object);
-                },
-            }
         }
 
     </script>

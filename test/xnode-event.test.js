@@ -1,5 +1,5 @@
 import { XNode } from '../src/core/xnode';
-import { xnew } from '../src/core/xnew';
+import { xnew, xthis } from '../src/core/xnew';
 
 beforeEach(() => {
     XNode.reset();
@@ -7,41 +7,25 @@ beforeEach(() => {
 
 describe('xnode event', () => {
     it('basic', () => {
-        return new Promise((resolve, reject) => {
-            let state = 0;
-            xnew((xnode) => {
-                xnode.on('resolve', () => state++);
-                xnode.emit('resolve');
-                xnew((xnode) => xnode.emit('resolve'));
-            });
-            xnew((xnode) => xnode.emit('resolve'));
-            setTimeout(() => state === 1 ? resolve() : reject(new Error()), 100);
+        let state = 0;
+        xnew(() => {
+            const xnode = xthis();
+            xnode.on('countup', () => state++);
+            xnode.emit('countup');
+            xnew(() => xthis().emit('countup'));
         });
+        xnew(() => xthis().emit('countup'));
+        expect(state).toBe(1);
     });
 
-    it('broadcast #', () => {
-        return new Promise((resolve, reject) => {
-            let state = 0;
-            xnew((xnode) => {
-                xnode.on('#resolve', () => state++);
-                xnode.emit('#resolve');
-                xnew((xnode) => xnode.emit('#resolve'));
-            });
-            xnew((xnode) => xnode.emit('#resolve'));
-            setTimeout(() => state === 3 ? resolve() : reject(), 100);
+    it('broadcast ~', () => {
+        let state = 0;
+        xnew(() => {
+            const xnode = xthis();
+            xnode.on('~myevent', () => state++);
+            xnode.emit('~myevent');
+            xnew(() => xthis().emit('~myevent'));
         });
-    });
-
-    it('broadcast +', () => {
-        return new Promise((resolve, reject) => {
-            let state = 0;
-            xnew((xnode) => {
-                xnode.on('+resolve', () => state++);
-                xnode.emit('+resolve');
-                xnew((xnode) => xnode.emit('+resolve'));
-            });
-            xnew((xnode) => xnode.emit('+resolve'));
-            setTimeout(() => state === 2 ? resolve() : reject(), 100);
-        });
+        expect(state).toBe(2);
     });
 });

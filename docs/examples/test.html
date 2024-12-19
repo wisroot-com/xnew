@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="../xnew.js"></script>
+</head>
+
+<body>
+    <script>
+        xnew(() => {
+            const xnode1 = xnew(() => {
+                xthis().nest({ tag: 'div', name: 'test' });
+            })
+    
+            xthis().finalize();
+            console.log(xthis());
+        });
+
+    </script>
+</body>
+</html>

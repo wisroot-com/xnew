@@ -11,40 +11,39 @@
 <body>
     <div id="main" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap;"></div>
     <script>
-        xnew(document.querySelector('#main'), (xnode) => {            
+        xnew('#main', () => {            
             xnew(Screen, 'object fit: contain (default)', 'contain');
             xnew(Screen, 'object fit: cover', 'cover');
             xnew(Screen, 'object fit: fill', 'fill');
         });
 
-        function Screen(xnode, text, objectFit) {
+        function Screen(text, objectFit) {
             xnest({ style: 'margin: 8px auto;' });
 
             xnew({ tagName: 'p' }, text);
             xnew({ style: 'width: 200px; height: 150px; border: 1px solid #A0A' }, () => {
-                // xcomponents.Screen is a component function that defines a canvas
-                const screen = xnew(xcomponents.Screen, { width: 400, height: 200, objectFit, pixelated: true });
+                const screen = xnew(xbasics.Screen, { width: 400, height: 200, objectFit, pixelated: true });
                 xnew(Draw, screen.canvas);
             });
         }
 
-        function Draw(xnode, canvas) {
-            const context = canvas.getContext('2d');
+        function Draw(canvas) {
+            const ctx = canvas.getContext('2d');
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
             const s = Math.min(cx, cy) * 0.5;
 
-            context.fillStyle = "rgb(0,0,0)";
-            context.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "rgb(0,0,0)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            context.fillStyle = "rgb(200,0,100)";
-            context.fillRect(cx - 0.6 * cx - s, cy - s, s * 2, s * 2);
+            ctx.fillStyle = "rgb(200,0,100)";
+            ctx.fillRect(cx - 0.6 * cx - s, cy - s, s * 2, s * 2);
 
-            context.fillStyle = "rgb(100,200,0)";
-            context.fillRect(cx + 0.0 * cx - s, cy - s, s * 2, s * 2);
+            ctx.fillStyle = "rgb(100,200,0)";
+            ctx.fillRect(cx + 0.0 * cx - s, cy - s, s * 2, s * 2);
 
-            context.fillStyle = "rgb(0,100,200)";
-            context.fillRect(cx + 0.6 * cx - s, cy - s, s * 2, s * 2);
+            ctx.fillStyle = "rgb(0,100,200)";
+            ctx.fillRect(cx + 0.6 * cx - s, cy - s, s * 2, s * 2);
         }
 
     </script>
