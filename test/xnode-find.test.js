@@ -1,5 +1,5 @@
 import { XNode } from '../src/core/xnode';
-import { xnew, xfind } from '../src/core/xnew';
+import { xnew, xthis, xfind } from '../src/core/xnew';
 
 beforeEach(() => {
     XNode.reset();
@@ -7,14 +7,14 @@ beforeEach(() => {
 
 describe('xnode context', () => {
     it('basic', () => {
-        const xnode1 = xnew((xnode1) => {
-            xnode1.key = 'aaa';
+        const xnode1 = xnew(() => {
+            xthis().key = 'aaa';
         });
-        const xnode2 = xnew((xnode2) => {
-            xnode2.key = 'bbb';
+        const xnode2 = xnew(() => {
+            xthis().key = 'bbb';
         });
-        const xnode3 = xnew((xnode3) => {
-            xnode3.key = 'bbb ccc';
+        const xnode3 = xnew(() => {
+            xthis().key = 'bbb ccc';
         });
 
         expect(xfind('aaa')[0]).toBe(xnode1);
@@ -28,13 +28,13 @@ describe('xnode context', () => {
 
     it('delete', () => {
         const xnode1 = xnew((xnode1) => {
-            xnode1.key = 'aaa';
+            xthis().key = 'aaa';
         });
         const xnode2 = xnew((xnode2) => {
-            xnode2.key = 'bbb';
+            xthis().key = 'bbb';
         });
         const xnode3 = xnew((xnode3) => {
-            xnode3.key = 'bbb ccc';
+            xthis().key = 'bbb ccc';
         });
         xnode3.finalize();
 
@@ -51,11 +51,11 @@ describe('xnode context', () => {
         const xnode1 = xnew(A);
         const xnode2 = xnew(B);
         const xnode3 = xnew(C);
-        function A(xnode) {
+        function A() {
         }
-        function B(xnode) {
+        function B() {
         }
-        function C(xnode) {
+        function C() {
         }
 
         expect(xfind(A)[0]).toBe(xnode1);

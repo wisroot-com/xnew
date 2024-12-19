@@ -10,7 +10,7 @@ describe('xnode extend', () => {
     it('basic', () => {
         const xnode = xnew(Derived);
 
-        function Base(xnode) {
+        function Base() {
             return {
                 test1() {
                     return 1;
@@ -18,7 +18,7 @@ describe('xnode extend', () => {
             }
         }
 
-        function Derived(xnode) {
+        function Derived() {
             const props = xextend(Base);
             return {
                 test1() {
