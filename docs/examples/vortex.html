@@ -50,6 +50,10 @@
             
             const num = 200;
             let counter = 0;
+
+            // finalize after 5000ms
+            xtimer(() => xthis().finalize(), 5 * 1000);
+
             return {
                 update() {
                     const time = 1000.0 / 60.0 * counter++;
@@ -67,9 +71,6 @@
                         ctx.arc(x + screen.width / 2, y + screen.height / 2, 15, 0, 2 * Math.PI);
                         ctx.closePath();
                         ctx.fill();
-                    }
-                    if (n > 3 * num) {
-                        xthis().finalize();
                     }
                 }
             }
