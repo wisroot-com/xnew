@@ -69,7 +69,7 @@
             }
         }
 
-        function Cube(xnode, [x, y, z], [sx, sy, sz]) {
+        function Cube([x, y, z], [sx, sy, sz]) {
             const geometry = new THREE.BoxGeometry(sx, sy, sz);
             const material = new THREE.MeshNormalMaterial();
             const object = new THREE.Mesh(geometry, material);
