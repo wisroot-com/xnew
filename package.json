@@ -6,9 +6,9 @@
   "main": "dist/xnew.js",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/wisroot-com/xnew.js/issues"
+    "url": "https://github.com/wisroot-com/xnew/issues"
   },
-  "homepage": "https://github.com/wisroot-com/xnew.js#readme",
+  "homepage": "https://github.com/wisroot-com/xnew#readme",
   "scripts": {
     "test": "jest",
     "build": "npx rollup --config --bundleConfigAsCjs",
