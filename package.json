@@ -2,7 +2,7 @@
   "name": "xnew",
   "description": "JavaScript Library for Component-Oriented Programming.",
   "keywords": ["Component-Oriented Programming"],
-  "version": "2.0.0",
+  "version": "2.0.1",
   "main": "dist/xnew.js",
   "license": "MIT",
   "bugs": {
