@@ -1,88 +1,90 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="../xnew.js"></script>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script src="../xnew.js"></script>
 </head>
 
 <body>
-    <div id="main" style="width: 100%; height: 100%;"></div>
-    <script>
-        
-        xnew('#main', () => {
-            xnew(Div1);
-            xnew(Div2);
-            xnew(Div3);
-            xnew(Div4);
-        });
+  <div id="main" style="width: 100%; height: 100%;"></div>
+  <script>
 
-        function Div1() {
-            xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
+    xnew('#main', () => {
+      xnew(Div1);
+      xnew(Div2);
+      xnew(Div3);
+      xnew(Div4);
+    });
 
-            xnew({ tagName: 'p' }, 'my div');
-            xnew({ style: 'display: flex;'}, () => {
-                xnew({ style: 'width: 160px; height: 36px; background: #d66;'}, '1');
-                xnew({ style: 'width: 160px; height: 36px; background: #6d6;'}, '2');
-                xnew({ style: 'width: 160px; height: 36px; background: #66d;'}, '3');
-            });
-        }
+    function Div1() {
+      xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;' });
 
-        function Div2() {
-            xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
-          
-            xnew({ tagName: 'p' }, 'my button');
+      xnew({ tagName: 'p' }, 'my div');
+      xnew({ style: 'display: flex;' }, () => {
+        xnew({ style: 'width: 160px; height: 36px; background: #d66;' }, '1');
+        xnew({ style: 'width: 160px; height: 36px; background: #6d6;' }, '2');
+        xnew({ style: 'width: 160px; height: 36px; background: #66d;' }, '3');
+      });
+    }
 
-            const button = xnew({ tagName: 'button' }, 'click me');
+    function Div2() {
+      xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;' });
 
-            let counter = 0;
-            button.on('click', () => {
-                button.element.textContent = `counter: ${counter++}`;
-            })
-        }
+      xnew({ tagName: 'p' }, 'my button');
 
-        function Div3() {
-            xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
-         
-            xnew({ tagName: 'p' }, 'my input text');
+      const button = xnew({ tagName: 'button' }, 'click me');
 
-            const input = xnew({ tagName: 'input', type: 'text' });
-            const span = xnew({ tagName: 'span' });
+      let counter = 0;
+      button.on('click', () => {
+        button.element.textContent = `counter: ${counter++}`;
+      })
+    }
 
-            input.on('change input', () => {
-                span.element.textContent = input.element.value;
-            })
-        }
+    function Div3() {
+      xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;' });
 
-        function Div4() {
-            xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
-        
-            xnew({ tagName: 'p' }, 'my canvas');
+      xnew({ tagName: 'p' }, 'my input text');
 
-            const canvas = xnew({ tagName: 'canvas', width: 200, height: 100 });
-            xnew(Content, canvas.element);
-        }
+      const input = xnew({ tagName: 'input', type: 'text' });
+      const span = xnew({ tagName: 'span' });
 
-        function Content(canvas) {
-            const ctx = canvas.getContext('2d');
-            const cx = canvas.width / 2;
-            const cy = canvas.height / 2;
-            const s = Math.min(cx, cy) * 0.5;
+      input.on('change input', () => {
+        span.element.textContent = input.element.value;
+      })
+    }
 
-            ctx.fillStyle = "rgb(0,0,0)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+    function Div4() {
+      xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;' });
 
-            ctx.fillStyle = "rgb(200,0,100)";
-            ctx.fillRect(cx - 0.6 * cx - s, cy - s, s * 2, s * 2);
+      xnew({ tagName: 'p' }, 'my canvas');
 
-            ctx.fillStyle = "rgb(100,200,0)";
-            ctx.fillRect(cx + 0.0 * cx - s, cy - s, s * 2, s * 2);
+      const canvas = xnew({ tagName: 'canvas', width: 200, height: 100 });
+      xnew(Contents, canvas.element);
+    }
 
-            ctx.fillStyle = "rgb(0,100,200)";
-            ctx.fillRect(cx + 0.6 * cx - s, cy - s, s * 2, s * 2);
-        }
+    function Contents(canvas) {
+      const ctx = canvas.getContext('2d');
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const s = Math.min(cx, cy) * 0.5;
 
-    </script>
+      ctx.fillStyle = "rgb(0,0,0)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "rgb(200,0,100)";
+      ctx.fillRect(cx - 0.6 * cx - s, cy - s, s * 2, s * 2);
+
+      ctx.fillStyle = "rgb(100,200,0)";
+      ctx.fillRect(cx + 0.0 * cx - s, cy - s, s * 2, s * 2);
+
+      ctx.fillStyle = "rgb(0,100,200)";
+      ctx.fillRect(cx + 0.6 * cx - s, cy - s, s * 2, s * 2);
+    }
+
+  </script>
 </body>
+
 </html>

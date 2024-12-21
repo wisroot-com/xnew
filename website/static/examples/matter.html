@@ -1,100 +1,104 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="../thirdparty/matter.min.js"></script>
-    <script src="../xnew.js"></script>
-    <style>
-        html {
-            height: -webkit-fill-available;
-        }
-        body {
-            min-height: 100vh;
-            min-height: -webkit-fill-available;
-            position: absolute;
-            margin: 0;
-            inset: 0;
-            overflow: hidden;
-        }
-    </style>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script src="../thirdparty/matter.min.js"></script>
+  <script src="../xnew.js"></script>
+  <style>
+    html {
+      height: -webkit-fill-available;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      position: absolute;
+      margin: 0;
+      inset: 0;
+      overflow: hidden;
+    }
+  </style>
 </head>
 
 <body>
-    <div id="main" style="position: relative; width: 100%; height: 100%;"></div>
-    <script>
-        xnew('#main', () => {
-            const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
+  <div id="main" style="position: relative; width: 100%; height: 100%;"></div>
+  <script>
+    xnew('#main', () => {
+      const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
 
-            xnew(MatterMain, screen.canvas);
-    
-            const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
-            button.on('click', () => {
-                button.emit('~matter.reset');
-            });
-        });
+      xnew(MatterMain, screen.canvas);
 
-        function MatterMain(canvas) {
-            const engine = Matter.Engine.create();
-            const render = Matter.Render.create({ canvas, engine,
-                options: {
-                    width: canvas.width,
-                    height: canvas.height,
-                    hasBounds: true,
-                    wireframes: false,
-                    background: 'rgb(240,240,240)'
-                }
-            });
-            Matter.Composite.add(engine.world, Matter.MouseConstraint.create(engine, { element: canvas }));
-            
-            const content = xnew(MatterContents, engine);
+      const button = xnew({ tagName: 'button', style: 'position: absolute; top: 0;' }, 'reset');
+      button.on('click', () => {
+        button.emit('~matter.reset');
+      });
+    });
 
-            return {
-                update() {
-                    Matter.Engine.update(engine);
-                    Matter.Render.world(render);
-                },
-            }
+    function MatterMain(canvas) {
+      const engine = Matter.Engine.create();
+      const render = Matter.Render.create({
+        canvas, engine,
+        options: {
+          width: canvas.width,
+          height: canvas.height,
+          hasBounds: true,
+          wireframes: false,
+          background: 'rgb(240,240,240)'
         }
-        
-        function MatterObject(object) {
-            const parent = xcontext('Matter.Composite');
-            xcontext('Matter.Composite', object);
-                
-            parent && Matter.Composite.add(parent, object);
-            return {
-                finalize() {
-                    parent && Matter.Composite.remove(parent, object);
-                },
-            }
-        }
+      });
+      Matter.Composite.add(engine.world, Matter.MouseConstraint.create(engine, { element: canvas }));
 
-        function MatterContents(engine) {
-            xextend(MatterObject, engine.world);
+      const content = xnew(MatterContents, engine);
 
-            xthis().on('~matter.reset', () => {
-                xthis().reboot(engine);
-            })
+      return {
+        update() {
+          Matter.Engine.update(engine);
+          Matter.Render.world(render);
+        },
+      }
+    }
 
-            xnew(Rectangle, 400, 200, 80, 80);
-            xnew(Polygon, 450, 50, 6, 40);
-            xnew(Circle, 350, 50, 40);
-            xnew(Rectangle, 400, 400, 800, 20, { isStatic: true });
-        }
+    function MatterObject(object) {
+      const parent = xcontext('Matter.Composite');
+      xcontext('Matter.Composite', object);
 
-        function Rectangle(...args) {
-            const object = Matter.Bodies.rectangle(...args)
-            xextend(MatterObject, object);
-        }
-        function Circle(...args) {
-            const object = Matter.Bodies.circle(...args)
-            xextend(MatterObject, object);
-        }
-        function Polygon(...args) {
-            const object = Matter.Bodies.polygon(...args)
-            xextend(MatterObject, object);
-        }
-    </script>
+      parent && Matter.Composite.add(parent, object);
+      return {
+        finalize() {
+          parent && Matter.Composite.remove(parent, object);
+        },
+      }
+    }
+
+    function MatterContents(engine) {
+      xextend(MatterObject, engine.world);
+
+      xthis().on('~matter.reset', () => {
+        xthis().reboot(engine);
+      })
+
+      xnew(Rectangle, 400, 200, 80, 80);
+      xnew(Polygon, 450, 50, 6, 40);
+      xnew(Circle, 350, 50, 40);
+      xnew(Rectangle, 400, 400, 800, 20, { isStatic: true });
+    }
+
+    function Rectangle(...args) {
+      const object = Matter.Bodies.rectangle(...args)
+      xextend(MatterObject, object);
+    }
+    function Circle(...args) {
+      const object = Matter.Bodies.circle(...args)
+      xextend(MatterObject, object);
+    }
+    function Polygon(...args) {
+      const object = Matter.Bodies.polygon(...args)
+      xextend(MatterObject, object);
+    }
+  </script>
 </body>
+
 </html>

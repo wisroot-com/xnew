@@ -2,65 +2,65 @@
 <html>
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="../xnew.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="../xnew.js"></script>
 </head>
 
 <body>
-    <script>
-        xnew(Parent);
+  <script>
+    xnew(Parent);
 
-        function Parent() {
-            xnest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'})
-            const text = xnew({ tagName: 'span' }, 'parent: start');
+    function Parent() {
+      xnest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;' })
+      const text = xnew({ tagName: 'span' }, 'parent: start');
 
-            xnew(Child);
+      xnew(Child);
 
-            const xnode = xthis();
-            xnode.on('click', () => {
-                xnode.state === 'running' ? xnode.stop() : xnode.start();
-            });
+      const xnode = xthis();
+      xnode.on('click', () => {
+        xnode.state === 'running' ? xnode.stop() : xnode.start();
+      });
 
-            let counter = 0;
-            return {
-                start() {
-                    text.element.textContent = 'parent: start';
-                },
-                update() {
-                    xnode.element.style.transform = `rotate(${counter++}deg)`;
-                },
-                stop() {
-                    text.element.textContent = 'parent: stop';
-                },
-            };
-        }
+      let counter = 0;
+      return {
+        start() {
+          text.element.textContent = 'parent: start';
+        },
+        update() {
+          xnode.element.style.transform = `rotate(${counter++}deg)`;
+        },
+        stop() {
+          text.element.textContent = 'parent: stop';
+        },
+      };
+    }
 
-        function Child() {
-            xnest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
-            const text = xnew({ tagName: 'span' }, 'parent: start');
-     
-            const xnode = xthis();
-            xnode.on('click', (event) => {
-                event.stopPropagation(); // cancel propagation to the parent element
-                xnode.state === 'running' ? xnode.stop() : xnode.start();
-            });
+    function Child() {
+      xnest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' })
+      const text = xnew({ tagName: 'span' }, 'parent: start');
 
-            let counter = 0;
-            return {
-                start() {
-                    text.element.textContent = 'child: start';
-                },
-                update() {
-                    xnode.element.style.transform = `rotate(${counter++}deg)`;
-                },
-                stop() {
-                    text.element.textContent = 'child: stop';
-                },
-            };
-        }
+      const xnode = xthis();
+      xnode.on('click', (event) => {
+        event.stopPropagation(); // cancel propagation to the parent element
+        xnode.state === 'running' ? xnode.stop() : xnode.start();
+      });
 
-    </script>
+      let counter = 0;
+      return {
+        start() {
+          text.element.textContent = 'child: start';
+        },
+        update() {
+          xnode.element.style.transform = `rotate(${counter++}deg)`;
+        },
+        stop() {
+          text.element.textContent = 'child: stop';
+        },
+      };
+    }
+
+  </script>
 </body>
 
 </html>
