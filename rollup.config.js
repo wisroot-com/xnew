@@ -13,7 +13,7 @@ export default [
     {
         input: 'index.js',
         output: {
-            file: 'docs/xnew.js',
+            file: 'website/static/xnew.js',
             format: 'umd',
             extend: true,
             name: 'window',
