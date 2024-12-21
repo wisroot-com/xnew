@@ -9,6 +9,9 @@
    id="svg5"
    inkscape:version="1.4 (86a8ad7, 2024-10-11)"
    sodipodi:docname="logo.svg"
+   inkscape:export-filename="logo.png"
+   inkscape:export-xdpi="50.799999"
+   inkscape:export-ydpi="50.799999"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -24,9 +27,9 @@
      inkscape:pagecheckerboard="0"
      inkscape:document-units="mm"
      showgrid="true"
-     inkscape:zoom="0.5"
-     inkscape:cx="1018"
-     inkscape:cy="521"
+     inkscape:zoom="1"
+     inkscape:cx="542"
+     inkscape:cy="427.5"
      inkscape:window-width="1920"
      inkscape:window-height="1094"
      inkscape:window-x="-11"
@@ -51,18 +54,6 @@
   <defs
      id="defs2">
     <linearGradient
-       id="linearGradient10"
-       inkscape:collect="always">
-      <stop
-         style="stop-color:#0e7490;stop-opacity:1;"
-         offset="0"
-         id="stop11" />
-      <stop
-         style="stop-color:#0e7490;stop-opacity:0;"
-         offset="1"
-         id="stop12" />
-    </linearGradient>
-    <linearGradient
        id="swatch10"
        inkscape:swatch="solid">
       <stop
@@ -75,7 +66,7 @@
        inkscape:collect="always">
       <stop
          style="stop-color:#0e7490;stop-opacity:1;"
-         offset="0"
+         offset="0.4595376"
          id="stop6" />
       <stop
          style="stop-color:#0e7490;stop-opacity:0;"
@@ -112,22 +103,13 @@
        x2="118.37847"
        y2="38.642906"
        gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient10"
-       id="linearGradient12"
-       x1="68.000007"
-       y1="32.000001"
-       x2="107.99999"
-       y2="32.000001"
-       gradientUnits="userSpaceOnUse" />
   </defs>
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1">
     <path
-       style="fill:url(#linearGradient5);stroke:url(#linearGradient7);stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;fill-opacity:1"
+       style="fill:url(#linearGradient5);stroke:url(#linearGradient7);stroke-width:14;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;fill-opacity:1"
        id="path1"
        sodipodi:type="arc"
        sodipodi:cx="64"
@@ -140,19 +122,14 @@
        sodipodi:arc-type="arc"
        d="M 120,64 A 56,56 0 0 1 64.079936,119.99994 56,56 0 0 1 8.0002282,64.159872 56,56 0 0 1 63.760193,8.0005135 56,56 0 0 1 119.99909,63.680258" />
     <path
-       style="fill:#06b6d4;fill-opacity:1;stroke:#155e75;stroke-width:12;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#06b6d4;fill-opacity:1;stroke:#155e75;stroke-width:16;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
        d="m 32.000001,64.000002 v 16"
        id="path2"
        sodipodi:nodetypes="cc" />
     <path
-       style="fill:#06b6d4;fill-opacity:1;stroke:#155e75;stroke-width:12;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#06b6d4;fill-opacity:1;stroke:#155e75;stroke-width:16;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
        d="m 64.000002,72.000002 v 16"
        id="path3"
        sodipodi:nodetypes="cc" />
-    <path
-       style="fill:none;fill-opacity:1;stroke:url(#linearGradient12);stroke-width:7.99999;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       d="m 72.000002,40.000001 8,-8 8,8 15.999998,-16"
-       id="path4"
-       sodipodi:nodetypes="cccc" />
   </g>
 </svg>
