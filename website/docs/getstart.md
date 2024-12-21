@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # get start
 
-Let's discover **xnew in less than 5 minutes**.
+**Get start xnew in less than 5 minutes**.
 
 
 ## introcuntion
@@ -13,8 +13,8 @@ Let's discover **xnew in less than 5 minutes**.
 xnew is a JavaScript library for component oriented programming.  
 You can build your program as a collection of simple components.  
 
-Let's start by looking at various examples. [examples](/xnew/docs/examples/cube)
-## Setup
+Let's check various [examples](/xnew/docs/examples/cube).
+## setup
 ### via cdn
 ```html
 <script src="https://unpkg.com/xnew@2.0.x/dist/xnew.js"></script>;
@@ -24,9 +24,9 @@ Let's start by looking at various examples. [examples](/xnew/docs/examples/cube)
 ```html
 <script type="importmap">
 {
-    "imports": {
-        "xnew": "https://unpkg.com/xnew@2.0.x/dist/xnew.mjs"
-    }
+  "imports": {
+    "xnew": "https://unpkg.com/xnew@2.0.x/dist/xnew.mjs"
+  }
 }
 </script>
 
@@ -45,31 +45,31 @@ npm install xnew@2.0.x
 ```js
 import { xnew, xthis, xnest, xextend, xcontext, xfind, xtimer, xbasics } from 'xnew'
 ```
-## Tutorial
-### Basic usage
+## tutorial
+### basic usage
 By setting a component function to `xnew`, an instance `xnode` will be created.  
 ```js
 const xnode = xnew(Component);    
 
 function Component() {
-    const xnode = xthis(); // you can get xnode from inside.
-    // ...
-    // implement features
+  const xnode = xthis(); // you can get xnode from inside.
+  // ...
+  // implement features
 }
 ```
 
-You can also use a function literal.  `() => { //... }`
+You can also use a function literal.  `xnew(() => { });`
 ```js
 const xnode = xnew(() => {
-    const xnode = xthis();
-    // ...
-    // implement features
+  const xnode = xthis();
+  // ...
+  // implement features
 });
 ```
 
 ### example 1
 You can create html elements using `xnew` and `xnest`.  
-(The detailed mechanism is explained on the next page.)
+(The detail is explained on the [manual](/xnew/docs/manual/xnew))
 
 <iframe style={{width:'100%',height:'200px',border:'solid 1px #AAA',borderRadius:'6px'}} src="/xnew/examples/getstart1.html" ></iframe>
 
