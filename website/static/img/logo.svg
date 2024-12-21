@@ -29,7 +29,7 @@
      showgrid="true"
      inkscape:zoom="1"
      inkscape:cx="542"
-     inkscape:cy="427.5"
+     inkscape:cy="428.5"
      inkscape:window-width="1920"
      inkscape:window-height="1094"
      inkscape:window-x="-11"
@@ -65,11 +65,11 @@
        id="linearGradient6"
        inkscape:collect="always">
       <stop
-         style="stop-color:#0e7490;stop-opacity:1;"
+         style="stop-color:#15803d;stop-opacity:1;"
          offset="0.4595376"
          id="stop6" />
       <stop
-         style="stop-color:#0e7490;stop-opacity:0;"
+         style="stop-color:#15803d;stop-opacity:0;"
          offset="1"
          id="stop7" />
     </linearGradient>
@@ -77,11 +77,11 @@
        id="linearGradient4"
        inkscape:collect="always">
       <stop
-         style="stop-color:#06b6d4;stop-opacity:1;"
+         style="stop-color:#22c55e;stop-opacity:1;"
          offset="0.47543353"
          id="stop4" />
       <stop
-         style="stop-color:#06b6d4;stop-opacity:0;"
+         style="stop-color:#22c55e;stop-opacity:0;"
          offset="1"
          id="stop5" />
     </linearGradient>
@@ -122,12 +122,12 @@
        sodipodi:arc-type="arc"
        d="M 120,64 A 56,56 0 0 1 64.079936,119.99994 56,56 0 0 1 8.0002282,64.159872 56,56 0 0 1 63.760193,8.0005135 56,56 0 0 1 119.99909,63.680258" />
     <path
-       style="fill:#06b6d4;fill-opacity:1;stroke:#155e75;stroke-width:16;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#06b6d4;fill-opacity:1;stroke:#14532d;stroke-width:16;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
        d="m 32.000001,64.000002 v 16"
        id="path2"
        sodipodi:nodetypes="cc" />
     <path
-       style="fill:#06b6d4;fill-opacity:1;stroke:#155e75;stroke-width:16;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#06b6d4;fill-opacity:1;stroke:#14532d;stroke-width:16;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
        d="m 64.000002,72.000002 v 16"
        id="path3"
        sodipodi:nodetypes="cc" />

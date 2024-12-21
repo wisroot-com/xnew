@@ -15,12 +15,12 @@ function HomepageHeader() {
         <Heading as="h1" className="hero__title">
           {siteConfig.title}
         </Heading>
-        <p className="hero__subtitle">{siteConfig.tagline}</p>
+        {/* <p className="hero__subtitle">{siteConfig.tagline}</p> */}
         <div className={styles.buttons}>
           <Link
             className="button button--secondary button--lg"
-            to="/docs/intro">
-            Docusaurus Tutorial - 5min ⏱️
+            to="/docs/getstart">
+            get start - 5min ⏱️
           </Link>
         </div>
       </div>
@@ -36,7 +36,9 @@ export default function Home() {
       description="Description will go into a meta tag in <head />">
       <HomepageHeader />
       <main>
-        <HomepageFeatures />
+        <iframe style={{width:'100%',height:'400px'}} src="/xnew/examples/cube.html" ></iframe>
+
+        {/* <HomepageFeatures /> */}
       </main>
     </Layout>
   );
