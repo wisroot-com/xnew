@@ -1,5 +1,5 @@
 # xnew
-xnew is a javascript library for component based programming.  
+xnew is a javascript library for component oriented programming.  
 You can build your program as a collection of simple components.
 
 [**xnew website**](https://wisroot-com.github.io/xnew)
