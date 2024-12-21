@@ -1,0 +1,37 @@
+name: deploy
+
+on:
+  push:
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: |
+          cd website
+          npm ci
+      - run: |
+          cd website
+          npm run build
+      - uses: actions/upload-pages-artifact@v1
+        with:
+          path: website/build
+
+  deploy:
+    name: deploy
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v1
