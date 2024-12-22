@@ -35,36 +35,62 @@ export function isObject(value)
 // create element from attributes
 //----------------------------------------------------------------------------------------------------
 
-export function createElement(attributes)
+export function createElement(attributes, parentElement = null)
 {
     const tagName = (attributes.tagName ?? 'div').toLowerCase();
     let element = null;
+
+    let nsmode = false;
     if (tagName === 'svg') {
+        nsmode = true;
+    } else {
+        while (parentElement) {
+            if (parentElement.tagName.toLowerCase() === 'svg') {
+                nsmode = true;
+                break;
+            }
+            parentElement = parentElement.parentElement;
+        }
+    }
+
+    if (nsmode === true) {
         element = document.createElementNS('http://www.w3.org/2000/svg', tagName);
     } else {
         element = document.createElement(tagName);
     }
     
-    const bools = ['checked', 'disabled', 'readOnly',];
-
     Object.keys(attributes).forEach((key) => {
         const value = attributes[key];
-        if (key === 'style') {
-            if (isString(value) === true) {
-                element.style = value;
-            } else if (isObject(value) === true){
-                Object.assign(element.style, value);
-            }
+        if (key === 'tagName') {
         } else if (key === 'class') {
         } else if (key === 'className') {
             if (isString(value) === true) {
                 element.classList.add(...value.trim().split(/\s+/));
             }
-        } else if (key === 'tagName') {
-        } else if (bools.includes(key) === true) {
-            element[key] = value;
+        } else if (key === 'style') {
+            if (isString(value) === true) {
+                element.style = value;
+            } else if (isObject(value) === true){
+                Object.assign(element.style, value);
+            }
         } else {
-            element.setAttribute(key, value);
+            const snake = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+            if (element[key] === true || element[key] === false) {
+                element[key] = value;
+            } else if (key === snake) {
+                setAttribute(element, key, value);
+            } else {
+                setAttribute(element, key, value);
+                // setAttribute(element, snake, value);
+            }
+            
+            function setAttribute(element, key, value) {
+                if (nsmode === true) {
+                    element.setAttributeNS(null, key, value);
+                } else {
+                    element.setAttribute(key, value);
+                }
+            }
         }
     });
 

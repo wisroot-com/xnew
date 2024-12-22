@@ -3,7 +3,6 @@ sidebar_position: 3
 ---
 
 # system properties
-## usage
 `xnode` has some system properties for basic control.  
 You can define the detail in the response of the component function.
 
@@ -66,7 +65,7 @@ xnode.state; // [pending → running ↔ stopped → finalized]
 ```
 
 ## calling order
-`start`, `stop`, `finalize`, these methods have a calling order.  
+`start`, `update`, `stop`, `finalize`, these methods have a calling order.  
 The parent xnode method is called after the children xnode method is called.
 
 ```js
@@ -80,6 +79,7 @@ function Parent() {
     start() { console.log('Parent start'); },
     update() { console.log('Parent update'); },
     stop() { console.log('Parent stop'); },
+    finalize() { console.log('Parent finalize'); },
   }
 }
 
@@ -88,6 +88,7 @@ function Child1() {
     start() { console.log('Child1 start'); },
     update() { console.log('Child1 update'); },
     stop() { console.log('Child1 stop'); },
+    finalize() { console.log('Child1 finalize'); },
   }
 }
 
@@ -96,6 +97,7 @@ function Child2() {
     start() { console.log('Child2 start'); },
     update() { console.log('Child2 update'); },
     stop() { console.log('Child2 stop'); },
+    finalize() { console.log('Child2 finalize'); },
   }
 }
 

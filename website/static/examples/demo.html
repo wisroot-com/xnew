@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="../xnew.js"></script>
+
+  <style>
+    html {
+      height: -webkit-fill-available;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      position: absolute;
+      margin: 0;
+      inset: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <script>
+    xnew(() => {
+      xnest({ style: 'position: relative; width: 100%; height: 100%;' });
+
+      const rect = xthis().element.getBoundingClientRect();
+      let w = rect.width;
+      let h = rect.height;
+      xtimer(() => {
+        const x = (Math.random() * (w + 300)) % (w + 300);
+        const y = (Math.random() * (h + 300)) % (h + 300) - 300;
+        const size = Math.random() * 60 + 40;
+        xnew(Unit, x, y, size);
+      }, 277, true);
+    });
+
+    function Unit(x, y, size) {
+      const absolute = xnest({ style: `position: absolute; left: ${x}px; top: ${y}px; width: ${size}px; height: ${size}px;` });
+      xnest({ tagName: 'svg', width: '100%', height: '100%', viewBox: '0 0 100 100' });
+      const index = x * y;
+      absolute.style.zIndex = Math.floor(index / 4);
+      const deg = Math.floor(Math.random() * 360) % 360;
+      xnew({ tagName: 'defs'}, `
+        <linearGradient id="linearGradient${deg}-1" x1="10" y1="90" x2="90" y2="20" gradientUnits="userSpaceOnUse">
+          <stop style="stop-color:hsl(${deg}deg 30% 60%);stop-opacity:1;" offset="0.5"/>
+          <stop style="stop-color:hsl(${deg}deg 30% 60%);stop-opacity:0;" offset="1.0"/>
+        </linearGradient>
+        <linearGradient id="linearGradient${deg}-2" x1="10" y1="90" x2="90" y2="20" gradientUnits="userSpaceOnUse">
+          <stop style="stop-color:hsl(${deg}deg 60% 60%);stop-opacity:1;" offset="0.5"/>
+          <stop style="stop-color:hsl(${deg}deg 60% 60%);stop-opacity:0;" offset="1.0"/>
+        </linearGradient>
+      `);
+      xnew({ tagName: 'circle', r: '43', cx: '50', cy: '50', fill: `url(#linearGradient${deg}-2)`, stroke: `url(#linearGradient${deg}-1)`, strokeWidth: '12'});
+      xnew({ tagName: 'path', stroke: `hsl(${deg}deg 30% 30%)`, strokeWidth: '12', strokeLinecap: 'round', d: 'm 25,45 v 12' });
+      xnew({ tagName: 'path', stroke: `hsl(${deg}deg 30% 30%)`, strokeWidth: '12', strokeLinecap: 'round', d: 'm 50,50 v 12' });
+    
+      let count = 0;
+      let movex = 0;
+      let movey = 0;
+      let prev = false;
+      let jump = 0;
+      return {
+        update() {
+          const s = Math.sin(count * 0.1);
+          if (s > 0 ^ prev) {
+            jump = 30;
+          }
+          let a = 0;
+          if (jump > 0) {
+            a = Math.sin((30 - jump) * 0.02) * 0.3;
+            jump--;
+            absolute.style.transform = `scale(1.0, ${1.0 - a})`;
+          } else {
+            absolute.style.transform = 'scale(1.0, 1.0)';
+          }
+          if (s > 0) {
+            absolute.style.left = (x - movex) + 'px';
+            absolute.style.top = (y + movey - s * 60 + a * size / 2) + 'px';
+            movex += 1.5;
+            movey += 0.5;
+            prev = true;
+          } else {
+            prev = false;
+          }
+          if (x - movex < -10) {
+            xthis().finalize();
+          }
+          count++;
+        }
+      }
+    }
+  </script>
+</body>
+
+</html>

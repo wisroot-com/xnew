@@ -36,7 +36,7 @@ export default function Home() {
       description="Description will go into a meta tag in <head />">
       <HomepageHeader />
       <main>
-        <iframe style={{width:'100%',height:'400px'}} src="/xnew/examples/cube.html" ></iframe>
+        {/* <iframe style={{width:'100%',height:'400px'}} src="/xnew/examples/demo.html" ></iframe> */}
 
         {/* <HomepageFeatures /> */}
       </main>

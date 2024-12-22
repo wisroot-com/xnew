@@ -4,8 +4,6 @@ sidebar_position: 9
 
 # xcontext
 You can use context property when you want to get properties on higher xnode.
-
-## usage 
 ```js
 // set
 xcontext(name, value);

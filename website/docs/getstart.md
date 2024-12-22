@@ -48,6 +48,8 @@ import { xnew, xthis, xnest, xextend, xcontext, xfind, xtimer, xbasics } from 'x
 ## tutorial
 ### basic usage
 By setting a component function to `xnew`, an instance `xnode` will be created.  
+In that function, you will implement various features.
+
 ```js
 const xnode = xnew(Component);    
 

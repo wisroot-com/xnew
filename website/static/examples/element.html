@@ -19,10 +19,14 @@
       xnew(Div4);
     });
 
-    function Div1() {
+    function BaseDiv(name) {
       xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;' });
+      xnew({ tagName: 'p' }, name);
+    }
 
-      xnew({ tagName: 'p' }, 'my div');
+    function Div1() {
+      xextend(BaseDiv, 'my div');
+
       xnew({ style: 'display: flex;' }, () => {
         xnew({ style: 'width: 160px; height: 36px; background: #d66;' }, '1');
         xnew({ style: 'width: 160px; height: 36px; background: #6d6;' }, '2');
@@ -31,9 +35,7 @@
     }
 
     function Div2() {
-      xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;' });
-
-      xnew({ tagName: 'p' }, 'my button');
+      xextend(BaseDiv, 'my button');
 
       const button = xnew({ tagName: 'button' }, 'click me');
 
@@ -44,9 +46,7 @@
     }
 
     function Div3() {
-      xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;' });
-
-      xnew({ tagName: 'p' }, 'my input text');
+      xextend(BaseDiv, 'my input text');
 
       const input = xnew({ tagName: 'input', type: 'text' });
       const span = xnew({ tagName: 'span' });
@@ -57,9 +57,7 @@
     }
 
     function Div4() {
-      xnest({ tagName: 'div', style: 'margin: 4px; padding: 4px; border: solid 1px #222;' });
-
-      xnew({ tagName: 'p' }, 'my canvas');
+      xextend(BaseDiv, 'my canvas');
 
       const canvas = xnew({ tagName: 'canvas', width: 200, height: 100 });
       xnew(Contents, canvas.element);

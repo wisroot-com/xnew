@@ -3,7 +3,7 @@ sidebar_position: 5
 ---
 
 # xextend
-You can create a component function that extends another component function.
+You can extend the component function using another component function.
 ## arguments
 ```
 xextend(component, ...args);

@@ -3,7 +3,6 @@ sidebar_position: 4
 ---
 
 # original properties
-## usage
 You can define original properties unless the properties are already defined.  
 The following names are not available.
 - `promise`, `start`, `update`, `stop`, `finalize`, `reboot`

@@ -3,7 +3,8 @@ sidebar_position: 7
 ---
 
 # listener
-You can set the event listener using `xnode.on`, and fire original event using `xnode.emit`.
+You can set event listeners using `xnode.on`.
+Your original event is fired using `xnode.emit`.
 
 ## `xnode.on`
 This add a event listener.

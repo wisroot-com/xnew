@@ -3,13 +3,14 @@ sidebar_position: 2
 ---
 
 # xnest
-`xnest` create a new element as a child of the current element. and replace `xnode.element`.
-### usage
+`xnest` create a new element as a child of the current element.  
+You can access it by `xnode.element` or return value.
+
 ```js
-xnest(attributes);
-// e.g.: xnest({ tagName: 'div', className: 'bbb', style: 'color: #000;' });
+const newElement = xnest(attributes);
+// e.g.: attributes = { tagName: 'div', className: 'bbb', style: 'color: #000;' };
 ```
-### example
+## example
 ```js
 xnew({ tagName: 'div', name: 'A'}, () =>{
     // xthis().element: (div A)

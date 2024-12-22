@@ -3,8 +3,6 @@ sidebar_position: 6
 ---
 
 # xtimer
-
-## ximer
 `xtimer` create a timer that execute a callback function for a specified time.
 
 ## arguments
