@@ -53,8 +53,9 @@ const xnode = xnew(() => {
 If you omit the `parent` parameter, the nesting higher xnode or otherwise `null` is assigned.   
     
 ```js
-// xnode1.parent: null
-const xnode1 = xnew(() => {
+xnew(() => {
+  // xnode1.parent: null
+  const xnode1 = xnew.self;
 
   // xnode2.parent: xnode1
   const xnode2 = xnew(() => {
@@ -71,7 +72,7 @@ const xnode1 = xnew(() => {
 ```
 ## target
 `target` is set for the html element of the new xnode.  
-The set element is accessed by `xnode.element`.
+The element is accessed by `xnode.element`.
 
 - Setting an existing html element  
 e.g. `xnew(document.querySelector('#hoge'), ...)` or `xnew('#hoge', ...)`
@@ -128,7 +129,7 @@ If you omit the `element` parameter, the parent xnode's element or otherwise `do
 </script>;
 ```
 
-## Compoennt (string)
+## innerHTML
 
 If you set string as `Compoennt`, innerHTML will be added in a created element.
 
