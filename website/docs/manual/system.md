@@ -5,6 +5,7 @@ sidebar_position: 3
 # system properties
 `xnode` has some system properties for basic control.  
 You can define the detail in the response of the component function.
+## example
 
 ```js
 const xnode = xnew(() => {

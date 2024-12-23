@@ -62,8 +62,7 @@ export function createElement(attributes, parentElement = null)
     Object.keys(attributes).forEach((key) => {
         const value = attributes[key];
         if (key === 'tagName') {
-        } else if (key === 'class') {
-        } else if (key === 'className') {
+        } else if (key === 'class' || key === 'className') {
             if (isString(value) === true) {
                 element.classList.add(...value.trim().split(/\s+/));
             }
@@ -77,11 +76,8 @@ export function createElement(attributes, parentElement = null)
             const snake = key.replace(/([A-Z])/g, '-$1').toLowerCase();
             if (element[key] === true || element[key] === false) {
                 element[key] = value;
-            } else if (key === snake) {
-                setAttribute(element, key, value);
             } else {
                 setAttribute(element, key, value);
-                // setAttribute(element, snake, value);
             }
             
             function setAttribute(element, key, value) {

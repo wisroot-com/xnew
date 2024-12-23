@@ -2,11 +2,10 @@
 sidebar_position: 5
 ---
 
-# xextend
+# xnew.extend
 You can extend the component function using another component function.
-## arguments
 ```
-xextend(component, ...args);
+xnew.extend(component, ...args);
 ```
 ## example
 
@@ -25,7 +24,7 @@ function Base() {
 ```
 ```js
 const xnode = xnew(() => {
-  xextend(Base);
+  xnew.extend(Base);
 
   return {
     update() {
@@ -54,11 +53,11 @@ xnode.hoge();
   the properties are overridden.
 :::
 
-By using the return value of `xextend`, you can change the calling rules of the original properties.
+By using the return value of `xnew.extend`, you can change the calling rules of the original properties.
 
 ```js
 const xnode = xnew(() => {
-  const props = xextend(Base);
+  const props = xnew.extend(Base);
 
   return {
     hoge() {

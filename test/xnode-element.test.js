@@ -1,5 +1,5 @@
 import { XNode } from '../src/core/xnode';
-import { xnew, xthis, xnest } from '../src/core/xnew';
+import { xnew } from '../src/core/xnew';
 
 beforeEach(() => {
     XNode.reset();
@@ -9,7 +9,7 @@ describe('xnode element', () => {
 
     it('basic', () => {
         xnew(() => {
-            const xnode1 = xthis();
+            const xnode1 = xnew.self;
             const xnode2 = xnew();
             expect(xnode1.element).toBe(document.body);
             expect(xnode2.element).toBe(document.body);
@@ -18,20 +18,20 @@ describe('xnode element', () => {
 
     it('create', () => {
         xnew(() => {
-            const xnode1 = xthis();
-            xnest({ tagName: 'div', name: 'A' });
+            const xnode1 = xnew.self;
+            xnew.nest({ tagName: 'div', name: 'A' });
             expect(xnode1.element).toBe(document.querySelector('div[name=A]'));
         })
         xnew({ tagName: 'div', name: 'B' }, () => {
-            const xnode2 = xthis();
+            const xnode2 = xnew.self;
             expect(xnode2.element).toBe(document.querySelector('div[name=B]'));
         })
     });
 
     it('nest', () => {
         const xnode1 = xnew(() => {
-            const xnode1 = xthis();
-            xnest({ tagName: 'div', name: 'test' });
+            const xnode1 = xnew.self;
+            xnew.nest({ tagName: 'div', name: 'test' });
             const xnode2 = xnew();
             expect(xnode1.element).toBe(document.querySelector('div[name=test]'));
             expect(xnode2.element).toBe(document.querySelector('div[name=test]'));
@@ -41,7 +41,7 @@ describe('xnode element', () => {
 
     it('delete', () => {
         const xnode1 = xnew(() => {
-            xnest({ tagName: 'div', name: 'test' });
+            xnew.nest({ tagName: 'div', name: 'test' });
         });
  
         expect(xnode1.element).toBe(document.querySelector('div[name=test]'));

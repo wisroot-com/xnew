@@ -31,7 +31,7 @@ Let's check various [examples](/xnew/docs/examples/cube).
 </script>
 
 <script type="module">
-import { xnew, xthis, xnest, xextend, xcontext, xfind, xtimer, xbasics } from 'xnew'
+import { xnew } from 'xnew'
 
 // ...
 
@@ -43,7 +43,7 @@ import { xnew, xthis, xnest, xextend, xcontext, xfind, xtimer, xbasics } from 'x
 npm install xnew@2.0.x
 ```
 ```js
-import { xnew, xthis, xnest, xextend, xcontext, xfind, xtimer, xbasics } from 'xnew'
+import { xnew } from 'xnew'
 ```
 ## tutorial
 ### basic usage
@@ -54,7 +54,7 @@ In that function, you will implement various features.
 const xnode = xnew(Component);    
 
 function Component() {
-  const xnode = xthis(); // you can get xnode from inside.
+  const xnode = xnew.self; // you can get xnode from inside.
   // ...
   // implement features
 }
@@ -63,14 +63,14 @@ function Component() {
 You can also use a function literal.  `xnew(() => { });`
 ```js
 const xnode = xnew(() => {
-  const xnode = xthis();
+  const xnode = xnew.self;
   // ...
   // implement features
 });
 ```
 
 ### example 1
-You can create html elements using `xnew` and `xnest`.  
+You can create html elements using `xnew` and `xnew.nest`.  
 (The detail is explained on the [manual](/xnew/docs/manual/xnew))
 
 <iframe style={{width:'100%',height:'200px',border:'solid 1px #AAA',borderRadius:'6px'}} src="/xnew/examples/getstart1.html" ></iframe>
@@ -81,14 +81,14 @@ You can create html elements using `xnew` and `xnest`.
     xnew(Div);
 
     function Div() {
-      xnest({ style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
+      xnew.nest({ style: 'margin: 4px; padding: 4px; border: solid 1px #222;'});
 
       xnew({ tagName: 'p' }, 'my div');
       xnew(Divs);
     }
 
     function Divs() {
-      xnest({ style: 'display: flex;'});
+      xnew.nest({ style: 'display: flex;'});
    
       xnew({ style: 'width: 160px; height: 36px; background: #d66;'}, '1');
       xnew({ style: 'width: 160px; height: 36px; background: #6d6;'}, '2');
@@ -110,11 +110,11 @@ Click on the square below.
     xnew(Component);
 
     function Component() {
-      xnest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'});
+      xnew.nest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'});
       
       const text = xnew({ tagName: 'span' });
 
-      const xnode = xthis();
+      const xnode = xnew.self;
       xnode.on('click', (event) => {
           xnode.state === 'running' ? xnode.stop() : xnode.start();
       });
@@ -148,13 +148,13 @@ For example, when the parent component stop, its children also stop.
     xnew(Parent);
 
     function Parent() {
-      xnest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'});
+      xnew.nest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'});
 
       const text = xnew({ tagName: 'span' });
 
       xnew(Child);
 
-      const xnode = xthis();
+      const xnode = xnew.self;
       xnode.on('click', () => {
         xnode.state === 'running' ? xnode.stop() : xnode.start();
       });
@@ -174,11 +174,11 @@ For example, when the parent component stop, its children also stop.
     }
 
     function Child() {
-      xnest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' });
+      xnew.nest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' });
 
       const text = xnew({ tagName: 'span' });
 
-      const xnode = xthis();
+      const xnode = xnew.self;
       xnode.on('click', (event) => {
         event.stopPropagation();
         xnode.state === 'running' ? xnode.stop() : xnode.start();

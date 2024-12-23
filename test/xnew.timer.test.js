@@ -1,5 +1,5 @@
 import { XNode } from '../src/core/xnode';
-import { xnew, xtimer } from '../src/core/xnew';
+import { xnew } from '../src/core/xnew';
 
 beforeEach(() => {
     XNode.reset();
@@ -11,7 +11,7 @@ describe('xnode timer', () => {
             let state = 0;
             let start = Date.now();
             const margin = 100;
-            xtimer(() => {
+            xnew.timer(() => {
                 const d = Date.now() - start;
                 expect(d).toBeGreaterThan(500 - margin);
                 expect(d).toBeLessThan(500 + margin);

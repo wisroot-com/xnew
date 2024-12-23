@@ -28,7 +28,7 @@
   <div id="main" style="width: 100%; height: 100%;"></div>
   <script>
     xnew('#main', () => {
-      const screen = xnew(xbasics.Screen, { width: 1200, height: 800 });
+      const screen = xnew(xnew.basics.Screen, { width: 1200, height: 800 });
 
       // setting for three.js
       const three = xnew(ThreeMain, screen.canvas);
@@ -57,8 +57,8 @@
     }
 
     function ThreeObject(object) {
-      const parent = xcontext('ThreeObject');
-      xcontext('ThreeObject', object);
+      const parent = xnew.context('ThreeObject');
+      xnew.context('ThreeObject', object);
 
       parent?.add(object);
       return {
@@ -69,11 +69,11 @@
     }
 
     function Controller() {
-      const dpad = xnew({ style: 'position: absolute; left: 10px; bottom: 20px; z-index: 10;' }, xbasics.DPad);
+      const dpad = xnew({ style: 'position: absolute; left: 10px; bottom: 20px; z-index: 10;' }, xnew.basics.DPad);
       dpad.on('down move up', (event, ex) => {
         dpad.emit('#object.move', ex);
       })
-      const button = xnew({ style: 'position: absolute; right: 20px; bottom: 20px; z-index: 10;' }, xbasics.CircleButton);
+      const button = xnew({ style: 'position: absolute; right: 20px; bottom: 20px; z-index: 10;' }, xnew.basics.CircleButton);
       button.on('down', (event, ex) => {
         button.emit('#object.action');
       })
@@ -88,7 +88,7 @@
     }
 
     function Content(three) {
-      xextend(ThreeObject, three.scene);
+      xnew.extend(ThreeObject, three.scene);
 
       xnew(DirectionaLight, 20, 50, 100);
       xnew(AmbientLight);
@@ -113,13 +113,13 @@
       object.shadow.camera.far = +s * 10.0;
       object.shadow.camera.updateProjectionMatrix();
 
-      xextend(ThreeObject, object);
+      xnew.extend(ThreeObject, object);
     }
 
     function AmbientLight() {
       const object = new THREE.AmbientLight(0xFFFFFF, 0.50);
 
-      xextend(ThreeObject, object);
+      xnew.extend(ThreeObject, object);
     }
 
     function Ground(size, color) {
@@ -128,11 +128,11 @@
       const object = new THREE.Mesh(geometry, material);
       object.receiveShadow = true;
 
-      xextend(ThreeObject, object);
+      xnew.extend(ThreeObject, object);
     }
 
     function Blocks() {
-      xextend(ThreeObject, new THREE.Group());
+      xnew.extend(ThreeObject, new THREE.Group());
 
       xnew(Block, [-36, -50]);
       xnew(Block, [-12, -50]);
@@ -144,7 +144,7 @@
       const object = new THREE.Group();
       object.position.set(x, y, 0);
 
-      xextend(ThreeObject, object);
+      xnew.extend(ThreeObject, object);
 
       const data = [
         [0, 0, 0, 1, 0, 0, 0],
@@ -156,7 +156,7 @@
       xnew(CubeArray, data, [3, 2], 4, 0xAAFFAA);
 
       let move = null;
-      xthis().on('object.move', ({ vector }) => {
+      xnew.self.on('object.move', ({ vector }) => {
         move = vector;
       });
       return {
@@ -171,7 +171,7 @@
 
     function Block([x, y]) {
       const object = new THREE.Group();
-      xextend(ThreeObject, object);
+      xnew.extend(ThreeObject, object);
       object.position.set(x, y, 0);
       const data = [
         [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
@@ -187,7 +187,7 @@
 
     function CubeArray(data, offset, size, color) {
       const object = new THREE.Group();
-      xextend(ThreeObject, object);
+      xnew.extend(ThreeObject, object);
 
       for (let y = 0; y < data.length; y++) {
         for (let x = 0; x < data[y].length; x++) {
@@ -204,7 +204,7 @@
       const geometry = new THREE.BoxGeometry(sx, sy, sz);
       const material = new THREE.MeshLambertMaterial({ color, });
       const object = new THREE.Mesh(geometry, material);
-      xextend(ThreeObject, object);
+      xnew.extend(ThreeObject, object);
       object.position.set(x, y, z);
 
       object.castShadow = true;

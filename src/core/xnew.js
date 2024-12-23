@@ -41,56 +41,60 @@ export function xnew(...args)
     }
 }
 
-export function xthis()
+function self()
 {
     return XNode.current;
 }
+Object.defineProperty(xnew, 'self', { configurable: true, enumerable: true, get: self });
 
-export function xnest(attributes)
+function nest(attributes)
 {
     const xnode = XNode.current;
 
     if (xnode.element instanceof Window || xnode.element instanceof Document) {
-        error('xnext', 'No elements are added to window or document.');
+        error('xnew.nest', 'No elements are added to window or document.');
     } else if (isObject(attributes) === false) {
-        error('xnext', 'The argument is invalid.', 'attributes');
+        error('xnew.nest', 'The argument is invalid.', 'attributes');
     } else if (xnode._.state !== 'pending') {
-        error('xnext', 'This function can not be called after initialized.');
+        error('xnew.nest', 'This function can not be called after initialized.');
     } else {
         return XNode.nest.call(xnode, attributes);
     }
 }
+Object.defineProperty(xnew, 'nest', { configurable: true, enumerable: true, value: nest });
 
-export function xextend(component, ...args)
+function extend(component, ...args)
 {
     const xnode = XNode.current;
 
     if (isFunction(component) === false) {
-        error('xextend', 'The argument is invalid.', 'component');
+        error('xnew.extend', 'The argument is invalid.', 'component');
     } else if (xnode._.state !== 'pending') {
-        error('xextend', 'This function can not be called after initialized.');
+        error('xnew.extend', 'This function can not be called after initialized.');
     } else if (xnode._.components.has(component) === true) {
-        error('xextend', 'This function has already been added.');
+        error('xnew.extend', 'This function has already been added.');
     } else {
         return XNode.extend.call(xnode, component, ...args);
     }
 }
+Object.defineProperty(xnew, 'extend', { configurable: true, enumerable: true, value: extend });
 
-export function xcontext(key, value)
+function context(key, value)
 {
     const xnode = XNode.current;
 
     if (isString(key) === false) {
-        error('xcontext', 'The argument is invalid.', 'key');
+        error('xnew.context', 'The argument is invalid.', 'key');
     } else {
         return XNode.context.call(xnode, key, value);
     }
 }
+Object.defineProperty(xnew, 'context', { configurable: true, enumerable: true, value: context });
 
-export function xfind(key)
+function find(key)
 {
     if (isString(key) === false && isFunction(key) === false) {
-        error('xfind', 'The argument is invalid.', 'key');
+        error('xnew.find', 'The argument is invalid.', 'key');
     } else if (isString(key) === true) {
         const set = new Set();
         key.trim().split(/\s+/).forEach((key) => {
@@ -103,8 +107,9 @@ export function xfind(key)
         return [...set];
     }
 }
+Object.defineProperty(xnew, 'find', { configurable: true, enumerable: true, value: find });
 
-export function xtimer(callback, delay = 0, loop = false)
+function timer(callback, delay = 0, loop = false)
 {
     const current = XNode.current;
 
@@ -133,3 +138,4 @@ export function xtimer(callback, delay = 0, loop = false)
     });
     return timer;
 }
+Object.defineProperty(xnew, 'timer', { configurable: true, enumerable: true, value: timer });

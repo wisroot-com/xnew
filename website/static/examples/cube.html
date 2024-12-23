@@ -27,7 +27,7 @@
   <div id="main" style="width: 100%; height: 100%;"></div>
   <script>
     xnew('#main', () => {
-      const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
+      const screen = xnew(xnew.basics.Screen, { width: 800, height: 400 });
 
       xnew(ThreeMain, screen.canvas);
     });
@@ -46,8 +46,8 @@
     }
 
     function ThreeObject(object) {
-      const parent = xcontext('THREE.Object3D');
-      xcontext('THREE.Object3D', object);
+      const parent = xnew.context('THREE.Object3D');
+      xnew.context('THREE.Object3D', object);
 
       parent?.add(object);
       return {
@@ -60,12 +60,12 @@
     function ThreeContents() {
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0xFFFFFF);
-      xextend(ThreeObject, scene);
+      xnew.extend(ThreeObject, scene);
 
       xnew(Light);
 
       // call iteratively (delay = 100ms, loop = true)
-      xtimer(() => xnew(Cube), 100, true);
+      xnew.timer(() => xnew(Cube), 100, true);
 
       return {
         get scene() {
@@ -78,7 +78,7 @@
       const light = new THREE.PointLight(0xFFFFFF, 1);
       light.position.set(0, 0, +100);
 
-      xextend(ThreeObject, light);
+      xnew.extend(ThreeObject, light);
     }
 
     function Cube() {
@@ -90,7 +90,7 @@
       object.position.y = 100 * (Math.random() - 0.5);
       object.position.z = 100 * (Math.random() - 0.5);
 
-      xextend(ThreeObject, object);
+      xnew.extend(ThreeObject, object);
 
       const velocity = {};
       velocity.x = Math.random() - 0.5;
@@ -98,7 +98,7 @@
       velocity.z = Math.random() - 0.5;
 
       // finalize after 5000ms
-      xtimer(() => xthis().finalize(), 5 * 1000);
+      xnew.timer(() => xnew.self.finalize(), 5 * 1000);
 
       return {
         update() {

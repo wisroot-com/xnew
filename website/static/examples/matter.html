@@ -27,7 +27,7 @@
   <div id="main" style="position: relative; width: 100%; height: 100%;"></div>
   <script>
     xnew('#main', () => {
-      const screen = xnew(xbasics.Screen, { width: 800, height: 450 });
+      const screen = xnew(xnew.basics.Screen, { width: 800, height: 450 });
 
       xnew(MatterMain, screen.canvas);
 
@@ -62,8 +62,8 @@
     }
 
     function MatterObject(object) {
-      const parent = xcontext('Matter.Composite');
-      xcontext('Matter.Composite', object);
+      const parent = xnew.context('Matter.Composite');
+      xnew.context('Matter.Composite', object);
 
       parent && Matter.Composite.add(parent, object);
       return {
@@ -74,10 +74,10 @@
     }
 
     function MatterContents(engine) {
-      xextend(MatterObject, engine.world);
+      xnew.extend(MatterObject, engine.world);
 
-      xthis().on('~matter.reset', () => {
-        xthis().reboot(engine);
+      xnew.self.on('~matter.reset', () => {
+        xnew.self.reboot(engine);
       })
 
       xnew(Rectangle, 400, 200, 80, 80);
@@ -88,15 +88,15 @@
 
     function Rectangle(...args) {
       const object = Matter.Bodies.rectangle(...args)
-      xextend(MatterObject, object);
+      xnew.extend(MatterObject, object);
     }
     function Circle(...args) {
       const object = Matter.Bodies.circle(...args)
-      xextend(MatterObject, object);
+      xnew.extend(MatterObject, object);
     }
     function Polygon(...args) {
       const object = Matter.Bodies.polygon(...args)
-      xextend(MatterObject, object);
+      xnew.extend(MatterObject, object);
     }
   </script>
 </body>

@@ -2,18 +2,17 @@
 sidebar_position: 6
 ---
 
-# xtimer
-`xtimer` create a timer that execute a callback function for a specified time.
+# xnew.timer
+`xnew.timer` create a timer that execute a callback function for a specified time.
 
-## arguments
 ```
-xtimer(callback, delay, loop = false);
+xnew.timer(callback, delay, loop = false);
 ```
 ### example
 
 ```
 xnew(() => {
-    const timer = xtimer(() => {
+    const timer = xnew.timer(() => {
         // This function is called after 100 ms.
     }, 100);
 

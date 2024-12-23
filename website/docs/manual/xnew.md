@@ -26,7 +26,7 @@ xnew(parent, target);               // Component is omitted
 ...
 ```
 
-## Compoennt (function)
+## example
 By setting a component function to `xnew`, an instance `xnode` will be created.  
 In the function, you will implement various features.
 
@@ -34,7 +34,7 @@ In the function, you will implement various features.
 const xnode = xnew(Component);    
 
 function Component() {
-  const xnode = xthis(); // you can get xnode from inside.
+  const xnode = xnew.self; // you can get xnode from inside.
   // ...
   // implement features
 }
@@ -43,27 +43,10 @@ function Component() {
 You can also use a function literal.  `xnew(() => { });`
 ```js
 const xnode = xnew(() => {
-  const xnode = xthis();
+  const xnode = xnew.self;
   // ...
   // implement features
 });
-```
-Calling `xnew` within a component function connects the parent-child relationship automatically and makes it work together.
-
-```js
-const xnode = xnew(Parent);
-
-function Parent() {
-  const xnode = xthis();
-  xnode.parent; // null
-
-  xnew(Child); 
-}
-
-function Child() {
-  const xnode = xthis();
-  xnode.parent; // parent xnode
-}
 ```
 
 ## parent
@@ -97,7 +80,7 @@ e.g. `xnew(document.querySelector('#hoge'), ...)` or `xnew('#hoge', ...)`
   <div id="hoge"></div>
   <script>
     const xnode = xnew(document.querySelector('#hoge'), () => {
-      const xnode = xthis();
+      const xnode = xnew.self;
 
       xnode.element; // element (id = hoge)
     });
@@ -111,7 +94,7 @@ e.g. `xnew({ tagName: 'div', className: 'aaa', style: 'bbb', }, ...)`
 <body>
   <script>
     const xnode = xnew({ tagName: 'div', id: 'hoge' }, () => {
-      const xnode = xthis();
+      const xnode = xnew.self;
       
       xnode.element; // element (id = hoge)
     });
@@ -128,18 +111,18 @@ If you omit the `element` parameter, the parent xnode's element or otherwise `do
 
 <script>
   xnew(() => {
-    // xthis().element: document.body
+    // xnew.self.element: document.body
   });
 
   xnew('#hoge', () => {
-    // xthis().element: (id=hoge)
+    // xnew.self.element: (id=hoge)
 
     xnew(() => {
-      // xthis().element: (id=hoge)
+      // xnew.self.element: (id=hoge)
     });
 
     xnew({ tagName: 'div', id: 'fuga' }, () => {
-      // xthis().element: (id=fuga) (as a child element of hoge)
+      // xnew.self.element: (id=fuga) (as a child element of hoge)
     });
   });
 </script>;

@@ -1,15 +1,18 @@
-export { xnew, xthis, xnest, xextend, xfind, xcontext, xtimer } from './src/core/xnew';
+export { xnew } from './src/core/xnew';
 
+import { xnew } from './src/core/xnew';
 import { DragEvent } from './src/basics/DragEvent';
 import { GestureEvent } from './src/basics/GestureEvent';
 import { ResizeEvent } from './src/basics/ResizeEvent';
 import { Screen } from './src/basics/Screen';
 import { SubWindow } from './src/basics/SubWindow';
 
-export const xbasics = {
+const basics = {
     DragEvent,
     GestureEvent,
     ResizeEvent,
     Screen,
     SubWindow
 };
+
+Object.defineProperty(xnew, 'basics', { configurable: true, enumerable: true, value: basics });

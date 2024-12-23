@@ -15,12 +15,12 @@
   <script>
     xnew('#main', () => {
       const subwindow = xnew(() => {
-        xextend(xbasics.SubWindow);
+        xnew.extend(xnew.basics.SubWindow);
         xnew({ style: 'width: 100px; height: 100px; background: #AAA; border: solid 10px #000; border-radius: 4px;' }, (xnode) => {
           xnew({ tagName: 'button' }, 'test');
         });
-        const xnode = xthis();
-        const drag = xnew(xbasics.DragEvent);
+        const xnode = xnew.self;
+        const drag = xnew(xnew.basics.DragEvent);
 
         let offset = { x: 0, y: 0 };
         drag.on('down', (event, { position }) => {

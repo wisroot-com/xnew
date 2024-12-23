@@ -27,7 +27,7 @@
   <div id="main" style="width: 100%; height: 100%;"></div>
   <script>
     xnew('#main', () => {
-      const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
+      const screen = xnew(xnew.basics.Screen, { width: 800, height: 400 });
 
       xnew(PixiMain, screen.canvas);
     });
@@ -45,8 +45,8 @@
     }
 
     function PixiObject(object) {
-      const parent = xcontext('PIXI.DisplayObject');
-      xcontext('PIXI.DisplayObject', object);
+      const parent = xnew.context('PIXI.DisplayObject');
+      xnew.context('PIXI.DisplayObject', object);
 
       parent?.addChild(object);
       return {
@@ -58,7 +58,7 @@
 
     function PixiContents() {
       const scene = new PIXI.Container();
-      xextend(PixiObject, scene);
+      xnew.extend(PixiObject, scene);
 
       xnew(Box, [800 / 2, 400 / 2], [160, 160], 0xEA1E63);
 
@@ -71,7 +71,7 @@
 
     function Box([x, y], [sx, sy], color) {
       const object = new PIXI.Container();
-      xextend(PixiObject, object);
+      xnew.extend(PixiObject, object);
 
       object.x = x;
       object.y = y;

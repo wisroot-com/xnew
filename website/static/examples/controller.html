@@ -27,7 +27,7 @@
   <div id="main" style="width: 100%; height: 100%;"></div>
   <script>
     xnew('#main', () => {
-      const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
+      const screen = xnew(xnew.basics.Screen, { width: 800, height: 400 });
 
       xnew(PixiMain, screen.canvas);
 
@@ -46,8 +46,8 @@
     }
 
     function PixiObject(object) {
-      const parent = xcontext('PixiObject');
-      xcontext('PixiObject', object);
+      const parent = xnew.context('PixiObject');
+      xnew.context('PixiObject', object);
 
       parent?.addChild(object);
       return {
@@ -59,7 +59,7 @@
 
     function PixiContents() {
       const scene = new PIXI.Container();
-      xextend(PixiObject, scene);
+      xnew.extend(PixiObject, scene);
 
       xnew(Box, [800 / 2, 400 / 2], [160, 160], 0xEA1E63);
 
@@ -71,7 +71,7 @@
     }
 
     function Controller() {
-      const xnode = xthis();
+      const xnode = xnew.self;
       xnode.on('touchstart contextmenu wheel', (event) => {
         event.preventDefault();
       });
@@ -92,7 +92,7 @@
 
     function Box([x, y], [sx, sy], color) {
       const object = new PIXI.Container();
-      xextend(PixiObject, object);
+      xnew.extend(PixiObject, object);
 
       object.x = x;
       object.y = y;
@@ -104,7 +104,7 @@
 
       let move = null;
       let direction = +1;
-      const xnode = xthis();
+      const xnode = xnew.self;
       xnode.on('~box.move', (vector) => {
         move = vector;
       });
@@ -124,7 +124,7 @@
     }
 
     function AnalogStick({ size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-      xnest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
+      xnew.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; overflow: hidden;`, });
 
       const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
       const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -139,8 +139,8 @@
                 <circle cx="50" cy="50" r="23"></circle>
             `);
 
-      const xnode = xthis();
-      const drag = xnew(xbasics.DragEvent);
+      const xnode = xnew.self;
+      const drag = xnew(xnew.basics.DragEvent);
 
       drag.on('down move', (event, { type, position }) => {
         target.element.style.filter = 'brightness(90%)';
@@ -166,7 +166,7 @@
     }
 
     function DPad({ size = 130, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-      xnest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
+      xnew.nest({ style: `position: relative; width: ${size}px; height: ${size}px; cursor: pointer; overflow: hidden; user-select: none;`, });
 
       const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
       const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
@@ -197,8 +197,8 @@
                 <polygon points="89 50 80 42 80 58"></polygon>
             `);
 
-      const xnode = xthis();
-      const drag = xnew(xbasics.DragEvent);
+      const xnode = xnew.self;
+      const drag = xnew(xnew.basics.DragEvent);
 
       drag.on('down move', (event, { type, position }) => {
         const x = position.x - size / 2;
@@ -227,7 +227,7 @@
     }
 
     function CircleButton({ size = 80, fill = '#FFF', fillOpacity = 0.8, stroke = '#000', strokeOpacity = 0.8, strokeWidth = 2 } = {}) {
-      xnest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
+      xnew.nest({ style: `position: relative; width: ${size}px; height: ${size}px; user-select: none;`, });
       const fillStyle = `fill: ${fill}; fill-opacity: ${fillOpacity};`;
       const strokeStyle = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth / (size / 100)}; stroke-linejoin: round;`;
 
@@ -235,8 +235,8 @@
                 <circle cx="50" cy="50" r="40"></circle>
             `);
 
-      const xnode = xthis();
-      const drag = xnew(target, xbasics.DragEvent);
+      const xnode = xnew.self;
+      const drag = xnew(target, xnew.basics.DragEvent);
 
       drag.on('down', (event, ex) => {
         target.element.style.filter = 'brightness(90%)';

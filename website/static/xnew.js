@@ -62,7 +62,7 @@
         
         Object.keys(attributes).forEach((key) => {
             const value = attributes[key];
-            if (key === 'tagName') ; else if (key === 'class') ; else if (key === 'className') {
+            if (key === 'tagName') ; else if (key === 'class' || key === 'className') {
                 if (isString(value) === true) {
                     element.classList.add(...value.trim().split(/\s+/));
                 }
@@ -73,14 +73,11 @@
                     Object.assign(element.style, value);
                 }
             } else {
-                const snake = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+                key.replace(/([A-Z])/g, '-$1').toLowerCase();
                 if (element[key] === true || element[key] === false) {
                     element[key] = value;
-                } else if (key === snake) {
-                    setAttribute(element, key, value);
                 } else {
                     setAttribute(element, key, value);
-                    // setAttribute(element, snake, value);
                 }
                 
                 function setAttribute(element, key, value) {
@@ -680,56 +677,60 @@
         }
     }
 
-    function xthis()
+    function self()
     {
         return XNode.current;
     }
+    Object.defineProperty(xnew, 'self', { configurable: true, enumerable: true, get: self });
 
-    function xnest$1(attributes)
+    function nest(attributes)
     {
         const xnode = XNode.current;
 
         if (xnode.element instanceof Window || xnode.element instanceof Document) {
-            error('xnext', 'No elements are added to window or document.');
+            error('xnew.nest', 'No elements are added to window or document.');
         } else if (isObject(attributes) === false) {
-            error('xnext', 'The argument is invalid.', 'attributes');
+            error('xnew.nest', 'The argument is invalid.', 'attributes');
         } else if (xnode._.state !== 'pending') {
-            error('xnext', 'This function can not be called after initialized.');
+            error('xnew.nest', 'This function can not be called after initialized.');
         } else {
             return XNode.nest.call(xnode, attributes);
         }
     }
+    Object.defineProperty(xnew, 'nest', { configurable: true, enumerable: true, value: nest });
 
-    function xextend(component, ...args)
+    function extend(component, ...args)
     {
         const xnode = XNode.current;
 
         if (isFunction(component) === false) {
-            error('xextend', 'The argument is invalid.', 'component');
+            error('xnew.extend', 'The argument is invalid.', 'component');
         } else if (xnode._.state !== 'pending') {
-            error('xextend', 'This function can not be called after initialized.');
+            error('xnew.extend', 'This function can not be called after initialized.');
         } else if (xnode._.components.has(component) === true) {
-            error('xextend', 'This function has already been added.');
+            error('xnew.extend', 'This function has already been added.');
         } else {
             return XNode.extend.call(xnode, component, ...args);
         }
     }
+    Object.defineProperty(xnew, 'extend', { configurable: true, enumerable: true, value: extend });
 
-    function xcontext(key, value)
+    function context(key, value)
     {
         const xnode = XNode.current;
 
         if (isString(key) === false) {
-            error('xcontext', 'The argument is invalid.', 'key');
+            error('xnew.context', 'The argument is invalid.', 'key');
         } else {
             return XNode.context.call(xnode, key, value);
         }
     }
+    Object.defineProperty(xnew, 'context', { configurable: true, enumerable: true, value: context });
 
-    function xfind(key)
+    function find(key)
     {
         if (isString(key) === false && isFunction(key) === false) {
-            error('xfind', 'The argument is invalid.', 'key');
+            error('xnew.find', 'The argument is invalid.', 'key');
         } else if (isString(key) === true) {
             const set = new Set();
             key.trim().split(/\s+/).forEach((key) => {
@@ -742,8 +743,9 @@
             return [...set];
         }
     }
+    Object.defineProperty(xnew, 'find', { configurable: true, enumerable: true, value: find });
 
-    function xtimer(callback, delay = 0, loop = false)
+    function timer(callback, delay = 0, loop = false)
     {
         const current = XNode.current;
 
@@ -772,9 +774,10 @@
         });
         return timer;
     }
+    Object.defineProperty(xnew, 'timer', { configurable: true, enumerable: true, value: timer });
 
     function DragEvent() {
-        const xnode = xthis();
+        const xnode = xnew.self;
         let isActive = false;
       
         const base = xnew();
@@ -831,7 +834,7 @@
     }
 
     function GestureEvent() {
-        const xnode = xthis();
+        const xnode = xnew.self;
         const drag = xnew(DragEvent);
 
         let isActive = false;
@@ -879,7 +882,7 @@
     }
 
     function ResizeEvent() {
-        const xnode = xthis();
+        const xnode = xnew.self;
 
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
@@ -901,9 +904,9 @@
     }
 
     function Screen({ width = 640, height = 480, objectFit = 'contain', pixelated = false } = {}) {
-        const wrapper = xnest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
-        const absolute = xnest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
-        xnest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
+        const wrapper = xnew.nest({ style: 'position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none;' });
+        const absolute = xnew.nest({ style: 'position: absolute; inset: 0; margin: auto; user-select: none;' });
+        xnew.nest({ style: 'position: relative; width: 100%; height: 100%; user-select: none;' });
 
         const size = { width, height };
         const canvas = xnew({ tagName: 'canvas', width, height, style: 'position: absolute; width: 100%; height: 100%; vertical-align: bottom; user-select: none;' });
@@ -971,7 +974,7 @@
     }
 
     function SubWindow() {
-        xthis();
+        xnew.self;
         const absolute = xnest({ style: 'position: absolute;' });
         
         return {
@@ -985,7 +988,7 @@
         }
     }
 
-    const xbasics = {
+    const basics = {
         DragEvent,
         GestureEvent,
         ResizeEvent,
@@ -993,13 +996,8 @@
         SubWindow
     };
 
-    exports.xbasics = xbasics;
-    exports.xcontext = xcontext;
-    exports.xextend = xextend;
-    exports.xfind = xfind;
-    exports.xnest = xnest$1;
+    Object.defineProperty(xnew, 'basics', { configurable: true, enumerable: true, value: basics });
+
     exports.xnew = xnew;
-    exports.xthis = xthis;
-    exports.xtimer = xtimer;
 
 }));

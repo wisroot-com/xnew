@@ -28,7 +28,7 @@
   <div id="main" style="width: 100%; height: 100%;"></div>
   <script>
     xnew('#main', () => {
-      const screen = xnew(xbasics.Screen, { width: 800, height: 400 });
+      const screen = xnew(xnew.basics.Screen, { width: 800, height: 400 });
 
       xnew(ThreeMain, screen.canvas);
       xnew(PixiMain, screen.canvas);
@@ -54,8 +54,8 @@
     }
 
     function ThreeObject(object) {
-      const parent = xcontext('THREE.Object3D');
-      xcontext('THREE.Object3D', object);
+      const parent = xnew.context('THREE.Object3D');
+      xnew.context('THREE.Object3D', object);
 
       parent?.add(object);
       return {
@@ -69,7 +69,7 @@
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0xFFFFFF);
 
-      xextend(ThreeObject, scene);
+      xnew.extend(ThreeObject, scene);
 
       xnew(Cube, [0, 0, 0], [40, 40, 40]);
       return {
@@ -92,8 +92,8 @@
     }
 
     function PixiObject(object) {
-      const parent = xcontext('PIXI.DisplayObject');
-      xcontext('PIXI.DisplayObject', object);
+      const parent = xnew.context('PIXI.DisplayObject');
+      xnew.context('PIXI.DisplayObject', object);
 
       parent?.addChild(object);
       return {
@@ -106,9 +106,9 @@
     function PixiContents() {
       const scene = new PIXI.Container();
 
-      xextend(PixiObject, scene);
+      xnew.extend(PixiObject, scene);
 
-      const three = xfind(ThreeMain)[0];
+      const three = xnew.find(ThreeMain)[0];
       const background = new PIXI.Sprite(PIXI.Texture.from(three.canvas));
       scene.addChild(background);
 
@@ -134,7 +134,7 @@
       graphics.drawRect(-sx / 2, -sy / 2, sx, sy);
       graphics.endFill();
 
-      xextend(PixiObject, object);
+      xnew.extend(PixiObject, object);
 
       return {
         update() {
@@ -148,7 +148,7 @@
       const material = new THREE.MeshNormalMaterial();
       const object = new THREE.Mesh(geometry, material);
 
-      xextend(ThreeObject, object);
+      xnew.extend(ThreeObject, object);
 
       return {
         update() {

@@ -13,14 +13,14 @@
     xnew(Div);
 
     function Div() {
-      xnest({ style: 'margin: 4px; padding: 4px; border: solid 1px #222;' });
+      xnew.nest({ style: 'margin: 4px; padding: 4px; border: solid 1px #222;' });
 
       xnew({ tagName: 'p' }, 'my div');
       xnew(Divs);
     }
 
     function Divs() {
-      xnest({ style: 'display: flex;' });
+      xnew.nest({ style: 'display: flex;' });
 
       xnew({ style: 'width: 160px; height: 36px; background: #d66;' }, '1');
       xnew({ style: 'width: 160px; height: 36px; background: #6d6;' }, '2');
