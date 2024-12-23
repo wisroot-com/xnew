@@ -61,7 +61,7 @@
       }
     }
 
-    function MatterObject(object) {
+    function MatterNest(object) {
       const parent = xnew.context('Matter.Composite');
       xnew.context('Matter.Composite', object);
 
@@ -74,7 +74,7 @@
     }
 
     function MatterContents(engine) {
-      xnew.extend(MatterObject, engine.world);
+      xnew.extend(MatterNest, engine.world);
 
       xnew.current.on('~matter.reset', () => {
         xnew.current.reboot(engine);
@@ -88,15 +88,15 @@
 
     function Rectangle(...args) {
       const object = Matter.Bodies.rectangle(...args)
-      xnew.extend(MatterObject, object);
+      xnew.extend(MatterNest, object);
     }
     function Circle(...args) {
       const object = Matter.Bodies.circle(...args)
-      xnew.extend(MatterObject, object);
+      xnew.extend(MatterNest, object);
     }
     function Polygon(...args) {
       const object = Matter.Bodies.polygon(...args)
-      xnew.extend(MatterObject, object);
+      xnew.extend(MatterNest, object);
     }
   </script>
 </body>

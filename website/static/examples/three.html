@@ -45,7 +45,7 @@
       }
     }
 
-    function ThreeObject(object) {
+    function ThreeNest(object) {
       const parent = xnew.context('THREE.Object3D');
       xnew.context('THREE.Object3D', object);
 
@@ -61,7 +61,7 @@
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0xFFFFFF);
 
-      xnew.extend(ThreeObject, scene);
+      xnew.extend(ThreeNest, scene);
 
       xnew(Cube, [0, 0, 0], [40, 40, 40]);
       return {
@@ -77,7 +77,7 @@
       const object = new THREE.Mesh(geometry, material);
       object.position.set(x, y, z);
 
-      xnew.extend(ThreeObject, object);
+      xnew.extend(ThreeNest, object);
 
       return {
         update() {

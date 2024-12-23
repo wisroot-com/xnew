@@ -44,7 +44,7 @@
       };
     }
 
-    function PixiObject(object) {
+    function PixiNest(object) {
       const parent = xnew.context('PIXI.DisplayObject');
       xnew.context('PIXI.DisplayObject', object);
 
@@ -58,7 +58,7 @@
 
     function PixiContents() {
       const scene = new PIXI.Container();
-      xnew.extend(PixiObject, scene);
+      xnew.extend(PixiNest, scene);
 
       xnew(Box, [800 / 2, 400 / 2], [160, 160], 0xEA1E63);
 
@@ -71,7 +71,7 @@
 
     function Box([x, y], [sx, sy], color) {
       const object = new PIXI.Container();
-      xnew.extend(PixiObject, object);
+      xnew.extend(PixiNest, object);
 
       object.x = x;
       object.y = y;

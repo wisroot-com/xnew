@@ -53,7 +53,7 @@
       }
     }
 
-    function ThreeObject(object) {
+    function ThreeNest(object) {
       const parent = xnew.context('THREE.Object3D');
       xnew.context('THREE.Object3D', object);
 
@@ -69,7 +69,7 @@
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0xFFFFFF);
 
-      xnew.extend(ThreeObject, scene);
+      xnew.extend(ThreeNest, scene);
 
       xnew(Cube, [0, 0, 0], [40, 40, 40]);
       return {
@@ -91,7 +91,7 @@
       };
     }
 
-    function PixiObject(object) {
+    function PixiNest(object) {
       const parent = xnew.context('PIXI.DisplayObject');
       xnew.context('PIXI.DisplayObject', object);
 
@@ -106,7 +106,7 @@
     function PixiContents() {
       const scene = new PIXI.Container();
 
-      xnew.extend(PixiObject, scene);
+      xnew.extend(PixiNest, scene);
 
       const three = xnew.find(ThreeMain)[0];
       const background = new PIXI.Sprite(PIXI.Texture.from(three.canvas));
@@ -134,7 +134,7 @@
       graphics.drawRect(-sx / 2, -sy / 2, sx, sy);
       graphics.endFill();
 
-      xnew.extend(PixiObject, object);
+      xnew.extend(PixiNest, object);
 
       return {
         update() {
@@ -148,7 +148,7 @@
       const material = new THREE.MeshNormalMaterial();
       const object = new THREE.Mesh(geometry, material);
 
-      xnew.extend(ThreeObject, object);
+      xnew.extend(ThreeNest, object);
 
       return {
         update() {

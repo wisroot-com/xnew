@@ -45,7 +45,7 @@
       }
     }
 
-    function ThreeObject(object) {
+    function ThreeNest(object) {
       const parent = xnew.context('THREE.Object3D');
       xnew.context('THREE.Object3D', object);
 
@@ -60,7 +60,7 @@
     function ThreeContents() {
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0xFFFFFF);
-      xnew.extend(ThreeObject, scene);
+      xnew.extend(ThreeNest, scene);
 
       xnew(Light);
 
@@ -78,7 +78,7 @@
       const light = new THREE.PointLight(0xFFFFFF, 1);
       light.position.set(0, 0, +100);
 
-      xnew.extend(ThreeObject, light);
+      xnew.extend(ThreeNest, light);
     }
 
     function Cube() {
@@ -90,7 +90,7 @@
       object.position.y = 100 * (Math.random() - 0.5);
       object.position.z = 100 * (Math.random() - 0.5);
 
-      xnew.extend(ThreeObject, object);
+      xnew.extend(ThreeNest, object);
 
       const velocity = {};
       velocity.x = Math.random() - 0.5;
