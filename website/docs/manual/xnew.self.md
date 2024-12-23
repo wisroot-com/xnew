@@ -19,12 +19,11 @@ xnew(() => {
 ```
 
 ## scope issues
-In `xnew` arguments, `parent` can be omitted.  
-However in some callback functions, appropriate parent xnode may not be set.  
-In such cases, the first argument should be set intentionally.  
+In some callback functions, appropriate parent xnode may not be set.  
 
-- appropriate parent is set  
-  In the following, other xnodes are created as children of `xnode1`.
+:::note
+In the following, appropriate parent is set.
+the xnodes are created as children of `xnode1`.
 ```js
 xnew(() => {
   const xnode1 = xnew.self;
@@ -37,35 +36,45 @@ xnew(() => {
     xnode3.parent; // xnode1;
   });
 
-  setTimeout(() => {
-    const xnode4 = xnew(xnode1, Component);
+  xnew.timer(() => {
+    const xnode4 = xnew(Component);
     xnode4.parent; // xnode1;
   }, 1000);
 
-  xnew.timer(() => {
-    const xnode5 = xnew(Component);
+
+  // use callback functions except for xnode method
+  setTimeout(() => {
+    const xnode5 = xnew(xnode1, Component); // parent xnode is set intentionally
     xnode5.parent; // xnode1;
   }, 1000);
+
+  window.addEventListener('click', () => {
+    const xnode6 = xnew(xnode1, Component); // parent xnode is set intentionally
+    xnode6.parent; // xnode1
+  });
 });
 ```
+:::
 
-- appropriate parent is not(?) set  
-  In the following, other xnodes are not created as children of `xnode1`.
+:::warning
+In the following, appropriate parent is not(?) set.  
+the xnodes are not created as children of `xnode1`.
 ```js
 xnew(() => {
   const xnode1 = xnew.self;
 
-  // not xnode method
+  // use callback functions except for xnode method
   window.addEventListener('click', () => {
-    const xnode2 = xnew(Component);
+    const xnode2 = xnew(Component); // parent xnode is not set
     xnode2.parent; // null
   });
 
-  // parent xnode is not set
   setTimeout(() => {
-    const xnode3 = xnew(Component);
+    const xnode3 = xnew(Component); // parent xnode is not set
     xnode3.parent; // null
   }, 1000);
+
+
 
   const another = xnew(Component);
   another.on('click', () => {
@@ -74,3 +83,4 @@ xnew(() => {
   });
 })
 ```
+:::

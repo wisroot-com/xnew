@@ -49,15 +49,10 @@ The above code leads to the following result.
 ```
 
 :::tip
-
 The created elements are removed when the xnodes finalize.
-
 :::
 
-
 :::tip
-
 When setting class of the element, use `className` instead of `class`.  
 `xnew.nest({ className: 'myclass' });`
-
 :::
