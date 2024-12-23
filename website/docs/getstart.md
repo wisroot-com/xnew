@@ -7,7 +7,7 @@ sidebar_position: 1
 **Get start xnew in less than 5 minutes**.
 
 
-## introcuntion
+## introduction
 ![](/img/introduction.svg)  
 
 xnew is a JavaScript library for component oriented programming.  
