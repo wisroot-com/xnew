@@ -11,10 +11,10 @@ export default [
             name: 'xnew', // name: 'window
             freeze: false,
         },
-        plugins: [
-            resolve(), // resolve node_modules
-            commonjs() // CommonJS -> ES6
-        ]
+        // plugins: [
+        //     resolve(), // resolve node_modules
+        //     commonjs() // CommonJS -> ES6
+        // ]
     },
     {
         input: 'index.js',
@@ -25,10 +25,10 @@ export default [
             name: 'xnew', // name: 'window
             freeze: false,
         },
-        plugins: [
-            resolve(), // resolve node_modules
-            commonjs() // CommonJS -> ES6
-        ]
+        // plugins: [
+        //     resolve(), // resolve node_modules
+        //     commonjs() // CommonJS -> ES6
+        // ]
     },
     {
         input: 'index.js',
@@ -39,9 +39,9 @@ export default [
             name: 'xnew', // name: 'window
             freeze: false
         },
-        plugins: [
-            resolve(), // resolve node_modules
-            commonjs() // CommonJS -> ES6
-        ]
+        // plugins: [
+        //     resolve(), // resolve node_modules
+        //     commonjs() // CommonJS -> ES6
+        // ]
     },
 ];
