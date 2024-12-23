@@ -118,12 +118,12 @@ Click on the square below.
     function Component() {
       xnew.nest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'});
       
-      const text = xnew({ tagName: 'span' });
-
       const xnode = xnew.current;
       xnode.on('click', (event) => {
           xnode.state === 'running' ? xnode.stop() : xnode.start();
       });
+
+      const text = xnew({ tagName: 'span' });
 
       let counter = 0;
       return {
@@ -156,14 +156,14 @@ For example, when the parent component stop, its children also stop.
     function Parent() {
       xnew.nest({ style: 'position: absolute; width: 200px; height: 200px; inset: 0; margin: auto; background: #08F;'});
 
-      const text = xnew({ tagName: 'span' });
-
-      xnew(Child);
-
       const xnode = xnew.current;
       xnode.on('click', () => {
         xnode.state === 'running' ? xnode.stop() : xnode.start();
       });
+
+      const text = xnew({ tagName: 'span' });
+
+      xnew(Child);
 
       let counter = 0;
       return {
@@ -182,13 +182,13 @@ For example, when the parent component stop, its children also stop.
     function Child() {
       xnew.nest({ style: 'position: absolute; width: 100px; height: 100px; inset: 0; margin: auto; background: #F80;' });
 
-      const text = xnew({ tagName: 'span' });
-
       const xnode = xnew.current;
       xnode.on('click', (event) => {
         event.stopPropagation();
         xnode.state === 'running' ? xnode.stop() : xnode.start();
       });
+
+      const text = xnew({ tagName: 'span' });
 
       let counter = 0;
       return {
