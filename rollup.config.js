@@ -1,3 +1,5 @@
+import resolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs'
 
 export default [
     {
@@ -6,9 +8,13 @@ export default [
             file: 'dist/xnew.js',
             format: 'umd',
             extend: true,
-            name: 'window',
-            freeze: false
+            name: 'xnew', // name: 'window
+            freeze: false,
         },
+        plugins: [
+            resolve(), // resolve node_modules
+            commonjs() // CommonJS -> ES6
+        ]
     },
     {
         input: 'index.js',
@@ -16,9 +22,13 @@ export default [
             file: 'website/static/xnew.js',
             format: 'umd',
             extend: true,
-            name: 'window',
-            freeze: false
+            name: 'xnew', // name: 'window
+            freeze: false,
         },
+        plugins: [
+            resolve(), // resolve node_modules
+            commonjs() // CommonJS -> ES6
+        ]
     },
     {
         input: 'index.js',
@@ -26,8 +36,12 @@ export default [
             file: 'dist/xnew.mjs',
             format: 'esm',
             extend: true,
-            name: 'window',
+            name: 'xnew', // name: 'window
             freeze: false
         },
+        plugins: [
+            resolve(), // resolve node_modules
+            commonjs() // CommonJS -> ES6
+        ]
     },
 ];

@@ -15,8 +15,4 @@ const basics = {
     SubWindow
 };
 
-export function test() {
-    console.log('test');
-}
-
 Object.defineProperty(xnew, 'basics', { configurable: true, enumerable: true, value: basics });
