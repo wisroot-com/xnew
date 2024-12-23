@@ -12,7 +12,7 @@ As shown below, `xnew` accepts some arguments.
 // Component: [an component function] or [an inner html for the created html element]  
 // ...args:   [arguments for the component function]
 
-xnew(parent, target, Component, ...args);
+const xnode = xnew(parent, target, Component, ...args);
 ```
 
 These arguments are often omitted.  
@@ -27,8 +27,8 @@ xnew(parent, target);               // Component is omitted
 ```
 
 ## example
-By setting a component function to `xnew`, an instance `xnode` will be created.  
-In the function, you will implement various features.
+First, let's set only the component function.  
+In the component function, you will implement various features.  
 
 ```js
 const xnode = xnew(Component);    
@@ -79,7 +79,7 @@ e.g. `xnew(document.querySelector('#hoge'), ...)` or `xnew('#hoge', ...)`
 <body>
   <div id="hoge"></div>
   <script>
-    const xnode = xnew(document.querySelector('#hoge'), () => {
+    const xnode = xnew('#hoge', () => {
       const xnode = xnew.self;
 
       xnode.element; // element (id = hoge)

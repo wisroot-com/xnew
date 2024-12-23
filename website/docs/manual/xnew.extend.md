@@ -46,10 +46,11 @@ xnode.hoge();
 
 ```
 :::tip
-
-- If system properties (`promise`, `start`, `update`, `stop`, `finalize`) defined in both component functions,
+If system properties (`promise`, `start`, `update`, `stop`, `finalize`) defined in both component functions,
   the properties are automatically merged.
-- If original properties defined in both component functions,
+:::
+:::tip
+If original properties defined in both component functions,
   the properties are overridden.
 :::
 

@@ -5,6 +5,7 @@ sidebar_position: 6
 # xnew.timer
 `xnew.timer` create a timer that execute a callback function for a specified time.
 
+## arguments
 ```
 xnew.timer(callback, delay, loop = false);
 ```

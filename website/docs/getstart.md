@@ -11,13 +11,12 @@ sidebar_position: 1
 ![](/img/introduction.svg)  
 
 xnew is a JavaScript library for component oriented programming.  
-You can build your program as a collection of simple components.  
+You can architect your program as a collection of simple components.  
 
-Let's check various [examples](/xnew/docs/examples/cube).
 ## setup
 ### via cdn
 ```html
-<script src="https://unpkg.com/xnew@2.0.x/dist/xnew.js"></script>;
+<script src="https://unpkg.com/xnew@2.0.x/dist/xnew.js"></script>
 ```
 
 ### via cdn (ESM)
@@ -71,11 +70,17 @@ const xnode = xnew(() => {
 
 ### example 1
 You can create html elements using `xnew` and `xnew.nest`.  
-(The detail is explained on the [manual](/xnew/docs/manual/xnew))
 
-<iframe style={{width:'100%',height:'200px',border:'solid 1px #AAA',borderRadius:'6px'}} src="/xnew/examples/getstart1.html" ></iframe>
+<iframe style={{width:'100%',height:'120px',border:'solid 1px #AAA',borderRadius:'6px'}} src="/xnew/examples/getstart1.html" ></iframe>
 
 ```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/xnew@2.0.x/dist/xnew.js"></script>
+</head>
 <body>
   <script>
     xnew(Div);
@@ -96,10 +101,11 @@ You can create html elements using `xnew` and `xnew.nest`.
     }
   </script>
 </body>
+</html>
 ```
 
 ### example 2
-And you can implement various process.   
+You can implement various process in the componet function.   
 Click on the square below.
 
 <iframe style={{width:'100%',height:'300px',border:'solid 1px #AAA',borderRadius:'6px'}} src="/xnew/examples/box.html" ></iframe>

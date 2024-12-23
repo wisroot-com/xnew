@@ -101,7 +101,9 @@ function Child2() {
     finalize() { console.log('Child2 finalize'); },
   }
 }
+```
 
+```js
 // Child1 start
 // Child2 start
 // Parent start

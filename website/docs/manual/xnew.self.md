@@ -20,7 +20,7 @@ xnew(() => {
 
 ## scope issues
 In `xnew` arguments, `parent` can be omitted.  
-However in callback functions, appropriate parent xnode may not be set.  
+However in some callback functions, appropriate parent xnode may not be set.  
 In such cases, the first argument should be set intentionally.  
 
 - appropriate parent is set  
