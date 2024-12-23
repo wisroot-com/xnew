@@ -26,7 +26,7 @@
     xnew(() => {
       xnew.nest({ style: 'position: relative; width: 100%; height: 100%;' });
 
-      const rect = xnew.self.element.getBoundingClientRect();
+      const rect = xnew.current.element.getBoundingClientRect();
       let w = rect.width;
       let h = rect.height;
       xnew.timer(() => {
@@ -86,7 +86,7 @@
             prev = false;
           }
           if (x - movex < -10) {
-            xnew.self.finalize();
+            xnew.current.finalize();
           }
           count++;
         }

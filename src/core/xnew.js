@@ -41,11 +41,11 @@ export function xnew(...args)
     }
 }
 
-function self()
+function current()
 {
     return XNode.current;
 }
-Object.defineProperty(xnew, 'self', { configurable: true, enumerable: true, get: self });
+Object.defineProperty(xnew, 'current', { configurable: true, enumerable: true, get: current });
 
 function nest(attributes)
 {

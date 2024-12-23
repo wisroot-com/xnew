@@ -8,26 +8,26 @@ sidebar_position: 2
 ```js
 xnew(() => {
   const element = xnew.nest(attributes);
-  // You can access the created element by xnew.self.element or return value.
+  // You can access the created element by xnew.current.element or return value.
 })
 ```
 
 ## example
 ```js
 xnew({ tagName: 'div', name: 'A'}, () =>{
-  // xnew.self.element: (div A)
+  // xnew.current.element: (div A)
 });
 
 xnew(() => {
   xnew.nest({ tagName: 'div', name: 'B' });
-  // xnew.self.element: (div B)
+  // xnew.current.element: (div B)
 }
 
 xnew({ tagName: 'div', name: 'C' }, () => { 
-  // xnew.self.element: (div C)
+  // xnew.current.element: (div C)
   xnew.nest({ tagName: 'div', name: 'D' }); // inner div
-  // xnew.self.element: (div D)
-  // xnew.self.element.parentElement: (div C)
+  // xnew.current.element: (div D)
+  // xnew.current.element.parentElement: (div C)
 }
 
 const xnode4 = xnew({ tagName: 'div', name: 'E' }, 'aaa');

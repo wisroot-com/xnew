@@ -43,7 +43,7 @@
       const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height);
       camera.position.set(0, 0, +200);
 
-      const xnode = xnew.self;
+      const xnode = xnew.current;
       xnode.on('~camera.zscale', (scale) => {
         camera.position.z /= scale;
       })
@@ -74,7 +74,7 @@
     }
 
     function Event() {
-      const xnode = xnew.self;
+      const xnode = xnew.current;
       xnode.on('touchstart contextmenu wheel', (event) => {
         event.preventDefault();
       });
@@ -105,7 +105,7 @@
       scene.rotation.x = -60 / 180 * Math.PI
       xnew.extend(ThreeObject, scene);
 
-      const xnode = xnew.self;
+      const xnode = xnew.current;
       xnode.on('~scene.rotate', (move) => {
         scene.rotation.x += move.y * 0.01;
         scene.rotation.z += move.x * 0.01;

@@ -76,8 +76,8 @@
     function MatterContents(engine) {
       xnew.extend(MatterObject, engine.world);
 
-      xnew.self.on('~matter.reset', () => {
-        xnew.self.reboot(engine);
+      xnew.current.on('~matter.reset', () => {
+        xnew.current.reboot(engine);
       })
 
       xnew(Rectangle, 400, 200, 80, 80);

@@ -1,7 +1,7 @@
 import { xnew } from '../core/xnew';
 
 export function DragEvent() {
-    const xnode = xnew.self;
+    const xnode = xnew.current;
     let isActive = false;
   
     const base = xnew();

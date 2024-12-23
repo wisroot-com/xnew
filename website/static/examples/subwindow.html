@@ -19,7 +19,7 @@
         xnew({ style: 'width: 100px; height: 100px; background: #AAA; border: solid 10px #000; border-radius: 4px;' }, (xnode) => {
           xnew({ tagName: 'button' }, 'test');
         });
-        const xnode = xnew.self;
+        const xnode = xnew.current;
         const drag = xnew(xnew.basics.DragEvent);
 
         let offset = { x: 0, y: 0 };

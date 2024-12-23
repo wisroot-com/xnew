@@ -35,7 +35,7 @@ In the component function, you will implement various features.
 const xnode = xnew(Component);    
 
 function Component() {
-  const xnode = xnew.self; // you can get xnode from inside.
+  const xnode = xnew.current; // you can get xnode from inside.
   // ...
   // implement features
 }
@@ -44,7 +44,7 @@ function Component() {
 You can also use a function literal.  `xnew(() => { });`
 ```js
 const xnode = xnew(() => {
-  const xnode = xnew.self;
+  const xnode = xnew.current;
   // ...
   // implement features
 });
@@ -55,7 +55,7 @@ If you omit the `parent` parameter, the nesting higher xnode or otherwise `null`
 ```js
 xnew(() => {
   // xnode1.parent: null
-  const xnode1 = xnew.self;
+  const xnode1 = xnew.current;
 
   // xnode2.parent: xnode1
   const xnode2 = xnew(() => {
@@ -81,7 +81,7 @@ e.g. `xnew(document.querySelector('#hoge'), ...)` or `xnew('#hoge', ...)`
   <div id="hoge"></div>
   <script>
     const xnode = xnew('#hoge', () => {
-      const xnode = xnew.self;
+      const xnode = xnew.current;
 
       xnode.element; // element (id = hoge)
     });
@@ -95,7 +95,7 @@ e.g. `xnew({ tagName: 'div', className: 'aaa', style: 'bbb', }, ...)`
 <body>
   <script>
     const xnode = xnew({ tagName: 'div', id: 'hoge' }, () => {
-      const xnode = xnew.self;
+      const xnode = xnew.current;
       
       xnode.element; // element (id = hoge)
     });
@@ -112,18 +112,18 @@ If you omit the `element` parameter, the parent xnode's element or otherwise `do
 
 <script>
   xnew(() => {
-    // xnew.self.element: document.body
+    // xnew.current.element: document.body
   });
 
   xnew('#hoge', () => {
-    // xnew.self.element: (id=hoge)
+    // xnew.current.element: (id=hoge)
 
     xnew(() => {
-      // xnew.self.element: (id=hoge)
+      // xnew.current.element: (id=hoge)
     });
 
     xnew({ tagName: 'div', id: 'fuga' }, () => {
-      // xnew.self.element: (id=fuga) (as a child element of hoge)
+      // xnew.current.element: (id=fuga) (as a child element of hoge)
     });
   });
 </script>;

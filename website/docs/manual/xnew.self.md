@@ -2,16 +2,16 @@
 sidebar_position: 8
 ---
 
-# xnew.self
-`xnew.self` get the created `xnode`.
+# xnew.current
+`xnew.current` get the created `xnode`.
 
 ## example
 ```js
 xnew(() => {
-  const xnode1 = xnew.self;
+  const xnode1 = xnew.current;
 
   const xnode2 = xnew(() => {
-    const xnode2 = xnew.self;
+    const xnode2 = xnew.current;
 
     // ...
   });  
@@ -26,7 +26,7 @@ In the following, appropriate parent is set.
 the xnodes are created as children of `xnode1`.
 ```js
 xnew(() => {
-  const xnode1 = xnew.self;
+  const xnode1 = xnew.current;
 
   const xnode2 = xnew(Component);
   xnode2.parent; // xnode1
@@ -61,7 +61,7 @@ In the following, appropriate parent is not(?) set.
 the xnodes are not created as children of `xnode1`.
 ```js
 xnew(() => {
-  const xnode1 = xnew.self;
+  const xnode1 = xnew.current;
 
   // use callback functions except for xnode method
   window.addEventListener('click', () => {

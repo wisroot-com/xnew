@@ -677,11 +677,11 @@
         }
     }
 
-    function self()
+    function current()
     {
         return XNode.current;
     }
-    Object.defineProperty(xnew, 'self', { configurable: true, enumerable: true, get: self });
+    Object.defineProperty(xnew, 'current', { configurable: true, enumerable: true, get: current });
 
     function nest(attributes)
     {
@@ -777,7 +777,7 @@
     Object.defineProperty(xnew, 'timer', { configurable: true, enumerable: true, value: timer });
 
     function DragEvent() {
-        const xnode = xnew.self;
+        const xnode = xnew.current;
         let isActive = false;
       
         const base = xnew();
@@ -834,7 +834,7 @@
     }
 
     function GestureEvent() {
-        const xnode = xnew.self;
+        const xnode = xnew.current;
         const drag = xnew(DragEvent);
 
         let isActive = false;
@@ -882,7 +882,7 @@
     }
 
     function ResizeEvent() {
-        const xnode = xnew.self;
+        const xnode = xnew.current;
 
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
@@ -974,7 +974,7 @@
     }
 
     function SubWindow() {
-        xnew.self;
+        xnew.current;
         const absolute = xnest({ style: 'position: absolute;' });
         
         return {

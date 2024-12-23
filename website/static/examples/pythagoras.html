@@ -100,7 +100,7 @@
 
     function MatterController(engine, render) {
       xnew(() => {
-        const xnode = xnew.self;
+        const xnode = xnew.current;
         xnode.stop();
         xnode.on('~matter.engine.toggle', (scale) => {
           xnode.state === 'running' ? xnode.stop() : xnode.start();
@@ -112,7 +112,7 @@
         }
       })
 
-      const xnode = xnew.self;
+      const xnode = xnew.current;
       xnode.on('~matter.scene.scale', (scale) => {
         const x = (render.bounds.max.x - render.bounds.min.x) * (1 / scale - 1);
         const y = (render.bounds.max.y - render.bounds.min.y) * (1 / scale - 1);
@@ -162,7 +162,7 @@
     }
 
     function Event(canvas) {
-      const xnode = xnew.self;
+      const xnode = xnew.current;
       xnode.on('touchstart contextmenu wheel', (event) => {
         event.preventDefault();
       });
@@ -193,7 +193,7 @@
     }
     function MatterContents(engine) {
       xnew.extend(MatterObject, engine.world);
-      const xnode = xnew.self;
+      const xnode = xnew.current;
       xnode.on('~reboot', () => xnode.reboot(engine));
 
       xnew(Rectangle, 400, 200, 80, 80);

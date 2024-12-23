@@ -1,7 +1,7 @@
 import { xnew } from '../core/xnew';
 
 export function ResizeEvent() {
-    const xnode = xnew.self;
+    const xnode = xnew.current;
 
     const observer = new ResizeObserver((entries) => {
         for (const entry of entries) {

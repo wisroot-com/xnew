@@ -156,7 +156,7 @@
       xnew(CubeArray, data, [3, 2], 4, 0xAAFFAA);
 
       let move = null;
-      xnew.self.on('object.move', ({ vector }) => {
+      xnew.current.on('object.move', ({ vector }) => {
         move = vector;
       });
       return {

@@ -2,7 +2,7 @@ import { xnew } from '../core/xnew';
 import { DragEvent } from './DragEvent';
 
 export function GestureEvent() {
-    const xnode = xnew.self;
+    const xnode = xnew.current;
     const drag = xnew(DragEvent);
 
     let isActive = false;

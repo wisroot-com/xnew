@@ -53,7 +53,7 @@ In that function, you will implement various features.
 const xnode = xnew(Component);    
 
 function Component() {
-  const xnode = xnew.self; // you can get xnode from inside.
+  const xnode = xnew.current; // you can get xnode from inside.
   // ...
   // implement features
 }
@@ -62,7 +62,7 @@ function Component() {
 You can also use a function literal.  `xnew(() => { });`
 ```js
 const xnode = xnew(() => {
-  const xnode = xnew.self;
+  const xnode = xnew.current;
   // ...
   // implement features
 });
@@ -120,7 +120,7 @@ Click on the square below.
       
       const text = xnew({ tagName: 'span' });
 
-      const xnode = xnew.self;
+      const xnode = xnew.current;
       xnode.on('click', (event) => {
           xnode.state === 'running' ? xnode.stop() : xnode.start();
       });
@@ -160,7 +160,7 @@ For example, when the parent component stop, its children also stop.
 
       xnew(Child);
 
-      const xnode = xnew.self;
+      const xnode = xnew.current;
       xnode.on('click', () => {
         xnode.state === 'running' ? xnode.stop() : xnode.start();
       });
@@ -184,7 +184,7 @@ For example, when the parent component stop, its children also stop.
 
       const text = xnew({ tagName: 'span' });
 
-      const xnode = xnew.self;
+      const xnode = xnew.current;
       xnode.on('click', (event) => {
         event.stopPropagation();
         xnode.state === 'running' ? xnode.stop() : xnode.start();

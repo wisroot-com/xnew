@@ -98,7 +98,7 @@
       velocity.z = Math.random() - 0.5;
 
       // finalize after 5000ms
-      xnew.timer(() => xnew.self.finalize(), 5 * 1000);
+      xnew.timer(() => xnew.current.finalize(), 5 * 1000);
 
       return {
         update() {
