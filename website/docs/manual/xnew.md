@@ -4,6 +4,8 @@ sidebar_position: 1
 
 # xnew
 `xnew` create a new `xnode`.  
+This function is the starting point of component-oriented programming.
+
 As shown below, `xnew` accepts some arguments.
 
 ```js
@@ -26,7 +28,6 @@ xnew(parent, target);               // Component is omitted
 ...
 ```
 
-## example
 First, let's set only the component function.  
 In the component function, you will implement various features.  
 
@@ -48,7 +49,6 @@ const xnode = xnew(() => {
   // implement features
 });
 ```
-
 ## parent
 If you omit the `parent` parameter, the nesting higher xnode or otherwise `null` is assigned.   
     
@@ -130,15 +130,12 @@ If you omit the `element` parameter, the parent xnode's element or otherwise `do
 ```
 
 ## innerHTML
-
 If you set string as `Compoennt`, innerHTML will be added in a created element.
-
 ```js
 const xnode = xnew({ tagName: 'p', id: 'hoge' }, 'aaa');
 
 // xnode.element: (id=hoge)
 ```
-
 ```html
 <body>
   <p id="hoge">
