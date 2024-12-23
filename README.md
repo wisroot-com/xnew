@@ -24,7 +24,7 @@ You can architect your code as a collection of simple components.
 </script>
 
 <script type="module">
-import { xnew } from 'xnew'
+import xnew from 'xnew'
 
 // ...
 
@@ -36,5 +36,5 @@ import { xnew } from 'xnew'
 npm install xnew@2.0.x
 ```
 ```js
-import { xnew } from 'xnew'
+import xnew from 'xnew'
 ```

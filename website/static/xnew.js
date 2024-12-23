@@ -996,8 +996,15 @@
         SubWindow
     };
 
+    function test() {
+        console.log('test');
+    }
+
     Object.defineProperty(xnew, 'basics', { configurable: true, enumerable: true, value: basics });
 
-    exports.xnew = xnew;
+    exports.default = xnew;
+    exports.test = test;
+
+    Object.defineProperty(exports, '__esModule', { value: true });
 
 }));
