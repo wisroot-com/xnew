@@ -4,8 +4,7 @@ sidebar_position: 1
 
 # get start
 
-**Get start xnew in less than 5 minutes**.
-
+**Get start xnew in less than 10 minutes**.
 
 ## introduction
 ![](/img/introduction.svg)  
