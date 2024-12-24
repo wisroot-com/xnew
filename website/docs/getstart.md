@@ -46,13 +46,13 @@ import xnew from 'xnew'
 ```
 ## tutorial
 ### basic usage
-By setting a component function to `xnew`, an instance `xnode` will be created.  
-In that function, you will implement various features.
+By calling `xnew`, an instance `xnode` will be created.  
+If you set a component function to `xnew`, you will implement various features.
 
 ```js
-const xnode = xnew(Component);    
+const xnode = xnew(Component, ...args);    
 
-function Component() {
+function Component(...args) {
   const xnode = xnew.current; // you can get xnode from inside.
   // ...
   // implement features

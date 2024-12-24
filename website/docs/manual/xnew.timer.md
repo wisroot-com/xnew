@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 4
 ---
 
 # xnew.timer
@@ -8,7 +8,7 @@ sidebar_position: 6
 ```js
 xnew.timer(callback, delay, loop = false);
 ```
-### example
+## example
 
 ```js
 xnew(() => {

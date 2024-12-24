@@ -1,10 +1,11 @@
 ---
-sidebar_position: 5
+sidebar_position: 3
 ---
 
 # xnew.extend
-You can extend the component function using another component function.
-```
+`xnew.extend` extend the component function using another component function.
+
+```js
 xnew.extend(component, ...args);
 ```
 ## example

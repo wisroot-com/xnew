@@ -4,12 +4,12 @@ sidebar_position: 2
 
 # xnew.nest
 `xnew.nest` create a new element as a child of the current element.  
-And it replace `xnode.element`.
+It replace `xnode.element`.
 
 ```js
 xnew(() => {
   const xnode = xnew.current;
-  
+
   const element = xnew.nest(attributes);
   // You can access the created element by xnode.element or return value.
 })
