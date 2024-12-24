@@ -1,11 +1,12 @@
 /node_modules
 /dist
-/wip
 /src
-/docs
 /test
+/website
+/babel.config.js
+/jest.config.js
 /rollup.config.js
 /package-lock.json
 /tailwind.config.js
-/index.js
 /.vscode
+/.github

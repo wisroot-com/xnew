@@ -3,7 +3,7 @@ import commonjs from '@rollup/plugin-commonjs'
 
 export default [
     {
-        input: 'index.js',
+        input: 'src/index.js',
         output: {
             file: 'dist/xnew.js',
             format: 'umd',
@@ -17,7 +17,7 @@ export default [
         // ]
     },
     {
-        input: 'index.js',
+        input: 'src/index.js',
         output: {
             file: 'website/static/xnew.js',
             format: 'umd',
@@ -31,7 +31,7 @@ export default [
         // ]
     },
     {
-        input: 'index.js',
+        input: 'src/index.js',
         output: {
             file: 'dist/xnew.mjs',
             format: 'esm',

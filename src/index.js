@@ -1,9 +1,9 @@
-import { xnew } from './src/core/xnew';
-import { DragEvent } from './src/basics/DragEvent';
-import { GestureEvent } from './src/basics/GestureEvent';
-import { ResizeEvent } from './src/basics/ResizeEvent';
-import { Screen } from './src/basics/Screen';
-import { SubWindow } from './src/basics/SubWindow';
+import { xnew } from './core/xnew';
+import { DragEvent } from './basics/DragEvent';
+import { GestureEvent } from './basics/GestureEvent';
+import { ResizeEvent } from './basics/ResizeEvent';
+import { Screen } from './basics/Screen';
+import { SubWindow } from './basics/SubWindow';
 
 export default xnew;
 
