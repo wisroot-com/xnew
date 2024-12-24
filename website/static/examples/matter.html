@@ -27,7 +27,7 @@
   <div id="main" style="position: relative; width: 100%; height: 100%;"></div>
   <script>
     xnew('#main', () => {
-      const screen = xnew(xnew.basics.Screen, { width: 800, height: 450 });
+      const screen = xnew(xnew.Screen, { width: 800, height: 450 });
 
       xnew(MatterMain, screen.canvas);
 

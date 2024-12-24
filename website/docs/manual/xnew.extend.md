@@ -3,7 +3,7 @@ sidebar_position: 3
 ---
 
 # xnew.extend
-`xnew.extend` extend the component function using another component function.
+it extend the component function using another one.
 
 ```js
 xnew.extend(component, ...args);

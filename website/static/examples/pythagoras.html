@@ -31,7 +31,7 @@
   <script>
     xnew(() => {
       xnew('#view', () => {
-        const screen = xnew(xnew.basics.Screen, { width: 800, height: 450 });
+        const screen = xnew(xnew.Screen, { width: 800, height: 450 });
 
         xnew(MatterMain, screen.canvas);
         xnew(Event, screen.canvas);
@@ -74,7 +74,7 @@
 
     function MatterThumbnail(size, component) {
       xnest({});
-      const screen = xnew(xnew.basics.Screen, { width: 100, height: 100 });
+      const screen = xnew(xnew.Screen, { width: 100, height: 100 });
       const engine = Matter.Engine.create();
       const render = Matter.Render.create({
         canvas, engine,
@@ -170,7 +170,7 @@
         xnode.emit('~matter.scene.scale', 1 + 0.001 * event.wheelDeltaY);
       });
 
-      const drag = xnew(canvas, xnew.basics.DragEvent);
+      const drag = xnew(canvas, xnew.DragEvent);
 
       drag.on('down', (event, { position }) => {
         const x = position.x * canvas.width / canvas.clientWidth;

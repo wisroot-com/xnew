@@ -60,17 +60,14 @@
       xnew.extend(BaseDiv, 'my canvas');
 
       const canvas = xnew({ tagName: 'canvas', width: 200, height: 100 });
-      xnew(Contents, canvas.element);
-    }
-
-    function Contents(canvas) {
-      const ctx = canvas.getContext('2d');
-      const cx = canvas.width / 2;
-      const cy = canvas.height / 2;
+      
+      const ctx = canvas.element.getContext('2d');
+      const cx = canvas.element.width / 2;
+      const cy = canvas.element.height / 2;
       const s = Math.min(cx, cy) * 0.5;
 
       ctx.fillStyle = "rgb(0,0,0)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, canvas.element.width, canvas.element.height);
 
       ctx.fillStyle = "rgb(200,0,100)";
       ctx.fillRect(cx - 0.6 * cx - s, cy - s, s * 2, s * 2);

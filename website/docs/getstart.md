@@ -71,7 +71,7 @@ const xnode = xnew(() => {
 ### example 1
 You can create html elements using `xnew` and `xnew.nest`.  
 
-<iframe style={{width:'100%',height:'120px',border:'solid 1px #AAA',borderRadius:'6px'}} src="/xnew/examples/getstart1.html" ></iframe>
+<iframe style={{width:'100%',height:'120px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/examples/getstart1.html" ></iframe>
 
 ```html
 <!DOCTYPE html>
@@ -108,7 +108,7 @@ You can create html elements using `xnew` and `xnew.nest`.
 You can implement various process in the componet function.   
 Click on the square below.
 
-<iframe style={{width:'100%',height:'300px',border:'solid 1px #AAA',borderRadius:'6px'}} src="/xnew/examples/box.html" ></iframe>
+<iframe style={{width:'100%',height:'300px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/examples/box.html" ></iframe>
 
 ```html
 <body>
@@ -146,7 +146,7 @@ If you call `xnew` inside a component function, a parent-child relationship is c
 The conencted xnodes will work together.  
 For example, when the parent component stop, its children also stop.   
 
-<iframe style={{width:'100%',height:'300px',border:'solid 1px #AAA',borderRadius:'6px'}} src="/xnew/examples/boxinbox.html" ></iframe>
+<iframe style={{width:'100%',height:'300px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/examples/boxinbox.html" ></iframe>
 
 ```html
 <body>

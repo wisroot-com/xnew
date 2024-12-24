@@ -28,7 +28,7 @@
   <div id="main" style="width: 100%; height: 100%;"></div>
   <script>
     xnew('#main', () => {
-      const screen = xnew(xnew.basics.Screen, { width: 800, height: 400 });
+      const screen = xnew(xnew.Screen, { width: 800, height: 400 });
 
       xnew(ThreeMain, screen.canvas);
 
@@ -82,12 +82,12 @@
         xnode.emit('~camera.zscale', 1 + 0.001 * event.wheelDeltaY);
       });
 
-      const gesture = xnew(xnew.basics.GestureEvent);
+      const gesture = xnew(xnew.GestureEvent);
       gesture.on('move', (event, { scale }) => {
         xnode.emit('~camera.zscale', scale);
       });
 
-      const drag = xnew(xnew.basics.DragEvent);
+      const drag = xnew(xnew.DragEvent);
       drag.on('move', (event, { position, delta }) => {
         if (gesture.isActive === true) return;
         if (event.buttons & 1 || !event.buttons) {

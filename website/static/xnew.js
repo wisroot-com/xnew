@@ -677,11 +677,17 @@
         }
     }
 
+    Object.defineProperty(xnew, 'current', { enumerable: true, get: current });
+    Object.defineProperty(xnew, 'nest', { enumerable: true, value: nest });
+    Object.defineProperty(xnew, 'extend', { enumerable: true, value: extend });
+    Object.defineProperty(xnew, 'context', { enumerable: true, value: context });
+    Object.defineProperty(xnew, 'find', { enumerable: true, value: find });
+    Object.defineProperty(xnew, 'timer', { enumerable: true, value: timer });
+
     function current()
     {
         return XNode.current;
     }
-    Object.defineProperty(xnew, 'current', { configurable: true, enumerable: true, get: current });
 
     function nest(attributes)
     {
@@ -697,7 +703,6 @@
             return XNode.nest.call(xnode, attributes);
         }
     }
-    Object.defineProperty(xnew, 'nest', { configurable: true, enumerable: true, value: nest });
 
     function extend(component, ...args)
     {
@@ -713,7 +718,6 @@
             return XNode.extend.call(xnode, component, ...args);
         }
     }
-    Object.defineProperty(xnew, 'extend', { configurable: true, enumerable: true, value: extend });
 
     function context(key, value)
     {
@@ -725,7 +729,6 @@
             return XNode.context.call(xnode, key, value);
         }
     }
-    Object.defineProperty(xnew, 'context', { configurable: true, enumerable: true, value: context });
 
     function find(key)
     {
@@ -743,7 +746,6 @@
             return [...set];
         }
     }
-    Object.defineProperty(xnew, 'find', { configurable: true, enumerable: true, value: find });
 
     function timer(callback, delay = 0, loop = false)
     {
@@ -774,7 +776,6 @@
         });
         return timer;
     }
-    Object.defineProperty(xnew, 'timer', { configurable: true, enumerable: true, value: timer });
 
     function DragEvent() {
         const xnode = xnew.current;
@@ -973,30 +974,10 @@
         }
     }
 
-    function SubWindow() {
-        xnew.current;
-        const absolute = xnest({ style: 'position: absolute;' });
-        
-        return {
-            setPosition(x, y) {
-                absolute.style.left = x + 'px';
-                absolute.style.top = y + 'px';
-            },
-            getPosition() {
-                return { x: absolute.offsetLeft, y: absolute.offsetTop };
-            },
-        }
-    }
-
-    const basics = {
-        DragEvent,
-        GestureEvent,
-        ResizeEvent,
-        Screen,
-        SubWindow
-    };
-
-    Object.defineProperty(xnew, 'basics', { configurable: true, enumerable: true, value: basics });
+    Object.defineProperty(xnew, 'Screen', { enumerable: true, value: Screen });
+    Object.defineProperty(xnew, 'DragEvent', { enumerable: true, value: DragEvent });
+    Object.defineProperty(xnew, 'GestureEvent', { enumerable: true, value: GestureEvent });
+    Object.defineProperty(xnew, 'ResizeEvent', { enumerable: true, value: ResizeEvent });
 
     return xnew;
 

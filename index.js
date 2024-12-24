@@ -7,12 +7,8 @@ import { SubWindow } from './src/basics/SubWindow';
 
 export default xnew;
 
-const basics = {
-    DragEvent,
-    GestureEvent,
-    ResizeEvent,
-    Screen,
-    SubWindow
-};
+Object.defineProperty(xnew, 'Screen', { enumerable: true, value: Screen });
+Object.defineProperty(xnew, 'DragEvent', { enumerable: true, value: DragEvent });
+Object.defineProperty(xnew, 'GestureEvent', { enumerable: true, value: GestureEvent });
+Object.defineProperty(xnew, 'ResizeEvent', { enumerable: true, value: ResizeEvent });
 
-Object.defineProperty(xnew, 'basics', { configurable: true, enumerable: true, value: basics });

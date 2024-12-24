@@ -3,7 +3,7 @@ sidebar_position: 7
 ---
 
 # xnew.current
-`xnew.current` get the created `xnode`.
+`xnew.current` get the `xnode` in current scope.
 
 ## example
 ```js

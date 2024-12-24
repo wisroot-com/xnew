@@ -7,7 +7,7 @@ export default function ShowExample({ height, name, code }) {
     code = code.replace('../xnew.js', 'https://unpkg.com/xnew@2.0.x/dist/xnew.js');
     return (
         <>
-            <iframe style={{width: '100%', height,border: 'solid 1px #DDD', borderRadius: '6px'}} src={'/xnew/examples/' + name} ></iframe>
+            <iframe style={{width: '100%', height, border: 'solid 1px #DDD', borderRadius: '6px' }} src={'/xnew/examples/' + name} ></iframe>
             <CodeBlock language='html'>{code}</CodeBlock>
         </>
     )

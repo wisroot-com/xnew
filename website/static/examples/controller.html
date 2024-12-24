@@ -27,7 +27,7 @@
   <div id="main" style="width: 100%; height: 100%;"></div>
   <script>
     xnew('#main', () => {
-      const screen = xnew(xnew.basics.Screen, { width: 800, height: 400 });
+      const screen = xnew(xnew.Screen, { width: 800, height: 400 });
 
       xnew(PixiMain, screen.canvas);
 
@@ -140,7 +140,7 @@
             `);
 
       const xnode = xnew.current;
-      const drag = xnew(xnew.basics.DragEvent);
+      const drag = xnew(xnew.DragEvent);
 
       drag.on('down move', (event, { type, position }) => {
         target.element.style.filter = 'brightness(90%)';
@@ -198,7 +198,7 @@
             `);
 
       const xnode = xnew.current;
-      const drag = xnew(xnew.basics.DragEvent);
+      const drag = xnew(xnew.DragEvent);
 
       drag.on('down move', (event, { type, position }) => {
         const x = position.x - size / 2;
@@ -236,7 +236,7 @@
             `);
 
       const xnode = xnew.current;
-      const drag = xnew(target, xnew.basics.DragEvent);
+      const drag = xnew(target, xnew.DragEvent);
 
       drag.on('down', (event, ex) => {
         target.element.style.filter = 'brightness(90%)';

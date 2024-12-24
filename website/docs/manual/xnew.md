@@ -3,8 +3,9 @@ sidebar_position: 1
 ---
 
 # xnew
-`xnew` create a new `xnode`.  
-This function is the starting point of component-oriented programming.
+It create a new instance `xnode`.  
+How `xnew` works makes component-oriented programming easier.
+
 ## basic usage
 ### arguments
 As shown below, `xnew` accepts some arguments.
@@ -18,7 +19,6 @@ const xnode = xnew(parent, target, Component, ...args);
 
 These arguments are often omitted.  
 ```js
-// e.g.
 xnew(Component, ...args);           // parent and target are omitted
 xnew(parent, Component, ...args);   // target is omitted
 xnew(target, Component, ...args);   // parent is omitted
@@ -26,12 +26,11 @@ xnew(parent, target);               // ...
 xnew(parent);                       // ...
 xnew(target);                       // ...
 xnew();                             // ...
-...
 ```
 
 ### Component
-First, let's set only the component function.  
-By setting a component function to `xnew`, you will implement various features.  
+First, let's set a component function to `xnew`.  
+In the function, you will implement various features.  
 
 ```js
 const xnode = xnew(Component, ...args);    

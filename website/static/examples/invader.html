@@ -28,7 +28,7 @@
   <div id="main" style="width: 100%; height: 100%;"></div>
   <script>
     xnew('#main', () => {
-      const screen = xnew(xnew.basics.Screen, { width: 1200, height: 800 });
+      const screen = xnew(xnew.Screen, { width: 1200, height: 800 });
 
       // setting for three.js
       const three = xnew(ThreeMain, screen.canvas);
@@ -69,11 +69,11 @@
     }
 
     function Controller() {
-      const dpad = xnew({ style: 'position: absolute; left: 10px; bottom: 20px; z-index: 10;' }, xnew.basics.DPad);
+      const dpad = xnew({ style: 'position: absolute; left: 10px; bottom: 20px; z-index: 10;' }, xnew.DPad);
       dpad.on('down move up', (event, ex) => {
         dpad.emit('#object.move', ex);
       })
-      const button = xnew({ style: 'position: absolute; right: 20px; bottom: 20px; z-index: 10;' }, xnew.basics.CircleButton);
+      const button = xnew({ style: 'position: absolute; right: 20px; bottom: 20px; z-index: 10;' }, xnew.CircleButton);
       button.on('down', (event, ex) => {
         button.emit('#object.action');
       })
