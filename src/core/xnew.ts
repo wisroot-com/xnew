@@ -66,7 +66,7 @@ export const xnew = Object.assign(
             return Unit.getContext(Unit.currentUnit, key);
         },
             
-        /** Registers a promise to the current unit。第1引数が string ならキー。promise を渡さなければ deferred（{ resolve, reject }）。2 引数で promise が undefined は誤用として throw。Unit を渡すとそのキー付き結果を集約し、対象 unit のプールを消費（リセット）する。 */
+        /** Registers a promise to the current unit。第1引数が string ならキー。promise を渡さなければ deferred（{ resolve, reject }）。2 引数で promise が undefined は誤用として throw。Unit を渡すとそのキー付き結果を集約する（対象 unit のプールは消費しない）。 */
         promise: (function (keyOrPromise?: any, maybePromise?: any): any {
             const key = typeof keyOrPromise === 'string' ? keyOrPromise : undefined;
             const promise = typeof keyOrPromise === 'string' ? maybePromise : keyOrPromise;
@@ -86,10 +86,10 @@ export const xnew = Object.assign(
             } else {
                 let unitPromise: UnitPromise;
                 if (promise instanceof Unit) {
+                    // 対象 unit のプールを集約する。プールは消費しない（同じ unit を何度集約しても
+                    // 同じ promise 群を見る）。results は登録時点の配列をクロージャで握るので、
+                    // 集約後に対象 unit へ promise を追加しても進行中の集約は無傷。
                     unitPromise = UnitPromise.results(promise._.promises, key);
-                    // 集約した結果は消費する。UnitPromise.results は旧配列をクロージャで握るので、
-                    // ここで新配列に差し替えても進行中の集約は無傷。次の集約は新規登録分だけを見る。
-                    promise._.promises = [];
                 } else if (promise instanceof Promise) {
                     unitPromise = new UnitPromise(promise, key);
                 } else {

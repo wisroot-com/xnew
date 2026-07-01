@@ -10,7 +10,7 @@
 // - UnitPromise : 元の Unit スコープで再開する promise ラッパー。.then / .catch / .finally は
 //                 捕捉スコープで callback を実行し、戻り値をチェーン値にする素のチェーン
 //                 （非同期継続は return new Promise で表す）。集約リザルトは xnew.promise(unit)
-//                 で取得し、集約時に対象 unit のプールを消費（リセット）する。
+//                 で取得する（集約しても対象 unit のプールは消費しない）。
 // - UnitTimer   : xnew.timeout / interval / transition が使うキュー式タイマー
 //----------------------------------------------------------------------------------------------------
 
@@ -525,18 +525,15 @@ export class UnitPromise {
     }
 
     // promise 群を集約した UnitPromise を返す（常にオブジェクト）。
-    // - キー付きは { key: 最終チェーン値 }（キーが `name[]` 形式なら out[name] を配列にして登録順 push）。
-    // - キー無しは out.results 配列に登録順でまとめる。results は常に存在する（無ければ []）。
-    // 注意: 予約キー `results` をユーザーキーに使うと衝突する。
+    // - キー付きのみ出力に含める（キーが `name[]` 形式なら out[name] を配列にして登録順 push）。
+    // - キー無しは await されるが出力には含めない（完了待ちの対象にはなる）。
     public static results(promises: UnitPromise[], key?: string): UnitPromise {
         return new UnitPromise(
             Promise.all(promises.map(p => p.promise)).then((values) => {
-                const out: Record<string, any> = { results: [] };
+                const out: Record<string, any> = {};
                 promises.forEach((p, i) => {
                     if (p.key !== undefined) {
                         UnitPromise.assignKey(out, p.key, values[i]);
-                    } else {
-                        out.results.push(values[i]);
                     }
                 });
                 return out;

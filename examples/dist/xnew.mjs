@@ -825,13 +825,10 @@ class UnitPromise {
     }
     static results(promises, key) {
         return new UnitPromise(Promise.all(promises.map(p => p.promise)).then((values) => {
-            const out = { results: [] };
+            const out = {};
             promises.forEach((p, i) => {
                 if (p.key !== undefined) {
                     UnitPromise.assignKey(out, p.key, values[i]);
-                }
-                else {
-                    out.results.push(values[i]);
                 }
             });
             return out;
@@ -966,7 +963,6 @@ const xnew$1 = Object.assign((function (...args) {
             let unitPromise;
             if (promise instanceof Unit) {
                 unitPromise = UnitPromise.results(promise._.promises, key);
-                promise._.promises = [];
             }
             else if (promise instanceof Promise) {
                 unitPromise = new UnitPromise(promise, key);
