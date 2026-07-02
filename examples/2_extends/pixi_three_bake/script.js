@@ -53,7 +53,8 @@ function PreRender(unit, { url }) {
   const model = xnew(Model, { url });
   const textures = [];
 
-  const { resolve } = xnew.promise('textures');
+  let resolve;
+  xnew.promise('textures', (res) => { resolve = res; });
 
   const BAKE_FRAMES = 120;
 
@@ -89,7 +90,8 @@ function PreRender(unit, { url }) {
 
 function Model(unit, { url }) {
   const object = xthree.nest(new THREE.Object3D());
-  const { resolve } = xnew.promise();
+  let resolve;
+  xnew.promise((res) => { resolve = res; });
 
   let vrm = null;
   const loader = new GLTFLoader();

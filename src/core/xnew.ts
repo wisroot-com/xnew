@@ -66,43 +66,30 @@ export const xnew = Object.assign(
             return Unit.getContext(Unit.currentUnit, key);
         },
             
-        /** Registers a promise to the current unit。第1引数が string ならキー。promise を渡さなければ deferred（{ resolve, reject }）。2 引数で promise が undefined は誤用として throw。Unit を渡すとそのキー付き結果を集約する（対象 unit のプールは消費しない）。 */
-        promise: (function (keyOrPromise?: any, maybePromise?: any): any {
+        /** Registers a promise to the current unit。第1引数が string ならキー。executor 関数 / 素の Promise / Unit のいずれかを受け取る（executor は new Promise 同様 (resolve, reject) を受け取る）。Unit を渡すとそのキー付き結果を集約する（対象 unit のプールは消費しない）。 */
+        promise: (function (keyOrPromise?: any, maybePromise?: any): UnitPromise {
             const key = typeof keyOrPromise === 'string' ? keyOrPromise : undefined;
             const promise = typeof keyOrPromise === 'string' ? maybePromise : keyOrPromise;
             // 旧仕様 `name[index]`（数値添字）は廃止。登録順に push する `name[]` に誘導する。
             if (key !== undefined && /^.+\[\d+\]$/.test(key)) {
                 throw new Error(`xnew.promise: indexed key "${key}" is no longer supported; use "${key.replace(/\[\d+\]$/, '[]')}" to append in registration order`);
             }
-            // 2 引数で呼ばれたのに promise が undefined → 登録のつもりで promise を渡し忘れた誤用。
-            // deferred は xnew.promise() / xnew.promise(key)（1 引数以下）でのみ成立させる。
-            if (arguments.length >= 2 && promise === undefined) {
-                throw new Error('xnew.promise(key, promise): promise is required when a second argument is given');
-            }
-            if (promise === undefined) {
-                const { unitPromise, resolve, reject } = UnitPromise.defer(key);
-                Unit.currentUnit._.promises.push(unitPromise);
-                return { resolve, reject };
+            // 集約（Unit）/ 素の Promise / コールバック(executor)のいずれでも最終的に一つの UnitPromise に包む。
+            // Unit を渡した場合は対象のプールを集約する。プールは消費しない（同じ unit を何度集約しても
+            // 同じ promise 群を見る）。results は登録時点の配列をクロージャで握るので、集約後に対象 unit へ
+            // promise を追加しても進行中の集約は無傷。
+            let source: any;
+            if (promise instanceof Unit) {
+                source = UnitPromise.collect(promise._.promises);
+            } else if (promise instanceof Promise) {
+                source = promise;
             } else {
-                // 集約（Unit）/ 素の Promise / コールバックのいずれでも最終的に一つの UnitPromise に包む。
-                // Unit を渡した場合は対象のプールを集約する。プールは消費しない（同じ unit を何度集約しても
-                // 同じ promise 群を見る）。results は登録時点の配列をクロージャで握るので、集約後に対象 unit へ
-                // promise を追加しても進行中の集約は無傷。
-                let source: any;
-                if (promise instanceof Unit) {
-                    source = UnitPromise.collect(promise._.promises);
-                } else if (promise instanceof Promise) {
-                    source = promise;
-                } else {
-                    source = new Promise(xnew.scope(promise));
-                }
-                const unitPromise = new UnitPromise(source, key);
-                Unit.currentUnit._.promises.push(unitPromise);
-                return unitPromise;
+                source = new Promise(xnew.scope(promise));
             }
+            const unitPromise = new UnitPromise(source, key);
+            Unit.currentUnit._.promises.push(unitPromise);
+            return unitPromise;
         }) as {
-            (): { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
-            (key: string): { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
             (promise: Function | Promise<any> | Unit): UnitPromise;
             (key: string, promise: Function | Promise<any> | Unit): UnitPromise;
         },

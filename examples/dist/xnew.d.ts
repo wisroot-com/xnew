@@ -115,11 +115,6 @@ declare class UnitPromise {
     then(callback: Function): UnitPromise;
     catch(callback: Function): UnitPromise;
     finally(callback: Function): UnitPromise;
-    static defer(key?: string): {
-        unitPromise: UnitPromise;
-        resolve: (value?: unknown) => void;
-        reject: (reason?: unknown) => void;
-    };
     static collect(promises: UnitPromise[]): Promise<Record<string, any>>;
 }
 declare class UnitTimer {
@@ -339,14 +334,6 @@ declare const xnew: XnewBase & {
     extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
     context(key: any): any;
     promise: {
-        (): {
-            resolve: (value?: unknown) => void;
-            reject: (reason?: unknown) => void;
-        };
-        (key: string): {
-            resolve: (value?: unknown) => void;
-            reject: (reason?: unknown) => void;
-        };
         (promise: Function | Promise<any> | Unit): UnitPromise;
         (key: string, promise: Function | Promise<any> | Unit): UnitPromise;
     };

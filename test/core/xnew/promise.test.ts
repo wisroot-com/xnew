@@ -186,19 +186,19 @@ describe('xnew promise helpers', () => {
         });
     });
 
-    describe('xnew.promise (deferred mode)', () => {
-        it('returns a settle handle and resolves via resolve()', async () => {
+    describe('xnew.promise (executor form)', () => {
+        it('captures resolve via the executor and resolves through it', async () => {
             const done = jest.fn();
-            let defer!: { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
+            let resolve!: (value?: unknown) => void;
             xnew((unit) => {
-                defer = xnew.promise();
+                xnew.promise((res: any) => { resolve = res; });
                 xnew.promise(unit).then(done);
             });
 
             await jest.advanceTimersByTimeAsync(0);
             expect(done).not.toHaveBeenCalled();
 
-            defer.resolve();
+            resolve();
             await jest.advanceTimersByTimeAsync(0);
 
             expect(done).toHaveBeenCalledTimes(1);
@@ -207,76 +207,67 @@ describe('xnew promise helpers', () => {
         it('ignores subsequent settle calls (idempotent)', async () => {
             const done = jest.fn();
             const caught = jest.fn();
-            let defer!: { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
+            let resolve!: (value?: unknown) => void;
+            let reject!: (reason?: unknown) => void;
             xnew((unit) => {
-                defer = xnew.promise();
+                xnew.promise((res: any, rej: any) => { resolve = res; reject = rej; });
                 xnew.promise(unit).then(done);
                 xnew.promise(unit).catch(caught);
             });
 
-            defer.resolve();
+            resolve();
             // a later reject after the first settle must be a no-op
-            defer.reject();
+            reject();
             await jest.advanceTimersByTimeAsync(0);
 
             expect(done).toHaveBeenCalledTimes(1);
             expect(caught).not.toHaveBeenCalled();
         });
 
-        it('passes a keyed deferred value to then under its key', async () => {
+        it('passes a keyed value to then under its key', async () => {
             const done = jest.fn();
-            let defer!: { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
+            let resolve!: (value?: unknown) => void;
             xnew((unit) => {
-                defer = xnew.promise('ready');
+                xnew.promise('ready', (res: any) => { resolve = res; });
                 xnew.promise(unit).then(done);
             });
 
             await jest.advanceTimersByTimeAsync(0);
             expect(done).not.toHaveBeenCalled();
 
-            defer.resolve(42);
+            resolve(42);
             await jest.advanceTimersByTimeAsync(0);
 
             expect(done).toHaveBeenCalledWith({ ready: 42 });
         });
 
-        it('awaits a keyless deferred but omits its value from the aggregate', async () => {
+        it('awaits a keyless promise but omits its value from the aggregate', async () => {
             const done = jest.fn();
-            let defer!: { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
+            let resolve!: (value?: unknown) => void;
             xnew((unit) => {
-                defer = xnew.promise();
+                xnew.promise((res: any) => { resolve = res; });
                 xnew.promise(unit).then(done);
             });
 
-            defer.resolve('kept');
+            resolve('kept');
             await jest.advanceTimersByTimeAsync(0);
 
             expect(done).toHaveBeenCalledWith({});
         });
 
-        it('rejects via reject() and triggers xnew.promise(unit).catch', async () => {
+        it('rejects via the executor reject and triggers xnew.promise(unit).catch', async () => {
             const caught = jest.fn();
-            let defer!: { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
+            let reject!: (reason?: unknown) => void;
             xnew((unit) => {
-                defer = xnew.promise();
+                xnew.promise((res: any, rej: any) => { reject = rej; });
                 xnew.promise(unit).catch(caught);
             });
 
-            defer.reject('boom');
+            reject('boom');
             await jest.advanceTimersByTimeAsync(0);
 
             expect(caught).toHaveBeenCalledTimes(1);
             expect(caught).toHaveBeenCalledWith('boom');
-        });
-
-        it('throws when called with two arguments but the promise is undefined (runtime misuse)', () => {
-            // The overloads reject this at compile time; cast to exercise the runtime guard
-            // for dynamic callers whose promise variable is undefined at runtime.
-            expect(() => {
-                xnew(() => {
-                    (xnew.promise as (key: string, promise: unknown) => unknown)('key', undefined);
-                });
-            }).toThrow();
         });
     });
 
@@ -288,8 +279,10 @@ describe('xnew promise helpers', () => {
             let releaseD!: () => void;
 
             function Child(unit: Unit) {
-                const a = xnew.promise('key1'); releaseA = () => a.resolve(1); // A
-                const b = xnew.promise('key2'); releaseB = () => b.resolve(2); // B
+                let resolveA!: (value?: unknown) => void;
+                xnew.promise('key1', (res: any) => { resolveA = res; }); releaseA = () => resolveA(1); // A
+                let resolveB!: (value?: unknown) => void;
+                xnew.promise('key2', (res: any) => { resolveB = res; }); releaseB = () => resolveB(2); // B
                 xnew.promise('key3', unit).then(({ key1, key2 }: any) => {     // C
                     order.push(`C:${key1},${key2}`);
                     // D は return した promise として表す（同期登録は NG）。

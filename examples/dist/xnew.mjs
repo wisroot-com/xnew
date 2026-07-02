@@ -770,21 +770,6 @@ class UnitPromise {
     finally(callback) {
         return this.chain('finally', callback);
     }
-    static defer(key) {
-        let settled = false;
-        let resolve;
-        let reject;
-        const unitPromise = new UnitPromise(new Promise((res, rej) => { resolve = res; reject = rej; }), key);
-        return {
-            unitPromise,
-            resolve(value) { if (settled) {
-                return;
-            } settled = true; resolve(value); },
-            reject(reason) { if (settled) {
-                return;
-            } settled = true; reject(reason); },
-        };
-    }
     static async collect(promises) {
         const values = await Promise.all(promises.map(p => p.promise));
         const out = {};
@@ -910,29 +895,19 @@ const xnew$1 = Object.assign((function (...args) {
         if (key !== undefined && /^.+\[\d+\]$/.test(key)) {
             throw new Error(`xnew.promise: indexed key "${key}" is no longer supported; use "${key.replace(/\[\d+\]$/, '[]')}" to append in registration order`);
         }
-        if (arguments.length >= 2 && promise === undefined) {
-            throw new Error('xnew.promise(key, promise): promise is required when a second argument is given');
+        let source;
+        if (promise instanceof Unit) {
+            source = UnitPromise.collect(promise._.promises);
         }
-        if (promise === undefined) {
-            const { unitPromise, resolve, reject } = UnitPromise.defer(key);
-            Unit.currentUnit._.promises.push(unitPromise);
-            return { resolve, reject };
+        else if (promise instanceof Promise) {
+            source = promise;
         }
         else {
-            let source;
-            if (promise instanceof Unit) {
-                source = UnitPromise.collect(promise._.promises);
-            }
-            else if (promise instanceof Promise) {
-                source = promise;
-            }
-            else {
-                source = new Promise(xnew$1.scope(promise));
-            }
-            const unitPromise = new UnitPromise(source, key);
-            Unit.currentUnit._.promises.push(unitPromise);
-            return unitPromise;
+            source = new Promise(xnew$1.scope(promise));
         }
+        const unitPromise = new UnitPromise(source, key);
+        Unit.currentUnit._.promises.push(unitPromise);
+        return unitPromise;
     }),
     scope(callback) {
         const snapshot = Unit.snapshot(Unit.currentUnit);

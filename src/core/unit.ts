@@ -462,21 +462,6 @@ export class UnitPromise {
         return this.chain('finally', callback);
     }
 
-    // deferred な UnitPromise を生成し、settled ガード付きの resolve / reject と共に返す。
-    // xnew.promise() の deferred 形が使う（Promise 構築と executor からの resolve / reject
-    // 取り出しの重複を排除する）。
-    public static defer(key?: string): { unitPromise: UnitPromise; resolve: (value?: unknown) => void; reject: (reason?: unknown) => void; }{
-        let settled = false;
-        let resolve!: (value?: unknown) => void;
-        let reject!: (reason?: unknown) => void;
-        const unitPromise = new UnitPromise(new Promise((res, rej) => { resolve = res; reject = rej; }), key);
-        return {
-            unitPromise,
-            resolve(value?: unknown) { if (settled) { return; } settled = true; resolve(value); },
-            reject(reason?: unknown) { if (settled) { return; } settled = true; reject(reason); },
-        };
-    }
-
     // promise 群を集約した Promise を返す（解決値は常にオブジェクト）。呼び出し側で
     // new UnitPromise(...) に包む（他の登録分岐と形を揃えるため wrap はここでは行わない）。
     // - キー付きのみ出力に含める（キーが `name[]` 形式なら out[name] を配列にして登録順 push）。
