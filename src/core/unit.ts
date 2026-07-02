@@ -340,16 +340,14 @@ export class Unit {
         return ancestors;
     }
 
-    // from から遡って最初の protect 境界（無ければ undefined）。
-    static protectBoundary(from: Unit | null): Unit | undefined {
+    // from を起点に protect 境界越しの対象が current（とその祖先列）から可視か。
+    // from から遡って最初の protect 境界を求め、無ければ可視、あれば current かその祖先列に
+    // 含まれる（= 境界を通過できる）場合のみ可視。
+    static isVisible(from: Unit | null, current: Unit | null, ancestors: Unit[]): boolean {
+        let boundary: Unit | undefined;
         for (let u = from; u !== null; u = u._.parent) {
-            if (u._.protected === true) return u;
+            if (u._.protected === true) { boundary = u; break; }
         }
-        return undefined;
-    }
-
-    // boundary 内の対象が current（とその祖先列）から可視か。
-    static isVisible(boundary: Unit | undefined, current: Unit | null, ancestors: Unit[]): boolean {
         return boundary === undefined || ancestors.includes(boundary) === true || current === boundary;
     }
 
@@ -360,7 +358,7 @@ export class Unit {
             if (key !== undefined && unit._.key !== key) {
                 return false;
             }
-            return Unit.isVisible(Unit.protectBoundary(unit._.parent), current, ancestors);
+            return Unit.isVisible(unit._.parent, current, ancestors);
         });
     }
 
@@ -420,7 +418,7 @@ export class Unit {
         if (type[0] === '+') {
             const ancestors = Unit.ancestors(unit);
             Unit.type2units.get(type)?.forEach((target) => {
-                if (Unit.isVisible(Unit.protectBoundary(target), unit, ancestors)) {
+                if (Unit.isVisible(target, unit, ancestors)) {
                     target._.listeners.get(type)?.forEach((item) => item.execute(props));
                 }
             });
