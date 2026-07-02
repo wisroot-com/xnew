@@ -68,15 +68,12 @@ unit.off();               // すべてのリスナーを解除
 
 ## ライフサイクルイベント
 
-ライフサイクル全体は 5 つのイベントでカバーされます。必要なものだけ購読してください。
+ライフサイクル全体は 2 つのイベントでカバーされます。必要なものだけ購読してください。
 
-| イベント     | タイミング                                   |
-| ------------ | -------------------------------------------- |
-| `start`      | 最初の `update` の直前に 1 回                 |
-| `update`     | 毎フレーム（おおよそ 60fps）                  |
-| `render`     | 各 `update` の後                              |
-| `stop`       | unit が破棄される直前（`finalize` の前）に 1 回 |
-| `finalize`   | unit が破棄されるとき                         |
+| イベント     | タイミング                    |
+| ------------ | ----------------------------- |
+| `update`     | 毎フレーム（おおよそ 60fps）  |
+| `finalize`   | unit が破棄されるとき         |
 
 ```js
 function AnimatedBox(unit) {
@@ -102,21 +99,21 @@ unit.on('click', () => unit.finalize());
 
 ### 実行順序
 
-子のイベントは親より**先に**発火します。これにより、子は親の `start` より前に初期化を終え、親の `stop` より前に後片付けを完了できます。
+`update` などのイベントは、子が親より**先に**発火します（後片付けの `finalize` は逆に子が先）。
 
 ```js
 function Parent(unit) {
   xnew(Child);
-  unit.on('start', () => console.log('Parent start'));
+  unit.on('update', () => console.log('Parent update'));
 }
 function Child(unit) {
-  unit.on('start', () => console.log('Child start'));
+  unit.on('update', () => console.log('Child update'));
 }
 xnew(Parent);
 
-// 出力:
-// Child start
-// Parent start
+// 出力（毎フレーム）:
+// Child update
+// Parent update
 ```
 
 ## DOM イベントのペイロード

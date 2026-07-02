@@ -11,7 +11,7 @@ function Main(unit) {
 
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('render', () => {
+  unit.on('update', () => {
     xpixi.renderer.render(xpixi.scene);
   });
 
@@ -54,7 +54,7 @@ function Rectangle(unit, { x, y, w, h, color, options = {} }) {
 
   Matter.Body.setPosition(pyshics, { x, y });
 
-  unit.on('render', () => {
+  unit.on('update', () => {
     object.rotation = pyshics.angle;
     object.position.set(pyshics.position.x, pyshics.position.y);
   });
@@ -70,7 +70,7 @@ function Circle(unit, { x, y, radius, color, options = {} }) {
   Matter.Body.setPosition(pyshics, { x, y });
 
   unit.on('finalize', () => Matter.Composite.remove(xmatter.world, pyshics));
-  unit.on('render', () => {
+  unit.on('update', () => {
     object.rotation = pyshics.angle;
     object.position.set(pyshics.position.x, pyshics.position.y);
   });
@@ -87,7 +87,7 @@ function Polygon(unit, { x, y, sides, radius, color, options = {} }) {
   Matter.Body.setPosition(pyshics, { x, y });
 
   unit.on('finalize', () => Matter.Composite.remove(xmatter.world, pyshics));
-  unit.on('render', () => {
+  unit.on('update', () => {
       object.rotation = pyshics.angle;
       object.position.set(pyshics.position.x, pyshics.position.y);
   });

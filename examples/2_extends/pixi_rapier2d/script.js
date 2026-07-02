@@ -11,7 +11,7 @@ function Main(unit) {
 
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('render', () => {
+  unit.on('update', () => {
     xpixi.renderer.render(xpixi.scene);
   });
   xnew(Contents);
@@ -22,7 +22,7 @@ function Contents(unit) {
   xrapier2d.initialize({ gravity: { x: 0.0, y: 9.81 * 10 } });
 
   xnew.promise(unit).then(() => {
-    unit.on('render', () => {
+    unit.on('update', () => {
       xrapier2d.world.timestep = 3 / 60;
       xrapier2d.world.step();
     });
@@ -52,7 +52,7 @@ function Rectangle(self, { x, y, w, h, color = 0xFFFFFF, dynamic = true, options
     xrapier2d.world.removeCollider(collider);
     xrapier2d.world.removeRigidBody(rigidBody);
   });
-  self.on('render', () => {
+  self.on('update', () => {
     const position = rigidBody.translation();
     object.position.set(position.x, position.y);
   });

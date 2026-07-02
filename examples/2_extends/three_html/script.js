@@ -75,7 +75,7 @@ function ThreeMain(unit) {
   xnew.extend(xnew.basics.Screen, { width, height, fit: 'cover' });
 
   xthree.initialize({ canvas: unit.canvas });
-  unit.on('render', () => {
+  unit.on('update', () => {
     xthree.renderer.render(xthree.scene, xthree.camera);
   });
 

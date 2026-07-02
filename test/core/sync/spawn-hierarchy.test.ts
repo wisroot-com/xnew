@@ -1,7 +1,7 @@
 import { Unit } from '../../../src/core/unit';
 import { syncOf } from '../../../src/core/sync';
 import { xnew } from '../../../src/index';
-import { ioMock, bootServer, bootClient, asServer, asServerAsync } from './io-mock';
+import { ioMock, bootServer, bootClient, asServer, asServerAsync, asClient } from './io-mock';
 
 // 2 階層: Mover が server ブロック内で定期的に Enemy(synced 子) を spawn し、
 // 各 Enemy は所定方向へ移動して一定時間で消える。ブラウザ例 (index.js) と同じ構造の検証。
@@ -16,7 +16,7 @@ function Enemy(unit: Unit, props: any = {}) {
     });
     xnew.sync.client(() => {
         const el = xnew.nest('<div>');
-        unit.on('render', () => { (el as HTMLElement).style.left = `${state.x}px`; });
+        unit.on('update', () => { (el as HTMLElement).style.left = `${state.x}px`; });
     });
 }
 
@@ -44,7 +44,6 @@ describe('2-level spawn hierarchy (Mover -> Enemy)', () => {
         const server = bootServer({ io: hub.io }, function Root() { xnew.sync.register({ Mover }); xnew(Mover); });
         const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ Mover }); });
 
-        Unit.start(Unit.engineRoot);
         await asServerAsync(() => jest.advanceTimersByTimeAsync(500));   // interval 発火 → Enemy spawn（server 構築）
         asServer(() => Unit.update(server));                   // server Enemy が移動 + 'sync' broadcast → client apply
 
@@ -55,8 +54,7 @@ describe('2-level spawn hierarchy (Mover -> Enemy)', () => {
         expect(enemyNode).toBeDefined();
         expect(enemyNode.parent).toBe(moverNode.id);       // 2 階層: Enemy の親は Mover
 
-        Unit.start(Unit.engineRoot);
-        Unit.render(Unit.engineRoot);
+        asClient(() => Unit.update(client));
 
         const replicaMover = client._.children[0];
         expect(syncOf(replicaMover).id).toBe(moverNode.id);
@@ -69,7 +67,6 @@ describe('2-level spawn hierarchy (Mover -> Enemy)', () => {
         const server = bootServer({ io: hub.io }, function Root() { xnew.sync.register({ Mover }); xnew(Mover); });
         const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ Mover }); });
 
-        Unit.start(Unit.engineRoot);
         await asServerAsync(() => jest.advanceTimersByTimeAsync(500));   // 最初の Enemy が spawn
         asServer(() => Unit.update(server));                   // capture + 'sync' → client apply
         const replicaMover = client._.children[0];

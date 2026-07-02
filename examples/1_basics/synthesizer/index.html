@@ -228,7 +228,7 @@
         });
         activate?.on('change', ({ value }) => value ? subgroup.open() : subgroup.close());
 
-        group.on('render', () => {
+        group.on('update', () => {
           const [A, D, S, R] = [params.attack, params.decay, params.sustain, params.release];
           const points = `0 150 ${0.1 * A} ${10} ${0.1 * (A + D)} ${150 - 140 * S} ${0.1 * (A + D + 500)} ${150 - 140 * S} ${0.1 * (A + D + 500 + R)} 150`;
           svg.element.innerHTML = `<polyline stroke="#2B2" stroke-width="4" points="${points}" />`;

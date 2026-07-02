@@ -68,15 +68,12 @@ unit.off();        // remove all listeners
 
 ## Lifecycle events
 
-The whole lifecycle is covered by five events. Subscribe only to the ones you need.
+The whole lifecycle is covered by two events. Subscribe only to the ones you need.
 
-| Event       | When it fires                              |
-| ----------- | ------------------------------------------ |
-| `start`     | once, just before the first `update`        |
-| `update`    | every frame (roughly 60fps)                 |
-| `render`    | after each `update`                         |
-| `stop`      | once, just before the unit is destroyed (before `finalize`) |
-| `finalize`  | when the unit is destroyed                  |
+| Event       | When it fires                |
+| ----------- | ---------------------------- |
+| `update`    | every frame (roughly 60fps)  |
+| `finalize`  | when the unit is destroyed   |
 
 ```js
 function AnimatedBox(unit) {
@@ -102,21 +99,21 @@ unit.on('click', () => unit.finalize());
 
 ### Execution order
 
-Children's events fire **before** their parent's. This lets a child finish initializing before the parent's `start`, and finish cleaning up before the parent's `stop`.
+Events such as `update` fire on children **before** their parent (teardown via `finalize` is the reverse — children first).
 
 ```js
 function Parent(unit) {
   xnew(Child);
-  unit.on('start', () => console.log('Parent start'));
+  unit.on('update', () => console.log('Parent update'));
 }
 function Child(unit) {
-  unit.on('start', () => console.log('Child start'));
+  unit.on('update', () => console.log('Child update'));
 }
 xnew(Parent);
 
-// Output:
-// Child start
-// Parent start
+// Output (each frame):
+// Child update
+// Parent update
 ```
 
 ## DOM event payloads

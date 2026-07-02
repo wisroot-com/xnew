@@ -1,7 +1,7 @@
 import { Unit } from '../../../src/core/unit';
 import { syncOf } from '../../../src/core/sync';
 import { xnew } from '../../../src/index';
-import { ioMock, bootServer, bootClient, asServer } from './io-mock';
+import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
 // capture / apply は boot 内部に移動した。server boot は root.on('update') で 'sync' を broadcast し、
 // client boot は on('sync') で apply するので、「server を update する」だけで client へ反映される。
@@ -38,7 +38,6 @@ describe('composed synced state (base + extend)', () => {
         const server = bootServer({ io: hub.io }, function Server() { xnew.sync.register({ Enemy }); xnew(Enemy); });
         const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ Enemy }); });
 
-        Unit.start(Unit.engineRoot);
         asServer(() => Unit.update(server));   // server Enemy: hp=101, x=3 → 'sync' → client が replica を生成
 
         const replica = client._.children[0];
@@ -68,7 +67,6 @@ describe('composed synced state (base + extend)', () => {
         const server = bootServer({ io: hub.io }, function Server() { xnew.sync.register({ Host }); xnew(Host); });
         const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ Host }); });
 
-        Unit.start(Unit.engineRoot);
         asServer(() => Unit.update(server));   // server Host: value=5 → 'sync' → client が replica Host + inline Child を生成
 
         const replicaHost = client._.children[0];
@@ -83,7 +81,6 @@ describe('composed synced state (base + extend)', () => {
         function EnemyDerived(unit: Unit, props: any = {}) { xnew.extend(ActorBase, props); xnew.sync.state({ hp: 3 }); }
         const server = bootServer({ io: hub.io }, function S() { xnew.sync.register({ ActorBase, EnemyDerived }); xnew(EnemyDerived, { y: 8 }); });
 
-        Unit.start(Unit.engineRoot);
         asServer(() => Unit.update(server));
         const tree = hub.lastSync();
         expect(tree).toHaveLength(1);
@@ -98,7 +95,7 @@ describe('composed synced state (base + extend)', () => {
             const pos = xnew.sync.state({ x: 0, y: props.y ?? 0 });
             xnew.sync.client(() => {
                 const el = xnew.nest('<div>') as HTMLElement;
-                unit.on('render', () => { el.style.left = `${pos.x}px`; el.style.top = `${pos.y}px`; });
+                unit.on('update', () => { el.style.left = `${pos.x}px`; el.style.top = `${pos.y}px`; });
             });
         }
         // 拡張: Actor を取り込み hp を足し、基底が nest した要素を unit.element 経由で着色する
@@ -108,21 +105,19 @@ describe('composed synced state (base + extend)', () => {
             xnew.sync.server(() => { unit.on('update', () => { state.x += 3; state.hp -= 1; }); });
             xnew.sync.client(() => {
                 const el = unit.element as HTMLElement;
-                unit.on('render', () => { el.style.background = state.hp >= 2 ? 'red' : 'gray'; });
+                unit.on('update', () => { el.style.background = state.hp >= 2 ? 'red' : 'gray'; });
             });
         }
         const server = bootServer({ io: hub.io }, function Server() { xnew.sync.register({ Sprite }); xnew(Sprite, { y: 8 }); });
         const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ Sprite }); });
 
-        Unit.start(Unit.engineRoot);
         asServer(() => Unit.update(server));   // server Sprite: x=3, hp=2 → 'sync' → client が replica を生成
 
         const tree = hub.lastSync();
         expect(tree).toHaveLength(1);
         expect(tree[0].state).toEqual({ x: 3, y: 8, hp: 2 });    // Actor 由来(x,y) + Sprite 由来(hp) がマージ
 
-        Unit.start(Unit.engineRoot);
-        Unit.render(Unit.engineRoot);                             // replica render（両 render ハンドラが走る）
+        asClient(() => Unit.update(client));                      // replica update（両描画ハンドラが走る）
 
         const el = client._.children[0].element as HTMLElement;
         expect(el.style.left).toBe('3px');                      // 基底 Actor の render（位置）

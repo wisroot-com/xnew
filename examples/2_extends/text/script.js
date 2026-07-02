@@ -16,13 +16,13 @@ function Main(unit) {
   const camera = new THREE.OrthographicCamera(-10, +10, +10, -10, 0, 100);
   xthree.initialize({ camera, canvas: new OffscreenCanvas(width, height) });
   xthree.camera.position.set(0, 0, +100);
-  unit.on('render', () => {
+  unit.on('update', () => {
     xthree.renderer.render(xthree.scene, xthree.camera);
   });
 
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('render', () => {
+  unit.on('update', () => {
     xnew.emit('+prerender');
     xpixi.renderer.render(xpixi.scene);
   });

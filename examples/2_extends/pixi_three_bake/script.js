@@ -16,7 +16,7 @@ function Main(unit) {
   xnew.extend(xnew.basics.Screen, { width, height });
 
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('render', () => xpixi.renderer.render(xpixi.scene));
+  unit.on('update', () => xpixi.renderer.render(xpixi.scene));
 
   xnew(Contents);
 }
@@ -59,7 +59,7 @@ function PreRender(unit, { url }) {
 
   // Model のロード完了を待ってから、xnew.chunk で BAKE_FRAMES 回を時間予算（既定 8ms/フレーム）で
   // 自動的にフレーム分散してベイクする。完了で textures を解決し unit を畳む。
-  // （旧実装の unit.on('render') + frameIndex/batch による手動バッチを置き換え。）
+  // （旧実装の unit.on('update') + frameIndex/batch による手動バッチを置き換え。）
   xnew.promise(model).then(() => xnew.chunk(({ index }) => {
     const t = index * (Math.PI / BAKE_FRAMES * 3);
 

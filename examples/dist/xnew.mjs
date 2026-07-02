@@ -436,7 +436,7 @@ function keyboardFactory(type) {
     }, props.options);
 }
 
-const SYSTEM_EVENTS = ['start', 'update', 'render', 'stop', 'finalize'];
+const SYSTEM_EVENTS = ['update', 'finalize'];
 function isSystemEvent(type) {
     return SYSTEM_EVENTS.includes(type);
 }
@@ -459,7 +459,6 @@ class Unit {
             id: Unit.nextId++,
             parent,
             status: 'invoked',
-            tostart: true,
             protected: false,
             currentElement: baseElement,
             currentContext: baseContext,
@@ -471,7 +470,7 @@ class Unit {
             Components: [],
             listeners: new MapMap(),
             defines: {},
-            systems: { start: [], update: [], render: [], stop: [], finalize: [] },
+            systems: { update: [], finalize: [] },
             eventor: new Eventor(),
             key: null,
         };
@@ -517,15 +516,7 @@ class Unit {
     get element() {
         return this._.currentElement;
     }
-    start() {
-        this._.tostart = true;
-    }
-    stop() {
-        this._.tostart = false;
-        Unit.stop(this);
-    }
     finalize() {
-        Unit.stop(this);
         Unit.finalize(this);
     }
     static finalize(unit) {
@@ -622,35 +613,10 @@ class Unit {
         Object.defineProperties(clone, Object.getOwnPropertyDescriptors(unit._.defines));
         return clone;
     }
-    static start(unit) {
-        if (unit._.tostart === false)
-            return;
-        if (unit._.status === 'initialized' || unit._.status === 'stopped') {
-            unit._.status = 'started';
-            unit._.children.forEach((child) => Unit.start(child));
-            unit._.systems.start.forEach(({ execute }) => execute());
-        }
-        else if (unit._.status === 'started') {
-            unit._.children.forEach((child) => Unit.start(child));
-        }
-    }
-    static stop(unit) {
-        if (unit._.status === 'started') {
-            unit._.status = 'stopped';
-            unit._.children.forEach((child) => Unit.stop(child));
-            unit._.systems.stop.forEach(({ execute }) => execute());
-        }
-    }
     static update(unit, delta = 0) {
-        if (unit._.status === 'started') {
+        if (unit._.status === 'initialized') {
             unit._.children.forEach((child) => Unit.update(child, delta));
             unit._.systems.update.forEach((entry) => entry.execute({ count: entry.count++, delta }));
-        }
-    }
-    static render(unit, delta = 0) {
-        if (unit._.status === 'started' || unit._.status === 'stopped') {
-            unit._.children.forEach((child) => Unit.render(child, delta));
-            unit._.systems.render.forEach((entry) => entry.execute({ count: entry.count++, delta }));
         }
     }
     static reset() {
@@ -659,9 +625,7 @@ class Unit {
         Unit.nextId = 0;
         Unit.currentUnit = Unit.engineRoot = Unit.create(null);
         const ticker = new Ticker((delta) => {
-            Unit.start(Unit.engineRoot);
             Unit.update(Unit.engineRoot, delta);
-            Unit.render(Unit.engineRoot, delta);
         });
         Unit.engineRoot.on('finalize', () => ticker.clear());
     }
@@ -1334,7 +1298,7 @@ function Select(_, { key = '', value, items = [] } = {}) {
             xnew$1(OpenAndClose, { open: false });
             xnew$1.extend(Popup);
             xnew$1.nest('<div style="position: absolute; padding: 0.25em 0;">');
-            list.on('render', () => {
+            list.on('update', () => {
                 const rect = button.element.getBoundingClientRect();
                 list.element.style.right = (window.innerWidth - rect.right) + 'px';
                 list.element.style.top = rect.bottom + 'px';

@@ -62,9 +62,12 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
 
 ## 5. Lifecycle events
 
-- `unit.on('start' | 'update' | 'render' | 'stop' | 'finalize', cb)`.
-- `update` / `render` callbacks receive `{ count, delta }` (`delta` = ms since last
-  frame; `count` starts at 0 per listener). `start`/`stop`/`finalize` get `{ type }`.
+- `unit.on('update' | 'finalize', cb)`. There is **no** `start`/`stop`/`render`
+  event — a unit begins ticking (`update`) as soon as it is `initialized` and stops
+  only on `finalize` (no pause/resume state, no separate render pass). Lifecycle is
+  `invoked → initialized → finalizing → finalized`.
+- `update` callbacks receive `{ count, delta }` (`delta` = ms since last frame;
+  `count` starts at 0 per listener). `finalize` gets `{ type }`.
 - **Do all teardown in `'finalize'`**: remove external listeners, disconnect
   sockets, clear non-xnew timers. Children finalize before parents, in reverse.
 

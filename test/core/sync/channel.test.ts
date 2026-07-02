@@ -34,7 +34,6 @@ describe('event channel (socket.io transport)', () => {
         expect(id1).toBe('c1');   // 自動発番（手動 clientId 不要）
         expect(id2).toBe('c2');
 
-        Unit.start(Unit.engineRoot);
         Unit.update(Unit.engineRoot);   // c1 の client が emit
 
         expect(received).toEqual([['c1', { x: 1 }]]);
@@ -108,11 +107,8 @@ describe('event channel (socket.io transport)', () => {
         // server update が root.on('update') で 'sync' を両 client へ broadcast し、各 client boot が apply する
         // （明示の capture/apply は不要）。
         function cycle() {
-            Unit.start(Unit.engineRoot);
             asServer(() => Unit.update(server));                                // server: presence から Player を spawn + 'sync' broadcast → 両 client apply
             asClient(() => { Unit.update(client1); Unit.update(client2); });    // client: on('update') の emit
-            Unit.start(Unit.engineRoot);
-            Unit.render(Unit.engineRoot);
         }
         cycle();   // f1: server spawn 2 Player（この frame の client emit は Player 登録前なので素通り）
         cycle();   // f2: client emit → 各 Player の on('move') が受信時に state を更新
@@ -146,9 +142,7 @@ describe('event channel (socket.io transport)', () => {
         const server = bootServer({ io: hub.io }, World);   // boot の自動 mirror が update で broadcast
         const client = bootClient({ socket: hub.connect() }, World);   // boot の自動 mirror が on('sync') で apply
 
-        Unit.start(Unit.engineRoot);
         Unit.update(Unit.engineRoot);   // server Mover が x+=1、World(server) が 'sync' を broadcast → client が apply
-        Unit.start(Unit.engineRoot);
 
         const replica = client._.children.find((c: Unit) => syncOf(c).state);
         expect(replica).toBeDefined();

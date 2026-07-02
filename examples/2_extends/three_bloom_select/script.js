@@ -34,7 +34,7 @@ function Main(unit) {
   xnew(Panel);
   xnew(Contents);
 
-  unit.on('render', () => {
+  unit.on('update', () => {
     renderer.render();
   });
 }

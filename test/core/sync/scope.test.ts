@@ -20,7 +20,6 @@ describe('scoped registry isolation', () => {
             xnew(ParentA);
             xnew(ParentB);
         });
-        Unit.start(Unit.engineRoot);
         asServer(() => Unit.update(Unit.engineRoot));   // root.on('update') が 'sync' を emit
         const tree = hub.lastSync();
         const childNodes = tree.filter((n: any) => n.name === 'Child');
@@ -36,7 +35,6 @@ describe('scoped registry isolation', () => {
         });
         const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ ParentA, ParentB }); });
 
-        Unit.start(Unit.engineRoot);
         asServer(() => Unit.update(server));   // capture + 'sync' broadcast → client apply
 
         const replicaA = client._.children.find(c => c._.Components.includes(ParentA))!;
@@ -50,7 +48,6 @@ describe('scoped registry isolation', () => {
     it('a child not registered by its parent is omitted from capture', () => {
         function Loose(unit: Unit) { xnew.sync.state({ v: 1 }); }
         bootServer({ io: hub.io }, function Root() { xnew(Loose); });   // Root は Loose を register しない
-        Unit.start(Unit.engineRoot);
         asServer(() => Unit.update(Unit.engineRoot));
         expect(hub.lastSync()).toHaveLength(0);
     });

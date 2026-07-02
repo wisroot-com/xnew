@@ -11,22 +11,6 @@ describe('Unit lifecycle', () => {
         jest.useRealTimers();
     });
 
-    it('emits start automatically once the unit begins ticking', async () => {
-        const onStart = jest.fn();
-        xnew((u: Unit) => u.on('start', onStart));
-        expect(onStart).not.toHaveBeenCalled();
-        await jest.advanceTimersByTimeAsync(50);
-        expect(onStart).toHaveBeenCalledTimes(1);
-    });
-
-    it('emits stop when finalized after having started', async () => {
-        const onStop = jest.fn();
-        const unit = xnew((u: Unit) => u.on('stop', onStop));
-        await jest.advanceTimersByTimeAsync(40);
-        unit.finalize();
-        expect(onStop).toHaveBeenCalledTimes(1);
-    });
-
     it('emits finalize exactly once even when finalized twice', () => {
         const onFinalize = jest.fn();
         const unit = xnew((u: Unit) => u.on('finalize', onFinalize));
@@ -35,13 +19,23 @@ describe('Unit lifecycle', () => {
         expect(onFinalize).toHaveBeenCalledTimes(1);
     });
 
-    it('does not emit stop again when finalized twice', async () => {
-        const onStop = jest.fn();
-        const unit = xnew((u: Unit) => u.on('stop', onStop));
+    it('runs update listeners once the unit is initialized', async () => {
+        const onUpdate = jest.fn();
+        xnew((u: Unit) => u.on('update', onUpdate));
+        expect(onUpdate).not.toHaveBeenCalled();
+        await jest.advanceTimersByTimeAsync(50);
+        expect(onUpdate).toHaveBeenCalled();
+    });
+
+    it('stops running update listeners after finalize', async () => {
+        const onUpdate = jest.fn();
+        const unit = xnew((u: Unit) => u.on('update', onUpdate));
         await jest.advanceTimersByTimeAsync(40);
+        const calledBefore = onUpdate.mock.calls.length;
+        expect(calledBefore).toBeGreaterThan(0);
         unit.finalize();
-        unit.finalize();
-        expect(onStop).toHaveBeenCalledTimes(1);
+        await jest.advanceTimersByTimeAsync(40);
+        expect(onUpdate).toHaveBeenCalledTimes(calledBefore);
     });
 
     it('passes an incrementing per-listener count and numeric delta to update listeners', async () => {
@@ -71,19 +65,6 @@ describe('Unit lifecycle', () => {
         expect(a[0]).toBe(0);
         expect(b[0]).toBe(0); // A が count===2 まで進んでいても B は 0 から
         expect(a.at(-1)!).toBeGreaterThan(b.at(-1)!); // 先に登録した A の方が多く呼ばれている
-    });
-
-    it('passes count / delta to render listeners as well', async () => {
-        const counts: number[] = [];
-        let sawNumericDelta = false;
-        xnew((u: Unit) => u.on('render', ({ count, delta }: any) => {
-            counts.push(count);
-            if (typeof delta === 'number' && delta > 0) sawNumericDelta = true;
-        }));
-        await jest.advanceTimersByTimeAsync(100);
-        expect(counts.length).toBeGreaterThan(1);
-        counts.forEach((c, i) => expect(c).toBe(i));
-        expect(sawNumericDelta).toBe(true);
     });
 
     it('counts per unit — a later unit starts its own count at 0', async () => {

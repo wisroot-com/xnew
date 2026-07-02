@@ -17,7 +17,6 @@ describe('registry (scoped)', () => {
     // component を server boot し 1 度 update して、emit された 'sync' ツリーを返す。
     function capture(Component: any): any[] {
         bootServer({ io: hub.io }, Component);
-        Unit.start(Unit.engineRoot);
         asServer(() => Unit.update(Unit.engineRoot));
         return hub.lastSync() ?? [];
     }
@@ -48,7 +47,6 @@ describe('captureStateTree', () => {
 
     function capture(Component: any): any[] {
         bootServer({ io: hub.io }, Component);
-        Unit.start(Unit.engineRoot);
         asServer(() => Unit.update(Unit.engineRoot));
         return hub.lastSync() ?? [];
     }
@@ -70,7 +68,6 @@ describe('captureStateTree', () => {
 
     it('assigns stable ids and reflects mutated state on later captures', () => {
         const server = bootServer({ io: hub.io }, function Root() { xnew.sync.register({ Child }); xnew(Child); });
-        Unit.start(Unit.engineRoot);
         asServer(() => Unit.update(Unit.engineRoot));
         const first = hub.lastSync()[0];
         syncOf(server._.children[0]).state!.position = 9;

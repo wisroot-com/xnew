@@ -12,7 +12,7 @@ function Main(unit) {
   xthree.initialize({ canvas: unit.canvas });
   xthree.camera.position.set(0, 0, +100);
 
-  unit.on('render', () => {
+  unit.on('update', () => {
     xthree.renderer.render(xthree.scene, xthree.camera);
   });
   

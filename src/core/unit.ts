@@ -2,7 +2,8 @@
 // Unit — the lifecycle, ownership, and scoping primitive of xnew
 //
 // Unit は DOM 要素・Component・子 unit・リスナ・promise を 1 つに束ね、状態機械
-// invoked → initialized → started ↔ stopped → finalizing → finalized で駆動する。
+// invoked → initialized → finalizing → finalized で駆動する。initialized が実行状態で、
+// update はそこで走る（一時停止/再開の概念は持たない）。
 // 遅延コールバック（DOM イベント・timer・promise 継続）は Snapshot 経由で Unit.scope に再入し、
 // 非同期を跨いでも元のコンポーネント内にいるかのように実行される。
 //
@@ -26,8 +27,8 @@ interface Context { previous: Context | null; key?: any; value?: any; }
 
 interface Snapshot { unit: Unit; context: Context; element: DomElement; Component: Function | null; }
 
-// lifecycle phase: invoked → initialized → started ↔ stopped → finalizing → finalized
-export type Status = 'invoked' | 'initialized' | 'started' | 'stopped' | 'finalizing' | 'finalized';
+// lifecycle phase: invoked → initialized → finalizing → finalized
+export type Status = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
 
 // Component 関数の型。戻り値 defines は xnew(...) の戻り値に合成される(Unit & A)。
 export type ComponentFn<P extends object = any, A extends object = {}> =
@@ -43,7 +44,7 @@ export type DefinesOf<C> =
 export type PropsOf<C> =
     C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
 
-const SYSTEM_EVENTS = ['start', 'update', 'render', 'stop', 'finalize'] as const;
+const SYSTEM_EVENTS = ['update', 'finalize'] as const;
 type SystemEvent = typeof SYSTEM_EVENTS[number];
 function isSystemEvent(type: string): type is SystemEvent {
     return (SYSTEM_EVENTS as readonly string[]).includes(type);
@@ -62,7 +63,6 @@ export class Unit {
         children: Unit[];
 
         status: Status;
-        tostart: boolean;
         protected: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
@@ -101,7 +101,6 @@ export class Unit {
             id: Unit.nextId++,
             parent,
             status: 'invoked',
-            tostart: true,
             protected: false,
             currentElement: baseElement,
             currentContext: baseContext,
@@ -113,7 +112,7 @@ export class Unit {
             Components: [],
             listeners: new MapMap(),
             defines: {},
-            systems: { start: [], update: [], render: [], stop: [], finalize: [] },
+            systems: { update: [], finalize: [] },
             eventor: new Eventor(),
             key: null,
         };
@@ -168,20 +167,7 @@ export class Unit {
         return this._.currentElement;
     }
 
-    // 非公開のライフサイクル制御。公開 API には載せないが、停止/再開の能力は内部に残す。
-    // start: 次フレーム以降の自動 start を許可（実際の起動はエンジンの cascade が行う）。
-    // stop:  自動 start を抑止し、即座に stop 遷移する。
-    private start(): void {
-        this._.tostart = true;
-    }
-
-    private stop(): void {
-        this._.tostart = false;
-        Unit.stop(this);
-    }
-
     public finalize(): void {
-        Unit.stop(this);
         Unit.finalize(this);
     }
 
@@ -288,39 +274,13 @@ export class Unit {
         return clone;
     }
 
-    static start(unit: Unit): void {
-        if (unit._.tostart === false) return;
-        if (unit._.status === 'initialized' || unit._.status === 'stopped') {
-            unit._.status = 'started';
-            unit._.children.forEach((child: Unit) => Unit.start(child));
-            unit._.systems.start.forEach(({ execute }) => execute());
-        } else if (unit._.status === 'started') {
-            unit._.children.forEach((child: Unit) => Unit.start(child));
-        }
-    }
-
-    static stop(unit: Unit): void {
-        if (unit._.status === 'started') {
-            unit._.status = 'stopped';
-            unit._.children.forEach((child: Unit) => Unit.stop(child));
-            unit._.systems.stop.forEach(({ execute }) => execute());
-        }
-    }
-
     // count = そのリスナが呼ばれた回数（登録後 0 始まり）, delta = 前フレームからの経過 ms。
     // リスナは ({ count, delta }) で受け取れる。count はリスナ登録ごとに独立し、
-    // 後から登録したリスナは 0 から数え始める。
+    // 後から登録したリスナは 0 から数え始める。initialized になった unit のみ駆動する。
     static update(unit: Unit, delta: number = 0): void {
-        if (unit._.status === 'started') {
+        if (unit._.status === 'initialized') {
             unit._.children.forEach((child: Unit) => Unit.update(child, delta));
             unit._.systems.update.forEach((entry) => entry.execute({ count: entry.count++, delta }));
-        }
-    }
-
-    static render(unit: Unit, delta: number = 0): void {
-        if (unit._.status === 'started' || unit._.status === 'stopped') {
-            unit._.children.forEach((child: Unit) => Unit.render(child, delta));
-            unit._.systems.render.forEach((entry) => entry.execute({ count: entry.count++, delta }));
         }
     }
 
@@ -332,9 +292,7 @@ export class Unit {
         Unit.nextId = 0;
         Unit.currentUnit = Unit.engineRoot = Unit.create(null);
         const ticker = new Ticker((delta: number) => {
-            Unit.start(Unit.engineRoot);
             Unit.update(Unit.engineRoot, delta);
-            Unit.render(Unit.engineRoot, delta);
         });
         Unit.engineRoot.on('finalize', () => ticker.clear());
     }

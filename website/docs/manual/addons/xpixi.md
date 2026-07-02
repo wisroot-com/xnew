@@ -49,7 +49,7 @@ function Main(unit) {
   const canvas = xnew('<canvas width="800" height="600">');
   xpixi.initialize({ canvas: canvas.element });
 
-  unit.on('render', () => xpixi.renderer.render(xpixi.scene));
+  unit.on('update', () => xpixi.renderer.render(xpixi.scene));
 }
 ```
 

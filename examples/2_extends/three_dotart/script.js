@@ -26,7 +26,7 @@ function Main(unit) {
   xthree.renderer.shadowMap.enabled = true;
 
   const renderer = xnew(Renderer);
-  unit.on('render', () => {
+  unit.on('update', () => {
     renderer.render();
   });
 
@@ -117,7 +117,7 @@ function Crystal(unit, { radius, position, rotation }) {
   object.position.set(position.x, position.y, position.z);
 
   const time = new Date();
-  unit.on('render', () => {
+  unit.on('update', () => {
     const t = (new Date() - time) / 1000;
     
     object.material.emissiveIntensity = Math.sin(t * 2) * 0.5 + 0.5;
@@ -176,7 +176,7 @@ function Model(unit, { mogPath, vrmaPath, position, rotation }) {
     action.play();
 
     let clock = new THREE.Clock();
-    unit.on('render', () => {
+    unit.on('update', () => {
         const delta = clock.getDelta();
         mixer.update(delta);
         vrm.update(delta);

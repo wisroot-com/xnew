@@ -14,7 +14,7 @@ function Main(unit) {
   xthree.camera.lookAt(0, 0, 0);
   xthree.renderer.shadowMap.enabled = true;
   
-  unit.on('render', () => {
+  unit.on('update', () => {
     xthree.renderer.render(xthree.scene, xthree.camera);
   });
 

@@ -38,11 +38,11 @@ interface Snapshot {
     element: DomElement;
     Component: Function | null;
 }
-type Status = 'invoked' | 'initialized' | 'started' | 'stopped' | 'finalizing' | 'finalized';
+type Status = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
 type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends [void] ? {} : Exclude<R, void | undefined>) : {};
 type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
-declare const SYSTEM_EVENTS: readonly ["start", "update", "render", "stop", "finalize"];
+declare const SYSTEM_EVENTS: readonly ["update", "finalize"];
 type SystemEvent = typeof SYSTEM_EVENTS[number];
 declare class Unit {
     [key: string]: any;
@@ -51,7 +51,6 @@ declare class Unit {
         parent: Unit | null;
         children: Unit[];
         status: Status;
-        tostart: boolean;
         protected: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
@@ -82,18 +81,13 @@ declare class Unit {
     static initialize(unit: Unit, ...args: any[]): void;
     get parent(): Unit | null;
     get element(): DomElement;
-    private start;
-    private stop;
     finalize(): void;
     static finalize(unit: Unit): void;
     static nest(unit: Unit, target: DomElement | string, textContent?: string | number): DomElement;
     static extend(unit: Unit, Component: Function, props?: Object): {
         [key: string]: any;
     };
-    static start(unit: Unit): void;
-    static stop(unit: Unit): void;
     static update(unit: Unit, delta?: number): void;
-    static render(unit: Unit, delta?: number): void;
     static engineRoot: Unit;
     static currentUnit: Unit;
     static nextId: number;

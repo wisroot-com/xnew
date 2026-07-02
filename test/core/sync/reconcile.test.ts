@@ -11,7 +11,7 @@ function Box(unit: Unit) {
     const state = xnew.sync.state({ value: 0 });
     xnew.sync.client(() => {
         const el = xnew.nest('<div>');
-        unit.on('render', () => { (el as HTMLElement).textContent = String(state.value); });
+        unit.on('update', () => { (el as HTMLElement).textContent = String(state.value); });
     });
 }
 

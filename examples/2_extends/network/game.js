@@ -114,7 +114,7 @@ function Setup(unit) {
         const hint = xnew('<p class="m-0 text-xs text-gray-400">', '両方のプレイヤーが決まると開始できます。');
 
         // 共有 state（slots）をボタン表示へ反映する。
-        unit.on('render', () => {
+        unit.on('update', () => {
             SLOTS.forEach((slot) => {
                 const owner = state.slots[slot];
                 const who = owner ? (owner === myId ? 'あなた' : nameOf(owner)) : '空き';
@@ -146,7 +146,7 @@ export function World(unit, { slots } = {}) {
 
         // 自分の id に一致する Player があれば操作者、無ければ観戦者（途中参加もここに含まれる）。
         const myId = xnew.sync.myself.id;
-        unit.on('render', () => {
+        unit.on('update', () => {
             const players = xnew.find(Player);
             const mine = players.find((player) => player.clientId === myId);
             status.element.textContent = mine ? `操作中: ${slotLabel(mine.slot)}（WASD / 矢印で移動）` : '観戦中（操作はできません）';
@@ -184,7 +184,7 @@ export function Player(unit, { clientId = '', slot = '' } = {}) {
     xnew.sync.client(() => {
         const color = state.slot === 'p1' ? 'bg-blue-500' : 'bg-red-500';   // p1=青 / p2=赤
         const el = xnew.nest(`<div class="absolute w-4 h-4 rounded ${color}">`);
-        unit.on('render', () => { el.style.left = `${state.x}px`; el.style.top = `${state.y}px`; });
+        unit.on('update', () => { el.style.left = `${state.x}px`; el.style.top = `${state.y}px`; });
 
         // 入力 → 移動は自機（このクライアント自身の Player）だけが受ける。観戦者は描画のみ。
         if (state.clientId === xnew.sync.myself.id) {

@@ -40,7 +40,7 @@ function Main(unit, { mogPath = '../../assets/rei.mog', vrmaPath = '../../assets
   composer.addPass(ssaoPass);
   composer.addPass(new OutputPass());
 
-  unit.on('render', () => {
+  unit.on('update', () => {
     composer.render();
   });
 
@@ -134,7 +134,7 @@ function Model(unit, { mogPath, vrmaPath, position }) {
     action.play();
 
     let clock = new THREE.Clock();
-    unit.on('render', () => {
+    unit.on('update', () => {
         const delta = clock.getDelta();
         mixer.update(delta);
         vrm.update(delta);

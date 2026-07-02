@@ -12,7 +12,7 @@ function Main(unit) {
 
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('render', () => {
+  unit.on('update', () => {
     xpixi.renderer.render(xpixi.scene);
   });
 
@@ -30,7 +30,7 @@ function Contents(unit) {
 function SubScreen(unit, { width, height, color }) {
   xpixi.initialize({ canvas: new OffscreenCanvas(width, height) });
   const texture = PIXI.Texture.from(xpixi.canvas);
-  unit.on('render', () => {
+  unit.on('update', () => {
     xpixi.renderer.render(xpixi.scene);
     texture.source.update();
   });
