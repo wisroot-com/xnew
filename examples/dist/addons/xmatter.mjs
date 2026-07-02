@@ -3,7 +3,7 @@ import Matter from 'matter-js';
 
 const xmatter = {
     initialize({} = {}) {
-        xnew.promise(xnew(Root, {}));
+        return xnew.promise(xnew(Root, {}));
     },
     get engine() {
         var _a;

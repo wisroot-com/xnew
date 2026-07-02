@@ -3,7 +3,7 @@ import * as PIXI from 'pixi.js';
 
 const xpixi = {
     initialize({ canvas }) {
-        xnew.promise(xnew(Root, { canvas }));
+        return xnew.promise(xnew(Root, { canvas }));
     },
     nest(object) {
         xnew(Nest, { object });

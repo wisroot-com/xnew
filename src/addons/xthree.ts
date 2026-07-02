@@ -28,7 +28,7 @@ export const xthree = {
         { canvas, camera = null }:
         { canvas: HTMLCanvasElement, camera?: THREE.Camera | null }
     ) {
-        xnew.promise(xnew(Root, { canvas, camera }));
+        return xnew.promise(xnew(Root, { canvas, camera }));
     },
     nest(object: any) {
         xnew(Nest, { object });

@@ -30,7 +30,7 @@ export const xpixi = {
         { canvas }:
         { canvas: HTMLCanvasElement }
     ) {
-        xnew.promise(xnew(Root, { canvas }));
+        return xnew.promise(xnew(Root, { canvas }));
     },
     nest(object: any) {
         xnew(Nest, { object });

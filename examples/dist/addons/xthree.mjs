@@ -3,7 +3,7 @@ import * as THREE from 'three';
 
 const xthree = {
     initialize({ canvas, camera = null }) {
-        xnew.promise(xnew(Root, { canvas, camera }));
+        return xnew.promise(xnew(Root, { canvas, camera }));
     },
     nest(object) {
         xnew(Nest, { object });
