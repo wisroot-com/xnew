@@ -84,17 +84,19 @@ export const xnew = Object.assign(
                 Unit.currentUnit._.promises.push(unitPromise);
                 return { resolve, reject };
             } else {
-                let unitPromise: UnitPromise;
+                // 集約（Unit）/ 素の Promise / コールバックのいずれでも最終的に一つの UnitPromise に包む。
+                // Unit を渡した場合は対象のプールを集約する。プールは消費しない（同じ unit を何度集約しても
+                // 同じ promise 群を見る）。results は登録時点の配列をクロージャで握るので、集約後に対象 unit へ
+                // promise を追加しても進行中の集約は無傷。
+                let source: any;
                 if (promise instanceof Unit) {
-                    // 対象 unit のプールを集約する。プールは消費しない（同じ unit を何度集約しても
-                    // 同じ promise 群を見る）。results は登録時点の配列をクロージャで握るので、
-                    // 集約後に対象 unit へ promise を追加しても進行中の集約は無傷。
-                    unitPromise = new UnitPromise(UnitPromise.collect(promise._.promises), key);
+                    source = UnitPromise.collect(promise._.promises);
                 } else if (promise instanceof Promise) {
-                    unitPromise = new UnitPromise(promise, key);
+                    source = promise;
                 } else {
-                    unitPromise = new UnitPromise(new Promise(xnew.scope(promise)), key);
+                    source = new Promise(xnew.scope(promise));
                 }
+                const unitPromise = new UnitPromise(source, key);
                 Unit.currentUnit._.promises.push(unitPromise);
                 return unitPromise;
             }

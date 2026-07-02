@@ -462,11 +462,7 @@ export class UnitPromise {
     // deferred な UnitPromise を生成し、settled ガード付きの resolve / reject と共に返す。
     // xnew.promise() の deferred 形が使う（Promise 構築と executor からの resolve / reject
     // 取り出しの重複を排除する）。
-    public static defer(key?: string): {
-        unitPromise: UnitPromise;
-        resolve: (value?: unknown) => void;
-        reject: (reason?: unknown) => void;
-    } {
+    public static defer(key?: string): { unitPromise: UnitPromise; resolve: (value?: unknown) => void; reject: (reason?: unknown) => void; }{
         let settled = false;
         let resolve!: (value?: unknown) => void;
         let reject!: (reason?: unknown) => void;
@@ -482,23 +478,22 @@ export class UnitPromise {
     // new UnitPromise(...) に包む（他の登録分岐と形を揃えるため wrap はここでは行わない）。
     // - キー付きのみ出力に含める（キーが `name[]` 形式なら out[name] を配列にして登録順 push）。
     // - キー無しは await されるが出力には含めない（完了待ちの対象にはなる）。
-    public static collect(promises: UnitPromise[]): Promise<Record<string, any>> {
-        return Promise.all(promises.map(p => p.promise)).then((values) => {
-            const out: Record<string, any> = {};
-            promises.forEach((p, i) => {
-                if (p.key === undefined) { return; }
-                const matched = p.key.match(/^(.+)\[\]$/);
-                if (matched !== null) {
-                    // `name[]` はその name を配列にして登録順に push する。
-                    const name = matched[1];
-                    if (Array.isArray(out[name]) === false) { out[name] = []; }
-                    out[name].push(values[i]);
-                } else {
-                    out[p.key] = values[i];
-                }
-            });
-            return out;
+    public static async collect(promises: UnitPromise[]): Promise<Record<string, any>> {
+        const values = await Promise.all(promises.map(p => p.promise));
+        const out: Record<string, any> = {};
+        promises.forEach((p, i) => {
+            if (p.key === undefined) { return; }
+            const matched = p.key.match(/^(.+)\[\]$/);
+            if (matched !== null) {
+                // `name[]` はその name を配列にして登録順に push する。
+                const name = matched[1];
+                if (Array.isArray(out[name]) === false) { out[name] = []; }
+                out[name].push(values[i]);
+            } else {
+                out[p.key] = values[i];
+            }
         });
+        return out;
     }
 }
 
