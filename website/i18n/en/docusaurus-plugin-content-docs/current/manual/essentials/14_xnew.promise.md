@@ -1,18 +1,22 @@
 # xnew.promise
 
-`xnew.promise` ties a Promise to the current component so its `.then()` / `.catch()` handlers run in the component's scope. If the component is destroyed before the Promise resolves, the pending handlers are dropped — no stale DOM writes, no crashes.
+`xnew.promise` ties a Promise to the current component so its `.then()` / `.catch()` / `.finally()` handlers run in the component's scope. If the component is destroyed before the Promise resolves, the pending handlers are dropped — no stale DOM writes, no crashes.
 
 ## Usage
 
 ```js
-const promise = xnew.promise(source);
+xnew.promise(source);        // register / aggregate a Promise, function, or unit
+xnew.promise(key, source);   // register under a key
+xnew.promise();              // deferred (returns { resolve, reject })
 ```
 
 **Parameters:**
-- `source`: a standard Promise, or a unit (aggregates all promises registered on that unit)
+- `key` (optional): the property name this promise's value lands under in the aggregate result
+- `source`: a standard Promise, a `(resolve, reject) => { ... }` function, or a unit (aggregates the promises registered on that unit)
 
 **Returns:**
-- A wrapped Promise that runs its handlers within the current `xnew` scope
+- A wrapped Promise that runs its handlers within the current `xnew` scope (chain `.then` / `.catch` / `.finally`)
+- Called with no argument (or only a key), a deferred `{ resolve, reject }`
 
 ## Examples
 
@@ -35,20 +39,30 @@ function Loader(unit) {
   const deferred = xnew.promise();
 
   unit.on('click', () => deferred.resolve('done'));
-
-  return { ready: () => unit.promise };
 }
 ```
 
 ### Aggregating on a unit
 
-Promises registered on a unit can be awaited together via `unit.promise`.
+Pass a unit to await all the promises registered on it together.
 
 ```js
-const unit = xnew((u) => {
-  xnew.promise(loadImage());
-  xnew.promise(loadSound());
-});
+function Assets(unit) {
+  xnew.promise('image', loadImage());
+  xnew.promise('sound', loadSound());
+}
 
-unit.promise.then(() => console.log('all assets ready'));
+const assets = xnew(Assets);
+xnew.promise(assets).then((results) => {
+  // results === { image: <image>, sound: <sound> }
+  console.log('all assets ready', results);
+});
 ```
+
+The aggregate is **always an object**.
+
+- Promises registered **with a key** become that key's property.
+- Promises registered **without a key** are awaited, but their values are not included in the result.
+- Appending `[]` (e.g. `xnew.promise('name[]', ...)`) collects same-named keys into an array in registration order.
+
+Aggregating does not consume the target unit's pool, so the same unit can be aggregated repeatedly and always yields the same result.
