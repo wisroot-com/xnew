@@ -1,6 +1,6 @@
 # xnew.timeout
 
-`xnew.timeout` is `setTimeout` extended for xnew. The timeout is automatically cancelled when the owning unit is destroyed, so you don't need to stash the ID and call `clearTimeout`. You can also chain timeouts and transitions to build multi-step sequences without nesting callbacks.
+`xnew.timeout` is `setTimeout` extended for xnew. The timeout is automatically cancelled when the owning unit is finalized, so you don't need to stash the ID and call `clearTimeout`.
 
 ## Usage
 

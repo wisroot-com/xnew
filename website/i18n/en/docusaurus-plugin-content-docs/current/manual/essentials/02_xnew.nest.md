@@ -5,11 +5,11 @@
 ## Usage
 
 ```js
-const element = xnew.nest(htmlString);
+const element = xnew.nest(tag);
 ```
 
 **Parameters:**
-- `htmlString`: HTML string to create the element (e.g., `'<div>'`, `'<span class="highlight">'`)
+- `tag`: HTML string to create the element (e.g., `'<div>'`, `'<span class="highlight">'`)
 
 **Returns:**
 - The newly created HTMLElement (`unit.element` also now points to this element)
