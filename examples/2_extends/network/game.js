@@ -3,7 +3,7 @@ import { ChatView } from './chat.js';
 
 //----------------------------------------------------------------------------------------------------
 // game — multi-client のゲームロジック（socket.io 前提・無改変で動く）。
-//   ネットワークは xnew.sync（toServer/toClient/on/state）だけに依存。transport は起動側が
+//   ネットワークは xnew.sync（emitToServer/emitToClient/on/state）だけに依存。transport は起動側が
 //   xnew.sync.boot({ io, client, room }, ...) で生成する socket.io の socket。1 ブラウザ = 1 client。
 //
 //   シーンは「サーバーが現在のシーンを synced child として 1 つだけ持ち、差し替える」ことで全員に
@@ -21,11 +21,11 @@ import { ChatView } from './chat.js';
 //              クライアントには Setup が存在しないので設定画面はスキップされ、自機も持たない＝観戦になる。
 //   - Player : synced state {x,y,clientId,slot}。server が移動、client が描画＋（自機なら）入力。
 //   - ChatView : 全シーン共通のルームチャット（client 専用・Game の client 直下に常駐・chat.js）。
-//              送信は xnew.sync.toClient('chat', { text })、受信は unit.on('chat', ({ id, text })=>…)。
+//              送信は xnew.sync.emitToClient('chat', { text })、受信は unit.on('chat', ({ id, text })=>…)。
 //              server 経由でルーム全員（自分含む）へ届くので中継コンポーネントは不要。
 //
-//   sync イベント: 送信は toServer/toClient（payload はオブジェクト・syncId 自動付与）、受信は unit.on。
-//   toServer=必ず server で発火（client→server）、toClient=必ず client で発火（server 経由で全 client・自分含む）。
+//   sync イベント: 送信は emitToServer/emitToClient（payload はオブジェクト・syncId 自動付与）、受信は unit.on。
+//   emitToServer=必ず server で発火（client→server）、emitToClient=必ず client で発火（server 経由で全 client・自分含む）。
 //   プレフィックス '-'=同一コンポーネント(同じ syncId・replica↔server で一致) / '+'・無印=全体。
 //   key: xnew(C,{key}) で同一性の目印、xnew.find(C,{key}) で引ける（key はグローバル一意の想定）。
 //----------------------------------------------------------------------------------------------------
@@ -42,7 +42,7 @@ const nameOf = (id) => xnew.sync.clients.find((c) => c.id === id)?.name || (id ?
 export function Game(unit) {
     xnew.sync.register({ Title, Setup, World });   // 同期対象（= シーン）の型を宣言
 
-    // server: 最初のシーン Title を生成する（チャット中継は core の toClient が担うので不要）。
+    // server: 最初のシーン Title を生成する（チャット中継は core の emitToClient が担うので不要）。
     xnew.sync.server(() => {
         xnew(Title);
     });
@@ -67,7 +67,7 @@ function Title(unit) {
         xnew('<h2 class="m-0 text-lg font-bold text-gray-700">', 'マルチプレイ サンプル');
         xnew('<p class="m-0 text-sm text-gray-500">', 'プレイヤー1 / プレイヤー2 を決めてゲームを開始します。');
         const start = xnew('<button class="px-4 py-2 rounded border-0 bg-emerald-500 hover:bg-emerald-600 text-white text-sm cursor-pointer">', '設定画面へ進む');
-        start.on('click', () => xnew.sync.toServer('-proceed'));   // 全員ぶんの Title が同じ syncId なので server の Title に届く
+        start.on('click', () => xnew.sync.emitToServer('-proceed'));   // 全員ぶんの Title が同じ syncId なので server の Title に届く
     });
 }
 
@@ -104,13 +104,13 @@ function Setup(unit) {
             const btn = xnew('<button class="px-3 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-50 text-sm cursor-pointer">');
             slotBtns[slot] = btn.element;
             btn.on('click', () => {
-                if (state.slots[slot] === myId) { xnew.sync.toServer('-release'); }
-                else if (!state.slots[slot]) { xnew.sync.toServer('-claim', { slot }); }
+                if (state.slots[slot] === myId) { xnew.sync.emitToServer('-release'); }
+                else if (!state.slots[slot]) { xnew.sync.emitToServer('-claim', { slot }); }
             });
         });
 
         const begin = xnew('<button class="px-4 py-2 rounded border-0 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm cursor-pointer">', 'ゲーム開始');
-        begin.on('click', () => xnew.sync.toServer('-begin'));
+        begin.on('click', () => xnew.sync.emitToServer('-begin'));
         const hint = xnew('<p class="m-0 text-xs text-gray-400">', '両方のプレイヤーが決まると開始できます。');
 
         // 共有 state（slots）をボタン表示へ反映する。
@@ -188,10 +188,10 @@ export function Player(unit, { clientId = '', slot = '' } = {}) {
 
         // 入力 → 移動は自機（このクライアント自身の Player）だけが受ける。観戦者は描画のみ。
         if (state.clientId === xnew.sync.myself.id) {
-            const stop = () => xnew.sync.toServer('-move', { vector: { x: 0, y: 0 } });
+            const stop = () => xnew.sync.emitToServer('-move', { vector: { x: 0, y: 0 } });
             unit.on('window.keydown.wasd window.keyup.wasd window.keydown.arrow window.keyup.arrow', ({ event, vector }) => {
                 event.preventDefault();
-                xnew.sync.toServer('-move', { vector });
+                xnew.sync.emitToServer('-move', { vector });
             });
             unit.on('window.blur', stop);   // フォーカス喪失で停止
         }

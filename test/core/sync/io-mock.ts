@@ -114,7 +114,7 @@ export function ioMock(): IoMock {
 }
 
 // 実行環境（server/client）を固定して同期的な処理を走らせる。1 プロセスで両側を模すテスト用。
-// 構築（component body / xnew(...) / apply）に加え、sync.myself / sync.toServer / sync.toClient も env で
+// 構築（component body / xnew(...) / apply）に加え、sync.myself / sync.emitToServer / sync.emitToClient も env で
 // server/client を分岐する。よって server 側の処理（boot / server update での spawn / status）は asServer、client 側は
 // asClient で囲む。両側を 1 回の update でまとめて回すと env がどちらかにしか合わないので、サブツリーを
 // 各々の env で別々に tick する（例: channel.test の cycle）。apply は src 側で常に client 環境を強制する。

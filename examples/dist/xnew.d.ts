@@ -98,8 +98,7 @@ declare class Unit {
     static getContext(unit: Unit, key: any): any;
     static component2units: MapSet<Function, Unit>;
     static ancestors(unit: Unit | null): Unit[];
-    static protectBoundary(from: Unit | null): Unit | undefined;
-    static isVisible(boundary: Unit | undefined, current: Unit | null, ancestors: Unit[]): boolean;
+    static isVisible(from: Unit | null, current: Unit | null, ancestors: Unit[]): boolean;
     static find(Component: Function, key?: any): Unit[];
     static type2units: MapSet<string, Unit>;
     on(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
@@ -387,8 +386,8 @@ declare const xnew: XnewBase & {
         readonly room: RoomStatus;
         readonly clients: ClientStatus[];
         readonly myself: ClientStatus;
-        toServer(type: string, props?: Record<string, any>): void;
-        toClient(type: string, props?: Record<string, any>, ids?: string[]): void;
+        emitToServer(type: string, props?: Record<string, any>): void;
+        emitToClient(type: string, props?: Record<string, any>, ids?: string[]): void;
         boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
     };
 };

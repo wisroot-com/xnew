@@ -62,6 +62,7 @@ export class Unit {
         protected: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
+        // update / finalize の唯一の登録先（listeners とは別経路で、emit / sync の dispatch には載らない）。
         // count はリスナ登録ごとに保持する（そのリスナが呼ばれた回数。後から登録したものは 0 始まり）。
         systems: Record<SystemEvent, { listener: Function, execute: Function, count: number }[]>;
 
@@ -375,8 +376,9 @@ export class Unit {
     }
 
     public off(type?: string, listener?: Function): void {
-        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys()];
-    
+        // 型未指定は全解除。system イベントは listeners に載らないので明示的に加える。
+        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), 'update', 'finalize'];
+
         types.forEach((type) => Unit.off(this, type, listener));
     }
     
@@ -386,9 +388,10 @@ export class Unit {
             Unit.scope(snapshot, listener, Object.assign({ type }, props));
         }
         if (type === 'update' || type === 'finalize') {
+            // update / finalize は lifecycle 駆動専用。dispatch 経路（listeners / type2units / eventor）
+            // には載せず systems だけを登録先にする（emit / sync はこれらを参照しない）。
             unit._.systems[type].push({ listener, execute, count: 0 });
-        }
-        if (unit._.listeners.has(type, listener) === false) {
+        } else if (unit._.listeners.has(type, listener) === false) {
             unit._.listeners.set(type, listener, { element: unit.element, Component: unit._.currentComponent, execute });
             Unit.type2units.add(type, unit);
             if (/^[A-Za-z]/.test(type) && unit.element !== null) {
@@ -400,17 +403,19 @@ export class Unit {
     static off(unit: Unit, type: string, listener?: Function): void {
         if (type === 'update' || type === 'finalize') {
             unit._.systems[type] = unit._.systems[type].filter(({ listener: lis }) => listener ? lis !== listener : false);
-        }
-        (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((listener) => {
-            const item = unit._.listeners.get(type, listener);
-            if (item === undefined) return;
-            unit._.listeners.delete(type, listener);
-            if (/^[A-Za-z]/.test(type)) {
-                unit._.eventor.remove(type, item.execute);
+        } else {
+            (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((listener) => {
+                const item = unit._.listeners.get(type, listener);
+                if (item !== undefined) {
+                    unit._.listeners.delete(type, listener);
+                    if (/^[A-Za-z]/.test(type)) {
+                        unit._.eventor.remove(type, item.execute);
+                    }
+                }
+            });
+            if (unit._.listeners.has(type) === false) {
+                Unit.type2units.delete(type, unit);
             }
-        });
-        if (unit._.listeners.has(type) === false) {
-            Unit.type2units.delete(type, unit);
         }
     }
 

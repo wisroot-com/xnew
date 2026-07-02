@@ -7,9 +7,9 @@
 // - server / client : extend the current unit only on its runtime (Node=server / browser=client)
 // - state           : declare synced state on the current unit (server authoritative)
 // - register        : declare the components allowed as direct sync children {Name: Component}
-// - toServer        : fire `type` on the SERVER. client→server (syncId-scoped dispatch, sender id);
+// - emitToServer    : fire `type` on the SERVER. client→server (syncId-scoped dispatch, sender id);
 //                     on the server it is a local emit (same as xnew.emit).
-// - toClient        : fire `type` on the CLIENTS (via the server). client→server→all clients (incl. self);
+// - emitToClient    : fire `type` on the CLIENTS (via the server). client→server→all clients (incl. self);
 //                     on the server it broadcasts to clients. ids? = target client ids (default: all).
 // - room / clients  : current room info / connected clients
 // - myself          : this client's entry (client side only)
@@ -68,12 +68,12 @@ function dispatch(info: ServerInfo | ClientInfo, event: string, id: string | und
     });
 }
 
-// Reserved wire events for toServer / toClient (never used as app `type`s).
+// Reserved wire events for emitToServer / emitToClient (never used as app `type`s).
 const WIRE_TO_SERVER = 'sync:toServer';   // client→server: { type, syncId, data }      → dispatch `type` on the server
 const WIRE_TO_CLIENT = 'sync:toClient';   // client→server: { type, syncId, data, ids } → server fans out to clients
 const WIRE_DELIVER = 'sync:deliver';      // server→client: { type, syncId, id, data }   → dispatch `type` on the client
 
-/** Server → clients delivery for toClient (ids = target client ids; omitted/empty = whole room). */
+/** Server → clients delivery for emitToClient (ids = target client ids; omitted/empty = whole room). */
 function relayToClients(info: ServerInfo, type: string, senderId: string | undefined, syncId: number | null, data: any, ids?: string[]): void {
     const envelope = { type, syncId, id: senderId, data };
     if (Array.isArray(ids) && ids.length > 0) {
@@ -132,10 +132,10 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
         dispatch(info, 'sync.connect', socket.id, undefined);
         statusUpdate();
         socket.onAny((event: string, payload: any) => {
-            // toServer: fire `type` on the server (sender id attached, syncId-scoped for '-' types).
+            // emitToServer: fire `type` on the server (sender id attached, syncId-scoped for '-' types).
             if (event === WIRE_TO_SERVER) {
                 dispatch(info, payload?.type, socket.id, payload);
-            // toClient: relay `type` to the target clients (incl. the sender), with the sender id attached.
+            // emitToClient: relay `type` to the target clients (incl. the sender), with the sender id attached.
             } else if (event === WIRE_TO_CLIENT) {
                 relayToClients(info, payload?.type, socket.id, payload?.syncId ?? null, payload?.data, payload?.ids);
             }
@@ -156,7 +156,7 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
 function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
     const { io, room, client } = opts;
     // client owns its socket: io() with flat string query (roomId / clientName) on the handshake.
-    // create it before init so the component body can already read it (sync.myself / sync.toServer).
+    // create it before init so the component body can already read it (sync.myself / sync.emitToServer).
     const socket = io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
     const info: ClientInfo = { socket, room, clients: [] };
 
@@ -199,7 +199,7 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
     };
     socket.on('status', onStatus);
     socket.onAny((event: string, payload: any) => {
-        // toServer/toClient delivery: the server forwards everything as WIRE_DELIVER ({ type, syncId, id, data }).
+        // emitToServer/emitToClient delivery: the server forwards everything as WIRE_DELIVER ({ type, syncId, id, data }).
         if (event === WIRE_DELIVER) { dispatch(info, payload?.type, payload?.id, payload); }
     });
 
@@ -248,7 +248,7 @@ export const sync = {
         const info = rootInfoOf(Unit.currentUnit) as ClientInfo;
         return info.clients.find((c) => c.id === info.socket.id) ?? { id: info.socket.id, name: '' };
     },
-    toServer(type: string, props: Record<string, any> = {}): void {
+    emitToServer(type: string, props: Record<string, any> = {}): void {
         const info = rootInfoOf(Unit.currentUnit);
         if (getEnvironment() === 'server') {
             Unit.emit(Unit.currentUnit, type, props);
@@ -256,7 +256,7 @@ export const sync = {
             (info as ClientInfo).socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.currentUnit).id, data: props });
         }
     },
-    toClient(type: string, props: Record<string, any> = {}, ids?: string[]): void {
+    emitToClient(type: string, props: Record<string, any> = {}, ids?: string[]): void {
         const info = rootInfoOf(Unit.currentUnit);
         const syncId = syncOf(Unit.currentUnit).id;
         if (getEnvironment() === 'server') {

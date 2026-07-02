@@ -309,9 +309,9 @@ function Cursor(unit, { player, color }) {
     // 自分のカーソルだけ動かせる（手番でなくても自分のぶんは動かせる。ドロップは手番＆収束後のみ）。
     unit.on('pointermove pointerdown', ({ position }) => {
         if (!iControl) { return; }
-        xnew.sync.toServer('move', { x: position.x * xpixi.canvas.width / xpixi.canvas.clientWidth });
+        xnew.sync.emitToServer('move', { x: position.x * xpixi.canvas.width / xpixi.canvas.clientWidth });
     });
-    unit.on('pointerdown', () => { if (canDrop) { xnew.sync.toServer('drop'); } });
+    unit.on('pointerdown', () => { if (canDrop) { xnew.sync.emitToServer('drop'); } });
 
     unit.on('update', () => {
         object.rotation += 0.02;

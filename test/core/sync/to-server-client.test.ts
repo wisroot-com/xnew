@@ -4,28 +4,28 @@ import { syncOf } from '../../../src/core/sync';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
 //----------------------------------------------------------------------------------------------------
-// sync.toServer / sync.toClient — 方向を明示するイベント送信
-//   - toServer(type, props)      : 必ず SERVER 側で type を発火。client→server（送信者 id 付き・'-' は syncId 限定）、
+// sync.emitToServer / sync.emitToClient — 方向を明示するイベント送信
+//   - emitToServer(type, props)      : 必ず SERVER 側で type を発火。client→server（送信者 id 付き・'-' は syncId 限定）、
 //                                   server 側からは local emit（xnew.emit 相当）。
-//   - toClient(type, props, ids?): 必ず CLIENT 側で（server 経由）type を発火。client→server→全 client（自分含む）、
+//   - emitToClient(type, props, ids?): 必ず CLIENT 側で（server 経由）type を発火。client→server→全 client（自分含む）、
 //                                   server 側からは全 client へ。ids 指定で宛先を限定。
 //   transport は in-memory な socket.io 風モック（test/core/sync/io-mock）を使う。
 //----------------------------------------------------------------------------------------------------
 
-describe('sync.toServer / sync.toClient', () => {
+describe('sync.emitToServer / sync.emitToClient', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
 
-    // ---- toServer ----
+    // ---- emitToServer ----
 
-    it('toServer (client): fires on the server with the sender id', () => {
+    it('emitToServer (client): fires on the server with the sender id', () => {
         const got: any[] = [];
         bootServer({ io: hub.io }, function Server(unit: Unit) {
             xnew.sync.server(() => { unit.on('hit', ({ id, n }: any) => got.push({ id, n })); });
         });
         const client = bootClient({ socket: hub.connect('A') }, function Client(unit: Unit) {
-            xnew.sync.client(() => { return { fire() { xnew.sync.toServer('hit', { n: 1 }); } }; });
+            xnew.sync.client(() => { return { fire() { xnew.sync.emitToServer('hit', { n: 1 }); } }; });
         });
 
         asClient(() => (client as any).fire());
@@ -33,12 +33,12 @@ describe('sync.toServer / sync.toClient', () => {
         expect(got).toEqual([{ id: 'A', n: 1 }]);
     });
 
-    it('toServer (server): is a local emit (xnew.emit) — reaches +/- listeners on the current root', () => {
+    it('emitToServer (server): is a local emit (xnew.emit) — reaches +/- listeners on the current root', () => {
         const got: string[] = [];
         const server = bootServer({ io: hub.io }, function Server(unit: Unit) {
             xnew.sync.server(() => {
                 unit.on('+ping', ({ n }: any) => got.push(`ping:${n}`));
-                return { ping() { xnew.sync.toServer('+ping', { n: 2 }); } };
+                return { ping() { xnew.sync.emitToServer('+ping', { n: 2 }); } };
             });
         });
 
@@ -47,7 +47,7 @@ describe('sync.toServer / sync.toClient', () => {
         expect(got).toEqual(['ping:2']);   // local emit が同一 root の '+ping' に届く
     });
 
-    it("toServer ('-type'): only the server unit sharing the sender's syncId receives it", () => {
+    it("emitToServer ('-type'): only the server unit sharing the sender's syncId receives it", () => {
         const hits: string[] = [];
         function Tagged(unit: Unit, props: { tag?: string; syncId?: number } = {}) {
             syncOf(unit).id = props.syncId ?? null;
@@ -59,7 +59,7 @@ describe('sync.toServer / sync.toClient', () => {
         const client = bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
             xnew.sync.client(() => {
                 syncOf(unit).id = 10;
-                return { move() { xnew.sync.toServer('-move', { x: 1 }); } };
+                return { move() { xnew.sync.emitToServer('-move', { x: 1 }); } };
             });
         });
 
@@ -68,16 +68,16 @@ describe('sync.toServer / sync.toClient', () => {
         expect(hits).toEqual(['A:1']);   // syncId=20 の B には届かない
     });
 
-    // ---- toClient ----
+    // ---- emitToClient ----
 
-    it('toClient (client): reaches every client incl. the sender, with the sender id', () => {
+    it('emitToClient (client): reaches every client incl. the sender, with the sender id', () => {
         const a: any[] = [];
         const b: any[] = [];
         bootServer({ io: hub.io }, function Server() { xnew.sync.server(() => {}); });
         const clientA = bootClient({ socket: hub.connect('A') }, function Client(unit: Unit) {
             xnew.sync.client(() => {
                 unit.on('chat', ({ id, text }: any) => a.push({ id, text }));
-                return { say(text: string) { xnew.sync.toClient('chat', { text }); } };
+                return { say(text: string) { xnew.sync.emitToClient('chat', { text }); } };
             });
         });
         bootClient({ socket: hub.connect('B') }, function Client(unit: Unit) {
@@ -90,10 +90,10 @@ describe('sync.toServer / sync.toClient', () => {
         expect(b).toEqual([{ id: 'A', text: 'hi' }]);
     });
 
-    it('toClient (server): broadcasts to every client with id undefined', () => {
+    it('emitToClient (server): broadcasts to every client with id undefined', () => {
         const a: any[] = [];
         const server = bootServer({ io: hub.io }, function Server(unit: Unit) {
-            xnew.sync.server(() => { return { announce(text: string) { xnew.sync.toClient('chat', { text }); } }; });
+            xnew.sync.server(() => { return { announce(text: string) { xnew.sync.emitToClient('chat', { text }); } }; });
         });
         bootClient({ socket: hub.connect('A') }, function Client(unit: Unit) {
             xnew.sync.client(() => { unit.on('chat', ({ id, text }: any) => a.push({ id, text })); });
@@ -104,12 +104,12 @@ describe('sync.toServer / sync.toClient', () => {
         expect(a).toEqual([{ id: undefined, text: 'hello' }]);
     });
 
-    it('toClient with ids: delivers only to the listed clients', () => {
+    it('emitToClient with ids: delivers only to the listed clients', () => {
         const a: any[] = [];
         const b: any[] = [];
         const c: any[] = [];
         const server = bootServer({ io: hub.io }, function Server(unit: Unit) {
-            xnew.sync.server(() => { return { dm(text: string, ids: string[]) { xnew.sync.toClient('chat', { text }, ids); } }; });
+            xnew.sync.server(() => { return { dm(text: string, ids: string[]) { xnew.sync.emitToClient('chat', { text }, ids); } }; });
         });
         bootClient({ socket: hub.connect('A') }, function Client(unit: Unit) {
             xnew.sync.client(() => { unit.on('chat', ({ text }: any) => a.push(text)); });

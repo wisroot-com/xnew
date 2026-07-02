@@ -136,19 +136,19 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   forwards the socket's `connect`/`disconnect`/`notfound` to the boot **parent** (host)
   unit as `-connect`/`-disconnect`/`-notfound`, and disconnects it on finalize. Callers
   (e.g. `basics.Room`) just boot — they no longer touch the socket. `sync.state`,
-  `sync.register`, `sync.toServer`, `sync.toClient` operate on the current sync root.
+  `sync.register`, `sync.emitToServer`, `sync.emitToClient` operate on the current sync root.
 - Socket handlers run outside the tick → wrap them in `xnew.scope` (§7).
 - **Wire event names vs host event names are independent.** A socket/wire event
   (`'roomcreated'`) and the host-facing unit event it is forwarded to
   (`'-roomcreated'`) are separate strings; keep their mapping deliberate.
-- **Send events with `sync.toServer` / `sync.toClient` — they name the side the
+- **Send events with `sync.emitToServer` / `sync.emitToClient` — they name the side the
   event fires on, not the direction you happen to call from.** Receive both with
   `unit.on(type, ({ id, ...props }) => …)` (`id` = sender socket id).
-  - `sync.toServer(type, props)` → fires `type` on the **server**. From a client it
+  - `sync.emitToServer(type, props)` → fires `type` on the **server**. From a client it
     travels over the socket (a `'-type'` is scoped to the server unit sharing the
     sender's `syncId`); on the server it is a local emit (identical to `xnew.emit`,
     so `'+'`/`'-'` only).
-  - `sync.toClient(type, props, ids?)` → fires `type` on the **clients** via the
+  - `sync.emitToClient(type, props, ids?)` → fires `type` on the **clients** via the
     server. From a client it round-trips through the server to every client incl. the
     sender (`id` = sender); from the server it broadcasts (`id` = `undefined`). `ids`
     limits delivery to those client ids (default: the whole room). This is the

@@ -667,14 +667,14 @@ class Unit {
             ancestors.push(u);
         return ancestors;
     }
-    static protectBoundary(from) {
+    static isVisible(from, current, ancestors) {
+        let boundary;
         for (let u = from; u !== null; u = u._.parent) {
-            if (u._.protected === true)
-                return u;
+            if (u._.protected === true) {
+                boundary = u;
+                break;
+            }
         }
-        return undefined;
-    }
-    static isVisible(boundary, current, ancestors) {
         return boundary === undefined || ancestors.includes(boundary) === true || current === boundary;
     }
     static find(Component, key) {
@@ -685,7 +685,7 @@ class Unit {
             if (key !== undefined && unit._.key !== key) {
                 return false;
             }
-            return Unit.isVisible(Unit.protectBoundary(unit._.parent), current, ancestors);
+            return Unit.isVisible(unit._.parent, current, ancestors);
         });
     }
     on(type, listener, options) {
@@ -693,7 +693,7 @@ class Unit {
         types.forEach((type) => Unit.on(this, type, listener, options));
     }
     off(type, listener) {
-        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys()];
+        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), 'update', 'finalize'];
         types.forEach((type) => Unit.off(this, type, listener));
     }
     static on(unit, type, listener, options) {
@@ -704,7 +704,7 @@ class Unit {
         if (type === 'update' || type === 'finalize') {
             unit._.systems[type].push({ listener, execute, count: 0 });
         }
-        if (unit._.listeners.has(type, listener) === false) {
+        else if (unit._.listeners.has(type, listener) === false) {
             unit._.listeners.set(type, listener, { element: unit.element, Component: unit._.currentComponent, execute });
             Unit.type2units.add(type, unit);
             if (/^[A-Za-z]/.test(type) && unit.element !== null) {
@@ -716,17 +716,19 @@ class Unit {
         if (type === 'update' || type === 'finalize') {
             unit._.systems[type] = unit._.systems[type].filter(({ listener: lis }) => listener ? lis !== listener : false);
         }
-        (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((listener) => {
-            const item = unit._.listeners.get(type, listener);
-            if (item === undefined)
-                return;
-            unit._.listeners.delete(type, listener);
-            if (/^[A-Za-z]/.test(type)) {
-                unit._.eventor.remove(type, item.execute);
+        else {
+            (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((listener) => {
+                const item = unit._.listeners.get(type, listener);
+                if (item !== undefined) {
+                    unit._.listeners.delete(type, listener);
+                    if (/^[A-Za-z]/.test(type)) {
+                        unit._.eventor.remove(type, item.execute);
+                    }
+                }
+            });
+            if (unit._.listeners.has(type) === false) {
+                Unit.type2units.delete(type, unit);
             }
-        });
-        if (unit._.listeners.has(type) === false) {
-            Unit.type2units.delete(type, unit);
         }
     }
     static emit(unit, type, props = {}) {
@@ -735,7 +737,7 @@ class Unit {
             const ancestors = Unit.ancestors(unit);
             (_a = Unit.type2units.get(type)) === null || _a === void 0 ? void 0 : _a.forEach((target) => {
                 var _a;
-                if (Unit.isVisible(Unit.protectBoundary(target), unit, ancestors)) {
+                if (Unit.isVisible(target, unit, ancestors)) {
                     (_a = target._.listeners.get(type)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(props));
                 }
             });
@@ -783,27 +785,26 @@ class UnitPromise {
             } settled = true; reject(reason); },
         };
     }
-    static collect(promises) {
-        return Promise.all(promises.map(p => p.promise)).then((values) => {
-            const out = {};
-            promises.forEach((p, i) => {
-                if (p.key === undefined) {
-                    return;
+    static async collect(promises) {
+        const values = await Promise.all(promises.map(p => p.promise));
+        const out = {};
+        promises.forEach((p, i) => {
+            if (p.key === undefined) {
+                return;
+            }
+            const matched = p.key.match(/^(.+)\[\]$/);
+            if (matched !== null) {
+                const name = matched[1];
+                if (Array.isArray(out[name]) === false) {
+                    out[name] = [];
                 }
-                const matched = p.key.match(/^(.+)\[\]$/);
-                if (matched !== null) {
-                    const name = matched[1];
-                    if (Array.isArray(out[name]) === false) {
-                        out[name] = [];
-                    }
-                    out[name].push(values[i]);
-                }
-                else {
-                    out[p.key] = values[i];
-                }
-            });
-            return out;
+                out[name].push(values[i]);
+            }
+            else {
+                out[p.key] = values[i];
+            }
         });
+        return out;
     }
 }
 class UnitTimer {
@@ -918,16 +919,17 @@ const xnew$1 = Object.assign((function (...args) {
             return { resolve, reject };
         }
         else {
-            let unitPromise;
+            let source;
             if (promise instanceof Unit) {
-                unitPromise = new UnitPromise(UnitPromise.collect(promise._.promises), key);
+                source = UnitPromise.collect(promise._.promises);
             }
             else if (promise instanceof Promise) {
-                unitPromise = new UnitPromise(promise, key);
+                source = promise;
             }
             else {
-                unitPromise = new UnitPromise(new Promise(xnew$1.scope(promise)), key);
+                source = new Promise(xnew$1.scope(promise));
             }
+            const unitPromise = new UnitPromise(source, key);
             Unit.currentUnit._.promises.push(unitPromise);
             return unitPromise;
         }
@@ -1534,7 +1536,7 @@ const sync = {
         const info = rootInfoOf(Unit.currentUnit);
         return (_a = info.clients.find((c) => c.id === info.socket.id)) !== null && _a !== void 0 ? _a : { id: info.socket.id, name: '' };
     },
-    toServer(type, props = {}) {
+    emitToServer(type, props = {}) {
         const info = rootInfoOf(Unit.currentUnit);
         if (getEnvironment() === 'server') {
             Unit.emit(Unit.currentUnit, type, props);
@@ -1543,7 +1545,7 @@ const sync = {
             info.socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.currentUnit).id, data: props });
         }
     },
-    toClient(type, props = {}, ids) {
+    emitToClient(type, props = {}, ids) {
         const info = rootInfoOf(Unit.currentUnit);
         const syncId = syncOf(Unit.currentUnit).id;
         if (getEnvironment() === 'server') {
