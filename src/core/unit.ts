@@ -44,11 +44,7 @@ export type DefinesOf<C> =
 export type PropsOf<C> =
     C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
 
-const SYSTEM_EVENTS = ['update', 'finalize'] as const;
-type SystemEvent = typeof SYSTEM_EVENTS[number];
-function isSystemEvent(type: string): type is SystemEvent {
-    return (SYSTEM_EVENTS as readonly string[]).includes(type);
-}
+type SystemEvent = 'update' | 'finalize';
 
 //----------------------------------------------------------------------------------------------------
 // unit
@@ -391,7 +387,7 @@ export class Unit {
         const execute = (props: object = {}) => {
             Unit.scope(snapshot, listener, Object.assign({ type }, props));
         }
-        if (isSystemEvent(type)) {
+        if (type === 'update' || type === 'finalize') {
             unit._.systems[type].push({ listener, execute, count: 0 });
         }
         if (unit._.listeners.has(type, listener) === false) {
@@ -404,7 +400,7 @@ export class Unit {
     }
 
     static off(unit: Unit, type: string, listener?: Function): void {
-        if (isSystemEvent(type)) {
+        if (type === 'update' || type === 'finalize') {
             unit._.systems[type] = unit._.systems[type].filter(({ listener: lis }) => listener ? lis !== listener : false);
         }
         (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((listener) => {

@@ -436,10 +436,6 @@ function keyboardFactory(type) {
     }, props.options);
 }
 
-const SYSTEM_EVENTS = ['update', 'finalize'];
-function isSystemEvent(type) {
-    return SYSTEM_EVENTS.includes(type);
-}
 class Unit {
     constructor(parent = null) {
         var _a, _b;
@@ -705,7 +701,7 @@ class Unit {
         const execute = (props = {}) => {
             Unit.scope(snapshot, listener, Object.assign({ type }, props));
         };
-        if (isSystemEvent(type)) {
+        if (type === 'update' || type === 'finalize') {
             unit._.systems[type].push({ listener, execute, count: 0 });
         }
         if (unit._.listeners.has(type, listener) === false) {
@@ -717,7 +713,7 @@ class Unit {
         }
     }
     static off(unit, type, listener) {
-        if (isSystemEvent(type)) {
+        if (type === 'update' || type === 'finalize') {
             unit._.systems[type] = unit._.systems[type].filter(({ listener: lis }) => listener ? lis !== listener : false);
         }
         (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((listener) => {

@@ -42,8 +42,7 @@ type Status = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
 type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends [void] ? {} : Exclude<R, void | undefined>) : {};
 type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
-declare const SYSTEM_EVENTS: readonly ["update", "finalize"];
-type SystemEvent = typeof SYSTEM_EVENTS[number];
+type SystemEvent = 'update' | 'finalize';
 declare class Unit {
     [key: string]: any;
     _: {
