@@ -34,7 +34,7 @@ export const xnew = Object.assign(
 
         if (args[0] instanceof Unit) {
             const parent = args.shift() as Unit;
-            const snapshot = parent._.afterSnapshot ?? Unit.snapshot(parent);
+            const snapshot = parent._.lastSnapshot ?? Unit.snapshot(parent);
             return Unit.scope(snapshot, () => Unit.create(parent, ...args)) as Unit;
         } else {
             const parent = Unit.currentUnit ?? null;
@@ -89,7 +89,7 @@ export const xnew = Object.assign(
                     // 対象 unit のプールを集約する。プールは消費しない（同じ unit を何度集約しても
                     // 同じ promise 群を見る）。results は登録時点の配列をクロージャで握るので、
                     // 集約後に対象 unit へ promise を追加しても進行中の集約は無傷。
-                    unitPromise = UnitPromise.results(promise._.promises, key);
+                    unitPromise = new UnitPromise(UnitPromise.collect(promise._.promises), key);
                 } else if (promise instanceof Promise) {
                     unitPromise = new UnitPromise(promise, key);
                 } else {

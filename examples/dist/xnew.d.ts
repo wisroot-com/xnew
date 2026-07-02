@@ -61,7 +61,7 @@ declare class Unit {
         currentElement: DomElement;
         currentContext: Context;
         currentComponent: Function | null;
-        afterSnapshot: Snapshot | null;
+        lastSnapshot: Snapshot | null;
         nestElements: {
             element: DomElement;
             owned: boolean;
@@ -121,8 +121,7 @@ declare class UnitPromise {
         resolve: (value?: unknown) => void;
         reject: (reason?: unknown) => void;
     };
-    static results(promises: UnitPromise[], key?: string): UnitPromise;
-    private static assignKey;
+    static collect(promises: UnitPromise[]): Promise<Record<string, any>>;
 }
 declare class UnitTimer {
     private unit;

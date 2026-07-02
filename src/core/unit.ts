@@ -69,7 +69,7 @@ export class Unit {
         currentContext: Context;
         currentComponent: Function | null;
 
-        afterSnapshot: Snapshot | null;
+        lastSnapshot: Snapshot | null;
 
         nestElements: { element: DomElement, owned: boolean }[];
         Components: Function[];
@@ -101,7 +101,7 @@ export class Unit {
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
-            afterSnapshot: null,
+            lastSnapshot: null,
             children: [],
             nestElements: [],
             promises: [],
@@ -151,7 +151,7 @@ export class Unit {
         if (unit._.status === 'invoked') {
             unit._.status = 'initialized';
         }
-        unit._.afterSnapshot = Unit.snapshot(unit);
+        unit._.lastSnapshot = Unit.snapshot(unit);
         Unit.currentUnit = backup;
     }
 
@@ -478,35 +478,27 @@ export class UnitPromise {
         };
     }
 
-    // promise 群を集約した UnitPromise を返す（常にオブジェクト）。
+    // promise 群を集約した Promise を返す（解決値は常にオブジェクト）。呼び出し側で
+    // new UnitPromise(...) に包む（他の登録分岐と形を揃えるため wrap はここでは行わない）。
     // - キー付きのみ出力に含める（キーが `name[]` 形式なら out[name] を配列にして登録順 push）。
     // - キー無しは await されるが出力には含めない（完了待ちの対象にはなる）。
-    public static results(promises: UnitPromise[], key?: string): UnitPromise {
-        return new UnitPromise(
-            Promise.all(promises.map(p => p.promise)).then((values) => {
-                const out: Record<string, any> = {};
-                promises.forEach((p, i) => {
-                    if (p.key !== undefined) {
-                        UnitPromise.assignKey(out, p.key, values[i]);
-                    }
-                });
-                return out;
-            }),
-            key
-        );
-    }
-
-    // キーを集約オブジェクトへ代入する。`name[]` はその name を配列にして登録順に push し、
-    // それ以外はフラットなキーとして代入する。
-    private static assignKey(out: Record<string, any>, key: string, value: any): void {
-        const matched = key.match(/^(.+)\[\]$/);
-        if (matched !== null) {
-            const name = matched[1];
-            if (Array.isArray(out[name]) === false) { out[name] = []; }
-            out[name].push(value);
-        } else {
-            out[key] = value;
-        }
+    public static collect(promises: UnitPromise[]): Promise<Record<string, any>> {
+        return Promise.all(promises.map(p => p.promise)).then((values) => {
+            const out: Record<string, any> = {};
+            promises.forEach((p, i) => {
+                if (p.key === undefined) { return; }
+                const matched = p.key.match(/^(.+)\[\]$/);
+                if (matched !== null) {
+                    // `name[]` はその name を配列にして登録順に push する。
+                    const name = matched[1];
+                    if (Array.isArray(out[name]) === false) { out[name] = []; }
+                    out[name].push(values[i]);
+                } else {
+                    out[p.key] = values[i];
+                }
+            });
+            return out;
+        });
     }
 }
 

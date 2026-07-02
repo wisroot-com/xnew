@@ -459,7 +459,7 @@ class Unit {
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
-            afterSnapshot: null,
+            lastSnapshot: null,
             children: [],
             nestElements: [],
             promises: [],
@@ -503,7 +503,7 @@ class Unit {
         if (unit._.status === 'invoked') {
             unit._.status = 'initialized';
         }
-        unit._.afterSnapshot = Unit.snapshot(unit);
+        unit._.lastSnapshot = Unit.snapshot(unit);
         Unit.currentUnit = backup;
     }
     get parent() {
@@ -783,29 +783,27 @@ class UnitPromise {
             } settled = true; reject(reason); },
         };
     }
-    static results(promises, key) {
-        return new UnitPromise(Promise.all(promises.map(p => p.promise)).then((values) => {
+    static collect(promises) {
+        return Promise.all(promises.map(p => p.promise)).then((values) => {
             const out = {};
             promises.forEach((p, i) => {
-                if (p.key !== undefined) {
-                    UnitPromise.assignKey(out, p.key, values[i]);
+                if (p.key === undefined) {
+                    return;
+                }
+                const matched = p.key.match(/^(.+)\[\]$/);
+                if (matched !== null) {
+                    const name = matched[1];
+                    if (Array.isArray(out[name]) === false) {
+                        out[name] = [];
+                    }
+                    out[name].push(values[i]);
+                }
+                else {
+                    out[p.key] = values[i];
                 }
             });
             return out;
-        }), key);
-    }
-    static assignKey(out, key, value) {
-        const matched = key.match(/^(.+)\[\]$/);
-        if (matched !== null) {
-            const name = matched[1];
-            if (Array.isArray(out[name]) === false) {
-                out[name] = [];
-            }
-            out[name].push(value);
-        }
-        else {
-            out[key] = value;
-        }
+        });
     }
 }
 class UnitTimer {
@@ -879,7 +877,7 @@ const xnew$1 = Object.assign((function (...args) {
         Unit.reset();
     if (args[0] instanceof Unit) {
         const parent = args.shift();
-        const snapshot = (_a = parent._.afterSnapshot) !== null && _a !== void 0 ? _a : Unit.snapshot(parent);
+        const snapshot = (_a = parent._.lastSnapshot) !== null && _a !== void 0 ? _a : Unit.snapshot(parent);
         return Unit.scope(snapshot, () => Unit.create(parent, ...args));
     }
     else {
@@ -922,7 +920,7 @@ const xnew$1 = Object.assign((function (...args) {
         else {
             let unitPromise;
             if (promise instanceof Unit) {
-                unitPromise = UnitPromise.results(promise._.promises, key);
+                unitPromise = new UnitPromise(UnitPromise.collect(promise._.promises), key);
             }
             else if (promise instanceof Promise) {
                 unitPromise = new UnitPromise(promise, key);
