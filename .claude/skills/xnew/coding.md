@@ -190,6 +190,15 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **The public barrel exposes three tiers: `xnew` (core) / `xsync` (networking) / `xbasics`
+  (networking-free components), all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
+  The networking layer lives in `src/sync/` (internal / boot / facade / components), assembled and
+  exported as `xsync` from `src/sync/index.ts`; `xsync` also carries the `Lobby` / `Room` components.
+  When reassembling `xsync` from the `sync` facade, use `Object.defineProperties(target,
+  getOwnPropertyDescriptors(sync))` — **never `Object.assign`**, which invokes the facade's
+  `room`/`clients`/`myself` getters at module load (no current unit → throws). `defineProperties`
+  drops the facade type from its return, so cast: `as typeof sync & { Lobby; Room }`.
+
 - **Custom sync-event handlers get `{ id, ...data }`, but `id` (sender socket id) is set
   only on the SERVER dispatch; on the CLIENT it is `undefined`.** So for a room-wide
   (`+`-broadcast or no-prefix) event whose server broadcast must tell clients who sent it, put

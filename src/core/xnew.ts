@@ -12,7 +12,7 @@
 // - xnew.timeout / interval / transition : UnitTimer によるスケジューリング
 //----------------------------------------------------------------------------------------------------
 //
-// 実行環境限定の extend（旧 xnew.server / xnew.client）は sync 配下へ移動した（src/core/sync.ts）。
+// 実行環境限定の extend（旧 xnew.server / xnew.client）は sync 配下へ移動した（src/sync/facade.ts）。
 
 import { Unit, UnitPromise, UnitTimer, ComponentFn, DefinesOf, PropsOf } from './unit';
 import { DomElement } from './dom';

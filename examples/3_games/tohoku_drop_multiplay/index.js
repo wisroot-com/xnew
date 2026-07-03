@@ -1,10 +1,10 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xsync, xbasics } from '@mulsense/xnew';
 import { Game } from './game.js';
 
 //----------------------------------------------------------------------------------------------------
 // tohoku_drop_multiplay（client エントリ）— ロビー / ルームの配線だけ。
 //   ゲームの描画・入力（three/pixi）はすべて game.js の Game に集約。Room の中身として Game を boot し、
-//   browser 実行なので Game の xnew.sync.client 分岐（three/pixi）だけが動く。matter は読み込まれない。
+//   browser 実行なので Game の xsync.client 分岐（three/pixi）だけが動く。matter は読み込まれない。
 //   Lobby / Room の作りは network サンプルと同じ。
 //----------------------------------------------------------------------------------------------------
 
@@ -23,8 +23,8 @@ xnew(document.getElementById('app'), App);
 
 function Lobby(unit, { io }) {
     const app = xnew.context(App);
-    xnew.extend(xnew.basics.Scene);   // シーン遷移（change）は呼び出し側の責務
-    xnew.extend(xnew.basics.Lobby, { io });   // basics.Lobby が io から socket を生成・所有
+    xnew.extend(xbasics.Scene);   // シーン遷移（change）は呼び出し側の責務
+    xnew.extend(xsync.Lobby, { io });   // basics.Lobby が io から socket を生成・所有
 
     let rooms = [];
 
@@ -80,8 +80,8 @@ function Room(unit, { io, client, room }) {
     back.on('click', () => unit.change(Lobby, { io: window.io }));
     xnew.nest('<div class="relative w-[90vmin] max-w-[800px] aspect-[4/3]">');   // Game（Screen）の mount 先（高さを確定させる）
 
-    xnew.extend(xnew.basics.Scene);   // シーン遷移（change）は呼び出し側の責務
-    xnew.extend(xnew.basics.Room, { io, client, room, Component: Game });
+    xnew.extend(xbasics.Scene);   // シーン遷移（change）は呼び出し側の責務
+    xnew.extend(xsync.Room, { io, client, room, Component: Game });
 
     unit.on('-connect', ({ id }) => app.setStatus(`ルーム ${room.id}: ${id}`, true));
     unit.on('-disconnect', () => app.setStatus('切断', false));

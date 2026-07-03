@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
-import { syncOf } from '../../../src/core/sync';
-import { xnew } from '../../../src/index';
+import { syncOf } from '../../../src/sync';
+import { xnew, xsync } from '../../../src/index';
 import { ioMock, bootServer, asServer } from './io-mock';
 
 // capture は boot 内部へ移動したため、検証は boot 経由で行う:
@@ -22,7 +22,7 @@ describe('registry (scoped)', () => {
     }
 
     it('a child is synced under the name its parent registered', () => {
-        const tree = capture(function Root() { xnew.sync.register({ Player }); xnew(Player); });
+        const tree = capture(function Root() { xsync.register({ Player }); xnew(Player); });
         expect(tree.map((n: any) => n.name)).toContain('Player');
     });
 
@@ -42,8 +42,8 @@ describe('captureStateTree', () => {
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
 
-    function World(unit: Unit) { xnew.sync.register({ Child }); xnew.sync.state({ tick: 0 }); xnew(Child); }
-    function Child(unit: Unit) { xnew.sync.state({ position: 5 }); }
+    function World(unit: Unit) { xsync.register({ Child }); xsync.state({ tick: 0 }); xnew(Child); }
+    function Child(unit: Unit) { xsync.state({ position: 5 }); }
 
     function capture(Component: any): any[] {
         bootServer({ io: hub.io }, Component);
@@ -52,7 +52,7 @@ describe('captureStateTree', () => {
     }
 
     it('captures a synced unit; parent is null when no synced ancestor exists', () => {
-        const tree = capture(function Root() { xnew.sync.register({ World }); xnew(World); });
+        const tree = capture(function Root() { xsync.register({ World }); xnew(World); });
         const worldNode = tree.find((n: any) => n.name === 'World')!;
         expect(worldNode).toBeDefined();
         expect(worldNode.parent).toBeNull();
@@ -60,14 +60,14 @@ describe('captureStateTree', () => {
     });
 
     it('sets a child parent to the nearest synced ancestor id', () => {
-        const tree = capture(function Root() { xnew.sync.register({ World }); xnew(World); });
+        const tree = capture(function Root() { xsync.register({ World }); xnew(World); });
         const worldNode = tree.find((n: any) => n.name === 'World')!;
         const childNode = tree.find((n: any) => n.name === 'Child')!;
         expect(childNode.parent).toBe(worldNode.id);
     });
 
     it('assigns stable ids and reflects mutated state on later captures', () => {
-        const server = bootServer({ io: hub.io }, function Root() { xnew.sync.register({ Child }); xnew(Child); });
+        const server = bootServer({ io: hub.io }, function Root() { xsync.register({ Child }); xnew(Child); });
         asServer(() => Unit.update(Unit.engineRoot));
         const first = hub.lastSync()[0];
         syncOf(server._.children[0]).state!.position = 9;

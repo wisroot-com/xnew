@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
-import { syncOf } from '../../../src/core/sync';
-import { xnew } from '../../../src/index';
+import { syncOf } from '../../../src/sync';
+import { xnew, xsync } from '../../../src/index';
 import { ioMock, bootServer, bootClient, asServer, asServerAsync, asClient } from './io-mock';
 
 // 2 階層: Mover が server ブロック内で定期的に Enemy(synced 子) を spawn し、
@@ -9,24 +9,24 @@ import { ioMock, bootServer, bootClient, asServer, asServerAsync, asClient } fro
 // broadcast し、client boot が apply する（明示の applyStateTree(client, captureStateTree(server)) は不要）。
 
 function Enemy(unit: Unit, props: any = {}) {
-    const state = xnew.sync.state({ x: props.x ?? 0 });
-    xnew.sync.server(() => {
+    const state = xsync.state({ x: props.x ?? 0 });
+    xsync.server(() => {
         unit.on('update', () => { state.x += 1; });          // 所定方向へ移動
         xnew.timeout(() => unit.finalize(), 1000);           // 一定時間で消滅
     });
-    xnew.sync.client(() => {
+    xsync.client(() => {
         const el = xnew.nest('<div>');
         unit.on('update', () => { (el as HTMLElement).style.left = `${state.x}px`; });
     });
 }
 
 function Mover(unit: Unit) {
-    xnew.sync.register({ Enemy });
-    const state = xnew.sync.state({ spawned: 0 });
-    xnew.sync.server(() => {
+    xsync.register({ Enemy });
+    const state = xsync.state({ spawned: 0 });
+    xsync.server(() => {
         xnew.interval(() => { state.spawned += 1; xnew(Enemy, { x: 0 }); }, 500); // 定期 spawn
     });
-    xnew.sync.client(() => {
+    xsync.client(() => {
         xnew.nest('<div>');                                   // Enemy を内包するコンテナ
     });
 }
@@ -41,8 +41,8 @@ describe('2-level spawn hierarchy (Mover -> Enemy)', () => {
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
 
     it('captures Enemy as a child of Mover and mirrors the 2-level tree on the replica', async () => {
-        const server = bootServer({ io: hub.io }, function Root() { xnew.sync.register({ Mover }); xnew(Mover); });
-        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ Mover }); });
+        const server = bootServer({ io: hub.io }, function Root() { xsync.register({ Mover }); xnew(Mover); });
+        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xsync.register({ Mover }); });
 
         await asServerAsync(() => jest.advanceTimersByTimeAsync(500));   // interval 発火 → Enemy spawn（server 構築）
         asServer(() => Unit.update(server));                   // server Enemy が移動 + 'sync' broadcast → client apply
@@ -64,8 +64,8 @@ describe('2-level spawn hierarchy (Mover -> Enemy)', () => {
     });
 
     it('despawns Enemy after its lifetime and removes that replica', async () => {
-        const server = bootServer({ io: hub.io }, function Root() { xnew.sync.register({ Mover }); xnew(Mover); });
-        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ Mover }); });
+        const server = bootServer({ io: hub.io }, function Root() { xsync.register({ Mover }); xnew(Mover); });
+        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xsync.register({ Mover }); });
 
         await asServerAsync(() => jest.advanceTimersByTimeAsync(500));   // 最初の Enemy が spawn
         asServer(() => Unit.update(server));                   // capture + 'sync' → client apply

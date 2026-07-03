@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
-import { syncOf } from '../../../src/core/sync';
-import { xnew } from '../../../src/index';
+import { syncOf } from '../../../src/sync';
+import { xnew, xsync } from '../../../src/index';
 import { ioMock, bootServer, bootClient, asServer } from './io-mock';
 
 describe('scoped registry isolation', () => {
@@ -9,14 +9,14 @@ describe('scoped registry isolation', () => {
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
 
     // 同名 'Child' を 2 つの親がそれぞれ別の実体で登録する
-    function ChildA(unit: Unit) { xnew.sync.state({ kind: 'A' }); }
-    function ChildB(unit: Unit) { xnew.sync.state({ kind: 'B' }); }
-    function ParentA(unit: Unit) { xnew.sync.register({ Child: ChildA }); xnew(ChildA); }
-    function ParentB(unit: Unit) { xnew.sync.register({ Child: ChildB }); xnew(ChildB); }
+    function ChildA(unit: Unit) { xsync.state({ kind: 'A' }); }
+    function ChildB(unit: Unit) { xsync.state({ kind: 'B' }); }
+    function ParentA(unit: Unit) { xsync.register({ Child: ChildA }); xnew(ChildA); }
+    function ParentB(unit: Unit) { xsync.register({ Child: ChildB }); xnew(ChildB); }
 
     it('resolves the same name to different components per scope (capture)', () => {
         bootServer({ io: hub.io }, function Root() {
-            xnew.sync.register({ ParentA, ParentB });
+            xsync.register({ ParentA, ParentB });
             xnew(ParentA);
             xnew(ParentB);
         });
@@ -29,11 +29,11 @@ describe('scoped registry isolation', () => {
 
     it('apply re-creates each Child with the component its reconciled parent registered', () => {
         const server = bootServer({ io: hub.io }, function Root() {
-            xnew.sync.register({ ParentA, ParentB });
+            xsync.register({ ParentA, ParentB });
             xnew(ParentA);
             xnew(ParentB);
         });
-        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ ParentA, ParentB }); });
+        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xsync.register({ ParentA, ParentB }); });
 
         asServer(() => Unit.update(server));   // capture + 'sync' broadcast → client apply
 
@@ -46,7 +46,7 @@ describe('scoped registry isolation', () => {
     });
 
     it('a child not registered by its parent is omitted from capture', () => {
-        function Loose(unit: Unit) { xnew.sync.state({ v: 1 }); }
+        function Loose(unit: Unit) { xsync.state({ v: 1 }); }
         bootServer({ io: hub.io }, function Root() { xnew(Loose); });   // Root は Loose を register しない
         asServer(() => Unit.update(Unit.engineRoot));
         expect(hub.lastSync()).toHaveLength(0);
@@ -56,7 +56,7 @@ describe('scoped registry isolation', () => {
         const err = jest.spyOn(console, 'error').mockImplementation(() => {});
         function Solo(unit: Unit) {}
         // トップレベル（構築中のユニットが無い）で呼ぶとエラー
-        expect(() => xnew.sync.register({ Solo })).toThrow('during component initialization');
+        expect(() => xsync.register({ Solo })).toThrow('during component initialization');
         err.mockRestore();
     });
 });

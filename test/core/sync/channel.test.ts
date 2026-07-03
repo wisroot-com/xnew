@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
-import { xnew } from '../../../src/index';
-import { syncOf } from '../../../src/core/sync';
+import { xnew, xsync } from '../../../src/index';
+import { syncOf } from '../../../src/sync';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
 //----------------------------------------------------------------------------------------------------
@@ -19,16 +19,16 @@ describe('event channel (socket.io transport)', () => {
     it('boot({ socket, room }): wires the transport and auto-generates clientId', () => {
         const received: Array<[string, any]> = [];
         const server = bootServer({ io: hub.io }, function Server(unit: Unit) {
-            xnew.sync.server(() => { unit.on('move', ({ id, x }: any) => received.push([id, { x }])); });
+            xsync.server(() => { unit.on('move', ({ id, x }: any) => received.push([id, { x }])); });
         });
 
         let id1: string | undefined;
         let id2: string | undefined;
         bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
-            xnew.sync.client(() => { id1 = xnew.sync.myself.id; unit.on('update', () => xnew.sync.emitToServer('move', { x: 1 })); });
+            xsync.client(() => { id1 = xsync.myself.id; unit.on('update', () => xsync.emitToServer('move', { x: 1 })); });
         });
         bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
-            xnew.sync.client(() => { id2 = xnew.sync.myself.id; });
+            xsync.client(() => { id2 = xsync.myself.id; });
         });
 
         expect(id1).toBe('c1');   // 自動発番（手動 clientId 不要）
@@ -43,15 +43,15 @@ describe('event channel (socket.io transport)', () => {
     it('updates state directly on message receipt (no polling) via closure', () => {
         let state: Record<string, any> = {};
         bootServer({ io: hub.io }, function Server(unit: Unit) {
-            xnew.sync.server(() => {
-                state = xnew.sync.state({ x: 0 });
+            xsync.server(() => {
+                state = xsync.state({ x: 0 });
                 // 受信時に closure の state を直接更新（inbox 不要）。unit 生成等はしない。
                 unit.on('move', ({ dx }: any) => { state.x += dx; });
             });
         });
 
         const socket = hub.connect();   // 同じ hub の生 client
-        // 生 socket から送るときも xnew.sync.emitToServer と同じ封筒（予約 wire 'sync:toServer' + { type, data }）で送る。
+        // 生 socket から送るときも xsync.emitToServer と同じ封筒（予約 wire 'sync:toServer' + { type, data }）で送る。
         socket.emit('sync:toServer', { type: 'move', data: { dx: 5 } });
         socket.emit('sync:toServer', { type: 'move', data: { dx: 2 } });
         expect(state.x).toBe(7);
@@ -60,21 +60,21 @@ describe('event channel (socket.io transport)', () => {
     it('full cycle: Player updates its own state on move receipt; World spawns from presence', () => {
         // Player: 自分宛の 'move' を受けたら（tick を待たず）closure の state を直接更新。
         function Player(unit: Unit, props: { clientId?: string } = {}) {
-            const state = xnew.sync.state({ x: 0, y: 0, clientId: props.clientId ?? '' });
-            xnew.sync.server(() => {
+            const state = xsync.state({ x: 0, y: 0, clientId: props.clientId ?? '' });
+            xsync.server(() => {
                 unit.on('move', ({ id, dx, dy }: any) => {
                     if (id !== state.clientId) { return; }     // 自分宛だけ（無印=全体なので id で絞る）
                     state.x += dx ?? 0;
                     state.y += dy ?? 0;
                 });
             });
-            xnew.sync.client(() => { xnew.nest('<div>'); });
+            xsync.client(() => { xnew.nest('<div>'); });
         }
         // World: 接続集合(presence)を on('sync.connect'/'sync.disconnect') で持ち、spawn/despawn は update(tick内)で行う。
         function World(unit: Unit, props: { view?: HTMLElement } = {}) {
-            xnew.sync.register({ Player });
+            xsync.register({ Player });
             // socket は boot に渡した transport により自動バインドされる。
-            xnew.sync.server(() => {
+            xsync.server(() => {
                 const connected = new Set<string>();
                 const players = new Map<string, Unit>();
                 unit.on('sync.connect', ({ id }: any) => connected.add(id));
@@ -88,9 +88,9 @@ describe('event channel (socket.io transport)', () => {
                     }
                 });
             });
-            xnew.sync.client(() => {
+            xsync.client(() => {
                 if (props.view) { xnew.nest(props.view); }
-                unit.on('update', () => { xnew.sync.emitToServer('move', { dx: 1, dy: 0 }); });
+                unit.on('update', () => { xsync.emitToServer('move', { dx: 1, dy: 0 }); });
             });
         }
 
@@ -132,12 +132,12 @@ describe('event channel (socket.io transport)', () => {
 
     it('boot auto-wires the down-channel (server broadcast / client apply)', () => {
         function Mover(unit: Unit) {
-            const state = xnew.sync.state({ x: 0 });
-            xnew.sync.server(() => { unit.on('update', () => { state.x += 1; }); });
+            const state = xsync.state({ x: 0 });
+            xsync.server(() => { unit.on('update', () => { state.x += 1; }); });
         }
         function World(unit: Unit) {
-            xnew.sync.register({ Mover });   // 下りの配線（emit('sync')/on('sync')）は boot が自動で行う
-            xnew.sync.server(() => { xnew(Mover); });
+            xsync.register({ Mover });   // 下りの配線（emit('sync')/on('sync')）は boot が自動で行う
+            xsync.server(() => { xnew(Mover); });
         }
         const server = bootServer({ io: hub.io }, World);   // boot の自動 mirror が update で broadcast
         const client = bootClient({ socket: hub.connect() }, World);   // boot の自動 mirror が on('sync') で apply
@@ -173,17 +173,17 @@ describe('event channel (socket.io transport)', () => {
         // server 側: syncId を持つ 2 ユニットが各々 on('-move') を登録。
         function Tagged(unit: Unit, props: { tag?: string; syncId?: number } = {}) {
             syncOf(unit).id = props.syncId ?? null;
-            xnew.sync.server(() => { unit.on('-move', ({ vector }: any) => hits.push(`${props.tag}:${vector.x}`)); });
+            xsync.server(() => { unit.on('-move', ({ vector }: any) => hits.push(`${props.tag}:${vector.x}`)); });
         }
         bootServer({ io: hub.io }, function Server() {
-            xnew.sync.server(() => { xnew(Tagged, { tag: 'A', syncId: 10 }); xnew(Tagged, { tag: 'B', syncId: 20 }); });
+            xsync.server(() => { xnew(Tagged, { tag: 'A', syncId: 10 }); xnew(Tagged, { tag: 'B', syncId: 20 }); });
         });
 
         // client 側: syncId=10 のユニットから '-move' を送ると、同じ syncId の A だけに届く。
         bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
-            xnew.sync.client(() => {
+            xsync.client(() => {
                 syncOf(unit).id = 10;
-                xnew.sync.emitToServer('-move', { vector: { x: 1 } });
+                xsync.emitToServer('-move', { vector: { x: 1 } });
             });
         });
 
@@ -194,14 +194,14 @@ describe('event channel (socket.io transport)', () => {
         const hits: string[] = [];
         function Tagged(unit: Unit, props: { tag?: string; syncId?: number } = {}) {
             syncOf(unit).id = props.syncId ?? null;
-            xnew.sync.server(() => { unit.on('+ping', ({ n }: any) => hits.push(`${props.tag}:${n}`)); });
+            xsync.server(() => { unit.on('+ping', ({ n }: any) => hits.push(`${props.tag}:${n}`)); });
         }
         bootServer({ io: hub.io }, function Server() {
-            xnew.sync.server(() => { xnew(Tagged, { tag: 'A', syncId: 10 }); xnew(Tagged, { tag: 'B', syncId: 20 }); });
+            xsync.server(() => { xnew(Tagged, { tag: 'A', syncId: 10 }); xnew(Tagged, { tag: 'B', syncId: 20 }); });
         });
         // 送信ユニットの syncId に関係なく、'+ping' は両方のユニットへ届く（全体）。
         bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
-            xnew.sync.client(() => { syncOf(unit).id = 10; xnew.sync.emitToServer('+ping', { n: 1 }); });
+            xsync.client(() => { syncOf(unit).id = 10; xsync.emitToServer('+ping', { n: 1 }); });
         });
 
         expect(hits.sort()).toEqual(['A:1', 'B:1']);

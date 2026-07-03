@@ -16,7 +16,7 @@
 <body class="m-0 p-0 w-full h-screen overflow-hidden">
   <div id="main" class="relative w-full h-full"></div>
   <script type="module">
-    import { xnew } from '@mulsense/xnew';
+    import { xnew, xbasics } from '@mulsense/xnew';
 
     xnew(document.querySelector('#main'), (unit) => {
       xnew.nest('<div class="m-2">')
@@ -59,8 +59,8 @@
             const [oscillator, filter, amp, options] = [xnew.find(Oscillator)[0], xnew.find(Filter)[0], xnew.find(Amp)[0], xnew.find(Options)[0]];
             const param = { oscillator: oscillator.value, ...filter.value, ...amp.value, ...options.value};
             xnew.emit('+code1', { text: ' ' });
-            xnew.emit('+code2', { text: `const synth = xnew(xnew.basics.Synthesizer, { ${oscillator.json}${filter.json}${amp.json}${options.json} });\nsynth.press('${list[key] + number}', duration);` });
-            const synth = xnew(xnew.basics.Synthesizer, param);
+            xnew.emit('+code2', { text: `const synth = xnew(xbasics.Synthesizer, { ${oscillator.json}${filter.json}${amp.json}${options.json} });\nsynth.press('${list[key] + number}', duration);` });
+            const synth = xnew(xbasics.Synthesizer, param);
             press = synth.press(list[key] + number);
           }
         });
@@ -104,7 +104,7 @@
       xnew.nest('<div class="w-40 p-1 border rounded-lg">');
       xnew('<p>', 'filter');
       const params = { activate: false, type: 'lowpass', cutoff: 1000 };
-      const panel = xnew(xnew.basics.Panel, { params });
+      const panel = xnew(xbasics.Panel, { params });
 
       let type = null;
       panel.group({ open: true }, (group) => {
@@ -149,7 +149,7 @@
 
       const reverb = xnew((unit) => {
         const params = { time: 1000, mix: 0.5 };
-        const panel = xnew(xnew.basics.Panel, { params });
+        const panel = xnew(xbasics.Panel, { params });
         panel.group({ name: 'reverb', open: true, }, (group) => {
           const activate = group.checkbox('activate');
           const subgroup = group.group({ open: false }, (subgroup) => {
@@ -176,7 +176,7 @@
 
     function Waveform(unit, { value = 0 }) {
       const labels = ['sine', 'triangle', 'square', 'sawtooth'];
-      const panel = xnew(xnew.basics.Panel, { name: 'type', open: true });
+      const panel = xnew(xbasics.Panel, { name: 'type', open: true });
       panel.group({ name: 'type', open: true }, (group) => {
         xnew.nest('<div class="m-1 flex">');
         const name = 'waveform' + xnew.find(Waveform).length;
@@ -211,7 +211,7 @@
     }
     function Envelope(unit, { value, min, max, step, checkable = false }) {
       const params = { activate: !checkable, amount: value, attack: 200, decay: 200, sustain: 0.2, release: 200 };
-      const panel = xnew.extend(xnew.basics.Panel, { params });
+      const panel = xnew.extend(xbasics.Panel, { params });
 
       panel.group({ name: 'envelope', open: true, }, (group) => {
         let activate = null;
@@ -243,7 +243,7 @@
 
     function LFO(unit, { value, min, max, step }) {
       const params = { amount: value, rate: 8 };
-      const panel = xnew(xnew.basics.Panel, { params });
+      const panel = xnew(xbasics.Panel, { params });
 
       let waveform = null;
       panel.group({ name: 'LFO', open: true, }, (group) => {

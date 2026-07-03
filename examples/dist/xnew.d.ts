@@ -158,6 +158,27 @@ interface BootClientOptions {
     client: any;
 }
 
+declare const sync: {
+    server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
+    client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
+    state(initial?: Record<string, any>): Record<string, any>;
+    register(Components: Record<string, Function>): void;
+    readonly room: RoomStatus;
+    readonly clients: ClientStatus[];
+    readonly myself: ClientStatus;
+    emitToServer(type: string, props?: Record<string, any>): void;
+    emitToClient(type: string, props?: Record<string, any>, ids?: string[]): void;
+    boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
+};
+
+declare function Lobby(unit: Unit, props: any): void;
+declare function Room(unit: Unit, props: any): void;
+
+declare const xsync: typeof sync & {
+    Lobby: typeof Lobby;
+    Room: typeof Room;
+};
+
 interface TransitionOptions {
     duration?: number;
     easing?: string;
@@ -244,9 +265,6 @@ declare function Panel(unit: Unit, { params }: PanelOptions): {
     }): Unit;
     separator(): void;
 };
-
-declare function Lobby(unit: Unit, props: any): void;
-declare function Room(unit: Unit, props: any): void;
 
 declare function Aspect(unit: Unit, { aspect, fit }?: {
     aspect?: number;
@@ -346,38 +364,23 @@ declare const xnew: XnewBase & {
     interval(callback: Function, duration: number, iterations?: number): UnitTimer;
     transition(transition: Function, duration?: number, easing?: string): UnitTimer;
     protect(): void;
-} & {
-    basics: {
-        SVG: typeof SVG;
-        SVGText: typeof SVGText;
-        Aspect: typeof Aspect;
-        Screen: typeof Screen;
-        OpenAndClose: typeof OpenAndClose;
-        AnalogStick: typeof AnalogStick;
-        DPad: typeof DPad;
-        Panel: typeof Panel;
-        Accordion: typeof Accordion;
-        Popup: typeof Popup;
-        Scene: typeof Scene;
-        Lobby: typeof Lobby;
-        Room: typeof Room;
-        AudioTrack: typeof AudioTrack;
-        Synthesizer: typeof Synthesizer;
-        Volume: typeof Volume;
-    };
-    sync: {
-        server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
-        client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
-        state(initial?: Record<string, any>): Record<string, any>;
-        register(Components: Record<string, Function>): void;
-        readonly room: RoomStatus;
-        readonly clients: ClientStatus[];
-        readonly myself: ClientStatus;
-        emitToServer(type: string, props?: Record<string, any>): void;
-        emitToClient(type: string, props?: Record<string, any>, ids?: string[]): void;
-        boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
-    };
+};
+declare const xbasics: {
+    SVG: typeof SVG;
+    SVGText: typeof SVGText;
+    Aspect: typeof Aspect;
+    Screen: typeof Screen;
+    OpenAndClose: typeof OpenAndClose;
+    AnalogStick: typeof AnalogStick;
+    DPad: typeof DPad;
+    Panel: typeof Panel;
+    Accordion: typeof Accordion;
+    Popup: typeof Popup;
+    Scene: typeof Scene;
+    AudioTrack: typeof AudioTrack;
+    Synthesizer: typeof Synthesizer;
+    Volume: typeof Volume;
 };
 
-export { xnew };
+export { xbasics, xnew, xsync };
 export type { BootClientOptions, BootServerOptions, ClientStatus, RoomStatus };

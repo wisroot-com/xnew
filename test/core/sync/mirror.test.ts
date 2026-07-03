@@ -1,15 +1,15 @@
 import { Unit } from '../../../src/core/unit';
-import { syncOf } from '../../../src/core/sync';
-import { xnew } from '../../../src/index';
+import { syncOf } from '../../../src/sync';
+import { xnew, xsync } from '../../../src/index';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
 // 1 関数コンポーネント: server ブロック(ロジック)と client ブロック(描画) を持つ。どちらも update。
 function Mover(unit: Unit) {
-    const state = xnew.sync.state({ position: 0 });
-    xnew.sync.server(() => {
+    const state = xsync.state({ position: 0 });
+    xsync.server(() => {
         unit.on('update', () => { state.position += 1; });   // server のみ
     });
-    xnew.sync.client(() => {
+    xsync.client(() => {
         const el = xnew.nest('<div>');
         unit.on('update', () => { (el as HTMLElement).style.left = `${state.position}px`; }); // client のみ
     });
@@ -24,8 +24,8 @@ describe('server/client mirror (server/client blocks)', () => {
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
 
     it('mirrors server state into the client subtree and renders it', () => {
-        const server = bootServer({ io: hub.io }, function Server() { xnew.sync.register({ Mover }); xnew(Mover); });
-        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ Mover }); });
+        const server = bootServer({ io: hub.io }, function Server() { xsync.register({ Mover }); xnew(Mover); });
+        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xsync.register({ Mover }); });
 
         function cycle() {
             asServer(() => Unit.update(server));   // server Mover: position += 1 → 'sync' broadcast → client apply
@@ -46,11 +46,11 @@ describe('server/client mirror (server/client blocks)', () => {
     it('routes a single shared Main root to server/client by mode and mounts replicas into the nested element', () => {
         const view = document.createElement('div');   // 既存の描画先（例の #view 相当）
 
-        // server/client 共通の非同期ルート。中で xnew.sync.server / xnew.sync.client に分岐する。
+        // server/client 共通の非同期ルート。中で xsync.server / xsync.client に分岐する。
         function Main() {
-            xnew.sync.register({ Mover });               // server/client 共通: Mover を直接の同期子として宣言
-            xnew.sync.server(() => { xnew(Mover); });        // server: ロジックツリー
-            xnew.sync.client(() => { xnew.nest(view); });    // client: 既存要素を描画先にする
+            xsync.register({ Mover });               // server/client 共通: Mover を直接の同期子として宣言
+            xsync.server(() => { xnew(Mover); });        // server: ロジックツリー
+            xsync.client(() => { xnew.nest(view); });    // client: 既存要素を描画先にする
         }
 
         const server = bootServer({ io: hub.io }, Main);
@@ -77,9 +77,9 @@ describe('server/client mirror (server/client blocks)', () => {
 
     it('mirrors spawn and despawn driven from server update', () => {
         function Server(unit: Unit) {
-            xnew.sync.register({ Mover });
+            xsync.register({ Mover });
             let spawned = false; let child: Unit | null = null;
-            xnew.sync.server(() => {
+            xsync.server(() => {
                 unit.on('update', () => {
                     if (!spawned) { child = xnew(Mover) as unknown as Unit; spawned = true; }
                     else if (child) { child.finalize(); child = null; }
@@ -87,7 +87,7 @@ describe('server/client mirror (server/client blocks)', () => {
             });
         }
         const server = bootServer({ io: hub.io }, Server);
-        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ Mover }); });
+        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xsync.register({ Mover }); });
 
         asServer(() => Unit.update(server)); // server update が Mover を spawn → 'sync' → client apply
         expect(client._.children.length).toBe(1);    // spawn mirrored

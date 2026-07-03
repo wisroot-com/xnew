@@ -1,11 +1,11 @@
 import { Unit } from '../../src/core/unit';
-import { xnew } from '../../src/index';
-import { Lobby, Room } from '../../src/basics/sync';
+import { xnew, xsync } from '../../src/index';
+import { Lobby, Room } from '../../src/sync/components';
 import { setEnvironment } from '../../src/core/env';
 
 // boot 対象の client ツリー（client 側でペインを nest する）。
 function World(unit: Unit) {
-    xnew.sync.client(() => { xnew.nest('<div>'); });
+    xsync.client(() => { xnew.nest('<div>'); });
 }
 
 // socket.io 互換の最小モック socket。fire でイベントを擬似発火する（onAny は connect/disconnect を含まない）。

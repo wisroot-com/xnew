@@ -1,8 +1,8 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xsync, xbasics } from '@mulsense/xnew';
 
 //----------------------------------------------------------------------------------------------------
 // game — とーほくドロップ 2人対戦のゲームロジック（server / client を 1 ファイルに集約）。
-//   server / client の分岐は xnew.sync.server / xnew.sync.client で行い、環境依存ライブラリは「環境判定つきの
+//   server / client の分岐は xsync.server / xsync.client で行い、環境依存ライブラリは「環境判定つきの
 //   動的 import」で読み分ける（matter は browser の importmap に無く、three/pixi は Node で動かないため）。
 //   sync は「レジストリ名」で同期するので、同じ Status / Ball を両環境で登録し、各 unit の中で
 //   server=物理(matter) / client=描画(three・pixi) を担当する。boot と Lobby/Room の配線は server.js /
@@ -50,10 +50,10 @@ const clampX = (x) => Math.max(BOWL.cx - 190, Math.min(BOWL.cx + 190, x));
 //----------------------------------------------------------------------------------------------------
 
 export function Game(unit) {
-    xnew.sync.register({ Status, Ball });   // 同期対象（server/client 共通の名前で登録）
+    xsync.register({ Status, Ball });   // 同期対象（server/client 共通の名前で登録）
 
     // server: matter エンジンと皿、共有状態 Status を用意する（描画はしない）。
-    xnew.sync.server(() => {
+    xsync.server(() => {
         xmatter.initialize();   // この unit 配下に matter Root（以降の子は context で engine/world を引ける）
         unit.on('update', () => Matter.Engine.update(xmatter.engine));
 
@@ -68,8 +68,8 @@ export function Game(unit) {
     });
 
     // client: 描画パイプライン（three→pixi）と盤面・カーソル・予告・HUD を組み立てる。
-    xnew.sync.client(() => {
-        xnew.extend(xnew.basics.Screen, { width: WIDTH, height: HEIGHT });
+    xsync.client(() => {
+        xnew.extend(xbasics.Screen, { width: WIDTH, height: HEIGHT });
 
         xthree.initialize({ canvas: new OffscreenCanvas(WIDTH, HEIGHT) });
         xthree.renderer.shadowMap.enabled = true;
@@ -102,14 +102,14 @@ export function Game(unit) {
 function Status(unit) {
     // phase: waiting（2 人待ち）→ playing → over。dropping=ドロップ後に皿が静まるのを待つ間。
     // queue1/queue2 は各プレイヤーが次に落とすキャラ列（先頭が次の 1 体）。cursor1X/2X は各自のカーソル位置。
-    const state = xnew.sync.state({
+    const state = xsync.state({
         phase: 'waiting', p1: null, p2: null,
         turn: 1, cursor1X: WIDTH / 2, cursor2X: WIDTH / 2, queue1: [], queue2: [], dropping: false,
         score1: 0, score2: 0, winner: 0,
     });
 
     // server: 権威ロジック。Ball が合体/あふれの加減点に使えるよう addScore を公開する。
-    xnew.sync.server(() => {
+    xsync.server(() => {
         const QUEUE_LEN = 3;
         const idOfTurn = () => (state.turn === 1 ? state.p1 : state.p2);
         const randDrop = () => Math.floor(Math.random() * DROP_KINDS);
@@ -192,8 +192,8 @@ function Status(unit) {
     });
 
     // client: 同期 state を毎フレーム '+status' として盤面（Cursor / QueuePreview / HUD）へ配る。
-    xnew.sync.client(() => {
-        const myId = xnew.sync.myself.id;
+    xsync.client(() => {
+        const myId = xsync.myself.id;
         unit.on('update', () => {
             const myNo = myId === state.p1 ? 1 : myId === state.p2 ? 2 : 0;
             xnew.emit('+status', {
@@ -211,10 +211,10 @@ function Status(unit) {
 //----------------------------------------------------------------------------------------------------
 
 function Ball(unit, { x = 0, y = 0, id = 0 } = {}) {
-    const state = xnew.sync.state({ x, y, angle: 0, id });   // server が書き、client が描画に使う
+    const state = xsync.state({ x, y, angle: 0, id });   // server が書き、client が描画に使う
 
     // server: matter ボディを持ち、毎フレーム位置を state へ反映。あふれ=減点撤去 / 同種接触=合体。
-    xnew.sync.server(() => {
+    xsync.server(() => {
         const radius = ballRadius(state.id);
         const body = Matter.Bodies.circle(state.x, state.y, radius, { restitution: 0.1, friction: 0.5 });
         Matter.Composite.add(xmatter.world, body);
@@ -257,7 +257,7 @@ function Ball(unit, { x = 0, y = 0, id = 0 } = {}) {
     });
 
     // client: 3D モデルを synced 位置/角度へ追従させる。
-    xnew.sync.client(() => {
+    xsync.client(() => {
         const model = xnew(Model, { id: state.id, scale: SCALES[state.id] });
         unit.on('update', () => {
             const p = convert3d(state.x, state.y);
@@ -309,9 +309,9 @@ function Cursor(unit, { player, color }) {
     // 自分のカーソルだけ動かせる（手番でなくても自分のぶんは動かせる。ドロップは手番＆収束後のみ）。
     unit.on('pointermove pointerdown', ({ position }) => {
         if (!iControl) { return; }
-        xnew.sync.emitToServer('move', { x: position.x * xpixi.canvas.width / xpixi.canvas.clientWidth });
+        xsync.emitToServer('move', { x: position.x * xpixi.canvas.width / xpixi.canvas.clientWidth });
     });
-    unit.on('pointerdown', () => { if (canDrop) { xnew.sync.emitToServer('drop'); } });
+    unit.on('pointerdown', () => { if (canDrop) { xsync.emitToServer('drop'); } });
 
     unit.on('update', () => {
         object.rotation += 0.02;

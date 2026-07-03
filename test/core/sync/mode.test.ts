@@ -1,11 +1,11 @@
 import { Unit } from '../../../src/core/unit';
-import { xnew } from '../../../src/index';
+import { xnew, xsync } from '../../../src/index';
 import { ioMock, bootServer, bootClient } from './io-mock';
 
 // mode（server/client）は実行環境で決まる（Node=server / browser=client、core/env）。
-// xnew.sync.server / xnew.sync.client は現在の環境を見て、その環境のブロックだけを実行する。
+// xsync.server / xsync.client は現在の環境を見て、その環境のブロックだけを実行する。
 
-describe('xnew.sync.server / xnew.sync.client by environment', () => {
+describe('xsync.server / xsync.client by environment', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
@@ -13,11 +13,11 @@ describe('xnew.sync.server / xnew.sync.client by environment', () => {
     it('server environment runs server blocks for the root and nested units', () => {
         const ran: string[] = [];
         bootServer({ io: hub.io }, (_: Unit) => {
-            xnew.sync.server(() => { ran.push('root-server'); });
-            xnew.sync.client(() => { ran.push('root-client'); });
+            xsync.server(() => { ran.push('root-server'); });
+            xsync.client(() => { ran.push('root-client'); });
             xnew((_c: Unit) => {
-                xnew.sync.server(() => { ran.push('child-server'); });
-                xnew.sync.client(() => { ran.push('child-client'); });
+                xsync.server(() => { ran.push('child-server'); });
+                xsync.client(() => { ran.push('child-client'); });
             });
         });
         expect(ran).toEqual(['root-server', 'child-server']);   // 環境はサブツリー全体に効く
@@ -26,14 +26,14 @@ describe('xnew.sync.server / xnew.sync.client by environment', () => {
     it('client environment runs client blocks', () => {
         const ran: string[] = [];
         bootClient({ socket: hub.connect() }, (_: Unit) => {
-            xnew.sync.server(() => { ran.push('server'); });
-            xnew.sync.client(() => { ran.push('client'); });
+            xsync.server(() => { ran.push('server'); });
+            xsync.client(() => { ran.push('client'); });
         });
         expect(ran).toEqual(['client']);
     });
 });
 
-describe('xnew.sync.boot', () => {
+describe('xsync.boot', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import { Background, BlockBUtton, GrowText, TextStream } from './util.js';
@@ -25,7 +25,7 @@ function Main(unit) {
   xnew(GameData);
 
   const [width, height] = [800, 450];
-  xnew.extend(xnew.basics.Screen, { width, height });
+  xnew.extend(xbasics.Screen, { width, height });
 
   // three setup
   const size = xnew.context(GameData).GRID / 2;
@@ -170,7 +170,7 @@ function GameScene(unit, { id }) {
     xnew(GameClearText);
 
     xnew.timeout(() => {
-      xnew(xnew.basics.KeyboardEvent).on('-keydown', next);
+      xnew(xbasics.KeyboardEvent).on('-keydown', next);
       unit.on('pointerdown', next);
       function next(){
         if (id + 1 < global.levels.length) {
@@ -460,7 +460,7 @@ function LeftBlock(unit, { id }) {
   });
 
   xnew('<div class="absolute bottom-[8cqh] left-0 right-0 m-auto size-[18cqw] text-green-700">', () => {
-    const dpad = xnew(xnew.basics.DPad, { diagonal: false, fill: '#228B22', fillOpacity: 0.4 });
+    const dpad = xnew(xbasics.DPad, { diagonal: false, fill: '#228B22', fillOpacity: 0.4 });
     dpad.on('-down', ({ vector }) => move(vector));
   });
 
@@ -482,7 +482,7 @@ function RightBlock(unit, { id }) {
 
   xnew('<div class="absolute bottom-[6cqh] size-[20cqw]">', (screen) => {
     const [width, height] = [300, 300];
-    xnew.extend(xnew.basics.Screen, { aspect: width / height, fit: 'contain' });
+    xnew.extend(xbasics.Screen, { aspect: width / height, fit: 'contain' });
 
     const canvas = xnew(`<canvas width="${width}" height="${height}" class="size-full align-bottom">`);
 

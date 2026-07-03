@@ -1,12 +1,12 @@
 import * as PIXI from 'pixi.js';
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 
 xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
   const [width, height] = [800, 600];
-  xnew.extend(xnew.basics.Screen, { width, height });
+  xnew.extend(xbasics.Screen, { width, height });
 
   // setup pixi
   xpixi.initialize({ canvas: unit.canvas });
@@ -47,7 +47,7 @@ function Dot(unit) {
 }
 
 function TitleScene(unit) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
 
   xnew(TitleText);
   unit.on('window.keydown pointerdown', () => unit.change(GameScene));
@@ -60,7 +60,7 @@ function TitleText(unit) {
 }
 
 function GameScene(unit) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
 
   xnew(Controller);
   xnew(ScoreText);
@@ -85,7 +85,7 @@ function Controller(unit) {
     xnew.nest('<div class="absolute left-0 right-0 bottom-0 w-full h-[30%] pointer-events-none" style="container-type: size;">');
     xnew.nest('<div class="absolute left-0 top-0 bottom-0 w-[100cqh] h-full">');
     // directional pad
-    const dpad = xnew('<div class="absolute inset-[5cqh]">', xnew.basics.DPad, {});
+    const dpad = xnew('<div class="absolute inset-[5cqh]">', xbasics.DPad, {});
     dpad.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));
 
     dpad.on('pointerdown', ({ event }) => {
@@ -128,7 +128,7 @@ function Player(unit) {
   // actions
   let velocity = { x: 0, y: 0 };
   unit.on('+move', ({ vector }) => velocity = vector);
-  unit.on('+shot', () => xnew.context(xnew.basics.Scene).add(Shot, { x: object.x, y: object.y }));
+  unit.on('+shot', () => xnew.context(xbasics.Scene).add(Shot, { x: object.x, y: object.y }));
   unit.on('+shot', () => unit.sound());
 
   unit.on('update', () => {
@@ -151,7 +151,7 @@ function Player(unit) {
   });
   return {
     sound() {
-      const synth = xnew(xnew.basics.Synthesizer, {
+      const synth = xnew(xbasics.Synthesizer, {
         oscillator: { type: 'square', envelope: { amount: 36, ADSR: [0, 200, 0.2, 200], }, },
         amp: { envelope: { amount: 0.1, ADSR: [0, 100, 0.2, 200], },},
       });
@@ -208,9 +208,9 @@ function Enemy(unit) {
     clash(score) {
       unit.sound(score);
       for (let i = 0; i < 4; i++) {
-        xnew.context(xnew.basics.Scene).add(Crash, { x: object.x, y: object.y, score });
+        xnew.context(xbasics.Scene).add(Crash, { x: object.x, y: object.y, score });
       }
-      xnew.context(xnew.basics.Scene).add(CrashText, { x: object.x, y: object.y, score });
+      xnew.context(xbasics.Scene).add(CrashText, { x: object.x, y: object.y, score });
       xnew.emit('+scoreup', { score });
       unit.finalize();
     },
@@ -221,7 +221,7 @@ function Enemy(unit) {
     },
     sound(score) {
       const v = Math.log2(score); // convert svore (1->0, 2->1, 4->2, 8->3, ...)
-      const synth = xnew(xnew.basics.Synthesizer, {
+      const synth = xnew(xbasics.Synthesizer, {
         oscillator: { type: 'triangle', },
         amp: { envelope: { amount: 0.1, ADSR: [0, 200, 0.0, 0], }, },
       });

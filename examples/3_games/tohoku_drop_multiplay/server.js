@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // tohoku_drop_multiplay（server エントリ）— express 静的配信 + socket.io + ロビー/ルームの配線だけ。
 //   ゲームロジック（物理 / 勝敗 / 同期）はすべて game.js の Game に集約。Room の中身として Game を boot し、
-//   Node 実行なので Game の xnew.sync.server 分岐（matter）だけが動く。three/pixi は読み込まれない。
+//   Node 実行なので Game の xsync.server 分岐（matter）だけが動く。three/pixi は読み込まれない。
 //----------------------------------------------------------------------------------------------------
 
 import { createServer } from 'node:http';
@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import express from 'express';
 import { Server as IOServer } from 'socket.io';
-import { xnew } from '@mulsense/xnew';
+import { xnew, xsync } from '@mulsense/xnew';
 import { Game } from './game.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -27,11 +27,11 @@ const io = new IOServer(httpServer);
 
 // ---- ロビー + 動的ルーム（basics を extend し、部屋の中身に Game を据える） ----
 function Lobby(unit) {
-    xnew.extend(xnew.basics.Lobby, { io, Room });
+    xnew.extend(xsync.Lobby, { io, Room });
 }
 
 function Room(unit, { io, room }) {
-    xnew.extend(xnew.basics.Room, { io, room, Component: Game });
+    xnew.extend(xsync.Room, { io, room, Component: Game });
 }
 
 xnew(Lobby);
