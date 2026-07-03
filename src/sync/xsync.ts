@@ -1,42 +1,22 @@
 //----------------------------------------------------------------------------------------------------
-// sync — the networking layer (exported as xsync): sync engine + facade
+// xsync — the networking layer: sync engine + facade (exported as `xsync`)
 //
-// One file, layered top→bottom: runtime environment (server/client) → shared state (syncOf / SyncInfo
-// context) → transport (dispatch / relay / wire) → boot wiring (bootServer / bootClient) → the xsync.*
-// facade. The server root is the source of truth: on each update it captures its sync targets as a flat
-// pre-order node list and emits 'sync'; each client root diff-applies that tree. A sync target is a unit
-// whose type is registered in its parent registry. server/client is a networking distinction, so its
-// single source lives here. Ready-made "gathering place" wiring (lobby / room lifecycle) is NOT provided
-// here — callers assemble it from this facade (see examples/*/server.js + index.js).
+// The server root is the source of truth: each update it captures its sync targets (units whose type is
+// registered in the parent) as a flat pre-order node list and emits 'sync'; each client root diff-applies
+// it. Layered top→bottom: environment → shared state → transport → boot → facade. Lobby/room lifecycle is
+// NOT built in — callers assemble it from the facade (see examples/*/server.js + index.js).
 //
-// The public barrel (src/index.ts) re-exports `xsync` from here; addons never touch these internals.
+// - xsync : facade — server / client / state / register / emitTo* / room / clients / myself / boot.
 //
-// - xsync : the facade (server / client / state / register / emitTo* / room / clients / myself / boot).
-//           Callers rely on TS inference from the method signatures; no named public type aliases are
-//           exported.
-//
-// Invariants: node ids are monotonic per server root (`nextId`), so a unit keeps its id for life;
-// capture runs on the root's own update (fires AFTER children update → sees this tick's mutations).
-// captureStateTree / applyStateTree are boot-internal closures over `root`; drive them only through
-// the 'sync' emit/apply seam.
-//
-// Caveat: room / clients / myself are getters that resolve the current unit lazily; export the facade
-// object literal directly (never Object.assign it onto a fresh object — that would invoke the getters at
-// module load, when there is no current unit → throw).
-//
-// syncOf is also a test seam (replicas' per-unit sync data); setEnvironment / withEnvironment let tests
-// fake both runtimes in one process.
+// Invariants: a unit keeps its id for life (`nextId` monotonic per server root); capture runs on the root's
+//   own update, so it sees this tick's child mutations. Drive capture/apply only via the 'sync' seam.
+// Caveat: room / clients / myself are lazy getters — export the facade literal directly, never Object.assign
+//   it onto a fresh object (that invokes the getters at load with no current unit → throw).
+// syncOf / setEnvironment / withEnvironment are test seams (per-unit sync data; fake both runtimes in one process).
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';
 
-//---- runtime environment ----------------------------------------------------------------------------
-//
-// server = Node.js / client = browser. The distinction is fixed by which runtime the process is in
-// (a Node process is always server, a browser tab always client), so it is decided once at load and
-// never re-evaluated. xsync.server / xsync.client and the boot transport choice all share this one
-// source. A temporary override exists for tests that must fake both runtimes in one process and for
-// operations whose runtime is unambiguous (e.g. apply is always a client-side construction).
 export type Environment = 'server' | 'client';
 
 // window（と document）が無ければ Node.js = server、有れば browser = client。
