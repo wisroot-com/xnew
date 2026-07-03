@@ -1,7 +1,6 @@
 import { Unit } from '../../src/core/unit';
 import { xnew, xsync } from '../../src/index';
-import { Lobby, Room } from '../../src/sync/venue';
-import { setEnvironment } from '../../src/sync/engine';
+import { Lobby, Room, setEnvironment } from '../../src/sync/xsync';
 
 // boot 対象の client ツリー（client 側でペインを nest する）。
 function World(unit: Unit) {

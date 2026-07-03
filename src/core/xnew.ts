@@ -13,7 +13,7 @@
 // - xnew.{Unit,Component}                : 公開型（呼び出し可能な値に型名前空間をマージ）
 //----------------------------------------------------------------------------------------------------
 //
-// 実行環境限定の extend（旧 xnew.server / xnew.client）は sync 配下へ移動した（src/sync/engine.ts）。
+// 実行環境限定の extend（旧 xnew.server / xnew.client）は sync 配下へ移動した（src/sync/xsync.ts）。
 
 import { Unit, UnitPromise, UnitTimer, ComponentFn, DefinesOf, PropsOf } from './unit';
 import { DomElement } from './dom';

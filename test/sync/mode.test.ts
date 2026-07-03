@@ -2,7 +2,7 @@ import { Unit } from '../../src/core/unit';
 import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, bootClient } from './io-mock';
 
-// mode（server/client）は実行環境で決まる（Node=server / browser=client、sync/engine）。
+// mode（server/client）は実行環境で決まる（Node=server / browser=client、sync/xsync）。
 // xsync.server / xsync.client は現在の環境を見て、その環境のブロックだけを実行する。
 
 describe('xsync.server / xsync.client by environment', () => {
