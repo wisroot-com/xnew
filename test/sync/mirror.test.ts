@@ -1,6 +1,6 @@
-import { Unit } from '../../../src/core/unit';
-import { syncOf } from '../../../src/sync/xsync';
-import { xnew, xsync } from '../../../src/index';
+import { Unit } from '../../src/core/unit';
+import { syncOf } from '../../src/sync/xsync';
+import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
 // 1 関数コンポーネント: server ブロック(ロジック)と client ブロック(描画) を持つ。どちらも update。

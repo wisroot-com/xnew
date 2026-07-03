@@ -1,6 +1,6 @@
-import { Unit } from '../../../src/core/unit';
-import { syncOf } from '../../../src/sync/xsync';
-import { xnew, xsync } from '../../../src/index';
+import { Unit } from '../../src/core/unit';
+import { syncOf } from '../../src/sync/xsync';
+import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, bootClient, asServer, asServerAsync, asClient } from './io-mock';
 
 // 2 階層: Mover が server ブロック内で定期的に Enemy(synced 子) を spawn し、

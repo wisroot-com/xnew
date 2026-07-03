@@ -13,8 +13,8 @@
 // - bootServer(opts, ...args) / bootClient(opts, ...args) : xsync.boot with the mode forced
 //----------------------------------------------------------------------------------------------------
 
-import { xnew, xsync } from '../../../src/index';
-import { setEnvironment, withEnvironment } from '../../../src/sync/engine';
+import { xnew, xsync } from '../../src/index';
+import { setEnvironment, withEnvironment } from '../../src/sync/engine';
 
 type Handler = (...args: any[]) => void;
 type AnyHandler = (event: string, payload: any) => void;

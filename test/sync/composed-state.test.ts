@@ -1,6 +1,6 @@
-import { Unit } from '../../../src/core/unit';
-import { syncOf } from '../../../src/sync/xsync';
-import { xnew, xsync } from '../../../src/index';
+import { Unit } from '../../src/core/unit';
+import { syncOf } from '../../src/sync/xsync';
+import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
 // capture / apply は boot 内部に移動した。server boot は root.on('update') で 'sync' を broadcast し、

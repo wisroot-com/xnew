@@ -1,5 +1,5 @@
-import { Unit } from '../../../src/core/unit';
-import { xnew, xsync } from '../../../src/index';
+import { Unit } from '../../src/core/unit';
+import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, bootClient } from './io-mock';
 
 // mode（server/client）は実行環境で決まる（Node=server / browser=client、sync/engine）。

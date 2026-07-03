@@ -1,6 +1,6 @@
-import { Unit } from '../../../src/core/unit';
-import { syncOf } from '../../../src/sync/xsync';
-import { xnew, xsync } from '../../../src/index';
+import { Unit } from '../../src/core/unit';
+import { syncOf } from '../../src/sync/xsync';
+import { xnew, xsync } from '../../src/index';
 
 describe('xsync.state', () => {
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); });

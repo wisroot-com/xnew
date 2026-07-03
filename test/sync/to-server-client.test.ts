@@ -1,6 +1,6 @@
-import { Unit } from '../../../src/core/unit';
-import { xnew, xsync } from '../../../src/index';
-import { syncOf } from '../../../src/sync/xsync';
+import { Unit } from '../../src/core/unit';
+import { xnew, xsync } from '../../src/index';
+import { syncOf } from '../../src/sync/xsync';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
 //----------------------------------------------------------------------------------------------------
@@ -9,7 +9,7 @@ import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 //                                   server 側からは local emit（xnew.emit 相当）。
 //   - emitToClient(type, props, ids?): 必ず CLIENT 側で（server 経由）type を発火。client→server→全 client（自分含む）、
 //                                   server 側からは全 client へ。ids 指定で宛先を限定。
-//   transport は in-memory な socket.io 風モック（test/core/sync/io-mock）を使う。
+//   transport は in-memory な socket.io 風モック（test/sync/io-mock）を使う。
 //----------------------------------------------------------------------------------------------------
 
 describe('sync.emitToServer / sync.emitToClient', () => {

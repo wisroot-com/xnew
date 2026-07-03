@@ -1,6 +1,6 @@
-import { Unit } from '../../../src/core/unit';
-import { syncOf } from '../../../src/sync/xsync';
-import { xnew, xsync } from '../../../src/index';
+import { Unit } from '../../src/core/unit';
+import { syncOf } from '../../src/sync/xsync';
+import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, asServer } from './io-mock';
 
 // capture は boot 内部へ移動したため、検証は boot 経由で行う:
