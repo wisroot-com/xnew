@@ -16,7 +16,8 @@
 
 import { xnew } from '../core/xnew';
 import { Unit, UnitTimer } from '../core/unit';
-import { sync, SyncBootServerOptions, SyncRoomStatus } from './engine';
+import { SyncBootServerOptions, SyncRoomStatus } from './engine';
+import { sync } from './xsync';
 
 const rooms = new Map<string, Unit>();
 

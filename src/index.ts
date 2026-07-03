@@ -9,8 +9,8 @@
 // - xbasics : networking-free convenience components — src/basics/xbasics.ts
 //----------------------------------------------------------------------------------------------------
 
-// 各レイヤーは自モジュールで組み立て済み（xnew / xsync は値＋型名前空間をマージ済み。boot 入力や
-// ルームステータス等の公開型は xsync.BootServerOptions のように名前空間から参照する）ので、ここでは再輸出のみ。
+// 各レイヤーは自モジュールで組み立て済み（xnew は値＋型名前空間をマージ済み。xsync の boot 入力や
+// ルームステータス等の公開型はファサードのシグネチャ経由で露出し、呼び出し側は推論で受け取る）ので、ここでは再輸出のみ。
 export { xnew } from './core/xnew';
 export { xsync } from './sync/xsync';
 export { xbasics } from './basics/xbasics';

@@ -1,32 +1,25 @@
 //----------------------------------------------------------------------------------------------------
-// sync/engine — the whole server↔client sync engine + the xsync.* facade in one module
+// sync/engine — the server↔client sync engine (environment + shared state + transport + boot)
 //
 // Layered internally: runtime environment (server/client detection) → shared state (syncOf / SyncInfo
-// context) → transport (dispatch / relay / wire) → boot wiring (bootServer / bootClient) → facade
-// (`sync`). server/client is a networking distinction, so its single source lives here. The server
-// root is the source of truth: on
-// each update it captures its sync targets as a flat pre-order node list and emits 'sync'; each client
+// context) → transport (dispatch / relay / wire) → boot wiring (bootServer / bootClient). server/client
+// is a networking distinction, so its single source lives here. The server root is the source of truth:
+// on each update it captures its sync targets as a flat pre-order node list and emits 'sync'; each client
 // root diff-applies that tree. A sync target is a unit whose type is registered in its parent registry.
 //
-// Public surface (assembled as xsync.* in sync/xsync.ts):
-// - server / client : extend the current unit only on its runtime (Node=server / browser=client)
-// - state           : declare synced state on the current unit (server authoritative)
-// - register        : declare the components allowed as direct sync children {Name: Component}
-// - emitToServer    : fire `type` on the SERVER (client→server; local emit on the server)
-// - emitToClient    : fire `type` on the CLIENTS via the server (broadcast; ids? limits targets)
-// - room / clients / myself : current room / connected clients / this client (getters)
-// - boot            : create a sync root bound to a socket (server/client auto-detected)
+// This module owns no user-facing surface: the xsync.* facade (server / client / state / register /
+// emitTo* / room / clients / myself / boot) is assembled in sync/xsync.ts from the primitives exported
+// here — getEnvironment, syncOf, rootInfoOf, relayToClients, bootServer / bootClient, and the WIRE_* tags.
 //
 // Invariants: node ids are monotonic per server root (`nextId`), so a unit keeps its id for life;
 // capture runs on the root's own update (fires AFTER children update → sees this tick's mutations).
 // captureStateTree / applyStateTree are boot-internal closures over `root`; drive them only through
-// the 'sync' emit/apply seam. room / clients / myself are getters — reassembling `sync` must preserve
-// them as getters (see sync/xsync.ts), copying by value would evaluate them with no current unit.
+// the 'sync' emit/apply seam.
 //
-// syncOf is exported as a test seam (replicas' per-unit sync data); everything else stays internal.
+// syncOf is also a test seam (replicas' per-unit sync data).
 //----------------------------------------------------------------------------------------------------
 
-import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';
+import { Unit } from '../core/unit';
 
 //---- runtime environment ----------------------------------------------------------------------------
 //
@@ -35,29 +28,26 @@ import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';
 // never re-evaluated. xsync.server / xsync.client and the boot transport choice all share this one
 // source. A temporary override exists for tests that must fake both runtimes in one process and for
 // operations whose runtime is unambiguous (e.g. apply is always a client-side construction).
-
-// 公開名は xsync.Environment。d.ts バンドル時に名前空間メンバと衝突しないよう内部名を分ける
-// （同名だと rollup-plugin-dts が `type Environment = Environment` を吐き自己参照になる）。
-export type RuntimeEnvironment = 'server' | 'client';
+export type Environment = 'server' | 'client';
 
 // window（と document）が無ければ Node.js = server、有れば browser = client。
-const detectedEnvironment: RuntimeEnvironment =
+const detectedEnvironment: Environment =
     (typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client';
 
-let environmentOverride: RuntimeEnvironment | null = null;
+let environmentOverride: Environment | null = null;
 
 /** 現在の実行環境を返す（override 優先、無ければ起動時の自動判定）。 */
-export function getEnvironment(): RuntimeEnvironment {
+export function getEnvironment(): Environment {
     return environmentOverride ?? detectedEnvironment;
 }
 
 /** 実行環境を上書きする（null で自動判定へ戻す）。主にテストが 1 プロセスで両環境を模すために使う。 */
-export function setEnvironment(env: RuntimeEnvironment | null): void {
+export function setEnvironment(env: Environment | null): void {
     environmentOverride = env;
 }
 
 /** fn 実行中だけ env へ上書きし、終了時に直前の状態へ戻す（ネスト可。例: apply は常に client 文脈で構築）。 */
-export function withEnvironment<T>(env: RuntimeEnvironment, fn: () => T): T {
+export function withEnvironment<T>(env: Environment, fn: () => T): T {
     const previous = environmentOverride;
     environmentOverride = env;
     try {
@@ -81,14 +71,13 @@ export function syncOf(unit: Unit): SyncData {
     return syncData.get(unit)!;
 }
 
-// 公開型。呼び出し側は xsync.ClientStatus / xsync.RoomStatus / xsync.BootServerOptions /
-// xsync.BootClientOptions として参照する（src/sync/xsync.ts の名前空間で公開名に束ね直す）。
-// 内部名に Sync 接頭辞を付けるのは、d.ts バンドル時に名前空間メンバと同名だと自己参照になるため。
+// 公開型。ファサードのシグネチャ（boot / room / clients / myself）経由で d.ts に露出し、
+// 呼び出し側は推論で受け取る。名前付きエイリアスは公開しない。
 export interface SyncClientStatus { id: string; name: string; }
 export interface SyncRoomStatus { id: string; name: string; count: number; }
 
-interface ServerInfo { io: any; room: SyncRoomStatus; clients: SyncClientStatus[]; }
-interface ClientInfo { socket: any; room: SyncRoomStatus; clients: SyncClientStatus[]; }
+export interface ServerInfo { io: any; room: SyncRoomStatus; clients: SyncClientStatus[]; }
+export interface ClientInfo { socket: any; room: SyncRoomStatus; clients: SyncClientStatus[]; }
 
 export interface SyncBootServerOptions { io: any; room: SyncRoomStatus; }
 export interface SyncBootClientOptions { io: any; room: SyncRoomStatus; client: any; }
@@ -98,7 +87,7 @@ export interface SyncBootClientOptions { io: any; room: SyncRoomStatus; client: 
 const SYNC_KEY = Symbol('sync');
 
 /** Internal info of the caller's sync root (throws if not booted). */
-function rootInfoOf(unit: Unit): ServerInfo | ClientInfo {
+export function rootInfoOf(unit: Unit): ServerInfo | ClientInfo {
     const info = Unit.getContext(unit, SYNC_KEY) as ServerInfo | ClientInfo | undefined;
     if (info === undefined) {
         throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
@@ -109,8 +98,8 @@ function rootInfoOf(unit: Unit): ServerInfo | ClientInfo {
 //---- transport --------------------------------------------------------------------------------------
 
 // Reserved wire events for emitToServer / emitToClient (never used as app `type`s).
-const WIRE_TO_SERVER = 'sync:toServer';   // client→server: { type, syncId, data }      → dispatch `type` on the server
-const WIRE_TO_CLIENT = 'sync:toClient';   // client→server: { type, syncId, data, ids } → server fans out to clients
+export const WIRE_TO_SERVER = 'sync:toServer';   // client→server: { type, syncId, data }      → dispatch `type` on the server
+export const WIRE_TO_CLIENT = 'sync:toClient';   // client→server: { type, syncId, data, ids } → server fans out to clients
 const WIRE_DELIVER = 'sync:deliver';      // server→client: { type, syncId, id, data }   → dispatch `type` on the client
 
 /** Route a received event to listening units belonging to `info`'s root. */
@@ -125,7 +114,7 @@ function dispatch(info: ServerInfo | ClientInfo, event: string, id: string | und
 }
 
 /** Server → clients delivery for emitToClient (ids = target client ids; omitted/empty = whole room). */
-function relayToClients(info: ServerInfo, type: string, senderId: string | undefined, syncId: number | null, data: any, ids?: string[]): void {
+export function relayToClients(info: ServerInfo, type: string, senderId: string | undefined, syncId: number | null, data: any, ids?: string[]): void {
     const envelope = { type, syncId, id: senderId, data };
     if (Array.isArray(ids) && ids.length > 0) {
         ids.forEach((cid) => info.io.to(cid).emit(WIRE_DELIVER, envelope));   // each socket is in a room named by its id
@@ -136,7 +125,7 @@ function relayToClients(info: ServerInfo, type: string, senderId: string | undef
 
 //---- boot -------------------------------------------------------------------------------------------
 
-function bootServer(opts: SyncBootServerOptions, parent: Unit, args: any[]): Unit {
+export function bootServer(opts: SyncBootServerOptions, parent: Unit, args: any[]): Unit {
     const { io, room } = opts;
     const info: ServerInfo = { io, room, clients: [] };
 
@@ -206,7 +195,7 @@ function bootServer(opts: SyncBootServerOptions, parent: Unit, args: any[]): Uni
     return root;
 }
 
-function bootClient(opts: SyncBootClientOptions, parent: Unit, args: any[]): Unit {
+export function bootClient(opts: SyncBootClientOptions, parent: Unit, args: any[]): Unit {
     const { io, room, client } = opts;
     // client owns its socket: io() with flat string query (roomId / clientName) on the handshake.
     // create it before init so the component body can already read it (xsync.myself / xsync.emitToServer).
@@ -266,64 +255,3 @@ function bootClient(opts: SyncBootClientOptions, parent: Unit, args: any[]): Uni
     });
     return root;
 }
-
-//---- facade -----------------------------------------------------------------------------------------
-
-export const sync = {
-    server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {} {
-        return getEnvironment() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) as DefinesOf<C> : {};
-    },
-    client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {} {
-        return getEnvironment() === 'client' ? Unit.extend(Unit.currentUnit, callback, props) as DefinesOf<C> : {};
-    },
-    state(initial: Record<string, any> = {}): Record<string, any> {
-        const data = syncOf(Unit.currentUnit);
-        for (const key of Object.keys(initial)) {
-            if (!(key in data.state)) { data.state[key] = initial[key]; }
-        }
-        return data.state;
-    },
-    register(Components: Record<string, Function>): void {
-        const unit = Unit.currentUnit;
-        if (unit._.status !== 'invoked') {
-            throw new Error('xsync.register must be called during component initialization.');
-        }
-        Object.assign(syncOf(unit).registry, Components);
-    },
-    get room(): SyncRoomStatus {
-        return rootInfoOf(Unit.currentUnit).room;
-    },
-    get clients(): SyncClientStatus[] {
-        return rootInfoOf(Unit.currentUnit).clients;
-    },
-    get myself(): SyncClientStatus {
-        if (getEnvironment() === 'server') {
-            throw new Error('xsync.myself is only available on the client side.');
-        }
-        const info = rootInfoOf(Unit.currentUnit) as ClientInfo;
-        return info.clients.find((c) => c.id === info.socket.id) ?? { id: info.socket.id, name: '' };
-    },
-    emitToServer(type: string, props: Record<string, any> = {}): void {
-        const info = rootInfoOf(Unit.currentUnit);
-        if (getEnvironment() === 'server') {
-            Unit.emit(Unit.currentUnit, type, props);
-        } else {
-            (info as ClientInfo).socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.currentUnit).id, data: props });
-        }
-    },
-    emitToClient(type: string, props: Record<string, any> = {}, ids?: string[]): void {
-        const info = rootInfoOf(Unit.currentUnit);
-        const syncId = syncOf(Unit.currentUnit).id;
-        if (getEnvironment() === 'server') {
-            relayToClients(info as ServerInfo, type, undefined, syncId, props, ids);
-        } else {
-            (info as ClientInfo).socket.emit(WIRE_TO_CLIENT, { type, syncId, data: props, ids });
-        }
-    },
-    boot(opts: SyncBootServerOptions | SyncBootClientOptions, ...args: any[]): Unit {
-        if (Unit.engineRoot === undefined) { Unit.reset(); }
-        return getEnvironment() === 'server'
-            ? bootServer(opts as SyncBootServerOptions, Unit.currentUnit, args)
-            : bootClient(opts as SyncBootClientOptions, Unit.currentUnit, args);
-    },
-};

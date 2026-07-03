@@ -121,11 +121,11 @@ declare class UnitTimer {
     private unit;
     private queue;
     clear(): void;
-    timeout(timeout: Function, duration?: number): UnitTimer;
-    interval(timeout: Function, duration?: number, iterations?: number): UnitTimer;
-    transition(transition: Function, duration?: number, easing?: string): UnitTimer;
-    private static execute;
-    private static next;
+    timeout(timeout: Function, duration?: number): this;
+    interval(timeout: Function, duration?: number, iterations?: number): this;
+    transition(transition: Function, duration?: number, easing?: string): this;
+    private execute;
+    private start;
 }
 
 interface XnewBase {
@@ -159,7 +159,6 @@ declare namespace xnew {
     type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
 }
 
-type RuntimeEnvironment = 'server' | 'client';
 interface SyncClientStatus {
     id: string;
     name: string;
@@ -178,6 +177,10 @@ interface SyncBootClientOptions {
     room: SyncRoomStatus;
     client: any;
 }
+
+declare function Lobby(unit: Unit, props: any): void;
+declare function Room(unit: Unit, props: any): void;
+
 declare const sync: {
     server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
     client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
@@ -190,21 +193,10 @@ declare const sync: {
     emitToClient(type: string, props?: Record<string, any>, ids?: string[]): void;
     boot(opts: SyncBootServerOptions | SyncBootClientOptions, ...args: any[]): Unit;
 };
-
-declare function Lobby(unit: Unit, props: any): void;
-declare function Room(unit: Unit, props: any): void;
-
 declare const xsync: typeof sync & {
     Lobby: typeof Lobby;
     Room: typeof Room;
 };
-declare namespace xsync {
-    type Environment = RuntimeEnvironment;
-    type ClientStatus = SyncClientStatus;
-    type RoomStatus = SyncRoomStatus;
-    type BootServerOptions = SyncBootServerOptions;
-    type BootClientOptions = SyncBootClientOptions;
-}
 
 interface TransitionOptions {
     duration?: number;

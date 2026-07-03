@@ -228,10 +228,7 @@ function isDomElement(value) {
     return (typeof HTMLElement !== 'undefined' && value instanceof HTMLElement) || (typeof SVGElement !== 'undefined' && value instanceof SVGElement);
 }
 const factories = new Map();
-function defineEvent(types, factory) {
-    (Array.isArray(types) ? types : [types]).forEach((type) => factories.set(type, factory));
-}
-function listen(target, type, execute, options) {
+function attach(target, type, execute, options) {
     let initalized = false;
     const id = setTimeout(() => {
         initalized = true;
@@ -259,13 +256,13 @@ class Eventor {
             finalize = factory(props);
         }
         else if (type.startsWith('window.')) {
-            finalize = listen(window, type.substring('window.'.length), (event) => listener({ event }), options);
+            finalize = attach(window, type.substring('window.'.length), (event) => listener({ event }), options);
         }
         else if (type.startsWith('document.')) {
-            finalize = listen(document, type.substring('document.'.length), (event) => listener({ event }), options);
+            finalize = attach(document, type.substring('document.'.length), (event) => listener({ event }), options);
         }
         else {
-            finalize = listen(element, type, (event) => listener({ event }), options);
+            finalize = attach(element, type, (event) => listener({ event }), options);
         }
         this.map.set(type, listener, finalize);
     }
@@ -281,8 +278,11 @@ function getPointerPosition(element, event) {
     const rect = element.getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
 }
+function defineEvent(types, factory) {
+    (Array.isArray(types) ? types : [types]).forEach((type) => factories.set(type, factory));
+}
 defineEvent(['change', 'input'], (props) => {
-    return listen(props.element, props.type, (event) => {
+    return attach(props.element, props.type, (event) => {
         let value = null;
         if (event.target.type === 'checkbox') {
             value = event.target.checked;
@@ -297,19 +297,19 @@ defineEvent(['change', 'input'], (props) => {
     }, props.options);
 });
 defineEvent(['click', 'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout'], (props) => {
-    return listen(props.element, props.type, (event) => {
+    return attach(props.element, props.type, (event) => {
         props.listener({ event, position: getPointerPosition(props.element, event) });
     }, props.options);
 });
 defineEvent(['click.outside', 'pointerdown.outside', 'pointermove.outside', 'pointerup.outside'], (props) => {
-    return listen(document, props.type.split('.')[0], (event) => {
+    return attach(document, props.type.split('.')[0], (event) => {
         if (props.element.contains(event.target) === false) {
             props.listener({ event, position: getPointerPosition(props.element, event) });
         }
     }, props.options);
 });
 defineEvent('wheel', (props) => {
-    return listen(props.element, props.type, (event) => {
+    return attach(props.element, props.type, (event) => {
         props.listener({ event, delta: { x: event.wheelDeltaX, y: event.wheelDeltaY } });
     }, props.options);
 });
@@ -320,7 +320,7 @@ defineEvent('resize', (props) => {
 });
 defineEvent(['window.keydown', 'window.keyup'], (props) => {
     const type = props.type.substring('window.'.length);
-    return listen(window, type, (event) => {
+    return attach(window, type, (event) => {
         if (event.repeat)
             return;
         props.listener({ event });
@@ -330,11 +330,11 @@ defineEvent(['dragstart', 'dragmove', 'dragend'], (props) => {
     let pointermove = null;
     let pointerup = null;
     let pointercancel = null;
-    const pointerdown = listen(props.element, 'pointerdown', (event) => {
+    const pointerdown = attach(props.element, 'pointerdown', (event) => {
         const id = event.pointerId;
         const position = getPointerPosition(props.element, event);
         let previous = position;
-        pointermove = listen(window, 'pointermove', (event) => {
+        pointermove = attach(window, 'pointermove', (event) => {
             if (event.pointerId === id) {
                 const position = getPointerPosition(props.element, event);
                 const delta = { x: position.x - previous.x, y: position.y - previous.y };
@@ -353,8 +353,8 @@ defineEvent(['dragstart', 'dragmove', 'dragend'], (props) => {
                 remove();
             }
         };
-        pointerup = listen(window, 'pointerup', finish, props.options);
-        pointercancel = listen(window, 'pointercancel', finish, props.options);
+        pointerup = attach(window, 'pointerup', finish, props.options);
+        pointercancel = attach(window, 'pointercancel', finish, props.options);
         if (props.type === 'dragstart') {
             props.listener({ event, position, delta: { x: 0, y: 0 } });
         }
@@ -380,7 +380,7 @@ function keyVectorEvent(variant, codes) {
             x: (keymap[codes.left] ? -1 : 0) + (keymap[codes.right] ? +1 : 0),
             y: (keymap[codes.up] ? -1 : 0) + (keymap[codes.down] ? +1 : 0),
         });
-        const keydown = listen(window, 'keydown', (event) => {
+        const keydown = attach(window, 'keydown', (event) => {
             if (event.repeat)
                 return;
             keymap[event.code] = 1;
@@ -388,7 +388,7 @@ function keyVectorEvent(variant, codes) {
                 props.listener({ event, vector: vector() });
             }
         }, props.options);
-        const keyup = listen(window, 'keyup', (event) => {
+        const keyup = attach(window, 'keyup', (event) => {
             keymap[event.code] = 0;
             if (variant === 'keyup' && targets.includes(event.code)) {
                 props.listener({ event, vector: vector() });
@@ -421,15 +421,14 @@ function matchKey(name, event) {
     return ((_a = event.code) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === name || ((_b = event.key) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === name;
 }
 function keyboardFactory(type) {
-    const matched = type.match(/^(window|document)\.(keydown|keyup)\.([A-Za-z0-9]+)(\.repeat)?$/);
+    const matched = type.match(/^(window|document)\.(keydown|keyup)\.([A-Za-z0-9]+)$/);
     if (matched === null)
         return undefined;
-    const [, scope, variant, rawKey, repeat] = matched;
+    const [, scope, variant, rawKey] = matched;
     const key = rawKey.toLowerCase();
-    const allowRepeat = repeat !== undefined;
     const target = scope === 'document' ? document : window;
-    return (props) => listen(target, variant, (event) => {
-        if (allowRepeat === false && event.repeat)
+    return (props) => attach(target, variant, (event) => {
+        if (event.repeat)
             return;
         if (matchKey(key, event))
             props.listener({ event });
@@ -804,15 +803,16 @@ class UnitTimer {
         this.unit = null;
     }
     timeout(timeout, duration = 0) {
-        return UnitTimer.execute(this, timeout, null, duration, undefined, 1);
+        return this.execute(timeout, null, duration, 1);
     }
     interval(timeout, duration = 0, iterations = 0) {
-        return UnitTimer.execute(this, timeout, null, duration, undefined, iterations);
+        return this.execute(timeout, null, duration, iterations);
     }
     transition(transition, duration = 0, easing) {
-        return UnitTimer.execute(this, null, transition, duration, easing, 1);
+        return this.execute(null, transition, duration, 1, easing);
     }
-    static execute(timer, timeout, transition, duration, easing, iterations) {
+    execute(timeout, transition, duration, iterations, easing) {
+        const timer = this;
         const snapshot = Unit.snapshot(Unit.currentUnit);
         const Component = (unit) => {
             let counter = 0;
@@ -837,23 +837,21 @@ class UnitTimer {
             }
             unit.on('finalize', () => current.clear());
         };
-        if (timer.unit === null || timer.unit._.status === 'finalized') {
-            timer.unit = Unit.create(Unit.currentUnit, Component);
-        }
-        else if (timer.queue.length === 0) {
-            timer.queue.push(Component);
-            timer.unit.on('finalize', () => UnitTimer.next(timer));
+        if (this.unit === null || this.unit._.status === 'finalized') {
+            this.start(Component);
         }
         else {
-            timer.queue.push(Component);
+            this.queue.push(Component);
         }
-        return timer;
+        return this;
     }
-    static next(timer) {
-        if (timer.queue.length > 0) {
-            timer.unit = Unit.create(Unit.currentUnit, timer.queue.shift());
-            timer.unit.on('finalize', () => UnitTimer.next(timer));
-        }
+    start(Component) {
+        this.unit = Unit.create(Unit.currentUnit, Component);
+        this.unit.on('finalize', () => {
+            if (this.queue.length > 0) {
+                this.start(this.queue.shift());
+            }
+        });
     }
 }
 
@@ -1102,71 +1100,6 @@ function bootClient(opts, parent, args) {
     });
     return root;
 }
-const sync = {
-    server(callback, props) {
-        return getEnvironment() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) : {};
-    },
-    client(callback, props) {
-        return getEnvironment() === 'client' ? Unit.extend(Unit.currentUnit, callback, props) : {};
-    },
-    state(initial = {}) {
-        const data = syncOf(Unit.currentUnit);
-        for (const key of Object.keys(initial)) {
-            if (!(key in data.state)) {
-                data.state[key] = initial[key];
-            }
-        }
-        return data.state;
-    },
-    register(Components) {
-        const unit = Unit.currentUnit;
-        if (unit._.status !== 'invoked') {
-            throw new Error('xsync.register must be called during component initialization.');
-        }
-        Object.assign(syncOf(unit).registry, Components);
-    },
-    get room() {
-        return rootInfoOf(Unit.currentUnit).room;
-    },
-    get clients() {
-        return rootInfoOf(Unit.currentUnit).clients;
-    },
-    get myself() {
-        var _a;
-        if (getEnvironment() === 'server') {
-            throw new Error('xsync.myself is only available on the client side.');
-        }
-        const info = rootInfoOf(Unit.currentUnit);
-        return (_a = info.clients.find((c) => c.id === info.socket.id)) !== null && _a !== void 0 ? _a : { id: info.socket.id, name: '' };
-    },
-    emitToServer(type, props = {}) {
-        const info = rootInfoOf(Unit.currentUnit);
-        if (getEnvironment() === 'server') {
-            Unit.emit(Unit.currentUnit, type, props);
-        }
-        else {
-            info.socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.currentUnit).id, data: props });
-        }
-    },
-    emitToClient(type, props = {}, ids) {
-        const info = rootInfoOf(Unit.currentUnit);
-        const syncId = syncOf(Unit.currentUnit).id;
-        if (getEnvironment() === 'server') {
-            relayToClients(info, type, undefined, syncId, props, ids);
-        }
-        else {
-            info.socket.emit(WIRE_TO_CLIENT, { type, syncId, data: props, ids });
-        }
-    },
-    boot(opts, ...args) {
-        if (Unit.engineRoot === undefined) {
-            Unit.reset();
-        }
-        return getEnvironment() === 'server'
-            ? bootServer(opts, Unit.currentUnit, args)
-            : bootClient(opts, Unit.currentUnit, args);
-    },
-};
 
 const rooms = new Map();
 function roomList() {
@@ -1275,6 +1208,71 @@ function Room(unit, props) {
     });
 }
 
+const sync = {
+    server(callback, props) {
+        return getEnvironment() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) : {};
+    },
+    client(callback, props) {
+        return getEnvironment() === 'client' ? Unit.extend(Unit.currentUnit, callback, props) : {};
+    },
+    state(initial = {}) {
+        const data = syncOf(Unit.currentUnit);
+        for (const key of Object.keys(initial)) {
+            if (!(key in data.state)) {
+                data.state[key] = initial[key];
+            }
+        }
+        return data.state;
+    },
+    register(Components) {
+        const unit = Unit.currentUnit;
+        if (unit._.status !== 'invoked') {
+            throw new Error('xsync.register must be called during component initialization.');
+        }
+        Object.assign(syncOf(unit).registry, Components);
+    },
+    get room() {
+        return rootInfoOf(Unit.currentUnit).room;
+    },
+    get clients() {
+        return rootInfoOf(Unit.currentUnit).clients;
+    },
+    get myself() {
+        var _a;
+        if (getEnvironment() === 'server') {
+            throw new Error('xsync.myself is only available on the client side.');
+        }
+        const info = rootInfoOf(Unit.currentUnit);
+        return (_a = info.clients.find((c) => c.id === info.socket.id)) !== null && _a !== void 0 ? _a : { id: info.socket.id, name: '' };
+    },
+    emitToServer(type, props = {}) {
+        const info = rootInfoOf(Unit.currentUnit);
+        if (getEnvironment() === 'server') {
+            Unit.emit(Unit.currentUnit, type, props);
+        }
+        else {
+            info.socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.currentUnit).id, data: props });
+        }
+    },
+    emitToClient(type, props = {}, ids) {
+        const info = rootInfoOf(Unit.currentUnit);
+        const syncId = syncOf(Unit.currentUnit).id;
+        if (getEnvironment() === 'server') {
+            relayToClients(info, type, undefined, syncId, props, ids);
+        }
+        else {
+            info.socket.emit(WIRE_TO_CLIENT, { type, syncId, data: props, ids });
+        }
+    },
+    boot(opts, ...args) {
+        if (Unit.engineRoot === undefined) {
+            Unit.reset();
+        }
+        return getEnvironment() === 'server'
+            ? bootServer(opts, Unit.currentUnit, args)
+            : bootClient(opts, Unit.currentUnit, args);
+    },
+};
 const xsync = Object.defineProperties({ Lobby, Room }, Object.getOwnPropertyDescriptors(sync));
 
 function OpenAndClose(unit, { open = true, transition = { duration: 200, easing: 'ease' } }) {
