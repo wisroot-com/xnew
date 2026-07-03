@@ -3,12 +3,12 @@ import { Game } from './game.js';
 
 //----------------------------------------------------------------------------------------------------
 // multi-client（client 側）— ロビーでルームを作成 / 入室してプレイする。
-//   呼び出し側は io（socket.io factory）を渡し、socket の生成は basics 側に委ねる（どちらも forceNew で
-//   独立。サーバーは query.roomId の有無で lobby/game を判別）:
-//     - Lobby : io を渡す → basics.Lobby が io({ forceNew }) を生成（room 無し）→ ロビー（一覧 / 作成）
-//     - Room  : io と client（{name}）/ room を渡す → basics.Room → sync.boot が
-//               io({ query:{ roomId, clientName }, forceNew }) を生成 → そのルームに参加
-//   どちらも受信イベントを unit.on('-event') へ転送し finalize で切断する。
+//   ロビー / ルームの配線はこのファイルで直接組む（xsync が提供するのは boot / emit* などの同期
+//   ファサードのみ）。どちらも io（socket.io factory）から socket を作り、サーバーは query.roomId の
+//   有無で lobby/game を判別する:
+//     - Lobby : io({ forceNew }) を生成（room 無し）→ ロビー（一覧 / 作成）。受信を unit.on('-event') へ転送。
+//     - Room  : xsync.boot({ io, client, room }, Game) が io({ query:{ roomId, clientName }, forceNew })
+//               を生成・所有し、socket の connect/disconnect/notfound を unit.on('-event') へ転送する。
 //   ゲーム本体 game.js は Game が Title→Setup→World のシーン遷移を同期で処理する。
 //----------------------------------------------------------------------------------------------------
 
@@ -37,11 +37,17 @@ xnew(document.getElementById('app'), App);
 function Lobby(unit, { io }) {
     const app = xnew.context(App);   // ステータス表示はコンテナ App が持つ
 
-    // io（socket.io factory）を渡すと basics.Lobby が socket を生成・所有する（room 無し = サーバーはロビー接続として扱う）。
-    // basics.Lobby が受信イベントを unit.on('-event') へ転送し、finalize で socket を切断する。
     // シーン遷移（change/add）は呼び出し側の責務なので Scene をここで extend する。
     xnew.extend(xbasics.Scene);
-    xnew.extend(xsync.Lobby, { io });
+
+    // ロビー接続は room を持たない（query なし → サーバーはロビー接続として扱う）。socket は Lobby が所有する。
+    const socket = io({ forceNew: true });
+    // 受信イベントを host の '-event' へ転送する（socket ハンドラは tick 外 → xnew.scope で包む）。
+    for (const event of ['connect', 'disconnect', 'statusupdate', 'roomcreated', 'roomrejected']) {
+        socket.on(event, xnew.scope((payload) => xnew.emit('-' + event, payload ?? {})));
+    }
+    unit.on('finalize', () => socket.disconnect());
+    const createRoom = (name) => socket.emit('roomcreate', { name });
 
     let rooms = [];
 
@@ -64,7 +70,7 @@ function Lobby(unit, { io }) {
             event.preventDefault();
             const name = nameInput.element.value.trim();
             if (!name) { return; }
-            unit.createRoom(name);   // Lobby が公開（内部で 'roomcreate' を emit）
+            createRoom(name);   // 内部で socket が 'roomcreate' を emit
             nameInput.element.value = '';
         });
     });
@@ -93,7 +99,7 @@ function Lobby(unit, { io }) {
         });
     }
 
-    // 受信イベントは Lobby が '-event' で転送する（finalize の切断も Lobby が担う。一覧は接続時に自動で届く）。
+    // 受信イベントは上の socket 転送で '-event' として届く（一覧は接続時に自動で届く）。
     unit.on('-connect', () => app.setStatus('ロビー', true));
     unit.on('-disconnect', () => app.setStatus('切断', false));
     unit.on('-statusupdate', ({ rooms: list }) => { rooms = list; render(); });
@@ -106,8 +112,8 @@ function Lobby(unit, { io }) {
 //----------------------------------------------------------------------------------------------------
 // Room — 渡された io / client / room でそのルームへ接続し、client ツリー(Game) を mount してプレイ
 //   呼び出し側が io（socket.io factory）・client（表示名）・room({id,name}）を渡す。HTML（戻るボタン・
-//   シーンの mount 先）だけを持ち、room 関連の配線（boot / socket 生成・所有 / 基本イベント connect・
-//   disconnect・notfound の '-event' 転送）は xsync.Room → sync.boot に委ねる（mode は client に自動判定）。
+//   シーンの mount 先）だけを持ち、room 関連の配線（socket 生成・所有 / 基本イベント connect・disconnect・
+//   notfound の '-event' 転送）は xsync.boot に委ねる（browser 実行なので client 分岐が動く）。
 //----------------------------------------------------------------------------------------------------
 
 function Room(unit, { io, client, room }) {
@@ -117,11 +123,11 @@ function Room(unit, { io, client, room }) {
     back.on('click', () => unit.change(Lobby, { io: window.io }));
     xnew.nest('<div class="flex gap-4">');   // シーンの mount 先（Game の client が Title/Setup/World を nest する）
 
-    // room 関連の配線は Room が引き受ける（boot(Game)、socket は boot が io から生成・所有し finalize で切断）。
-    // io / client / room は boot へ渡され、基本イベントは boot が '-event' でこの Room の unit.on へ転送する。
+    // xsync.boot が socket を io から生成・所有し（query に roomId/clientName を載せる）、finalize で切断する。
+    // socket の connect/disconnect/notfound は boot がこの Room の unit.on('-event') へ転送する。
     // シーン遷移（change）は呼び出し側の責務なので Scene をここで extend する。
     xnew.extend(xbasics.Scene);
-    xnew.extend(xsync.Room, { io, client, room, Component: Game });
+    xsync.boot({ io, client, room }, Game);
 
     unit.on('-connect', ({ id }) => app.setStatus(`ルーム ${room.id}: ${id}`, true));
     unit.on('-disconnect', () => app.setStatus('切断', false));

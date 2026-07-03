@@ -1100,115 +1100,7 @@ function bootClient(opts, parent, args) {
     });
     return root;
 }
-
-const rooms = new Map();
-function roomList() {
-    return [...rooms.values()].map((room) => room.status());
-}
-function broadcastRooms(io) {
-    io.to('lobby').emit('statusupdate', { rooms: roomList() });
-}
-function Lobby(unit, props) {
-    sync.server(() => {
-        const { io, Room, maxRooms = 20, roomNameMax = 16 } = props;
-        let nextRoomNum = 0;
-        const connection = xnew.scope((conn) => {
-            var _a, _b;
-            const roomId = (_b = (_a = conn.handshake) === null || _a === void 0 ? void 0 : _a.query) === null || _b === void 0 ? void 0 : _b.roomId;
-            if (roomId !== undefined && roomId !== '') {
-                if (!rooms.has(roomId)) {
-                    conn.emit('notfound', { roomId });
-                    conn.disconnect(true);
-                }
-                return;
-            }
-            conn.join('lobby');
-            conn.emit('statusupdate', { rooms: roomList() });
-            conn.on('roomcreate', xnew.scope((payload) => {
-                var _a;
-                if (rooms.size >= maxRooms) {
-                    conn.emit('roomrejected', { message: 'room limit reached' });
-                    return;
-                }
-                const id = `r${++nextRoomNum}`;
-                const name = String((_a = payload === null || payload === void 0 ? void 0 : payload.name) !== null && _a !== void 0 ? _a : '').trim().slice(0, roomNameMax) || `Room ${nextRoomNum}`;
-                const room = { id, name, count: 0 };
-                rooms.set(id, xnew(unit, Room, { io, room }));
-                conn.emit('roomcreated', { room });
-                broadcastRooms(io);
-            }));
-        });
-        io.on('connection', connection);
-        unit.on('finalize', () => { io.off('connection', connection); rooms.clear(); });
-    });
-    sync.client(() => {
-        const { io } = props;
-        const socket = io({ forceNew: true });
-        for (const event of ['connect', 'disconnect', 'statusupdate', 'roomcreated', 'roomrejected']) {
-            socket.on(event, xnew.scope((payload) => xnew.emit('-' + event, payload !== null && payload !== void 0 ? payload : {})));
-        }
-        unit.on('finalize', () => socket.disconnect());
-        return { createRoom(name) { socket.emit('roomcreate', { name }); } };
-    });
-}
-function Room(unit, props) {
-    const members = new Set();
-    sync.server(() => {
-        const { io, room, Component, graceMs = 3000 } = props;
-        sync.boot({ io, room }, Component);
-        let graceTimer = null;
-        const connection = xnew.scope((socket) => {
-            var _a, _b;
-            if (((_b = (_a = socket.handshake) === null || _a === void 0 ? void 0 : _a.query) === null || _b === void 0 ? void 0 : _b.roomId) !== room.id) {
-                return;
-            }
-            graceTimer === null || graceTimer === void 0 ? void 0 : graceTimer.clear();
-            members.add(socket.id);
-            room.count = members.size;
-            xnew.emit('-connect', { id: socket.id });
-            if (rooms.has(room.id)) {
-                broadcastRooms(io);
-            }
-            socket.on('disconnect', xnew.scope(() => {
-                members.delete(socket.id);
-                room.count = members.size;
-                xnew.emit('-disconnect', { id: socket.id });
-                if (rooms.has(room.id)) {
-                    broadcastRooms(io);
-                }
-                if (members.size === 0) {
-                    scheduleCleanup();
-                }
-            }));
-        });
-        io.on('connection', connection);
-        unit.on('finalize', () => io.off('connection', connection));
-        scheduleCleanup();
-        function scheduleCleanup() {
-            graceTimer === null || graceTimer === void 0 ? void 0 : graceTimer.clear();
-            graceTimer = xnew.timeout(() => {
-                if (members.size > 0) {
-                    return;
-                }
-                xnew.emit('-empty', {});
-                if (rooms.has(room.id)) {
-                    rooms.delete(room.id);
-                    broadcastRooms(io);
-                    unit.finalize();
-                }
-            }, graceMs);
-        }
-        return {
-            status() { return room; },
-        };
-    });
-    sync.client(() => {
-        const { io, client, room, Component } = props;
-        sync.boot({ io, client, room }, Component);
-    });
-}
-
-const sync = {
+const xsync = {
     server(callback, props) {
         return getEnvironment() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) : {};
     },
@@ -1273,7 +1165,6 @@ const sync = {
             : bootClient(opts, Unit.currentUnit, args);
     },
 };
-const xsync = Object.defineProperties({ Lobby, Room }, Object.getOwnPropertyDescriptors(sync));
 
 function OpenAndClose(unit, { open = true, transition = { duration: 200, easing: 'ease' } }) {
     let value = open ? 1.0 : 0.0;

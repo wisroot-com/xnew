@@ -177,11 +177,7 @@ interface SyncBootClientOptions {
     room: SyncRoomStatus;
     client: any;
 }
-
-declare function Lobby(unit: Unit, props: any): void;
-declare function Room(unit: Unit, props: any): void;
-
-declare const sync: {
+declare const xsync: {
     server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
     client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
     state(initial?: Record<string, any>): Record<string, any>;
@@ -192,10 +188,6 @@ declare const sync: {
     emitToServer(type: string, props?: Record<string, any>): void;
     emitToClient(type: string, props?: Record<string, any>, ids?: string[]): void;
     boot(opts: SyncBootServerOptions | SyncBootClientOptions, ...args: any[]): Unit;
-};
-declare const xsync: typeof sync & {
-    Lobby: typeof Lobby;
-    Room: typeof Room;
 };
 
 interface TransitionOptions {

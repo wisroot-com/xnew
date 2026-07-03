@@ -5,7 +5,7 @@
 // Each layer is assembled in its own module and merely re-exported here.
 //
 // - xnew    : core (unit tree / lifecycle / DOM / events / timers / context) — the callable + type namespace
-// - xsync   : networking (server↔client sync facade + Lobby / Room) — src/sync/xsync.ts
+// - xsync   : networking (server↔client sync facade) — src/sync/xsync.ts
 // - xbasics : networking-free convenience components — src/basics/xbasics.ts
 //----------------------------------------------------------------------------------------------------
 

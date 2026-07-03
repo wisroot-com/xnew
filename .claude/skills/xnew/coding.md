@@ -127,15 +127,15 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   object `cb` returns becomes defines on the unit. They are init-only.
 - A component mounted on both sides reads a **different prop shape** per side.
   Split the props into explicit types and cast inside each block, e.g.
-  `LobbyServerProps` / `LobbyClientProps`, then
-  `const { io } = props as LobbyServerProps;`.
+  `RoomServerProps` / `RoomClientProps`, then
+  `const { io } = props as RoomServerProps;`.
 - `sync.boot({ io, room }, Component)` (server) / `sync.boot({ io, client, room }, Component)`
   (client) creates a synced root. On the **client** side boot calls `io(...)` to
   create **and own** the socket, with a **flat string** handshake query
   (`io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true })`),
   forwards the socket's `connect`/`disconnect`/`notfound` to the boot **parent** (host)
   unit as `-connect`/`-disconnect`/`-notfound`, and disconnects it on finalize. Callers
-  (e.g. `basics.Room`) just boot — they no longer touch the socket. `sync.state`,
+  (e.g. an example's `Room` component) just boot — they no longer touch the socket. `sync.state`,
   `sync.register`, `sync.emitToServer`, `sync.emitToClient` operate on the current sync root.
 - Socket handlers run outside the tick → wrap them in `xnew.scope` (§7).
 - **Wire event names vs host event names are independent.** A socket/wire event
@@ -192,13 +192,11 @@ the rule, then one line of why.
 
 - **The public barrel exposes three tiers: `xnew` (core) / `xsync` (networking) / `xbasics`
   (networking-free components), all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
-  The networking layer lives in `src/sync/`: `engine.ts` (shared state + boot + facade), `venue.ts`
-  (the Lobby / Room components), and `xsync.ts` (the assembly). `xsync` is exported from `src/sync/xsync.ts`
-  and also carries the `Lobby` / `Room` components.
-  When reassembling `xsync` from the `sync` facade, use `Object.defineProperties(target,
-  getOwnPropertyDescriptors(sync))` — **never `Object.assign`**, which invokes the facade's
-  `room`/`clients`/`myself` getters at module load (no current unit → throws). `defineProperties`
-  drops the facade type from its return, so cast: `as typeof sync & { Lobby; Room }`.
+  The networking layer is a single file `src/sync/xsync.ts` (shared state + boot + facade). `xsync`
+  **is** the facade object literal (`export const xsync = { … }`) — there is no Lobby / Room component
+  built in; lobby / room lifecycle is assembled by callers from the facade (see `examples/*/server.js` +
+  `index.js`). Export the literal directly — **never `Object.assign` the facade onto a fresh object**,
+  which invokes the `room`/`clients`/`myself` getters at module load (no current unit → throws).
 
 - **Custom sync-event handlers get `{ id, ...data }`, but `id` (sender socket id) is set
   only on the SERVER dispatch; on the CLIENT it is `undefined`.** So for a room-wide
@@ -233,8 +231,8 @@ the rule, then one line of why.
   strings** (socket.io stringifies query values, so a nested object would arrive as
   `[object Object]`). boot also forwards `connect`/`disconnect`/`notfound` to the boot
   **parent** as `-events`. When you change a query key, update every reader in one pass:
-  core boot's connection handler **and** `basics` Lobby/Room server blocks **and** the
-  test mocks (`io-mock.ts`, `test/basics/sync.test.ts`).
+  boot's connection handler **and** the examples' Lobby/Room server blocks (`examples/*/server.js`)
+  **and** the test mocks (`io-mock.ts`).
   The forward reaches up to the parent (the boot root is a *child* of the host), so it
   bypasses the root-scoped `dispatch` on purpose — host listeners live above the root.
 - **When changing `BootServerOptions`/`BootClientOptions`, update the test `bootClient`
