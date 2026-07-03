@@ -192,8 +192,9 @@ the rule, then one line of why.
 
 - **The public barrel exposes three tiers: `xnew` (core) / `xsync` (networking) / `xbasics`
   (networking-free components), all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
-  The networking layer lives in `src/sync/` (internal / boot / facade / components), assembled and
-  exported as `xsync` from `src/sync/index.ts`; `xsync` also carries the `Lobby` / `Room` components.
+  The networking layer lives in `src/sync/`: `engine.ts` (shared state + boot + facade), `venue.ts`
+  (the Lobby / Room components), and `xsync.ts` (the assembly). `xsync` is exported from `src/sync/xsync.ts`
+  and also carries the `Lobby` / `Room` components.
   When reassembling `xsync` from the `sync` facade, use `Object.defineProperties(target,
   getOwnPropertyDescriptors(sync))` — **never `Object.assign`**, which invokes the facade's
   `room`/`clients`/`myself` getters at module load (no current unit → throws). `defineProperties`

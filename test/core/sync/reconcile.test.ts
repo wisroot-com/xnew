@@ -1,7 +1,7 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew, xsync } from '../../../src/index';
 import { ioMock, bootClient } from './io-mock';
-import { syncOf, SyncNode } from '../../../src/sync';
+import { syncOf, SyncNode } from '../../../src/sync/xsync';
 
 // apply は boot 内部へ移動したため、client boot の socket に 'sync' を fire して駆動する。
 // socket.fire は受信を client 環境で擬似発火し、boot の on('sync')→apply を呼ぶ（手で作ったツリーを流し込める）。

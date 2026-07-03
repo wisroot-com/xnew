@@ -1,5 +1,5 @@
 import { Unit } from '../../../src/core/unit';
-import { syncOf } from '../../../src/sync';
+import { syncOf } from '../../../src/sync/xsync';
 import { xnew, xsync } from '../../../src/index';
 import { ioMock, bootServer, bootClient, asServer } from './io-mock';
 

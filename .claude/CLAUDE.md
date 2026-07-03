@@ -29,7 +29,7 @@ Integrations for games and interactive apps.
 ## Directory Layout
 
 - `src/core/` — `xnew` core: `unit`, event, time, map, env, dom
-- `src/sync/` — networking layer (exported as `xsync`): internal / boot / facade / components
+- `src/sync/` — networking layer (exported as `xsync`): engine (state+boot+facade) / venue (Lobby,Room) / xsync (assembly)
 - `src/basics/` — built-in basic components (exported as `xbasics`)
 - `src/addons/` — third-party library integrations
 - `examples/` — runnable samples
@@ -80,7 +80,7 @@ for a reference.
 | Directory     | Focus                                                                |
 | ------------- | -------------------------------------------------------------------- |
 | `src/core/`   | Role, invariants, relationship to other core files                   |
-| `src/sync/`   | Role, invariants, which layer (internal/boot/facade/components) the file is |
+| `src/sync/`   | Role, invariants, which layer (engine / venue / xsync assembly) the file is |
 | `src/basics/` | User-facing component behavior and a small usage example             |
 | `src/addons/` | Integration target (and version), boundary with xnew, lifetime model |
 

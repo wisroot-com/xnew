@@ -157,7 +157,6 @@ interface BootClientOptions {
     room: RoomStatus;
     client: any;
 }
-
 declare const sync: {
     server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
     client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
@@ -340,6 +339,23 @@ declare function Volume(unit: Unit): {
     volume: number;
 };
 
+declare const xbasics: {
+    SVG: typeof SVG;
+    SVGText: typeof SVGText;
+    Aspect: typeof Aspect;
+    Screen: typeof Screen;
+    OpenAndClose: typeof OpenAndClose;
+    AnalogStick: typeof AnalogStick;
+    DPad: typeof DPad;
+    Panel: typeof Panel;
+    Accordion: typeof Accordion;
+    Popup: typeof Popup;
+    Scene: typeof Scene;
+    AudioTrack: typeof AudioTrack;
+    Synthesizer: typeof Synthesizer;
+    Volume: typeof Volume;
+};
+
 declare namespace xnew {
     type Unit = InstanceType<typeof Unit>;
     type UnitTimer = InstanceType<typeof UnitTimer>;
@@ -364,22 +380,6 @@ declare const xnew: XnewBase & {
     interval(callback: Function, duration: number, iterations?: number): UnitTimer;
     transition(transition: Function, duration?: number, easing?: string): UnitTimer;
     protect(): void;
-};
-declare const xbasics: {
-    SVG: typeof SVG;
-    SVGText: typeof SVGText;
-    Aspect: typeof Aspect;
-    Screen: typeof Screen;
-    OpenAndClose: typeof OpenAndClose;
-    AnalogStick: typeof AnalogStick;
-    DPad: typeof DPad;
-    Panel: typeof Panel;
-    Accordion: typeof Accordion;
-    Popup: typeof Popup;
-    Scene: typeof Scene;
-    AudioTrack: typeof AudioTrack;
-    Synthesizer: typeof Synthesizer;
-    Volume: typeof Volume;
 };
 
 export { xbasics, xnew, xsync };

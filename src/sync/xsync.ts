@@ -12,13 +12,13 @@
 // the result is cast back.
 //----------------------------------------------------------------------------------------------------
 
-import { sync } from './facade';
-import { Lobby, Room } from './components';
+import { sync } from './engine';
+import { Lobby, Room } from './venue';
 
 // public types callers annotate with
-export type { ClientStatus, RoomStatus, BootServerOptions, BootClientOptions, SyncNode } from './internal';
+export type { ClientStatus, RoomStatus, BootServerOptions, BootClientOptions, SyncNode } from './engine';
 // test seam: replicas' per-unit sync data (drive capture/apply through boot's 'sync' emit, not directly)
-export { syncOf } from './internal';
+export { syncOf } from './engine';
 
 export const xsync = Object.defineProperties(
     { Lobby, Room },

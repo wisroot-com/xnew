@@ -933,6 +933,351 @@ const xnew$1 = Object.assign((function (...args) {
     },
 });
 
+const detected = (typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client';
+function getEnvironment() {
+    return detected;
+}
+
+const syncData = new WeakMap();
+function syncOf(unit) {
+    if (syncData.has(unit) === false) {
+        syncData.set(unit, { id: null, state: {}, registry: {} });
+    }
+    return syncData.get(unit);
+}
+const SYNC_KEY = Symbol('sync');
+function rootInfoOf(unit) {
+    const info = Unit.getContext(unit, SYNC_KEY);
+    if (info === undefined) {
+        throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
+    }
+    return info;
+}
+const WIRE_TO_SERVER = 'sync:toServer';
+const WIRE_TO_CLIENT = 'sync:toClient';
+const WIRE_DELIVER = 'sync:deliver';
+function dispatch(info, event, id, payload) {
+    var _a;
+    const data = payload && payload.data !== null && typeof payload.data === 'object' ? payload.data : {};
+    const syncId = payload ? payload.syncId : undefined;
+    ((_a = Unit.type2units.get(event)) !== null && _a !== void 0 ? _a : []).forEach((unit) => {
+        var _a;
+        if (Unit.getContext(unit, SYNC_KEY) !== info)
+            return;
+        if (event[0] === '-' && syncOf(unit).id !== syncId)
+            return;
+        (_a = unit._.listeners.get(event)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
+    });
+}
+function relayToClients(info, type, senderId, syncId, data, ids) {
+    const envelope = { type, syncId, id: senderId, data };
+    if (Array.isArray(ids) && ids.length > 0) {
+        ids.forEach((cid) => info.io.to(cid).emit(WIRE_DELIVER, envelope));
+    }
+    else {
+        info.io.to(info.room.id).emit(WIRE_DELIVER, envelope);
+    }
+}
+function bootServer(opts, parent, args) {
+    const { io, room } = opts;
+    const info = { io, room, clients: [] };
+    const root = new Unit(parent);
+    Unit.addContext(root, root, SYNC_KEY, info);
+    Unit.initialize(root, ...args);
+    let nextId = 1;
+    const captureStateTree = () => {
+        const nodes = [];
+        const syncName = (unit) => {
+            var _a;
+            const registry = unit._.parent ? (_a = syncData.get(unit._.parent)) === null || _a === void 0 ? void 0 : _a.registry : null;
+            if (registry === null || registry === undefined) {
+                return undefined;
+            }
+            const entries = Object.entries(registry);
+            for (let i = unit._.Components.length - 1; i >= 0; i--) {
+                const hit = entries.find(([, Component]) => Component === unit._.Components[i]);
+                if (hit !== undefined) {
+                    return hit[0];
+                }
+            }
+            return undefined;
+        };
+        const walk = (unit, parent) => {
+            var _a;
+            const name = syncName(unit);
+            if (name !== undefined) {
+                const data = syncOf(unit);
+                (_a = data.id) !== null && _a !== void 0 ? _a : (data.id = nextId++);
+                nodes.push({ id: data.id, name, parent, state: Object.assign({}, data.state) });
+                parent = data.id;
+            }
+            unit._.children.forEach((child) => walk(child, parent));
+        };
+        walk(root, null);
+        return nodes;
+    };
+    root.on('update', () => io.to(room.id).emit('sync', captureStateTree()));
+    io.on('connection', (socket) => {
+        var _a, _b;
+        const query = (_a = socket.handshake) === null || _a === void 0 ? void 0 : _a.query;
+        if ((query === null || query === void 0 ? void 0 : query.roomId) !== room.id)
+            return;
+        socket.join(room.id);
+        info.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
+        dispatch(info, 'sync.connect', socket.id, undefined);
+        statusUpdate();
+        socket.onAny((event, payload) => {
+            var _a;
+            if (event === WIRE_TO_SERVER) {
+                dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, payload);
+            }
+            else if (event === WIRE_TO_CLIENT) {
+                relayToClients(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, (_a = payload === null || payload === void 0 ? void 0 : payload.syncId) !== null && _a !== void 0 ? _a : null, payload === null || payload === void 0 ? void 0 : payload.data, payload === null || payload === void 0 ? void 0 : payload.ids);
+            }
+        });
+        socket.on('disconnect', () => {
+            info.clients = info.clients.filter((c) => c.id !== socket.id);
+            dispatch(info, 'sync.disconnect', socket.id, undefined);
+            statusUpdate();
+        });
+    });
+    function statusUpdate() {
+        io.to(room.id).emit('status', { clients: info.clients });
+        dispatch(info, 'sync.statusupdate', undefined, undefined);
+    }
+    return root;
+}
+function bootClient(opts, parent, args) {
+    var _a;
+    const { io, room, client } = opts;
+    const socket = io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true });
+    const info = { socket, room, clients: [] };
+    const root = new Unit(parent);
+    Unit.addContext(root, root, SYNC_KEY, info);
+    Unit.initialize(root, ...args);
+    const reconcileMap = new Map();
+    const applyStateTree = (tree) => {
+        const incoming = new Set(tree.map((node) => node.id));
+        for (const node of tree) {
+            const existing = reconcileMap.get(node.id);
+            if (existing !== undefined) {
+                Object.assign(syncOf(existing).state, node.state);
+                continue;
+            }
+            const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
+            const Component = nodeParent && syncOf(nodeParent).registry[node.name];
+            if (!Component) {
+                continue;
+            }
+            const unit = new Unit(nodeParent);
+            syncData.set(unit, { id: node.id, state: Object.assign({}, node.state), registry: {} });
+            Unit.initialize(unit, Component);
+            reconcileMap.set(node.id, unit);
+        }
+        for (const [id, unit] of [...reconcileMap.entries()]) {
+            if (!incoming.has(id)) {
+                unit.finalize();
+                reconcileMap.delete(id);
+            }
+        }
+    };
+    socket.on('sync', applyStateTree);
+    const onStatus = (status) => {
+        var _a;
+        info.clients = (_a = status === null || status === void 0 ? void 0 : status.clients) !== null && _a !== void 0 ? _a : [];
+        dispatch(info, 'sync.statusupdate', undefined, undefined);
+    };
+    socket.on('status', onStatus);
+    socket.onAny((event, payload) => {
+        if (event === WIRE_DELIVER) {
+            dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, payload === null || payload === void 0 ? void 0 : payload.id, payload);
+        }
+    });
+    socket.on('connect', () => Unit.emit(parent, '-connect', { id: socket.id }));
+    socket.on('disconnect', () => Unit.emit(parent, '-disconnect', {}));
+    socket.on('notfound', (payload) => Unit.emit(parent, '-notfound', payload !== null && payload !== void 0 ? payload : {}));
+    root.on('finalize', () => {
+        socket.off('sync', applyStateTree);
+        socket.off('status', onStatus);
+        socket.disconnect();
+    });
+    return root;
+}
+const sync = {
+    server(callback, props) {
+        return getEnvironment() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) : {};
+    },
+    client(callback, props) {
+        return getEnvironment() === 'client' ? Unit.extend(Unit.currentUnit, callback, props) : {};
+    },
+    state(initial = {}) {
+        const data = syncOf(Unit.currentUnit);
+        for (const key of Object.keys(initial)) {
+            if (!(key in data.state)) {
+                data.state[key] = initial[key];
+            }
+        }
+        return data.state;
+    },
+    register(Components) {
+        const unit = Unit.currentUnit;
+        if (unit._.status !== 'invoked') {
+            throw new Error('xsync.register must be called during component initialization.');
+        }
+        Object.assign(syncOf(unit).registry, Components);
+    },
+    get room() {
+        return rootInfoOf(Unit.currentUnit).room;
+    },
+    get clients() {
+        return rootInfoOf(Unit.currentUnit).clients;
+    },
+    get myself() {
+        var _a;
+        if (getEnvironment() === 'server') {
+            throw new Error('xsync.myself is only available on the client side.');
+        }
+        const info = rootInfoOf(Unit.currentUnit);
+        return (_a = info.clients.find((c) => c.id === info.socket.id)) !== null && _a !== void 0 ? _a : { id: info.socket.id, name: '' };
+    },
+    emitToServer(type, props = {}) {
+        const info = rootInfoOf(Unit.currentUnit);
+        if (getEnvironment() === 'server') {
+            Unit.emit(Unit.currentUnit, type, props);
+        }
+        else {
+            info.socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.currentUnit).id, data: props });
+        }
+    },
+    emitToClient(type, props = {}, ids) {
+        const info = rootInfoOf(Unit.currentUnit);
+        const syncId = syncOf(Unit.currentUnit).id;
+        if (getEnvironment() === 'server') {
+            relayToClients(info, type, undefined, syncId, props, ids);
+        }
+        else {
+            info.socket.emit(WIRE_TO_CLIENT, { type, syncId, data: props, ids });
+        }
+    },
+    boot(opts, ...args) {
+        if (Unit.engineRoot === undefined) {
+            Unit.reset();
+        }
+        return getEnvironment() === 'server'
+            ? bootServer(opts, Unit.currentUnit, args)
+            : bootClient(opts, Unit.currentUnit, args);
+    },
+};
+
+const rooms = new Map();
+function roomList() {
+    return [...rooms.values()].map((room) => room.status());
+}
+function broadcastRooms(io) {
+    io.to('lobby').emit('statusupdate', { rooms: roomList() });
+}
+function Lobby(unit, props) {
+    sync.server(() => {
+        const { io, Room, maxRooms = 20, roomNameMax = 16 } = props;
+        let nextRoomNum = 0;
+        const connection = xnew$1.scope((conn) => {
+            var _a, _b;
+            const roomId = (_b = (_a = conn.handshake) === null || _a === void 0 ? void 0 : _a.query) === null || _b === void 0 ? void 0 : _b.roomId;
+            if (roomId !== undefined && roomId !== '') {
+                if (!rooms.has(roomId)) {
+                    conn.emit('notfound', { roomId });
+                    conn.disconnect(true);
+                }
+                return;
+            }
+            conn.join('lobby');
+            conn.emit('statusupdate', { rooms: roomList() });
+            conn.on('roomcreate', xnew$1.scope((payload) => {
+                var _a;
+                if (rooms.size >= maxRooms) {
+                    conn.emit('roomrejected', { message: 'room limit reached' });
+                    return;
+                }
+                const id = `r${++nextRoomNum}`;
+                const name = String((_a = payload === null || payload === void 0 ? void 0 : payload.name) !== null && _a !== void 0 ? _a : '').trim().slice(0, roomNameMax) || `Room ${nextRoomNum}`;
+                const room = { id, name, count: 0 };
+                rooms.set(id, xnew$1(unit, Room, { io, room }));
+                conn.emit('roomcreated', { room });
+                broadcastRooms(io);
+            }));
+        });
+        io.on('connection', connection);
+        unit.on('finalize', () => { io.off('connection', connection); rooms.clear(); });
+    });
+    sync.client(() => {
+        const { io } = props;
+        const socket = io({ forceNew: true });
+        for (const event of ['connect', 'disconnect', 'statusupdate', 'roomcreated', 'roomrejected']) {
+            socket.on(event, xnew$1.scope((payload) => xnew$1.emit('-' + event, payload !== null && payload !== void 0 ? payload : {})));
+        }
+        unit.on('finalize', () => socket.disconnect());
+        return { createRoom(name) { socket.emit('roomcreate', { name }); } };
+    });
+}
+function Room(unit, props) {
+    const members = new Set();
+    sync.server(() => {
+        const { io, room, Component, graceMs = 3000 } = props;
+        sync.boot({ io, room }, Component);
+        let graceTimer = null;
+        const connection = xnew$1.scope((socket) => {
+            var _a, _b;
+            if (((_b = (_a = socket.handshake) === null || _a === void 0 ? void 0 : _a.query) === null || _b === void 0 ? void 0 : _b.roomId) !== room.id) {
+                return;
+            }
+            graceTimer === null || graceTimer === void 0 ? void 0 : graceTimer.clear();
+            members.add(socket.id);
+            room.count = members.size;
+            xnew$1.emit('-connect', { id: socket.id });
+            if (rooms.has(room.id)) {
+                broadcastRooms(io);
+            }
+            socket.on('disconnect', xnew$1.scope(() => {
+                members.delete(socket.id);
+                room.count = members.size;
+                xnew$1.emit('-disconnect', { id: socket.id });
+                if (rooms.has(room.id)) {
+                    broadcastRooms(io);
+                }
+                if (members.size === 0) {
+                    scheduleCleanup();
+                }
+            }));
+        });
+        io.on('connection', connection);
+        unit.on('finalize', () => io.off('connection', connection));
+        scheduleCleanup();
+        function scheduleCleanup() {
+            graceTimer === null || graceTimer === void 0 ? void 0 : graceTimer.clear();
+            graceTimer = xnew$1.timeout(() => {
+                if (members.size > 0) {
+                    return;
+                }
+                xnew$1.emit('-empty', {});
+                if (rooms.has(room.id)) {
+                    rooms.delete(room.id);
+                    broadcastRooms(io);
+                    unit.finalize();
+                }
+            }, graceMs);
+        }
+        return {
+            status() { return room; },
+        };
+    });
+    sync.client(() => {
+        const { io, client, room, Component } = props;
+        sync.boot({ io, client, room }, Component);
+    });
+}
+
+const xsync = Object.defineProperties({ Lobby, Room }, Object.getOwnPropertyDescriptors(sync));
+
 function OpenAndClose(unit, { open = true, transition = { duration: 200, easing: 'ease' } }) {
     let value = open ? 1.0 : 0.0;
     let sign = open ? +1 : -1;
@@ -1616,360 +1961,6 @@ function Volume(unit) {
     };
 }
 
-const detected = (typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client';
-function getEnvironment() {
-    return detected;
-}
-
-const syncData = new WeakMap();
-function syncOf(unit) {
-    if (syncData.has(unit) === false) {
-        syncData.set(unit, { id: null, state: {}, registry: {} });
-    }
-    return syncData.get(unit);
-}
-function seedSyncData(unit, data) {
-    syncData.set(unit, data);
-}
-function registryOfParent(unit) {
-    var _a;
-    return unit._.parent ? (_a = syncData.get(unit._.parent)) === null || _a === void 0 ? void 0 : _a.registry : undefined;
-}
-const SYNC_KEY = Symbol('sync');
-function rootInfoOf(unit) {
-    const info = Unit.getContext(unit, SYNC_KEY);
-    if (info === undefined) {
-        throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
-    }
-    return info;
-}
-const WIRE_TO_SERVER = 'sync:toServer';
-const WIRE_TO_CLIENT = 'sync:toClient';
-const WIRE_DELIVER = 'sync:deliver';
-function dispatch(info, event, id, payload) {
-    var _a;
-    const data = payload && payload.data !== null && typeof payload.data === 'object' ? payload.data : {};
-    const syncId = payload ? payload.syncId : undefined;
-    ((_a = Unit.type2units.get(event)) !== null && _a !== void 0 ? _a : []).forEach((unit) => {
-        var _a;
-        if (Unit.getContext(unit, SYNC_KEY) !== info)
-            return;
-        if (event[0] === '-' && syncOf(unit).id !== syncId)
-            return;
-        (_a = unit._.listeners.get(event)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
-    });
-}
-function relayToClients(info, type, senderId, syncId, data, ids) {
-    const envelope = { type, syncId, id: senderId, data };
-    if (Array.isArray(ids) && ids.length > 0) {
-        ids.forEach((cid) => info.io.to(cid).emit(WIRE_DELIVER, envelope));
-    }
-    else {
-        info.io.to(info.room.id).emit(WIRE_DELIVER, envelope);
-    }
-}
-
-function bootServer(opts, parent, args) {
-    const { io, room } = opts;
-    const info = { io, room, clients: [] };
-    const root = new Unit(parent);
-    Unit.addContext(root, root, SYNC_KEY, info);
-    Unit.initialize(root, ...args);
-    let nextId = 1;
-    const captureStateTree = () => {
-        const nodes = [];
-        const syncName = (unit) => {
-            const registry = registryOfParent(unit);
-            if (registry === undefined) {
-                return undefined;
-            }
-            const entries = Object.entries(registry);
-            for (let i = unit._.Components.length - 1; i >= 0; i--) {
-                const hit = entries.find(([, Component]) => Component === unit._.Components[i]);
-                if (hit !== undefined) {
-                    return hit[0];
-                }
-            }
-            return undefined;
-        };
-        const walk = (unit, parent) => {
-            var _a;
-            const name = syncName(unit);
-            if (name !== undefined) {
-                const data = syncOf(unit);
-                (_a = data.id) !== null && _a !== void 0 ? _a : (data.id = nextId++);
-                nodes.push({ id: data.id, name, parent, state: Object.assign({}, data.state) });
-                parent = data.id;
-            }
-            unit._.children.forEach((child) => walk(child, parent));
-        };
-        walk(root, null);
-        return nodes;
-    };
-    root.on('update', () => io.to(room.id).emit('sync', captureStateTree()));
-    io.on('connection', (socket) => {
-        var _a, _b;
-        const query = (_a = socket.handshake) === null || _a === void 0 ? void 0 : _a.query;
-        if ((query === null || query === void 0 ? void 0 : query.roomId) !== room.id)
-            return;
-        socket.join(room.id);
-        info.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
-        dispatch(info, 'sync.connect', socket.id, undefined);
-        statusUpdate();
-        socket.onAny((event, payload) => {
-            var _a;
-            if (event === WIRE_TO_SERVER) {
-                dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, payload);
-            }
-            else if (event === WIRE_TO_CLIENT) {
-                relayToClients(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, (_a = payload === null || payload === void 0 ? void 0 : payload.syncId) !== null && _a !== void 0 ? _a : null, payload === null || payload === void 0 ? void 0 : payload.data, payload === null || payload === void 0 ? void 0 : payload.ids);
-            }
-        });
-        socket.on('disconnect', () => {
-            info.clients = info.clients.filter((c) => c.id !== socket.id);
-            dispatch(info, 'sync.disconnect', socket.id, undefined);
-            statusUpdate();
-        });
-    });
-    function statusUpdate() {
-        io.to(room.id).emit('status', { clients: info.clients });
-        dispatch(info, 'sync.statusupdate', undefined, undefined);
-    }
-    return root;
-}
-function bootClient(opts, parent, args) {
-    var _a;
-    const { io, room, client } = opts;
-    const socket = io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true });
-    const info = { socket, room, clients: [] };
-    const root = new Unit(parent);
-    Unit.addContext(root, root, SYNC_KEY, info);
-    Unit.initialize(root, ...args);
-    const reconcileMap = new Map();
-    const applyStateTree = (tree) => {
-        const incoming = new Set(tree.map((node) => node.id));
-        for (const node of tree) {
-            const existing = reconcileMap.get(node.id);
-            if (existing !== undefined) {
-                Object.assign(syncOf(existing).state, node.state);
-                continue;
-            }
-            const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
-            const Component = nodeParent && syncOf(nodeParent).registry[node.name];
-            if (!Component) {
-                continue;
-            }
-            const unit = new Unit(nodeParent);
-            seedSyncData(unit, { id: node.id, state: Object.assign({}, node.state), registry: {} });
-            Unit.initialize(unit, Component);
-            reconcileMap.set(node.id, unit);
-        }
-        for (const [id, unit] of [...reconcileMap.entries()]) {
-            if (!incoming.has(id)) {
-                unit.finalize();
-                reconcileMap.delete(id);
-            }
-        }
-    };
-    socket.on('sync', applyStateTree);
-    const onStatus = (status) => {
-        var _a;
-        info.clients = (_a = status === null || status === void 0 ? void 0 : status.clients) !== null && _a !== void 0 ? _a : [];
-        dispatch(info, 'sync.statusupdate', undefined, undefined);
-    };
-    socket.on('status', onStatus);
-    socket.onAny((event, payload) => {
-        if (event === WIRE_DELIVER) {
-            dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, payload === null || payload === void 0 ? void 0 : payload.id, payload);
-        }
-    });
-    socket.on('connect', () => Unit.emit(parent, '-connect', { id: socket.id }));
-    socket.on('disconnect', () => Unit.emit(parent, '-disconnect', {}));
-    socket.on('notfound', (payload) => Unit.emit(parent, '-notfound', payload !== null && payload !== void 0 ? payload : {}));
-    root.on('finalize', () => {
-        socket.off('sync', applyStateTree);
-        socket.off('status', onStatus);
-        socket.disconnect();
-    });
-    return root;
-}
-
-const sync = {
-    server(callback, props) {
-        return getEnvironment() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) : {};
-    },
-    client(callback, props) {
-        return getEnvironment() === 'client' ? Unit.extend(Unit.currentUnit, callback, props) : {};
-    },
-    state(initial = {}) {
-        const data = syncOf(Unit.currentUnit);
-        for (const key of Object.keys(initial)) {
-            if (!(key in data.state)) {
-                data.state[key] = initial[key];
-            }
-        }
-        return data.state;
-    },
-    register(Components) {
-        const unit = Unit.currentUnit;
-        if (unit._.status !== 'invoked') {
-            throw new Error('xsync.register must be called during component initialization.');
-        }
-        Object.assign(syncOf(unit).registry, Components);
-    },
-    get room() {
-        return rootInfoOf(Unit.currentUnit).room;
-    },
-    get clients() {
-        return rootInfoOf(Unit.currentUnit).clients;
-    },
-    get myself() {
-        var _a;
-        if (getEnvironment() === 'server') {
-            throw new Error('xsync.myself is only available on the client side.');
-        }
-        const info = rootInfoOf(Unit.currentUnit);
-        return (_a = info.clients.find((c) => c.id === info.socket.id)) !== null && _a !== void 0 ? _a : { id: info.socket.id, name: '' };
-    },
-    emitToServer(type, props = {}) {
-        const info = rootInfoOf(Unit.currentUnit);
-        if (getEnvironment() === 'server') {
-            Unit.emit(Unit.currentUnit, type, props);
-        }
-        else {
-            info.socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.currentUnit).id, data: props });
-        }
-    },
-    emitToClient(type, props = {}, ids) {
-        const info = rootInfoOf(Unit.currentUnit);
-        const syncId = syncOf(Unit.currentUnit).id;
-        if (getEnvironment() === 'server') {
-            relayToClients(info, type, undefined, syncId, props, ids);
-        }
-        else {
-            info.socket.emit(WIRE_TO_CLIENT, { type, syncId, data: props, ids });
-        }
-    },
-    boot(opts, ...args) {
-        if (Unit.engineRoot === undefined) {
-            Unit.reset();
-        }
-        return getEnvironment() === 'server'
-            ? bootServer(opts, Unit.currentUnit, args)
-            : bootClient(opts, Unit.currentUnit, args);
-    },
-};
-
-const rooms = new Map();
-function roomList() {
-    return [...rooms.values()].map((room) => room.status());
-}
-function broadcastRooms(io) {
-    io.to('lobby').emit('statusupdate', { rooms: roomList() });
-}
-function Lobby(unit, props) {
-    sync.server(() => {
-        const { io, Room, maxRooms = 20, roomNameMax = 16 } = props;
-        let nextRoomNum = 0;
-        const connection = xnew$1.scope((conn) => {
-            var _a, _b;
-            const roomId = (_b = (_a = conn.handshake) === null || _a === void 0 ? void 0 : _a.query) === null || _b === void 0 ? void 0 : _b.roomId;
-            if (roomId !== undefined && roomId !== '') {
-                if (!rooms.has(roomId)) {
-                    conn.emit('notfound', { roomId });
-                    conn.disconnect(true);
-                }
-                return;
-            }
-            conn.join('lobby');
-            conn.emit('statusupdate', { rooms: roomList() });
-            conn.on('roomcreate', xnew$1.scope((payload) => {
-                var _a;
-                if (rooms.size >= maxRooms) {
-                    conn.emit('roomrejected', { message: 'room limit reached' });
-                    return;
-                }
-                const id = `r${++nextRoomNum}`;
-                const name = String((_a = payload === null || payload === void 0 ? void 0 : payload.name) !== null && _a !== void 0 ? _a : '').trim().slice(0, roomNameMax) || `Room ${nextRoomNum}`;
-                const room = { id, name, count: 0 };
-                rooms.set(id, xnew$1(unit, Room, { io, room }));
-                conn.emit('roomcreated', { room });
-                broadcastRooms(io);
-            }));
-        });
-        io.on('connection', connection);
-        unit.on('finalize', () => { io.off('connection', connection); rooms.clear(); });
-    });
-    sync.client(() => {
-        const { io } = props;
-        const socket = io({ forceNew: true });
-        for (const event of ['connect', 'disconnect', 'statusupdate', 'roomcreated', 'roomrejected']) {
-            socket.on(event, xnew$1.scope((payload) => xnew$1.emit('-' + event, payload !== null && payload !== void 0 ? payload : {})));
-        }
-        unit.on('finalize', () => socket.disconnect());
-        return { createRoom(name) { socket.emit('roomcreate', { name }); } };
-    });
-}
-function Room(unit, props) {
-    const members = new Set();
-    sync.server(() => {
-        const { io, room, Component, graceMs = 3000 } = props;
-        sync.boot({ io, room }, Component);
-        let graceTimer = null;
-        const connection = xnew$1.scope((socket) => {
-            var _a, _b;
-            if (((_b = (_a = socket.handshake) === null || _a === void 0 ? void 0 : _a.query) === null || _b === void 0 ? void 0 : _b.roomId) !== room.id) {
-                return;
-            }
-            graceTimer === null || graceTimer === void 0 ? void 0 : graceTimer.clear();
-            members.add(socket.id);
-            room.count = members.size;
-            xnew$1.emit('-connect', { id: socket.id });
-            if (rooms.has(room.id)) {
-                broadcastRooms(io);
-            }
-            socket.on('disconnect', xnew$1.scope(() => {
-                members.delete(socket.id);
-                room.count = members.size;
-                xnew$1.emit('-disconnect', { id: socket.id });
-                if (rooms.has(room.id)) {
-                    broadcastRooms(io);
-                }
-                if (members.size === 0) {
-                    scheduleCleanup();
-                }
-            }));
-        });
-        io.on('connection', connection);
-        unit.on('finalize', () => io.off('connection', connection));
-        scheduleCleanup();
-        function scheduleCleanup() {
-            graceTimer === null || graceTimer === void 0 ? void 0 : graceTimer.clear();
-            graceTimer = xnew$1.timeout(() => {
-                if (members.size > 0) {
-                    return;
-                }
-                xnew$1.emit('-empty', {});
-                if (rooms.has(room.id)) {
-                    rooms.delete(room.id);
-                    broadcastRooms(io);
-                    unit.finalize();
-                }
-            }, graceMs);
-        }
-        return {
-            status() { return room; },
-        };
-    });
-    sync.client(() => {
-        const { io, client, room, Component } = props;
-        sync.boot({ io, client, room }, Component);
-    });
-}
-
-const xsync = Object.defineProperties({ Lobby, Room }, Object.getOwnPropertyDescriptors(sync));
-
-const xnew = xnew$1;
 const xbasics = {
     SVG,
     SVGText,
@@ -1982,9 +1973,11 @@ const xbasics = {
     Accordion,
     Popup,
     Scene,
-    AudioTrack: AudioTrack,
+    AudioTrack,
     Synthesizer,
     Volume,
 };
+
+const xnew = xnew$1;
 
 export { xbasics, xnew, xsync };

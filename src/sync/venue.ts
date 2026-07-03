@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------
-// sync/components — socket.io ready-made components (Lobby / Room), exposed as xsync.Lobby / xsync.Room
+// sync/venue — socket.io ready-made "gathering place" components (Lobby / Room), exposed as xsync.Lobby / xsync.Room
 //
 // Wire socket.io to the host unit; server/client auto-detected. Both sides receive io: the server
 // uses it as the hub; the client calls io() to create its own socket — Lobby creates it inline,
@@ -16,8 +16,7 @@
 
 import { xnew } from '../core/xnew';
 import { Unit, UnitTimer } from '../core/unit';
-import { sync } from './facade';
-import { BootServerOptions, RoomStatus } from './internal';
+import { sync, BootServerOptions, RoomStatus } from './engine';
 
 const rooms = new Map<string, Unit>();
 
