@@ -235,6 +235,6 @@ unit.element; // Access the created DOM element
 
 これで xnew を使い始める準備は整いました。次は以下のページに進んでください。
 
-1. **[Essentials — xnew](./essentials/xnew)** — イベント・ライフサイクル・カスタムメソッドなどの API リファレンス
-2. **[Essentials — xnew.timeout / interval / transition](./essentials/xnew.timeout)** — 自動クリーンアップ付きのタイマーと連鎖可能なトランジション
+1. **[xnew — xnew](./xnew/xnew)** — イベント・ライフサイクル・カスタムメソッドなどの API リファレンス
+2. **[xnew — xnew.timeout / interval / transition](./xnew/xnew.timeout)** — 自動クリーンアップ付きのタイマーと連鎖可能なトランジション
 3. **[Addons — xpixi / xthree](./addons/xpixi)** — PixiJS / Three.js 連携
