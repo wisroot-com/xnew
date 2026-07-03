@@ -156,7 +156,6 @@ declare const xnew: XnewBase & {
 };
 declare namespace xnew {
     type Unit = InstanceType<typeof Unit>;
-    type UnitTimer = InstanceType<typeof UnitTimer>;
     type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
 }
 
