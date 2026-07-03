@@ -20,15 +20,13 @@
 
 import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';
 
-export type Environment = 'server' | 'client';
+let environment: 'server' | 'client' | null = null;
 
-let environment: Environment | null = null;
-
-export function setEnvironment(env: Environment | null): void {
+export function setEnvironment(env: 'server' | 'client' | null): void {
     environment = env;
 }
 
-export function getEnvironment(): Environment {
+export function getEnvironment(): 'server' | 'client' {
     return environment ?? ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
 }
 
