@@ -496,16 +496,17 @@ export class UnitTimer {
     }
 
     public timeout(timeout: Function, duration: number = 0) {
-        return UnitTimer.execute(this, timeout, null, duration, undefined, 1);
+        return this.execute(timeout, null, duration, 1);
     }
     public interval(timeout: Function, duration: number = 0, iterations: number = 0) {
-        return UnitTimer.execute(this, timeout, null, duration, undefined, iterations);
+        return this.execute(timeout, null, duration, iterations);
     }
     public transition(transition: Function, duration: number = 0, easing?: string) {
-        return UnitTimer.execute(this, null, transition, duration, easing, 1);
+        return this.execute(null, transition, duration, 1, easing);
     }
 
-    private static execute(timer: UnitTimer, timeout: Function | null, transition: Function | null, duration: number, easing: string | undefined, iterations: number) {
+    private execute(timeout: Function | null, transition: Function | null, duration: number, iterations: number, easing?: string) {
+        const timer = this;
         const snapshot = Unit.snapshot(Unit.currentUnit);
 
         // タイマーのパラメータはクロージャで捕捉し、props では渡さない。
@@ -535,17 +536,17 @@ export class UnitTimer {
             timer.unit = Unit.create(Unit.currentUnit, Component);
         } else if (timer.queue.length === 0) {
             timer.queue.push(Component);
-            timer.unit.on('finalize', () => UnitTimer.next(timer));
+            timer.unit.on('finalize', () => this.next());
         } else {
             timer.queue.push(Component);
         }
         return timer;
     }
 
-    private static next(timer: UnitTimer) {
-        if (timer.queue.length > 0) {
-            timer.unit = Unit.create(Unit.currentUnit, timer.queue.shift());
-            timer.unit.on('finalize', () => UnitTimer.next(timer));
+    private next() {
+        if (this.queue.length > 0) {
+            this.unit = Unit.create(Unit.currentUnit, this.queue.shift());
+            this.unit.on('finalize', () => this.next());
         }
     }
 }
