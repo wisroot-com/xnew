@@ -235,6 +235,6 @@ Click the box below to start and stop a CSS rotation animation.
 
 You now know everything to start building with xnew. Here's where to go next:
 
-1. **[Core — xnew](./core/xnew)** — full API reference: events, lifecycle, custom methods, and more
-2. **[Core — xnew.timeout / interval / transition](./core/xnew.timeout)** — timers with automatic cleanup and chainable transitions
+1. **[xnew — xnew](./xnew/xnew)** — full API reference: events, lifecycle, custom methods, and more
+2. **[xnew — xnew.timeout / interval / transition](./xnew/xnew.timeout)** — timers with automatic cleanup and chainable transitions
 3. **[Addons — xpixi / xthree](./addons/xpixi)** — drop-in PixiJS and Three.js integration
