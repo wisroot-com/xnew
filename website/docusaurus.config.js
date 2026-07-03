@@ -49,7 +49,7 @@ const config = {
       {
         redirects: [
           { from: '/docs/category/document', to: '/docs/manual' },
-          { from: '/docs/category/manual', to: '/docs/manual/essentials' },
+          { from: '/docs/category/manual', to: '/docs/manual/core' },
           { from: '/docs/category/addons', to: '/docs/manual/addons' },
           { from: '/docs/category/examples', to: '/docs/examples' },
         ],
