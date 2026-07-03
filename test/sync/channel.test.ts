@@ -25,10 +25,10 @@ describe('event channel (socket.io transport)', () => {
         let id1: string | undefined;
         let id2: string | undefined;
         bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
-            xsync.client(() => { id1 = xsync.myself.id; unit.on('update', () => xsync.emitToServer('move', { x: 1 })); });
+            xsync.client(() => { id1 = xsync.session.myself.id; unit.on('update', () => xsync.emitToServer('move', { x: 1 })); });
         });
         bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
-            xsync.client(() => { id2 = xsync.myself.id; });
+            xsync.client(() => { id2 = xsync.session.myself.id; });
         });
 
         expect(id1).toBe('c1');   // 自動発番（手動 clientId 不要）

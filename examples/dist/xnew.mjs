@@ -1122,19 +1122,21 @@ const xsync = {
         }
         Object.assign(syncOf(unit).registry, Components);
     },
-    get room() {
-        return rootInfoOf(Unit.currentUnit).room;
-    },
-    get clients() {
-        return rootInfoOf(Unit.currentUnit).clients;
-    },
-    get myself() {
-        var _a;
-        if (getEnvironment() === 'server') {
-            throw new Error('xsync.myself is only available on the client side.');
-        }
+    get session() {
         const info = rootInfoOf(Unit.currentUnit);
-        return (_a = info.clients.find((c) => c.id === info.socket.id)) !== null && _a !== void 0 ? _a : { id: info.socket.id, name: '' };
+        const isServer = getEnvironment() === 'server';
+        return {
+            get room() { return info.room; },
+            get clients() { return info.clients; },
+            get myself() {
+                var _a;
+                if (isServer) {
+                    throw new Error('xsync.session.myself is only available on the client side.');
+                }
+                const client = info;
+                return (_a = client.clients.find((c) => c.id === client.socket.id)) !== null && _a !== void 0 ? _a : { id: client.socket.id, name: '' };
+            },
+        };
     },
     emitToServer(type, props = {}) {
         const info = rootInfoOf(Unit.currentUnit);

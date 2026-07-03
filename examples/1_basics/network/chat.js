@@ -8,8 +8,8 @@ import { xnew, xsync } from '@mulsense/xnew';
 //   名前は client 側で nameOf(id) に解決する（表示は例側の責務）。
 //----------------------------------------------------------------------------------------------------
 
-// clientId → 表示名。台帳（sync.clients の name）に無ければ id 先頭を出す。client 側でのみ使う。
-const nameOf = (id) => xsync.clients.find((c) => c.id === id)?.name || (id ? id.slice(0, 4) : '');
+// clientId → 表示名。台帳（session.clients の name）に無ければ id 先頭を出す。client 側でのみ使う。
+const nameOf = (id) => xsync.session.clients.find((c) => c.id === id)?.name || (id ? id.slice(0, 4) : '');
 
 export function ChatView(unit) {
     xnew.nest('<div class="w-56 h-80 flex flex-col border border-gray-300 rounded bg-white">');
@@ -32,7 +32,7 @@ export function ChatView(unit) {
         });
     });
 
-    const myId = xsync.myself.id;
+    const myId = xsync.session.myself.id;
     // server 経由で届いた 'chat'（{ id, text }）を 1 行追加する。名前は client 側で nameOf に解決。
     unit.on('chat', ({ id, text }) => {
         const mine = id === myId;

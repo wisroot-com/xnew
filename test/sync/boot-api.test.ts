@@ -11,8 +11,8 @@ describe('xsync.boot({ socket, room }) — in-memory socket.io', () => {
         bootServer({ io: hub.io }, function Server() {});
         let id1: string | undefined;
         let id2: string | undefined;
-        bootClient({ socket: hub.connect() }, function C1() { xsync.client(() => { id1 = xsync.myself.id; }); });
-        bootClient({ socket: hub.connect() }, function C2() { xsync.client(() => { id2 = xsync.myself.id; }); });
+        bootClient({ socket: hub.connect() }, function C1() { xsync.client(() => { id1 = xsync.session.myself.id; }); });
+        bootClient({ socket: hub.connect() }, function C2() { xsync.client(() => { id2 = xsync.session.myself.id; }); });
         expect(id1).toBe('c1');
         expect(id2).toBe('c2');
     });

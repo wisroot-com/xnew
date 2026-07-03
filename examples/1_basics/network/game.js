@@ -35,8 +35,8 @@ const SPEED = 3;
 const SLOTS = ['p1', 'p2'];
 const slotLabel = (slot) => (slot === 'p1' ? 'プレイヤー1' : 'プレイヤー2');
 const clamp = (v, max) => Math.max(0, Math.min(max, v));
-// clientId → 表示名。台帳（sync.clients の name）に無ければ id 先頭を出す。client 側でのみ使う。
-const nameOf = (id) => xsync.clients.find((c) => c.id === id)?.name || (id ? id.slice(0, 4) : '');
+// clientId → 表示名。台帳（session.clients の name）に無ければ id 先頭を出す。client 側でのみ使う。
+const nameOf = (id) => xsync.session.clients.find((c) => c.id === id)?.name || (id ? id.slice(0, 4) : '');
 
 // ---- Game: server/client 共通ルート。シーンを synced child として 1 つ持つ ----
 export function Game(unit) {
@@ -97,7 +97,7 @@ function Setup(unit) {
         xnew.nest('<div class="flex flex-col items-start gap-2 p-4 border border-gray-300 rounded bg-white">');
         xnew('<p class="m-0 text-sm text-gray-600">', '担当プレイヤーを選んでください（クリックで取得 / 取り消し）。');
 
-        const myId = xsync.myself.id;
+        const myId = xsync.session.myself.id;
         // 枠ボタン: 自分の枠ならクリックで取消、空き枠なら取得。
         const slotBtns = {};
         SLOTS.forEach((slot) => {
@@ -121,7 +121,7 @@ function Setup(unit) {
                 slotBtns[slot].textContent = `${slotLabel(slot)}: ${who}`;
             });
             begin.element.disabled = !(state.slots.p1 && state.slots.p2);
-            hint.element.textContent = `参加者 ${xsync.clients.length} 人 / 観戦者は盤面を見るだけです。`;
+            hint.element.textContent = `参加者 ${xsync.session.clients.length} 人 / 観戦者は盤面を見るだけです。`;
         });
     });
 }
@@ -145,7 +145,7 @@ export function World(unit, { slots } = {}) {
         xnew.nest('<div class="relative w-60 h-40 overflow-hidden border border-gray-300 bg-gray-50">');   // 全員共通の盤面（以降 Player はここへ）
 
         // 自分の id に一致する Player があれば操作者、無ければ観戦者（途中参加もここに含まれる）。
-        const myId = xsync.myself.id;
+        const myId = xsync.session.myself.id;
         unit.on('update', () => {
             const players = xnew.find(Player);
             const mine = players.find((player) => player.clientId === myId);
@@ -187,7 +187,7 @@ export function Player(unit, { clientId = '', slot = '' } = {}) {
         unit.on('update', () => { el.style.left = `${state.x}px`; el.style.top = `${state.y}px`; });
 
         // 入力 → 移動は自機（このクライアント自身の Player）だけが受ける。観戦者は描画のみ。
-        if (state.clientId === xsync.myself.id) {
+        if (state.clientId === xsync.session.myself.id) {
             const stop = () => xsync.emitToServer('-move', { vector: { x: 0, y: 0 } });
             unit.on('window.keydown.wasd window.keyup.wasd window.keydown.arrow window.keyup.arrow', ({ event, vector }) => {
                 event.preventDefault();

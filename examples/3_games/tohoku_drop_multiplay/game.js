@@ -193,7 +193,7 @@ function Status(unit) {
 
     // client: 同期 state を毎フレーム '+status' として盤面（Cursor / QueuePreview / HUD）へ配る。
     xsync.client(() => {
-        const myId = xsync.myself.id;
+        const myId = xsync.session.myself.id;
         unit.on('update', () => {
             const myNo = myId === state.p1 ? 1 : myId === state.p2 ? 2 : 0;
             xnew.emit('+status', {

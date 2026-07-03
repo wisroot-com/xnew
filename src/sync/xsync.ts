@@ -6,12 +6,13 @@
 // it. Layered top→bottom: environment → shared state → transport → boot → facade. Lobby/room lifecycle is
 // NOT built in — callers assemble it from the facade (see examples/*/server.js + index.js).
 //
-// - xsync : facade — server / client / state / register / emitTo* / room / clients / myself / boot.
+// - xsync : facade — server / client / state / register / emitTo* / session / boot.
+//           (session = the connection state { room, clients, myself }; myself is client-only.)
 //
 // Invariants: a unit keeps its id for life (`nextId` monotonic per server root); capture runs on the root's
 //   own update, so it sees this tick's child mutations. Drive capture/apply only via the 'sync' seam.
-// Caveat: room / clients / myself are lazy getters — export the facade literal directly, never Object.assign
-//   it onto a fresh object (that invokes the getters at load with no current unit → throw).
+// Caveat: session resolves the current unit's root lazily — export the facade literal directly, never
+//   Object.assign it onto a fresh object (that invokes the getter at load with no current unit → throw).
 // syncOf / setEnvironment are the only test seams (@internal): per-unit sync data, and a runtime override so
 // tests can fake both server & client in one process. The ergonomic wrappers (withEnvironment / asServer …) live
 // in the test harness (test/sync/io-mock.ts), built on setEnvironment.
@@ -172,7 +173,7 @@ function bootServer(opts: SyncBootServerOptions, parent: Unit, args: any[]): Uni
 function bootClient(opts: SyncBootClientOptions, parent: Unit, args: any[]): Unit {
     const { io, room, client } = opts;
     // client owns its socket: io() with flat string query (roomId / clientName) on the handshake.
-    // create it before init so the component body can already read it (xsync.myself / xsync.emitToServer).
+    // create it before init so the component body can already read it (xsync.session.myself / xsync.emitToServer).
     const socket = io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
     const info: ClientInfo = { socket, room, clients: [] };
 
@@ -253,18 +254,22 @@ export const xsync = {
         }
         Object.assign(syncOf(unit).registry, Components);
     },
-    get room(): SyncRoomStatus {
-        return rootInfoOf(Unit.currentUnit).room;
-    },
-    get clients(): SyncClientStatus[] {
-        return rootInfoOf(Unit.currentUnit).clients;
-    },
-    get myself(): SyncClientStatus {
-        if (getEnvironment() === 'server') {
-            throw new Error('xsync.myself is only available on the client side.');
-        }
-        const info = rootInfoOf(Unit.currentUnit) as ClientInfo;
-        return info.clients.find((c) => c.id === info.socket.id) ?? { id: info.socket.id, name: '' };
+    // このルートの通信セッション状態（room / clients / myself）をまとめて返す。room / clients は
+    // 両側で有効、myself は client 専用（server では access 時のみ throw）。値は info 越しに live 参照。
+    get session(): { room: SyncRoomStatus; clients: SyncClientStatus[]; myself: SyncClientStatus } {
+        const info = rootInfoOf(Unit.currentUnit);
+        const isServer = getEnvironment() === 'server';
+        return {
+            get room(): SyncRoomStatus { return info.room; },
+            get clients(): SyncClientStatus[] { return info.clients; },
+            get myself(): SyncClientStatus {
+                if (isServer) {
+                    throw new Error('xsync.session.myself is only available on the client side.');
+                }
+                const client = info as ClientInfo;
+                return client.clients.find((c) => c.id === client.socket.id) ?? { id: client.socket.id, name: '' };
+            },
+        };
     },
     emitToServer(type: string, props: Record<string, any> = {}): void {
         const info = rootInfoOf(Unit.currentUnit);

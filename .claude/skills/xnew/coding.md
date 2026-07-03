@@ -196,7 +196,7 @@ the rule, then one line of why.
   **is** the facade object literal (`export const xsync = { … }`) — there is no Lobby / Room component
   built in; lobby / room lifecycle is assembled by callers from the facade (see `examples/*/server.js` +
   `index.js`). Export the literal directly — **never `Object.assign` the facade onto a fresh object**,
-  which invokes the `room`/`clients`/`myself` getters at module load (no current unit → throws).
+  which invokes the `session` getter at module load (no current unit → throws).
 
 - **Custom sync-event handlers get `{ id, ...data }`, but `id` (sender socket id) is set
   only on the SERVER dispatch; on the CLIENT it is `undefined`.** So for a room-wide

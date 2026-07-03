@@ -182,9 +182,11 @@ declare const xsync: {
     client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
     state(initial?: Record<string, any>): Record<string, any>;
     register(Components: Record<string, Function>): void;
-    readonly room: SyncRoomStatus;
-    readonly clients: SyncClientStatus[];
-    readonly myself: SyncClientStatus;
+    readonly session: {
+        room: SyncRoomStatus;
+        clients: SyncClientStatus[];
+        myself: SyncClientStatus;
+    };
     emitToServer(type: string, props?: Record<string, any>): void;
     emitToClient(type: string, props?: Record<string, any>, ids?: string[]): void;
     boot(opts: SyncBootServerOptions | SyncBootClientOptions, ...args: any[]): Unit;
