@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import voxelkit from 'voxelkit';
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import { xmatter } from '@mulsense/xnew/addons/xmatter';
@@ -14,7 +14,7 @@ xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
   const [width, height] = [800, 600];
-  xnew.extend(xnew.basics.Screen, { width, height });
+  xnew.extend(xbasics.Screen, { width, height });
 
   // setup three 
   xthree.initialize({ canvas: new OffscreenCanvas(width, height) });
@@ -53,7 +53,7 @@ function GameData(unit) {
 }
 
 function TitleScene(unit) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
 
   xnew(Background);
   xnew(ShadowPlane);
@@ -74,7 +74,7 @@ function TitleScene(unit) {
 }
 
 function GameScene(unit) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
   
   xmatter.initialize();
   unit.on('update', () => {
@@ -95,7 +95,7 @@ function GameScene(unit) {
 
   const playing = xnew((unit) => {
     xnew(Controller);
-    xnew(xnew.basics.AudioTrack, { url: '../../assets/y015.mp3' }).play({ fade: 1000, loop: true });
+    xnew(xbasics.AudioTrack, { url: '../../assets/y015.mp3' }).play({ fade: 1000, loop: true });
   })
 
   // xnew.timeout(() => xnew.emit('+gameover'), 1100);
@@ -113,9 +113,9 @@ function GameScene(unit) {
 }
 
 function ResultScene(unit, { image }) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
   
-  xnew(xnew.basics.AudioTrack, { url: '../../assets/st005.mp3' }).play({ fade: 1, loop: true });
+  xnew(xbasics.AudioTrack, { url: '../../assets/st005.mp3' }).play({ fade: 1, loop: true });
 
   // popup
   xnew.nest(`<div class="absolute inset-0 size-full">`);
@@ -145,7 +145,7 @@ function ThreeTexture(unit) {
 
 function ScoreText(unit) {
   xnew.nest('<div class="absolute top-[1cqw] right-[2cqw] w-full text-right text-green-600 font-bold">');
-  const text = xnew(xnew.basics.SVGText, { text: 'score 0', fontSize: '6cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
+  const text = xnew(xbasics.SVGText, { text: 'score 0', fontSize: '6cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
   let sum = 0;
   unit.on('+scoreup', ({ score }) => {
     text.element.textContent = `score ${sum += Math.pow(2, score)}`;
@@ -302,7 +302,7 @@ function Cursor(unit) {
   });
   unit.on('+drop', () => {
     if (model !== null) {
-      xnew.context(xnew.basics.Scene).add(ModelBall, { x: object.x, y: object.y + offset, id: model.id });
+      xnew.context(xbasics.Scene).add(ModelBall, { x: object.x, y: object.y + offset, id: model.id });
       model.finalize();
       model = null;
       xnew.emit('+reload');
@@ -324,14 +324,14 @@ function ModelBall(ball, { x, y, id = 0 }) {
   const now = new Date().getTime();
   if (now - prev > 200) {
     prev = now;
-    const synth = xnew(xnew.basics.Synthesizer, { oscillator: { type: 'triangle', envelope: { amount: 8, ADSR: [0, 500, 1, 0], }, }, filter: { type: 'bandpass', cutoff: 1000}, amp: { envelope: { amount: 1, ADSR: [20, 100, 0, 0], }, }, reverb: { time: 1000, mix: 0.2, },  });
+    const synth = xnew(xbasics.Synthesizer, { oscillator: { type: 'triangle', envelope: { amount: 8, ADSR: [0, 500, 1, 0], }, }, filter: { type: 'bandpass', cutoff: 1000}, amp: { envelope: { amount: 1, ADSR: [20, 100, 0, 0], }, }, reverb: { time: 1000, mix: 0.2, },  });
     synth.press(['C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', 'C6'][id], 100);
   }
 
   const model = xnew(Model, { id, scale });
   xnew.emit('+scoreup', { score: id });
 
-  xnew.context(xnew.basics.Scene).add(StarParticles, { x, y });
+  xnew.context(xbasics.Scene).add(StarParticles, { x, y });
   
   ball.on('update', () => {
     const position = convert3d(ball.pixiObject.x, ball.pixiObject.y);
@@ -349,7 +349,7 @@ function ModelBall(ball, { x, y, id = 0 }) {
       const dist = Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
 
       if (dist < ball.radius + target.radius + 0.01) {
-        xnew.context(xnew.basics.Scene).add(ModelBall, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, id: id + 1 });
+        xnew.context(xbasics.Scene).add(ModelBall, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, id: id + 1 });
         ball.finalize();
         target.finalize();
         break;

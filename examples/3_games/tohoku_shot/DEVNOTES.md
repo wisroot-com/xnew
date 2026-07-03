@@ -61,8 +61,8 @@ TitleScene ──tap/Space──▶ StoryScene ──2ページ目のtap/Space�
 （戻ってきた TitleScene は skipStory:true → 次の tap/Space で StoryScene を飛ばし直接 GameScene へ）
 ```
 
-- シーンは `xnew.extend(xnew.basics.Scene)` を使い、`unit.change(NextScene, props)` で遷移
-  （兄弟として次を生成し自分を finalize）。`xnew.context(xnew.basics.Scene).add(Comp)` で子追加。
+- シーンは `xnew.extend(xbasics.Scene)` を使い、`unit.change(NextScene, props)` で遷移
+  （兄弟として次を生成し自分を finalize）。`xnew.context(xbasics.Scene).add(Comp)` で子追加。
 - どのシーンも先頭で `xnew(Background)` を呼ぶので、遷移しても背景が連続して見える。
 - **進行入力はタップとスペースキー両対応**（Title 進行 / Story ページ送り / Result→Title）。
   各シーンで `unit.on('window.keydown', ...)` を `event.code==='Space' && !event.repeat` で拾う
@@ -149,7 +149,7 @@ TitleScene ──tap/Space──▶ StoryScene ──2ページ目のtap/Space�
 
 ## 7. レイアウト定数
 
-- キャンバスは 800×600（`Main` で `xnew.basics.Screen`）。
+- キャンバスは 800×600（`Main` で `xbasics.Screen`）。
 - `PANEL_W = 200` / `PLAY_RIGHT = 600`。**ゲーム領域は x ∈ [0, 600]**、右 200px は SidePanel。
   HTML 側の `25cqw`(=200/800) と一致させること。`cqw` はコンテナ幅基準（1cqw = 8px）。
 - **当たり判定（自機⇄敵）**: `PLAYER_HIT_R=18` / `ENEMY_HIT_R=10`。中心間距離 `< 18+10=28` で被弾
@@ -267,7 +267,7 @@ TitleScene ──tap/Space──▶ StoryScene ──2ページ目のtap/Space�
 - `asset(name)` … `../../assets/${name}`。アセット読み込みは全部これ経由。
 - `enemyIdForWave(wave)` … その wave の主役敵 id（`Math.min(wave-1, 3)`）。WaveManager /
   WaveEnemyDisplay / TargetInfo が共用。`waveColor()` は別概念（色）なので分離したまま。
-- `svgText(text, fontSize, stroke?, strokeWidth?)` … `xnew.basics.SVGText` の縁取りテキスト
+- `svgText(text, fontSize, stroke?, strokeWidth?)` … `xbasics.SVGText` の縁取りテキスト
   ラッパー（`className:'inline-block'` 固定。stroke 既定 `#EEEEEE` / strokeWidth 既定 `0.2cqw`）。
 - `ResultBackground` 内の白丸 2 ループは局所関数 `floatingCircle(size, transform)` に集約。
 

@@ -16,7 +16,7 @@
 <body class="m-0 p-0 w-full h-screen overflow-hidden">
   <div id="main" class="relative w-full h-full"></div>
   <script type="module">
-    import { xnew } from '@mulsense/xnew';
+    import { xnew, xbasics } from '@mulsense/xnew';
 
     xnew(document.querySelector('#main'), (unit) => {
       xnew(Box);
@@ -32,14 +32,14 @@
       // left bottom
       xnew('<div class="absolute left-0 top-0 bottom-0 w-[100cqh] h-full">', () => {
         // directional pad
-        const dpad = xnew('<div class="absolute inset-[5cqh]">', xnew.basics.DPad, {});
+        const dpad = xnew('<div class="absolute inset-[5cqh]">', xbasics.DPad, {});
         dpad.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));        
       });
 
       // right bottom
       xnew('<div class="absolute right-0 top-0 bottom-0 w-[100cqh] h-full">', () => {
         // analog stick
-        const stick = xnew('<div class="absolute inset-[5cqh]">', xnew.basics.AnalogStick, {});
+        const stick = xnew('<div class="absolute inset-[5cqh]">', xbasics.AnalogStick, {});
         stick.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));
 
       });

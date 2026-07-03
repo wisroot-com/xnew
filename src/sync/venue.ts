@@ -1,9 +1,9 @@
 //----------------------------------------------------------------------------------------------------
-// Sync — socket.io basics components (Lobby / Room)
+// sync/venue — socket.io ready-made "gathering place" components (Lobby / Room), exposed as xsync.Lobby / xsync.Room
 //
 // Wire socket.io to the host unit; server/client auto-detected. Both sides receive io: the server
 // uses it as the hub; the client calls io() to create its own socket — Lobby creates it inline,
-// Room hands io (+ client) to sync.boot which creates/owns it (→ core/env).
+// Room hands io (+ client) to xsync.boot which creates/owns it (→ core/env).
 // The room ledger (id → Room unit) is module-global so Room self-removes/re-broadcasts without a
 // Lobby context; Lobby is its sole writer and clears it on finalize. Scene navigation (change/add)
 // is the caller's concern — extend Scene on the host unit if you want it (see examples/network).
@@ -16,7 +16,7 @@
 
 import { xnew } from '../core/xnew';
 import { Unit, UnitTimer } from '../core/unit';
-import { sync, BootServerOptions, RoomStatus } from '../core/sync';
+import { sync, BootServerOptions, RoomStatus } from './engine';
 
 const rooms = new Map<string, Unit>();
 

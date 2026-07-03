@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
-import { syncOf } from '../../../src/core/sync';
-import { xnew } from '../../../src/index';
+import { syncOf } from '../../../src/sync/xsync';
+import { xnew, xsync } from '../../../src/index';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
 // capture / apply は boot 内部に移動した。server boot は root.on('update') で 'sync' を broadcast し、
@@ -8,17 +8,17 @@ import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
 // Base: synced state を宣言する基底コンポーネント（最初の sync.state 宣言）
 function Base(unit: Unit) {
-    const state = xnew.sync.state({ hp: 100 });
-    xnew.sync.server(() => { unit.on('update', () => { state.hp += 1; }); });
+    const state = xsync.state({ hp: 100 });
+    xsync.server(() => { unit.on('update', () => { state.hp += 1; }); });
 }
 
 // Enemy: Base を extend した上で自分の synced state も宣言する（2番目の sync.state 宣言）
 let clientReadAtConstruction: Record<string, any> = {};
 function Enemy(unit: Unit) {
     xnew.extend(Base);
-    const state = xnew.sync.state({ x: 0 });
-    xnew.sync.server(() => { unit.on('update', () => { state.x += 3; }); });
-    xnew.sync.client(() => {
+    const state = xsync.state({ x: 0 });
+    xsync.server(() => { unit.on('update', () => { state.x += 3; }); });
+    xsync.client(() => {
         // 構築時点での state を記録（注入が全宣言に効いていれば全てサーバー値になる）
         clientReadAtConstruction = { ...state };
     });
@@ -35,8 +35,8 @@ describe('composed synced state (base + extend)', () => {
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
 
     it('hydrates every sync.state declaration from injected server state at construction time', () => {
-        const server = bootServer({ io: hub.io }, function Server() { xnew.sync.register({ Enemy }); xnew(Enemy); });
-        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ Enemy }); });
+        const server = bootServer({ io: hub.io }, function Server() { xsync.register({ Enemy }); xnew(Enemy); });
+        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xsync.register({ Enemy }); });
 
         asServer(() => Unit.update(server));   // server Enemy: hp=101, x=3 → 'sync' → client が replica を生成
 
@@ -48,8 +48,8 @@ describe('composed synced state (base + extend)', () => {
 
     it('keeps the first value when keys collide across declarations (existing-wins)', () => {
         const unit = xnew((u: Unit) => {
-            xnew.sync.state({ pos: 1 });
-            xnew.sync.state({ pos: 2 });   // 同名キー: 既存（先勝ち）を尊重
+            xsync.state({ pos: 1 });
+            xsync.state({ pos: 2 });   // 同名キー: 既存（先勝ち）を尊重
         });
         expect(syncOf(unit).state).toEqual({ pos: 1 });   // existing-wins（プリシード/先行宣言を優先する規則と一貫）
     });
@@ -57,15 +57,15 @@ describe('composed synced state (base + extend)', () => {
     it('does not leak injected state into a non-synced child built during the body', () => {
         let childState: Record<string, any> = {};
         function Host(unit: Unit) {
-            xnew.sync.state({ value: 0 });
-            xnew.sync.server(() => { unit.on('update', () => { (syncOf(unit).state as any).value += 5; }); });
+            xsync.state({ value: 0 });
+            xsync.server(() => { unit.on('update', () => { (syncOf(unit).state as any).value += 5; }); });
             // 本体内でインライン生成する非 synced 子（apply ではなく親本体が生成する）
-            xnew.sync.client(() => {
-                xnew(function Child() { childState = xnew.sync.state({ value: -1 }); });
+            xsync.client(() => {
+                xnew(function Child() { childState = xsync.state({ value: -1 }); });
             });
         }
-        const server = bootServer({ io: hub.io }, function Server() { xnew.sync.register({ Host }); xnew(Host); });
-        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ Host }); });
+        const server = bootServer({ io: hub.io }, function Server() { xsync.register({ Host }); xnew(Host); });
+        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xsync.register({ Host }); });
 
         asServer(() => Unit.update(server));   // server Host: value=5 → 'sync' → client が replica Host + inline Child を生成
 
@@ -77,9 +77,9 @@ describe('composed synced state (base + extend)', () => {
     // 基底コンポーネントも register されている場合（単独利用もあり得るため）でも、
     // 実際にインスタンス化した最も派生したコンポーネントの名前で同期される。
     it('syncs under the most-derived registered name even when the base is also registered', () => {
-        function ActorBase(unit: Unit, props: any = {}) { xnew.sync.state({ x: 0, y: props.y ?? 0 }); }
-        function EnemyDerived(unit: Unit, props: any = {}) { xnew.extend(ActorBase, props); xnew.sync.state({ hp: 3 }); }
-        const server = bootServer({ io: hub.io }, function S() { xnew.sync.register({ ActorBase, EnemyDerived }); xnew(EnemyDerived, { y: 8 }); });
+        function ActorBase(unit: Unit, props: any = {}) { xsync.state({ x: 0, y: props.y ?? 0 }); }
+        function EnemyDerived(unit: Unit, props: any = {}) { xnew.extend(ActorBase, props); xsync.state({ hp: 3 }); }
+        const server = bootServer({ io: hub.io }, function S() { xsync.register({ ActorBase, EnemyDerived }); xnew(EnemyDerived, { y: 8 }); });
 
         asServer(() => Unit.update(server));
         const tree = hub.lastSync();
@@ -92,8 +92,8 @@ describe('composed synced state (base + extend)', () => {
     it('mirrors the example: extended base nests the element, both declarations sync and render', () => {
         // 基底: 位置 {x,y} を宣言し、client で要素を nest して位置を反映する
         function Actor(unit: Unit, props: any = {}) {
-            const pos = xnew.sync.state({ x: 0, y: props.y ?? 0 });
-            xnew.sync.client(() => {
+            const pos = xsync.state({ x: 0, y: props.y ?? 0 });
+            xsync.client(() => {
                 const el = xnew.nest('<div>') as HTMLElement;
                 unit.on('update', () => { el.style.left = `${pos.x}px`; el.style.top = `${pos.y}px`; });
             });
@@ -101,15 +101,15 @@ describe('composed synced state (base + extend)', () => {
         // 拡張: Actor を取り込み hp を足し、基底が nest した要素を unit.element 経由で着色する
         function Sprite(unit: Unit, props: any = {}) {
             xnew.extend(Actor, props);
-            const state = xnew.sync.state({ hp: 3 });
-            xnew.sync.server(() => { unit.on('update', () => { state.x += 3; state.hp -= 1; }); });
-            xnew.sync.client(() => {
+            const state = xsync.state({ hp: 3 });
+            xsync.server(() => { unit.on('update', () => { state.x += 3; state.hp -= 1; }); });
+            xsync.client(() => {
                 const el = unit.element as HTMLElement;
                 unit.on('update', () => { el.style.background = state.hp >= 2 ? 'red' : 'gray'; });
             });
         }
-        const server = bootServer({ io: hub.io }, function Server() { xnew.sync.register({ Sprite }); xnew(Sprite, { y: 8 }); });
-        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xnew.sync.register({ Sprite }); });
+        const server = bootServer({ io: hub.io }, function Server() { xsync.register({ Sprite }); xnew(Sprite, { y: 8 }); });
+        const client = bootClient({ socket: hub.connect() }, function ClientRoot() { xsync.register({ Sprite }); });
 
         asServer(() => Unit.update(server));   // server Sprite: x=3, hp=2 → 'sync' → client が replica を生成
 

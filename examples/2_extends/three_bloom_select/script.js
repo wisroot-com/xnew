@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -17,7 +17,7 @@ xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
   const [width, height] = [800, 600];
-  xnew.extend(xnew.basics.Screen, { width, height });
+  xnew.extend(xbasics.Screen, { width, height });
 
   // three setup
   xthree.initialize({ canvas: unit.canvas });
@@ -173,7 +173,7 @@ function Panel(panel) {
   };
   xnew.nest('<div class="absolute text-sm w-48 top-2 right-2 p-1 bg-white border rounded shadow-lg">');
 
-  xnew.extend(xnew.basics.Panel, { name: 'GUI', open: true, params });
+  xnew.extend(xbasics.Panel, { name: 'GUI', open: true, params });
 
   panel.range('threshold', { min: 0, max: 1, step: 0.01 }).on('input', ({ value }) => {
     render.bloom.threshold = value;

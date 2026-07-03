@@ -1,8 +1,8 @@
 import { Unit } from '../../../src/core/unit';
-import { xnew } from '../../../src/index';
+import { xnew, xsync } from '../../../src/index';
 import { ioMock, bootServer, bootClient } from './io-mock';
 
-describe('xnew.sync.boot({ socket, room }) — in-memory socket.io', () => {
+describe('xsync.boot({ socket, room }) — in-memory socket.io', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
@@ -11,8 +11,8 @@ describe('xnew.sync.boot({ socket, room }) — in-memory socket.io', () => {
         bootServer({ io: hub.io }, function Server() {});
         let id1: string | undefined;
         let id2: string | undefined;
-        bootClient({ socket: hub.connect() }, function C1() { xnew.sync.client(() => { id1 = xnew.sync.myself.id; }); });
-        bootClient({ socket: hub.connect() }, function C2() { xnew.sync.client(() => { id2 = xnew.sync.myself.id; }); });
+        bootClient({ socket: hub.connect() }, function C1() { xsync.client(() => { id1 = xsync.myself.id; }); });
+        bootClient({ socket: hub.connect() }, function C2() { xsync.client(() => { id2 = xsync.myself.id; }); });
         expect(id1).toBe('c1');
         expect(id2).toBe('c2');
     });
@@ -29,11 +29,11 @@ describe('xnew.sync.boot({ socket, room }) — in-memory socket.io', () => {
 
     it('environment selects which block runs at the root', () => {
         const ran: string[] = [];
-        bootServer({ io: hub.io }, function S() { xnew.sync.server(() => ran.push('server')); xnew.sync.client(() => ran.push('client')); });
+        bootServer({ io: hub.io }, function S() { xsync.server(() => ran.push('server')); xsync.client(() => ran.push('client')); });
         expect(ran).toEqual(['server']);
 
         ran.length = 0;
-        bootClient({ socket: hub.connect() }, function C() { xnew.sync.server(() => ran.push('server')); xnew.sync.client(() => ran.push('client')); });
+        bootClient({ socket: hub.connect() }, function C() { xsync.server(() => ran.push('server')); xsync.client(() => ran.push('client')); });
         expect(ran).toEqual(['client']);
     });
 });

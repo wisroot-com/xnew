@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
-import { xnew } from '../../../src/index';
-import { syncOf } from '../../../src/core/sync';
+import { xnew, xsync } from '../../../src/index';
+import { syncOf } from '../../../src/sync/xsync';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
 //----------------------------------------------------------------------------------------------------
@@ -22,10 +22,10 @@ describe('sync.emitToServer / sync.emitToClient', () => {
     it('emitToServer (client): fires on the server with the sender id', () => {
         const got: any[] = [];
         bootServer({ io: hub.io }, function Server(unit: Unit) {
-            xnew.sync.server(() => { unit.on('hit', ({ id, n }: any) => got.push({ id, n })); });
+            xsync.server(() => { unit.on('hit', ({ id, n }: any) => got.push({ id, n })); });
         });
         const client = bootClient({ socket: hub.connect('A') }, function Client(unit: Unit) {
-            xnew.sync.client(() => { return { fire() { xnew.sync.emitToServer('hit', { n: 1 }); } }; });
+            xsync.client(() => { return { fire() { xsync.emitToServer('hit', { n: 1 }); } }; });
         });
 
         asClient(() => (client as any).fire());
@@ -36,9 +36,9 @@ describe('sync.emitToServer / sync.emitToClient', () => {
     it('emitToServer (server): is a local emit (xnew.emit) — reaches +/- listeners on the current root', () => {
         const got: string[] = [];
         const server = bootServer({ io: hub.io }, function Server(unit: Unit) {
-            xnew.sync.server(() => {
+            xsync.server(() => {
                 unit.on('+ping', ({ n }: any) => got.push(`ping:${n}`));
-                return { ping() { xnew.sync.emitToServer('+ping', { n: 2 }); } };
+                return { ping() { xsync.emitToServer('+ping', { n: 2 }); } };
             });
         });
 
@@ -51,15 +51,15 @@ describe('sync.emitToServer / sync.emitToClient', () => {
         const hits: string[] = [];
         function Tagged(unit: Unit, props: { tag?: string; syncId?: number } = {}) {
             syncOf(unit).id = props.syncId ?? null;
-            xnew.sync.server(() => { unit.on('-move', ({ x }: any) => hits.push(`${props.tag}:${x}`)); });
+            xsync.server(() => { unit.on('-move', ({ x }: any) => hits.push(`${props.tag}:${x}`)); });
         }
         bootServer({ io: hub.io }, function Server() {
-            xnew.sync.server(() => { xnew(Tagged, { tag: 'A', syncId: 10 }); xnew(Tagged, { tag: 'B', syncId: 20 }); });
+            xsync.server(() => { xnew(Tagged, { tag: 'A', syncId: 10 }); xnew(Tagged, { tag: 'B', syncId: 20 }); });
         });
         const client = bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
-            xnew.sync.client(() => {
+            xsync.client(() => {
                 syncOf(unit).id = 10;
-                return { move() { xnew.sync.emitToServer('-move', { x: 1 }); } };
+                return { move() { xsync.emitToServer('-move', { x: 1 }); } };
             });
         });
 
@@ -73,15 +73,15 @@ describe('sync.emitToServer / sync.emitToClient', () => {
     it('emitToClient (client): reaches every client incl. the sender, with the sender id', () => {
         const a: any[] = [];
         const b: any[] = [];
-        bootServer({ io: hub.io }, function Server() { xnew.sync.server(() => {}); });
+        bootServer({ io: hub.io }, function Server() { xsync.server(() => {}); });
         const clientA = bootClient({ socket: hub.connect('A') }, function Client(unit: Unit) {
-            xnew.sync.client(() => {
+            xsync.client(() => {
                 unit.on('chat', ({ id, text }: any) => a.push({ id, text }));
-                return { say(text: string) { xnew.sync.emitToClient('chat', { text }); } };
+                return { say(text: string) { xsync.emitToClient('chat', { text }); } };
             });
         });
         bootClient({ socket: hub.connect('B') }, function Client(unit: Unit) {
-            xnew.sync.client(() => { unit.on('chat', ({ id, text }: any) => b.push({ id, text })); });
+            xsync.client(() => { unit.on('chat', ({ id, text }: any) => b.push({ id, text })); });
         });
 
         asClient(() => (clientA as any).say('hi'));
@@ -93,10 +93,10 @@ describe('sync.emitToServer / sync.emitToClient', () => {
     it('emitToClient (server): broadcasts to every client with id undefined', () => {
         const a: any[] = [];
         const server = bootServer({ io: hub.io }, function Server(unit: Unit) {
-            xnew.sync.server(() => { return { announce(text: string) { xnew.sync.emitToClient('chat', { text }); } }; });
+            xsync.server(() => { return { announce(text: string) { xsync.emitToClient('chat', { text }); } }; });
         });
         bootClient({ socket: hub.connect('A') }, function Client(unit: Unit) {
-            xnew.sync.client(() => { unit.on('chat', ({ id, text }: any) => a.push({ id, text })); });
+            xsync.client(() => { unit.on('chat', ({ id, text }: any) => a.push({ id, text })); });
         });
 
         asServer(() => (server as any).announce('hello'));
@@ -109,16 +109,16 @@ describe('sync.emitToServer / sync.emitToClient', () => {
         const b: any[] = [];
         const c: any[] = [];
         const server = bootServer({ io: hub.io }, function Server(unit: Unit) {
-            xnew.sync.server(() => { return { dm(text: string, ids: string[]) { xnew.sync.emitToClient('chat', { text }, ids); } }; });
+            xsync.server(() => { return { dm(text: string, ids: string[]) { xsync.emitToClient('chat', { text }, ids); } }; });
         });
         bootClient({ socket: hub.connect('A') }, function Client(unit: Unit) {
-            xnew.sync.client(() => { unit.on('chat', ({ text }: any) => a.push(text)); });
+            xsync.client(() => { unit.on('chat', ({ text }: any) => a.push(text)); });
         });
         bootClient({ socket: hub.connect('B') }, function Client(unit: Unit) {
-            xnew.sync.client(() => { unit.on('chat', ({ text }: any) => b.push(text)); });
+            xsync.client(() => { unit.on('chat', ({ text }: any) => b.push(text)); });
         });
         bootClient({ socket: hub.connect('C') }, function Client(unit: Unit) {
-            xnew.sync.client(() => { unit.on('chat', ({ text }: any) => c.push(text)); });
+            xsync.client(() => { unit.on('chat', ({ text }: any) => c.push(text)); });
         });
 
         asServer(() => (server as any).dm('psst', ['A', 'C']));

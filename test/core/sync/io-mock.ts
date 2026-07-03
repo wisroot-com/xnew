@@ -10,10 +10,10 @@
 //   - bootServer/bootClient(): force the boot mode (jsdom would otherwise always detect 'client').
 //
 // - ioMock() : { io, connect(id?) } — server-side io + client-socket factory, wired in-memory
-// - bootServer(opts, ...args) / bootClient(opts, ...args) : xnew.sync.boot with the mode forced
+// - bootServer(opts, ...args) / bootClient(opts, ...args) : xsync.boot with the mode forced
 //----------------------------------------------------------------------------------------------------
 
-import { xnew } from '../../../src/index';
+import { xnew, xsync } from '../../../src/index';
 import { setEnvironment, withEnvironment } from '../../../src/core/env';
 
 type Handler = (...args: any[]) => void;
@@ -131,16 +131,16 @@ export async function asServerAsync<T>(fn: () => Promise<T>): Promise<T> {
     try { return await fn(); } finally { setEnvironment(null); }
 }
 
-/** xnew.sync.boot を server 環境で呼ぶ（room 未指定なら既定 ROOM を補う）。 */
-export function bootServer(opts: { io: any; room?: any }, ...rest: any[]): ReturnType<typeof xnew.sync.boot> {
-    return asServer(() => xnew.sync.boot({ room: ROOM, ...opts }, ...rest));
+/** xsync.boot を server 環境で呼ぶ（room 未指定なら既定 ROOM を補う）。 */
+export function bootServer(opts: { io: any; room?: any }, ...rest: any[]): ReturnType<typeof xsync.boot> {
+    return asServer(() => xsync.boot({ room: ROOM, ...opts }, ...rest));
 }
 
 /**
- * xnew.sync.boot を client 環境で呼ぶ（room 未指定なら既定 ROOM を補う）。
+ * xsync.boot を client 環境で呼ぶ（room 未指定なら既定 ROOM を補う）。
  * boot は client 側で io() を呼んで socket を生成するため、事前生成した socket は io: () => socket で包む。
  */
-export function bootClient(opts: { socket: any; room?: any; client?: any }, ...rest: any[]): ReturnType<typeof xnew.sync.boot> {
+export function bootClient(opts: { socket: any; room?: any; client?: any }, ...rest: any[]): ReturnType<typeof xsync.boot> {
     const { socket, room = ROOM, client } = opts;
-    return asClient(() => xnew.sync.boot({ room, client, io: () => socket }, ...rest));
+    return asClient(() => xsync.boot({ room, client, io: () => socket }, ...rest));
 }

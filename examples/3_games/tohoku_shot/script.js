@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as PIXI from 'pixi.js';
@@ -120,7 +120,7 @@ xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
   const [width, height] = [800, 600];
-  xnew.extend(xnew.basics.Screen, { width, height });
+  xnew.extend(xbasics.Screen, { width, height });
 
   xpixi.initialize({ canvas: unit.canvas });
   unit.on('update', () => xpixi.renderer.render(xpixi.scene));
@@ -284,7 +284,7 @@ function BakedCharacters(unit) {
 
 // skipStory: リザルトから戻ってきたときは true。ストーリーを飛ばして直接ゲームへ。
 function TitleScene(unit, { skipStory = false } = {}) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
 
   xnew(Background);
   xnew(TitleCharacters); // 中央のうさぎ + 周囲で蠢く敵4キャラ（背景の上・HTMLテキストの下）
@@ -348,7 +348,7 @@ function DriftingFactor(unit, { id, x, y, scale }) {
 //  1: 中国うさぎがずんだアローに被弾（コミカル）
 //  2: 体内で増殖するずんだ因子（4キャラ）が蠢く
 function StoryScene(unit) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
 
   xnew(Background);   // 体内背景を流用（タイトル/ゲームと連続感）
   xnew(CameraShake);  // 被弾時のシェイク演出用
@@ -449,9 +449,9 @@ function StoryPageHit(unit) {
   xnew(() => {
     xnew.extend(StoryDialog, { accent: '#FF8FA3', tag: 'ALERT', bottomCqw: 4.5 });
 
-    xnew('<div style="color:#FF8FA3;">', () => { xnew(xnew.basics.SVGText, { text: 'ずんだアローに当たってしまった！', fontSize: '5.2cqw', stroke: '#0a1830', strokeWidth: '0.25cqw', className: 'inline-block' }); });
+    xnew('<div style="color:#FF8FA3;">', () => { xnew(xbasics.SVGText, { text: 'ずんだアローに当たってしまった！', fontSize: '5.2cqw', stroke: '#0a1830', strokeWidth: '0.25cqw', className: 'inline-block' }); });
     sub = xnew('<div class="mt-[0.6cqw]" style="color:#FCEFA0; opacity:0;">', () => {
-      xnew(xnew.basics.SVGText, { text: '（ずんだアローに当たると、ずんだ餅にされてしまう…）', fontSize: '2.5cqw', stroke: '#0a1830', strokeWidth: '0.2cqw', className: 'inline-block' });
+      xnew(xbasics.SVGText, { text: '（ずんだアローに当たると、ずんだ餅にされてしまう…）', fontSize: '2.5cqw', stroke: '#0a1830', strokeWidth: '0.2cqw', className: 'inline-block' });
     });
   });
 
@@ -503,13 +503,13 @@ function StoryPageSwarm(unit) {
   xnew(() => {
     xnew.extend(StoryDialog, { accent: '#9BE53C', tag: 'MISSION', bottomCqw: 5 });
 
-    xnew('<div class="mb-[0.6cqw]">', () => { xnew(xnew.basics.SVGText, { text: '体内の免疫キャラを操作し、', fontSize: '4cqw', stroke: '#0a1830', strokeWidth: '0.22cqw', className: 'inline-block' }); });
-    xnew('<div style="color:#9BE53C;">', () => { xnew(xnew.basics.SVGText, { text: 'ずんだ因子の増殖を食い止めろ！', fontSize: '4.4cqw', stroke: '#0a1830', strokeWidth: '0.25cqw', className: 'inline-block' }); });
+    xnew('<div class="mb-[0.6cqw]">', () => { xnew(xbasics.SVGText, { text: '体内の免疫キャラを操作し、', fontSize: '4cqw', stroke: '#0a1830', strokeWidth: '0.22cqw', className: 'inline-block' }); });
+    xnew('<div style="color:#9BE53C;">', () => { xnew(xbasics.SVGText, { text: 'ずんだ因子の増殖を食い止めろ！', fontSize: '4.4cqw', stroke: '#0a1830', strokeWidth: '0.25cqw', className: 'inline-block' }); });
   });
 }
 
 function GameScene(unit) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
 
   xnew(Background);
   xnew(CameraShake);
@@ -524,7 +524,7 @@ function GameScene(unit) {
   xnew(VolumeControl, { className: 'text-stone-300 z-10' });
 
   const bgm = xnew(() => {
-    xnew(xnew.basics.AudioTrack, { url: asset('maou_bgm_cyber31.mp3') }).play({ fade: 1000, loop: true });
+    xnew(xbasics.AudioTrack, { url: asset('maou_bgm_cyber31.mp3') }).play({ fade: 1000, loop: true });
   });
 
   unit.on('+gameover', () => {
@@ -542,9 +542,9 @@ function GameScene(unit) {
 }
 
 function ResultScene(unit, { image, score, wave, kills, cleared }) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
 
-  xnew(xnew.basics.AudioTrack, { url: asset('st005.mp3') }).play({ fade: 1, loop: true });
+  xnew(xbasics.AudioTrack, { url: asset('st005.mp3') }).play({ fade: 1, loop: true });
 
   // popup
   xnew.nest(`<div class="absolute inset-0 size-full">`);
@@ -581,7 +581,7 @@ function WaveManager(unit) {
     // 画面内の敵を一旦フェードアウト（得点は入らない）
     for (const enemy of xnew.find(Enemy)) enemy.fadeOut();
     // 警告 → 次 wave への切替表示
-    xnew.context(xnew.basics.Scene).add(WaveTransition, { wave: next });
+    xnew.context(xbasics.Scene).add(WaveTransition, { wave: next });
     xnew.timeout(() => { startWave(next); transitioning = false; }, 2800);
   }
 
@@ -589,7 +589,7 @@ function WaveManager(unit) {
   // wave は即 1 にする（0 のままだと ScoreGauge のしきい値計算が NaN になり恒久的に壊れる）。
   startWave(1);
   transitioning = true;
-  xnew.context(xnew.basics.Scene).add(WaveTransition, { wave: 1 });
+  xnew.context(xbasics.Scene).add(WaveTransition, { wave: 1 });
   xnew.timeout(() => { transitioning = false; }, 2800);
 
   let spawnTick = 0;
@@ -602,7 +602,7 @@ function WaveManager(unit) {
       return;
     }
 
-    const scene = xnew.context(xnew.basics.Scene);
+    const scene = xnew.context(xbasics.Scene);
     // 自動出現はその wave のキャラ1種のみ。下位キャラは被弾時の分裂で登場。
     const id = enemyIdForWave(wave);
     // 高い wave ほど分裂で増えるのでスポーン間隔を空ける
@@ -704,7 +704,7 @@ function WaveTransition(unit, { wave }) {
 // 右パネル上部の "Wave N" 表示（wave のメインカラーに追従）
 function WaveLabel(unit) {
   xnew.nest('<div class="absolute top-[1.5cqw] right-0 w-[25cqw] text-center font-bold text-lime-400">');
-  const text = xnew(xnew.basics.SVGText, { text: 'Wave 1', fontSize: '6cqw', stroke: '#102008', strokeWidth: '0.2cqw', className: 'inline-block' });
+  const text = xnew(xbasics.SVGText, { text: 'Wave 1', fontSize: '6cqw', stroke: '#102008', strokeWidth: '0.2cqw', className: 'inline-block' });
   xnew(FollowWave, { apply: (wave) => {
     text.element.textContent = `Wave ${wave}`;
     unit.element.style.color = waveCss(wave); // SVGText の fill=currentColor が追従
@@ -1118,7 +1118,7 @@ function Controller(unit) {
   xnew(() => {
     xnew.nest('<div class="absolute left-0 right-0 bottom-0 w-full h-[30%] pointer-events-none" style="container-type: size;">');
     xnew.nest('<div class="absolute left-0 top-0 bottom-0 w-[100cqh] h-full">');
-    const dpad = xnew('<div class="absolute inset-[5cqh]">', xnew.basics.DPad, {});
+    const dpad = xnew('<div class="absolute inset-[5cqh]">', xbasics.DPad, {});
     dpad.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));
     dpad.on('pointerdown', ({ event }) => event.stopPropagation());
   });
@@ -1174,7 +1174,7 @@ function Player(unit) {
   unit.on('+shot', () => {
     if (!alive) return;
     if (!xnew.context(ShotEnergy).tryConsume()) return; // エネルギー不足なら撃てない
-    xnew.context(xnew.basics.Scene).add(Shot, { x: object.x, y: object.y });
+    xnew.context(xbasics.Scene).add(Shot, { x: object.x, y: object.y });
     xnew.context(SoundFX).shot();
   });
   unit.on('+gameover', () => {
@@ -1182,7 +1182,7 @@ function Player(unit) {
     alive = false;
     sprite.visible = false; // 自機を消して
     hitRing.visible = false;
-    xnew.context(xnew.basics.Scene).add(PlayerExplosion, { x: object.x, y: object.y }); // 爆発
+    xnew.context(xbasics.Scene).add(PlayerExplosion, { x: object.x, y: object.y }); // 爆発
   });
 
   unit.on('update', ({ count }) => {
@@ -1332,7 +1332,7 @@ function Enemy(unit, { id, x, y, invincible = false, knockback = null }) {
       if (fromStar && !vulnerable) return; // 星チェーンは無敵中スキップ
 
       const data = ENEMY_DATA[id];
-      const scene = xnew.context(xnew.basics.Scene);
+      const scene = xnew.context(xbasics.Scene);
       const baseAngle = Math.atan2(direction.y, direction.x); // 当たった方向
 
       // 撃破エフェクト：衝撃バースト（敵が大きい id ほど強く）+ 撃破音。シェイクは自機ショット命中時のみ。
@@ -1552,13 +1552,13 @@ function ShotEnergy(unit) {
 // 効果音：ショット音と撃破音（ピン、というピアノ風のシンセ音）
 function SoundFX(unit) {
   // ショット：高めで少し下がるピッ
-  const shotSynth = xnew(xnew.basics.Synthesizer, {
+  const shotSynth = xnew(xbasics.Synthesizer, {
     oscillator: { type: 'triangle', envelope: { amount: -7, ADSR: [0, 90, 0, 0] } },
     filter: { type: 'lowpass', cutoff: 3500 },
     amp: { envelope: { amount: 0.3, ADSR: [0, 110, 0, 0] } },
   });
   // 撃破：ピン（ピアノ風の余韻のある短い音）。敵 id ごとに音程を変える。
-  const pinSynth = xnew(xnew.basics.Synthesizer, {
+  const pinSynth = xnew(xbasics.Synthesizer, {
     oscillator: { type: 'triangle' },
     filter: { type: 'lowpass', cutoff: 5000 },
     amp: { envelope: { amount: 0.8, ADSR: [2, 350, 0, 0] } },

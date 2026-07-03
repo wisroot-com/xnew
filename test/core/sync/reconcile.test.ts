@@ -1,15 +1,15 @@
 import { Unit } from '../../../src/core/unit';
-import { xnew } from '../../../src/index';
+import { xnew, xsync } from '../../../src/index';
 import { ioMock, bootClient } from './io-mock';
-import { syncOf, SyncNode } from '../../../src/core/sync';
+import { syncOf, SyncNode } from '../../../src/sync/xsync';
 
 // apply は boot 内部へ移動したため、client boot の socket に 'sync' を fire して駆動する。
 // socket.fire は受信を client 環境で擬似発火し、boot の on('sync')→apply を呼ぶ（手で作ったツリーを流し込める）。
 
 function Box(unit: Unit) {
-    xnew.sync.register({ Box });   // Box は自分を直接の同期子として許可（ネスト用）
-    const state = xnew.sync.state({ value: 0 });
-    xnew.sync.client(() => {
+    xsync.register({ Box });   // Box は自分を直接の同期子として許可（ネスト用）
+    const state = xsync.state({ value: 0 });
+    xsync.client(() => {
         const el = xnew.nest('<div>');
         unit.on('update', () => { (el as HTMLElement).textContent = String(state.value); });
     });
@@ -21,7 +21,7 @@ describe('applyStateTree create', () => {
 
     function makeView() {
         const socket = ioMock().connect();
-        const view = bootClient({ socket }, function View() { xnew.sync.register({ Box }); });
+        const view = bootClient({ socket }, function View() { xsync.register({ Box }); });
         return { view, socket };
     }
 
@@ -49,14 +49,14 @@ describe('applyStateTree create', () => {
 describe('applyStateTree state injection (client inits from server state)', () => {
     let observed: Record<string, any> | null;
     function Probe(unit: Unit) {
-        const state = xnew.sync.state({ value: 0, who: 'local' });
+        const state = xsync.state({ value: 0, who: 'local' });
         observed = { ...state };   // 本体実行時点で見えている state のスナップショット
     }
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); observed = null; });
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
     function makeView() {
         const socket = ioMock().connect();
-        const view = bootClient({ socket }, function View() { xnew.sync.register({ Probe }); });
+        const view = bootClient({ socket }, function View() { xsync.register({ Probe }); });
         return { view, socket };
     }
 
@@ -70,7 +70,7 @@ describe('applyStateTree state injection (client inits from server state)', () =
         const { socket } = makeView();
         socket.fire('sync', [{ id: 1, name: 'Probe', parent: null, state: { value: 42, who: 'server' } }]);
         observed = null;
-        xnew(function Holder() { xnew.sync.register({ Probe }); xnew(Probe); });   // apply 経由でない生成（null mode）
+        xnew(function Holder() { xsync.register({ Probe }); xnew(Probe); });   // apply 経由でない生成（null mode）
         expect(observed).toEqual({ value: 0, who: 'local' });
     });
 });
@@ -80,7 +80,7 @@ describe('applyStateTree update', () => {
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
     function makeView() {
         const socket = ioMock().connect();
-        const view = bootClient({ socket }, function View() { xnew.sync.register({ Box }); });
+        const view = bootClient({ socket }, function View() { xsync.register({ Box }); });
         return { view, socket };
     }
 
@@ -100,7 +100,7 @@ describe('applyStateTree remove', () => {
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
     function makeView() {
         const socket = ioMock().connect();
-        const view = bootClient({ socket }, function View() { xnew.sync.register({ Box }); });
+        const view = bootClient({ socket }, function View() { xsync.register({ Box }); });
         return { view, socket };
     }
 

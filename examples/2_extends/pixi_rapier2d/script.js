@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xrapier2d } from '@mulsense/xnew/addons/xrapier2d';
 import * as PIXI from 'pixi.js';
@@ -7,7 +7,7 @@ import RAPIER from '@dimforge/rapier2d-compat';
 xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
-  xnew.extend(xnew.basics.Screen, { width: 800, height: 600 });
+  xnew.extend(xbasics.Screen, { width: 800, height: 600 });
 
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
@@ -18,7 +18,7 @@ function Main(unit) {
 }
 
 function Contents(unit) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
   xrapier2d.initialize({ gravity: { x: 0.0, y: 9.81 * 10 } });
 
   xnew.promise(unit).then(() => {

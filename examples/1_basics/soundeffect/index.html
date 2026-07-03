@@ -16,7 +16,7 @@
 <body class="m-0 p-0 w-full h-screen overflow-hidden">
   <div id="main" class="relative w-full h-full"></div>
   <script type="module">
-    import { xnew } from '@mulsense/xnew';
+    import { xnew, xbasics } from '@mulsense/xnew';
 
     xnew(document.querySelector('#main'), Main);
 
@@ -43,10 +43,10 @@
         });
       });
 
-      // A minimal volume slider: extend xnew.basics.Volume for master-gain access, then bind a plain
+      // A minimal volume slider: extend xbasics.Volume for master-gain access, then bind a plain
       // <input type="range"> to it.
       xnew('<div class="absolute right-2 bottom-2 flex items-center gap-2 text-stone-500">', (unit) => {
-        const volume = xnew.extend(xnew.basics.Volume);
+        const volume = xnew.extend(xbasics.Volume);
         xnew('<span class="text-sm">', 'volume');
         const input = xnew('<input type="range" min="0" max="100" class="cursor-pointer">');
         input.element.value = volume.volume * 100;
@@ -61,7 +61,7 @@
 
     // Coin pickup: a short low blip snapping up to a sustained bright note (classic platformer coin).
     function playCoin() {
-      const synth = xnew(xnew.basics.Synthesizer, {
+      const synth = xnew(xbasics.Synthesizer, {
         oscillator: { type: 'square' },
         amp: { envelope: { amount: 0.3, ADSR: [1, 80, 0.7, 120] } },
       });
@@ -72,7 +72,7 @@
     // Jump: a fast upward pitch sweep (+24 semitones) that fades out via the amp decay rather than
     // the release tail, so the pitch reset at note-end stays silent (no trailing "ton").
     function playJump() {
-      const synth = xnew(xnew.basics.Synthesizer, {
+      const synth = xnew(xbasics.Synthesizer, {
         oscillator: { type: 'square', envelope: { amount: 24, ADSR: [80, 0, 1, 1] } },
         amp: { envelope: { amount: 0.3, ADSR: [1, 160, 0, 1] } },
       });
@@ -81,7 +81,7 @@
 
     // Power-up: an ascending arpeggio (C5-E5-G5-C6) staggered by the wait argument.
     function playPowerup() {
-      const synth = xnew(xnew.basics.Synthesizer, {
+      const synth = xnew(xbasics.Synthesizer, {
         oscillator: { type: 'triangle' },
         amp: { envelope: { amount: 0.3, ADSR: [1, 60, 0.3, 80] } },
       });
@@ -90,7 +90,7 @@
 
     // Explosion: low square pitched downward (-24 semitones) through a lowpass filter, long decay.
     function playExplosion() {
-      const synth = xnew(xnew.basics.Synthesizer, {
+      const synth = xnew(xbasics.Synthesizer, {
         oscillator: { type: 'square', envelope: { amount: -24, ADSR: [10, 600, 0, 1] } },
         filter: { type: 'lowpass', cutoff: 800 },
         amp: { envelope: { amount: 0.4, ADSR: [1, 400, 0, 300] } },
@@ -100,7 +100,7 @@
 
     // Hit / damage: a short harsh low buzz with a quick downward sweep.
     function playHit() {
-      const synth = xnew(xnew.basics.Synthesizer, {
+      const synth = xnew(xbasics.Synthesizer, {
         oscillator: { type: 'square', envelope: { amount: -12, ADSR: [1, 100, 0, 1] } },
         amp: { envelope: { amount: 0.35, ADSR: [1, 0, 1, 100] } },
       });
@@ -109,7 +109,7 @@
 
     // Select / cursor move: a very short high blip.
     function playSelect() {
-      const synth = xnew(xnew.basics.Synthesizer, {
+      const synth = xnew(xbasics.Synthesizer, {
         oscillator: { type: 'square' },
         amp: { envelope: { amount: 0.25, ADSR: [1, 0, 1, 30] } },
       });
@@ -118,7 +118,7 @@
 
     // Confirm / decide: two short rising blips (C5 -> G5).
     function playConfirm() {
-      const synth = xnew(xnew.basics.Synthesizer, {
+      const synth = xnew(xbasics.Synthesizer, {
         oscillator: { type: 'square' },
         amp: { envelope: { amount: 0.3, ADSR: [1, 40, 0.4, 60] } },
       });
@@ -128,7 +128,7 @@
 
     // Game over: a slow descending triangle melody (C5-B4-A4-G4).
     function playGameover() {
-      const synth = xnew(xnew.basics.Synthesizer, {
+      const synth = xnew(xbasics.Synthesizer, {
         oscillator: { type: 'triangle' },
         amp: { envelope: { amount: 0.3, ADSR: [2, 200, 0.4, 200] } },
       });

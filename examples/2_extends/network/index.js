@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xsync, xbasics } from '@mulsense/xnew';
 import { Game } from './game.js';
 
 //----------------------------------------------------------------------------------------------------
@@ -40,8 +40,8 @@ function Lobby(unit, { io }) {
     // io（socket.io factory）を渡すと basics.Lobby が socket を生成・所有する（room 無し = サーバーはロビー接続として扱う）。
     // basics.Lobby が受信イベントを unit.on('-event') へ転送し、finalize で socket を切断する。
     // シーン遷移（change/add）は呼び出し側の責務なので Scene をここで extend する。
-    xnew.extend(xnew.basics.Scene);
-    xnew.extend(xnew.basics.Lobby, { io });
+    xnew.extend(xbasics.Scene);
+    xnew.extend(xsync.Lobby, { io });
 
     let rooms = [];
 
@@ -107,7 +107,7 @@ function Lobby(unit, { io }) {
 // Room — 渡された io / client / room でそのルームへ接続し、client ツリー(Game) を mount してプレイ
 //   呼び出し側が io（socket.io factory）・client（表示名）・room({id,name}）を渡す。HTML（戻るボタン・
 //   シーンの mount 先）だけを持ち、room 関連の配線（boot / socket 生成・所有 / 基本イベント connect・
-//   disconnect・notfound の '-event' 転送）は xnew.basics.Room → sync.boot に委ねる（mode は client に自動判定）。
+//   disconnect・notfound の '-event' 転送）は xsync.Room → sync.boot に委ねる（mode は client に自動判定）。
 //----------------------------------------------------------------------------------------------------
 
 function Room(unit, { io, client, room }) {
@@ -120,8 +120,8 @@ function Room(unit, { io, client, room }) {
     // room 関連の配線は Room が引き受ける（boot(Game)、socket は boot が io から生成・所有し finalize で切断）。
     // io / client / room は boot へ渡され、基本イベントは boot が '-event' でこの Room の unit.on へ転送する。
     // シーン遷移（change）は呼び出し側の責務なので Scene をここで extend する。
-    xnew.extend(xnew.basics.Scene);
-    xnew.extend(xnew.basics.Room, { io, client, room, Component: Game });
+    xnew.extend(xbasics.Scene);
+    xnew.extend(xsync.Room, { io, client, room, Component: Game });
 
     unit.on('-connect', ({ id }) => app.setStatus(`ルーム ${room.id}: ${id}`, true));
     unit.on('-disconnect', () => app.setStatus('切断', false));

@@ -3,7 +3,7 @@
 //
 // server / client の別は「プロセスがどの実行環境で動いているか」で決まり、実行中に変化しない
 // （Node プロセスは常に server、browser タブは常に client）。そのため判定は起動時に一度だけ行い、
-// xnew.sync.server / xnew.sync.client の分岐と sync の transport 選択がこの 1 箇所を共有する。
+// xsync.server / xsync.client の分岐と sync の transport 選択がこの 1 箇所を共有する。
 // 1 プロセスで両環境を模す必要があるテストや、apply（常に client 側の操作）のような
 // 「環境が一意に決まる処理」のために、一時的な上書き（override）も用意する。
 //
