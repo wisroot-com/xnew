@@ -14,10 +14,32 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew, xsync } from '../../src/index';
-import { setEnvironment, withEnvironment } from '../../src/sync/xsync';
+import { setEnvironment } from '../../src/sync/xsync';
 
 type Handler = (...args: any[]) => void;
 type AnyHandler = (event: string, payload: any) => void;
+
+//---- environment override（テスト専用の人間工学） --------------------------------------------------
+// src は setEnvironment（書き）/ getEnvironment（読み・内部）だけを持つ。ネスト対応の一時上書きは
+// ここで組む。src への書き手はテストだけなので、直前値をこのモジュール内でミラーして復元する。
+type Env = 'server' | 'client';
+let currentOverride: Env | null = null;
+
+function applyEnvironment(env: Env | null): void {
+    currentOverride = env;
+    setEnvironment(env);
+}
+
+/** fn 実行中だけ env へ上書きし、終了時に直前の override（null 含む）へ戻す（ネスト可）。 */
+function withEnvironment<T>(env: Env, fn: () => T): T {
+    const previous = currentOverride;
+    applyEnvironment(env);
+    try {
+        return fn();
+    } finally {
+        applyEnvironment(previous);
+    }
+}
 
 /** テストの既定 room。bootServer/bootClient が省略時に補い、connect も既定でここへ join する。 */
 export const ROOM = { id: 'room', name: 'room', count: 0 };
@@ -127,8 +149,9 @@ export function asClient<T>(fn: () => T): T { return withEnvironment('client', f
 
 /** server 環境で非同期 fn を実行する（fake timer の flush 中に server spawn が走る場合用。完了まで env を保持）。 */
 export async function asServerAsync<T>(fn: () => Promise<T>): Promise<T> {
-    setEnvironment('server');
-    try { return await fn(); } finally { setEnvironment(null); }
+    const previous = currentOverride;
+    applyEnvironment('server');
+    try { return await fn(); } finally { applyEnvironment(previous); }
 }
 
 /** xsync.boot を server 環境で呼ぶ（room 未指定なら既定 ROOM を補う）。 */

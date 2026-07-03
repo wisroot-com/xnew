@@ -931,9 +931,8 @@ const xnew = Object.assign((function (...args) {
     },
 });
 
-const detectedEnvironment = (typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client';
 function getEnvironment() {
-    return detectedEnvironment;
+    return ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
 }
 const syncData = new WeakMap();
 function syncOf(unit) {

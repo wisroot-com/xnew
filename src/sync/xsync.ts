@@ -12,38 +12,23 @@
 //   own update, so it sees this tick's child mutations. Drive capture/apply only via the 'sync' seam.
 // Caveat: room / clients / myself are lazy getters — export the facade literal directly, never Object.assign
 //   it onto a fresh object (that invokes the getters at load with no current unit → throw).
-// syncOf / setEnvironment / withEnvironment are test seams (per-unit sync data; fake both runtimes in one process).
+// syncOf / setEnvironment are the only test seams (@internal): per-unit sync data, and a runtime override so
+// tests can fake both server & client in one process. The ergonomic wrappers (withEnvironment / asServer …) live
+// in the test harness (test/sync/io-mock.ts), built on setEnvironment.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';
 
 export type Environment = 'server' | 'client';
 
-// window（と document）が無ければ Node.js = server、有れば browser = client。
-const detectedEnvironment: Environment =
-    (typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client';
+let environment: Environment | null = null;
 
-let environmentOverride: Environment | null = null;
-
-/** 現在の実行環境を返す（override 優先、無ければ起動時の自動判定）。 */
-export function getEnvironment(): Environment {
-    return environmentOverride ?? detectedEnvironment;
-}
-
-/** 実行環境を上書きする（null で自動判定へ戻す）。主にテストが 1 プロセスで両環境を模すために使う。 */
 export function setEnvironment(env: Environment | null): void {
-    environmentOverride = env;
+    environment = env;
 }
 
-/** fn 実行中だけ env へ上書きし、終了時に直前の状態へ戻す（ネスト可。例: apply は常に client 文脈で構築）。 */
-export function withEnvironment<T>(env: Environment, fn: () => T): T {
-    const previous = environmentOverride;
-    environmentOverride = env;
-    try {
-        return fn();
-    } finally {
-        environmentOverride = previous;
-    }
+export function getEnvironment(): Environment {
+    return environment ?? ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
 }
 
 //---- shared state -----------------------------------------------------------------------------------
