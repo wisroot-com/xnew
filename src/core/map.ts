@@ -1,8 +1,8 @@
 //----------------------------------------------------------------------------------------------------
-// map utilities — 2 段キーの Map サブクラス（Unit のリスナ表や逆引きインデックスに使う）
+// map utilities — two-level Map subclasses (used for Unit listener tables and reverse indexes)
 //
-// 挿入時に内側コレクションを自動生成し、空になったら外側エントリも自動削除する。
-// 各メソッドは引数の数で外側 / 内側のどちらを操作するか切り替わる。
+// The inner collection is created on insert and the outer entry is removed once it becomes empty.
+// Each method operates on the outer or inner level depending on the number of arguments.
 //
 // - MapSet<Key, Value>        : Map<Key, Set<Value>>
 // - MapMap<Key1, Key2, Value> : Map<Key1, Map<Key2, Value>>
