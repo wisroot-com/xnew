@@ -532,22 +532,23 @@ export class UnitTimer {
             unit.on('finalize', () => current.clear());
         };
 
-        if (timer.unit === null || timer.unit._.status === 'finalized') {
-            timer.unit = Unit.create(Unit.currentUnit, Component);
-        } else if (timer.queue.length === 0) {
-            timer.queue.push(Component);
-            timer.unit.on('finalize', () => this.next());
+        // Run now if idle, otherwise queue behind the running task
+        // (each running task starts the next queued one when it finalizes).
+        if (this.unit === null || this.unit._.status === 'finalized') {
+            this.start(Component);
         } else {
-            timer.queue.push(Component);
+            this.queue.push(Component);
         }
-        return timer;
+        return this;
     }
 
-    private next() {
-        if (this.queue.length > 0) {
-            this.unit = Unit.create(Unit.currentUnit, this.queue.shift());
-            this.unit.on('finalize', () => this.next());
-        }
+    private start(Component: Function) {
+        this.unit = Unit.create(Unit.currentUnit, Component);
+        this.unit.on('finalize', () => {
+            if (this.queue.length > 0) {
+                this.start(this.queue.shift()!);
+            }
+        });
     }
 }
 
