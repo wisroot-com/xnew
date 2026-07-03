@@ -3,7 +3,7 @@
 //
 // Wire socket.io to the host unit; server/client auto-detected. Both sides receive io: the server
 // uses it as the hub; the client calls io() to create its own socket — Lobby creates it inline,
-// Room hands io (+ client) to xsync.boot which creates/owns it (→ core/env).
+// Room hands io (+ client) to xsync.boot which creates/owns it (→ engine runtime environment).
 // The room ledger (id → Room unit) is module-global so Room self-removes/re-broadcasts without a
 // Lobby context; Lobby is its sole writer and clears it on finalize. Scene navigation (change/add)
 // is the caller's concern — extend Scene on the host unit if you want it (see examples/network).
@@ -11,16 +11,16 @@
 // - Lobby    : lobby + dynamic rooms; client forwards events to '-<event>' and exposes createRoom().
 // - Room     : boots Component (boot forwards connect/disconnect/notfound); server counts members + cleanup.
 //
-// A room-list row is core's RoomStatus { id, name, count } (count = live member count).
+// A room-list row is SyncRoomStatus { id, name, count } (count = live member count).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../core/xnew';
 import { Unit, UnitTimer } from '../core/unit';
-import { sync, BootServerOptions, RoomStatus } from './engine';
+import { sync, SyncBootServerOptions, SyncRoomStatus } from './engine';
 
 const rooms = new Map<string, Unit>();
 
-function roomList(): RoomStatus[] {
+function roomList(): SyncRoomStatus[] {
     return [...rooms.values()].map((room) => room.status());
 }
 
@@ -76,7 +76,7 @@ export function Room(unit: Unit, props: any) {
     const members = new Set<string>();
 
     sync.server(() => {
-        const { io, room, Component, graceMs = 3000 } = props as { io: any; room: BootServerOptions['room']; Component: Function; graceMs?: number; };
+        const { io, room, Component, graceMs = 3000 } = props as { io: any; room: SyncBootServerOptions['room']; Component: Function; graceMs?: number; };
         sync.boot({ io, room }, Component);
 
         let graceTimer: UnitTimer | null = null;
@@ -111,12 +111,12 @@ export function Room(unit: Unit, props: any) {
         }
 
         return {
-            status(): RoomStatus { return room; },
+            status(): SyncRoomStatus { return room; },
         };
     });
 
     sync.client(() => {
-        const { io, client, room, Component } = props as { io: any; client: any; room: RoomStatus; Component: Function; };
+        const { io, client, room, Component } = props as { io: any; client: any; room: SyncRoomStatus; Component: Function; };
         sync.boot({ io, client, room }, Component);
     });
 }

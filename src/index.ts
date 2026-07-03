@@ -9,24 +9,8 @@
 // - xbasics : networking-free convenience components — src/basics/xbasics.ts
 //----------------------------------------------------------------------------------------------------
 
-import { xnew as base } from './core/xnew';
-import { Unit, UnitTimer, ComponentFn, Status as CoreStatus } from './core/unit';
-import { Environment as CoreEnvironment } from './core/env';
-
-// boot 入力 / ルームステータスの型を公開する（socket は socket.io の io / socket をそのまま渡す）。
-export type { BootServerOptions, BootClientOptions, ClientStatus, RoomStatus } from './sync/xsync';
-
-import { xsync } from './sync/xsync';
-import { xbasics } from './basics/xbasics';
-
-// --- xnew: core only (type namespace merges onto the callable) ---
-namespace xnew {
-    export type Unit = InstanceType<typeof Unit>;
-    export type UnitTimer = InstanceType<typeof UnitTimer>;
-    export type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
-    export type Environment = CoreEnvironment;
-    export type Status = CoreStatus;
-}
-const xnew = base;
-
-export { xnew, xsync, xbasics };
+// 各レイヤーは自モジュールで組み立て済み（xnew / xsync は値＋型名前空間をマージ済み。boot 入力や
+// ルームステータス等の公開型は xsync.BootServerOptions のように名前空間から参照する）ので、ここでは再輸出のみ。
+export { xnew } from './core/xnew';
+export { xsync } from './sync/xsync';
+export { xbasics } from './basics/xbasics';

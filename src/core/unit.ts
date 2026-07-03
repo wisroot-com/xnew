@@ -28,7 +28,7 @@ interface Context { previous: Context | null; key?: any; value?: any; }
 interface Snapshot { unit: Unit; context: Context; element: DomElement; Component: Function | null; }
 
 // lifecycle phase: invoked → initialized → finalizing → finalized
-export type Status = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
+type Status = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
 
 // Component 関数の型。戻り値 defines は xnew(...) の戻り値に合成される(Unit & A)。
 export type ComponentFn<P extends object = any, A extends object = {}> =

@@ -136,25 +136,47 @@ interface XnewBase {
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
 }
+declare const xnew: XnewBase & {
+    nest(target: DomElement | string): HTMLElement | SVGElement;
+    extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
+    context(key: any): any;
+    promise: {
+        (promise: Function | Promise<any> | Unit): UnitPromise;
+        (key: string, promise: Function | Promise<any> | Unit): UnitPromise;
+    };
+    scope(callback: any): any;
+    find(Component: Function, opts?: {
+        key?: any;
+    }): Unit[];
+    emit(type: string, ...args: any[]): void;
+    timeout(callback: Function, duration?: number): UnitTimer;
+    interval(callback: Function, duration: number, iterations?: number): UnitTimer;
+    transition(transition: Function, duration?: number, easing?: string): UnitTimer;
+    protect(): void;
+};
+declare namespace xnew {
+    type Unit = InstanceType<typeof Unit>;
+    type UnitTimer = InstanceType<typeof UnitTimer>;
+    type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
+}
 
-type Environment = 'server' | 'client';
-
-interface ClientStatus {
+type RuntimeEnvironment = 'server' | 'client';
+interface SyncClientStatus {
     id: string;
     name: string;
 }
-interface RoomStatus {
+interface SyncRoomStatus {
     id: string;
     name: string;
     count: number;
 }
-interface BootServerOptions {
+interface SyncBootServerOptions {
     io: any;
-    room: RoomStatus;
+    room: SyncRoomStatus;
 }
-interface BootClientOptions {
+interface SyncBootClientOptions {
     io: any;
-    room: RoomStatus;
+    room: SyncRoomStatus;
     client: any;
 }
 declare const sync: {
@@ -162,12 +184,12 @@ declare const sync: {
     client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
     state(initial?: Record<string, any>): Record<string, any>;
     register(Components: Record<string, Function>): void;
-    readonly room: RoomStatus;
-    readonly clients: ClientStatus[];
-    readonly myself: ClientStatus;
+    readonly room: SyncRoomStatus;
+    readonly clients: SyncClientStatus[];
+    readonly myself: SyncClientStatus;
     emitToServer(type: string, props?: Record<string, any>): void;
     emitToClient(type: string, props?: Record<string, any>, ids?: string[]): void;
-    boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
+    boot(opts: SyncBootServerOptions | SyncBootClientOptions, ...args: any[]): Unit;
 };
 
 declare function Lobby(unit: Unit, props: any): void;
@@ -177,6 +199,13 @@ declare const xsync: typeof sync & {
     Lobby: typeof Lobby;
     Room: typeof Room;
 };
+declare namespace xsync {
+    type Environment = RuntimeEnvironment;
+    type ClientStatus = SyncClientStatus;
+    type RoomStatus = SyncRoomStatus;
+    type BootServerOptions = SyncBootServerOptions;
+    type BootClientOptions = SyncBootClientOptions;
+}
 
 interface TransitionOptions {
     duration?: number;
@@ -356,31 +385,4 @@ declare const xbasics: {
     Volume: typeof Volume;
 };
 
-declare namespace xnew {
-    type Unit = InstanceType<typeof Unit>;
-    type UnitTimer = InstanceType<typeof UnitTimer>;
-    type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
-    type Environment = Environment;
-    type Status = Status;
-}
-declare const xnew: XnewBase & {
-    nest(target: DomElement | string): HTMLElement | SVGElement;
-    extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
-    context(key: any): any;
-    promise: {
-        (promise: Function | Promise<any> | Unit): UnitPromise;
-        (key: string, promise: Function | Promise<any> | Unit): UnitPromise;
-    };
-    scope(callback: any): any;
-    find(Component: Function, opts?: {
-        key?: any;
-    }): Unit[];
-    emit(type: string, ...args: any[]): void;
-    timeout(callback: Function, duration?: number): UnitTimer;
-    interval(callback: Function, duration: number, iterations?: number): UnitTimer;
-    transition(transition: Function, duration?: number, easing?: string): UnitTimer;
-    protect(): void;
-};
-
 export { xbasics, xnew, xsync };
-export type { BootClientOptions, BootServerOptions, ClientStatus, RoomStatus };

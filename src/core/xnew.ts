@@ -10,6 +10,7 @@
 // - xnew.promise                         : Unit に promise を登録（集約リザルトは xnew.promise(unit) で取得し .then/.catch/.finally）
 // - xnew.scope / emit / protect          : スコープ捕捉 / '+global' '-local' イベント / 可視性境界
 // - xnew.timeout / interval / transition : UnitTimer によるスケジューリング
+// - xnew.{Unit,UnitTimer,Component} : 公開型（呼び出し可能な値に型名前空間をマージ）
 //----------------------------------------------------------------------------------------------------
 //
 // 実行環境限定の extend（旧 xnew.server / xnew.client）は sync 配下へ移動した（src/sync/engine.ts）。
@@ -135,4 +136,11 @@ export const xnew = Object.assign(
 
     }
 );
+
+// 呼び出し可能な値 xnew に型名前空間をマージする（xnew.Unit などの公開型）。
+export namespace xnew {
+    export type Unit = InstanceType<typeof Unit>;
+    export type UnitTimer = InstanceType<typeof UnitTimer>;
+    export type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
+}
 
