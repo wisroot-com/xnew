@@ -14,35 +14,33 @@ export class Ticker {
 
     constructor(callback: Function, fps: number = 60) {
         const interval = 1000 / fps;
-        const minDelta = interval * 0.9;
-        let previous = 0;
 
-        const tick = (): void => {
-            if (typeof requestAnimationFrame !== 'undefined') {
-                // rAF fires at the display refresh rate, so throttle down to the target fps.
+        if (typeof requestAnimationFrame !== 'undefined') {
+            // rAF fires at the display refresh rate, so throttle down to the target fps.
+            // The first frame is scheduled (not run synchronously), so the callback begins next frame.
+            const minDelta = interval * 0.9;
+            let previous = Date.now();
+            const tick = (): void => {
                 const now = Date.now();
-                if (previous === 0) {
-                    // First tick only records the start time (callback begins next frame). Without this,
-                    // delta would be Date.now() (a huge epoch value) and it would fire synchronously on construction.
+                const delta = now - previous;
+                if (delta > minDelta) {
+                    callback(delta); // pass elapsed ms to the callback (becomes the update / render delta)
                     previous = now;
-                } else {
-                    const delta = now - previous;
-                    if (delta > minDelta) {
-                        callback(delta); // pass elapsed ms to the callback (becomes the update / render delta)
-                        previous += delta;
-                    }
                 }
-                const id = requestAnimationFrame(tick);
-                this.cancel = () => cancelAnimationFrame(id);
-            } else {
-                // setTimeout already fires at the target interval, so no throttling is needed.
+                id = requestAnimationFrame(tick);
+            };
+            let id = requestAnimationFrame(tick);
+            this.cancel = () => cancelAnimationFrame(id);
+        } else {
+            // setTimeout already fires at the target interval, so no throttling is needed.
+            let id: ReturnType<typeof setTimeout>;
+            const tick = (): void => {
                 callback(interval);
-                const id = setTimeout(tick, interval);
-                this.cancel = () => clearTimeout(id);
-            }
-        };
-
-        tick();
+                id = setTimeout(tick, interval);
+            };
+            tick();
+            this.cancel = () => clearTimeout(id);
+        }
     }
 
     clear(): void {

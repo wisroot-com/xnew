@@ -38,22 +38,19 @@ interface Snapshot {
     element: DomElement;
     Component: Function | null;
 }
-type Phase = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
 type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends [void] ? {} : Exclude<R, void | undefined>) : {};
 type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
-type SystemEvent = 'update' | 'finalize';
 declare class Unit {
     [key: string]: any;
     _: {
-        id: number;
         parent: Unit | null;
         children: Unit[];
-        phase: Phase;
+        phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
-        systems: Record<SystemEvent, {
+        systems: Record<'update' | 'finalize', {
             listener: Function;
             execute: Function;
             count: number;
@@ -89,7 +86,6 @@ declare class Unit {
     static update(unit: Unit, delta?: number): void;
     static engineRoot: Unit;
     static currentUnit: Unit;
-    static nextId: number;
     static reset(): void;
     static scope(snapshot: Snapshot, func: Function, ...args: any[]): any;
     static snapshot(unit: Unit): Snapshot;

@@ -111,31 +111,30 @@ class Ticker {
     constructor(callback, fps = 60) {
         this.cancel = null;
         const interval = 1000 / fps;
-        const minDelta = interval * 0.9;
-        let previous = 0;
-        const tick = () => {
-            if (typeof requestAnimationFrame !== 'undefined') {
+        if (typeof requestAnimationFrame !== 'undefined') {
+            const minDelta = interval * 0.9;
+            let previous = Date.now();
+            const tick = () => {
                 const now = Date.now();
-                if (previous === 0) {
+                const delta = now - previous;
+                if (delta > minDelta) {
+                    callback(delta);
                     previous = now;
                 }
-                else {
-                    const delta = now - previous;
-                    if (delta > minDelta) {
-                        callback(delta);
-                        previous += delta;
-                    }
-                }
-                const id = requestAnimationFrame(tick);
-                this.cancel = () => cancelAnimationFrame(id);
-            }
-            else {
+                id = requestAnimationFrame(tick);
+            };
+            let id = requestAnimationFrame(tick);
+            this.cancel = () => cancelAnimationFrame(id);
+        }
+        else {
+            let id;
+            const tick = () => {
                 callback(interval);
-                const id = setTimeout(tick, interval);
-                this.cancel = () => clearTimeout(id);
-            }
-        };
-        tick();
+                id = setTimeout(tick, interval);
+            };
+            tick();
+            this.cancel = () => clearTimeout(id);
+        }
     }
     clear() {
         if (this.cancel !== null) {
@@ -451,7 +450,6 @@ class Unit {
             baseElement = null;
         }
         this._ = {
-            id: Unit.nextId++,
             parent,
             phase: 'invoked',
             protected: false,
@@ -537,14 +535,12 @@ class Unit {
             });
             Unit.unit2Contexts.delete(unit);
             unit._.currentContext = { previous: null };
-            Object.keys(unit._.defines).forEach((key) => {
-                delete unit[key];
-            });
+            Object.keys(unit._.defines).forEach((key) => delete unit[key]);
             unit._.defines = {};
-            unit._.phase = 'finalized';
             if (unit._.parent) {
                 unit._.parent._.children = unit._.parent._.children.filter((u) => u !== unit);
             }
+            unit._.phase = 'finalized';
         }
     }
     static nest(unit, target, textContent) {
@@ -617,7 +613,6 @@ class Unit {
     static reset() {
         var _a;
         (_a = Unit.engineRoot) === null || _a === void 0 ? void 0 : _a.finalize();
-        Unit.nextId = 0;
         Unit.currentUnit = Unit.engineRoot = Unit.create(null);
         const ticker = new Ticker((delta) => {
             Unit.update(Unit.engineRoot, delta);
@@ -746,7 +741,6 @@ class Unit {
         }
     }
 }
-Unit.nextId = 0;
 Unit.unit2Contexts = new MapSet();
 Unit.component2units = new MapSet();
 Unit.type2units = new MapSet();
@@ -848,8 +842,12 @@ class UnitTimer {
     start(Component) {
         this.unit = Unit.create(Unit.currentUnit, Component);
         this.unit.on('finalize', () => {
-            if (this.queue.length > 0) {
+            const owner = Unit.currentUnit;
+            if (this.queue.length > 0 && owner._.phase !== 'finalizing' && owner._.phase !== 'finalized') {
                 this.start(this.queue.shift());
+            }
+            else {
+                this.queue = [];
             }
         });
     }
