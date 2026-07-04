@@ -1,22 +1,16 @@
 //----------------------------------------------------------------------------------------------------
 // dom — the boundary with the DOM (element detection + event binding)
 //
-// Decides what counts as a DOM element (SSR-safe type guard) and centralizes Unit's DOM event binding.
-// Events pass { event } through a plain addEventListener by default ('window.' / 'document.' prefixes only
-// switch the bind target); special events normalize their payload via the defineEvent(type, factory) dictionary.
-// mouse / touch are intentionally undefined (unified on pointer; a plain { event } still works).
-// Binding is deferred by 1 tick, so a listener attached during component init does not fire on the same tick.
+// Special events normalize their payload via the defineEvent dictionary; everything else passes
+// { event } through addEventListener ('window.' / 'document.' prefixes switch the bind target).
+// mouse / touch stay undefined on purpose (unified on pointer); binding is deferred by 1 tick.
 //
 // - DomElement / isDomElement : element types xnew can host (HTML | SVG) and its type guard
 // - Eventor : manages (type, listener) → finalize, resolving dictionary → passthrough
-//   (defineEvent / attach / EventProps are internal)
 //
-// Payload: change|input:{event,value} / click|pointer*:{event,position} / *.outside: fires outside the element /
-// wheel:{event,delta} / resize:{} / drag*:{event,position,delta} /
-// window.keydown|keyup:{event}(repeat stripped) / window.keydown|keyup.arrow|wasd:{event,vector} /
-// (window|document).keydown|keyup.<key>:{event} (named-key filter; repeat stripped)
-// Binding the keyboard to window/document requires a 'window.' / 'document.' prefix.
-// Without a prefix, 'keydown' etc. bind to the unit's own element as a normal event.
+// Payloads: change|input {event,value} / click|pointer* {event,position} (+ .outside) / wheel {event,delta} /
+// drag* {event,position,delta} / resize {} / window|document.keydown|keyup[.arrow|.wasd|.<key>] {event[,vector]}
+// (keyboard: repeat stripped, prefix required)
 //----------------------------------------------------------------------------------------------------
 
 import { MapMap } from './map';
@@ -135,7 +129,6 @@ defineEvent('resize', (props: EventProps) => {
     return () => observer.unobserve(props.element);
 });
 
-// keydown/keyup bound to window (auto-repeat stripped). Requires the 'window.' prefix.
 defineEvent(['window.keydown', 'window.keyup'], (props: EventProps) => {
     const type = props.type.substring('window.'.length);
     return attach(window, type, (event: any) => {
@@ -227,7 +220,6 @@ function keyVectorEvent(variant: 'keydown' | 'keyup', codes: { left: string, rig
 const ARROW_CODES = { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown' };
 const WASD_CODES = { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS' };
 
-// Vector events always aggregate pressed state on window (the 'window.' prefix is required).
 defineEvent('window.keydown.arrow', keyVectorEvent('keydown', ARROW_CODES));
 defineEvent('window.keyup.arrow', keyVectorEvent('keyup', ARROW_CODES));
 defineEvent('window.keydown.wasd', keyVectorEvent('keydown', WASD_CODES));
@@ -236,11 +228,7 @@ defineEvent('window.keyup.wasd', keyVectorEvent('keyup', WASD_CODES));
 //----------------------------------------------------------------------------------------------------
 // named-key filter — (window|document).(keydown|keyup).<key>
 //
-// Notifies keydown / keyup narrowed by the trailing key name via { event } (no event.code checks needed).
-// <key>: space / enter / escape(esc) / tab / up|down|left|right / a–z / 0–9. Others match by code|key name.
-// auto-repeat is always stripped (same as plain keydown).
-// A 'window.' / 'document.' prefix is required (explicit about where to bind); no prefix → not a named key.
-// e.g. unit.on('window.keydown.space', ({ event }) => ...) / 'document.keyup.escape'
+// <key>: space / enter / escape(esc) / tab / up|down|left|right / a–z / 0–9; others match by code|key name.
 //----------------------------------------------------------------------------------------------------
 
 const KEY_ALIASES: Record<string, string> = {
@@ -255,14 +243,13 @@ function matchKey(name: string, event: KeyboardEvent): boolean {
     return event.code?.toLowerCase() === name || event.key?.toLowerCase() === name;
 }
 
-// Returns an EventFactory on match, else undefined (caller resolves otherwise). .arrow / .wasd never
-// reach here — an exact-match factory resolves them first.
+// undefined = not a named key; exact-match factories (.arrow / .wasd) resolve before this
 function keyboardFactory(type: string): EventFactory | undefined {
     const matched = type.match(/^(window|document)\.(keydown|keyup)\.([A-Za-z0-9]+)$/);
     if (matched === null) return undefined;
     const [, scope, variant, rawKey] = matched;
     const key = rawKey.toLowerCase();
-    const target = scope === 'document' ? document : window; // 'window.' → window, 'document.' → document (prefix required)
+    const target = scope === 'document' ? document : window;
     return (props: EventProps) => attach(target, variant, (event: any) => {
         if (event.repeat) return;
         if (matchKey(key, event)) props.listener({ event });
