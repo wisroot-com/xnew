@@ -247,6 +247,10 @@ function attach(target, type, execute, options) {
         }
     };
 }
+function getPointerPosition(element, event) {
+    const rect = element.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+}
 class EventBinder {
     constructor() {
         this.map = new MapMap();
@@ -369,54 +373,53 @@ defineEvent(['dragstart', 'dragmove', 'dragend'], (props) => {
         remove();
     };
 });
-function getPointerPosition(element, event) {
-    const rect = element.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-}
-function keyVectorEvent(variant, codes) {
-    return (props) => {
-        const keymap = {};
-        const targets = [codes.left, codes.right, codes.up, codes.down];
-        const vector = () => ({
-            x: (keymap[codes.left] ? -1 : 0) + (keymap[codes.right] ? +1 : 0),
-            y: (keymap[codes.up] ? -1 : 0) + (keymap[codes.down] ? +1 : 0),
-        });
-        const bind = (kind) => attach(window, kind, (event) => {
-            if (kind === 'keyup' || !event.repeat) {
-                keymap[event.code] = kind === 'keydown' ? 1 : 0;
-                if (kind === variant && targets.includes(event.code)) {
-                    props.listener({ event, vector: vector() });
-                }
-            }
-        }, props.options);
-        const finalizers = [bind('keydown'), bind('keyup')];
-        return () => finalizers.forEach((finalize) => finalize());
+defineEvent(['window.keydown.arrow', 'window.keyup.arrow', 'window.keydown.wasd', 'window.keyup.wasd'], (props) => {
+    const VECTOR_CODES = {
+        arrow: { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown' },
+        wasd: { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS' },
     };
-}
-const ARROW_CODES = { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown' };
-const WASD_CODES = { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS' };
-defineEvent(['window.keydown.arrow'], keyVectorEvent('keydown', ARROW_CODES));
-defineEvent(['window.keyup.arrow'], keyVectorEvent('keyup', ARROW_CODES));
-defineEvent(['window.keydown.wasd'], keyVectorEvent('keydown', WASD_CODES));
-defineEvent(['window.keyup.wasd'], keyVectorEvent('keyup', WASD_CODES));
-const KEY_ALIASES = {
-    space: 'Space', enter: 'Enter', escape: 'Escape', esc: 'Escape', tab: 'Tab',
-    up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
-};
-function matchKey(name, event) {
-    var _a, _b;
-    if (KEY_ALIASES[name] !== undefined)
-        return event.code === KEY_ALIASES[name];
-    if (/^[a-z]$/.test(name))
-        return event.code === 'Key' + name.toUpperCase();
-    if (/^[0-9]$/.test(name))
-        return event.code === 'Digit' + name;
-    return ((_a = event.code) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === name || ((_b = event.key) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === name;
-}
+    const [, variant, name] = props.type.split('.');
+    const codes = VECTOR_CODES[name];
+    const keymap = {};
+    const targets = [codes.left, codes.right, codes.up, codes.down];
+    const vector = () => ({
+        x: (keymap[codes.left] ? -1 : 0) + (keymap[codes.right] ? +1 : 0),
+        y: (keymap[codes.up] ? -1 : 0) + (keymap[codes.down] ? +1 : 0),
+    });
+    const bind = (kind) => attach(window, kind, (event) => {
+        if (kind === 'keyup' || !event.repeat) {
+            keymap[event.code] = kind === 'keydown' ? 1 : 0;
+            if (kind === variant && targets.includes(event.code)) {
+                props.listener({ event, vector: vector() });
+            }
+        }
+    }, props.options);
+    const finalizers = [bind('keydown'), bind('keyup')];
+    return () => finalizers.forEach((finalize) => finalize());
+});
 function keyboardEvent(matched, props) {
     const [, scope, variant, rawKey] = matched;
     const key = rawKey === null || rawKey === void 0 ? void 0 : rawKey.toLowerCase();
     const target = scope === 'document' ? document : window;
+    const matchKey = (name, event) => {
+        var _a, _b;
+        const aliases = {
+            space: 'Space', enter: 'Enter', escape: 'Escape', esc: 'Escape', tab: 'Tab',
+            up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
+        };
+        if (aliases[name] !== undefined) {
+            return event.code === aliases[name];
+        }
+        else if (/^[a-z]$/.test(name)) {
+            return event.code === 'Key' + name.toUpperCase();
+        }
+        else if (/^[0-9]$/.test(name)) {
+            return event.code === 'Digit' + name;
+        }
+        else {
+            return ((_a = event.code) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === name || ((_b = event.key) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === name;
+        }
+    };
     return attach(target, variant, (event) => {
         if (!event.repeat && (key === undefined || matchKey(key, event))) {
             props.listener({ event });
