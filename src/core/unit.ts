@@ -24,7 +24,7 @@ interface Context { previous: Context | null; key?: any; value?: any; }
 interface Snapshot { unit: Unit; context: Context; element: DomElement; Component: Function | null; }
 
 // lifecycle phase: invoked → initialized → finalizing → finalized
-type Status = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
+type Phase = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
 
 // Component function type; the returned defines are merged into the xnew(...) return value (Unit & A).
 export type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
@@ -49,7 +49,7 @@ export class Unit {
         parent: Unit | null;
         children: Unit[];
 
-        status: Status;
+        phase: Phase;
         protected: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
@@ -88,7 +88,7 @@ export class Unit {
         this._ = {
             id: Unit.nextId++,
             parent,
-            status: 'invoked',
+            phase: 'invoked',
             protected: false,
             currentElement: baseElement,
             currentContext: baseContext,
@@ -140,8 +140,8 @@ export class Unit {
 
         Unit.extend(unit, baseComponent, props);
 
-        if (unit._.status === 'invoked') {
-            unit._.status = 'initialized';
+        if (unit._.phase === 'invoked') {
+            unit._.phase = 'initialized';
         }
         unit._.lastSnapshot = Unit.snapshot(unit);
         Unit.currentUnit = backup;
@@ -160,8 +160,8 @@ export class Unit {
     }
 
     static finalize(unit: Unit): void {
-        if (unit._.status !== 'finalized' && unit._.status !== 'finalizing') {
-            unit._.status = 'finalizing';
+        if (unit._.phase !== 'finalized' && unit._.phase !== 'finalizing') {
+            unit._.phase = 'finalizing';
 
             [...unit._.children].reverse().forEach((child: Unit) => child.finalize());
             [...unit._.systems.finalize].reverse().forEach(({ execute }) => execute());
@@ -191,7 +191,7 @@ export class Unit {
                 delete unit[key];
             });
             unit._.defines = {};
-            unit._.status = 'finalized';
+            unit._.phase = 'finalized';
 
             if (unit._.parent) {
                 unit._.parent._.children = unit._.parent._.children.filter((u: Unit) => u !== unit);
@@ -265,7 +265,7 @@ export class Unit {
     // Drives only initialized units. Listeners receive ({ count, delta }): count is per
     // registration (starting at 0), delta is elapsed ms since the previous frame.
     static update(unit: Unit, delta: number = 0): void {
-        if (unit._.status === 'initialized') {
+        if (unit._.phase === 'initialized') {
             unit._.children.forEach((child: Unit) => Unit.update(child, delta));
             unit._.systems.update.forEach((entry) => entry.execute({ count: entry.count++, delta }));
         }
@@ -285,7 +285,7 @@ export class Unit {
     }
 
     static scope(snapshot: Snapshot, func: Function, ...args: any[]): any {
-        if (snapshot.unit._.status === 'finalized') {
+        if (snapshot.unit._.phase === 'finalized') {
             return;
         } 
         const currentUnit = Unit.currentUnit;
@@ -501,7 +501,7 @@ export class UnitTimer {
             function onTimeout() {
                 if (timeout) Unit.scope(snapshot, timeout, { timer });
                 // if the callback called timer.clear(), the unit is finalized — do not reschedule.
-                if (unit._.status === 'finalized') { return; }
+                if (unit._.phase === 'finalized') { return; }
                 if (iterations <= 0 || counter < iterations - 1) {
                     current = new Timer(onTimeout, onTransition, duration, easing);
                 } else {
@@ -518,7 +518,7 @@ export class UnitTimer {
 
         // Run now if idle, otherwise queue behind the running task
         // (each running task starts the next queued one when it finalizes).
-        if (this.unit === null || this.unit._.status === 'finalized') {
+        if (this.unit === null || this.unit._.phase === 'finalized') {
             this.start(Component);
         } else {
             this.queue.push(Component);

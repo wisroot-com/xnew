@@ -239,7 +239,7 @@ export const xsync = {
     },
     register(Components: Record<string, Function>): void {
         const unit = Unit.currentUnit;
-        if (unit._.status !== 'invoked') {
+        if (unit._.phase !== 'invoked') {
             throw new Error('xsync.register must be called during component initialization.');
         }
         Object.assign(syncOf(unit).registry, Components);

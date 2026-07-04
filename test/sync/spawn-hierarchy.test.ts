@@ -77,7 +77,7 @@ describe('2-level spawn hierarchy (Mover -> Enemy)', () => {
         await asServerAsync(() => jest.advanceTimersByTimeAsync(1000));   // 最初の Enemy の寿命経過 → server 側 finalize
         asServer(() => Unit.update(server));                   // capture + 'sync' → client apply
         // 最初の Enemy は replica からも消える（interval で別の Enemy は spawn され続ける）
-        expect(firstEnemy._.status).toBe('finalized');
+        expect(firstEnemy._.phase).toBe('finalized');
         expect(replicaMover._.children.some(c => syncOf(c).id === firstId)).toBe(false);
     });
 });

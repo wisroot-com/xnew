@@ -115,6 +115,6 @@ describe('applyStateTree remove', () => {
         socket.fire('sync', [{ id: 1, name: 'Box', parent: null, state: {} }]);
         expect(view._.children.length).toBe(1);
         expect(syncOf(view._.children[0]).id).toBe(1);
-        expect(removed._.status).toBe('finalized');
+        expect(removed._.phase).toBe('finalized');
     });
 });

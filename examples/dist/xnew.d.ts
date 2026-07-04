@@ -38,7 +38,7 @@ interface Snapshot {
     element: DomElement;
     Component: Function | null;
 }
-type Status = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
+type Phase = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
 type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends [void] ? {} : Exclude<R, void | undefined>) : {};
 type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
@@ -49,7 +49,7 @@ declare class Unit {
         id: number;
         parent: Unit | null;
         children: Unit[];
-        status: Status;
+        phase: Phase;
         protected: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;

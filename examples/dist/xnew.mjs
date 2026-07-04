@@ -453,7 +453,7 @@ class Unit {
         this._ = {
             id: Unit.nextId++,
             parent,
-            status: 'invoked',
+            phase: 'invoked',
             protected: false,
             currentElement: baseElement,
             currentContext: baseContext,
@@ -499,8 +499,8 @@ class Unit {
         const backup = Unit.currentUnit;
         Unit.currentUnit = unit;
         Unit.extend(unit, baseComponent, props);
-        if (unit._.status === 'invoked') {
-            unit._.status = 'initialized';
+        if (unit._.phase === 'invoked') {
+            unit._.phase = 'initialized';
         }
         unit._.lastSnapshot = Unit.snapshot(unit);
         Unit.currentUnit = backup;
@@ -515,8 +515,8 @@ class Unit {
         Unit.finalize(this);
     }
     static finalize(unit) {
-        if (unit._.status !== 'finalized' && unit._.status !== 'finalizing') {
-            unit._.status = 'finalizing';
+        if (unit._.phase !== 'finalized' && unit._.phase !== 'finalizing') {
+            unit._.phase = 'finalizing';
             [...unit._.children].reverse().forEach((child) => child.finalize());
             [...unit._.systems.finalize].reverse().forEach(({ execute }) => execute());
             unit.off();
@@ -541,7 +541,7 @@ class Unit {
                 delete unit[key];
             });
             unit._.defines = {};
-            unit._.status = 'finalized';
+            unit._.phase = 'finalized';
             if (unit._.parent) {
                 unit._.parent._.children = unit._.parent._.children.filter((u) => u !== unit);
             }
@@ -609,7 +609,7 @@ class Unit {
         return clone;
     }
     static update(unit, delta = 0) {
-        if (unit._.status === 'initialized') {
+        if (unit._.phase === 'initialized') {
             unit._.children.forEach((child) => Unit.update(child, delta));
             unit._.systems.update.forEach((entry) => entry.execute({ count: entry.count++, delta }));
         }
@@ -625,7 +625,7 @@ class Unit {
         Unit.engineRoot.on('finalize', () => ticker.clear());
     }
     static scope(snapshot, func, ...args) {
-        if (snapshot.unit._.status === 'finalized') {
+        if (snapshot.unit._.phase === 'finalized') {
             return;
         }
         const currentUnit = Unit.currentUnit;
@@ -820,7 +820,7 @@ class UnitTimer {
             function onTimeout() {
                 if (timeout)
                     Unit.scope(snapshot, timeout, { timer });
-                if (unit._.status === 'finalized') {
+                if (unit._.phase === 'finalized') {
                     return;
                 }
                 if (iterations <= 0 || counter < iterations - 1) {
@@ -837,7 +837,7 @@ class UnitTimer {
             }
             unit.on('finalize', () => current.clear());
         };
-        if (this.unit === null || this.unit._.status === 'finalized') {
+        if (this.unit === null || this.unit._.phase === 'finalized') {
             this.start(Component);
         }
         else {
@@ -870,13 +870,13 @@ const xnew = Object.assign((function (...args) {
     }
 }), {
     nest(target) {
-        if (Unit.currentUnit._.status !== 'invoked') {
+        if (Unit.currentUnit._.phase !== 'invoked') {
             throw new Error('xnew.nest can not be called after initialized.');
         }
         return Unit.nest(Unit.currentUnit, target);
     },
     extend(Component, props) {
-        if (Unit.currentUnit._.status !== 'invoked') {
+        if (Unit.currentUnit._.phase !== 'invoked') {
             throw new Error('xnew.extend can not be called after initialized.');
         }
         if (Unit.currentUnit._.Components.includes(Component) === true) {
@@ -1123,7 +1123,7 @@ const xsync = {
     },
     register(Components) {
         const unit = Unit.currentUnit;
-        if (unit._.status !== 'invoked') {
+        if (unit._.phase !== 'invoked') {
             throw new Error('xsync.register must be called during component initialization.');
         }
         Object.assign(syncOf(unit).registry, Components);

@@ -45,7 +45,7 @@ export const xnew = Object.assign(
     {
         /** Nests a child element（既存要素 or '<div>' 等のタグ文字列）。初期化中のみ呼べる。 */
         nest(target: DomElement | string): HTMLElement | SVGElement {
-            if (Unit.currentUnit._.status !== 'invoked') {
+            if (Unit.currentUnit._.phase !== 'invoked') {
                 throw new Error('xnew.nest can not be called after initialized.');
             }
             return Unit.nest(Unit.currentUnit, target);
@@ -53,7 +53,7 @@ export const xnew = Object.assign(
 
         /** Extends the current unit with another component. 初期化中のみ呼べる。defines を返す。 */
         extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C> {
-            if (Unit.currentUnit._.status !== 'invoked') {
+            if (Unit.currentUnit._.phase !== 'invoked') {
                 throw new Error('xnew.extend can not be called after initialized.');
             }
             if (Unit.currentUnit._.Components.includes(Component) === true) {
