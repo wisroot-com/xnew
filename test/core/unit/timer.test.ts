@@ -105,6 +105,39 @@ describe('UnitTimer', () => {
             expect(second).toHaveBeenCalledTimes(1);
         });
 
+        it('does not start a queued timeout under a finalizing parent', () => {
+            const second = jest.fn();
+            let parent!: Unit;
+            xnew((unit: Unit) => {
+                parent = unit;
+                xnew.timeout(() => {}, 100).timeout(second, 100);
+            });
+
+            parent.finalize();
+
+            expect(parent._.children.length).toBe(0);
+            jest.advanceTimersByTime(1000);
+            expect(second).not.toHaveBeenCalled();
+        });
+
+        it('does not leak a queued infinite interval when the parent is finalized', () => {
+            const cb = jest.fn();
+            let parent!: Unit;
+            xnew((unit: Unit) => {
+                parent = unit;
+                xnew.timeout(() => {}, 100).interval(cb, 100, 0);
+            });
+            const running = jest.getTimerCount();
+
+            parent.finalize();
+
+            // the running task's timers are cleared and no queued task is started
+            expect(jest.getTimerCount()).toBeLessThan(running);
+            jest.advanceTimersByTime(10000);
+            expect(cb).not.toHaveBeenCalled();
+            expect(parent._.children.length).toBe(0);
+        });
+
         it('runs each queued callback in the originating unit scope', () => {
             const observed: Array<Unit | null> = [];
             let target!: Unit;

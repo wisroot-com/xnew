@@ -527,8 +527,13 @@ export class UnitTimer {
     private start(Component: Function) {
         this.unit = Unit.create(Unit.currentUnit, Component);
         this.unit.on('finalize', () => {
-            if (this.queue.length > 0) {
+            // While the owner unit is finalizing, starting the next task would attach a new unit
+            // to the dying owner and escape its child-finalize loop, so drop the queue instead.
+            const owner = Unit.currentUnit;
+            if (this.queue.length > 0 && owner._.phase !== 'finalizing' && owner._.phase !== 'finalized') {
                 this.start(this.queue.shift()!);
+            } else {
+                this.queue = [];
             }
         });
     }
