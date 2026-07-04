@@ -1,18 +1,14 @@
 //----------------------------------------------------------------------------------------------------
 // Unit — the lifecycle, ownership, and scoping primitive of xnew
 //
-// Unit は DOM 要素・Component・子 unit・リスナ・promise を 1 つに束ね、状態機械
-// invoked → initialized → finalizing → finalized で駆動する。initialized が実行状態で、
-// update はそこで走る（一時停止/再開の概念は持たない）。
-// 遅延コールバック（DOM イベント・timer・promise 継続）は Snapshot 経由で Unit.scope に再入し、
-// 非同期を跨いでも元のコンポーネント内にいるかのように実行される。
+// A Unit bundles DOM elements, Components, children, listeners, and promises into one disposable
+// node driven by invoked → initialized → finalizing → finalized. Deferred callbacks (DOM events,
+// timers, promise continuations) re-enter Unit.scope via a Snapshot, so they run as if still
+// inside the original component.
 //
 // - Unit        : core class — lifecycle, listeners, contexts, emit
-// - UnitPromise : 元の Unit スコープで再開する promise ラッパー。.then / .catch / .finally は
-//                 捕捉スコープで callback を実行し、戻り値をチェーン値にする素のチェーン
-//                 （非同期継続は return new Promise で表す）。集約リザルトは xnew.promise(unit)
-//                 で取得する（集約しても対象 unit のプールは消費しない）。
-// - UnitTimer   : xnew.timeout / interval / transition が使うキュー式タイマー
+// - UnitPromise : promise wrapper resuming in the captured Unit scope; aggregated by xnew.promise(unit)
+// - UnitTimer   : queued timer backing xnew.timeout / interval / transition
 //----------------------------------------------------------------------------------------------------
 
 import { MapSet, MapMap } from './map';
@@ -30,19 +26,14 @@ interface Snapshot { unit: Unit; context: Context; element: DomElement; Componen
 // lifecycle phase: invoked → initialized → finalizing → finalized
 type Status = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
 
-// Component 関数の型。戻り値 defines は xnew(...) の戻り値に合成される(Unit & A)。
-export type ComponentFn<P extends object = any, A extends object = {}> =
-    (unit: Unit, props: P) => A | void;
+// Component function type; the returned defines are merged into the xnew(...) return value (Unit & A).
+export type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 
-// Component の defines 型を取り出す（void は {} に落とす）。
-export type DefinesOf<C> =
-    C extends (...args: any[]) => infer R
-        ? ([R] extends [void] ? {} : Exclude<R, void | undefined>)
-        : {};
+// Extract the defines type of a Component (void falls back to {}).
+export type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends [void] ? {} : Exclude<R, void | undefined>) : {};
 
-// Component の props 型を取り出す（無い場合は {}）。
-export type PropsOf<C> =
-    C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
+// Extract the props type of a Component ({} if absent).
+export type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
 
 type SystemEvent = 'update' | 'finalize';
 
@@ -62,8 +53,8 @@ export class Unit {
         protected: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
-        // update / finalize の唯一の登録先（listeners とは別経路で、emit / sync の dispatch には載らない）。
-        // count はリスナ登録ごとに保持する（そのリスナが呼ばれた回数。後から登録したものは 0 始まり）。
+        // sole registry for update / finalize (separate from listeners; never reached by emit / sync).
+        // count is per registration: how many times that listener has run, starting at 0.
         systems: Record<SystemEvent, { listener: Function, execute: Function, count: number }[]>;
 
         currentElement: DomElement;
@@ -271,9 +262,8 @@ export class Unit {
         return clone;
     }
 
-    // count = そのリスナが呼ばれた回数（登録後 0 始まり）, delta = 前フレームからの経過 ms。
-    // リスナは ({ count, delta }) で受け取れる。count はリスナ登録ごとに独立し、
-    // 後から登録したリスナは 0 から数え始める。initialized になった unit のみ駆動する。
+    // Drives only initialized units. Listeners receive ({ count, delta }): count is per
+    // registration (starting at 0), delta is elapsed ms since the previous frame.
     static update(unit: Unit, delta: number = 0): void {
         if (unit._.status === 'initialized') {
             unit._.children.forEach((child: Unit) => Unit.update(child, delta));
@@ -283,7 +273,7 @@ export class Unit {
 
     static engineRoot: Unit;
     static currentUnit: Unit;
-    static nextId: number = 0;   // unit ごとに 0 から順番に採番する id（reset でリセット）
+    static nextId: number = 0;   // sequential unit id from 0 (reset by reset())
     static reset(): void {
         Unit.engineRoot?.finalize();
         Unit.nextId = 0;
@@ -334,16 +324,15 @@ export class Unit {
 
     static component2units: MapSet<Function, Unit> = new MapSet();
 
-    // 祖先列（unit 自身は含まない）。
+    // Ancestor chain (excluding unit itself).
     static ancestors(unit: Unit | null): Unit[] {
         const ancestors: Unit[] = [];
         for (let u = unit?._.parent ?? null; u !== null; u = u._.parent) ancestors.push(u);
         return ancestors;
     }
 
-    // from を起点に protect 境界越しの対象が current（とその祖先列）から可視か。
-    // from から遡って最初の protect 境界を求め、無ければ可視、あれば current かその祖先列に
-    // 含まれる（= 境界を通過できる）場合のみ可視。
+    // Visibility across protect boundaries: find the nearest protected ancestor of `from`;
+    // visible if there is none, or if it is `current` or one of its ancestors.
     static isVisible(from: Unit | null, current: Unit | null, ancestors: Unit[]): boolean {
         let boundary: Unit | undefined;
         for (let u = from; u !== null; u = u._.parent) {
@@ -376,7 +365,6 @@ export class Unit {
     }
 
     public off(type?: string, listener?: Function): void {
-        // 型未指定は全解除。system イベントは listeners に載らないので明示的に加える。
         const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), 'update', 'finalize'];
 
         types.forEach((type) => Unit.off(this, type, listener));
@@ -388,8 +376,7 @@ export class Unit {
             Unit.scope(snapshot, listener, Object.assign({ type }, props));
         }
         if (type === 'update' || type === 'finalize') {
-            // update / finalize は lifecycle 駆動専用。dispatch 経路（listeners / type2units / eventor）
-            // には載せず systems だけを登録先にする（emit / sync はこれらを参照しない）。
+            // lifecycle-only: registered in systems, never in the dispatch path (listeners / type2units / eventor).
             unit._.systems[type].push({ listener, execute, count: 0 });
         } else if (unit._.listeners.has(type, listener) === false) {
             unit._.listeners.set(type, listener, { element: unit.element, Component: unit._.currentComponent, execute });
@@ -442,8 +429,8 @@ export class UnitPromise {
     public key?: string;
     constructor(promise: Promise<any>, key?: string) { this.promise = promise; this.key = key; }
 
-    // then / catch / finally は捕捉スコープで callback を実行し、戻り値をチェーン値にする。
-    // UnitPromise を返した場合は内部 promise に展開して非同期継続を表す。
+    // then / catch / finally run the callback in the captured scope; the return value becomes the
+    // chain value (a returned UnitPromise unwraps to its inner promise for async continuation).
     private chain(method: 'then' | 'catch' | 'finally', callback: Function): UnitPromise {
         const snapshot = Unit.snapshot(Unit.currentUnit);
         this.promise = (this.promise[method] as Function)((...args: any[]) => {
@@ -462,10 +449,8 @@ export class UnitPromise {
         return this.chain('finally', callback);
     }
 
-    // promise 群を集約した Promise を返す（解決値は常にオブジェクト）。呼び出し側で
-    // new UnitPromise(...) に包む（他の登録分岐と形を揃えるため wrap はここでは行わない）。
-    // - キー付きのみ出力に含める（キーが `name[]` 形式なら out[name] を配列にして登録順 push）。
-    // - キー無しは await されるが出力には含めない（完了待ちの対象にはなる）。
+    // Aggregate promises into one Promise resolving to an object: keyed entries are included
+    // (a `name[]` key pushes into out[name] in registration order); unkeyed ones are awaited only.
     public static async collect(promises: UnitPromise[]): Promise<Record<string, any>> {
         const values = await Promise.all(promises.map(p => p.promise));
         const out: Record<string, any> = {};
@@ -473,7 +458,6 @@ export class UnitPromise {
             if (p.key === undefined) { return; }
             const matched = p.key.match(/^(.+)\[\]$/);
             if (matched !== null) {
-                // `name[]` はその name を配列にして登録順に push する。
                 const name = matched[1];
                 if (Array.isArray(out[name]) === false) { out[name] = []; }
                 out[name].push(values[i]);
@@ -509,14 +493,14 @@ export class UnitTimer {
         const timer = this;
         const snapshot = Unit.snapshot(Unit.currentUnit);
 
-        // タイマーのパラメータはクロージャで捕捉し、props では渡さない。
+        // Timer parameters are captured by closure, not passed as props.
         const Component = (unit: Unit) => {
             let counter = 0;
             let current = new Timer(onTimeout, onTransition, duration, easing);
 
             function onTimeout() {
                 if (timeout) Unit.scope(snapshot, timeout, { timer });
-                // コールバック内で timer.clear() された場合は unit が finalize 済みなので再スケジュールしない。
+                // if the callback called timer.clear(), the unit is finalized — do not reschedule.
                 if (unit._.status === 'finalized') { return; }
                 if (iterations <= 0 || counter < iterations - 1) {
                     current = new Timer(onTimeout, onTransition, duration, easing);
