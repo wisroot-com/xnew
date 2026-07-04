@@ -55,13 +55,25 @@ interface ClientInfo { socket: any; room: SyncRoomStatus; clients: SyncClientSta
 interface SyncBootServerOptions { io: any; room: SyncRoomStatus; }
 interface SyncBootClientOptions { io: any; room: SyncRoomStatus; client: any; }
 
-// A boot root publishes its SyncInfo as an ancestor context; descendants resolve the nearest root via
-// Unit.getContext. Private Symbol (avoids xnew.context() collision); auto-cleared on root finalize.
-const SYNC_KEY = Symbol('sync');
+// A boot root owns its SyncInfo here, keyed by the root unit itself; descendants resolve the nearest root
+// by walking their ancestor chain until they hit a unit registered as a key in this map. WeakMap → the
+// entry is auto-dropped once the root unit becomes unreachable (no explicit clear on finalize needed).
+const rootInfos: WeakMap<Unit, ServerInfo | ClientInfo> = new WeakMap();
+
+/** Nearest sync root info at or above `unit` (undefined if no registered root in this unit's ancestry). */
+function findRootInfo(unit: Unit): ServerInfo | ClientInfo | undefined {
+    for (let u: Unit | null = unit; u !== null; u = u._.parent) {
+        const info = rootInfos.get(u);
+        if (info !== undefined) {
+            return info;
+        }
+    }
+    return undefined;
+}
 
 /** Internal info of the caller's sync root (throws if not booted). */
 function rootInfoOf(unit: Unit): ServerInfo | ClientInfo {
-    const info = Unit.getContext(unit, SYNC_KEY) as ServerInfo | ClientInfo | undefined;
+    const info = findRootInfo(unit);
     if (info === undefined) {
         throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
     }
@@ -80,7 +92,7 @@ function dispatch(info: ServerInfo | ClientInfo, event: string, id: string | und
     const data = payload && payload.data !== null && typeof payload.data === 'object' ? payload.data : {};
     const syncId = payload ? payload.syncId : undefined;
     (Unit.type2units.get(event) ?? []).forEach((unit) => {
-        if (Unit.getContext(unit, SYNC_KEY) !== info) return; // skip units of another root
+        if (findRootInfo(unit) !== info) return; // skip units of another root
         if (event[0] === '-' && syncOf(unit).id !== syncId) return; // skip units of another sync node
         unit._.listeners.get(event)?.forEach((item) => item.execute({ id, ...data }));
     });
@@ -102,9 +114,9 @@ function bootServer(opts: SyncBootServerOptions, parent: Unit, args: any[]): Uni
     const { io, room } = opts;
     const info: ServerInfo = { io, room, clients: [] };
 
-    // Bind info as ancestor context before init so the body can resolve it.
+    // Register info under this root before init so the body (and descendants) resolve it via findRootInfo.
     const root = new Unit(parent);
-    Unit.addContext(root, root, SYNC_KEY, info);
+    rootInfos.set(root, info);
     Unit.initialize(root, ...args);
 
     // capture this root's sync targets as a flat pre-order node list (closed over `root`).
@@ -175,9 +187,9 @@ function bootClient(opts: SyncBootClientOptions, parent: Unit, args: any[]): Uni
     const socket = io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
     const info: ClientInfo = { socket, room, clients: [] };
 
-    // Bind info as ancestor context before init so the body can resolve it.
+    // Register info under this root before init so the body (and descendants) resolve it via findRootInfo.
     const root = new Unit(parent);
-    Unit.addContext(root, root, SYNC_KEY, info);
+    rootInfos.set(root, info);
     Unit.initialize(root, ...args);
 
     // diff-apply a captured tree onto this client root (create/update/remove; tree is pre-order).
