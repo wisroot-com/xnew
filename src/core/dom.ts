@@ -27,10 +27,7 @@ const factories = new Map<string, (props: EventProps) => Function>();
 
 function attach(target: Window | Document | DomElement, type: string, execute: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): Function {
     let initialized = false;
-    const id = setTimeout(() => {
-        initialized = true;
-        target.addEventListener(type, execute, options);
-    }, 0);
+    const id = setTimeout(() => { initialized = true; target.addEventListener(type, execute, options); }, 0);
 
     return () => {
         if (initialized === false) {
@@ -46,11 +43,14 @@ export class EventBinder {
 
     public add(element: DomElement, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void {
         const props: EventProps = { element, type, listener, options };
-        const factory = factories.get(type) ?? keyboardFactory(type);
+        const factory = factories.get(type);
+        const keyboard = type.match(/^(window|document)\.(keydown|keyup)(?:\.([A-Za-z0-9]+))?$/);
 
         let finalize: Function;
         if (factory !== undefined) {
             finalize = factory(props);
+        } else if (keyboard !== null) {
+            finalize = keyboardEvent(keyboard, props);
         } else {
             let target: Window | Document | DomElement = element;
             let name = type;
@@ -63,7 +63,6 @@ export class EventBinder {
             }
             finalize = attach(target, name, (event: Event) => listener({ event }), options);
         }
-
         this.map.set(type, listener, finalize);
     }
 
@@ -80,14 +79,9 @@ export class EventBinder {
 // special-event dictionary
 //----------------------------------------------------------------------------------------------------
 
-function getPointerPosition(element: DomElement, event: { clientX: number, clientY: number }): { x: number, y: number } {
-    const rect = element.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-}
-
 /** Registers a custom event factory for one or more exact type strings (last registration wins). */
-function defineEvent(types: string | string[], factory: (props: EventProps) => Function): void {
-    (Array.isArray(types) ? types : [types]).forEach((type) => factories.set(type, factory));
+function defineEvent(types: string[], factory: (props: EventProps) => Function): void {
+    types.forEach((type) => factories.set(type, factory));
 }
 
 defineEvent(['change', 'input'], (props: EventProps) => {
@@ -118,13 +112,13 @@ defineEvent(['click.outside', 'pointerdown.outside', 'pointermove.outside', 'poi
     }, props.options);
 });
 
-defineEvent('wheel', (props: EventProps) => {
+defineEvent(['wheel'], (props: EventProps) => {
     return attach(props.element, props.type, (event: any) => {
         props.listener({ event, delta: { x: event.deltaX, y: event.deltaY } });
     }, props.options);
 });
 
-defineEvent('resize', (props: EventProps) => {
+defineEvent(['resize'], (props: EventProps) => {
     const observer = new ResizeObserver(() => props.listener({}));
     observer.observe(props.element);
     return () => observer.unobserve(props.element);
@@ -180,6 +174,11 @@ defineEvent(['dragstart', 'dragmove', 'dragend'], (props: EventProps) => {
     };
 });
 
+function getPointerPosition(element: DomElement, event: { clientX: number, clientY: number }): { x: number, y: number } {
+    const rect = element.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+}
+
 // Tracks the 4 keys' pressed state in keymap and emits a combined vector on their keydown / keyup.
 function keyVectorEvent(variant: 'keydown' | 'keyup', codes: { left: string, right: string, up: string, down: string }): (props: EventProps) => Function {
     return (props: EventProps) => {
@@ -207,10 +206,10 @@ function keyVectorEvent(variant: 'keydown' | 'keyup', codes: { left: string, rig
 const ARROW_CODES = { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown' };
 const WASD_CODES = { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS' };
 
-defineEvent('window.keydown.arrow', keyVectorEvent('keydown', ARROW_CODES));
-defineEvent('window.keyup.arrow', keyVectorEvent('keyup', ARROW_CODES));
-defineEvent('window.keydown.wasd', keyVectorEvent('keydown', WASD_CODES));
-defineEvent('window.keyup.wasd', keyVectorEvent('keyup', WASD_CODES));
+defineEvent(['window.keydown.arrow'], keyVectorEvent('keydown', ARROW_CODES));
+defineEvent(['window.keyup.arrow'], keyVectorEvent('keyup', ARROW_CODES));
+defineEvent(['window.keydown.wasd'], keyVectorEvent('keydown', WASD_CODES));
+defineEvent(['window.keyup.wasd'], keyVectorEvent('keyup', WASD_CODES));
 
 //----------------------------------------------------------------------------------------------------
 // named-key filter — (window|document).(keydown|keyup).<key>
@@ -230,18 +229,12 @@ function matchKey(name: string, event: KeyboardEvent): boolean {
     return event.code?.toLowerCase() === name || event.key?.toLowerCase() === name;
 }
 
-// undefined = not a keyboard binding; exact-match factories (.arrow / .wasd) resolve before this.
-// The keyless 'window.keydown|keyup' also lands here (repeat stripped); 'document.keydown|keyup'
-// without a key stays a plain passthrough.
-function keyboardFactory(type: string): ((props: EventProps) => Function) | undefined {
-    const matched = type.match(/^(window|document)\.(keydown|keyup)(?:\.([A-Za-z0-9]+))?$/);
-    if (matched === null || (matched[3] === undefined && matched[1] === 'document')) {
-        return undefined;
-    }
+// exact-match factories (.arrow / .wasd) resolve before this; repeat is always stripped
+function keyboardEvent(matched: RegExpMatchArray, props: EventProps): Function {
     const [, scope, variant, rawKey] = matched;
     const key = rawKey?.toLowerCase();
     const target = scope === 'document' ? document : window;
-    return (props: EventProps) => attach(target, variant, (event: any) => {
+    return attach(target, variant, (event: any) => {
         if (!event.repeat && (key === undefined || matchKey(key, event))) {
             props.listener({ event });
         }

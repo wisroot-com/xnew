@@ -237,10 +237,7 @@ function isDomElement(value) {
 const factories = new Map();
 function attach(target, type, execute, options) {
     let initialized = false;
-    const id = setTimeout(() => {
-        initialized = true;
-        target.addEventListener(type, execute, options);
-    }, 0);
+    const id = setTimeout(() => { initialized = true; target.addEventListener(type, execute, options); }, 0);
     return () => {
         if (initialized === false) {
             clearTimeout(id);
@@ -255,12 +252,15 @@ class EventBinder {
         this.map = new MapMap();
     }
     add(element, type, listener, options) {
-        var _a;
         const props = { element, type, listener, options };
-        const factory = (_a = factories.get(type)) !== null && _a !== void 0 ? _a : keyboardFactory(type);
+        const factory = factories.get(type);
+        const keyboard = type.match(/^(window|document)\.(keydown|keyup)(?:\.([A-Za-z0-9]+))?$/);
         let finalize;
         if (factory !== undefined) {
             finalize = factory(props);
+        }
+        else if (keyboard !== null) {
+            finalize = keyboardEvent(keyboard, props);
         }
         else {
             let target = element;
@@ -285,12 +285,8 @@ class EventBinder {
         }
     }
 }
-function getPointerPosition(element, event) {
-    const rect = element.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-}
 function defineEvent(types, factory) {
-    (Array.isArray(types) ? types : [types]).forEach((type) => factories.set(type, factory));
+    types.forEach((type) => factories.set(type, factory));
 }
 defineEvent(['change', 'input'], (props) => {
     return attach(props.element, props.type, (event) => {
@@ -319,12 +315,12 @@ defineEvent(['click.outside', 'pointerdown.outside', 'pointermove.outside', 'poi
         }
     }, props.options);
 });
-defineEvent('wheel', (props) => {
+defineEvent(['wheel'], (props) => {
     return attach(props.element, props.type, (event) => {
         props.listener({ event, delta: { x: event.deltaX, y: event.deltaY } });
     }, props.options);
 });
-defineEvent('resize', (props) => {
+defineEvent(['resize'], (props) => {
     const observer = new ResizeObserver(() => props.listener({}));
     observer.observe(props.element);
     return () => observer.unobserve(props.element);
@@ -373,6 +369,10 @@ defineEvent(['dragstart', 'dragmove', 'dragend'], (props) => {
         remove();
     };
 });
+function getPointerPosition(element, event) {
+    const rect = element.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+}
 function keyVectorEvent(variant, codes) {
     return (props) => {
         const keymap = {};
@@ -395,10 +395,10 @@ function keyVectorEvent(variant, codes) {
 }
 const ARROW_CODES = { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown' };
 const WASD_CODES = { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS' };
-defineEvent('window.keydown.arrow', keyVectorEvent('keydown', ARROW_CODES));
-defineEvent('window.keyup.arrow', keyVectorEvent('keyup', ARROW_CODES));
-defineEvent('window.keydown.wasd', keyVectorEvent('keydown', WASD_CODES));
-defineEvent('window.keyup.wasd', keyVectorEvent('keyup', WASD_CODES));
+defineEvent(['window.keydown.arrow'], keyVectorEvent('keydown', ARROW_CODES));
+defineEvent(['window.keyup.arrow'], keyVectorEvent('keyup', ARROW_CODES));
+defineEvent(['window.keydown.wasd'], keyVectorEvent('keydown', WASD_CODES));
+defineEvent(['window.keyup.wasd'], keyVectorEvent('keyup', WASD_CODES));
 const KEY_ALIASES = {
     space: 'Space', enter: 'Enter', escape: 'Escape', esc: 'Escape', tab: 'Tab',
     up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
@@ -413,15 +413,11 @@ function matchKey(name, event) {
         return event.code === 'Digit' + name;
     return ((_a = event.code) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === name || ((_b = event.key) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === name;
 }
-function keyboardFactory(type) {
-    const matched = type.match(/^(window|document)\.(keydown|keyup)(?:\.([A-Za-z0-9]+))?$/);
-    if (matched === null || (matched[3] === undefined && matched[1] === 'document')) {
-        return undefined;
-    }
+function keyboardEvent(matched, props) {
     const [, scope, variant, rawKey] = matched;
     const key = rawKey === null || rawKey === void 0 ? void 0 : rawKey.toLowerCase();
     const target = scope === 'document' ? document : window;
-    return (props) => attach(target, variant, (event) => {
+    return attach(target, variant, (event) => {
         if (!event.repeat && (key === undefined || matchKey(key, event))) {
             props.listener({ event });
         }
