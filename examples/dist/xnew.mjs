@@ -236,13 +236,13 @@ function isDomElement(value) {
 }
 const factories = new Map();
 function attach(target, type, execute, options) {
-    let initalized = false;
+    let initialized = false;
     const id = setTimeout(() => {
-        initalized = true;
+        initialized = true;
         target.addEventListener(type, execute, options);
     }, 0);
     return () => {
-        if (initalized === false) {
+        if (initialized === false) {
             clearTimeout(id);
         }
         else {
@@ -262,14 +262,18 @@ class Eventor {
         if (factory !== undefined) {
             finalize = factory(props);
         }
-        else if (type.startsWith('window.')) {
-            finalize = attach(window, type.substring('window.'.length), (event) => listener({ event }), options);
-        }
-        else if (type.startsWith('document.')) {
-            finalize = attach(document, type.substring('document.'.length), (event) => listener({ event }), options);
-        }
         else {
-            finalize = attach(element, type, (event) => listener({ event }), options);
+            let target = element;
+            let name = type;
+            if (type.startsWith('window.')) {
+                target = window;
+                name = type.substring('window.'.length);
+            }
+            else if (type.startsWith('document.')) {
+                target = document;
+                name = type.substring('document.'.length);
+            }
+            finalize = attach(target, name, (event) => listener({ event }), options);
         }
         this.map.set(type, listener, finalize);
     }
@@ -317,7 +321,7 @@ defineEvent(['click.outside', 'pointerdown.outside', 'pointermove.outside', 'poi
 });
 defineEvent('wheel', (props) => {
     return attach(props.element, props.type, (event) => {
-        props.listener({ event, delta: { x: event.wheelDeltaX, y: event.wheelDeltaY } });
+        props.listener({ event, delta: { x: event.deltaX, y: event.deltaY } });
     }, props.options);
 });
 defineEvent('resize', (props) => {
@@ -325,54 +329,44 @@ defineEvent('resize', (props) => {
     observer.observe(props.element);
     return () => observer.unobserve(props.element);
 });
-defineEvent(['window.keydown', 'window.keyup'], (props) => {
-    const type = props.type.substring('window.'.length);
-    return attach(window, type, (event) => {
-        if (event.repeat)
-            return;
-        props.listener({ event });
-    }, props.options);
-});
 defineEvent(['dragstart', 'dragmove', 'dragend'], (props) => {
-    let pointermove = null;
-    let pointerup = null;
-    let pointercancel = null;
+    let finalizers = [];
     const pointerdown = attach(props.element, 'pointerdown', (event) => {
-        const id = event.pointerId;
-        const position = getPointerPosition(props.element, event);
-        let previous = position;
-        pointermove = attach(window, 'pointermove', (event) => {
-            if (event.pointerId === id) {
-                const position = getPointerPosition(props.element, event);
-                const delta = { x: position.x - previous.x, y: position.y - previous.y };
-                if (props.type === 'dragmove') {
-                    props.listener({ event, position, delta });
+        if (finalizers.length === 0) {
+            const id = event.pointerId;
+            const position = getPointerPosition(props.element, event);
+            let previous = position;
+            const finish = (event) => {
+                if (event.pointerId === id) {
+                    const position = getPointerPosition(props.element, event);
+                    if (props.type === 'dragend') {
+                        props.listener({ event, position, delta: { x: 0, y: 0 } });
+                    }
+                    remove();
                 }
-                previous = position;
+            };
+            finalizers = [
+                attach(window, 'pointermove', (event) => {
+                    if (event.pointerId === id) {
+                        const position = getPointerPosition(props.element, event);
+                        const delta = { x: position.x - previous.x, y: position.y - previous.y };
+                        if (props.type === 'dragmove') {
+                            props.listener({ event, position, delta });
+                        }
+                        previous = position;
+                    }
+                }, props.options),
+                attach(window, 'pointerup', finish, props.options),
+                attach(window, 'pointercancel', finish, props.options),
+            ];
+            if (props.type === 'dragstart') {
+                props.listener({ event, position, delta: { x: 0, y: 0 } });
             }
-        }, props.options);
-        const finish = (event) => {
-            if (event.pointerId === id) {
-                const position = getPointerPosition(props.element, event);
-                if (props.type === 'dragend') {
-                    props.listener({ event, position, delta: { x: 0, y: 0 } });
-                }
-                remove();
-            }
-        };
-        pointerup = attach(window, 'pointerup', finish, props.options);
-        pointercancel = attach(window, 'pointercancel', finish, props.options);
-        if (props.type === 'dragstart') {
-            props.listener({ event, position, delta: { x: 0, y: 0 } });
         }
     }, props.options);
     function remove() {
-        pointermove === null || pointermove === void 0 ? void 0 : pointermove();
-        pointermove = null;
-        pointerup === null || pointerup === void 0 ? void 0 : pointerup();
-        pointerup = null;
-        pointercancel === null || pointercancel === void 0 ? void 0 : pointercancel();
-        pointercancel = null;
+        finalizers.forEach((finalize) => finalize());
+        finalizers = [];
     }
     return () => {
         pointerdown();
@@ -387,24 +381,16 @@ function keyVectorEvent(variant, codes) {
             x: (keymap[codes.left] ? -1 : 0) + (keymap[codes.right] ? +1 : 0),
             y: (keymap[codes.up] ? -1 : 0) + (keymap[codes.down] ? +1 : 0),
         });
-        const keydown = attach(window, 'keydown', (event) => {
-            if (event.repeat)
-                return;
-            keymap[event.code] = 1;
-            if (variant === 'keydown' && targets.includes(event.code)) {
-                props.listener({ event, vector: vector() });
+        const bind = (kind) => attach(window, kind, (event) => {
+            if (kind === 'keyup' || !event.repeat) {
+                keymap[event.code] = kind === 'keydown' ? 1 : 0;
+                if (kind === variant && targets.includes(event.code)) {
+                    props.listener({ event, vector: vector() });
+                }
             }
         }, props.options);
-        const keyup = attach(window, 'keyup', (event) => {
-            keymap[event.code] = 0;
-            if (variant === 'keyup' && targets.includes(event.code)) {
-                props.listener({ event, vector: vector() });
-            }
-        }, props.options);
-        return () => {
-            keydown();
-            keyup();
-        };
+        const finalizers = [bind('keydown'), bind('keyup')];
+        return () => finalizers.forEach((finalize) => finalize());
     };
 }
 const ARROW_CODES = { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown' };
@@ -428,17 +414,17 @@ function matchKey(name, event) {
     return ((_a = event.code) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === name || ((_b = event.key) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === name;
 }
 function keyboardFactory(type) {
-    const matched = type.match(/^(window|document)\.(keydown|keyup)\.([A-Za-z0-9]+)$/);
-    if (matched === null)
+    const matched = type.match(/^(window|document)\.(keydown|keyup)(?:\.([A-Za-z0-9]+))?$/);
+    if (matched === null || (matched[3] === undefined && matched[1] === 'document')) {
         return undefined;
+    }
     const [, scope, variant, rawKey] = matched;
-    const key = rawKey.toLowerCase();
+    const key = rawKey === null || rawKey === void 0 ? void 0 : rawKey.toLowerCase();
     const target = scope === 'document' ? document : window;
     return (props) => attach(target, variant, (event) => {
-        if (event.repeat)
-            return;
-        if (matchKey(key, event))
+        if (!event.repeat && (key === undefined || matchKey(key, event))) {
             props.listener({ event });
+        }
     }, props.options);
 }
 

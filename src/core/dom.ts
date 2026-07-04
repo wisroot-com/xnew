@@ -30,14 +30,14 @@ type EventFactory = (props: EventProps) => Function;
 const factories = new Map<string, EventFactory>();
 
 function attach(target: Target, type: string, execute: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): Function {
-    let initalized = false;
+    let initialized = false;
     const id = setTimeout(() => {
-        initalized = true;
+        initialized = true;
         target.addEventListener(type, execute, options);
     }, 0);
 
     return () => {
-        if (initalized === false) {
+        if (initialized === false) {
             clearTimeout(id);
         } else {
             target.removeEventListener(type, execute);
@@ -55,12 +55,17 @@ export class Eventor {
         let finalize: Function;
         if (factory !== undefined) {
             finalize = factory(props);
-        } else if (type.startsWith('window.')) {
-            finalize = attach(window, type.substring('window.'.length), (event: Event) => listener({ event }), options);
-        } else if (type.startsWith('document.')) {
-            finalize = attach(document, type.substring('document.'.length), (event: Event) => listener({ event }), options);
         } else {
-            finalize = attach(element, type, (event: Event) => listener({ event }), options);
+            let target: Target = element;
+            let name = type;
+            if (type.startsWith('window.')) {
+                target = window;
+                name = type.substring('window.'.length);
+            } else if (type.startsWith('document.')) {
+                target = document;
+                name = type.substring('document.'.length);
+            }
+            finalize = attach(target, name, (event: Event) => listener({ event }), options);
         }
 
         this.map.set(type, listener, finalize);
@@ -70,7 +75,7 @@ export class Eventor {
         const finalize = this.map.get(type, listener);
         if (finalize) {
             finalize();
-            this.map.delete(type, listener)
+            this.map.delete(type, listener);
         }
     }
 }
@@ -119,7 +124,7 @@ defineEvent(['click.outside', 'pointerdown.outside', 'pointermove.outside', 'poi
 
 defineEvent('wheel', (props: EventProps) => {
     return attach(props.element, props.type, (event: any) => {
-        props.listener({ event, delta: { x: event.wheelDeltaX, y: event.wheelDeltaY } });
+        props.listener({ event, delta: { x: event.deltaX, y: event.deltaY } });
     }, props.options);
 });
 
@@ -129,55 +134,48 @@ defineEvent('resize', (props: EventProps) => {
     return () => observer.unobserve(props.element);
 });
 
-defineEvent(['window.keydown', 'window.keyup'], (props: EventProps) => {
-    const type = props.type.substring('window.'.length);
-    return attach(window, type, (event: any) => {
-        if (event.repeat) return;
-        props.listener({ event });
-    }, props.options);
-});
-
 defineEvent(['dragstart', 'dragmove', 'dragend'], (props: EventProps) => {
-    let pointermove: Function | null = null;
-    let pointerup: Function | null = null;
-    let pointercancel: Function | null = null;
+    let finalizers: Function[] = [];
 
     const pointerdown = attach(props.element, 'pointerdown', (event: any) => {
-        const id = event.pointerId;
-        const position = getPointerPosition(props.element, event);
-        let previous = position;
+        if (finalizers.length === 0) { // ignore other pointers while a drag is active
+            const id = event.pointerId;
+            const position = getPointerPosition(props.element, event);
+            let previous = position;
 
-        pointermove = attach(window, 'pointermove', (event: any) => {
-            if (event.pointerId === id) {
-                const position = getPointerPosition(props.element, event);
-                const delta = { x: position.x - previous.x, y: position.y - previous.y };
-                if (props.type === 'dragmove') {
-                    props.listener({ event, position, delta });
+            const finish = (event: any) => {
+                if (event.pointerId === id) {
+                    const position = getPointerPosition(props.element, event);
+                    if (props.type === 'dragend') {
+                        props.listener({ event, position, delta: { x: 0, y: 0 } });
+                    }
+                    remove();
                 }
-                previous = position;
-            }
-        }, props.options);
-        const finish = (event: any) => {
-            if (event.pointerId === id) {
-                const position = getPointerPosition(props.element, event);
-                if (props.type === 'dragend') {
-                    props.listener({ event, position, delta: { x: 0, y: 0 } });
-                }
-                remove();
-            }
-        };
-        pointerup = attach(window, 'pointerup', finish, props.options);
-        pointercancel = attach(window, 'pointercancel', finish, props.options);
+            };
+            finalizers = [
+                attach(window, 'pointermove', (event: any) => {
+                    if (event.pointerId === id) {
+                        const position = getPointerPosition(props.element, event);
+                        const delta = { x: position.x - previous.x, y: position.y - previous.y };
+                        if (props.type === 'dragmove') {
+                            props.listener({ event, position, delta });
+                        }
+                        previous = position;
+                    }
+                }, props.options),
+                attach(window, 'pointerup', finish, props.options),
+                attach(window, 'pointercancel', finish, props.options),
+            ];
 
-        if (props.type === 'dragstart') {
-            props.listener({ event, position, delta: { x: 0, y: 0 } });
+            if (props.type === 'dragstart') {
+                props.listener({ event, position, delta: { x: 0, y: 0 } });
+            }
         }
     }, props.options);
 
     function remove() {
-        pointermove?.(); pointermove = null;
-        pointerup?.(); pointerup = null;
-        pointercancel?.(); pointercancel = null;
+        finalizers.forEach((finalize) => finalize());
+        finalizers = [];
     }
 
     return () => {
@@ -196,24 +194,17 @@ function keyVectorEvent(variant: 'keydown' | 'keyup', codes: { left: string, rig
             y: (keymap[codes.up] ? -1 : 0) + (keymap[codes.down] ? +1 : 0),
         });
 
-        const keydown = attach(window, 'keydown', (event: any) => {
-            if (event.repeat) return;
-            keymap[event.code] = 1;
-            if (variant === 'keydown' && targets.includes(event.code)) {
-                props.listener({ event, vector: vector() });
-            }
-        }, props.options);
-        const keyup = attach(window, 'keyup', (event: any) => {
-            keymap[event.code] = 0;
-            if (variant === 'keyup' && targets.includes(event.code)) {
-                props.listener({ event, vector: vector() });
+        const bind = (kind: 'keydown' | 'keyup') => attach(window, kind, (event: any) => {
+            if (kind === 'keyup' || !event.repeat) {
+                keymap[event.code] = kind === 'keydown' ? 1 : 0;
+                if (kind === variant && targets.includes(event.code)) {
+                    props.listener({ event, vector: vector() });
+                }
             }
         }, props.options);
 
-        return () => {
-            keydown();
-            keyup();
-        };
+        const finalizers = [bind('keydown'), bind('keyup')];
+        return () => finalizers.forEach((finalize) => finalize());
     };
 }
 
@@ -243,15 +234,20 @@ function matchKey(name: string, event: KeyboardEvent): boolean {
     return event.code?.toLowerCase() === name || event.key?.toLowerCase() === name;
 }
 
-// undefined = not a named key; exact-match factories (.arrow / .wasd) resolve before this
+// undefined = not a keyboard binding; exact-match factories (.arrow / .wasd) resolve before this.
+// The keyless 'window.keydown|keyup' also lands here (repeat stripped); 'document.keydown|keyup'
+// without a key stays a plain passthrough.
 function keyboardFactory(type: string): EventFactory | undefined {
-    const matched = type.match(/^(window|document)\.(keydown|keyup)\.([A-Za-z0-9]+)$/);
-    if (matched === null) return undefined;
+    const matched = type.match(/^(window|document)\.(keydown|keyup)(?:\.([A-Za-z0-9]+))?$/);
+    if (matched === null || (matched[3] === undefined && matched[1] === 'document')) {
+        return undefined;
+    }
     const [, scope, variant, rawKey] = matched;
-    const key = rawKey.toLowerCase();
+    const key = rawKey?.toLowerCase();
     const target = scope === 'document' ? document : window;
     return (props: EventProps) => attach(target, variant, (event: any) => {
-        if (event.repeat) return;
-        if (matchKey(key, event)) props.listener({ event });
+        if (!event.repeat && (key === undefined || matchKey(key, event))) {
+            props.listener({ event });
+        }
     }, props.options);
 }

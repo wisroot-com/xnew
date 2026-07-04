@@ -196,19 +196,76 @@ describe('Eventor', () => {
     });
 
     describe('wheel', () => {
-        it('passes { event, delta } from legacy wheelDelta props', () => {
+        it('passes { event, delta } from standard deltaX/deltaY', () => {
             const listener = jest.fn();
             eventor.add(element, 'wheel', listener);
             jest.runOnlyPendingTimers();
 
-            // jsdom does not populate the legacy wheelDeltaX/Y props that the handler reads,
-            // so assign them on the event instance to exercise the real payload mapping.
-            const event = new WheelEvent('wheel', { bubbles: true });
-            Object.defineProperty(event, 'wheelDeltaX', { value: -30 });
-            Object.defineProperty(event, 'wheelDeltaY', { value: 120 });
+            const event = new WheelEvent('wheel', { deltaX: -30, deltaY: 120, bubbles: true });
             element.dispatchEvent(event);
 
             expect(listener).toHaveBeenCalledWith({ event, delta: { x: -30, y: 120 } });
+        });
+    });
+
+    describe('drag', () => {
+        const pointer = (type: string, pointerId: number, clientX = 0, clientY = 0): Event => {
+            const event = new MouseEvent(type, { clientX, clientY, bubbles: true });
+            Object.defineProperty(event, 'pointerId', { value: pointerId });
+            return event;
+        };
+
+        beforeEach(() => {
+            jest.spyOn(element, 'getBoundingClientRect').mockReturnValue(RECT);
+        });
+
+        it('emits dragstart / dragmove / dragend across pointerdown → move → up', () => {
+            const start = jest.fn();
+            const move = jest.fn();
+            const end = jest.fn();
+            eventor.add(element, 'dragstart', start);
+            eventor.add(element, 'dragmove', move);
+            eventor.add(element, 'dragend', end);
+            jest.runOnlyPendingTimers();
+
+            element.dispatchEvent(pointer('pointerdown', 1, 10, 20));
+            expect(start).toHaveBeenCalledTimes(1);
+            expect(start.mock.calls[0][0]).toMatchObject({ position: { x: 0, y: 0 }, delta: { x: 0, y: 0 } });
+
+            jest.runOnlyPendingTimers(); // the inner window listeners attach one tick later
+            window.dispatchEvent(pointer('pointermove', 1, 15, 26));
+            expect(move).toHaveBeenCalledTimes(1);
+            expect(move.mock.calls[0][0]).toMatchObject({ position: { x: 5, y: 6 }, delta: { x: 5, y: 6 } });
+
+            window.dispatchEvent(pointer('pointerup', 1, 15, 26));
+            expect(end).toHaveBeenCalledTimes(1);
+
+            // after the drag ended, window listeners are detached
+            window.dispatchEvent(pointer('pointermove', 1, 30, 40));
+            expect(move).toHaveBeenCalledTimes(1);
+        });
+
+        it('ignores a second pointer while a drag is active', () => {
+            const start = jest.fn();
+            const move = jest.fn();
+            eventor.add(element, 'dragstart', start);
+            eventor.add(element, 'dragmove', move);
+            jest.runOnlyPendingTimers();
+
+            element.dispatchEvent(pointer('pointerdown', 1, 10, 20));
+            element.dispatchEvent(pointer('pointerdown', 2, 50, 60));
+            expect(start).toHaveBeenCalledTimes(1);
+            jest.runOnlyPendingTimers(); // the inner window listeners attach one tick later
+
+            // the second pointer lifting must not end the first pointer's drag
+            window.dispatchEvent(pointer('pointerup', 2, 50, 60));
+            window.dispatchEvent(pointer('pointermove', 1, 15, 26));
+            expect(move).toHaveBeenCalledTimes(1);
+
+            // a new drag is accepted once the first pointer is released
+            window.dispatchEvent(pointer('pointerup', 1, 15, 26));
+            element.dispatchEvent(pointer('pointerdown', 2, 50, 60));
+            expect(start).toHaveBeenCalledTimes(2);
         });
     });
 
