@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden">
+  <div id="main" class="relative w-full h-full"></div>
+  
+  <script type="module">
+    import { xnew } from '@mulsense/xnew';
+
+    xnew(document.querySelector('#main'), (unit) => {
+      xnew(Div);
+      xnew(Input);
+      xnew(Design);
+    });
+
+    function Base(unit, { name }) {
+      xnew.nest('<div class="m-2 p-2 border rounded-lg border-gray-600">');
+      xnew('<div class="my-2">', name);
+      xnew.nest('<div class="flex gap-x-2 flex-wrap">');
+    }
+
+    function Div(unit) {
+      xnew.extend(Base, { name: 'div' });
+
+      xnew('<div class="w-32 h-8 bg-red-400 border rounded">', '1');
+
+      xnew('<div class="w-32 h-8 bg-green-400 border rounded">', (unit) => {
+        unit.element.textContent = '2';
+      });
+
+      xnew((unit) => {
+        xnew.nest('<div class="w-32 h-8 bg-blue-400 border rounded">');
+        unit.element.textContent = '3';
+      });
+    }
+
+    function Input(unit) {
+      xnew.extend(Base, { name: 'input' });
+
+      xnew('<div>', (unit) => {
+        let count = 0;
+        const button = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'click me');
+
+        button.on('click', ({ event }) => {
+          button.element.textContent = `count: ${count++}`;
+        });
+      });
+
+      xnew('<div>', (unit) => {
+        const input = xnew('<input type="text" class="px-2 h-8 border rounded-lg" placeholder="type here">');
+        const text = xnew('<span class="ml-2">');
+
+        input.on('change input', ({ event }) => {
+          text.element.textContent = input.element.value;
+        });
+      });
+
+      xnew('<div>', (unit) => {
+        const select = xnew('<select class="px-2 h-8 border rounded-lg">', () => {
+          xnew('<option value="one">', 'one');
+          xnew('<option value="two">', 'two');
+          xnew('<option value="three">', 'three');
+        });
+
+        const text = xnew('<span style="margin: 0 8px;">');
+        select.on('change', ({ event }) => {
+          text.element.textContent = event.target.value;
+        });
+      });
+    }
+
+    function Design(unit) {
+      xnew.extend(Base, { name: 'design' });
+      
+      xnew('<svg viewBox="0 0 100 100" class="w-30 h-30 border rounded-lg" style="stroke: #000;">', (unit) => {
+        xnew('<circle cx="20" cy="20" r="40" class="fill-current text-green-600">');
+        xnew('<rect x="40" y="40" width="80" height="80" class="fill-current text-blue-600">');
+      });
+      xnew('<div class="flex">', (unit) => {
+        xnew('<div class="size-16 text-red-500">', Bell);
+        xnew('<div class="size-16 text-green-500">', Calendar);
+        xnew('<div class="size-16 text-blue-500">', Bolt);
+      })
+
+      // reference: https://heroicons.com/
+      function Bell(unit){
+        xnew.nest(`<svg viewBox="0 0 24 24" fill="none" style="stroke-width: 1.5; stroke: currentColor;">`);
+        xnew('<path d="M14.857 17.082a24 24 0 0 0 5.454-1.31A8.97 8.97 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.97 8.97 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.3 24.3 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />');
+      }
+      function Calendar(unit){
+        xnew.nest(`<svg viewBox="0 0 24 24" fill="none" style="stroke-width: 1.5; stroke: currentColor;">`);
+        xnew('<path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />');
+      }
+      function Bolt(unit){
+        xnew.nest(`<svg viewBox="0 0 24 24" fill="none" style="stroke-width: 1.5; stroke: currentColor;">`);
+        xnew('<path d="m3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75L12 13.5z" />');
+      }
+    }
+
+
+
+  </script>
+</body>
+
+</html>

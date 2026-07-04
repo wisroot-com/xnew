@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden">
+  <div id="main" class="relative w-full h-full"></div>
+  <script type="module">
+    import { xnew } from '@mulsense/xnew';
+
+    xnew(document.querySelector('#main'), (unit) => {
+      xnew.nest('<div class="absolute w-128 h-64 inset-0 m-auto border rounded-lg overflow-hidden">');
+      xnew.interval(() => xnew(Box), 10);
+    });
+    
+    function Box(unit) {
+      const box = xnew.nest('<div class="absolute w-8 h-8 bg-orange-400">');
+      box.style.left = (Math.random() * 512 - 15) + 'px';
+      box.style.top = (Math.random() * 256 - 15) + 'px';
+
+      // fade in -> fade out -> finalize
+      xnew.transition(({ value }) => box.style.opacity = value, 1000)
+      .transition(({ value }) => box.style.opacity = 1.0 - value, 1000)
+      .timeout(() => unit.finalize());
+
+      let count = 0;
+      unit.on('update', () => {
+        box.style.transform = `rotate(${count++}deg)`;
+      });
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden">
+  <div id="main" class="relative w-full h-full"></div>
+  <script type="module">
+    import { xnew, xbasics } from '@mulsense/xnew';
+
+    xnew(document.querySelector('#main'), (unit) => {
+      xnew.nest('<div class="p-2 flex items-baseline gap-x-2">')
+      xnew(MyAccordion)
+
+      const button1 = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open modal!');
+      button1.on('click', () => xnew(MyModal));
+
+      const button2 = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open menu!');
+      button2.on('click', () => xnew(MyMenu, { relative: button2.element }));
+    });
+
+    function MyAccordion(unit) {
+      const system = xnew(xbasics.OpenAndClose, { open: true });
+      xnew.nest('<div class="w-64 border rounded-lg">');
+        
+      xnew('<div class="flex items-center select-none cursor-pointer">', (unit) => {
+        xnew(Chevron);
+        xnew('<div class="my-2">', 'accordion (click me!)');
+        unit.on('click', () => system.toggle());
+      });
+
+      xnew.extend(xbasics.Accordion);
+      xnew('<div class="p-2 border-t">', Contents);
+    }
+
+    function MyModal(unit) {
+      const system = xnew(xbasics.OpenAndClose, { open: false, transition: { duration: 300, easing: 'ease' } });
+
+      // background
+      xnew.extend(xbasics.Popup);
+      unit.element.style.background = 'rgba(0, 0, 0, 0.1)';
+
+      xnew.nest('<div class="absolute inset-0 m-auto w-max h-max">');
+      xnew.nest('<div class="m-auto w-[300px] max-w-[80%] border rounded-lg bg-white">');
+
+      xnew('<div class="p-2 flex justify-between">', () => {
+        xnew('<span>', 'Title');
+        xnew('<button class="cursor-pointer hover:opacity-50">', 'Close').on('click', () => system.close());
+      });
+
+      xnew('<div class="p-2 border-t">', Contents);
+    }
+
+    function MyMenu(unit, { relative }) {
+      const system = xnew(xbasics.OpenAndClose, { open: false });
+
+      // background
+      xnew.extend(xbasics.Popup);
+      
+      xnew.nest('<div class="absolute py-2">');
+      const rect = relative.getBoundingClientRect();
+      unit.element.style.right = (window.innerWidth - rect.right) + 'px';
+      unit.element.style.top = rect.bottom + 'px';
+      
+      xnew.extend(xbasics.Accordion);
+
+      xnew.nest('<div class="relative w-[300px] border rounded-lg bg-white">');
+      xnew('<div class="p-2">', Contents);
+    }
+
+    function Contents(unit) {
+      xnew('<span>', 'Contents');
+      xnew('<ul>', () => {
+        xnew('<li class="ml-2">', '1st item');
+        xnew('<li class="ml-2">', '2nd item');
+        xnew('<li class="ml-2">', '3rd item');
+      });
+    }
+
+    function Chevron(unit) {
+      const system = xnew.context(xbasics.OpenAndClose);
+      xnew('<svg viewBox="0 0 12 12" class="size-4" fill="none" stroke="currentColor">', (unit) => {
+        xnew('<path d="M6 2 10 6 6 10" />');
+        system.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${value * 90}deg)`);  
+      });
+    }
+</script>
+</body>
+
+</html>

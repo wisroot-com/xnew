@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden">
+  <div id="main" class="relative w-full h-full"></div>
+  <script type="module">
+    import { xnew, xbasics } from '@mulsense/xnew';
+
+    xnew(document.querySelector('#main'), (unit) => {
+      xnew.nest('<div class="p-2 flex gap-x-4 flex-wrap">');
+      const [width, height] = [400, 300];
+        
+      function Template(unit, { text }) {
+        xnew('<p>', text);
+        xnew.nest('<div class="w-32 h-32 border rounded-lg overflow-hidden">');
+      }
+
+      xnew('<div>', (unit) => {
+        xnew.extend(Template, { text: 'normal' });
+      
+        const canvas = xnew(`<canvas width="${width}" height="${height}" class="w-full align-bottom">`);
+        draw(canvas.element)
+      });
+
+      xnew('<div>', (unit) => {
+        xnew.extend(Template, { text: 'fit' });
+      
+        const canvas = xnew(`<canvas width="${width}" height="${height}" class="size-full align-bottom">`);
+        draw(canvas.element)
+      });
+
+      xnew('<div>', (unit) => {
+        xnew.extend(Template, { text: 'contain' });
+        xnew.extend(xbasics.Screen, { width, height, fit: 'contain' });
+      
+        draw(unit.canvas)
+      });
+      
+      xnew('<div>', (unit) => {
+        xnew.extend(Template, { text: 'cover' });
+        xnew.extend(xbasics.Screen, { width, height, fit: 'cover' });
+
+        draw(unit.canvas)
+      });
+
+      // Screen is built on top of Aspect: Aspect alone keeps the aspect ratio
+      // of a plain element (no canvas) inside any parent box.
+      xnew('<div>', (unit) => {
+        xnew.extend(Template, { text: 'aspect (no canvas)' });
+        xnew.extend(xbasics.Aspect, { aspect: width / height, fit: 'contain' });
+
+        xnew.nest('<div class="size-full bg-gradient-to-br from-pink-500 to-indigo-500 flex items-center justify-center">');
+        xnew('<span class="text-white text-xs">', `${width} : ${height}`);
+      });
+
+      function draw(canvas) {
+        const context = canvas.getContext('2d');
+        const [cx, cy] = [canvas.width / 2, canvas.height / 2];
+        const size = canvas.width / 6;
+
+        context.fillStyle = 'rgb(0,0,0)';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = 'rgb(200,0,100)';
+        context.fillRect(cx - 0.6 * cx - size / 2, cy - size / 2, size, size);
+        context.fillStyle = 'rgb(100,200,0)';
+        context.fillRect(cx + 0.0 * cx - size / 2, cy - size / 2, size, size);
+        context.fillStyle = 'rgb(0,100,200)';
+        context.fillRect(cx + 0.6 * cx - size / 2, cy - size / 2, size, size);
+      }
+    });
+
+  </script>
+</body>
+
+</html>
