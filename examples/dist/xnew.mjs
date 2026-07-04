@@ -941,9 +941,18 @@ function syncOf(unit) {
     }
     return syncData.get(unit);
 }
-const SYNC_KEY = Symbol('sync');
+const rootInfos = new WeakMap();
+function findRootInfo(unit) {
+    for (let u = unit; u !== null; u = u._.parent) {
+        const info = rootInfos.get(u);
+        if (info !== undefined) {
+            return info;
+        }
+    }
+    return undefined;
+}
 function rootInfoOf(unit) {
-    const info = Unit.getContext(unit, SYNC_KEY);
+    const info = findRootInfo(unit);
     if (info === undefined) {
         throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
     }
@@ -958,7 +967,7 @@ function dispatch(info, event, id, payload) {
     const syncId = payload ? payload.syncId : undefined;
     ((_a = Unit.type2units.get(event)) !== null && _a !== void 0 ? _a : []).forEach((unit) => {
         var _a;
-        if (Unit.getContext(unit, SYNC_KEY) !== info)
+        if (findRootInfo(unit) !== info)
             return;
         if (event[0] === '-' && syncOf(unit).id !== syncId)
             return;
@@ -978,25 +987,22 @@ function bootServer(opts, parent, args) {
     const { io, room } = opts;
     const info = { io, room, clients: [] };
     const root = new Unit(parent);
-    Unit.addContext(root, root, SYNC_KEY, info);
+    rootInfos.set(root, info);
     Unit.initialize(root, ...args);
     let nextId = 1;
     const captureStateTree = () => {
         const nodes = [];
         const syncName = (unit) => {
             var _a;
-            const registry = unit._.parent ? (_a = syncData.get(unit._.parent)) === null || _a === void 0 ? void 0 : _a.registry : null;
-            if (registry === null || registry === undefined) {
-                return undefined;
-            }
-            const entries = Object.entries(registry);
-            for (let i = unit._.Components.length - 1; i >= 0; i--) {
-                const hit = entries.find(([, Component]) => Component === unit._.Components[i]);
-                if (hit !== undefined) {
-                    return hit[0];
+            let name = undefined;
+            const registry = unit._.parent ? (_a = syncData.get(unit._.parent)) === null || _a === void 0 ? void 0 : _a.registry : undefined;
+            if (registry !== undefined) {
+                const names = new Map(Object.entries(registry).map(([key, Component]) => [Component, key]));
+                for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
+                    name = names.get(unit._.Components[i]);
                 }
             }
-            return undefined;
+            return name;
         };
         const walk = (unit, parent) => {
             var _a;
@@ -1049,7 +1055,7 @@ function bootClient(opts, parent, args) {
     const socket = io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true });
     const info = { socket, room, clients: [] };
     const root = new Unit(parent);
-    Unit.addContext(root, root, SYNC_KEY, info);
+    rootInfos.set(root, info);
     Unit.initialize(root, ...args);
     const reconcileMap = new Map();
     const applyStateTree = (tree) => {

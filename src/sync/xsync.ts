@@ -127,14 +127,15 @@ function bootServer(opts: SyncBootServerOptions, parent: Unit, args: any[]): Uni
         const nodes: SyncNode[] = [];
         // _.Components is [base..., most-derived]; match the registered name from the tail.
         const syncName = (unit: Unit): string | undefined => {
-            const registry = unit._.parent ? syncData.get(unit._.parent)?.registry : null;
-            if (registry === null || registry === undefined) { return undefined; }
-            const entries = Object.entries(registry);
-            for (let i = unit._.Components.length - 1; i >= 0; i--) {
-                const hit = entries.find(([, Component]) => Component === unit._.Components[i]);
-                if (hit !== undefined) { return hit[0]; }
+            let name: string | undefined = undefined;
+            const registry = unit._.parent ? syncData.get(unit._.parent)?.registry : undefined;
+            if (registry !== undefined) {
+                const names = new Map(Object.entries(registry).map(([key, Component]) => [Component, key]));
+                for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
+                    name = names.get(unit._.Components[i]);
+                }
             }
-            return undefined;
+            return name;
         };
         const walk = (unit: Unit, parent: number | null): void => {
             const name = syncName(unit);
