@@ -218,24 +218,18 @@ function keyboardEvent(matched: RegExpMatchArray, props: EventProps): Function {
     const key = rawKey?.toLowerCase();
     const target = scope === 'document' ? document : window;
 
-    const matchKey = (name: string, event: KeyboardEvent): boolean => {
-        const aliases: Record<string, string> = {
-            space: 'Space', enter: 'Enter', escape: 'Escape', esc: 'Escape', tab: 'Tab',
-            up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
-        };
-        if (aliases[name] !== undefined) {
-            return event.code === aliases[name];
-        } else if (/^[a-z]$/.test(name)) {
-            return event.code === 'Key' + name.toUpperCase();
-        } else if (/^[0-9]$/.test(name)) {
-            return event.code === 'Digit' + name;
-        } else {
-            return event.code?.toLowerCase() === name || event.key?.toLowerCase() === name;
-        }
+    // <key> name → KeyboardEvent.code; names outside the table match by code|key name instead
+    const codes: Record<string, string> = {
+        space: 'Space', enter: 'Enter', escape: 'Escape', esc: 'Escape', tab: 'Tab',
+        up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
     };
+    'abcdefghijklmnopqrstuvwxyz'.split('').forEach((c) => codes[c] = 'Key' + c.toUpperCase());
+    '0123456789'.split('').forEach((c) => codes[c] = 'Digit' + c);
+    const code = key !== undefined ? codes[key] : undefined;
 
     return attach(target, variant, (event: any) => {
-        if (!event.repeat && (key === undefined || matchKey(key, event))) {
+        const matches = key === undefined || (code !== undefined ? event.code === code : (event.code?.toLowerCase() === key || event.key?.toLowerCase() === key));
+        if (!event.repeat && matches) {
             props.listener({ event });
         }
     }, props.options);

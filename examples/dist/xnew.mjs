@@ -401,27 +401,17 @@ function keyboardEvent(matched, props) {
     const [, scope, variant, rawKey] = matched;
     const key = rawKey === null || rawKey === void 0 ? void 0 : rawKey.toLowerCase();
     const target = scope === 'document' ? document : window;
-    const matchKey = (name, event) => {
-        var _a, _b;
-        const aliases = {
-            space: 'Space', enter: 'Enter', escape: 'Escape', esc: 'Escape', tab: 'Tab',
-            up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
-        };
-        if (aliases[name] !== undefined) {
-            return event.code === aliases[name];
-        }
-        else if (/^[a-z]$/.test(name)) {
-            return event.code === 'Key' + name.toUpperCase();
-        }
-        else if (/^[0-9]$/.test(name)) {
-            return event.code === 'Digit' + name;
-        }
-        else {
-            return ((_a = event.code) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === name || ((_b = event.key) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === name;
-        }
+    const codes = {
+        space: 'Space', enter: 'Enter', escape: 'Escape', esc: 'Escape', tab: 'Tab',
+        up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
     };
+    'abcdefghijklmnopqrstuvwxyz'.split('').forEach((c) => codes[c] = 'Key' + c.toUpperCase());
+    '0123456789'.split('').forEach((c) => codes[c] = 'Digit' + c);
+    const code = key !== undefined ? codes[key] : undefined;
     return attach(target, variant, (event) => {
-        if (!event.repeat && (key === undefined || matchKey(key, event))) {
+        var _a, _b;
+        const matches = key === undefined || (code !== undefined ? event.code === code : (((_a = event.code) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === key || ((_b = event.key) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === key));
+        if (!event.repeat && matches) {
             props.listener({ event });
         }
     }, props.options);
