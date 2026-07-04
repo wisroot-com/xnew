@@ -43,6 +43,25 @@ describe('Ticker', () => {
         }
     });
 
+    it('holds the target fps on average when the frame rate is not a multiple of it', () => {
+        // fake rAF fires every 16ms; "reset from fire time" pacing would quantize 50fps to ~31fps
+        const cb = jest.fn();
+        new Ticker(cb, 50);
+        jest.advanceTimersByTime(1000);
+        expect(cb.mock.calls.length).toBeGreaterThanOrEqual(46);
+        expect(cb.mock.calls.length).toBeLessThanOrEqual(52);
+    });
+
+    it('keeps the sum of reported deltas equal to elapsed wall-clock time', () => {
+        // remainder-carry pacing ("previous = now - delta % interval") would double-count time
+        const cb = jest.fn();
+        new Ticker(cb, 50);
+        jest.advanceTimersByTime(1000);
+        const total = cb.mock.calls.reduce((sum, c) => sum + (c[0] as number), 0);
+        expect(total).toBeLessThanOrEqual(1000);
+        expect(total).toBeGreaterThan(900);
+    });
+
     it('falls back to setTimeout when requestAnimationFrame is unavailable', () => {
         const raf = global.requestAnimationFrame;
         (global as any).requestAnimationFrame = undefined;

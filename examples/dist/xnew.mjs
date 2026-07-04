@@ -111,15 +111,19 @@ class Ticker {
     constructor(callback, fps = 60) {
         this.cancel = null;
         const interval = 1000 / fps;
+        let previous = Date.now();
+        let next = previous + interval;
         if (typeof requestAnimationFrame !== 'undefined') {
-            const minDelta = interval * 0.9;
-            let previous = Date.now();
+            const tolerance = interval * 0.1;
             const tick = () => {
                 const now = Date.now();
-                const delta = now - previous;
-                if (delta > minDelta) {
-                    callback(delta);
+                if (now >= next - tolerance) {
+                    callback(now - previous);
                     previous = now;
+                    next += interval;
+                    if (next < now) {
+                        next = now + interval;
+                    }
                 }
                 id = requestAnimationFrame(tick);
             };
@@ -129,10 +133,16 @@ class Ticker {
         else {
             let id;
             const tick = () => {
-                callback(interval);
-                id = setTimeout(tick, interval);
+                const now = Date.now();
+                callback(now - previous);
+                previous = now;
+                next += interval;
+                if (next < now) {
+                    next = now + interval;
+                }
+                id = setTimeout(tick, next - now);
             };
-            tick();
+            id = setTimeout(tick, interval);
             this.cancel = () => clearTimeout(id);
         }
     }
