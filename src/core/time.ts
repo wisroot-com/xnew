@@ -86,7 +86,6 @@ export class Timer {
     private id: ReturnType<typeof setTimeout> | null = null;
     private startTime: number = 0.0;
     private processed: number = 0.0;
-    private request: boolean = true;
     private cleared: boolean = false;
     private visibilityListener: () => void;
     private ticker: Ticker | null = null;
@@ -97,18 +96,13 @@ export class Timer {
         private duration: number,
         private easing?: string,
     ) {
-        this.visibilityListener = () => document.hidden === false ? this._start() : this._stop();
+        this.visibilityListener = () => document.hidden === false ? this.start() : this.stop();
         if (typeof document !== 'undefined') {
             document.addEventListener('visibilitychange', this.visibilityListener);
         }
 
         this.transition?.(0.0);
-        this._start();
-    }
-
-    private animation(): void {
-        const p = this.duration > 0.0 ? Math.min(this.elapsed() / this.duration, 1.0) : 1.0;
-        this.transition?.(ease(p, this.easing));
+        this.start();
     }
 
     public clear(): void {
@@ -124,22 +118,8 @@ export class Timer {
         this.ticker = null;
     }
 
-    public elapsed(): number {
-        return this.processed + (this.id !== null ? (Date.now() - this.startTime) : 0.0);
-    }
-
-    public start(): void {
-        this.request = true;
-        this._start();
-    }
-
-    public stop(): void {
-        this._stop();
-        this.request = false;
-    }
-
-    private _start(): void {
-        if (this.cleared === false && this.request === true && this.id === null) {
+    private start(): void {
+        if (this.cleared === false && this.id === null) {
             this.id = setTimeout(() => {
                 this.id = null;
                 this.clear(); // clean up first so a throwing callback cannot leak the ticker / listener
@@ -147,13 +127,18 @@ export class Timer {
                 this.timeout?.();
             }, this.duration - this.processed);
             this.startTime = Date.now();
-            if (this.transition !== null) {
-                this.ticker = new Ticker(() => this.animation());
+            
+            if (this.duration > 0.0) {
+                this.ticker = new Ticker(() => {
+                    const elapsed = this.processed + (Date.now() - this.startTime);
+                    const p = Math.min(elapsed / this.duration, 1.0);
+                    this.transition?.(ease(p, this.easing));
+                });
             }
         }
     }
 
-    private _stop(): void {
+    private stop(): void {
         if (this.id !== null) {
             this.processed += Date.now() - this.startTime;
             clearTimeout(this.id);

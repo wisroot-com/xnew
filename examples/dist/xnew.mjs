@@ -177,20 +177,14 @@ class Timer {
         this.id = null;
         this.startTime = 0.0;
         this.processed = 0.0;
-        this.request = true;
         this.cleared = false;
         this.ticker = null;
-        this.visibilityListener = () => document.hidden === false ? this._start() : this._stop();
+        this.visibilityListener = () => document.hidden === false ? this.start() : this.stop();
         if (typeof document !== 'undefined') {
             document.addEventListener('visibilitychange', this.visibilityListener);
         }
         (_a = this.transition) === null || _a === void 0 ? void 0 : _a.call(this, 0.0);
-        this._start();
-    }
-    animation() {
-        var _a;
-        const p = this.duration > 0.0 ? Math.min(this.elapsed() / this.duration, 1.0) : 1.0;
-        (_a = this.transition) === null || _a === void 0 ? void 0 : _a.call(this, ease(p, this.easing));
+        this.start();
     }
     clear() {
         var _a;
@@ -205,19 +199,8 @@ class Timer {
         (_a = this.ticker) === null || _a === void 0 ? void 0 : _a.clear();
         this.ticker = null;
     }
-    elapsed() {
-        return this.processed + (this.id !== null ? (Date.now() - this.startTime) : 0.0);
-    }
     start() {
-        this.request = true;
-        this._start();
-    }
-    stop() {
-        this._stop();
-        this.request = false;
-    }
-    _start() {
-        if (this.cleared === false && this.request === true && this.id === null) {
+        if (this.cleared === false && this.id === null) {
             this.id = setTimeout(() => {
                 var _a, _b;
                 this.id = null;
@@ -226,12 +209,17 @@ class Timer {
                 (_b = this.timeout) === null || _b === void 0 ? void 0 : _b.call(this);
             }, this.duration - this.processed);
             this.startTime = Date.now();
-            if (this.transition !== null) {
-                this.ticker = new Ticker(() => this.animation());
+            if (this.duration > 0.0) {
+                this.ticker = new Ticker(() => {
+                    var _a;
+                    const elapsed = this.processed + (Date.now() - this.startTime);
+                    const p = Math.min(elapsed / this.duration, 1.0);
+                    (_a = this.transition) === null || _a === void 0 ? void 0 : _a.call(this, ease(p, this.easing));
+                });
             }
         }
     }
-    _stop() {
+    stop() {
         var _a;
         if (this.id !== null) {
             this.processed += Date.now() - this.startTime;

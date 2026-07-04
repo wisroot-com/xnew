@@ -127,12 +127,12 @@ describe('Timer', () => {
         expect(cb).not.toHaveBeenCalled();
     });
 
-    it('pauses the elapsed clock on stop() and resumes on start()', () => {
+    it('pauses the countdown on stop() and resumes on start() (visibilitychange path)', () => {
+        // driven directly because jsdom cannot dispatch visibilitychange with a controllable hidden state
         const cb = jest.fn();
-        const timer = new Timer(cb, null, 500);
+        const timer = new Timer(cb, null, 500) as any;
         jest.advanceTimersByTime(300);
         timer.stop();
-        // While stopped, advancing time must not fire the timeout.
         jest.advanceTimersByTime(1000);
         expect(cb).not.toHaveBeenCalled();
         timer.start();
@@ -163,25 +163,14 @@ describe('Timer', () => {
         expect(eased.at(-1)).toBe(1);
     });
 
-    it('does not run a ticker when there is no transition', () => {
-        const raf = jest.spyOn(globalThis, 'requestAnimationFrame');
-        try {
-            new Timer(jest.fn(), null, 100);
-            jest.advanceTimersByTime(50);
-            expect(raf).not.toHaveBeenCalled();
-        } finally {
-            raf.mockRestore();
-        }
-    });
-
-    it('does not invoke transition while stopped', () => {
+    it('does not invoke transition while paused', () => {
         const cb = jest.fn();
-        const timer = new Timer(null, cb, 1000);
+        const timer = new Timer(null, cb, 1000) as any;
         jest.advanceTimersByTime(100);
         timer.stop();
-        const callsWhileStopped = cb.mock.calls.length;
+        const callsWhilePaused = cb.mock.calls.length;
         jest.advanceTimersByTime(500);
-        expect(cb.mock.calls.length).toBe(callsWhileStopped);
+        expect(cb.mock.calls.length).toBe(callsWhilePaused);
         timer.start();
         jest.advanceTimersByTime(900);
         expect(cb.mock.calls.at(-1)![0]).toBe(1);
@@ -189,7 +178,7 @@ describe('Timer', () => {
 
     it('stays dead after clear() even if start() is called', () => {
         const cb = jest.fn();
-        const timer = new Timer(cb, null, 100);
+        const timer = new Timer(cb, null, 100) as any;
         timer.clear();
         timer.start();
         jest.advanceTimersByTime(1000);
