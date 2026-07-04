@@ -21,7 +21,7 @@ declare class MapMap<Key1, Key2, Value> extends Map<Key1, Map<Key2, Value>> {
 }
 
 type DomElement = HTMLElement | SVGElement;
-declare class Eventor {
+declare class EventBinder {
     private map;
     add(element: DomElement, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
     remove(type: string, listener: Function): void;
@@ -69,7 +69,7 @@ declare class Unit {
             Component: Function | null;
             execute: Function;
         }>;
-        eventor: Eventor;
+        events: EventBinder;
         key: any;
     };
     constructor(parent?: Unit | null);

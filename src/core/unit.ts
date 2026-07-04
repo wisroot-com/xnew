@@ -13,7 +13,7 @@
 
 import { MapSet, MapMap } from './map';
 import { Ticker, Timer } from './time';
-import { Eventor, isDomElement, DomElement } from './dom';
+import { EventBinder, isDomElement, DomElement } from './dom';
 
 //----------------------------------------------------------------------------------------------------
 // definitions
@@ -58,7 +58,7 @@ export class Unit {
         nestElements: { element: DomElement, owned: boolean }[];
         Components: Function[];
         listeners: MapMap<string, Function, { element: DomElement, Component: Function | null, execute: Function }>;
-        eventor: Eventor;
+        events: EventBinder;
 
         key: any;   // reserved prop for find(key) (global unique assumed)
     };
@@ -92,7 +92,7 @@ export class Unit {
             listeners: new MapMap(),
             defines: {},
             systems: { update: [], finalize: [] },
-            eventor: new Eventor(),
+            events: new EventBinder(),
             key: null,
         };
     }
@@ -361,13 +361,13 @@ export class Unit {
             Unit.scope(snapshot, listener, Object.assign({ type }, props));
         }
         if (type === 'update' || type === 'finalize') {
-            // lifecycle-only: registered in systems, never in the dispatch path (listeners / type2units / eventor).
+            // lifecycle-only: registered in systems, never in the dispatch path (listeners / type2units / events).
             unit._.systems[type].push({ listener, execute, count: 0 });
         } else if (unit._.listeners.has(type, listener) === false) {
             unit._.listeners.set(type, listener, { element: unit.element, Component: unit._.currentComponent, execute });
             Unit.type2units.add(type, unit);
             if (/^[A-Za-z]/.test(type) && unit.element !== null) {
-                unit._.eventor.add(unit.element, type, execute, options);
+                unit._.events.add(unit.element, type, execute, options);
             }
         }
     }
@@ -381,7 +381,7 @@ export class Unit {
                 if (item !== undefined) {
                     unit._.listeners.delete(type, listener);
                     if (/^[A-Za-z]/.test(type)) {
-                        unit._.eventor.remove(type, item.execute);
+                        unit._.events.remove(type, item.execute);
                     }
                 }
             });

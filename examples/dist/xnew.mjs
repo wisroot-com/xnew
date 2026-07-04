@@ -250,7 +250,7 @@ function attach(target, type, execute, options) {
         }
     };
 }
-class Eventor {
+class EventBinder {
     constructor() {
         this.map = new MapMap();
     }
@@ -458,7 +458,7 @@ class Unit {
             listeners: new MapMap(),
             defines: {},
             systems: { update: [], finalize: [] },
-            eventor: new Eventor(),
+            events: new EventBinder(),
             key: null,
         };
     }
@@ -696,7 +696,7 @@ class Unit {
             unit._.listeners.set(type, listener, { element: unit.element, Component: unit._.currentComponent, execute });
             Unit.type2units.add(type, unit);
             if (/^[A-Za-z]/.test(type) && unit.element !== null) {
-                unit._.eventor.add(unit.element, type, execute, options);
+                unit._.events.add(unit.element, type, execute, options);
             }
         }
     }
@@ -710,7 +710,7 @@ class Unit {
                 if (item !== undefined) {
                     unit._.listeners.delete(type, listener);
                     if (/^[A-Za-z]/.test(type)) {
-                        unit._.eventor.remove(type, item.execute);
+                        unit._.events.remove(type, item.execute);
                     }
                 }
             });

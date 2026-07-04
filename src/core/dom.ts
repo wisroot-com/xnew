@@ -6,7 +6,7 @@
 // mouse / touch stay undefined on purpose (unified on pointer); binding is deferred by 1 tick.
 //
 // - DomElement / isDomElement : element types xnew can host (HTML | SVG) and its type guard
-// - Eventor : manages (type, listener) → finalize, resolving dictionary → passthrough
+// - EventBinder : manages (type, listener) → finalize, resolving dictionary → passthrough
 //
 // Payloads: change|input {event,value} / click|pointer* {event,position} (+ .outside) / wheel {event,delta} /
 // drag* {event,position,delta} / resize {} / window|document.keydown|keyup[.arrow|.wasd|.<key>] {event[,vector]}
@@ -23,10 +23,7 @@ export function isDomElement(value: unknown): value is DomElement {
 
 interface EventProps { element: DomElement; type: string; listener: Function; options?: boolean | AddEventListenerOptions }
 
-/** Builds the binding for one custom event type. Returns a finalizer that detaches everything. */
-type EventFactory = (props: EventProps) => Function;
-
-const factories = new Map<string, EventFactory>();
+const factories = new Map<string, (props: EventProps) => Function>();
 
 function attach(target: Window | Document | DomElement, type: string, execute: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): Function {
     let initialized = false;
@@ -44,7 +41,7 @@ function attach(target: Window | Document | DomElement, type: string, execute: E
     };
 }
 
-export class Eventor {
+export class EventBinder {
     private map = new MapMap<string, Function, Function>();
 
     public add(element: DomElement, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void {
@@ -89,7 +86,7 @@ function getPointerPosition(element: DomElement, event: { clientX: number, clien
 }
 
 /** Registers a custom event factory for one or more exact type strings (last registration wins). */
-function defineEvent(types: string | string[], factory: EventFactory): void {
+function defineEvent(types: string | string[], factory: (props: EventProps) => Function): void {
     (Array.isArray(types) ? types : [types]).forEach((type) => factories.set(type, factory));
 }
 
@@ -184,7 +181,7 @@ defineEvent(['dragstart', 'dragmove', 'dragend'], (props: EventProps) => {
 });
 
 // Tracks the 4 keys' pressed state in keymap and emits a combined vector on their keydown / keyup.
-function keyVectorEvent(variant: 'keydown' | 'keyup', codes: { left: string, right: string, up: string, down: string }): EventFactory {
+function keyVectorEvent(variant: 'keydown' | 'keyup', codes: { left: string, right: string, up: string, down: string }): (props: EventProps) => Function {
     return (props: EventProps) => {
         const keymap: Record<string, number> = {};
         const targets = [codes.left, codes.right, codes.up, codes.down];
@@ -236,7 +233,7 @@ function matchKey(name: string, event: KeyboardEvent): boolean {
 // undefined = not a keyboard binding; exact-match factories (.arrow / .wasd) resolve before this.
 // The keyless 'window.keydown|keyup' also lands here (repeat stripped); 'document.keydown|keyup'
 // without a key stays a plain passthrough.
-function keyboardFactory(type: string): EventFactory | undefined {
+function keyboardFactory(type: string): ((props: EventProps) => Function) | undefined {
     const matched = type.match(/^(window|document)\.(keydown|keyup)(?:\.([A-Za-z0-9]+))?$/);
     if (matched === null || (matched[3] === undefined && matched[1] === 'document')) {
         return undefined;
