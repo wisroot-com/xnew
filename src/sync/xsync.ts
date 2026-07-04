@@ -39,8 +39,8 @@ interface RoomStatus { id: string; name: string; count: number; }
 interface ServerInfo { io: any; room: RoomStatus; clients: ClientStatus[]; }
 interface ClientInfo { socket: any; room: RoomStatus; clients: ClientStatus[]; }
 
-interface SyncBootServerOptions { io: any; room: RoomStatus; }
-interface SyncBootClientOptions { io: any; room: RoomStatus; client: any; }
+interface BootServerOptions { io: any; room: RoomStatus; }
+interface BootClientOptions { io: any; room: RoomStatus; client: any; }
 
 // boot root → its info; descendants resolve the nearest root by walking their ancestor chain.
 const rootInfos: WeakMap<Unit, ServerInfo | ClientInfo> = new WeakMap();
@@ -91,7 +91,7 @@ function relayToClients(info: ServerInfo, type: string, senderId: string | undef
 
 //---- boot -------------------------------------------------------------------------------------------
 
-function bootServer(opts: SyncBootServerOptions, parent: Unit, args: any[]): Unit {
+function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
     const { io, room } = opts;
     const info: ServerInfo = { io, room, clients: [] };
 
@@ -159,7 +159,7 @@ function bootServer(opts: SyncBootServerOptions, parent: Unit, args: any[]): Uni
     return root;
 }
 
-function bootClient(opts: SyncBootClientOptions, parent: Unit, args: any[]): Unit {
+function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
     const { io, room, client } = opts;
     // boot owns the socket; the handshake query must stay flat strings (socket.io stringifies values).
     const socket = io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
@@ -268,10 +268,10 @@ export const xsync = {
             (info as ClientInfo).socket.emit(WIRE_TO_CLIENT, { type, syncId, data: props, ids });
         }
     },
-    boot(opts: SyncBootServerOptions | SyncBootClientOptions, ...args: any[]): Unit {
+    boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit {
         if (Unit.engineRoot === undefined) { Unit.reset(); }
         return getEnvironment() === 'server'
-            ? bootServer(opts as SyncBootServerOptions, Unit.currentUnit, args)
-            : bootClient(opts as SyncBootClientOptions, Unit.currentUnit, args);
+            ? bootServer(opts as BootServerOptions, Unit.currentUnit, args)
+            : bootClient(opts as BootClientOptions, Unit.currentUnit, args);
     },
 };
