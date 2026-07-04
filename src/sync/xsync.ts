@@ -1,21 +1,10 @@
 //----------------------------------------------------------------------------------------------------
 // xsync — the networking layer: sync engine + facade (exported as `xsync`)
 //
-// The server root is the source of truth: each update it captures its sync targets (units whose type is
-// registered in the parent) as a flat pre-order node list and emits 'sync'; each client root diff-applies
-// it. Layered top→bottom: environment → shared state → transport → boot → facade. Lobby/room lifecycle is
-// NOT built in — callers assemble it from the facade (see examples/*/server.js + index.js).
+// The server root is the source of truth: each update it captures its registered units as a flat
+// pre-order node list and emits 'sync'; each client root diff-applies it into replica units.
 //
 // - xsync : facade — server / client / state / register / emitTo* / session / boot.
-//           (session = the connection state { room, clients, myself }; myself is client-only.)
-//
-// Invariants: a unit keeps its id for life (`nextId` monotonic per server root); capture runs on the root's
-//   own update, so it sees this tick's child mutations. Drive capture/apply only via the 'sync' seam.
-// Caveat: session resolves the current unit's root lazily — export the facade literal directly, never
-//   Object.assign it onto a fresh object (that invokes the getter at load with no current unit → throw).
-// syncOf / setEnvironment are the only test seams (@internal): per-unit sync data, and a runtime override so
-// tests can fake both server & client in one process. The ergonomic wrappers (withEnvironment / asServer …) live
-// in the test harness (test/sync/io-mock.ts), built on setEnvironment.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';
@@ -44,8 +33,6 @@ export function syncOf(unit: Unit): SyncData {
     return syncData.get(unit)!;
 }
 
-// 公開型。ファサードのシグネチャ（boot / room / clients / myself）経由で d.ts に露出し、
-// 呼び出し側は推論で受け取る。名前付きエイリアスは公開しない。
 interface ClientStatus { id: string; name: string; }
 interface RoomStatus { id: string; name: string; count: number; }
 
@@ -55,12 +42,9 @@ interface ClientInfo { socket: any; room: RoomStatus; clients: ClientStatus[]; }
 interface SyncBootServerOptions { io: any; room: RoomStatus; }
 interface SyncBootClientOptions { io: any; room: RoomStatus; client: any; }
 
-// A boot root owns its SyncInfo here, keyed by the root unit itself; descendants resolve the nearest root
-// by walking their ancestor chain until they hit a unit registered as a key in this map. WeakMap → the
-// entry is auto-dropped once the root unit becomes unreachable (no explicit clear on finalize needed).
+// boot root → its info; descendants resolve the nearest root by walking their ancestor chain.
 const rootInfos: WeakMap<Unit, ServerInfo | ClientInfo> = new WeakMap();
 
-/** Nearest sync root info at or above `unit` (undefined if no registered root in this unit's ancestry). */
 function findRootInfo(unit: Unit): ServerInfo | ClientInfo | undefined {
     for (let u: Unit | null = unit; u !== null; u = u._.parent) {
         const info = rootInfos.get(u);
@@ -71,7 +55,6 @@ function findRootInfo(unit: Unit): ServerInfo | ClientInfo | undefined {
     return undefined;
 }
 
-/** Internal info of the caller's sync root (throws if not booted). */
 function rootInfoOf(unit: Unit): ServerInfo | ClientInfo {
     const info = findRootInfo(unit);
     if (info === undefined) {
@@ -87,7 +70,6 @@ const WIRE_TO_SERVER = 'sync:toServer';   // client→server: { type, syncId, da
 const WIRE_TO_CLIENT = 'sync:toClient';   // client→server: { type, syncId, data, ids } → server fans out to clients
 const WIRE_DELIVER = 'sync:deliver';      // server→client: { type, syncId, id, data }   → dispatch `type` on the client
 
-/** Route a received event to listening units belonging to `info`'s root. */
 function dispatch(info: ServerInfo | ClientInfo, event: string, id: string | undefined, payload: any): void {
     const data = payload && payload.data !== null && typeof payload.data === 'object' ? payload.data : {};
     const syncId = payload ? payload.syncId : undefined;
@@ -98,7 +80,6 @@ function dispatch(info: ServerInfo | ClientInfo, event: string, id: string | und
     });
 }
 
-/** Server → clients delivery for emitToClients (ids = target client ids; omitted/empty = whole room). */
 function relayToClients(info: ServerInfo, type: string, senderId: string | undefined, syncId: number | null, data: any, ids?: string[]): void {
     const envelope = { type, syncId, id: senderId, data };
     if (Array.isArray(ids) && ids.length > 0) {
@@ -114,14 +95,13 @@ function bootServer(opts: SyncBootServerOptions, parent: Unit, args: any[]): Uni
     const { io, room } = opts;
     const info: ServerInfo = { io, room, clients: [] };
 
-    // Register info under this root before init so the body (and descendants) resolve it via findRootInfo.
+    // register info before init so the body (and descendants) resolve it via findRootInfo.
     const root = new Unit(parent);
     rootInfos.set(root, info);
     Unit.initialize(root, ...args);
 
-    // capture this root's sync targets as a flat pre-order node list (closed over `root`).
-    // A sync target is a unit whose type is registered in its direct parent's registry.
-    // nextId is monotonic across captures so a unit keeps its id for its whole lifetime.
+    // a sync target is a unit registered in its direct parent's registry; nextId is monotonic
+    // across captures so a unit keeps its id for its whole lifetime.
     let nextId = 1;
     const captureStateTree = (): SyncNode[] => {
         const nodes: SyncNode[] = [];
@@ -160,10 +140,8 @@ function bootServer(opts: SyncBootServerOptions, parent: Unit, args: any[]): Uni
         dispatch(info, 'sync.connect', socket.id, undefined);
         statusUpdate();
         socket.onAny((event: string, payload: any) => {
-            // emitToServer: fire `type` on the server (sender id attached, syncId-scoped for '-' types).
             if (event === WIRE_TO_SERVER) {
                 dispatch(info, payload?.type, socket.id, payload);
-            // emitToClients: relay `type` to the target clients (incl. the sender), with the sender id attached.
             } else if (event === WIRE_TO_CLIENT) {
                 relayToClients(info, payload?.type, socket.id, payload?.syncId ?? null, payload?.data, payload?.ids);
             }
@@ -183,22 +161,18 @@ function bootServer(opts: SyncBootServerOptions, parent: Unit, args: any[]): Uni
 
 function bootClient(opts: SyncBootClientOptions, parent: Unit, args: any[]): Unit {
     const { io, room, client } = opts;
-    // client owns its socket: io() with flat string query (roomId / clientName) on the handshake.
-    // create it before init so the component body can already read it (xsync.session.myself / xsync.emitToServer).
+    // boot owns the socket; the handshake query must stay flat strings (socket.io stringifies values).
     const socket = io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
     const info: ClientInfo = { socket, room, clients: [] };
 
-    // Register info under this root before init so the body (and descendants) resolve it via findRootInfo.
     const root = new Unit(parent);
     rootInfos.set(root, info);
     Unit.initialize(root, ...args);
 
-    // diff-apply a captured tree onto this client root (create/update/remove; tree is pre-order).
-    // reconcileMap tracks node id → replica unit for this root only (closed over `root`).
+    // diff-apply a captured tree onto this root; reconcileMap tracks node id → replica unit.
     const reconcileMap = new Map<number, Unit>();
     const applyStateTree = (tree: SyncNode[]): void => {
         const incoming = new Set<number>(tree.map((node) => node.id));
-        // create / update (pre-order, so the parent already exists)
         for (const node of tree) {
             const existing = reconcileMap.get(node.id);
             if (existing !== undefined) {
@@ -214,7 +188,6 @@ function bootClient(opts: SyncBootClientOptions, parent: Unit, args: any[]): Uni
             Unit.initialize(unit, Component);
             reconcileMap.set(node.id, unit);
         }
-        // remove replicas whose id vanished from the tree
         for (const [id, unit] of [...reconcileMap.entries()]) {
             if (!incoming.has(id)) { unit.finalize(); reconcileMap.delete(id); }
         }
@@ -227,12 +200,10 @@ function bootClient(opts: SyncBootClientOptions, parent: Unit, args: any[]): Uni
     };
     socket.on('status', onStatus);
     socket.onAny((event: string, payload: any) => {
-        // emitToServer/emitToClients delivery: the server forwards everything as WIRE_DELIVER ({ type, syncId, id, data }).
         if (event === WIRE_DELIVER) { dispatch(info, payload?.type, payload?.id, payload); }
     });
 
-    // forward the socket's own lifecycle to the host unit (boot parent) as local '-events',
-    // so callers listen with unit.on('-connect' | '-disconnect' | '-notfound').
+    // forward the socket's own lifecycle to the host unit (boot parent) as local '-events'.
     socket.on('connect', () => Unit.emit(parent, '-connect', { id: socket.id }));
     socket.on('disconnect', () => Unit.emit(parent, '-disconnect', {}));
     socket.on('notfound', (payload: any) => Unit.emit(parent, '-notfound', payload ?? {}));
@@ -265,8 +236,6 @@ export const xsync = {
         }
         Object.assign(syncOf(unit).registry, Components);
     },
-    // このルートの通信セッション状態（room / clients / myself）をまとめて返す。room / clients は
-    // 両側で有効、myself は client 専用（server では access 時のみ throw）。値は info 越しに live 参照。
     get session(): { room: RoomStatus; clients: ClientStatus[]; myself: ClientStatus } {
         const info = rootInfoOf(Unit.currentUnit);
         const isServer = getEnvironment() === 'server';
