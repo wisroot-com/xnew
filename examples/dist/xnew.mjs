@@ -331,43 +331,32 @@ defineEvent(['resize'], (props) => {
 });
 defineEvent(['dragstart', 'dragmove', 'dragend'], (props) => {
     let finalizers = [];
+    const remove = () => { finalizers.forEach((finalize) => finalize()); finalizers = []; };
     const pointerdown = attach(props.element, 'pointerdown', (event) => {
         if (finalizers.length === 0) {
             const id = event.pointerId;
-            const position = getPointerPosition(props.element, event);
-            let previous = position;
-            const finish = (event) => {
+            let previous = getPointerPosition(props.element, event);
+            const track = (kind) => (event) => {
                 if (event.pointerId === id) {
                     const position = getPointerPosition(props.element, event);
-                    if (props.type === 'dragend') {
-                        props.listener({ event, position, delta: { x: 0, y: 0 } });
+                    if (props.type === kind) {
+                        const delta = kind === 'dragmove' ? { x: position.x - previous.x, y: position.y - previous.y } : { x: 0, y: 0 };
+                        props.listener({ event, position, delta });
                     }
-                    remove();
+                    previous = position;
+                    if (kind === 'dragend') {
+                        remove();
+                    }
                 }
             };
             finalizers = [
-                attach(window, 'pointermove', (event) => {
-                    if (event.pointerId === id) {
-                        const position = getPointerPosition(props.element, event);
-                        const delta = { x: position.x - previous.x, y: position.y - previous.y };
-                        if (props.type === 'dragmove') {
-                            props.listener({ event, position, delta });
-                        }
-                        previous = position;
-                    }
-                }, props.options),
-                attach(window, 'pointerup', finish, props.options),
-                attach(window, 'pointercancel', finish, props.options),
+                attach(window, 'pointermove', track('dragmove'), props.options),
+                attach(window, 'pointerup', track('dragend'), props.options),
+                attach(window, 'pointercancel', track('dragend'), props.options),
             ];
-            if (props.type === 'dragstart') {
-                props.listener({ event, position, delta: { x: 0, y: 0 } });
-            }
+            track('dragstart')(event);
         }
     }, props.options);
-    function remove() {
-        finalizers.forEach((finalize) => finalize());
-        finalizers = [];
-    }
     return () => {
         pointerdown();
         remove();
