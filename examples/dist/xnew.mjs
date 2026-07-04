@@ -175,22 +175,26 @@ class Timer {
         this.duration = duration;
         this.easing = easing;
         this.id = null;
-        this.time = { start: 0.0, processed: 0.0 };
+        this.startTime = 0.0;
+        this.processed = 0.0;
         this.request = true;
-        this.ticker = new Ticker(() => this.animation());
+        this.cleared = false;
+        this.ticker = null;
         this.visibilityListener = () => document.hidden === false ? this._start() : this._stop();
         if (typeof document !== 'undefined') {
             document.addEventListener('visibilitychange', this.visibilityListener);
         }
         (_a = this.transition) === null || _a === void 0 ? void 0 : _a.call(this, 0.0);
-        this.start();
+        this._start();
     }
     animation() {
         var _a;
-        const p = Math.min(this.elapsed() / this.duration, 1.0);
+        const p = this.duration > 0.0 ? Math.min(this.elapsed() / this.duration, 1.0) : 1.0;
         (_a = this.transition) === null || _a === void 0 ? void 0 : _a.call(this, ease(p, this.easing));
     }
     clear() {
+        var _a;
+        this.cleared = true;
         if (this.id !== null) {
             clearTimeout(this.id);
             this.id = null;
@@ -198,10 +202,11 @@ class Timer {
         if (typeof document !== 'undefined') {
             document.removeEventListener('visibilitychange', this.visibilityListener);
         }
-        this.ticker.clear();
+        (_a = this.ticker) === null || _a === void 0 ? void 0 : _a.clear();
+        this.ticker = null;
     }
     elapsed() {
-        return this.time.processed + (this.id !== null ? (Date.now() - this.time.start) : 0);
+        return this.processed + (this.id !== null ? (Date.now() - this.startTime) : 0.0);
     }
     start() {
         this.request = true;
@@ -212,23 +217,28 @@ class Timer {
         this.request = false;
     }
     _start() {
-        if (this.request === true && this.id === null) {
+        if (this.cleared === false && this.request === true && this.id === null) {
             this.id = setTimeout(() => {
                 var _a, _b;
                 this.id = null;
-                this.time = { start: 0.0, processed: 0.0 };
+                this.clear();
                 (_a = this.transition) === null || _a === void 0 ? void 0 : _a.call(this, 1.0);
                 (_b = this.timeout) === null || _b === void 0 ? void 0 : _b.call(this);
-                this.clear();
-            }, this.duration - this.time.processed);
-            this.time.start = Date.now();
+            }, this.duration - this.processed);
+            this.startTime = Date.now();
+            if (this.transition !== null) {
+                this.ticker = new Ticker(() => this.animation());
+            }
         }
     }
     _stop() {
-        if (this.request === true && this.id !== null) {
-            this.time.processed = this.time.processed + Date.now() - this.time.start;
+        var _a;
+        if (this.id !== null) {
+            this.processed += Date.now() - this.startTime;
             clearTimeout(this.id);
             this.id = null;
+            (_a = this.ticker) === null || _a === void 0 ? void 0 : _a.clear();
+            this.ticker = null;
         }
     }
 }

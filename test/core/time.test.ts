@@ -163,6 +163,48 @@ describe('Timer', () => {
         expect(eased.at(-1)).toBe(1);
     });
 
+    it('does not run a ticker when there is no transition', () => {
+        const raf = jest.spyOn(globalThis, 'requestAnimationFrame');
+        try {
+            new Timer(jest.fn(), null, 100);
+            jest.advanceTimersByTime(50);
+            expect(raf).not.toHaveBeenCalled();
+        } finally {
+            raf.mockRestore();
+        }
+    });
+
+    it('does not invoke transition while stopped', () => {
+        const cb = jest.fn();
+        const timer = new Timer(null, cb, 1000);
+        jest.advanceTimersByTime(100);
+        timer.stop();
+        const callsWhileStopped = cb.mock.calls.length;
+        jest.advanceTimersByTime(500);
+        expect(cb.mock.calls.length).toBe(callsWhileStopped);
+        timer.start();
+        jest.advanceTimersByTime(900);
+        expect(cb.mock.calls.at(-1)![0]).toBe(1);
+    });
+
+    it('stays dead after clear() even if start() is called', () => {
+        const cb = jest.fn();
+        const timer = new Timer(cb, null, 100);
+        timer.clear();
+        timer.start();
+        jest.advanceTimersByTime(1000);
+        expect(cb).not.toHaveBeenCalled();
+    });
+
+    it('cleans up even if the timeout callback throws', () => {
+        const transition = jest.fn();
+        new Timer(() => { throw new Error('boom'); }, transition, 100);
+        expect(() => jest.advanceTimersByTime(100)).toThrow('boom');
+        const callsAfterThrow = transition.mock.calls.length;
+        jest.advanceTimersByTime(500);
+        expect(transition.mock.calls.length).toBe(callsAfterThrow);
+    });
+
     it('does not throw when document is undefined (SSR)', () => {
         const doc = global.document;
         (global as any).document = undefined;

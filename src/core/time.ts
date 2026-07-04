@@ -83,11 +83,13 @@ function ease(p: number, easing?: string): number {
 }
 
 export class Timer {
-    private id: number | null = null;
-    private time: { start: number, processed: number } = { start: 0.0, processed: 0.0 };
+    private id: ReturnType<typeof setTimeout> | null = null;
+    private startTime: number = 0.0;
+    private processed: number = 0.0;
     private request: boolean = true;
+    private cleared: boolean = false;
     private visibilityListener: () => void;
-    private ticker: Ticker;
+    private ticker: Ticker | null = null;
 
     constructor(
         private timeout: Function | null,
@@ -95,23 +97,22 @@ export class Timer {
         private duration: number,
         private easing?: string,
     ) {
-        this.ticker = new Ticker(() => this.animation());
-
         this.visibilityListener = () => document.hidden === false ? this._start() : this._stop();
         if (typeof document !== 'undefined') {
             document.addEventListener('visibilitychange', this.visibilityListener);
         }
 
         this.transition?.(0.0);
-        this.start();
+        this._start();
     }
 
     private animation(): void {
-        const p = Math.min(this.elapsed() / this.duration, 1.0);
+        const p = this.duration > 0.0 ? Math.min(this.elapsed() / this.duration, 1.0) : 1.0;
         this.transition?.(ease(p, this.easing));
     }
 
     public clear(): void {
+        this.cleared = true;
         if (this.id !== null) {
             clearTimeout(this.id);
             this.id = null;
@@ -119,11 +120,12 @@ export class Timer {
         if (typeof document !== 'undefined') {
             document.removeEventListener('visibilitychange', this.visibilityListener);
         }
-        this.ticker.clear();
+        this.ticker?.clear();
+        this.ticker = null;
     }
 
     public elapsed(): number {
-        return this.time.processed + (this.id !== null ? (Date.now() - this.time.start) : 0);
+        return this.processed + (this.id !== null ? (Date.now() - this.startTime) : 0.0);
     }
 
     public start(): void {
@@ -137,25 +139,27 @@ export class Timer {
     }
 
     private _start(): void {
-        if (this.request === true && this.id === null) {
+        if (this.cleared === false && this.request === true && this.id === null) {
             this.id = setTimeout(() => {
                 this.id = null;
-                this.time = { start: 0.0, processed: 0.0 };
-
+                this.clear(); // clean up first so a throwing callback cannot leak the ticker / listener
                 this.transition?.(1.0);
                 this.timeout?.();
-
-                this.clear();
-            }, this.duration - this.time.processed) as unknown as number;
-            this.time.start = Date.now();
+            }, this.duration - this.processed);
+            this.startTime = Date.now();
+            if (this.transition !== null) {
+                this.ticker = new Ticker(() => this.animation());
+            }
         }
     }
 
     private _stop(): void {
-        if (this.request === true && this.id !== null) {
-            this.time.processed = this.time.processed + Date.now() - this.time.start;
+        if (this.id !== null) {
+            this.processed += Date.now() - this.startTime;
             clearTimeout(this.id);
             this.id = null;
+            this.ticker?.clear();
+            this.ticker = null;
         }
     }
 }
