@@ -16,7 +16,6 @@
 import { MapMap } from './map';
 
 export type DomElement = HTMLElement | SVGElement;
-type Target = Window | Document | DomElement;
 
 export function isDomElement(value: unknown): value is DomElement {
     return (typeof HTMLElement !== 'undefined' && value instanceof HTMLElement) || (typeof SVGElement !== 'undefined' && value instanceof SVGElement);
@@ -29,7 +28,7 @@ type EventFactory = (props: EventProps) => Function;
 
 const factories = new Map<string, EventFactory>();
 
-function attach(target: Target, type: string, execute: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): Function {
+function attach(target: Window | Document | DomElement, type: string, execute: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): Function {
     let initialized = false;
     const id = setTimeout(() => {
         initialized = true;
@@ -56,7 +55,7 @@ export class Eventor {
         if (factory !== undefined) {
             finalize = factory(props);
         } else {
-            let target: Target = element;
+            let target: Window | Document | DomElement = element;
             let name = type;
             if (type.startsWith('window.')) {
                 target = window;
