@@ -23,9 +23,6 @@ interface Context { previous: Context | null; key?: any; value?: any; }
 
 interface Snapshot { unit: Unit; context: Context; element: DomElement; Component: Function | null; }
 
-// lifecycle phase: invoked → initialized → finalizing → finalized
-type Phase = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
-
 // Component function type; the returned defines are merged into the xnew(...) return value (Unit & A).
 export type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 
@@ -47,12 +44,10 @@ export class Unit {
         parent: Unit | null;
         children: Unit[];
 
-        phase: Phase;
+        phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
-        // sole registry for update / finalize (separate from listeners; never reached by emit / sync).
-        // count is per registration: how many times that listener has run, starting at 0.
         systems: Record<'update' | 'finalize', { listener: Function, execute: Function, count: number }[]>;
 
         currentElement: DomElement;
