@@ -190,6 +190,12 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **A `window.keydown.*` game-input handler that calls `preventDefault()` steals those keys
+  from every form field on the page** (e.g. WASD became untypable in the multiplay chat).
+  Skip the game branch when `event.target` is editable (`input, textarea, select` or
+  `isContentEditable`), and send a stop on `window.focusin` into an editable element so a
+  held key doesn't keep the player moving.
+
 - **The public barrel exposes three tiers: `xnew` (core) / `xsync` (networking) / `xbasics`
   (networking-free components), all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
   The networking layer is a single file `src/sync/xsync.ts` (shared state + boot + facade). `xsync`

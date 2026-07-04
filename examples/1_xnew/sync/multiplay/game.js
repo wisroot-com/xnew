@@ -189,10 +189,15 @@ export function Player(unit, { clientId = '', slot = '' } = {}) {
         // 入力 → 移動は自機（このクライアント自身の Player）だけが受ける。観戦者は描画のみ。
         if (state.clientId === xsync.session.myself.id) {
             const stop = () => xsync.emitToServer('-move', { vector: { x: 0, y: 0 } });
+            // チャット等の入力欄にフォーカスがある間はゲーム入力にしない（文字入力を優先）
+            const typing = (target) => target instanceof HTMLElement && (target.matches('input, textarea, select') || target.isContentEditable);
             unit.on('window.keydown.wasd window.keyup.wasd window.keydown.arrow window.keyup.arrow', ({ event, vector }) => {
-                event.preventDefault();
-                xsync.emitToServer('-move', { vector });
+                if (typing(event.target) === false) {
+                    event.preventDefault();
+                    xsync.emitToServer('-move', { vector });
+                }
             });
+            unit.on('window.focusin', ({ event }) => { if (typing(event.target)) { stop(); } });   // キー押下中に入力欄へ移っても停止
             unit.on('window.blur', stop);   // フォーカス喪失で停止
         }
     });
