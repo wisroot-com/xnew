@@ -99,9 +99,7 @@ export class Unit {
 
     static create(parent: Unit | null, ...args: any[]): Unit {
         const unit = new Unit(parent);
-
         Unit.initialize(unit, ...args);
-
         return unit;
     }
 
@@ -178,15 +176,13 @@ export class Unit {
             Unit.unit2Contexts.delete(unit);
             unit._.currentContext = { previous: null };
 
-            Object.keys(unit._.defines).forEach((key) => {
-                delete unit[key];
-            });
+            Object.keys(unit._.defines).forEach((key) => delete unit[key]);
             unit._.defines = {};
-            unit._.phase = 'finalized';
 
             if (unit._.parent) {
                 unit._.parent._.children = unit._.parent._.children.filter((u: Unit) => u !== unit);
             }
+            unit._.phase = 'finalized';
         }
     }
 
