@@ -35,8 +35,6 @@ export type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends 
 // Extract the props type of a Component ({} if absent).
 export type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
 
-type SystemEvent = 'update' | 'finalize';
-
 //----------------------------------------------------------------------------------------------------
 // unit
 //----------------------------------------------------------------------------------------------------
@@ -55,7 +53,7 @@ export class Unit {
         defines: Record<string, any>;
         // sole registry for update / finalize (separate from listeners; never reached by emit / sync).
         // count is per registration: how many times that listener has run, starting at 0.
-        systems: Record<SystemEvent, { listener: Function, execute: Function, count: number }[]>;
+        systems: Record<'update' | 'finalize', { listener: Function, execute: Function, count: number }[]>;
 
         currentElement: DomElement;
         currentContext: Context;
