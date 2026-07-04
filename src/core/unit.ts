@@ -1,17 +1,14 @@
 //----------------------------------------------------------------------------------------------------
 // Unit — the lifecycle, ownership, and scoping primitive of xnew
 //
-// Unit は DOM 要素・Component・子 unit・リスナ・promise を 1 つに束ね、状態機械
-// invoked → initialized → started ↔ stopped → finalizing → finalized で駆動する。
-// 遅延コールバック（DOM イベント・timer・promise 継続）は Snapshot 経由で Unit.scope に再入し、
-// 非同期を跨いでも元のコンポーネント内にいるかのように実行される。
+// A Unit bundles DOM elements, Components, children, listeners, and promises into one disposable
+// node driven by invoked → initialized → finalizing → finalized. Deferred callbacks (DOM events,
+// timers, promise continuations) re-enter Unit.scope via a Snapshot, so they run as if still
+// inside the original component.
 //
 // - Unit        : core class — lifecycle, listeners, contexts, emit
-// - UnitPromise : 元の Unit スコープで再開する promise ラッパー。.then / .catch / .finally は
-//                 捕捉スコープで callback を実行し、戻り値をチェーン値にする素のチェーン
-//                 （非同期継続は return new Promise で表す）。集約リザルトは xnew.promise(unit)
-//                 で取得し、集約時に対象 unit のプールを消費（リセット）する。
-// - UnitTimer   : xnew.timeout / interval / transition が使うキュー式タイマー
+// - UnitPromise : promise wrapper resuming in the captured Unit scope; aggregated by xnew.promise(unit)
+// - UnitTimer   : queued timer backing xnew.timeout / interval / transition
 //----------------------------------------------------------------------------------------------------
 
 import { MapSet, MapMap } from './map';
@@ -26,28 +23,14 @@ interface Context { previous: Context | null; key?: any; value?: any; }
 
 interface Snapshot { unit: Unit; context: Context; element: DomElement; Component: Function | null; }
 
-// lifecycle phase: invoked → initialized → started ↔ stopped → finalizing → finalized
-export type Status = 'invoked' | 'initialized' | 'started' | 'stopped' | 'finalizing' | 'finalized';
+// Component function type; the returned defines are merged into the xnew(...) return value (Unit & A).
+export type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 
-// Component 関数の型。戻り値 defines は xnew(...) の戻り値に合成される(Unit & A)。
-export type ComponentFn<P extends object = any, A extends object = {}> =
-    (unit: Unit, props: P) => A | void;
+// Extract the defines type of a Component (void falls back to {}).
+export type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends [void] ? {} : Exclude<R, void | undefined>) : {};
 
-// Component の defines 型を取り出す（void は {} に落とす）。
-export type DefinesOf<C> =
-    C extends (...args: any[]) => infer R
-        ? ([R] extends [void] ? {} : Exclude<R, void | undefined>)
-        : {};
-
-// Component の props 型を取り出す（無い場合は {}）。
-export type PropsOf<C> =
-    C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
-
-const SYSTEM_EVENTS = ['start', 'update', 'render', 'stop', 'finalize'] as const;
-type SystemEvent = typeof SYSTEM_EVENTS[number];
-function isSystemEvent(type: string): type is SystemEvent {
-    return (SYSTEM_EVENTS as readonly string[]).includes(type);
-}
+// Extract the props type of a Component ({} if absent).
+export type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
 
 //----------------------------------------------------------------------------------------------------
 // unit
@@ -57,23 +40,20 @@ export class Unit {
     [key: string]: any;
 
     public _: {
-        id: number;
         parent: Unit | null;
         children: Unit[];
 
-        status: Status;
-        tostart: boolean;
+        phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
-        // count はリスナ登録ごとに保持する（そのリスナが呼ばれた回数。後から登録したものは 0 始まり）。
-        systems: Record<SystemEvent, { listener: Function, execute: Function, count: number }[]>;
+        systems: Record<'update' | 'finalize', { listener: Function, execute: Function, count: number }[]>;
 
         currentElement: DomElement;
         currentContext: Context;
         currentComponent: Function | null;
 
-        afterSnapshot: Snapshot | null;
+        lastSnapshot: Snapshot | null;
 
         nestElements: { element: DomElement, owned: boolean }[];
         Components: Function[];
@@ -98,22 +78,20 @@ export class Unit {
         }
 
         this._ = {
-            id: Unit.nextId++,
             parent,
-            status: 'invoked',
-            tostart: true,
+            phase: 'invoked',
             protected: false,
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
-            afterSnapshot: null,
+            lastSnapshot: null,
             children: [],
             nestElements: [],
             promises: [],
             Components: [],
             listeners: new MapMap(),
             defines: {},
-            systems: { start: [], update: [], render: [], stop: [], finalize: [] },
+            systems: { update: [], finalize: [] },
             eventor: new Eventor(),
             key: null,
         };
@@ -121,9 +99,7 @@ export class Unit {
 
     static create(parent: Unit | null, ...args: any[]): Unit {
         const unit = new Unit(parent);
-
         Unit.initialize(unit, ...args);
-
         return unit;
     }
 
@@ -153,10 +129,10 @@ export class Unit {
 
         Unit.extend(unit, baseComponent, props);
 
-        if (unit._.status === 'invoked') {
-            unit._.status = 'initialized';
+        if (unit._.phase === 'invoked') {
+            unit._.phase = 'initialized';
         }
-        unit._.afterSnapshot = Unit.snapshot(unit);
+        unit._.lastSnapshot = Unit.snapshot(unit);
         Unit.currentUnit = backup;
     }
 
@@ -168,26 +144,13 @@ export class Unit {
         return this._.currentElement;
     }
 
-    // 非公開のライフサイクル制御。公開 API には載せないが、停止/再開の能力は内部に残す。
-    // start: 次フレーム以降の自動 start を許可（実際の起動はエンジンの cascade が行う）。
-    // stop:  自動 start を抑止し、即座に stop 遷移する。
-    private start(): void {
-        this._.tostart = true;
-    }
-
-    private stop(): void {
-        this._.tostart = false;
-        Unit.stop(this);
-    }
-
     public finalize(): void {
-        Unit.stop(this);
         Unit.finalize(this);
     }
 
     static finalize(unit: Unit): void {
-        if (unit._.status !== 'finalized' && unit._.status !== 'finalizing') {
-            unit._.status = 'finalizing';
+        if (unit._.phase !== 'finalized' && unit._.phase !== 'finalizing') {
+            unit._.phase = 'finalizing';
 
             [...unit._.children].reverse().forEach((child: Unit) => child.finalize());
             [...unit._.systems.finalize].reverse().forEach(({ execute }) => execute());
@@ -213,15 +176,13 @@ export class Unit {
             Unit.unit2Contexts.delete(unit);
             unit._.currentContext = { previous: null };
 
-            Object.keys(unit._.defines).forEach((key) => {
-                delete unit[key];
-            });
+            Object.keys(unit._.defines).forEach((key) => delete unit[key]);
             unit._.defines = {};
-            unit._.status = 'finalized';
 
             if (unit._.parent) {
                 unit._.parent._.children = unit._.parent._.children.filter((u: Unit) => u !== unit);
             }
+            unit._.phase = 'finalized';
         }
     }
 
@@ -288,59 +249,28 @@ export class Unit {
         return clone;
     }
 
-    static start(unit: Unit): void {
-        if (unit._.tostart === false) return;
-        if (unit._.status === 'initialized' || unit._.status === 'stopped') {
-            unit._.status = 'started';
-            unit._.children.forEach((child: Unit) => Unit.start(child));
-            unit._.systems.start.forEach(({ execute }) => execute());
-        } else if (unit._.status === 'started') {
-            unit._.children.forEach((child: Unit) => Unit.start(child));
-        }
-    }
-
-    static stop(unit: Unit): void {
-        if (unit._.status === 'started') {
-            unit._.status = 'stopped';
-            unit._.children.forEach((child: Unit) => Unit.stop(child));
-            unit._.systems.stop.forEach(({ execute }) => execute());
-        }
-    }
-
-    // count = そのリスナが呼ばれた回数（登録後 0 始まり）, delta = 前フレームからの経過 ms。
-    // リスナは ({ count, delta }) で受け取れる。count はリスナ登録ごとに独立し、
-    // 後から登録したリスナは 0 から数え始める。
+    // Drives only initialized units. Listeners receive ({ count, delta }): count is per
+    // registration (starting at 0), delta is elapsed ms since the previous frame.
     static update(unit: Unit, delta: number = 0): void {
-        if (unit._.status === 'started') {
+        if (unit._.phase === 'initialized') {
             unit._.children.forEach((child: Unit) => Unit.update(child, delta));
             unit._.systems.update.forEach((entry) => entry.execute({ count: entry.count++, delta }));
         }
     }
 
-    static render(unit: Unit, delta: number = 0): void {
-        if (unit._.status === 'started' || unit._.status === 'stopped') {
-            unit._.children.forEach((child: Unit) => Unit.render(child, delta));
-            unit._.systems.render.forEach((entry) => entry.execute({ count: entry.count++, delta }));
-        }
-    }
-
     static engineRoot: Unit;
     static currentUnit: Unit;
-    static nextId: number = 0;   // unit ごとに 0 から順番に採番する id（reset でリセット）
     static reset(): void {
         Unit.engineRoot?.finalize();
-        Unit.nextId = 0;
         Unit.currentUnit = Unit.engineRoot = Unit.create(null);
         const ticker = new Ticker((delta: number) => {
-            Unit.start(Unit.engineRoot);
             Unit.update(Unit.engineRoot, delta);
-            Unit.render(Unit.engineRoot, delta);
         });
         Unit.engineRoot.on('finalize', () => ticker.clear());
     }
 
     static scope(snapshot: Snapshot, func: Function, ...args: any[]): any {
-        if (snapshot.unit._.status === 'finalized') {
+        if (snapshot.unit._.phase === 'finalized') {
             return;
         } 
         const currentUnit = Unit.currentUnit;
@@ -379,23 +309,20 @@ export class Unit {
 
     static component2units: MapSet<Function, Unit> = new MapSet();
 
-    // 祖先列（unit 自身は含まない）。
+    // Ancestor chain (excluding unit itself).
     static ancestors(unit: Unit | null): Unit[] {
         const ancestors: Unit[] = [];
         for (let u = unit?._.parent ?? null; u !== null; u = u._.parent) ancestors.push(u);
         return ancestors;
     }
 
-    // from から遡って最初の protect 境界（無ければ undefined）。
-    static protectBoundary(from: Unit | null): Unit | undefined {
+    // Visibility across protect boundaries: find the nearest protected ancestor of `from`;
+    // visible if there is none, or if it is `current` or one of its ancestors.
+    static isVisible(from: Unit | null, current: Unit | null, ancestors: Unit[]): boolean {
+        let boundary: Unit | undefined;
         for (let u = from; u !== null; u = u._.parent) {
-            if (u._.protected === true) return u;
+            if (u._.protected === true) { boundary = u; break; }
         }
-        return undefined;
-    }
-
-    // boundary 内の対象が current（とその祖先列）から可視か。
-    static isVisible(boundary: Unit | undefined, current: Unit | null, ancestors: Unit[]): boolean {
         return boundary === undefined || ancestors.includes(boundary) === true || current === boundary;
     }
 
@@ -406,7 +333,7 @@ export class Unit {
             if (key !== undefined && unit._.key !== key) {
                 return false;
             }
-            return Unit.isVisible(Unit.protectBoundary(unit._.parent), current, ancestors);
+            return Unit.isVisible(unit._.parent, current, ancestors);
         });
     }
 
@@ -423,8 +350,8 @@ export class Unit {
     }
 
     public off(type?: string, listener?: Function): void {
-        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys()];
-    
+        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), 'update', 'finalize'];
+
         types.forEach((type) => Unit.off(this, type, listener));
     }
     
@@ -433,10 +360,10 @@ export class Unit {
         const execute = (props: object = {}) => {
             Unit.scope(snapshot, listener, Object.assign({ type }, props));
         }
-        if (isSystemEvent(type)) {
+        if (type === 'update' || type === 'finalize') {
+            // lifecycle-only: registered in systems, never in the dispatch path (listeners / type2units / eventor).
             unit._.systems[type].push({ listener, execute, count: 0 });
-        }
-        if (unit._.listeners.has(type, listener) === false) {
+        } else if (unit._.listeners.has(type, listener) === false) {
             unit._.listeners.set(type, listener, { element: unit.element, Component: unit._.currentComponent, execute });
             Unit.type2units.add(type, unit);
             if (/^[A-Za-z]/.test(type) && unit.element !== null) {
@@ -446,19 +373,21 @@ export class Unit {
     }
 
     static off(unit: Unit, type: string, listener?: Function): void {
-        if (isSystemEvent(type)) {
+        if (type === 'update' || type === 'finalize') {
             unit._.systems[type] = unit._.systems[type].filter(({ listener: lis }) => listener ? lis !== listener : false);
-        }
-        (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((listener) => {
-            const item = unit._.listeners.get(type, listener);
-            if (item === undefined) return;
-            unit._.listeners.delete(type, listener);
-            if (/^[A-Za-z]/.test(type)) {
-                unit._.eventor.remove(type, item.execute);
+        } else {
+            (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((listener) => {
+                const item = unit._.listeners.get(type, listener);
+                if (item !== undefined) {
+                    unit._.listeners.delete(type, listener);
+                    if (/^[A-Za-z]/.test(type)) {
+                        unit._.eventor.remove(type, item.execute);
+                    }
+                }
+            });
+            if (unit._.listeners.has(type) === false) {
+                Unit.type2units.delete(type, unit);
             }
-        });
-        if (unit._.listeners.has(type) === false) {
-            Unit.type2units.delete(type, unit);
         }
     }
 
@@ -466,7 +395,7 @@ export class Unit {
         if (type[0] === '+') {
             const ancestors = Unit.ancestors(unit);
             Unit.type2units.get(type)?.forEach((target) => {
-                if (Unit.isVisible(Unit.protectBoundary(target), unit, ancestors)) {
+                if (Unit.isVisible(target, unit, ancestors)) {
                     target._.listeners.get(type)?.forEach((item) => item.execute(props));
                 }
             });
@@ -485,8 +414,8 @@ export class UnitPromise {
     public key?: string;
     constructor(promise: Promise<any>, key?: string) { this.promise = promise; this.key = key; }
 
-    // then / catch / finally は捕捉スコープで callback を実行し、戻り値をチェーン値にする。
-    // UnitPromise を返した場合は内部 promise に展開して非同期継続を表す。
+    // then / catch / finally run the callback in the captured scope; the return value becomes the
+    // chain value (a returned UnitPromise unwraps to its inner promise for async continuation).
     private chain(method: 'then' | 'catch' | 'finally', callback: Function): UnitPromise {
         const snapshot = Unit.snapshot(Unit.currentUnit);
         this.promise = (this.promise[method] as Function)((...args: any[]) => {
@@ -505,57 +434,23 @@ export class UnitPromise {
         return this.chain('finally', callback);
     }
 
-    // deferred な UnitPromise を生成し、settled ガード付きの resolve / reject と共に返す。
-    // xnew.promise() の deferred 形が使う（Promise 構築と executor からの resolve / reject
-    // 取り出しの重複を排除する）。
-    public static defer(key?: string): {
-        unitPromise: UnitPromise;
-        resolve: (value?: unknown) => void;
-        reject: (reason?: unknown) => void;
-    } {
-        let settled = false;
-        let resolve!: (value?: unknown) => void;
-        let reject!: (reason?: unknown) => void;
-        const unitPromise = new UnitPromise(new Promise((res, rej) => { resolve = res; reject = rej; }), key);
-        return {
-            unitPromise,
-            resolve(value?: unknown) { if (settled) { return; } settled = true; resolve(value); },
-            reject(reason?: unknown) { if (settled) { return; } settled = true; reject(reason); },
-        };
-    }
-
-    // promise 群を集約した UnitPromise を返す（常にオブジェクト）。
-    // - キー付きは { key: 最終チェーン値 }（キーが `name[]` 形式なら out[name] を配列にして登録順 push）。
-    // - キー無しは out.results 配列に登録順でまとめる。results は常に存在する（無ければ []）。
-    // 注意: 予約キー `results` をユーザーキーに使うと衝突する。
-    public static results(promises: UnitPromise[], key?: string): UnitPromise {
-        return new UnitPromise(
-            Promise.all(promises.map(p => p.promise)).then((values) => {
-                const out: Record<string, any> = { results: [] };
-                promises.forEach((p, i) => {
-                    if (p.key !== undefined) {
-                        UnitPromise.assignKey(out, p.key, values[i]);
-                    } else {
-                        out.results.push(values[i]);
-                    }
-                });
-                return out;
-            }),
-            key
-        );
-    }
-
-    // キーを集約オブジェクトへ代入する。`name[]` はその name を配列にして登録順に push し、
-    // それ以外はフラットなキーとして代入する。
-    private static assignKey(out: Record<string, any>, key: string, value: any): void {
-        const matched = key.match(/^(.+)\[\]$/);
-        if (matched !== null) {
-            const name = matched[1];
-            if (Array.isArray(out[name]) === false) { out[name] = []; }
-            out[name].push(value);
-        } else {
-            out[key] = value;
-        }
+    // Aggregate promises into one Promise resolving to an object: keyed entries are included
+    // (a `name[]` key pushes into out[name] in registration order); unkeyed ones are awaited only.
+    public static async collect(promises: UnitPromise[]): Promise<Record<string, any>> {
+        const values = await Promise.all(promises.map(p => p.promise));
+        const out: Record<string, any> = {};
+        promises.forEach((p, i) => {
+            if (p.key === undefined) { return; }
+            const matched = p.key.match(/^(.+)\[\]$/);
+            if (matched !== null) {
+                const name = matched[1];
+                if (Array.isArray(out[name]) === false) { out[name] = []; }
+                out[name].push(values[i]);
+            } else {
+                out[p.key] = values[i];
+            }
+        });
+        return out;
     }
 }
 
@@ -570,27 +465,28 @@ export class UnitTimer {
     }
 
     public timeout(timeout: Function, duration: number = 0) {
-        return UnitTimer.execute(this, timeout, null, duration, undefined, 1);
+        return this.execute(timeout, null, duration, 1);
     }
     public interval(timeout: Function, duration: number = 0, iterations: number = 0) {
-        return UnitTimer.execute(this, timeout, null, duration, undefined, iterations);
+        return this.execute(timeout, null, duration, iterations);
     }
     public transition(transition: Function, duration: number = 0, easing?: string) {
-        return UnitTimer.execute(this, null, transition, duration, easing, 1);
+        return this.execute(null, transition, duration, 1, easing);
     }
 
-    private static execute(timer: UnitTimer, timeout: Function | null, transition: Function | null, duration: number, easing: string | undefined, iterations: number) {
+    private execute(timeout: Function | null, transition: Function | null, duration: number, iterations: number, easing?: string) {
+        const timer = this;
         const snapshot = Unit.snapshot(Unit.currentUnit);
 
-        // タイマーのパラメータはクロージャで捕捉し、props では渡さない。
+        // Timer parameters are captured by closure, not passed as props.
         const Component = (unit: Unit) => {
             let counter = 0;
             let current = new Timer(onTimeout, onTransition, duration, easing);
 
             function onTimeout() {
                 if (timeout) Unit.scope(snapshot, timeout, { timer });
-                // コールバック内で timer.clear() された場合は unit が finalize 済みなので再スケジュールしない。
-                if (unit._.status === 'finalized') { return; }
+                // if the callback called timer.clear(), the unit is finalized — do not reschedule.
+                if (unit._.phase === 'finalized') { return; }
                 if (iterations <= 0 || counter < iterations - 1) {
                     current = new Timer(onTimeout, onTransition, duration, easing);
                 } else {
@@ -605,22 +501,28 @@ export class UnitTimer {
             unit.on('finalize', () => current.clear());
         };
 
-        if (timer.unit === null || timer.unit._.status === 'finalized') {
-            timer.unit = Unit.create(Unit.currentUnit, Component);
-        } else if (timer.queue.length === 0) {
-            timer.queue.push(Component);
-            timer.unit.on('finalize', () => UnitTimer.next(timer));
+        // Run now if idle, otherwise queue behind the running task
+        // (each running task starts the next queued one when it finalizes).
+        if (this.unit === null || this.unit._.phase === 'finalized') {
+            this.start(Component);
         } else {
-            timer.queue.push(Component);
+            this.queue.push(Component);
         }
-        return timer;
+        return this;
     }
 
-    private static next(timer: UnitTimer) {
-        if (timer.queue.length > 0) {
-            timer.unit = Unit.create(Unit.currentUnit, timer.queue.shift());
-            timer.unit.on('finalize', () => UnitTimer.next(timer));
-        }
+    private start(Component: Function) {
+        this.unit = Unit.create(Unit.currentUnit, Component);
+        this.unit.on('finalize', () => {
+            // While the owner unit is finalizing, starting the next task would attach a new unit
+            // to the dying owner and escape its child-finalize loop, so drop the queue instead.
+            const owner = Unit.currentUnit;
+            if (this.queue.length > 0 && owner._.phase !== 'finalizing' && owner._.phase !== 'finalized') {
+                this.start(this.queue.shift()!);
+            } else {
+                this.queue = [];
+            }
+        });
     }
 }
 

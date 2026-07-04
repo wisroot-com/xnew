@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import { xrapier3d } from '@mulsense/xnew/addons/xrapier3d';
 import * as THREE from 'three';
@@ -8,7 +8,7 @@ xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
   const [width, height] = [800, 600];
-  xnew.extend(xnew.basics.Screen, { width, height });
+  xnew.extend(xbasics.Screen, { width, height });
 
   // three setup
   xthree.initialize({ canvas: unit.canvas });
@@ -16,7 +16,7 @@ function Main(unit) {
   xthree.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   xthree.camera.position.set(0, 50, 100);
   xthree.camera.lookAt(0, 0, 0);
-  unit.on('render', () => {
+  unit.on('update', () => {
     xthree.renderer.render(xthree.scene, xthree.camera);
   });
   
@@ -26,7 +26,7 @@ function Main(unit) {
 function Contents(unit) {
   xrapier3d.initialize({ gravity: { x: 0.0, y: -9.81, z: 0.0 } });
   xnew.promise(unit).then(() => {
-    unit.on('render', () => {
+    unit.on('update', () => {
       xrapier3d.world.timestep = 3 / 60;
       xrapier3d.world.step();
     });
@@ -118,7 +118,7 @@ function Player(unit, { x, y, z }) {
   // prevent default event
   unit.on('touchstart contextmenu wheel', (event) => event.preventDefault());
 
-  const direct = xnew(xnew.basics.DirectEvent);
+  const direct = xnew(xbasics.DirectEvent);
   direct.on('window.keydown.arrow window.keyup.arrow window.keydown.wasd window.keyup.wasd', ({ vector }) => {
     // move
     velocity.x = vector.x * speed;
@@ -169,7 +169,7 @@ function Player(unit, { x, y, z }) {
     }
   });
   
-  unit.on('render', () => {
+  unit.on('update', () => {
     // Update visual
     const position = rigidBody.translation();
     const rotation = rigidBody.rotation();

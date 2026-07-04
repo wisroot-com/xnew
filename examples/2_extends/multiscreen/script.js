@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import * as PIXI from 'pixi.js';
 
@@ -6,13 +6,13 @@ xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
   const [width, height] = [800, 600];
-  xnew.extend(xnew.basics.Screen, { width, height });
+  xnew.extend(xbasics.Screen, { width, height });
 
   const canvas = xnew(`<canvas width="${width}" height="${height}" class="size-full align-bottom">`);
 
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('render', () => {
+  unit.on('update', () => {
     xpixi.renderer.render(xpixi.scene);
   });
 
@@ -30,7 +30,7 @@ function Contents(unit) {
 function SubScreen(unit, { width, height, color }) {
   xpixi.initialize({ canvas: new OffscreenCanvas(width, height) });
   const texture = PIXI.Texture.from(xpixi.canvas);
-  unit.on('render', () => {
+  unit.on('update', () => {
     xpixi.renderer.render(xpixi.scene);
     texture.source.update();
   });

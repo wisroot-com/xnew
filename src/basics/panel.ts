@@ -176,7 +176,7 @@ function Select(_: Unit, { key = '', value, items = [] }: { key?: string, value?
             xnew.extend(Popup);
             
             xnew.nest('<div style="position: absolute; padding: 0.25em 0;">');
-            list.on('render', () => { 
+            list.on('update', () => {
                 const rect = button.element.getBoundingClientRect();
                 list.element.style.right = (window.innerWidth - rect.right) + 'px';
                 list.element.style.top = rect.bottom + 'px';

@@ -40,7 +40,7 @@ describe('xnew promise helpers', () => {
             expect(done).toHaveBeenCalledTimes(1);
         });
 
-        it('wraps keyless values under the results array', async () => {
+        it('awaits keyless promises but omits their values from the aggregate', async () => {
             const done = jest.fn();
             xnew((unit) => {
                 xnew.promise(Promise.resolve(1));
@@ -49,9 +49,9 @@ describe('xnew promise helpers', () => {
 
             await jest.advanceTimersByTimeAsync(0);
 
-            // then always receives an object; keyless values go under `results` (registration order)
+            // then always receives an object; keyless values are awaited but never surfaced
             expect(done).toHaveBeenCalledTimes(1);
-            expect(done).toHaveBeenCalledWith({ results: [1] });
+            expect(done).toHaveBeenCalledWith({});
         });
     });
 
@@ -186,19 +186,19 @@ describe('xnew promise helpers', () => {
         });
     });
 
-    describe('xnew.promise (deferred mode)', () => {
-        it('returns a settle handle and resolves via resolve()', async () => {
+    describe('xnew.promise (executor form)', () => {
+        it('captures resolve via the executor and resolves through it', async () => {
             const done = jest.fn();
-            let defer!: { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
+            let resolve!: (value?: unknown) => void;
             xnew((unit) => {
-                defer = xnew.promise();
+                xnew.promise((res: any) => { resolve = res; });
                 xnew.promise(unit).then(done);
             });
 
             await jest.advanceTimersByTimeAsync(0);
             expect(done).not.toHaveBeenCalled();
 
-            defer.resolve();
+            resolve();
             await jest.advanceTimersByTimeAsync(0);
 
             expect(done).toHaveBeenCalledTimes(1);
@@ -207,89 +207,82 @@ describe('xnew promise helpers', () => {
         it('ignores subsequent settle calls (idempotent)', async () => {
             const done = jest.fn();
             const caught = jest.fn();
-            let defer!: { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
+            let resolve!: (value?: unknown) => void;
+            let reject!: (reason?: unknown) => void;
             xnew((unit) => {
-                defer = xnew.promise();
+                xnew.promise((res: any, rej: any) => { resolve = res; reject = rej; });
                 xnew.promise(unit).then(done);
                 xnew.promise(unit).catch(caught);
             });
 
-            defer.resolve();
+            resolve();
             // a later reject after the first settle must be a no-op
-            defer.reject();
+            reject();
             await jest.advanceTimersByTimeAsync(0);
 
             expect(done).toHaveBeenCalledTimes(1);
             expect(caught).not.toHaveBeenCalled();
         });
 
-        it('passes a keyed deferred value to then under its key', async () => {
+        it('passes a keyed value to then under its key', async () => {
             const done = jest.fn();
-            let defer!: { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
+            let resolve!: (value?: unknown) => void;
             xnew((unit) => {
-                defer = xnew.promise('ready');
+                xnew.promise('ready', (res: any) => { resolve = res; });
                 xnew.promise(unit).then(done);
             });
 
             await jest.advanceTimersByTimeAsync(0);
             expect(done).not.toHaveBeenCalled();
 
-            defer.resolve(42);
+            resolve(42);
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(done).toHaveBeenCalledWith({ ready: 42, results: [] });
+            expect(done).toHaveBeenCalledWith({ ready: 42 });
         });
 
-        it('includes a keyless deferred value in the results array', async () => {
+        it('awaits a keyless promise but omits its value from the aggregate', async () => {
             const done = jest.fn();
-            let defer!: { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
+            let resolve!: (value?: unknown) => void;
             xnew((unit) => {
-                defer = xnew.promise();
+                xnew.promise((res: any) => { resolve = res; });
                 xnew.promise(unit).then(done);
             });
 
-            defer.resolve('kept');
+            resolve('kept');
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(done).toHaveBeenCalledWith({ results: ['kept'] });
+            expect(done).toHaveBeenCalledWith({});
         });
 
-        it('rejects via reject() and triggers xnew.promise(unit).catch', async () => {
+        it('rejects via the executor reject and triggers xnew.promise(unit).catch', async () => {
             const caught = jest.fn();
-            let defer!: { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
+            let reject!: (reason?: unknown) => void;
             xnew((unit) => {
-                defer = xnew.promise();
+                xnew.promise((res: any, rej: any) => { reject = rej; });
                 xnew.promise(unit).catch(caught);
             });
 
-            defer.reject('boom');
+            reject('boom');
             await jest.advanceTimersByTimeAsync(0);
 
             expect(caught).toHaveBeenCalledTimes(1);
             expect(caught).toHaveBeenCalledWith('boom');
         });
-
-        it('throws when called with two arguments but the promise is undefined (runtime misuse)', () => {
-            // The overloads reject this at compile time; cast to exercise the runtime guard
-            // for dynamic callers whose promise variable is undefined at runtime.
-            expect(() => {
-                xnew(() => {
-                    (xnew.promise as (key: string, promise: unknown) => unknown)('key', undefined);
-                });
-            }).toThrow();
-        });
     });
 
-    describe('promise-rules.md trace (A〜E, case 1 new)', () => {
-        it('C waits for A,B; E waits for A,B,C(returned); E receives only key3 in the parent scope', async () => {
+    describe('promise-rules.md trace (A〜E)', () => {
+        it('C waits for A,B; E waits for A,B,C(returned); E receives key1,key2,key3 in the parent scope', async () => {
             const order: string[] = [];
             let releaseA!: () => void;
             let releaseB!: () => void;
             let releaseD!: () => void;
 
             function Child(unit: Unit) {
-                const a = xnew.promise('key1'); releaseA = () => a.resolve(1); // A
-                const b = xnew.promise('key2'); releaseB = () => b.resolve(2); // B
+                let resolveA!: (value?: unknown) => void;
+                xnew.promise('key1', (res: any) => { resolveA = res; }); releaseA = () => resolveA(1); // A
+                let resolveB!: (value?: unknown) => void;
+                xnew.promise('key2', (res: any) => { resolveB = res; }); releaseB = () => resolveB(2); // B
                 xnew.promise('key3', unit).then(({ key1, key2 }: any) => {     // C
                     order.push(`C:${key1},${key2}`);
                     // D は return した promise として表す（同期登録は NG）。
@@ -315,14 +308,14 @@ describe('xnew promise helpers', () => {
 
             releaseD();
             await jest.advanceTimersByTimeAsync(0);
-            // E 開始: key3 = C の戻り値、key1/key2 は集約で消費済みなので E には入らない、Parent スコープ。
-            expect(order).toEqual(['C:1,2', 'E:key3=done,hasKey1=false,parentScope=true']);
-            expect(seen[0]).toEqual({ key3: 'done', results: [] });
+            // E 開始: プールは消費されないので key1/key2 も残っており、key3 = C の戻り値、Parent スコープ。
+            expect(order).toEqual(['C:1,2', 'E:key3=done,hasKey1=true,parentScope=true']);
+            expect(seen[0]).toEqual({ key1: 1, key2: 2, key3: 'done' });
         });
     });
 
-    describe('xnew.promise — results shape (keyless → results array)', () => {
-        it('collects keyless values into the results array in registration order', async () => {
+    describe('xnew.promise — keyless values are omitted from the aggregate', () => {
+        it('awaits keyless promises but leaves them out of the result object', async () => {
             const done = jest.fn();
             xnew((unit) => {
                 xnew.promise(Promise.resolve('a'));
@@ -332,26 +325,10 @@ describe('xnew promise helpers', () => {
 
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(done).toHaveBeenCalledWith({ results: ['a', 'b'] });
+            expect(done).toHaveBeenCalledWith({});
         });
 
-        it('orders the results array by registration, not by resolution timing', async () => {
-            const done = jest.fn();
-            let resolveFirst!: (v: unknown) => void;
-            xnew((unit) => {
-                xnew.promise(new Promise((res) => { resolveFirst = res; }));
-                xnew.promise(Promise.resolve('b'));
-                xnew.promise(unit).then(done);
-            });
-
-            await jest.advanceTimersByTimeAsync(0);
-            resolveFirst('a'); // 後から解決しても 0 番目に入る
-            await jest.advanceTimersByTimeAsync(0);
-
-            expect(done).toHaveBeenCalledWith({ results: ['a', 'b'] });
-        });
-
-        it('mixes keyed props and keyless results in one object', async () => {
+        it('keeps only keyed props when keyed and keyless are mixed', async () => {
             const done = jest.fn();
             xnew((unit) => {
                 xnew.promise('a', Promise.resolve(1));
@@ -361,20 +338,20 @@ describe('xnew promise helpers', () => {
 
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(done).toHaveBeenCalledWith({ a: 1, results: ['kept'] });
+            expect(done).toHaveBeenCalledWith({ a: 1 });
         });
 
-        it('returns { results: [] } when the unit has no registered promises', async () => {
+        it('returns {} when the unit has no keyed promises', async () => {
             const done = jest.fn();
             const unit = xnew(() => {});
             xnew.promise(unit).then(done);
 
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(done).toHaveBeenCalledWith({ results: [] });
+            expect(done).toHaveBeenCalledWith({});
         });
 
-        it('nests a keyless child aggregate under its key', async () => {
+        it('nests a keyless child aggregate as an empty object under its key', async () => {
             const done = jest.fn();
             xnew((unit) => {
                 const child = xnew(() => {
@@ -387,7 +364,25 @@ describe('xnew promise helpers', () => {
 
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(done).toHaveBeenCalledWith({ child: { results: [1, 2] }, results: [] });
+            expect(done).toHaveBeenCalledWith({ child: {} });
+        });
+    });
+
+    describe('xnew.promise(unit) — does not consume the pool', () => {
+        it('lets the same unit be aggregated twice with the same result', async () => {
+            const first = jest.fn();
+            const second = jest.fn();
+            const unit = xnew(() => {
+                xnew.promise('a', Promise.resolve(1));
+                xnew.promise('b', Promise.resolve(2));
+            });
+            xnew.promise(unit).then(first);
+            xnew.promise(unit).then(second);
+
+            await jest.advanceTimersByTimeAsync(0);
+
+            expect(first).toHaveBeenCalledWith({ a: 1, b: 2 });
+            expect(second).toHaveBeenCalledWith({ a: 1, b: 2 });
         });
     });
 
@@ -402,10 +397,10 @@ describe('xnew promise helpers', () => {
 
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(done).toHaveBeenCalledWith({ a: 1, b: 2, results: [] });
+            expect(done).toHaveBeenCalledWith({ a: 1, b: 2 });
         });
 
-        it('collects keyless promises into results alongside keyed props', async () => {
+        it('omits keyless promises while keeping keyed props', async () => {
             const done = jest.fn();
             xnew((unit) => {
                 xnew.promise('a', Promise.resolve(1));
@@ -415,7 +410,7 @@ describe('xnew promise helpers', () => {
 
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(done).toHaveBeenCalledWith({ a: 1, results: ['kept'] });
+            expect(done).toHaveBeenCalledWith({ a: 1 });
         });
 
         it('binds the key to the final value of a then-chain', async () => {
@@ -427,7 +422,7 @@ describe('xnew promise helpers', () => {
 
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(done).toHaveBeenCalledWith({ a: 22, results: [] });
+            expect(done).toHaveBeenCalledWith({ a: 22 });
         });
 
         it('lets a later duplicate key win', async () => {
@@ -440,7 +435,7 @@ describe('xnew promise helpers', () => {
 
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(done).toHaveBeenCalledWith({ a: 'second', results: [] });
+            expect(done).toHaveBeenCalledWith({ a: 'second' });
         });
 
         it('collects a child unit keyed results when registered with a key', async () => {
@@ -455,7 +450,7 @@ describe('xnew promise helpers', () => {
 
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(done).toHaveBeenCalledWith({ child: { x: 7, results: [] }, results: [] });
+            expect(done).toHaveBeenCalledWith({ child: { x: 7 } });
         });
 
         it('can be awaited from outside the component via the returned unit', async () => {
@@ -467,7 +462,7 @@ describe('xnew promise helpers', () => {
 
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(done).toHaveBeenCalledWith({ x: 7, results: [] });
+            expect(done).toHaveBeenCalledWith({ x: 7 });
         });
 
         it('does not run the then callback when a keyed promise rejects', async () => {
@@ -496,7 +491,7 @@ describe('xnew promise helpers', () => {
 
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(got).toHaveBeenCalledWith({ vrms: ['a', 'b'], results: [] });
+            expect(got).toHaveBeenCalledWith({ vrms: ['a', 'b'] });
         });
 
         it('orders by registration, not by resolution timing', async () => {
@@ -512,7 +507,7 @@ describe('xnew promise helpers', () => {
             resolveFirst('a'); // 後から解決しても 0 番目に入る
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(got).toHaveBeenCalledWith({ vrms: ['a', 'b'], results: [] });
+            expect(got).toHaveBeenCalledWith({ vrms: ['a', 'b'] });
         });
 
         it('keeps plain keys flat alongside append keys', async () => {
@@ -525,7 +520,7 @@ describe('xnew promise helpers', () => {
 
             await jest.advanceTimersByTimeAsync(0);
 
-            expect(got).toHaveBeenCalledWith({ vrms: ['a'], ready: 1, results: [] });
+            expect(got).toHaveBeenCalledWith({ vrms: ['a'], ready: 1 });
         });
 
         it('rejects the old indexed key form (name[index])', () => {

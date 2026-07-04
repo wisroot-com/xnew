@@ -13,7 +13,7 @@ import Matter from 'matter-js';
 
 export const xmatter = {
     initialize ({}: any = {}) {
-       xnew.promise(xnew(Root, {}));
+       return xnew.promise(xnew(Root, {}));
     },
     get engine() {
         return xnew.context(Root)?.engine;

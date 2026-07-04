@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -15,7 +15,7 @@ xnew(document.querySelector('#main'), Main);
 
 function Main(unit, { mogPath = '../../assets/rei.mog', vrmaPath = '../../assets/VRMA_07.vrma', size = 1024 }) {
   xnew.protect();
-  xnew.extend(xnew.basics.Screen, { width: size, height: size });
+  xnew.extend(xbasics.Screen, { width: size, height: size });
   
   // three setup
   const camera = new THREE.OrthographicCamera(-0.5, +0.5, +0.5, -0.5, 0.1, 10);
@@ -40,7 +40,7 @@ function Main(unit, { mogPath = '../../assets/rei.mog', vrmaPath = '../../assets
   composer.addPass(ssaoPass);
   composer.addPass(new OutputPass());
 
-  unit.on('render', () => {
+  unit.on('update', () => {
     composer.render();
   });
 
@@ -134,7 +134,7 @@ function Model(unit, { mogPath, vrmaPath, position }) {
     action.play();
 
     let clock = new THREE.Clock();
-    unit.on('render', () => {
+    unit.on('update', () => {
         const delta = clock.getDelta();
         mixer.update(delta);
         vrm.update(delta);

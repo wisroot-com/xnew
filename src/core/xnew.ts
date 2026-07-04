@@ -10,9 +10,10 @@
 // - xnew.promise                         : Unit に promise を登録（集約リザルトは xnew.promise(unit) で取得し .then/.catch/.finally）
 // - xnew.scope / emit / protect          : スコープ捕捉 / '+global' '-local' イベント / 可視性境界
 // - xnew.timeout / interval / transition : UnitTimer によるスケジューリング
+// - xnew.{Unit,Component}                : 公開型（呼び出し可能な値に型名前空間をマージ）
 //----------------------------------------------------------------------------------------------------
 //
-// 実行環境限定の extend（旧 xnew.server / xnew.client）は sync 配下へ移動した（src/core/sync.ts）。
+// 実行環境限定の extend（旧 xnew.server / xnew.client）は sync 配下へ移動した（src/sync/xsync.ts）。
 
 import { Unit, UnitPromise, UnitTimer, ComponentFn, DefinesOf, PropsOf } from './unit';
 import { DomElement } from './dom';
@@ -34,7 +35,7 @@ export const xnew = Object.assign(
 
         if (args[0] instanceof Unit) {
             const parent = args.shift() as Unit;
-            const snapshot = parent._.afterSnapshot ?? Unit.snapshot(parent);
+            const snapshot = parent._.lastSnapshot ?? Unit.snapshot(parent);
             return Unit.scope(snapshot, () => Unit.create(parent, ...args)) as Unit;
         } else {
             const parent = Unit.currentUnit ?? null;
@@ -44,7 +45,7 @@ export const xnew = Object.assign(
     {
         /** Nests a child element（既存要素 or '<div>' 等のタグ文字列）。初期化中のみ呼べる。 */
         nest(target: DomElement | string): HTMLElement | SVGElement {
-            if (Unit.currentUnit._.status !== 'invoked') {
+            if (Unit.currentUnit._.phase !== 'invoked') {
                 throw new Error('xnew.nest can not be called after initialized.');
             }
             return Unit.nest(Unit.currentUnit, target);
@@ -52,7 +53,7 @@ export const xnew = Object.assign(
 
         /** Extends the current unit with another component. 初期化中のみ呼べる。defines を返す。 */
         extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C> {
-            if (Unit.currentUnit._.status !== 'invoked') {
+            if (Unit.currentUnit._.phase !== 'invoked') {
                 throw new Error('xnew.extend can not be called after initialized.');
             }
             if (Unit.currentUnit._.Components.includes(Component) === true) {
@@ -66,41 +67,30 @@ export const xnew = Object.assign(
             return Unit.getContext(Unit.currentUnit, key);
         },
             
-        /** Registers a promise to the current unit。第1引数が string ならキー。promise を渡さなければ deferred（{ resolve, reject }）。2 引数で promise が undefined は誤用として throw。Unit を渡すとそのキー付き結果を集約し、対象 unit のプールを消費（リセット）する。 */
-        promise: (function (keyOrPromise?: any, maybePromise?: any): any {
+        /** Registers a promise to the current unit。第1引数が string ならキー。executor 関数 / 素の Promise / Unit のいずれかを受け取る（executor は new Promise 同様 (resolve, reject) を受け取る）。Unit を渡すとそのキー付き結果を集約する（対象 unit のプールは消費しない）。 */
+        promise: (function (keyOrPromise?: any, maybePromise?: any): UnitPromise {
             const key = typeof keyOrPromise === 'string' ? keyOrPromise : undefined;
             const promise = typeof keyOrPromise === 'string' ? maybePromise : keyOrPromise;
             // 旧仕様 `name[index]`（数値添字）は廃止。登録順に push する `name[]` に誘導する。
             if (key !== undefined && /^.+\[\d+\]$/.test(key)) {
                 throw new Error(`xnew.promise: indexed key "${key}" is no longer supported; use "${key.replace(/\[\d+\]$/, '[]')}" to append in registration order`);
             }
-            // 2 引数で呼ばれたのに promise が undefined → 登録のつもりで promise を渡し忘れた誤用。
-            // deferred は xnew.promise() / xnew.promise(key)（1 引数以下）でのみ成立させる。
-            if (arguments.length >= 2 && promise === undefined) {
-                throw new Error('xnew.promise(key, promise): promise is required when a second argument is given');
-            }
-            if (promise === undefined) {
-                const { unitPromise, resolve, reject } = UnitPromise.defer(key);
-                Unit.currentUnit._.promises.push(unitPromise);
-                return { resolve, reject };
+            // 集約（Unit）/ 素の Promise / コールバック(executor)のいずれでも最終的に一つの UnitPromise に包む。
+            // Unit を渡した場合は対象のプールを集約する。プールは消費しない（同じ unit を何度集約しても
+            // 同じ promise 群を見る）。results は登録時点の配列をクロージャで握るので、集約後に対象 unit へ
+            // promise を追加しても進行中の集約は無傷。
+            let source: any;
+            if (promise instanceof Unit) {
+                source = UnitPromise.collect(promise._.promises);
+            } else if (promise instanceof Promise) {
+                source = promise;
             } else {
-                let unitPromise: UnitPromise;
-                if (promise instanceof Unit) {
-                    unitPromise = UnitPromise.results(promise._.promises, key);
-                    // 集約した結果は消費する。UnitPromise.results は旧配列をクロージャで握るので、
-                    // ここで新配列に差し替えても進行中の集約は無傷。次の集約は新規登録分だけを見る。
-                    promise._.promises = [];
-                } else if (promise instanceof Promise) {
-                    unitPromise = new UnitPromise(promise, key);
-                } else {
-                    unitPromise = new UnitPromise(new Promise(xnew.scope(promise)), key);
-                }
-                Unit.currentUnit._.promises.push(unitPromise);
-                return unitPromise;
+                source = new Promise(xnew.scope(promise));
             }
+            const unitPromise = new UnitPromise(source, key);
+            Unit.currentUnit._.promises.push(unitPromise);
+            return unitPromise;
         }) as {
-            (): { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
-            (key: string): { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void };
             (promise: Function | Promise<any> | Unit): UnitPromise;
             (key: string, promise: Function | Promise<any> | Unit): UnitPromise;
         },
@@ -146,4 +136,10 @@ export const xnew = Object.assign(
 
     }
 );
+
+// 呼び出し可能な値 xnew に型名前空間をマージする（xnew.Unit などの公開型）。
+export namespace xnew {
+    export type Unit = InstanceType<typeof Unit>;
+    export type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
+}
 

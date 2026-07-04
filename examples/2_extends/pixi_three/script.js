@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as PIXI from 'pixi.js';
@@ -8,19 +8,17 @@ xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
   const [width, height] = [800, 600];
-  xnew.extend(xnew.basics.Screen, { width, height });
+  xnew.extend(xbasics.Screen, { width, height });
 
   // three setup
   xthree.initialize({ canvas: new OffscreenCanvas(width, height) });
   xthree.camera.position.set(0, 0, +100);
-  unit.on('render', () => {
-    xthree.renderer.render(xthree.scene, xthree.camera);
-  });
 
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
   const texture = PIXI.Texture.from(xthree.canvas);
-  unit.on('render', () => {
+  unit.on('update', () => {
+    xthree.renderer.render(xthree.scene, xthree.camera);
     texture.source.update();
     xpixi.renderer.render(xpixi.scene);
   });

@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as PIXI from 'pixi.js';
@@ -10,19 +10,19 @@ xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
   const [width, height] = [800, 600];
-  xnew.extend(xnew.basics.Screen, { width, height });
+  xnew.extend(xbasics.Screen, { width, height });
 
   // three setup
   const camera = new THREE.OrthographicCamera(-10, +10, +10, -10, 0, 100);
   xthree.initialize({ camera, canvas: new OffscreenCanvas(width, height) });
   xthree.camera.position.set(0, 0, +100);
-  unit.on('render', () => {
+  unit.on('update', () => {
     xthree.renderer.render(xthree.scene, xthree.camera);
   });
 
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('render', () => {
+  unit.on('update', () => {
     xnew.emit('+prerender');
     xpixi.renderer.render(xpixi.scene);
   });
@@ -58,7 +58,7 @@ function HtmlText(unit) {
 }
 
 function SVGText(unit) {
-  xnew(xnew.basics.SVGText, {
+  xnew(xbasics.SVGText, {
     className: 'absolute left-0 top-[10cqw]',
     text: 'This text is rendered by SVG',
     stroke: '#00FF00',

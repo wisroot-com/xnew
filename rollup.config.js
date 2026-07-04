@@ -11,6 +11,7 @@ append('addons/', 'xthree', 'xthree', ['@mulsense/xnew', 'three']);
 append('addons/', 'xmatter', 'xmatter', ['@mulsense/xnew', 'matter-js']);
 append('addons/', 'xrapier2d', 'xrapier2d', ['@mulsense/xnew', '@dimforge/rapier2d-compat']);
 append('addons/', 'xrapier3d', 'xrapier3d', ['@mulsense/xnew', '@dimforge/rapier3d-compat']);
+append('addons/', 'xreact', 'xreact', ['@mulsense/xnew', 'react']);
 
 function append(dir, src, name, external = []) {
     // ESM build — the only distribution format (`import { xnew } from '@mulsense/xnew'`).

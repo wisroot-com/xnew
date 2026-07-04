@@ -1,15 +1,15 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import * as PIXI from 'pixi.js';
 
 xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
-  xnew.extend(xnew.basics.Screen, { width: 800, height: 600 });
+  xnew.extend(xbasics.Screen, { width: 800, height: 600 });
 
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('render', () => {
+  unit.on('update', () => {
     xpixi.renderer.render(xpixi.scene);
   });
 
@@ -21,7 +21,7 @@ function Contents(unit) {
 }
 
 function Scene1(unit) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
   
   xnew(Text, { text: 'Scene1' });
   xnew(Box, { x: xpixi.canvas.width / 2, y: xpixi.canvas.height / 2, size: 160, color: 0xff2266 });
@@ -30,7 +30,7 @@ function Scene1(unit) {
 }
 
 function Scene2(unit) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
   
   xnew(Text, { text: 'Scene2' });
   xnew(Box, { x: xpixi.canvas.width / 2, y: xpixi.canvas.height / 2, size: 160, color: 0x6622ff });

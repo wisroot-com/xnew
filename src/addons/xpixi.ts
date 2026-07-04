@@ -10,7 +10,7 @@
 // Both tie the object's removal to Unit finalize, so the xnew tree and Pixi scene graph stay in
 // sync automatically. `remove(displayObject)` does that same detach + destroy on demand.
 // `xpixi.load(source)` loads textures via PIXI.Assets and registers the load on the current Unit
-// (symmetric to the `xnew.basics.AudioTrack` component's load), so the Unit's promise aggregation
+// (symmetric to the `xbasics.AudioTrack` component's load), so the Unit's promise aggregation
 // waits for it.
 //
 // Caveat: `nest` is stateful — two `nest` calls in the same unit produce two nesting levels.
@@ -30,7 +30,7 @@ export const xpixi = {
         { canvas }:
         { canvas: HTMLCanvasElement }
     ) {
-        xnew.promise(xnew(Root, { canvas }));
+        return xnew.promise(xnew(Root, { canvas }));
     },
     nest(object: any) {
         xnew(Nest, { object });

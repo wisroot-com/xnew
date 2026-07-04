@@ -1,47 +1,16 @@
-import { xnew as base } from './core/xnew';
-import { Unit, UnitTimer, ComponentFn, Status as CoreStatus } from './core/unit';
-import { Environment as CoreEnvironment } from './core/env';
+//----------------------------------------------------------------------------------------------------
+// Public barrel — the three first-tier exports of @mulsense/xnew
+//
+// Split by responsibility so callers pull only the layer they mean; addons stay on subpath exports.
+// Each layer is assembled in its own module and merely re-exported here.
+//
+// - xnew    : core (unit tree / lifecycle / DOM / events / timers / context) — the callable + type namespace
+// - xsync   : networking (server↔client sync facade) — src/sync/xsync.ts
+// - xbasics : networking-free convenience components — src/basics/xbasics.ts
+//----------------------------------------------------------------------------------------------------
 
-// boot 入力 / ルームステータスの型を公開する（socket は socket.io の io / socket をそのまま渡す）。
-export type { BootServerOptions, BootClientOptions, ClientStatus, RoomStatus } from './core/sync';
-
-import { OpenAndClose, Accordion, Popup } from './basics/transition';
-import { SVG, SVGText } from './basics/svg';
-import { AnalogStick, DPad } from './basics/controller';
-import { Panel } from './basics/panel';
-import { Lobby, Room } from './basics/sync';
-import { Aspect, Screen, Scene } from './basics/view';
-import { AudioTrack as AudioTrackComponent, Synthesizer, Volume } from './basics/audio';
-
-import { sync } from './core/sync';
-
-const basics = {
-    SVG,
-    SVGText,
-    Aspect,
-    Screen,
-    OpenAndClose,
-    AnalogStick,
-    DPad,
-    Panel,
-    Accordion,
-    Popup,
-    Scene,
-    Lobby,
-    Room,
-    AudioTrack: AudioTrackComponent,
-    Synthesizer,
-    Volume,
-};
-
-namespace xnew {
-    export type Unit = InstanceType<typeof Unit>;
-    export type UnitTimer = InstanceType<typeof UnitTimer>;
-    export type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
-    export type Environment = CoreEnvironment;
-    export type Status = CoreStatus;
-}
-
-const xnew = Object.assign(base, { basics, sync });
-
-export { xnew };
+// 各レイヤーは自モジュールで組み立て済み（xnew は値＋型名前空間をマージ済み。xsync の boot 入力や
+// ルームステータス等の公開型はファサードのシグネチャ経由で露出し、呼び出し側は推論で受け取る）ので、ここでは再輸出のみ。
+export { xnew } from './core/xnew';
+export { xsync } from './sync/xsync';
+export { xbasics } from './basics/xbasics';

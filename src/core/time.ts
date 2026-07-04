@@ -1,8 +1,8 @@
 //----------------------------------------------------------------------------------------------------
-// time — runtime-agnostic tickers and timers（browser は rAF / Node は setTimeout）
+// time — runtime-agnostic tickers and timers (rAF in the browser / setTimeout in Node)
 //
-// - Ticker : 目標 FPS でコールバック（前フレームからの経過 ms = delta を引数で渡す）
-// - Timer  : easing 付き setTimeout タイマー。visibilitychange で自動 pause（browser のみ）
+// - Ticker : calls back at the target FPS (passes delta = ms elapsed since the previous frame)
+// - Timer  : setTimeout timer with easing; auto-pauses on visibilitychange (browser only)
 //----------------------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------
@@ -22,13 +22,13 @@ export class Ticker {
                 // rAF fires at the display refresh rate, so throttle down to the target fps.
                 const now = Date.now();
                 if (previous === 0) {
-                    // 初回は開始時刻を記録するだけ（callback は次フレームから）。これがないと delta が
-                    // Date.now()（epoch 由来の巨大値）になり、かつ構築時に同期発火してしまう。
+                    // First tick only records the start time (callback begins next frame). Without this,
+                    // delta would be Date.now() (a huge epoch value) and it would fire synchronously on construction.
                     previous = now;
                 } else {
                     const delta = now - previous;
                     if (delta > minDelta) {
-                        callback(delta); // 経過 ms をコールバックへ（update / render の delta になる）
+                        callback(delta); // pass elapsed ms to the callback (becomes the update / render delta)
                         previous += delta;
                     }
                 }

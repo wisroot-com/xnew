@@ -16,7 +16,7 @@
 <body class="m-0 p-0 w-full h-screen overflow-hidden">
   <div id="main" class="relative w-full h-full"></div>
   <script type="module">
-    import { xnew } from '@mulsense/xnew';
+    import { xnew, xbasics } from '@mulsense/xnew';
 
     xnew(document.querySelector('#main'), (unit) => {
       xnew.nest('<div class="p-2 flex items-baseline gap-x-2">')
@@ -30,7 +30,7 @@
     });
 
     function MyAccordion(unit) {
-      const system = xnew(xnew.basics.OpenAndClose, { open: true });
+      const system = xnew(xbasics.OpenAndClose, { open: true });
       xnew.nest('<div class="w-64 border rounded-lg">');
         
       xnew('<div class="flex items-center select-none cursor-pointer">', (unit) => {
@@ -39,15 +39,15 @@
         unit.on('click', () => system.toggle());
       });
 
-      xnew.extend(xnew.basics.Accordion);
+      xnew.extend(xbasics.Accordion);
       xnew('<div class="p-2 border-t">', Contents);
     }
 
     function MyModal(unit) {
-      const system = xnew(xnew.basics.OpenAndClose, { open: false, transition: { duration: 300, easing: 'ease' } });
+      const system = xnew(xbasics.OpenAndClose, { open: false, transition: { duration: 300, easing: 'ease' } });
 
       // background
-      xnew.extend(xnew.basics.Popup);
+      xnew.extend(xbasics.Popup);
       unit.element.style.background = 'rgba(0, 0, 0, 0.1)';
 
       xnew.nest('<div class="absolute inset-0 m-auto w-max h-max">');
@@ -62,17 +62,17 @@
     }
 
     function MyMenu(unit, { relative }) {
-      const system = xnew(xnew.basics.OpenAndClose, { open: false });
+      const system = xnew(xbasics.OpenAndClose, { open: false });
 
       // background
-      xnew.extend(xnew.basics.Popup);
+      xnew.extend(xbasics.Popup);
       
       xnew.nest('<div class="absolute py-2">');
       const rect = relative.getBoundingClientRect();
       unit.element.style.right = (window.innerWidth - rect.right) + 'px';
       unit.element.style.top = rect.bottom + 'px';
       
-      xnew.extend(xnew.basics.Accordion);
+      xnew.extend(xbasics.Accordion);
 
       xnew.nest('<div class="relative w-[300px] border rounded-lg bg-white">');
       xnew('<div class="p-2">', Contents);
@@ -88,7 +88,7 @@
     }
 
     function Chevron(unit) {
-      const system = xnew.context(xnew.basics.OpenAndClose);
+      const system = xnew.context(xbasics.OpenAndClose);
       xnew('<svg viewBox="0 0 12 12" class="size-4" fill="none" stroke="currentColor">', (unit) => {
         xnew('<path d="M6 2 10 6 6 10" />');
         system.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${value * 90}deg)`);  

@@ -62,9 +62,12 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
 
 ## 5. Lifecycle events
 
-- `unit.on('start' | 'update' | 'render' | 'stop' | 'finalize', cb)`.
-- `update` / `render` callbacks receive `{ count, delta }` (`delta` = ms since last
-  frame; `count` starts at 0 per listener). `start`/`stop`/`finalize` get `{ type }`.
+- `unit.on('update' | 'finalize', cb)`. There is **no** `start`/`stop`/`render`
+  event — a unit begins ticking (`update`) as soon as it is `initialized` and stops
+  only on `finalize` (no pause/resume state, no separate render pass). Lifecycle is
+  `invoked → initialized → finalizing → finalized`.
+- `update` callbacks receive `{ count, delta }` (`delta` = ms since last frame;
+  `count` starts at 0 per listener). `finalize` gets `{ type }`.
 - **Do all teardown in `'finalize'`**: remove external listeners, disconnect
   sockets, clear non-xnew timers. Children finalize before parents, in reverse.
 
@@ -124,20 +127,35 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   object `cb` returns becomes defines on the unit. They are init-only.
 - A component mounted on both sides reads a **different prop shape** per side.
   Split the props into explicit types and cast inside each block, e.g.
-  `LobbyServerProps` / `LobbyClientProps`, then
-  `const { io } = props as LobbyServerProps;`.
+  `RoomServerProps` / `RoomClientProps`, then
+  `const { io } = props as RoomServerProps;`.
 - `sync.boot({ io, room }, Component)` (server) / `sync.boot({ io, client, room }, Component)`
   (client) creates a synced root. On the **client** side boot calls `io(...)` to
   create **and own** the socket, with a **flat string** handshake query
   (`io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true })`),
   forwards the socket's `connect`/`disconnect`/`notfound` to the boot **parent** (host)
   unit as `-connect`/`-disconnect`/`-notfound`, and disconnects it on finalize. Callers
-  (e.g. `basics.Room`) just boot — they no longer touch the socket. `sync.state`,
-  `sync.register`, `sync.emit`, `sync.status` operate on the current sync root.
+  (e.g. an example's `Room` component) just boot — they no longer touch the socket. `sync.state`,
+  `sync.register`, `sync.emitToServer`, `sync.emitToClients` operate on the current sync root.
 - Socket handlers run outside the tick → wrap them in `xnew.scope` (§7).
 - **Wire event names vs host event names are independent.** A socket/wire event
   (`'roomcreated'`) and the host-facing unit event it is forwarded to
   (`'-roomcreated'`) are separate strings; keep their mapping deliberate.
+- **Send events with `sync.emitToServer` / `sync.emitToClients` — they name the side the
+  event fires on, not the direction you happen to call from.** Receive both with
+  `unit.on(type, ({ id, ...props }) => …)` (`id` = sender socket id).
+  - `sync.emitToServer(type, props)` → fires `type` on the **server**. From a client it
+    travels over the socket (a `'-type'` is scoped to the server unit sharing the
+    sender's `syncId`); on the server it is a local emit (identical to `xnew.emit`,
+    so `'+'`/`'-'` only).
+  - `sync.emitToClients(type, props, ids?)` → fires `type` on the **clients** via the
+    server. From a client it round-trips through the server to every client incl. the
+    sender (`id` = sender); from the server it broadcasts (`id` = `undefined`). `ids`
+    limits delivery to those client ids (default: the whole room). This is the
+    built-in room broadcast — don't hand-roll a relay component.
+  - There is **no** `sync.emit`/`sync.message` anymore. The wire events
+    `sync:toServer` / `sync:toClient` / `sync:deliver` are reserved — don't use them
+    as app `type`s.
 
 ## 12. TypeScript notes
 
@@ -172,6 +190,22 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **The public barrel exposes three tiers: `xnew` (core) / `xsync` (networking) / `xbasics`
+  (networking-free components), all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
+  The networking layer is a single file `src/sync/xsync.ts` (shared state + boot + facade). `xsync`
+  **is** the facade object literal (`export const xsync = { … }`) — there is no Lobby / Room component
+  built in; lobby / room lifecycle is assembled by callers from the facade (see `examples/*/server.js` +
+  `index.js`). Export the literal directly — **never `Object.assign` the facade onto a fresh object**,
+  which invokes the `session` getter at module load (no current unit → throws).
+
+- **Custom sync-event handlers get `{ id, ...data }`, but `id` (sender socket id) is set
+  only on the SERVER dispatch; on the CLIENT it is `undefined`.** So for a room-wide
+  (`+`-broadcast or no-prefix) event whose server broadcast must tell clients who sent it, put
+  the sender id into the relayed `data` server-side — don't rely on the injected `id` reaching clients.
+  (A room chat: client `sync.emit('+chat',{text})` → server `unit.on('+chat',({id,text})=>…)` has
+  the real `id`; it must re-emit `{ id, text }` so each client's `{ id: undefined, ...data }`
+  recovers the sender via the spread shadowing the undefined.)
+
 - **Addons are NAMED exports (`export const xmatter/xpixi/xthree`), not default.**
   Import as `import { xmatter } from '@mulsense/xnew/addons/xmatter'`, or for a
   conditional dynamic import read the named key:
@@ -197,8 +231,8 @@ the rule, then one line of why.
   strings** (socket.io stringifies query values, so a nested object would arrive as
   `[object Object]`). boot also forwards `connect`/`disconnect`/`notfound` to the boot
   **parent** as `-events`. When you change a query key, update every reader in one pass:
-  core boot's connection handler **and** `basics` Lobby/Room server blocks **and** the
-  test mocks (`io-mock.ts`, `test/basics/sync.test.ts`).
+  boot's connection handler **and** the examples' Lobby/Room server blocks (`examples/*/server.js`)
+  **and** the test mocks (`io-mock.ts`).
   The forward reaches up to the parent (the boot root is a *child* of the host), so it
   bypasses the root-scoped `dispatch` on purpose — host listeners live above the root.
 - **When changing `BootServerOptions`/`BootClientOptions`, update the test `bootClient`

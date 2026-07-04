@@ -10,8 +10,8 @@
 // - Volume       : master-gain accessor (volume), standalone or via xnew.extend.
 //
 // Usage:
-//   xnew(xnew.basics.AudioTrack, { url: 'bgm.mp3', loop: true }).play();
-//   xnew(xnew.basics.Synthesizer, { oscillator: { type: 'sine' }, amp: { envelope: ... } }).press('A4', '4n');
+//   xnew(xbasics.AudioTrack, { url: 'bgm.mp3', loop: true }).play();
+//   xnew(xbasics.Synthesizer, { oscillator: { type: 'sine' }, amp: { envelope: ... } }).press('A4', '4n');
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../core/xnew';
@@ -446,7 +446,7 @@ export function Synthesizer(unit: Unit, props: SynthesizerOptions) {
 // Volume — master-gain accessor as a component
 //
 // The master GainNode is module-private; this component lets UI code read / write the global volume
-// without touching it. Use standalone or as a base via `xnew.extend(xnew.basics.Volume)`.
+// without touching it. Use standalone or as a base via `xnew.extend(xbasics.Volume)`.
 //----------------------------------------------------------------------------------------------------
 
 export function Volume(unit: Unit) {

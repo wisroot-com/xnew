@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xrapier2d } from '@mulsense/xnew/addons/xrapier2d';
 import * as PIXI from 'pixi.js';
@@ -7,22 +7,22 @@ import RAPIER from '@dimforge/rapier2d-compat';
 xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
-  xnew.extend(xnew.basics.Screen, { width: 800, height: 600 });
+  xnew.extend(xbasics.Screen, { width: 800, height: 600 });
 
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('render', () => {
+  unit.on('update', () => {
     xpixi.renderer.render(xpixi.scene);
   });
   xnew(Contents);
 }
 
 function Contents(unit) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
   xrapier2d.initialize({ gravity: { x: 0.0, y: 9.81 * 10 } });
 
   xnew.promise(unit).then(() => {
-    unit.on('render', () => {
+    unit.on('update', () => {
       xrapier2d.world.timestep = 3 / 60;
       xrapier2d.world.step();
     });
@@ -52,7 +52,7 @@ function Rectangle(self, { x, y, w, h, color = 0xFFFFFF, dynamic = true, options
     xrapier2d.world.removeCollider(collider);
     xrapier2d.world.removeRigidBody(rigidBody);
   });
-  self.on('render', () => {
+  self.on('update', () => {
     const position = rigidBody.translation();
     object.position.set(position.x, position.y);
   });

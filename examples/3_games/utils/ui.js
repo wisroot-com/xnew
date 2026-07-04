@@ -17,17 +17,17 @@
 // 各 index.html の importmap に @mulsense/xnew と html2canvas-pro が必要（既存サンプルは充足済み）。
 //----------------------------------------------------------------------------------------------------
 
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import html2canvas from 'html2canvas-pro';
 
 // 丸枠アイコン: 外周の円 + 中央70%に path 群。Camera / ArrowUturnLeft で共有。
 function RingIcon(unit, { paths }) {
   xnew('<div style="position: absolute; inset: 0; margin: auto; width: 100%; height: 100%;">', () => {
-    xnew.extend(xnew.basics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor' });
+    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor' });
     xnew('<circle cx="12" cy="12" r="11">');
   });
   xnew('<div style="position: absolute; inset: 0; margin: auto; width: 70%; height: 70%;">', () => {
-    xnew.extend(xnew.basics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.5 });
+    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.5 });
     for (const d of paths) {
       xnew(`<path d="${d}">`);
     }
@@ -116,20 +116,20 @@ export function ResultImage(unit, { image, boxClass }) {
 // タイトルの見出し（縁取り SVGText）。text=文言 / color="text-..."。
 export function TitleText(unit, { text, color }) {
   xnew.nest(`<div class="absolute w-full top-[16cqw] text-center ${color} font-bold">`);
-  xnew(xnew.basics.SVGText, { text, fontSize: '10cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
+  xnew(xbasics.SVGText, { text, fontSize: '10cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
 }
 
 // 点滅する "touch start"。color="text-..."。
 export function TouchMessage(unit, { color }) {
   xnew.nest(`<div class="absolute w-full top-[30cqw] text-center ${color} font-bold">`);
-  xnew(xnew.basics.SVGText, { text: 'touch start', fontSize: '6cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
+  xnew(xbasics.SVGText, { text: 'touch start', fontSize: '6cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
   unit.on('update', ({ count }) => unit.element.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
 }
 
 // 中央に降りてくる "Game Over"。className で横位置を調整（既定は全幅中央）。
 export function GameOverText(unit, { className = 'w-full' }) {
   xnew.nest(`<div class="absolute ${className} text-center text-red-400 font-bold">`);
-  xnew(xnew.basics.SVGText, { text: 'Game Over', fontSize: '12cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
+  xnew(xbasics.SVGText, { text: 'Game Over', fontSize: '12cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
   xnew.transition(({ value }) => {
     Object.assign(unit.element.style, { opacity: value, top: `${10 + value * 15}cqw` });
   }, 1000, 'ease');
@@ -139,20 +139,20 @@ export function GameOverText(unit, { className = 'w-full' }) {
 const paleColor = 'color-mix(in srgb, currentColor 20%, transparent)';
 
 function SpeakerIcon(unit, { muted = false } = {}) {
-  xnew.extend(xnew.basics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.5 });
+  xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.5 });
   const path = muted
     ? 'M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z'
     : 'M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z';
   xnew(`<path d="${path}" />`);
 }
 
-// スピーカーアイコン + アンカー方向に開くスライダー。xnew.basics.Volume をマスター音量への橋渡しに使う。
+// スピーカーアイコン + アンカー方向に開くスライダー。xbasics.Volume をマスター音量への橋渡しに使う。
 function VolumeController(unit, { anchor = 'left' } = {}) {
-  const volume = xnew.extend(xnew.basics.Volume);
-  xnew.extend(xnew.basics.Aspect, { aspect: 1.0, fit: 'contain' });
+  const volume = xnew.extend(xbasics.Volume);
+  xnew.extend(xbasics.Aspect, { aspect: 1.0, fit: 'contain' });
   unit.on('pointerdown', ({ event }) => event.stopPropagation());
 
-  const system = xnew(xnew.basics.OpenAndClose, { open: false, transition: { duration: 250, easing: 'ease' } });
+  const system = xnew(xbasics.OpenAndClose, { open: false, transition: { duration: 250, easing: 'ease' } });
 
   const button = xnew((unit) => {
     xnew.nest('<div style="width: 100%; height: 100%; cursor: pointer;">');

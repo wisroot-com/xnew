@@ -55,7 +55,7 @@ function Main(unit) {
   });
   xthree.camera.position.set(0, 0, 10);
 
-  unit.on('render', () => xthree.renderer.render(xthree.scene, xthree.camera));
+  unit.on('update', () => xthree.renderer.render(xthree.scene, xthree.camera));
 }
 ```
 

@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xmatter } from '@mulsense/xnew/addons/xmatter';
 import * as PIXI from 'pixi.js';
@@ -7,11 +7,11 @@ import Matter from 'matter-js';
 xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
-  xnew.extend(xnew.basics.Screen, { width: 800, height: 600 });
+  xnew.extend(xbasics.Screen, { width: 800, height: 600 });
 
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('render', () => {
+  unit.on('update', () => {
     xpixi.renderer.render(xpixi.scene);
   });
 
@@ -19,7 +19,7 @@ function Main(unit) {
 }
 
 function Contents(unit) {
-  xnew.extend(xnew.basics.Scene);
+  xnew.extend(xbasics.Scene);
 
   xmatter.initialize();
   unit.on('update', () => {
@@ -54,7 +54,7 @@ function Rectangle(unit, { x, y, w, h, color, options = {} }) {
 
   Matter.Body.setPosition(pyshics, { x, y });
 
-  unit.on('render', () => {
+  unit.on('update', () => {
     object.rotation = pyshics.angle;
     object.position.set(pyshics.position.x, pyshics.position.y);
   });
@@ -70,7 +70,7 @@ function Circle(unit, { x, y, radius, color, options = {} }) {
   Matter.Body.setPosition(pyshics, { x, y });
 
   unit.on('finalize', () => Matter.Composite.remove(xmatter.world, pyshics));
-  unit.on('render', () => {
+  unit.on('update', () => {
     object.rotation = pyshics.angle;
     object.position.set(pyshics.position.x, pyshics.position.y);
   });
@@ -87,7 +87,7 @@ function Polygon(unit, { x, y, sides, radius, color, options = {} }) {
   Matter.Body.setPosition(pyshics, { x, y });
 
   unit.on('finalize', () => Matter.Composite.remove(xmatter.world, pyshics));
-  unit.on('render', () => {
+  unit.on('update', () => {
       object.rotation = pyshics.angle;
       object.position.set(pyshics.position.x, pyshics.position.y);
   });

@@ -28,8 +28,9 @@ Integrations for games and interactive apps.
 
 ## Directory Layout
 
-- `src/core/` — `xnew` core, `unit`, event, time, map, sync
-- `src/basics/` — built-in basic components
+- `src/core/` — `xnew` core: `unit`, event, time, map, env, dom
+- `src/sync/` — networking layer (exported as `xsync`): a single `xsync.ts` (shared state + boot + facade). Lobby/room "gathering place" wiring is not built in — callers assemble it from the facade (see `examples/*/server.js` + `index.js`).
+- `src/basics/` — built-in basic components (exported as `xbasics`)
 - `src/addons/` — third-party library integrations
 - `examples/` — runnable samples
 - `website/` — Docusaurus documentation site
@@ -79,6 +80,7 @@ for a reference.
 | Directory     | Focus                                                                |
 | ------------- | -------------------------------------------------------------------- |
 | `src/core/`   | Role, invariants, relationship to other core files                   |
+| `src/sync/`   | Role, invariants of the sync engine + facade (`xsync.ts`)             |
 | `src/basics/` | User-facing component behavior and a small usage example             |
 | `src/addons/` | Integration target (and version), boundary with xnew, lifetime model |
 
@@ -94,5 +96,11 @@ for a reference.
 // - <PublicFeatureB> : <one-line description>
 //
 // (optional) Relationships / Invariants / Caveats / Example
+//----------------------------------------------------------------------------------------------------
+```
+
+```ts
+//----------------------------------------------------------------------------------------------------
+// code block header
 //----------------------------------------------------------------------------------------------------
 ```

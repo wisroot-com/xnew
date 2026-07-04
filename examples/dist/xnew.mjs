@@ -228,10 +228,7 @@ function isDomElement(value) {
     return (typeof HTMLElement !== 'undefined' && value instanceof HTMLElement) || (typeof SVGElement !== 'undefined' && value instanceof SVGElement);
 }
 const factories = new Map();
-function defineEvent(types, factory) {
-    (Array.isArray(types) ? types : [types]).forEach((type) => factories.set(type, factory));
-}
-function listen(target, type, execute, options) {
+function attach(target, type, execute, options) {
     let initalized = false;
     const id = setTimeout(() => {
         initalized = true;
@@ -259,13 +256,13 @@ class Eventor {
             finalize = factory(props);
         }
         else if (type.startsWith('window.')) {
-            finalize = listen(window, type.substring('window.'.length), (event) => listener({ event }), options);
+            finalize = attach(window, type.substring('window.'.length), (event) => listener({ event }), options);
         }
         else if (type.startsWith('document.')) {
-            finalize = listen(document, type.substring('document.'.length), (event) => listener({ event }), options);
+            finalize = attach(document, type.substring('document.'.length), (event) => listener({ event }), options);
         }
         else {
-            finalize = listen(element, type, (event) => listener({ event }), options);
+            finalize = attach(element, type, (event) => listener({ event }), options);
         }
         this.map.set(type, listener, finalize);
     }
@@ -281,8 +278,11 @@ function getPointerPosition(element, event) {
     const rect = element.getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
 }
+function defineEvent(types, factory) {
+    (Array.isArray(types) ? types : [types]).forEach((type) => factories.set(type, factory));
+}
 defineEvent(['change', 'input'], (props) => {
-    return listen(props.element, props.type, (event) => {
+    return attach(props.element, props.type, (event) => {
         let value = null;
         if (event.target.type === 'checkbox') {
             value = event.target.checked;
@@ -297,19 +297,19 @@ defineEvent(['change', 'input'], (props) => {
     }, props.options);
 });
 defineEvent(['click', 'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout'], (props) => {
-    return listen(props.element, props.type, (event) => {
+    return attach(props.element, props.type, (event) => {
         props.listener({ event, position: getPointerPosition(props.element, event) });
     }, props.options);
 });
 defineEvent(['click.outside', 'pointerdown.outside', 'pointermove.outside', 'pointerup.outside'], (props) => {
-    return listen(document, props.type.split('.')[0], (event) => {
+    return attach(document, props.type.split('.')[0], (event) => {
         if (props.element.contains(event.target) === false) {
             props.listener({ event, position: getPointerPosition(props.element, event) });
         }
     }, props.options);
 });
 defineEvent('wheel', (props) => {
-    return listen(props.element, props.type, (event) => {
+    return attach(props.element, props.type, (event) => {
         props.listener({ event, delta: { x: event.wheelDeltaX, y: event.wheelDeltaY } });
     }, props.options);
 });
@@ -320,7 +320,7 @@ defineEvent('resize', (props) => {
 });
 defineEvent(['window.keydown', 'window.keyup'], (props) => {
     const type = props.type.substring('window.'.length);
-    return listen(window, type, (event) => {
+    return attach(window, type, (event) => {
         if (event.repeat)
             return;
         props.listener({ event });
@@ -330,11 +330,11 @@ defineEvent(['dragstart', 'dragmove', 'dragend'], (props) => {
     let pointermove = null;
     let pointerup = null;
     let pointercancel = null;
-    const pointerdown = listen(props.element, 'pointerdown', (event) => {
+    const pointerdown = attach(props.element, 'pointerdown', (event) => {
         const id = event.pointerId;
         const position = getPointerPosition(props.element, event);
         let previous = position;
-        pointermove = listen(window, 'pointermove', (event) => {
+        pointermove = attach(window, 'pointermove', (event) => {
             if (event.pointerId === id) {
                 const position = getPointerPosition(props.element, event);
                 const delta = { x: position.x - previous.x, y: position.y - previous.y };
@@ -353,8 +353,8 @@ defineEvent(['dragstart', 'dragmove', 'dragend'], (props) => {
                 remove();
             }
         };
-        pointerup = listen(window, 'pointerup', finish, props.options);
-        pointercancel = listen(window, 'pointercancel', finish, props.options);
+        pointerup = attach(window, 'pointerup', finish, props.options);
+        pointercancel = attach(window, 'pointercancel', finish, props.options);
         if (props.type === 'dragstart') {
             props.listener({ event, position, delta: { x: 0, y: 0 } });
         }
@@ -380,7 +380,7 @@ function keyVectorEvent(variant, codes) {
             x: (keymap[codes.left] ? -1 : 0) + (keymap[codes.right] ? +1 : 0),
             y: (keymap[codes.up] ? -1 : 0) + (keymap[codes.down] ? +1 : 0),
         });
-        const keydown = listen(window, 'keydown', (event) => {
+        const keydown = attach(window, 'keydown', (event) => {
             if (event.repeat)
                 return;
             keymap[event.code] = 1;
@@ -388,7 +388,7 @@ function keyVectorEvent(variant, codes) {
                 props.listener({ event, vector: vector() });
             }
         }, props.options);
-        const keyup = listen(window, 'keyup', (event) => {
+        const keyup = attach(window, 'keyup', (event) => {
             keymap[event.code] = 0;
             if (variant === 'keyup' && targets.includes(event.code)) {
                 props.listener({ event, vector: vector() });
@@ -421,25 +421,20 @@ function matchKey(name, event) {
     return ((_a = event.code) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === name || ((_b = event.key) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === name;
 }
 function keyboardFactory(type) {
-    const matched = type.match(/^(window|document)\.(keydown|keyup)\.([A-Za-z0-9]+)(\.repeat)?$/);
+    const matched = type.match(/^(window|document)\.(keydown|keyup)\.([A-Za-z0-9]+)$/);
     if (matched === null)
         return undefined;
-    const [, scope, variant, rawKey, repeat] = matched;
+    const [, scope, variant, rawKey] = matched;
     const key = rawKey.toLowerCase();
-    const allowRepeat = repeat !== undefined;
     const target = scope === 'document' ? document : window;
-    return (props) => listen(target, variant, (event) => {
-        if (allowRepeat === false && event.repeat)
+    return (props) => attach(target, variant, (event) => {
+        if (event.repeat)
             return;
         if (matchKey(key, event))
             props.listener({ event });
     }, props.options);
 }
 
-const SYSTEM_EVENTS = ['start', 'update', 'render', 'stop', 'finalize'];
-function isSystemEvent(type) {
-    return SYSTEM_EVENTS.includes(type);
-}
 class Unit {
     constructor(parent = null) {
         var _a, _b;
@@ -458,20 +453,19 @@ class Unit {
         this._ = {
             id: Unit.nextId++,
             parent,
-            status: 'invoked',
-            tostart: true,
+            phase: 'invoked',
             protected: false,
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
-            afterSnapshot: null,
+            lastSnapshot: null,
             children: [],
             nestElements: [],
             promises: [],
             Components: [],
             listeners: new MapMap(),
             defines: {},
-            systems: { start: [], update: [], render: [], stop: [], finalize: [] },
+            systems: { update: [], finalize: [] },
             eventor: new Eventor(),
             key: null,
         };
@@ -505,10 +499,10 @@ class Unit {
         const backup = Unit.currentUnit;
         Unit.currentUnit = unit;
         Unit.extend(unit, baseComponent, props);
-        if (unit._.status === 'invoked') {
-            unit._.status = 'initialized';
+        if (unit._.phase === 'invoked') {
+            unit._.phase = 'initialized';
         }
-        unit._.afterSnapshot = Unit.snapshot(unit);
+        unit._.lastSnapshot = Unit.snapshot(unit);
         Unit.currentUnit = backup;
     }
     get parent() {
@@ -517,20 +511,12 @@ class Unit {
     get element() {
         return this._.currentElement;
     }
-    start() {
-        this._.tostart = true;
-    }
-    stop() {
-        this._.tostart = false;
-        Unit.stop(this);
-    }
     finalize() {
-        Unit.stop(this);
         Unit.finalize(this);
     }
     static finalize(unit) {
-        if (unit._.status !== 'finalized' && unit._.status !== 'finalizing') {
-            unit._.status = 'finalizing';
+        if (unit._.phase !== 'finalized' && unit._.phase !== 'finalizing') {
+            unit._.phase = 'finalizing';
             [...unit._.children].reverse().forEach((child) => child.finalize());
             [...unit._.systems.finalize].reverse().forEach(({ execute }) => execute());
             unit.off();
@@ -555,7 +541,7 @@ class Unit {
                 delete unit[key];
             });
             unit._.defines = {};
-            unit._.status = 'finalized';
+            unit._.phase = 'finalized';
             if (unit._.parent) {
                 unit._.parent._.children = unit._.parent._.children.filter((u) => u !== unit);
             }
@@ -622,35 +608,10 @@ class Unit {
         Object.defineProperties(clone, Object.getOwnPropertyDescriptors(unit._.defines));
         return clone;
     }
-    static start(unit) {
-        if (unit._.tostart === false)
-            return;
-        if (unit._.status === 'initialized' || unit._.status === 'stopped') {
-            unit._.status = 'started';
-            unit._.children.forEach((child) => Unit.start(child));
-            unit._.systems.start.forEach(({ execute }) => execute());
-        }
-        else if (unit._.status === 'started') {
-            unit._.children.forEach((child) => Unit.start(child));
-        }
-    }
-    static stop(unit) {
-        if (unit._.status === 'started') {
-            unit._.status = 'stopped';
-            unit._.children.forEach((child) => Unit.stop(child));
-            unit._.systems.stop.forEach(({ execute }) => execute());
-        }
-    }
     static update(unit, delta = 0) {
-        if (unit._.status === 'started') {
+        if (unit._.phase === 'initialized') {
             unit._.children.forEach((child) => Unit.update(child, delta));
             unit._.systems.update.forEach((entry) => entry.execute({ count: entry.count++, delta }));
-        }
-    }
-    static render(unit, delta = 0) {
-        if (unit._.status === 'started' || unit._.status === 'stopped') {
-            unit._.children.forEach((child) => Unit.render(child, delta));
-            unit._.systems.render.forEach((entry) => entry.execute({ count: entry.count++, delta }));
         }
     }
     static reset() {
@@ -659,14 +620,12 @@ class Unit {
         Unit.nextId = 0;
         Unit.currentUnit = Unit.engineRoot = Unit.create(null);
         const ticker = new Ticker((delta) => {
-            Unit.start(Unit.engineRoot);
             Unit.update(Unit.engineRoot, delta);
-            Unit.render(Unit.engineRoot, delta);
         });
         Unit.engineRoot.on('finalize', () => ticker.clear());
     }
     static scope(snapshot, func, ...args) {
-        if (snapshot.unit._.status === 'finalized') {
+        if (snapshot.unit._.phase === 'finalized') {
             return;
         }
         const currentUnit = Unit.currentUnit;
@@ -707,14 +666,14 @@ class Unit {
             ancestors.push(u);
         return ancestors;
     }
-    static protectBoundary(from) {
+    static isVisible(from, current, ancestors) {
+        let boundary;
         for (let u = from; u !== null; u = u._.parent) {
-            if (u._.protected === true)
-                return u;
+            if (u._.protected === true) {
+                boundary = u;
+                break;
+            }
         }
-        return undefined;
-    }
-    static isVisible(boundary, current, ancestors) {
         return boundary === undefined || ancestors.includes(boundary) === true || current === boundary;
     }
     static find(Component, key) {
@@ -725,7 +684,7 @@ class Unit {
             if (key !== undefined && unit._.key !== key) {
                 return false;
             }
-            return Unit.isVisible(Unit.protectBoundary(unit._.parent), current, ancestors);
+            return Unit.isVisible(unit._.parent, current, ancestors);
         });
     }
     on(type, listener, options) {
@@ -733,7 +692,7 @@ class Unit {
         types.forEach((type) => Unit.on(this, type, listener, options));
     }
     off(type, listener) {
-        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys()];
+        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), 'update', 'finalize'];
         types.forEach((type) => Unit.off(this, type, listener));
     }
     static on(unit, type, listener, options) {
@@ -741,10 +700,10 @@ class Unit {
         const execute = (props = {}) => {
             Unit.scope(snapshot, listener, Object.assign({ type }, props));
         };
-        if (isSystemEvent(type)) {
+        if (type === 'update' || type === 'finalize') {
             unit._.systems[type].push({ listener, execute, count: 0 });
         }
-        if (unit._.listeners.has(type, listener) === false) {
+        else if (unit._.listeners.has(type, listener) === false) {
             unit._.listeners.set(type, listener, { element: unit.element, Component: unit._.currentComponent, execute });
             Unit.type2units.add(type, unit);
             if (/^[A-Za-z]/.test(type) && unit.element !== null) {
@@ -753,20 +712,22 @@ class Unit {
         }
     }
     static off(unit, type, listener) {
-        if (isSystemEvent(type)) {
+        if (type === 'update' || type === 'finalize') {
             unit._.systems[type] = unit._.systems[type].filter(({ listener: lis }) => listener ? lis !== listener : false);
         }
-        (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((listener) => {
-            const item = unit._.listeners.get(type, listener);
-            if (item === undefined)
-                return;
-            unit._.listeners.delete(type, listener);
-            if (/^[A-Za-z]/.test(type)) {
-                unit._.eventor.remove(type, item.execute);
+        else {
+            (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((listener) => {
+                const item = unit._.listeners.get(type, listener);
+                if (item !== undefined) {
+                    unit._.listeners.delete(type, listener);
+                    if (/^[A-Za-z]/.test(type)) {
+                        unit._.eventor.remove(type, item.execute);
+                    }
+                }
+            });
+            if (unit._.listeners.has(type) === false) {
+                Unit.type2units.delete(type, unit);
             }
-        });
-        if (unit._.listeners.has(type) === false) {
-            Unit.type2units.delete(type, unit);
         }
     }
     static emit(unit, type, props = {}) {
@@ -775,7 +736,7 @@ class Unit {
             const ancestors = Unit.ancestors(unit);
             (_a = Unit.type2units.get(type)) === null || _a === void 0 ? void 0 : _a.forEach((target) => {
                 var _a;
-                if (Unit.isVisible(Unit.protectBoundary(target), unit, ancestors)) {
+                if (Unit.isVisible(target, unit, ancestors)) {
                     (_a = target._.listeners.get(type)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(props));
                 }
             });
@@ -808,47 +769,26 @@ class UnitPromise {
     finally(callback) {
         return this.chain('finally', callback);
     }
-    static defer(key) {
-        let settled = false;
-        let resolve;
-        let reject;
-        const unitPromise = new UnitPromise(new Promise((res, rej) => { resolve = res; reject = rej; }), key);
-        return {
-            unitPromise,
-            resolve(value) { if (settled) {
+    static async collect(promises) {
+        const values = await Promise.all(promises.map(p => p.promise));
+        const out = {};
+        promises.forEach((p, i) => {
+            if (p.key === undefined) {
                 return;
-            } settled = true; resolve(value); },
-            reject(reason) { if (settled) {
-                return;
-            } settled = true; reject(reason); },
-        };
-    }
-    static results(promises, key) {
-        return new UnitPromise(Promise.all(promises.map(p => p.promise)).then((values) => {
-            const out = { results: [] };
-            promises.forEach((p, i) => {
-                if (p.key !== undefined) {
-                    UnitPromise.assignKey(out, p.key, values[i]);
-                }
-                else {
-                    out.results.push(values[i]);
-                }
-            });
-            return out;
-        }), key);
-    }
-    static assignKey(out, key, value) {
-        const matched = key.match(/^(.+)\[\]$/);
-        if (matched !== null) {
-            const name = matched[1];
-            if (Array.isArray(out[name]) === false) {
-                out[name] = [];
             }
-            out[name].push(value);
-        }
-        else {
-            out[key] = value;
-        }
+            const matched = p.key.match(/^(.+)\[\]$/);
+            if (matched !== null) {
+                const name = matched[1];
+                if (Array.isArray(out[name]) === false) {
+                    out[name] = [];
+                }
+                out[name].push(values[i]);
+            }
+            else {
+                out[p.key] = values[i];
+            }
+        });
+        return out;
     }
 }
 class UnitTimer {
@@ -863,15 +803,16 @@ class UnitTimer {
         this.unit = null;
     }
     timeout(timeout, duration = 0) {
-        return UnitTimer.execute(this, timeout, null, duration, undefined, 1);
+        return this.execute(timeout, null, duration, 1);
     }
     interval(timeout, duration = 0, iterations = 0) {
-        return UnitTimer.execute(this, timeout, null, duration, undefined, iterations);
+        return this.execute(timeout, null, duration, iterations);
     }
     transition(transition, duration = 0, easing) {
-        return UnitTimer.execute(this, null, transition, duration, easing, 1);
+        return this.execute(null, transition, duration, 1, easing);
     }
-    static execute(timer, timeout, transition, duration, easing, iterations) {
+    execute(timeout, transition, duration, iterations, easing) {
+        const timer = this;
         const snapshot = Unit.snapshot(Unit.currentUnit);
         const Component = (unit) => {
             let counter = 0;
@@ -879,7 +820,7 @@ class UnitTimer {
             function onTimeout() {
                 if (timeout)
                     Unit.scope(snapshot, timeout, { timer });
-                if (unit._.status === 'finalized') {
+                if (unit._.phase === 'finalized') {
                     return;
                 }
                 if (iterations <= 0 || counter < iterations - 1) {
@@ -896,33 +837,31 @@ class UnitTimer {
             }
             unit.on('finalize', () => current.clear());
         };
-        if (timer.unit === null || timer.unit._.status === 'finalized') {
-            timer.unit = Unit.create(Unit.currentUnit, Component);
-        }
-        else if (timer.queue.length === 0) {
-            timer.queue.push(Component);
-            timer.unit.on('finalize', () => UnitTimer.next(timer));
+        if (this.unit === null || this.unit._.phase === 'finalized') {
+            this.start(Component);
         }
         else {
-            timer.queue.push(Component);
+            this.queue.push(Component);
         }
-        return timer;
+        return this;
     }
-    static next(timer) {
-        if (timer.queue.length > 0) {
-            timer.unit = Unit.create(Unit.currentUnit, timer.queue.shift());
-            timer.unit.on('finalize', () => UnitTimer.next(timer));
-        }
+    start(Component) {
+        this.unit = Unit.create(Unit.currentUnit, Component);
+        this.unit.on('finalize', () => {
+            if (this.queue.length > 0) {
+                this.start(this.queue.shift());
+            }
+        });
     }
 }
 
-const xnew$1 = Object.assign((function (...args) {
+const xnew = Object.assign((function (...args) {
     var _a, _b;
     if (Unit.engineRoot === undefined)
         Unit.reset();
     if (args[0] instanceof Unit) {
         const parent = args.shift();
-        const snapshot = (_a = parent._.afterSnapshot) !== null && _a !== void 0 ? _a : Unit.snapshot(parent);
+        const snapshot = (_a = parent._.lastSnapshot) !== null && _a !== void 0 ? _a : Unit.snapshot(parent);
         return Unit.scope(snapshot, () => Unit.create(parent, ...args));
     }
     else {
@@ -931,13 +870,13 @@ const xnew$1 = Object.assign((function (...args) {
     }
 }), {
     nest(target) {
-        if (Unit.currentUnit._.status !== 'invoked') {
+        if (Unit.currentUnit._.phase !== 'invoked') {
             throw new Error('xnew.nest can not be called after initialized.');
         }
         return Unit.nest(Unit.currentUnit, target);
     },
     extend(Component, props) {
-        if (Unit.currentUnit._.status !== 'invoked') {
+        if (Unit.currentUnit._.phase !== 'invoked') {
             throw new Error('xnew.extend can not be called after initialized.');
         }
         if (Unit.currentUnit._.Components.includes(Component) === true) {
@@ -954,29 +893,19 @@ const xnew$1 = Object.assign((function (...args) {
         if (key !== undefined && /^.+\[\d+\]$/.test(key)) {
             throw new Error(`xnew.promise: indexed key "${key}" is no longer supported; use "${key.replace(/\[\d+\]$/, '[]')}" to append in registration order`);
         }
-        if (arguments.length >= 2 && promise === undefined) {
-            throw new Error('xnew.promise(key, promise): promise is required when a second argument is given');
+        let source;
+        if (promise instanceof Unit) {
+            source = UnitPromise.collect(promise._.promises);
         }
-        if (promise === undefined) {
-            const { unitPromise, resolve, reject } = UnitPromise.defer(key);
-            Unit.currentUnit._.promises.push(unitPromise);
-            return { resolve, reject };
+        else if (promise instanceof Promise) {
+            source = promise;
         }
         else {
-            let unitPromise;
-            if (promise instanceof Unit) {
-                unitPromise = UnitPromise.results(promise._.promises, key);
-                promise._.promises = [];
-            }
-            else if (promise instanceof Promise) {
-                unitPromise = new UnitPromise(promise, key);
-            }
-            else {
-                unitPromise = new UnitPromise(new Promise(xnew$1.scope(promise)), key);
-            }
-            Unit.currentUnit._.promises.push(unitPromise);
-            return unitPromise;
+            source = new Promise(xnew.scope(promise));
         }
+        const unitPromise = new UnitPromise(source, key);
+        Unit.currentUnit._.promises.push(unitPromise);
+        return unitPromise;
     }),
     scope(callback) {
         const snapshot = Unit.snapshot(Unit.currentUnit);
@@ -1002,382 +931,9 @@ const xnew$1 = Object.assign((function (...args) {
     },
 });
 
-function OpenAndClose(unit, { open = true, transition = { duration: 200, easing: 'ease' } }) {
-    let value = open ? 1.0 : 0.0;
-    let sign = open ? +1 : -1;
-    let timer = xnew$1.timeout(() => xnew$1.emit('-transition', { value }));
-    function animate(dir) {
-        var _a, _b;
-        sign = dir;
-        const d = dir > 0 ? 1 - value : value;
-        const duration = ((_a = transition === null || transition === void 0 ? void 0 : transition.duration) !== null && _a !== void 0 ? _a : 200) * d;
-        const easing = (_b = transition === null || transition === void 0 ? void 0 : transition.easing) !== null && _b !== void 0 ? _b : 'ease';
-        timer === null || timer === void 0 ? void 0 : timer.clear();
-        timer = xnew$1.transition(({ value: x }) => {
-            const remaining = x < 1.0 ? (1 - x) * d : 0.0;
-            value = dir > 0 ? 1.0 - remaining : remaining;
-            xnew$1.emit('-transition', { value });
-        }, duration, easing)
-            .timeout(() => xnew$1.emit(dir > 0 ? '-opened' : '-closed'));
-    }
-    return {
-        toggle() {
-            animate(sign < 0 ? +1 : -1);
-        },
-        open() {
-            animate(+1);
-        },
-        close() {
-            animate(-1);
-        },
-    };
-}
-function Accordion(unit) {
-    const system = xnew$1.context(OpenAndClose);
-    const outer = xnew$1.nest('<div style="overflow: hidden;">');
-    const inner = xnew$1.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box;">');
-    system.on('-transition', ({ value }) => {
-        outer.style.height = value < 1.0 ? inner.offsetHeight * value + 'px' : 'auto';
-        outer.style.opacity = value.toString();
-    });
-}
-function Popup(unit) {
-    const system = xnew$1.context(OpenAndClose);
-    system.on('-closed', () => unit.finalize());
-    system.open();
-    xnew$1.nest('<div style="position: fixed; inset: 0; z-index: 1000; opacity: 0;">');
-    unit.on('click', ({ event }) => event.target === unit.element && system.close());
-    system.on('-transition', ({ value }) => {
-        unit.element.style.opacity = value.toString();
-    });
-}
-
-function SVG(unit, { viewBox = '0 0 64 64', className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'none', fillOpacity = 1 } = {}) {
-    xnew$1.nest(`<svg
-        viewBox="${viewBox}"
-        class="${className}"
-        style="${style}"
-        stroke="${stroke}"
-        stroke-opacity="${strokeOpacity}"
-        stroke-width="${strokeWidth}"
-        stroke-linejoin="${strokeLinejoin}"
-        stroke-linecap="${strokeLinecap}"
-        fill="${fill}"
-        fill-opacity="${fillOpacity}"
-    ">`);
-}
-function SVGText(unit, { text = '', fontSize = 20, anchor = { x: 0, y: 0 }, className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'currentColor', fillOpacity = 1 } = {}) {
-    xnew$1.extend(SVG, { className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
-    const svg = unit.element;
-    xnew$1.nest(`<text x="0" y="0" font-size="${fontSize}" paint-order="stroke fill">`);
-    unit.element.textContent = text;
-    function resize() {
-        const bbox = unit.element.getBBox();
-        const padding = 0;
-        svg.setAttribute('viewBox', `
-            ${bbox.x - padding}
-            ${bbox.y - padding}
-            ${bbox.width + padding * 2}
-            ${bbox.height + padding * 2}
-        `);
-        svg.style.width = (bbox.width + padding * 2) + 'px';
-    }
-    resize();
-    unit.on('resize', resize);
-    svg.style.overflow = 'visible';
-}
-
-function Aspect(unit, { aspect = 1.0, fit = 'contain' } = {}) {
-    xnew$1.nest('<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; container-type: size;">');
-    xnew$1.nest(`<div style="position: relative; aspect-ratio: ${aspect}; container-type: size;">`);
-    if (fit === 'contain') {
-        unit.element.style.width = `min(100cqw, calc(100cqh * ${aspect}))`;
-    }
-    else {
-        unit.element.style.flexShrink = '0';
-        unit.element.style.width = `max(100cqw, calc(100cqh * ${aspect}))`;
-    }
-}
-function Screen(unit, { width = 800, height = 600, fit = 'contain' } = {}) {
-    xnew$1.extend(Aspect, { aspect: width / height, fit });
-    const canvas = xnew$1(`<canvas width="${width}" height="${height}" style="width: 100%; height: 100%; vertical-align: bottom;">`);
-    return {
-        get canvas() { return canvas.element; },
-    };
-}
-function Scene(unit) {
-    return {
-        change(Component, props) {
-            xnew$1(unit.parent, Component, props);
-            unit.finalize();
-        },
-        add(Component, props) {
-            xnew$1(unit, Component, props);
-        }
-    };
-}
-
-function AnalogStick(unit, { stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 } = {}) {
-    xnew$1.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew$1.nest(`<div style="width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;">`);
-    xnew$1((unit) => {
-        xnew$1.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', stroke, strokeOpacity, strokeWidth, fill, fillOpacity });
-        xnew$1('<polygon points="32  7 27 13 37 13">');
-        xnew$1('<polygon points="32 57 27 51 37 51">');
-        xnew$1('<polygon points=" 7 32 13 27 13 37">');
-        xnew$1('<polygon points="57 32 51 27 51 37">');
-    });
-    const target = xnew$1((unit) => {
-        xnew$1.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', stroke, strokeOpacity, strokeWidth, fill, fillOpacity });
-        xnew$1('<circle cx="32" cy="32" r="14">');
-    });
-    unit.on('dragstart dragmove', ({ type, position }) => {
-        const size = unit.element.clientWidth;
-        const x = position.x - size / 2;
-        const y = position.y - size / 2;
-        const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
-        const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
-        const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-        Object.assign(target.element.style, { filter: 'brightness(80%)', left: `${vector.x * size / 4}px`, top: `${vector.y * size / 4}px` });
-        const nexttype = { dragstart: '-down', dragmove: '-move' }[type];
-        xnew$1.emit(nexttype, { vector });
-    });
-    unit.on('dragend', () => {
-        Object.assign(target.element.style, { filter: '', left: '0px', top: '0px' });
-        xnew$1.emit('-up', { vector: { x: 0, y: 0 } });
-    });
-}
-function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 } = {}) {
-    xnew$1.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew$1.nest(`<div style="width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;">`);
-    const polygons = [
-        '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
-        '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
-        '<polygon points="32 32 23 23  4 23  3 24  3 40  4 41 23 41">',
-        '<polygon points="32 32 41 23 60 23 61 24 61 40 60 41 41 41">'
-    ];
-    const targets = polygons.map((polygon) => {
-        return xnew$1((unit) => {
-            xnew$1.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', fill, fillOpacity });
-            xnew$1(polygon);
-        });
-    });
-    xnew$1((unit) => {
-        xnew$1.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', stroke, strokeOpacity, strokeWidth });
-        xnew$1('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
-        xnew$1('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
-        xnew$1('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');
-        xnew$1('<polyline points="41 23 60 23 61 24 61 40 60 41 41 41">');
-        xnew$1('<polygon points="32  7 27 13 37 13">');
-        xnew$1('<polygon points="32 57 27 51 37 51">');
-        xnew$1('<polygon points=" 7 32 13 27 13 37">');
-        xnew$1('<polygon points="57 32 51 27 51 37">');
-    });
-    unit.on('dragstart dragmove', ({ type, position }) => {
-        const size = unit.element.clientWidth;
-        const x = position.x - size / 2;
-        const y = position.y - size / 2;
-        const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
-        const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
-        const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-        if (diagonal === true) {
-            vector.x = Math.abs(vector.x) > 0.5 ? Math.sign(vector.x) : 0;
-            vector.y = Math.abs(vector.y) > 0.5 ? Math.sign(vector.y) : 0;
-        }
-        else if (Math.abs(vector.x) > Math.abs(vector.y)) {
-            vector.x = Math.abs(vector.x) > 0.5 ? Math.sign(vector.x) : 0;
-            vector.y = 0;
-        }
-        else {
-            vector.x = 0;
-            vector.y = Math.abs(vector.y) > 0.5 ? Math.sign(vector.y) : 0;
-        }
-        targets[0].element.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
-        targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
-        targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
-        targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
-        const nexttype = { dragstart: '-down', dragmove: '-move' }[type];
-        xnew$1.emit(nexttype, { vector });
-    });
-    unit.on('dragend', () => {
-        targets[0].element.style.filter = '';
-        targets[1].element.style.filter = '';
-        targets[2].element.style.filter = '';
-        targets[3].element.style.filter = '';
-        xnew$1.emit('-up', { vector: { x: 0, y: 0 } });
-    });
-}
-
-const paleColor = 'color-mix(in srgb, currentColor 20%, transparent)';
-const hiddenInput = 'position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;';
-function Panel(unit, { params }) {
-    const object = params !== null && params !== void 0 ? params : {};
-    function field(key, value, fallback, Component, props) {
-        var _a;
-        object[key] = (_a = value !== null && value !== void 0 ? value : object[key]) !== null && _a !== void 0 ? _a : fallback;
-        const control = xnew$1(Component, Object.assign({ key, value: object[key] }, props));
-        control.on('input', ({ value }) => object[key] = value);
-        return control;
-    }
-    return {
-        group({ name, open, params }, inner) {
-            const group = xnew$1((unit) => {
-                xnew$1.extend(Group, { name, open });
-                xnew$1.extend(Panel, { params: params !== null && params !== void 0 ? params : object });
-                inner(unit);
-            });
-            return group;
-        },
-        button(key) {
-            const button = xnew$1(Button, { key });
-            return button;
-        },
-        select(key, { value, items = [] } = {}) {
-            var _a;
-            return field(key, value, (_a = items[0]) !== null && _a !== void 0 ? _a : '', Select, { items });
-        },
-        range(key, { value, min = 0, max = 100, step = 1 } = {}) {
-            return field(key, value, min, Range, { min, max, step });
-        },
-        checkbox(key, { value } = {}) {
-            return field(key, value, false, Checkbox, {});
-        },
-        separator() {
-            xnew$1(Separator);
-        }
-    };
-}
-function Group(group, { name, open = false }) {
-    const openAndClose = xnew$1.extend(OpenAndClose, { open });
-    if (name) {
-        xnew$1('<div style="height: 2em; margin: 0.125em 0; display: flex; align-items: center; cursor: pointer; user-select: none;">', (unit) => {
-            unit.on('click', () => openAndClose.toggle());
-            xnew$1((unit) => {
-                xnew$1.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
-                xnew$1('<path d="M6 2 10 6 6 10"/>');
-                group.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${value * 90}deg)`);
-            });
-            xnew$1('<div>', name);
-        });
-    }
-    xnew$1.extend(Accordion);
-}
-function Button(unit, { key = '' }) {
-    xnew$1.nest('<button style="margin: 0.125em 0; height: 2em; border: 1px solid; border-radius: 0.25em; cursor: pointer;">');
-    unit.element.textContent = key;
-    unit.on('pointerover', () => {
-        Object.assign(unit.element.style, { background: paleColor, borderColor: 'currentColor' });
-    });
-    unit.on('pointerout', () => {
-        Object.assign(unit.element.style, { background: '', borderColor: '' });
-    });
-    unit.on('pointerdown', () => {
-        unit.element.style.filter = 'brightness(0.5)';
-    });
-    unit.on('pointerup', () => {
-        unit.element.style.filter = '';
-    });
-}
-function Separator(unit) {
-    xnew$1.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
-}
-function Range(unit, { key = '', value, min = 0, max = 100, step = 1 }) {
-    value = value !== null && value !== void 0 ? value : min;
-    xnew$1.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; cursor: pointer; user-select: none;">`);
-    const ratio = (value - min) / (max - min);
-    const fill = xnew$1(`<div style="position: absolute; top: 0; left: 0; bottom: 0; width: ${ratio * 100}%; background: ${paleColor}; border: 1px solid currentColor; border-radius: 0.25em; transition: width 0.05s;">`);
-    const status = xnew$1('<div style="position: absolute; inset: 0; padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">', (unit) => {
-        xnew$1('<div>', key);
-        xnew$1('<div key="status">', value);
-    });
-    xnew$1.nest(`<input type="range" name="${key}" min="${min}" max="${max}" step="${step}" value="${value}" style="${hiddenInput}">`);
-    unit.on('input', ({ event }) => {
-        const v = Number(event.target.value);
-        const r = (v - min) / (max - min);
-        fill.element.style.width = `${r * 100}%`;
-        status.element.querySelector('[key="status"]').textContent = String(v);
-    });
-}
-function Checkbox(unit, { key = '', value } = {}) {
-    xnew$1.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; padding: 0 0.5em; display: flex; align-items: center; cursor: pointer; user-select: none;">`);
-    xnew$1('<div style="flex: 1;">', key);
-    const box = xnew$1(`<div style="width: 1.25em; height: 1.25em; border: 1px solid currentColor; border-radius: 0.25em; display: flex; align-items: center; justify-content: center;">`, () => {
-        xnew$1((unit) => {
-            xnew$1.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 1.25em; height: 1.25em; opacity: 0;', stroke: 'currentColor', strokeWidth: 2 });
-            xnew$1('<path d="M2 6 5 9 10 3" />');
-        });
-    });
-    const check = box.element.querySelector('svg');
-    const update = (checked) => {
-        box.element.style.background = checked ? paleColor : '';
-        check.style.opacity = checked ? '1' : '0';
-    };
-    update(!!value);
-    xnew$1.nest(`<input type="checkbox" name="${key}" ${value ? 'checked' : ''} style="${hiddenInput}">`);
-    unit.on('input', ({ value }) => {
-        update(value);
-    });
-}
-function Select(_, { key = '', value, items = [] } = {}) {
-    var _a;
-    const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
-    xnew$1.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; padding: 0 0.5em; display: flex; align-items: center;">`);
-    xnew$1('<div style="flex: 1;">', key);
-    const native = xnew$1(`<select name="${key}" style="display: none;">`, () => {
-        for (const item of items) {
-            xnew$1(`<option value="${item}" ${item === initial ? 'selected' : ''}>`, item);
-        }
-    });
-    const button = xnew$1(`<div style="height: 2em; padding: 0 1.5em 0 0.5em; display: flex; align-items: center; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer; user-select: none; min-width: 3em; white-space: nowrap;">`, initial);
-    xnew$1((unit) => {
-        xnew$1.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', strokeWidth: 2, style: 'position: absolute; right: 1.0em; width: 0.75em; height: 0.75em; pointer-events: none;' });
-        xnew$1('<path d="M2 4 6 8 10 4" />');
-    });
-    button.on('click', () => {
-        xnew$1((list) => {
-            xnew$1(OpenAndClose, { open: false });
-            xnew$1.extend(Popup);
-            xnew$1.nest('<div style="position: absolute; padding: 0.25em 0;">');
-            list.on('render', () => {
-                const rect = button.element.getBoundingClientRect();
-                list.element.style.right = (window.innerWidth - rect.right) + 'px';
-                list.element.style.top = rect.bottom + 'px';
-                list.element.style.background = getEffectiveBg(button.element);
-            });
-            xnew$1.extend(Accordion);
-            xnew$1.nest(`<div style="position: relative; border: 1px solid currentColor; border-radius: 0.25em; overflow: hidden;">`);
-            for (const item of items) {
-                const div = xnew$1(`<div style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, item);
-                div.on('pointerover', () => div.element.style.background = paleColor);
-                div.on('pointerout', () => div.element.style.background = '');
-                div.on('click', () => {
-                    button.element.textContent = item;
-                    native.element.value = item;
-                    native.element.dispatchEvent(new Event('input', { bubbles: false }));
-                    list.finalize();
-                });
-            }
-            list.on('click.outside', () => list.finalize());
-        });
-    });
-    xnew$1.nest(native.element);
-    function getEffectiveBg(element) {
-        let current = element.parentElement;
-        while (current) {
-            const bg = getComputedStyle(current).backgroundColor;
-            if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent')
-                return bg;
-            current = current.parentElement;
-        }
-        return 'Canvas';
-    }
-}
-
-const detected = (typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client';
 function getEnvironment() {
-    return detected;
+    return ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
 }
-
 const syncData = new WeakMap();
 function syncOf(unit) {
     if (syncData.has(unit) === false) {
@@ -1385,50 +941,68 @@ function syncOf(unit) {
     }
     return syncData.get(unit);
 }
-const SYNC_KEY = Symbol('sync');
+const rootInfos = new WeakMap();
+function findRootInfo(unit) {
+    for (let u = unit; u !== null; u = u._.parent) {
+        const info = rootInfos.get(u);
+        if (info !== undefined) {
+            return info;
+        }
+    }
+    return undefined;
+}
 function rootInfoOf(unit) {
-    const info = Unit.getContext(unit, SYNC_KEY);
+    const info = findRootInfo(unit);
     if (info === undefined) {
-        throw new Error('no socket bound to this root; create it with xnew.sync.boot({ io, room } | { io, client, room }, ...).');
+        throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
     }
     return info;
 }
+const WIRE_TO_SERVER = 'sync:toServer';
+const WIRE_TO_CLIENT = 'sync:toClient';
+const WIRE_DELIVER = 'sync:deliver';
 function dispatch(info, event, id, payload) {
     var _a;
     const data = payload && payload.data !== null && typeof payload.data === 'object' ? payload.data : {};
     const syncId = payload ? payload.syncId : undefined;
     ((_a = Unit.type2units.get(event)) !== null && _a !== void 0 ? _a : []).forEach((unit) => {
         var _a;
-        if (Unit.getContext(unit, SYNC_KEY) !== info)
+        if (findRootInfo(unit) !== info)
             return;
         if (event[0] === '-' && syncOf(unit).id !== syncId)
             return;
         (_a = unit._.listeners.get(event)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
     });
 }
+function relayToClients(info, type, senderId, syncId, data, ids) {
+    const envelope = { type, syncId, id: senderId, data };
+    if (Array.isArray(ids) && ids.length > 0) {
+        ids.forEach((cid) => info.io.to(cid).emit(WIRE_DELIVER, envelope));
+    }
+    else {
+        info.io.to(info.room.id).emit(WIRE_DELIVER, envelope);
+    }
+}
 function bootServer(opts, parent, args) {
     const { io, room } = opts;
     const info = { io, room, clients: [] };
     const root = new Unit(parent);
-    Unit.addContext(root, root, SYNC_KEY, info);
+    rootInfos.set(root, info);
     Unit.initialize(root, ...args);
     let nextId = 1;
     const captureStateTree = () => {
         const nodes = [];
         const syncName = (unit) => {
             var _a;
-            const registry = unit._.parent ? (_a = syncData.get(unit._.parent)) === null || _a === void 0 ? void 0 : _a.registry : null;
-            if (registry === null || registry === undefined) {
-                return undefined;
-            }
-            const entries = Object.entries(registry);
-            for (let i = unit._.Components.length - 1; i >= 0; i--) {
-                const hit = entries.find(([, Component]) => Component === unit._.Components[i]);
-                if (hit !== undefined) {
-                    return hit[0];
+            let name = undefined;
+            const registry = unit._.parent ? (_a = syncData.get(unit._.parent)) === null || _a === void 0 ? void 0 : _a.registry : undefined;
+            if (registry !== undefined) {
+                const names = new Map(Object.entries(registry).map(([key, Component]) => [Component, key]));
+                for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
+                    name = names.get(unit._.Components[i]);
                 }
             }
-            return undefined;
+            return name;
         };
         const walk = (unit, parent) => {
             var _a;
@@ -1454,7 +1028,15 @@ function bootServer(opts, parent, args) {
         info.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
         dispatch(info, 'sync.connect', socket.id, undefined);
         statusUpdate();
-        socket.onAny((event, payload) => dispatch(info, event, socket.id, payload));
+        socket.onAny((event, payload) => {
+            var _a;
+            if (event === WIRE_TO_SERVER) {
+                dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, payload);
+            }
+            else if (event === WIRE_TO_CLIENT) {
+                relayToClients(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, (_a = payload === null || payload === void 0 ? void 0 : payload.syncId) !== null && _a !== void 0 ? _a : null, payload === null || payload === void 0 ? void 0 : payload.data, payload === null || payload === void 0 ? void 0 : payload.ids);
+            }
+        });
         socket.on('disconnect', () => {
             info.clients = info.clients.filter((c) => c.id !== socket.id);
             dispatch(info, 'sync.disconnect', socket.id, undefined);
@@ -1473,7 +1055,7 @@ function bootClient(opts, parent, args) {
     const socket = io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true });
     const info = { socket, room, clients: [] };
     const root = new Unit(parent);
-    Unit.addContext(root, root, SYNC_KEY, info);
+    rootInfos.set(root, info);
     Unit.initialize(root, ...args);
     const reconcileMap = new Map();
     const applyStateTree = (tree) => {
@@ -1508,7 +1090,11 @@ function bootClient(opts, parent, args) {
         dispatch(info, 'sync.statusupdate', undefined, undefined);
     };
     socket.on('status', onStatus);
-    socket.onAny((event, payload) => dispatch(info, event, undefined, payload));
+    socket.onAny((event, payload) => {
+        if (event === WIRE_DELIVER) {
+            dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, payload === null || payload === void 0 ? void 0 : payload.id, payload);
+        }
+    });
     socket.on('connect', () => Unit.emit(parent, '-connect', { id: socket.id }));
     socket.on('disconnect', () => Unit.emit(parent, '-disconnect', {}));
     socket.on('notfound', (payload) => Unit.emit(parent, '-notfound', payload !== null && payload !== void 0 ? payload : {}));
@@ -1519,7 +1105,7 @@ function bootClient(opts, parent, args) {
     });
     return root;
 }
-const sync = {
+const xsync = {
     server(callback, props) {
         return getEnvironment() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) : {};
     },
@@ -1537,33 +1123,44 @@ const sync = {
     },
     register(Components) {
         const unit = Unit.currentUnit;
-        if (unit._.status !== 'invoked') {
-            throw new Error('xnew.sync.register must be called during component initialization.');
+        if (unit._.phase !== 'invoked') {
+            throw new Error('xsync.register must be called during component initialization.');
         }
         Object.assign(syncOf(unit).registry, Components);
     },
-    get room() {
-        return rootInfoOf(Unit.currentUnit).room;
-    },
-    get clients() {
-        return rootInfoOf(Unit.currentUnit).clients;
-    },
-    get myself() {
-        var _a;
-        if (getEnvironment() === 'server') {
-            throw new Error('sync.myself is only available on the client side.');
-        }
+    get session() {
         const info = rootInfoOf(Unit.currentUnit);
-        return (_a = info.clients.find((c) => c.id === info.socket.id)) !== null && _a !== void 0 ? _a : { id: info.socket.id, name: '' };
+        const isServer = getEnvironment() === 'server';
+        return {
+            get room() { return info.room; },
+            get clients() { return info.clients; },
+            get myself() {
+                var _a;
+                if (isServer) {
+                    throw new Error('xsync.session.myself is only available on the client side.');
+                }
+                const client = info;
+                return (_a = client.clients.find((c) => c.id === client.socket.id)) !== null && _a !== void 0 ? _a : { id: client.socket.id, name: '' };
+            },
+        };
     },
-    emit(event, payload = {}) {
+    emitToServer(type, props = {}) {
         const info = rootInfoOf(Unit.currentUnit);
-        const envelope = { syncId: syncOf(Unit.currentUnit).id, data: payload };
         if (getEnvironment() === 'server') {
-            info.io.to(info.room.id).emit(event, envelope);
+            Unit.emit(Unit.currentUnit, type, props);
         }
         else {
-            info.socket.emit(event, envelope);
+            info.socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.currentUnit).id, data: props });
+        }
+    },
+    emitToClients(type, props = {}, ids) {
+        const info = rootInfoOf(Unit.currentUnit);
+        const syncId = syncOf(Unit.currentUnit).id;
+        if (getEnvironment() === 'server') {
+            relayToClients(info, type, undefined, syncId, props, ids);
+        }
+        else {
+            info.socket.emit(WIRE_TO_CLIENT, { type, syncId, data: props, ids });
         }
     },
     boot(opts, ...args) {
@@ -1576,111 +1173,375 @@ const sync = {
     },
 };
 
-const rooms = new Map();
-function roomList() {
-    return [...rooms.values()].map((room) => room.status());
+function OpenAndClose(unit, { open = true, transition = { duration: 200, easing: 'ease' } }) {
+    let value = open ? 1.0 : 0.0;
+    let sign = open ? +1 : -1;
+    let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
+    function animate(dir) {
+        var _a, _b;
+        sign = dir;
+        const d = dir > 0 ? 1 - value : value;
+        const duration = ((_a = transition === null || transition === void 0 ? void 0 : transition.duration) !== null && _a !== void 0 ? _a : 200) * d;
+        const easing = (_b = transition === null || transition === void 0 ? void 0 : transition.easing) !== null && _b !== void 0 ? _b : 'ease';
+        timer === null || timer === void 0 ? void 0 : timer.clear();
+        timer = xnew.transition(({ value: x }) => {
+            const remaining = x < 1.0 ? (1 - x) * d : 0.0;
+            value = dir > 0 ? 1.0 - remaining : remaining;
+            xnew.emit('-transition', { value });
+        }, duration, easing)
+            .timeout(() => xnew.emit(dir > 0 ? '-opened' : '-closed'));
+    }
+    return {
+        toggle() {
+            animate(sign < 0 ? +1 : -1);
+        },
+        open() {
+            animate(+1);
+        },
+        close() {
+            animate(-1);
+        },
+    };
 }
-function broadcastRooms(io) {
-    io.to('lobby').emit('statusupdate', { rooms: roomList() });
-}
-function Lobby(unit, props) {
-    sync.server(() => {
-        const { io, Room, maxRooms = 20, roomNameMax = 16 } = props;
-        let nextRoomNum = 0;
-        const connection = xnew$1.scope((conn) => {
-            var _a, _b;
-            const roomId = (_b = (_a = conn.handshake) === null || _a === void 0 ? void 0 : _a.query) === null || _b === void 0 ? void 0 : _b.roomId;
-            if (roomId !== undefined && roomId !== '') {
-                if (!rooms.has(roomId)) {
-                    conn.emit('notfound', { roomId });
-                    conn.disconnect(true);
-                }
-                return;
-            }
-            conn.join('lobby');
-            conn.emit('statusupdate', { rooms: roomList() });
-            conn.on('roomcreate', xnew$1.scope((payload) => {
-                var _a;
-                if (rooms.size >= maxRooms) {
-                    conn.emit('roomrejected', { message: 'room limit reached' });
-                    return;
-                }
-                const id = `r${++nextRoomNum}`;
-                const name = String((_a = payload === null || payload === void 0 ? void 0 : payload.name) !== null && _a !== void 0 ? _a : '').trim().slice(0, roomNameMax) || `Room ${nextRoomNum}`;
-                const room = { id, name, count: 0 };
-                rooms.set(id, xnew$1(unit, Room, { io, room }));
-                conn.emit('roomcreated', { room });
-                broadcastRooms(io);
-            }));
-        });
-        io.on('connection', connection);
-        unit.on('finalize', () => { io.off('connection', connection); rooms.clear(); });
+function Accordion(unit) {
+    const system = xnew.context(OpenAndClose);
+    const outer = xnew.nest('<div style="overflow: hidden;">');
+    const inner = xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box;">');
+    system.on('-transition', ({ value }) => {
+        outer.style.height = value < 1.0 ? inner.offsetHeight * value + 'px' : 'auto';
+        outer.style.opacity = value.toString();
     });
-    sync.client(() => {
-        const { io } = props;
-        const socket = io({ forceNew: true });
-        for (const event of ['connect', 'disconnect', 'statusupdate', 'roomcreated', 'roomrejected']) {
-            socket.on(event, xnew$1.scope((payload) => xnew$1.emit('-' + event, payload !== null && payload !== void 0 ? payload : {})));
+}
+function Popup(unit) {
+    const system = xnew.context(OpenAndClose);
+    system.on('-closed', () => unit.finalize());
+    system.open();
+    xnew.nest('<div style="position: fixed; inset: 0; z-index: 1000; opacity: 0;">');
+    unit.on('click', ({ event }) => event.target === unit.element && system.close());
+    system.on('-transition', ({ value }) => {
+        unit.element.style.opacity = value.toString();
+    });
+}
+
+function SVG(unit, { viewBox = '0 0 64 64', className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'none', fillOpacity = 1 } = {}) {
+    xnew.nest(`<svg
+        viewBox="${viewBox}"
+        class="${className}"
+        style="${style}"
+        stroke="${stroke}"
+        stroke-opacity="${strokeOpacity}"
+        stroke-width="${strokeWidth}"
+        stroke-linejoin="${strokeLinejoin}"
+        stroke-linecap="${strokeLinecap}"
+        fill="${fill}"
+        fill-opacity="${fillOpacity}"
+    ">`);
+}
+function SVGText(unit, { text = '', fontSize = 20, anchor = { x: 0, y: 0 }, className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'currentColor', fillOpacity = 1 } = {}) {
+    xnew.extend(SVG, { className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
+    const svg = unit.element;
+    xnew.nest(`<text x="0" y="0" font-size="${fontSize}" paint-order="stroke fill">`);
+    unit.element.textContent = text;
+    function resize() {
+        const bbox = unit.element.getBBox();
+        const padding = 0;
+        svg.setAttribute('viewBox', `
+            ${bbox.x - padding}
+            ${bbox.y - padding}
+            ${bbox.width + padding * 2}
+            ${bbox.height + padding * 2}
+        `);
+        svg.style.width = (bbox.width + padding * 2) + 'px';
+    }
+    resize();
+    unit.on('resize', resize);
+    svg.style.overflow = 'visible';
+}
+
+function Aspect(unit, { aspect = 1.0, fit = 'contain' } = {}) {
+    xnew.nest('<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; container-type: size;">');
+    xnew.nest(`<div style="position: relative; aspect-ratio: ${aspect}; container-type: size;">`);
+    if (fit === 'contain') {
+        unit.element.style.width = `min(100cqw, calc(100cqh * ${aspect}))`;
+    }
+    else {
+        unit.element.style.flexShrink = '0';
+        unit.element.style.width = `max(100cqw, calc(100cqh * ${aspect}))`;
+    }
+}
+function Screen(unit, { width = 800, height = 600, fit = 'contain' } = {}) {
+    xnew.extend(Aspect, { aspect: width / height, fit });
+    const canvas = xnew(`<canvas width="${width}" height="${height}" style="width: 100%; height: 100%; vertical-align: bottom;">`);
+    return {
+        get canvas() { return canvas.element; },
+    };
+}
+function Scene(unit) {
+    return {
+        change(Component, props) {
+            xnew(unit.parent, Component, props);
+            unit.finalize();
+        },
+        add(Component, props) {
+            xnew(unit, Component, props);
         }
-        unit.on('finalize', () => socket.disconnect());
-        return { createRoom(name) { socket.emit('roomcreate', { name }); } };
+    };
+}
+
+function AnalogStick(unit, { stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 } = {}) {
+    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
+    xnew.nest(`<div style="width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;">`);
+    xnew((unit) => {
+        xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', stroke, strokeOpacity, strokeWidth, fill, fillOpacity });
+        xnew('<polygon points="32  7 27 13 37 13">');
+        xnew('<polygon points="32 57 27 51 37 51">');
+        xnew('<polygon points=" 7 32 13 27 13 37">');
+        xnew('<polygon points="57 32 51 27 51 37">');
+    });
+    const target = xnew((unit) => {
+        xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', stroke, strokeOpacity, strokeWidth, fill, fillOpacity });
+        xnew('<circle cx="32" cy="32" r="14">');
+    });
+    unit.on('dragstart dragmove', ({ type, position }) => {
+        const size = unit.element.clientWidth;
+        const x = position.x - size / 2;
+        const y = position.y - size / 2;
+        const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
+        const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
+        const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
+        Object.assign(target.element.style, { filter: 'brightness(80%)', left: `${vector.x * size / 4}px`, top: `${vector.y * size / 4}px` });
+        const nexttype = { dragstart: '-down', dragmove: '-move' }[type];
+        xnew.emit(nexttype, { vector });
+    });
+    unit.on('dragend', () => {
+        Object.assign(target.element.style, { filter: '', left: '0px', top: '0px' });
+        xnew.emit('-up', { vector: { x: 0, y: 0 } });
     });
 }
-function Room(unit, props) {
-    const members = new Set();
-    sync.server(() => {
-        const { io, room, Component, graceMs = 3000 } = props;
-        sync.boot({ io, room }, Component);
-        let graceTimer = null;
-        const connection = xnew$1.scope((socket) => {
-            var _a, _b;
-            if (((_b = (_a = socket.handshake) === null || _a === void 0 ? void 0 : _a.query) === null || _b === void 0 ? void 0 : _b.roomId) !== room.id) {
-                return;
-            }
-            graceTimer === null || graceTimer === void 0 ? void 0 : graceTimer.clear();
-            members.add(socket.id);
-            room.count = members.size;
-            xnew$1.emit('-connect', { id: socket.id });
-            if (rooms.has(room.id)) {
-                broadcastRooms(io);
-            }
-            socket.on('disconnect', xnew$1.scope(() => {
-                members.delete(socket.id);
-                room.count = members.size;
-                xnew$1.emit('-disconnect', { id: socket.id });
-                if (rooms.has(room.id)) {
-                    broadcastRooms(io);
-                }
-                if (members.size === 0) {
-                    scheduleCleanup();
-                }
-            }));
+function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 } = {}) {
+    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
+    xnew.nest(`<div style="width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;">`);
+    const polygons = [
+        '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
+        '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
+        '<polygon points="32 32 23 23  4 23  3 24  3 40  4 41 23 41">',
+        '<polygon points="32 32 41 23 60 23 61 24 61 40 60 41 41 41">'
+    ];
+    const targets = polygons.map((polygon) => {
+        return xnew((unit) => {
+            xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', fill, fillOpacity });
+            xnew(polygon);
         });
-        io.on('connection', connection);
-        unit.on('finalize', () => io.off('connection', connection));
-        scheduleCleanup();
-        function scheduleCleanup() {
-            graceTimer === null || graceTimer === void 0 ? void 0 : graceTimer.clear();
-            graceTimer = xnew$1.timeout(() => {
-                if (members.size > 0) {
-                    return;
-                }
-                xnew$1.emit('-empty', {});
-                if (rooms.has(room.id)) {
-                    rooms.delete(room.id);
-                    broadcastRooms(io);
-                    unit.finalize();
-                }
-            }, graceMs);
+    });
+    xnew((unit) => {
+        xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', stroke, strokeOpacity, strokeWidth });
+        xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
+        xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
+        xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');
+        xnew('<polyline points="41 23 60 23 61 24 61 40 60 41 41 41">');
+        xnew('<polygon points="32  7 27 13 37 13">');
+        xnew('<polygon points="32 57 27 51 37 51">');
+        xnew('<polygon points=" 7 32 13 27 13 37">');
+        xnew('<polygon points="57 32 51 27 51 37">');
+    });
+    unit.on('dragstart dragmove', ({ type, position }) => {
+        const size = unit.element.clientWidth;
+        const x = position.x - size / 2;
+        const y = position.y - size / 2;
+        const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
+        const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
+        const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
+        if (diagonal === true) {
+            vector.x = Math.abs(vector.x) > 0.5 ? Math.sign(vector.x) : 0;
+            vector.y = Math.abs(vector.y) > 0.5 ? Math.sign(vector.y) : 0;
         }
-        return {
-            status() { return room; },
-        };
+        else if (Math.abs(vector.x) > Math.abs(vector.y)) {
+            vector.x = Math.abs(vector.x) > 0.5 ? Math.sign(vector.x) : 0;
+            vector.y = 0;
+        }
+        else {
+            vector.x = 0;
+            vector.y = Math.abs(vector.y) > 0.5 ? Math.sign(vector.y) : 0;
+        }
+        targets[0].element.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
+        targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
+        targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
+        targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
+        const nexttype = { dragstart: '-down', dragmove: '-move' }[type];
+        xnew.emit(nexttype, { vector });
     });
-    sync.client(() => {
-        const { io, client, room, Component } = props;
-        sync.boot({ io, client, room }, Component);
+    unit.on('dragend', () => {
+        targets[0].element.style.filter = '';
+        targets[1].element.style.filter = '';
+        targets[2].element.style.filter = '';
+        targets[3].element.style.filter = '';
+        xnew.emit('-up', { vector: { x: 0, y: 0 } });
     });
+}
+
+const paleColor = 'color-mix(in srgb, currentColor 20%, transparent)';
+const hiddenInput = 'position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;';
+function Panel(unit, { params }) {
+    const object = params !== null && params !== void 0 ? params : {};
+    function field(key, value, fallback, Component, props) {
+        var _a;
+        object[key] = (_a = value !== null && value !== void 0 ? value : object[key]) !== null && _a !== void 0 ? _a : fallback;
+        const control = xnew(Component, Object.assign({ key, value: object[key] }, props));
+        control.on('input', ({ value }) => object[key] = value);
+        return control;
+    }
+    return {
+        group({ name, open, params }, inner) {
+            const group = xnew((unit) => {
+                xnew.extend(Group, { name, open });
+                xnew.extend(Panel, { params: params !== null && params !== void 0 ? params : object });
+                inner(unit);
+            });
+            return group;
+        },
+        button(key) {
+            const button = xnew(Button, { key });
+            return button;
+        },
+        select(key, { value, items = [] } = {}) {
+            var _a;
+            return field(key, value, (_a = items[0]) !== null && _a !== void 0 ? _a : '', Select, { items });
+        },
+        range(key, { value, min = 0, max = 100, step = 1 } = {}) {
+            return field(key, value, min, Range, { min, max, step });
+        },
+        checkbox(key, { value } = {}) {
+            return field(key, value, false, Checkbox, {});
+        },
+        separator() {
+            xnew(Separator);
+        }
+    };
+}
+function Group(group, { name, open = false }) {
+    const openAndClose = xnew.extend(OpenAndClose, { open });
+    if (name) {
+        xnew('<div style="height: 2em; margin: 0.125em 0; display: flex; align-items: center; cursor: pointer; user-select: none;">', (unit) => {
+            unit.on('click', () => openAndClose.toggle());
+            xnew((unit) => {
+                xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
+                xnew('<path d="M6 2 10 6 6 10"/>');
+                group.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${value * 90}deg)`);
+            });
+            xnew('<div>', name);
+        });
+    }
+    xnew.extend(Accordion);
+}
+function Button(unit, { key = '' }) {
+    xnew.nest('<button style="margin: 0.125em 0; height: 2em; border: 1px solid; border-radius: 0.25em; cursor: pointer;">');
+    unit.element.textContent = key;
+    unit.on('pointerover', () => {
+        Object.assign(unit.element.style, { background: paleColor, borderColor: 'currentColor' });
+    });
+    unit.on('pointerout', () => {
+        Object.assign(unit.element.style, { background: '', borderColor: '' });
+    });
+    unit.on('pointerdown', () => {
+        unit.element.style.filter = 'brightness(0.5)';
+    });
+    unit.on('pointerup', () => {
+        unit.element.style.filter = '';
+    });
+}
+function Separator(unit) {
+    xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
+}
+function Range(unit, { key = '', value, min = 0, max = 100, step = 1 }) {
+    value = value !== null && value !== void 0 ? value : min;
+    xnew.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; cursor: pointer; user-select: none;">`);
+    const ratio = (value - min) / (max - min);
+    const fill = xnew(`<div style="position: absolute; top: 0; left: 0; bottom: 0; width: ${ratio * 100}%; background: ${paleColor}; border: 1px solid currentColor; border-radius: 0.25em; transition: width 0.05s;">`);
+    const status = xnew('<div style="position: absolute; inset: 0; padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">', (unit) => {
+        xnew('<div>', key);
+        xnew('<div key="status">', value);
+    });
+    xnew.nest(`<input type="range" name="${key}" min="${min}" max="${max}" step="${step}" value="${value}" style="${hiddenInput}">`);
+    unit.on('input', ({ event }) => {
+        const v = Number(event.target.value);
+        const r = (v - min) / (max - min);
+        fill.element.style.width = `${r * 100}%`;
+        status.element.querySelector('[key="status"]').textContent = String(v);
+    });
+}
+function Checkbox(unit, { key = '', value } = {}) {
+    xnew.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; padding: 0 0.5em; display: flex; align-items: center; cursor: pointer; user-select: none;">`);
+    xnew('<div style="flex: 1;">', key);
+    const box = xnew(`<div style="width: 1.25em; height: 1.25em; border: 1px solid currentColor; border-radius: 0.25em; display: flex; align-items: center; justify-content: center;">`, () => {
+        xnew((unit) => {
+            xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 1.25em; height: 1.25em; opacity: 0;', stroke: 'currentColor', strokeWidth: 2 });
+            xnew('<path d="M2 6 5 9 10 3" />');
+        });
+    });
+    const check = box.element.querySelector('svg');
+    const update = (checked) => {
+        box.element.style.background = checked ? paleColor : '';
+        check.style.opacity = checked ? '1' : '0';
+    };
+    update(!!value);
+    xnew.nest(`<input type="checkbox" name="${key}" ${value ? 'checked' : ''} style="${hiddenInput}">`);
+    unit.on('input', ({ value }) => {
+        update(value);
+    });
+}
+function Select(_, { key = '', value, items = [] } = {}) {
+    var _a;
+    const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
+    xnew.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; padding: 0 0.5em; display: flex; align-items: center;">`);
+    xnew('<div style="flex: 1;">', key);
+    const native = xnew(`<select name="${key}" style="display: none;">`, () => {
+        for (const item of items) {
+            xnew(`<option value="${item}" ${item === initial ? 'selected' : ''}>`, item);
+        }
+    });
+    const button = xnew(`<div style="height: 2em; padding: 0 1.5em 0 0.5em; display: flex; align-items: center; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer; user-select: none; min-width: 3em; white-space: nowrap;">`, initial);
+    xnew((unit) => {
+        xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', strokeWidth: 2, style: 'position: absolute; right: 1.0em; width: 0.75em; height: 0.75em; pointer-events: none;' });
+        xnew('<path d="M2 4 6 8 10 4" />');
+    });
+    button.on('click', () => {
+        xnew((list) => {
+            xnew(OpenAndClose, { open: false });
+            xnew.extend(Popup);
+            xnew.nest('<div style="position: absolute; padding: 0.25em 0;">');
+            list.on('update', () => {
+                const rect = button.element.getBoundingClientRect();
+                list.element.style.right = (window.innerWidth - rect.right) + 'px';
+                list.element.style.top = rect.bottom + 'px';
+                list.element.style.background = getEffectiveBg(button.element);
+            });
+            xnew.extend(Accordion);
+            xnew.nest(`<div style="position: relative; border: 1px solid currentColor; border-radius: 0.25em; overflow: hidden;">`);
+            for (const item of items) {
+                const div = xnew(`<div style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, item);
+                div.on('pointerover', () => div.element.style.background = paleColor);
+                div.on('pointerout', () => div.element.style.background = '');
+                div.on('click', () => {
+                    button.element.textContent = item;
+                    native.element.value = item;
+                    native.element.dispatchEvent(new Event('input', { bubbles: false }));
+                    list.finalize();
+                });
+            }
+            list.on('click.outside', () => list.finalize());
+        });
+    });
+    xnew.nest(native.element);
+    function getEffectiveBg(element) {
+        let current = element.parentElement;
+        while (current) {
+            const bg = getComputedStyle(current).backgroundColor;
+            if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent')
+                return bg;
+            current = current.parentElement;
+        }
+        return 'Canvas';
+    }
 }
 
 var _a;
@@ -1710,7 +1571,7 @@ function AudioTrack(unit, { url, volume, loop = false }) {
         .then((response) => response.arrayBuffer())
         .then((response) => context.decodeAudioData(response))
         .then((response) => { buffer = response; });
-    xnew$1.promise(promise);
+    xnew.promise(promise);
     function forceStop() {
         if (source !== null) {
             source.onended = null;
@@ -1995,7 +1856,7 @@ function Volume(unit) {
     };
 }
 
-const basics = {
+const xbasics = {
     SVG,
     SVGText,
     Aspect,
@@ -2007,12 +1868,9 @@ const basics = {
     Accordion,
     Popup,
     Scene,
-    Lobby,
-    Room,
-    AudioTrack: AudioTrack,
+    AudioTrack,
     Synthesizer,
     Volume,
 };
-const xnew = Object.assign(xnew$1, { basics, sync });
 
-export { xnew };
+export { xbasics, xnew, xsync };

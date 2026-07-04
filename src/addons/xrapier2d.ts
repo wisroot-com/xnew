@@ -13,7 +13,7 @@ import RAPIER from '@dimforge/rapier2d-compat';
 
 export const xrapier2d = {
     initialize ({ gravity = { x: 0.0, y: -9.81 } }: any = {}) {
-        xnew.promise(xnew(Root, { gravity }));
+        return xnew.promise(xnew(Root, { gravity }));
     },
     get world() {
         return xnew.context(Root)?.world;

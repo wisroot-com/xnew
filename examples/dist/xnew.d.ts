@@ -38,20 +38,18 @@ interface Snapshot {
     element: DomElement;
     Component: Function | null;
 }
-type Status = 'invoked' | 'initialized' | 'started' | 'stopped' | 'finalizing' | 'finalized';
+type Phase = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
 type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends [void] ? {} : Exclude<R, void | undefined>) : {};
 type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
-declare const SYSTEM_EVENTS: readonly ["start", "update", "render", "stop", "finalize"];
-type SystemEvent = typeof SYSTEM_EVENTS[number];
+type SystemEvent = 'update' | 'finalize';
 declare class Unit {
     [key: string]: any;
     _: {
         id: number;
         parent: Unit | null;
         children: Unit[];
-        status: Status;
-        tostart: boolean;
+        phase: Phase;
         protected: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
@@ -63,7 +61,7 @@ declare class Unit {
         currentElement: DomElement;
         currentContext: Context;
         currentComponent: Function | null;
-        afterSnapshot: Snapshot | null;
+        lastSnapshot: Snapshot | null;
         nestElements: {
             element: DomElement;
             owned: boolean;
@@ -82,18 +80,13 @@ declare class Unit {
     static initialize(unit: Unit, ...args: any[]): void;
     get parent(): Unit | null;
     get element(): DomElement;
-    private start;
-    private stop;
     finalize(): void;
     static finalize(unit: Unit): void;
     static nest(unit: Unit, target: DomElement | string, textContent?: string | number): DomElement;
     static extend(unit: Unit, Component: Function, props?: Object): {
         [key: string]: any;
     };
-    static start(unit: Unit): void;
-    static stop(unit: Unit): void;
     static update(unit: Unit, delta?: number): void;
-    static render(unit: Unit, delta?: number): void;
     static engineRoot: Unit;
     static currentUnit: Unit;
     static nextId: number;
@@ -105,8 +98,7 @@ declare class Unit {
     static getContext(unit: Unit, key: any): any;
     static component2units: MapSet<Function, Unit>;
     static ancestors(unit: Unit | null): Unit[];
-    static protectBoundary(from: Unit | null): Unit | undefined;
-    static isVisible(boundary: Unit | undefined, current: Unit | null, ancestors: Unit[]): boolean;
+    static isVisible(from: Unit | null, current: Unit | null, ancestors: Unit[]): boolean;
     static find(Component: Function, key?: any): Unit[];
     static type2units: MapSet<string, Unit>;
     on(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
@@ -123,23 +115,17 @@ declare class UnitPromise {
     then(callback: Function): UnitPromise;
     catch(callback: Function): UnitPromise;
     finally(callback: Function): UnitPromise;
-    static defer(key?: string): {
-        unitPromise: UnitPromise;
-        resolve: (value?: unknown) => void;
-        reject: (reason?: unknown) => void;
-    };
-    static results(promises: UnitPromise[], key?: string): UnitPromise;
-    private static assignKey;
+    static collect(promises: UnitPromise[]): Promise<Record<string, any>>;
 }
 declare class UnitTimer {
     private unit;
     private queue;
     clear(): void;
-    timeout(timeout: Function, duration?: number): UnitTimer;
-    interval(timeout: Function, duration?: number, iterations?: number): UnitTimer;
-    transition(transition: Function, duration?: number, easing?: string): UnitTimer;
-    private static execute;
-    private static next;
+    timeout(timeout: Function, duration?: number): this;
+    interval(timeout: Function, duration?: number, iterations?: number): this;
+    transition(transition: Function, duration?: number, easing?: string): this;
+    private execute;
+    private start;
 }
 
 interface XnewBase {
@@ -150,8 +136,28 @@ interface XnewBase {
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
 }
-
-type Environment = 'server' | 'client';
+declare const xnew: XnewBase & {
+    nest(target: DomElement | string): HTMLElement | SVGElement;
+    extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
+    context(key: any): any;
+    promise: {
+        (promise: Function | Promise<any> | Unit): UnitPromise;
+        (key: string, promise: Function | Promise<any> | Unit): UnitPromise;
+    };
+    scope(callback: any): any;
+    find(Component: Function, opts?: {
+        key?: any;
+    }): Unit[];
+    emit(type: string, ...args: any[]): void;
+    timeout(callback: Function, duration?: number): UnitTimer;
+    interval(callback: Function, duration: number, iterations?: number): UnitTimer;
+    transition(transition: Function, duration?: number, easing?: string): UnitTimer;
+    protect(): void;
+};
+declare namespace xnew {
+    type Unit = InstanceType<typeof Unit>;
+    type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
+}
 
 interface ClientStatus {
     id: string;
@@ -171,6 +177,20 @@ interface BootClientOptions {
     room: RoomStatus;
     client: any;
 }
+declare const xsync: {
+    server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
+    client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
+    state(initial?: Record<string, any>): Record<string, any>;
+    register(Components: Record<string, Function>): void;
+    readonly session: {
+        room: RoomStatus;
+        clients: ClientStatus[];
+        myself: ClientStatus;
+    };
+    emitToServer(type: string, props?: Record<string, any>): void;
+    emitToClients(type: string, props?: Record<string, any>, ids?: string[]): void;
+    boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
+};
 
 interface TransitionOptions {
     duration?: number;
@@ -259,9 +279,6 @@ declare function Panel(unit: Unit, { params }: PanelOptions): {
     separator(): void;
 };
 
-declare function Lobby(unit: Unit, props: any): void;
-declare function Room(unit: Unit, props: any): void;
-
 declare function Aspect(unit: Unit, { aspect, fit }?: {
     aspect?: number;
     fit?: 'contain' | 'cover';
@@ -336,69 +353,21 @@ declare function Volume(unit: Unit): {
     volume: number;
 };
 
-declare namespace xnew {
-    type Unit = InstanceType<typeof Unit>;
-    type UnitTimer = InstanceType<typeof UnitTimer>;
-    type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
-    type Environment = Environment;
-    type Status = Status;
-}
-declare const xnew: XnewBase & {
-    nest(target: DomElement | string): HTMLElement | SVGElement;
-    extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
-    context(key: any): any;
-    promise: {
-        (): {
-            resolve: (value?: unknown) => void;
-            reject: (reason?: unknown) => void;
-        };
-        (key: string): {
-            resolve: (value?: unknown) => void;
-            reject: (reason?: unknown) => void;
-        };
-        (promise: Function | Promise<any> | Unit): UnitPromise;
-        (key: string, promise: Function | Promise<any> | Unit): UnitPromise;
-    };
-    scope(callback: any): any;
-    find(Component: Function, opts?: {
-        key?: any;
-    }): Unit[];
-    emit(type: string, ...args: any[]): void;
-    timeout(callback: Function, duration?: number): UnitTimer;
-    interval(callback: Function, duration: number, iterations?: number): UnitTimer;
-    transition(transition: Function, duration?: number, easing?: string): UnitTimer;
-    protect(): void;
-} & {
-    basics: {
-        SVG: typeof SVG;
-        SVGText: typeof SVGText;
-        Aspect: typeof Aspect;
-        Screen: typeof Screen;
-        OpenAndClose: typeof OpenAndClose;
-        AnalogStick: typeof AnalogStick;
-        DPad: typeof DPad;
-        Panel: typeof Panel;
-        Accordion: typeof Accordion;
-        Popup: typeof Popup;
-        Scene: typeof Scene;
-        Lobby: typeof Lobby;
-        Room: typeof Room;
-        AudioTrack: typeof AudioTrack;
-        Synthesizer: typeof Synthesizer;
-        Volume: typeof Volume;
-    };
-    sync: {
-        server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
-        client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
-        state(initial?: Record<string, any>): Record<string, any>;
-        register(Components: Record<string, Function>): void;
-        readonly room: RoomStatus;
-        readonly clients: ClientStatus[];
-        readonly myself: ClientStatus;
-        emit(event: string, payload?: Record<string, any>): void;
-        boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
-    };
+declare const xbasics: {
+    SVG: typeof SVG;
+    SVGText: typeof SVGText;
+    Aspect: typeof Aspect;
+    Screen: typeof Screen;
+    OpenAndClose: typeof OpenAndClose;
+    AnalogStick: typeof AnalogStick;
+    DPad: typeof DPad;
+    Panel: typeof Panel;
+    Accordion: typeof Accordion;
+    Popup: typeof Popup;
+    Scene: typeof Scene;
+    AudioTrack: typeof AudioTrack;
+    Synthesizer: typeof Synthesizer;
+    Volume: typeof Volume;
 };
 
-export { xnew };
-export type { BootClientOptions, BootServerOptions, ClientStatus, RoomStatus };
+export { xbasics, xnew, xsync };

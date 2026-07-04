@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as PIXI from 'pixi.js';
@@ -13,10 +13,10 @@ xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
   const [width, height] = [800, 600];
-  xnew.extend(xnew.basics.Screen, { width, height });
+  xnew.extend(xbasics.Screen, { width, height });
 
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('render', () => xpixi.renderer.render(xpixi.scene));
+  unit.on('update', () => xpixi.renderer.render(xpixi.scene));
 
   xnew(Contents);
 }
@@ -53,13 +53,14 @@ function PreRender(unit, { url }) {
   const model = xnew(Model, { url });
   const textures = [];
 
-  const { resolve } = xnew.promise('textures');
+  let resolve;
+  xnew.promise('textures', (res) => { resolve = res; });
 
   const BAKE_FRAMES = 120;
 
   // Model のロード完了を待ってから、xnew.chunk で BAKE_FRAMES 回を時間予算（既定 8ms/フレーム）で
   // 自動的にフレーム分散してベイクする。完了で textures を解決し unit を畳む。
-  // （旧実装の unit.on('render') + frameIndex/batch による手動バッチを置き換え。）
+  // （旧実装の unit.on('update') + frameIndex/batch による手動バッチを置き換え。）
   xnew.promise(model).then(() => xnew.chunk(({ index }) => {
     const t = index * (Math.PI / BAKE_FRAMES * 3);
 
@@ -89,7 +90,8 @@ function PreRender(unit, { url }) {
 
 function Model(unit, { url }) {
   const object = xthree.nest(new THREE.Object3D());
-  const { resolve } = xnew.promise();
+  let resolve;
+  xnew.promise((res) => { resolve = res; });
 
   let vrm = null;
   const loader = new GLTFLoader();

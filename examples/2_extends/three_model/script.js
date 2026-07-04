@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -8,13 +8,13 @@ xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
   const [width, height] = [1600, 1200];
-  xnew.extend(xnew.basics.Screen, { width, height });
+  xnew.extend(xbasics.Screen, { width, height });
 
   // three setup
   xthree.initialize({ canvas: unit.canvas });
   xthree.renderer.shadowMap.enabled = true;
   xthree.camera.position.set(1, 2, 3);
-  unit.on('render', () => {
+  unit.on('update', () => {
     xthree.renderer.render(xthree.scene, xthree.camera);
   });
 
@@ -159,7 +159,7 @@ function Panel(unit) {
 
   xnew.nest('<div class="fixed inset-0 pointer-events-none">');
   xnew.nest('<div class="absolute text-sm w-36 top-2 right-2 p-1 bg-white border rounded shadow-lg pointer-events-auto">');
-  const panel = xnew(xnew.basics.Panel, { name: 'GUI', open: true });
+  const panel = xnew(xbasics.Panel, { name: 'GUI', open: true });
 
   panel.select('action', { value: 'idle', items: model.actions('base') }).on('input', ({ value }) => {
     model.crossfade(value);

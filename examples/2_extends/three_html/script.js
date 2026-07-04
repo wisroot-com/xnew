@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as THREE from 'three';
 
@@ -72,10 +72,10 @@ function Event(unit) {
 
 function ThreeMain(unit) {
   const [width, height] = [1200, 800];
-  xnew.extend(xnew.basics.Screen, { width, height, fit: 'cover' });
+  xnew.extend(xbasics.Screen, { width, height, fit: 'cover' });
 
   xthree.initialize({ canvas: unit.canvas });
-  unit.on('render', () => {
+  unit.on('update', () => {
     xthree.renderer.render(xthree.scene, xthree.camera);
   });
 

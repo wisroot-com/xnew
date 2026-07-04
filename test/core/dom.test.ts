@@ -353,20 +353,16 @@ describe('Eventor', () => {
             expect(onUp).toHaveBeenCalledTimes(1);
         });
 
-        it('strips repeat on named keys by default, but .repeat opts in', () => {
+        it('always strips repeat on named keys', () => {
             const strict = jest.fn();
-            const repeating = jest.fn();
             eventor.add(element, 'window.keydown.space', strict);
-            eventor.add(element, 'window.keydown.space.repeat', repeating);
             jest.runOnlyPendingTimers();
 
             window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', repeat: true }));
             expect(strict).not.toHaveBeenCalled();
-            expect(repeating).toHaveBeenCalledTimes(1);
 
             window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', repeat: false }));
             expect(strict).toHaveBeenCalledTimes(1);
-            expect(repeating).toHaveBeenCalledTimes(2);
         });
     });
 

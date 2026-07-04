@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -16,7 +16,7 @@ xnew(document.querySelector('#main'), Main);
 
 function Main(unit) {
   const [width, height] = [1600, 800];
-  xnew.extend(xnew.basics.Screen, { width, height });
+  xnew.extend(xbasics.Screen, { width, height });
   const aspect = width / height;
   
   // three setup
@@ -26,7 +26,7 @@ function Main(unit) {
   xthree.renderer.shadowMap.enabled = true;
 
   const renderer = xnew(Renderer);
-  unit.on('render', () => {
+  unit.on('update', () => {
     renderer.render();
   });
 
@@ -117,7 +117,7 @@ function Crystal(unit, { radius, position, rotation }) {
   object.position.set(position.x, position.y, position.z);
 
   const time = new Date();
-  unit.on('render', () => {
+  unit.on('update', () => {
     const t = (new Date() - time) / 1000;
     
     object.material.emissiveIntensity = Math.sin(t * 2) * 0.5 + 0.5;
@@ -176,7 +176,7 @@ function Model(unit, { mogPath, vrmaPath, position, rotation }) {
     action.play();
 
     let clock = new THREE.Clock();
-    unit.on('render', () => {
+    unit.on('update', () => {
         const delta = clock.getDelta();
         mixer.update(delta);
         vrm.update(delta);
@@ -258,7 +258,7 @@ function GUIPanel(unit) {
 
   xnew.nest('<div class="absolute text-sm w-48 top-2 right-2 p-1 bg-white border rounded shadow-lg">');
 
-  const panel = xnew(xnew.basics.Panel, { name: 'GUI', open: true, params });
+  const panel = xnew(xbasics.Panel, { name: 'GUI', open: true, params });
 
   panel.range('pixelSize', { min: 1, max: 16, step: 1 }).on('input', ({ value }) => {
     rpp.setPixelSize(value);
