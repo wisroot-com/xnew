@@ -113,7 +113,7 @@ This will generate:
 
 `xnew.nest()` shifts the nesting context so subsequent elements are placed inside a container. This is how you build structured layouts without writing a wall of HTML:
 
-<iframe style={{width:'100%',height:'120px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/0_manual/element.html" ></iframe>
+<iframe style={{width:'100%',height:'120px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/manual/element.html" ></iframe>
 
 ```html
 <!DOCTYPE html>
@@ -178,7 +178,7 @@ This generates:
 
 Click the box below to start and stop a CSS rotation animation.
 
-<iframe style={{width:'100%',height:'300px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/0_manual/box.html" ></iframe>
+<iframe style={{width:'100%',height:'300px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/manual/box.html" ></iframe>
 
 ```html
 <!DOCTYPE html>

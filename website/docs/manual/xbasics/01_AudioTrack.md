@@ -55,4 +55,4 @@ function Main(unit) {
 
 ## デモ
 
-<iframe style={{width:'100%',height:'400px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_basics/music/index.html" ></iframe>
+<iframe style={{width:'100%',height:'400px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/music/index.html" ></iframe>
