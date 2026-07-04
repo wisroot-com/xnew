@@ -40,7 +40,6 @@ export class Unit {
     [key: string]: any;
 
     public _: {
-        id: number;
         parent: Unit | null;
         children: Unit[];
 
@@ -79,7 +78,6 @@ export class Unit {
         }
 
         this._ = {
-            id: Unit.nextId++,
             parent,
             phase: 'invoked',
             protected: false,
@@ -266,10 +264,8 @@ export class Unit {
 
     static engineRoot: Unit;
     static currentUnit: Unit;
-    static nextId: number = 0;   // sequential unit id from 0 (reset by reset())
     static reset(): void {
         Unit.engineRoot?.finalize();
-        Unit.nextId = 0;
         Unit.currentUnit = Unit.engineRoot = Unit.create(null);
         const ticker = new Ticker((delta: number) => {
             Unit.update(Unit.engineRoot, delta);
