@@ -19,7 +19,9 @@ export function getEnvironment(): 'server' | 'client' {
     return environment ?? ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
 }
 
-//---- shared state -----------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+// shared state
+//----------------------------------------------------------------------------------------------------
 
 export interface SyncNode { id: number; name: string; parent: number | null; state: Record<string, any>; }
 interface SyncData { id: number | null; state: Record<string, any>; registry: Record<string, Function>; }
@@ -63,7 +65,9 @@ function rootInfoOf(unit: Unit): ServerInfo | ClientInfo {
     return info;
 }
 
-//---- transport --------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+// transport
+//----------------------------------------------------------------------------------------------------
 
 // Reserved wire events for emitToServer / emitToClients (never used as app `type`s).
 const WIRE_TO_SERVER = 'sync:toServer';   // client→server: { type, syncId, data }      → dispatch `type` on the server
@@ -89,7 +93,9 @@ function relayToClients(info: ServerInfo, type: string, senderId: string | undef
     }
 }
 
-//---- boot -------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+// boot
+//----------------------------------------------------------------------------------------------------
 
 function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
     const { io, room } = opts;
@@ -213,7 +219,9 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
     return root;
 }
 
-//---- facade -----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+// facade
+//----------------------------------------------------------------------------------------------------
 
 export const xsync = {
     server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {} {
