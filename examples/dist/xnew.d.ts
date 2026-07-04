@@ -159,22 +159,22 @@ declare namespace xnew {
     type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
 }
 
-interface SyncClientStatus {
+interface ClientStatus {
     id: string;
     name: string;
 }
-interface SyncRoomStatus {
+interface RoomStatus {
     id: string;
     name: string;
     count: number;
 }
 interface SyncBootServerOptions {
     io: any;
-    room: SyncRoomStatus;
+    room: RoomStatus;
 }
 interface SyncBootClientOptions {
     io: any;
-    room: SyncRoomStatus;
+    room: RoomStatus;
     client: any;
 }
 declare const xsync: {
@@ -183,9 +183,9 @@ declare const xsync: {
     state(initial?: Record<string, any>): Record<string, any>;
     register(Components: Record<string, Function>): void;
     readonly session: {
-        room: SyncRoomStatus;
-        clients: SyncClientStatus[];
-        myself: SyncClientStatus;
+        room: RoomStatus;
+        clients: ClientStatus[];
+        myself: ClientStatus;
     };
     emitToServer(type: string, props?: Record<string, any>): void;
     emitToClients(type: string, props?: Record<string, any>, ids?: string[]): void;

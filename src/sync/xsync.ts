@@ -46,14 +46,14 @@ export function syncOf(unit: Unit): SyncData {
 
 // 公開型。ファサードのシグネチャ（boot / room / clients / myself）経由で d.ts に露出し、
 // 呼び出し側は推論で受け取る。名前付きエイリアスは公開しない。
-interface SyncClientStatus { id: string; name: string; }
-interface SyncRoomStatus { id: string; name: string; count: number; }
+interface ClientStatus { id: string; name: string; }
+interface RoomStatus { id: string; name: string; count: number; }
 
-interface ServerInfo { io: any; room: SyncRoomStatus; clients: SyncClientStatus[]; }
-interface ClientInfo { socket: any; room: SyncRoomStatus; clients: SyncClientStatus[]; }
+interface ServerInfo { io: any; room: RoomStatus; clients: ClientStatus[]; }
+interface ClientInfo { socket: any; room: RoomStatus; clients: ClientStatus[]; }
 
-interface SyncBootServerOptions { io: any; room: SyncRoomStatus; }
-interface SyncBootClientOptions { io: any; room: SyncRoomStatus; client: any; }
+interface SyncBootServerOptions { io: any; room: RoomStatus; }
+interface SyncBootClientOptions { io: any; room: RoomStatus; client: any; }
 
 // A boot root owns its SyncInfo here, keyed by the root unit itself; descendants resolve the nearest root
 // by walking their ancestor chain until they hit a unit registered as a key in this map. WeakMap → the
@@ -221,7 +221,7 @@ function bootClient(opts: SyncBootClientOptions, parent: Unit, args: any[]): Uni
     };
 
     socket.on('sync', applyStateTree);
-    const onStatus = (status: { clients?: SyncClientStatus[] }) => {
+    const onStatus = (status: { clients?: ClientStatus[] }) => {
         info.clients = status?.clients ?? [];
         dispatch(info, 'sync.statusupdate', undefined, undefined);
     };
@@ -267,13 +267,13 @@ export const xsync = {
     },
     // このルートの通信セッション状態（room / clients / myself）をまとめて返す。room / clients は
     // 両側で有効、myself は client 専用（server では access 時のみ throw）。値は info 越しに live 参照。
-    get session(): { room: SyncRoomStatus; clients: SyncClientStatus[]; myself: SyncClientStatus } {
+    get session(): { room: RoomStatus; clients: ClientStatus[]; myself: ClientStatus } {
         const info = rootInfoOf(Unit.currentUnit);
         const isServer = getEnvironment() === 'server';
         return {
-            get room(): SyncRoomStatus { return info.room; },
-            get clients(): SyncClientStatus[] { return info.clients; },
-            get myself(): SyncClientStatus {
+            get room(): RoomStatus { return info.room; },
+            get clients(): ClientStatus[] { return info.clients; },
+            get myself(): ClientStatus {
                 if (isServer) {
                     throw new Error('xsync.session.myself is only available on the client side.');
                 }
