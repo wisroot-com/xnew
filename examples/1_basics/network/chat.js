@@ -3,7 +3,7 @@ import { xnew, xsync } from '@mulsense/xnew';
 //----------------------------------------------------------------------------------------------------
 // ChatView — 全シーン共通のルームチャット（client 専用・Game の client 直下に常駐）。
 //   送受信は core の sync 組み込みプリミティブだけで完結する（中継コンポーネントは不要）:
-//     - 送信: xsync.emitToClient('chat', { text })  → server 経由でルーム全員（自分含む）へ届く
+//     - 送信: xsync.emitToClients('chat', { text })  → server 経由でルーム全員（自分含む）へ届く
 //     - 受信: unit.on('chat', ({ id, text }) => …)  → root 内の全 client が受け取る（id = 送信者）
 //   名前は client 側で nameOf(id) に解決する（表示は例側の責務）。
 //----------------------------------------------------------------------------------------------------
@@ -27,7 +27,7 @@ export function ChatView(unit) {
                 return;
             }
 
-            xsync.emitToClient('chat', { text });   // server 経由でルーム全員（自分含む）へ届く
+            xsync.emitToClients('chat', { text });   // server 経由でルーム全員（自分含む）へ届く
             input.element.value = '';
         });
     });

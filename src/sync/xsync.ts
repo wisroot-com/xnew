@@ -82,7 +82,7 @@ function rootInfoOf(unit: Unit): ServerInfo | ClientInfo {
 
 //---- transport --------------------------------------------------------------------------------------
 
-// Reserved wire events for emitToServer / emitToClient (never used as app `type`s).
+// Reserved wire events for emitToServer / emitToClients (never used as app `type`s).
 const WIRE_TO_SERVER = 'sync:toServer';   // client→server: { type, syncId, data }      → dispatch `type` on the server
 const WIRE_TO_CLIENT = 'sync:toClient';   // client→server: { type, syncId, data, ids } → server fans out to clients
 const WIRE_DELIVER = 'sync:deliver';      // server→client: { type, syncId, id, data }   → dispatch `type` on the client
@@ -98,7 +98,7 @@ function dispatch(info: ServerInfo | ClientInfo, event: string, id: string | und
     });
 }
 
-/** Server → clients delivery for emitToClient (ids = target client ids; omitted/empty = whole room). */
+/** Server → clients delivery for emitToClients (ids = target client ids; omitted/empty = whole room). */
 function relayToClients(info: ServerInfo, type: string, senderId: string | undefined, syncId: number | null, data: any, ids?: string[]): void {
     const envelope = { type, syncId, id: senderId, data };
     if (Array.isArray(ids) && ids.length > 0) {
@@ -163,7 +163,7 @@ function bootServer(opts: SyncBootServerOptions, parent: Unit, args: any[]): Uni
             // emitToServer: fire `type` on the server (sender id attached, syncId-scoped for '-' types).
             if (event === WIRE_TO_SERVER) {
                 dispatch(info, payload?.type, socket.id, payload);
-            // emitToClient: relay `type` to the target clients (incl. the sender), with the sender id attached.
+            // emitToClients: relay `type` to the target clients (incl. the sender), with the sender id attached.
             } else if (event === WIRE_TO_CLIENT) {
                 relayToClients(info, payload?.type, socket.id, payload?.syncId ?? null, payload?.data, payload?.ids);
             }
@@ -227,7 +227,7 @@ function bootClient(opts: SyncBootClientOptions, parent: Unit, args: any[]): Uni
     };
     socket.on('status', onStatus);
     socket.onAny((event: string, payload: any) => {
-        // emitToServer/emitToClient delivery: the server forwards everything as WIRE_DELIVER ({ type, syncId, id, data }).
+        // emitToServer/emitToClients delivery: the server forwards everything as WIRE_DELIVER ({ type, syncId, id, data }).
         if (event === WIRE_DELIVER) { dispatch(info, payload?.type, payload?.id, payload); }
     });
 
@@ -290,7 +290,7 @@ export const xsync = {
             (info as ClientInfo).socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.currentUnit).id, data: props });
         }
     },
-    emitToClient(type: string, props: Record<string, any> = {}, ids?: string[]): void {
+    emitToClients(type: string, props: Record<string, any> = {}, ids?: string[]): void {
         const info = rootInfoOf(Unit.currentUnit);
         const syncId = syncOf(Unit.currentUnit).id;
         if (getEnvironment() === 'server') {

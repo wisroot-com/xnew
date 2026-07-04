@@ -3,7 +3,7 @@ import { ChatView } from './chat.js';
 
 //----------------------------------------------------------------------------------------------------
 // game — multi-client のゲームロジック（socket.io 前提・無改変で動く）。
-//   ネットワークは xsync（emitToServer/emitToClient/on/state）だけに依存。transport は起動側が
+//   ネットワークは xsync（emitToServer/emitToClients/on/state）だけに依存。transport は起動側が
 //   xsync.boot({ io, client, room }, ...) で生成する socket.io の socket。1 ブラウザ = 1 client。
 //
 //   シーンは「サーバーが現在のシーンを synced child として 1 つだけ持ち、差し替える」ことで全員に
@@ -21,11 +21,11 @@ import { ChatView } from './chat.js';
 //              クライアントには Setup が存在しないので設定画面はスキップされ、自機も持たない＝観戦になる。
 //   - Player : synced state {x,y,clientId,slot}。server が移動、client が描画＋（自機なら）入力。
 //   - ChatView : 全シーン共通のルームチャット（client 専用・Game の client 直下に常駐・chat.js）。
-//              送信は xsync.emitToClient('chat', { text })、受信は unit.on('chat', ({ id, text })=>…)。
+//              送信は xsync.emitToClients('chat', { text })、受信は unit.on('chat', ({ id, text })=>…)。
 //              server 経由でルーム全員（自分含む）へ届くので中継コンポーネントは不要。
 //
-//   sync イベント: 送信は emitToServer/emitToClient（payload はオブジェクト・syncId 自動付与）、受信は unit.on。
-//   emitToServer=必ず server で発火（client→server）、emitToClient=必ず client で発火（server 経由で全 client・自分含む）。
+//   sync イベント: 送信は emitToServer/emitToClients（payload はオブジェクト・syncId 自動付与）、受信は unit.on。
+//   emitToServer=必ず server で発火（client→server）、emitToClients=必ず client で発火（server 経由で全 client・自分含む）。
 //   プレフィックス '-'=同一コンポーネント(同じ syncId・replica↔server で一致) / '+'・無印=全体。
 //   key: xnew(C,{key}) で同一性の目印、xnew.find(C,{key}) で引ける（key はグローバル一意の想定）。
 //----------------------------------------------------------------------------------------------------
@@ -42,7 +42,7 @@ const nameOf = (id) => xsync.session.clients.find((c) => c.id === id)?.name || (
 export function Game(unit) {
     xsync.register({ Title, Setup, World });   // 同期対象（= シーン）の型を宣言
 
-    // server: 最初のシーン Title を生成する（チャット中継は core の emitToClient が担うので不要）。
+    // server: 最初のシーン Title を生成する（チャット中継は core の emitToClients が担うので不要）。
     xsync.server(() => {
         xnew(Title);
     });

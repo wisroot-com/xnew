@@ -188,7 +188,7 @@ declare const xsync: {
         myself: SyncClientStatus;
     };
     emitToServer(type: string, props?: Record<string, any>): void;
-    emitToClient(type: string, props?: Record<string, any>, ids?: string[]): void;
+    emitToClients(type: string, props?: Record<string, any>, ids?: string[]): void;
     boot(opts: SyncBootServerOptions | SyncBootClientOptions, ...args: any[]): Unit;
 };
 

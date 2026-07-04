@@ -1153,7 +1153,7 @@ const xsync = {
             info.socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.currentUnit).id, data: props });
         }
     },
-    emitToClient(type, props = {}, ids) {
+    emitToClients(type, props = {}, ids) {
         const info = rootInfoOf(Unit.currentUnit);
         const syncId = syncOf(Unit.currentUnit).id;
         if (getEnvironment() === 'server') {
