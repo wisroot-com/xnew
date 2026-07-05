@@ -443,15 +443,9 @@ export class UnitPromise {
         });
         return this;
     }
-    public then(callback: Function): UnitPromise {
-        return this.chain('then', callback);
-    }
-    public catch(callback: Function): UnitPromise {
-        return this.chain('catch', callback);
-    }
-    public finally(callback: Function): UnitPromise {
-        return this.chain('finally', callback);
-    }
+    public then(callback: Function): UnitPromise { return this.chain('then', callback); }
+    public catch(callback: Function): UnitPromise { return this.chain('catch', callback); }
+    public finally(callback: Function): UnitPromise { return this.chain('finally', callback); }
 
     // Aggregate promises into one Promise resolving to an object: keyed entries are included
     // (a `name[]` key pushes into out[name] in registration order); unkeyed ones are awaited only.
