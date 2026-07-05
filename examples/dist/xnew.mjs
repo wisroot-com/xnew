@@ -489,7 +489,7 @@ class Unit {
             unit._.phase = 'finalizing';
             [...unit._.children].reverse().forEach((child) => child.finalize());
             [...unit._.systems.finalize].reverse().forEach(({ execute }) => execute());
-            unit.off();
+            Unit.offAll(unit);
             [...unit._.nestElements].reverse().filter(item => item.owned).forEach(item => item.element.remove());
             unit._.Components.forEach((Component) => Unit.component2units.delete(Component, unit));
             const contexts = Unit.unit2Contexts.get(unit);
@@ -663,30 +663,34 @@ class Unit {
         types.forEach((type) => Unit.off(this, type, listener));
     }
     static on(unit, type, listener, options) {
-        const snapshot = Unit.snapshot(Unit.currentUnit);
+        const owner = Unit.currentUnit;
+        const snapshot = Unit.snapshot(owner);
         const execute = (props = {}) => {
             Unit.scope(snapshot, listener, Object.assign({ type }, props));
         };
         if (type === 'update' || type === 'finalize') {
-            unit._.systems[type].push({ listener, execute, count: 0 });
+            unit._.systems[type].push({ listener, execute, count: 0, owner });
         }
         else if (unit._.listeners.has(type, listener) === false) {
-            unit._.listeners.set(type, listener, { element: unit.element, Component: unit._.currentComponent, execute });
+            unit._.listeners.set(type, listener, { execute, owner });
             Unit.type2units.add(type, unit);
             if (/^[A-Za-z]/.test(type) && unit.element !== null) {
                 unit._.events.add(unit.element, type, execute, options);
             }
         }
+        if (owner !== unit) {
+            Unit.owner2targets.add(owner, unit);
+        }
     }
     static off(unit, type, listener) {
         if (type === 'update' || type === 'finalize') {
-            unit._.systems[type] = unit._.systems[type].filter(({ listener: lis }) => listener ? lis !== listener : false);
+            unit._.systems[type] = unit._.systems[type].filter((entry) => listener ? entry.listener !== listener : entry.owner !== Unit.currentUnit);
         }
         else {
-            (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((listener) => {
-                const item = unit._.listeners.get(type, listener);
-                if (item !== undefined) {
-                    unit._.listeners.delete(type, listener);
+            (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((lis) => {
+                const item = unit._.listeners.get(type, lis);
+                if (item !== undefined && (listener !== undefined || item.owner === Unit.currentUnit)) {
+                    unit._.listeners.delete(type, lis);
                     if (/^[A-Za-z]/.test(type)) {
                         unit._.events.remove(type, item.execute);
                     }
@@ -696,6 +700,28 @@ class Unit {
                 Unit.type2units.delete(type, unit);
             }
         }
+    }
+    static offAll(unit) {
+        var _a;
+        (_a = Unit.owner2targets.get(unit)) === null || _a === void 0 ? void 0 : _a.forEach((target) => {
+            ['update', 'finalize'].forEach((type) => {
+                target._.systems[type] = target._.systems[type].filter((entry) => entry.owner !== unit);
+            });
+            [...target._.listeners.keys()].forEach((type) => {
+                var _a, _b;
+                [...((_b = (_a = target._.listeners.get(type)) === null || _a === void 0 ? void 0 : _a.entries()) !== null && _b !== void 0 ? _b : [])].forEach(([listener, item]) => {
+                    if (item.owner === unit) {
+                        Unit.off(target, type, listener);
+                    }
+                });
+            });
+        });
+        Unit.owner2targets.delete(unit);
+        unit._.systems.update = [];
+        unit._.systems.finalize = [];
+        [...unit._.listeners.keys()].forEach((type) => {
+            [...unit._.listeners.keys(type)].forEach((listener) => Unit.off(unit, type, listener));
+        });
     }
     static emit(unit, type, props = {}) {
         var _a, _b;
@@ -716,6 +742,7 @@ class Unit {
 Unit.unit2Contexts = new MapSet();
 Unit.component2units = new MapSet();
 Unit.type2units = new MapSet();
+Unit.owner2targets = new MapSet();
 class UnitPromise {
     constructor(promise, key) { this.promise = promise; this.key = key; }
     chain(method, callback) {

@@ -59,6 +59,13 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   - `wheel`: `{ event, delta }`, `drag*`: `{ event, position, delta }`
   - `window.`/`document.` prefix attaches to window/document; `.arrow`/`.wasd` give `{ event, vector }`.
 - `unit.on('a b c', fn)` registers one listener for several space-separated types.
+- **Blanket `off()` is owner-scoped.** Each listener records the unit whose scope
+  registered it; `unit.off()` / `unit.off(type)` remove only listeners the *calling*
+  unit registered, so one unit cannot strip another component's internals (e.g.
+  `system.off()` no longer breaks Accordion/Popup subscribed via `context`).
+  `unit.off(type, listener)` with an explicit listener removes regardless of owner.
+  When a unit finalizes, its listeners registered on *other* units are detached
+  automatically (no stale cross-unit residue).
 
 ## 5. Lifecycle events
 

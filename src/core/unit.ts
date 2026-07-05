@@ -9,6 +9,11 @@
 // - Unit        : core class — lifecycle, listeners, contexts, emit
 // - UnitPromise : promise wrapper resuming in the captured Unit scope; aggregated by xnew.promise(unit)
 // - UnitTimer   : queued timer backing xnew.timeout / interval / transition
+//
+// Listener ownership: each listener records the unit whose scope registered it. A blanket
+// off(type?) removes only the caller's own listeners, so one unit cannot strip another
+// component's internals; off(type, listener) stays unrestricted. When the owner is finalized,
+// its listeners registered on other units are detached automatically.
 //----------------------------------------------------------------------------------------------------
 
 import { MapSet, MapMap } from './map';
@@ -47,7 +52,7 @@ export class Unit {
         protected: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
-        systems: Record<'update' | 'finalize', { listener: Function, execute: Function, count: number }[]>;
+        systems: Record<'update' | 'finalize', { listener: Function, execute: Function, count: number, owner: Unit }[]>;
 
         currentElement: DomElement;
         currentContext: Context;
@@ -57,7 +62,7 @@ export class Unit {
 
         nestElements: { element: DomElement, owned: boolean }[];
         Components: Function[];
-        listeners: MapMap<string, Function, { element: DomElement, Component: Function | null, execute: Function }>;
+        listeners: MapMap<string, Function, { execute: Function, owner: Unit }>;
         events: EventBinder;
 
         key: any;   // reserved prop for find(key) (global unique assumed)
@@ -154,7 +159,7 @@ export class Unit {
 
             [...unit._.children].reverse().forEach((child: Unit) => child.finalize());
             [...unit._.systems.finalize].reverse().forEach(({ execute }) => execute());
-            unit.off();
+            Unit.offAll(unit);
 
             [...unit._.nestElements].reverse().filter(item => item.owned).forEach(item => item.element.remove());
             unit._.Components.forEach((Component) => Unit.component2units.delete(Component, unit));
@@ -355,31 +360,40 @@ export class Unit {
         types.forEach((type) => Unit.off(this, type, listener));
     }
     
+    // owner (the unit whose scope called on) → the units it registered listeners on
+    static owner2targets = new MapSet<Unit, Unit>();
+
     static on(unit: Unit, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void {
-        const snapshot = Unit.snapshot(Unit.currentUnit);
+        const owner = Unit.currentUnit;
+        const snapshot = Unit.snapshot(owner);
         const execute = (props: object = {}) => {
             Unit.scope(snapshot, listener, Object.assign({ type }, props));
         }
         if (type === 'update' || type === 'finalize') {
             // lifecycle-only: registered in systems, never in the dispatch path (listeners / type2units / events).
-            unit._.systems[type].push({ listener, execute, count: 0 });
+            unit._.systems[type].push({ listener, execute, count: 0, owner });
         } else if (unit._.listeners.has(type, listener) === false) {
-            unit._.listeners.set(type, listener, { element: unit.element, Component: unit._.currentComponent, execute });
+            unit._.listeners.set(type, listener, { execute, owner });
             Unit.type2units.add(type, unit);
             if (/^[A-Za-z]/.test(type) && unit.element !== null) {
                 unit._.events.add(unit.element, type, execute, options);
             }
         }
+        if (owner !== unit) {
+            Unit.owner2targets.add(owner, unit);
+        }
     }
 
+    // blanket removal (no listener) is owner-scoped: only entries registered from the calling
+    // unit's scope are removed; off(type, listener) removes regardless of owner.
     static off(unit: Unit, type: string, listener?: Function): void {
         if (type === 'update' || type === 'finalize') {
-            unit._.systems[type] = unit._.systems[type].filter(({ listener: lis }) => listener ? lis !== listener : false);
+            unit._.systems[type] = unit._.systems[type].filter((entry) => listener ? entry.listener !== listener : entry.owner !== Unit.currentUnit);
         } else {
-            (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((listener) => {
-                const item = unit._.listeners.get(type, listener);
-                if (item !== undefined) {
-                    unit._.listeners.delete(type, listener);
+            (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((lis) => {
+                const item = unit._.listeners.get(type, lis);
+                if (item !== undefined && (listener !== undefined || item.owner === Unit.currentUnit)) {
+                    unit._.listeners.delete(type, lis);
                     if (/^[A-Za-z]/.test(type)) {
                         unit._.events.remove(type, item.execute);
                     }
@@ -389,6 +403,30 @@ export class Unit {
                 Unit.type2units.delete(type, unit);
             }
         }
+    }
+
+    // finalize-only: clear every listener on this unit regardless of owner, and detach the
+    // listeners this unit registered on other units.
+    static offAll(unit: Unit): void {
+        Unit.owner2targets.get(unit)?.forEach((target) => {
+            (['update', 'finalize'] as const).forEach((type) => {
+                target._.systems[type] = target._.systems[type].filter((entry) => entry.owner !== unit);
+            });
+            [...target._.listeners.keys()].forEach((type) => {
+                [...(target._.listeners.get(type)?.entries() ?? [])].forEach(([listener, item]) => {
+                    if (item.owner === unit) {
+                        Unit.off(target, type, listener);
+                    }
+                });
+            });
+        });
+        Unit.owner2targets.delete(unit);
+
+        unit._.systems.update = [];
+        unit._.systems.finalize = [];
+        [...unit._.listeners.keys()].forEach((type) => {
+            [...unit._.listeners.keys(type)].forEach((listener) => Unit.off(unit, type, listener));
+        });
     }
 
     static emit(unit: Unit, type: string, props: object = {}): void {

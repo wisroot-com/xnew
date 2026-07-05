@@ -54,6 +54,7 @@ declare class Unit {
             listener: Function;
             execute: Function;
             count: number;
+            owner: Unit;
         }[]>;
         currentElement: DomElement;
         currentContext: Context;
@@ -65,9 +66,8 @@ declare class Unit {
         }[];
         Components: Function[];
         listeners: MapMap<string, Function, {
-            element: DomElement;
-            Component: Function | null;
             execute: Function;
+            owner: Unit;
         }>;
         events: EventBinder;
         key: any;
@@ -99,8 +99,10 @@ declare class Unit {
     static type2units: MapSet<string, Unit>;
     on(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
     off(type?: string, listener?: Function): void;
+    static owner2targets: MapSet<Unit, Unit>;
     static on(unit: Unit, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
     static off(unit: Unit, type: string, listener?: Function): void;
+    static offAll(unit: Unit): void;
     static emit(unit: Unit, type: string, props?: object): void;
 }
 declare class UnitPromise {

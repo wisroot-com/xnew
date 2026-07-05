@@ -94,6 +94,66 @@ describe('Unit.on / Unit.off', () => {
             expect(b).not.toHaveBeenCalled();
         });
 
+        it('off(type) from a non-owner unit keeps other units\' listeners', () => {
+            const cb = jest.fn();
+            const system = xnew((unit: Unit) => ({ ping() { xnew.emit('-ping'); } }));
+            xnew((unit: Unit) => { system.on('-ping', cb); });   // subscriber (e.g. Accordion)
+            xnew((unit: Unit) => { system.off('-ping'); });      // outsider blanket off
+            system.ping();
+            expect(cb).toHaveBeenCalledTimes(1);
+        });
+
+        it('off() removes only the listeners the calling unit registered', () => {
+            const mine = jest.fn();
+            const theirs = jest.fn();
+            const system = xnew((unit: Unit) => ({ ping() { xnew.emit('-ping'); } }));
+            xnew((unit: Unit) => { system.on('-ping', theirs); });
+            xnew((unit: Unit) => {
+                system.on('-ping', mine);
+                system.off();
+            });
+            system.ping();
+            expect(mine).not.toHaveBeenCalled();
+            expect(theirs).toHaveBeenCalledTimes(1);
+        });
+
+        it('off(type, listener) removes a listener regardless of owner', () => {
+            const cb = jest.fn();
+            const system = xnew((unit: Unit) => ({ ping() { xnew.emit('-ping'); } }));
+            xnew((unit: Unit) => { system.on('-ping', cb); });
+            xnew((unit: Unit) => { system.off('-ping', cb); });
+            system.ping();
+            expect(cb).not.toHaveBeenCalled();
+        });
+
+        it('off(\'update\') from a non-owner unit keeps other units\' update listeners', () => {
+            const cb = jest.fn();
+            const target = xnew((unit: Unit) => {});
+            xnew((unit: Unit) => { target.on('update', cb); });
+            xnew((unit: Unit) => { target.off('update'); });
+            Unit.update(Unit.engineRoot);
+            expect(cb).toHaveBeenCalledTimes(1);
+        });
+
+        it('finalizing the owner detaches its listeners from other units', () => {
+            const cb = jest.fn();
+            const system = xnew((unit: Unit) => ({ ping() { xnew.emit('-ping'); } }));
+            const subscriber = xnew((unit: Unit) => { system.on('-ping', cb); });
+            subscriber.finalize();
+            expect(system._.listeners.has('-ping')).toBe(false);
+            system.ping();
+            expect(cb).not.toHaveBeenCalled();
+        });
+
+        it('finalizing the owner clears its registry, even after the target is gone', () => {
+            const cb = jest.fn();
+            const target = xnew((unit: Unit) => {});
+            const owner = xnew((unit: Unit) => { target.on('-ping', cb); });
+            target.finalize();
+            owner.finalize();
+            expect(Unit.owner2targets.has(owner)).toBe(false);
+        });
+
         it('off accepts space-separated types', () => {
             const cb = jest.fn();
             xnew((unit: Unit) => {
