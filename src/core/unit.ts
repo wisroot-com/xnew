@@ -379,13 +379,28 @@ export class Unit {
 
     // blanket off (no listener) removes only the caller's own entries; off(type, listener) ignores owner
     static off(unit: Unit, type: string, listener?: Function): void {
+        const owner = Unit.currentUnit;
+        Unit.remove(unit, type, (lis, own) => listener !== undefined ? lis === listener : own === owner);
+    }
+
+    // finalize-only: clear all listeners on this unit, and detach those it registered on other units
+    static offAll(unit: Unit): void {
+        Unit.owner2targets.get(unit)?.forEach((target) => {
+            [...target._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.remove(target, type, (_, own) => own === unit));
+        });
+        Unit.owner2targets.delete(unit);
+
+        [...unit._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.remove(unit, type, () => true));
+    }
+
+    // remove the entries of `type` whose (listener, owner) matches; shared by off / offAll
+    static remove(unit: Unit, type: string, match: (listener: Function, owner: Unit) => boolean): void {
         if (type === 'update' || type === 'finalize') {
-            unit._.systems[type] = unit._.systems[type].filter((entry) => listener ? entry.listener !== listener : entry.owner !== Unit.currentUnit);
+            unit._.systems[type] = unit._.systems[type].filter((entry) => match(entry.listener, entry.owner) === false);
         } else {
-            (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((lis) => {
-                const item = unit._.listeners.get(type, lis);
-                if (item !== undefined && (listener !== undefined || item.owner === Unit.currentUnit)) {
-                    unit._.listeners.delete(type, lis);
+            [...(unit._.listeners.get(type)?.entries() ?? [])].forEach(([listener, item]) => {
+                if (match(listener, item.owner)) {
+                    unit._.listeners.delete(type, listener);
                     if (/^[A-Za-z]/.test(type)) {
                         unit._.events.remove(type, item.execute);
                     }
@@ -395,29 +410,6 @@ export class Unit {
                 Unit.type2units.delete(type, unit);
             }
         }
-    }
-
-    // finalize-only: clear all listeners on this unit, and detach those it registered on other units
-    static offAll(unit: Unit): void {
-        Unit.owner2targets.get(unit)?.forEach((target) => {
-            (['update', 'finalize'] as const).forEach((type) => {
-                target._.systems[type] = target._.systems[type].filter((entry) => entry.owner !== unit);
-            });
-            [...target._.listeners.keys()].forEach((type) => {
-                [...(target._.listeners.get(type)?.entries() ?? [])].forEach(([listener, item]) => {
-                    if (item.owner === unit) {
-                        Unit.off(target, type, listener);
-                    }
-                });
-            });
-        });
-        Unit.owner2targets.delete(unit);
-
-        unit._.systems.update = [];
-        unit._.systems.finalize = [];
-        [...unit._.listeners.keys()].forEach((type) => {
-            [...unit._.listeners.keys(type)].forEach((listener) => Unit.off(unit, type, listener));
-        });
     }
 
     static emit(unit: Unit, type: string, props: object = {}): void {
