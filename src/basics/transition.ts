@@ -13,11 +13,9 @@
 import { xnew } from '../core/xnew';
 import { Unit, UnitTimer } from '../core/unit';
 
-interface TransitionOptions { duration?: number; easing?: string; }
-
 export function OpenAndClose(unit: Unit,
-    { open = true, transition = { duration: 200, easing: 'ease' } }:
-    { open?: boolean, transition?: TransitionOptions }
+    { open = true, duration = 200, easing = 'ease' }:
+    { open?: boolean, duration?: number, easing?: string }
 ) {
     let value = open ? 1.0 : 0.0;
     let sign: number = open ? +1 : -1;
@@ -27,14 +25,12 @@ export function OpenAndClose(unit: Unit,
     function animate(dir: number) {
         sign = dir;
         const d = dir > 0 ? 1 - value : value;
-        const duration = (transition?.duration ?? 200) * d;
-        const easing = transition?.easing ?? 'ease';
         timer?.clear();
         timer = xnew.transition(({ value: x }: { value: number }) => {
             const remaining = x < 1.0 ? (1 - x) * d : 0.0;
             value = dir > 0 ? 1.0 - remaining : remaining;
             xnew.emit('-transition', { value });
-        }, duration, easing)
+        }, duration * d, easing)
         .timeout(() => xnew.emit(dir > 0 ? '-opened' : '-closed'));
     }
 

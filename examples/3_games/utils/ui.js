@@ -152,7 +152,7 @@ function VolumeController(unit, { anchor = 'left' } = {}) {
   xnew.extend(xbasics.Aspect, { aspect: 1.0, fit: 'contain' });
   unit.on('pointerdown', ({ event }) => event.stopPropagation());
 
-  const system = xnew(xbasics.OpenAndClose, { open: false, transition: { duration: 250, easing: 'ease' } });
+  const system = xnew(xbasics.OpenAndClose, { open: false, duration: 250, easing: 'ease' });
 
   const button = xnew((unit) => {
     xnew.nest('<div style="width: 100%; height: 100%; cursor: pointer;">');

@@ -78,7 +78,6 @@ declare class Unit {
     get parent(): Unit | null;
     get element(): DomElement;
     finalize(): void;
-    static finalize(unit: Unit): void;
     static nest(unit: Unit, target: DomElement | string, textContent?: string | number): DomElement;
     static extend(unit: Unit, Component: Function, props?: Object): {
         [key: string]: any;
@@ -103,12 +102,13 @@ declare class Unit {
     static on(unit: Unit, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
     static off(unit: Unit, type: string, listener?: Function): void;
     static offAll(unit: Unit): void;
+    static remove(unit: Unit, type: string, match: (listener: Function, owner: Unit) => boolean): void;
     static emit(unit: Unit, type: string, props?: object): void;
 }
 declare class UnitPromise {
     private promise;
-    key?: string;
-    constructor(promise: Promise<any>, key?: string);
+    key?: string | undefined;
+    constructor(promise: Promise<any>, key?: string | undefined);
     private chain;
     then(callback: Function): UnitPromise;
     catch(callback: Function): UnitPromise;
@@ -190,13 +190,10 @@ declare const xsync: {
     boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
 };
 
-interface TransitionOptions {
+declare function OpenAndClose(unit: Unit, { open, duration, easing }: {
+    open?: boolean;
     duration?: number;
     easing?: string;
-}
-declare function OpenAndClose(unit: Unit, { open, transition }: {
-    open?: boolean;
-    transition?: TransitionOptions;
 }): {
     toggle(): void;
     open(): void;

@@ -482,17 +482,14 @@ class Unit {
         return this._.currentElement;
     }
     finalize() {
-        Unit.finalize(this);
-    }
-    static finalize(unit) {
-        if (unit._.phase !== 'finalized' && unit._.phase !== 'finalizing') {
-            unit._.phase = 'finalizing';
-            [...unit._.children].reverse().forEach((child) => child.finalize());
-            [...unit._.systems.finalize].reverse().forEach(({ execute }) => execute());
-            Unit.offAll(unit);
-            [...unit._.nestElements].reverse().filter(item => item.owned).forEach(item => item.element.remove());
-            unit._.Components.forEach((Component) => Unit.component2units.delete(Component, unit));
-            const contexts = Unit.unit2Contexts.get(unit);
+        if (this._.phase !== 'finalized' && this._.phase !== 'finalizing') {
+            this._.phase = 'finalizing';
+            [...this._.children].reverse().forEach((child) => child.finalize());
+            [...this._.systems.finalize].reverse().forEach(({ execute }) => execute());
+            Unit.offAll(this);
+            [...this._.nestElements].reverse().filter(item => item.owned).forEach(item => item.element.remove());
+            this._.Components.forEach((Component) => Unit.component2units.delete(Component, this));
+            const contexts = Unit.unit2Contexts.get(this);
             contexts === null || contexts === void 0 ? void 0 : contexts.forEach((context) => {
                 let temp = context.previous;
                 while (temp !== null) {
@@ -505,14 +502,14 @@ class Unit {
                     temp = temp.previous;
                 }
             });
-            Unit.unit2Contexts.delete(unit);
-            unit._.currentContext = { previous: null };
-            Object.keys(unit._.defines).forEach((key) => delete unit[key]);
-            unit._.defines = {};
-            if (unit._.parent) {
-                unit._.parent._.children = unit._.parent._.children.filter((u) => u !== unit);
+            Unit.unit2Contexts.delete(this);
+            this._.currentContext = { previous: null };
+            Object.keys(this._.defines).forEach((key) => delete this[key]);
+            this._.defines = {};
+            if (this._.parent) {
+                this._.parent._.children = this._.parent._.children.filter((u) => u !== this);
             }
-            unit._.phase = 'finalized';
+            this._.phase = 'finalized';
         }
     }
     static nest(unit, target, textContent) {
@@ -683,14 +680,26 @@ class Unit {
         }
     }
     static off(unit, type, listener) {
+        const owner = Unit.currentUnit;
+        Unit.remove(unit, type, (lis, own) => listener !== undefined ? lis === listener : own === owner);
+    }
+    static offAll(unit) {
+        var _a;
+        (_a = Unit.owner2targets.get(unit)) === null || _a === void 0 ? void 0 : _a.forEach((target) => {
+            [...target._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.remove(target, type, (_, own) => own === unit));
+        });
+        Unit.owner2targets.delete(unit);
+        [...unit._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.remove(unit, type, () => true));
+    }
+    static remove(unit, type, match) {
+        var _a, _b;
         if (type === 'update' || type === 'finalize') {
-            unit._.systems[type] = unit._.systems[type].filter((entry) => listener ? entry.listener !== listener : entry.owner !== Unit.currentUnit);
+            unit._.systems[type] = unit._.systems[type].filter((entry) => match(entry.listener, entry.owner) === false);
         }
         else {
-            (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((lis) => {
-                const item = unit._.listeners.get(type, lis);
-                if (item !== undefined && (listener !== undefined || item.owner === Unit.currentUnit)) {
-                    unit._.listeners.delete(type, lis);
+            [...((_b = (_a = unit._.listeners.get(type)) === null || _a === void 0 ? void 0 : _a.entries()) !== null && _b !== void 0 ? _b : [])].forEach(([listener, item]) => {
+                if (match(listener, item.owner)) {
+                    unit._.listeners.delete(type, listener);
                     if (/^[A-Za-z]/.test(type)) {
                         unit._.events.remove(type, item.execute);
                     }
@@ -700,28 +709,6 @@ class Unit {
                 Unit.type2units.delete(type, unit);
             }
         }
-    }
-    static offAll(unit) {
-        var _a;
-        (_a = Unit.owner2targets.get(unit)) === null || _a === void 0 ? void 0 : _a.forEach((target) => {
-            ['update', 'finalize'].forEach((type) => {
-                target._.systems[type] = target._.systems[type].filter((entry) => entry.owner !== unit);
-            });
-            [...target._.listeners.keys()].forEach((type) => {
-                var _a, _b;
-                [...((_b = (_a = target._.listeners.get(type)) === null || _a === void 0 ? void 0 : _a.entries()) !== null && _b !== void 0 ? _b : [])].forEach(([listener, item]) => {
-                    if (item.owner === unit) {
-                        Unit.off(target, type, listener);
-                    }
-                });
-            });
-        });
-        Unit.owner2targets.delete(unit);
-        unit._.systems.update = [];
-        unit._.systems.finalize = [];
-        [...unit._.listeners.keys()].forEach((type) => {
-            [...unit._.listeners.keys(type)].forEach((listener) => Unit.off(unit, type, listener));
-        });
     }
     static emit(unit, type, props = {}) {
         var _a, _b;
@@ -744,7 +731,10 @@ Unit.component2units = new MapSet();
 Unit.type2units = new MapSet();
 Unit.owner2targets = new MapSet();
 class UnitPromise {
-    constructor(promise, key) { this.promise = promise; this.key = key; }
+    constructor(promise, key) {
+        this.promise = promise;
+        this.key = key;
+    }
     chain(method, callback) {
         const snapshot = Unit.snapshot(Unit.currentUnit);
         this.promise = this.promise[method]((...args) => {
@@ -753,15 +743,9 @@ class UnitPromise {
         });
         return this;
     }
-    then(callback) {
-        return this.chain('then', callback);
-    }
-    catch(callback) {
-        return this.chain('catch', callback);
-    }
-    finally(callback) {
-        return this.chain('finally', callback);
-    }
+    then(callback) { return this.chain('then', callback); }
+    catch(callback) { return this.chain('catch', callback); }
+    finally(callback) { return this.chain('finally', callback); }
     static async collect(promises) {
         const values = await Promise.all(promises.map(p => p.promise));
         const out = {};
@@ -1170,22 +1154,19 @@ const xsync = {
     },
 };
 
-function OpenAndClose(unit, { open = true, transition = { duration: 200, easing: 'ease' } }) {
+function OpenAndClose(unit, { open = true, duration = 200, easing = 'ease' }) {
     let value = open ? 1.0 : 0.0;
     let sign = open ? +1 : -1;
     let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
     function animate(dir) {
-        var _a, _b;
         sign = dir;
         const d = dir > 0 ? 1 - value : value;
-        const duration = ((_a = transition === null || transition === void 0 ? void 0 : transition.duration) !== null && _a !== void 0 ? _a : 200) * d;
-        const easing = (_b = transition === null || transition === void 0 ? void 0 : transition.easing) !== null && _b !== void 0 ? _b : 'ease';
         timer === null || timer === void 0 ? void 0 : timer.clear();
         timer = xnew.transition(({ value: x }) => {
             const remaining = x < 1.0 ? (1 - x) * d : 0.0;
             value = dir > 0 ? 1.0 - remaining : remaining;
             xnew.emit('-transition', { value });
-        }, duration, easing)
+        }, duration * d, easing)
             .timeout(() => xnew.emit(dir > 0 ? '-opened' : '-closed'));
     }
     return {
