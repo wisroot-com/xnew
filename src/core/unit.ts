@@ -431,9 +431,7 @@ export class Unit {
 //----------------------------------------------------------------------------------------------------
 
 export class UnitPromise {
-    private promise: Promise<any>;
-    public key?: string;
-    constructor(promise: Promise<any>, key?: string) { this.promise = promise; this.key = key; }
+    constructor(private promise: Promise<any>, public key?: string) {}
 
     // then / catch / finally run the callback in the captured scope; the return value becomes the
     // chain value (a returned UnitPromise unwraps to its inner promise for async continuation).
