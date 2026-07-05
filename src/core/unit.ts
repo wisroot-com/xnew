@@ -1,19 +1,16 @@
 //----------------------------------------------------------------------------------------------------
 // Unit — the lifecycle, ownership, and scoping primitive of xnew
 //
-// A Unit bundles DOM elements, Components, children, listeners, and promises into one disposable
-// node driven by invoked → initialized → finalizing → finalized. Deferred callbacks (DOM events,
-// timers, promise continuations) re-enter Unit.scope via a Snapshot, so they run as if still
-// inside the original component.
+// A Unit bundles DOM elements, components, children, listeners, and promises into one disposable
+// node (invoked → initialized → finalizing → finalized). Deferred callbacks re-enter the original
+// unit scope via a Snapshot.
 //
 // - Unit        : core class — lifecycle, listeners, contexts, emit
-// - UnitPromise : promise wrapper resuming in the captured Unit scope; aggregated by xnew.promise(unit)
+// - UnitPromise : promise wrapper resuming in the captured unit scope
 // - UnitTimer   : queued timer backing xnew.timeout / interval / transition
 //
-// Listener ownership: each listener records the unit whose scope registered it. A blanket
-// off(type?) removes only the caller's own listeners, so one unit cannot strip another
-// component's internals; off(type, listener) stays unrestricted. When the owner is finalized,
-// its listeners registered on other units are detached automatically.
+// Listeners record their owner unit: blanket off(type?) removes only the caller's own, and a
+// finalized owner's listeners on other units are detached automatically.
 //----------------------------------------------------------------------------------------------------
 
 import { MapSet, MapMap } from './map';
@@ -150,22 +147,18 @@ export class Unit {
     }
 
     public finalize(): void {
-        Unit.finalize(this);
-    }
+        if (this._.phase !== 'finalized' && this._.phase !== 'finalizing') {
+            this._.phase = 'finalizing';
 
-    static finalize(unit: Unit): void {
-        if (unit._.phase !== 'finalized' && unit._.phase !== 'finalizing') {
-            unit._.phase = 'finalizing';
+            [...this._.children].reverse().forEach((child: Unit) => child.finalize());
+            [...this._.systems.finalize].reverse().forEach(({ execute }) => execute());
+            Unit.offAll(this);
 
-            [...unit._.children].reverse().forEach((child: Unit) => child.finalize());
-            [...unit._.systems.finalize].reverse().forEach(({ execute }) => execute());
-            Unit.offAll(unit);
+            [...this._.nestElements].reverse().filter(item => item.owned).forEach(item => item.element.remove());
+            this._.Components.forEach((Component) => Unit.component2units.delete(Component, this));
 
-            [...unit._.nestElements].reverse().filter(item => item.owned).forEach(item => item.element.remove());
-            unit._.Components.forEach((Component) => Unit.component2units.delete(Component, unit));
-            
             // remove contexts
-            const contexts = Unit.unit2Contexts.get(unit);
+            const contexts = Unit.unit2Contexts.get(this);
             contexts?.forEach((context: Context) => {
                 let temp = context.previous;
                 while(temp !== null) {
@@ -178,16 +171,16 @@ export class Unit {
                     temp = temp.previous;
                 }
             });
-            Unit.unit2Contexts.delete(unit);
-            unit._.currentContext = { previous: null };
+            Unit.unit2Contexts.delete(this);
+            this._.currentContext = { previous: null };
 
-            Object.keys(unit._.defines).forEach((key) => delete unit[key]);
-            unit._.defines = {};
+            Object.keys(this._.defines).forEach((key) => delete this[key]);
+            this._.defines = {};
 
-            if (unit._.parent) {
-                unit._.parent._.children = unit._.parent._.children.filter((u: Unit) => u !== unit);
+            if (this._.parent) {
+                this._.parent._.children = this._.parent._.children.filter((u: Unit) => u !== this);
             }
-            unit._.phase = 'finalized';
+            this._.phase = 'finalized';
         }
     }
 
@@ -384,8 +377,7 @@ export class Unit {
         }
     }
 
-    // blanket removal (no listener) is owner-scoped: only entries registered from the calling
-    // unit's scope are removed; off(type, listener) removes regardless of owner.
+    // blanket off (no listener) removes only the caller's own entries; off(type, listener) ignores owner
     static off(unit: Unit, type: string, listener?: Function): void {
         if (type === 'update' || type === 'finalize') {
             unit._.systems[type] = unit._.systems[type].filter((entry) => listener ? entry.listener !== listener : entry.owner !== Unit.currentUnit);
@@ -405,8 +397,7 @@ export class Unit {
         }
     }
 
-    // finalize-only: clear every listener on this unit regardless of owner, and detach the
-    // listeners this unit registered on other units.
+    // finalize-only: clear all listeners on this unit, and detach those it registered on other units
     static offAll(unit: Unit): void {
         Unit.owner2targets.get(unit)?.forEach((target) => {
             (['update', 'finalize'] as const).forEach((type) => {
