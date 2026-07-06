@@ -102,17 +102,17 @@ export const xnew = Object.assign(
             return Unit.emit(Unit.current, type, ...args);
         },
 
-        // Runs callback({ timer }) once after duration ms (the timer follows the unit lifecycle; timer.clear() aborts).
+        // Runs callback({ count }) once after duration ms (the timer follows the unit lifecycle; timer.clear() aborts).
         timeout(callback: Function, duration: number = 0): UnitTimer {
             return new UnitTimer().timeout(callback, duration);
         },
 
-        // Runs callback({ timer }) every duration ms, iterations times (0 = infinite; timer.clear() stops).
+        // Runs callback({ count }) every duration ms, iterations times (0 = infinite; count starts at 0; timer.clear() stops).
         interval(callback: Function, duration: number, iterations: number = 0): UnitTimer {
             return new UnitTimer().interval(callback, duration, iterations);
         },
 
-        // Runs transition({ value: 0→1, timer }) over duration ms (easing: 'linear'|'ease'|'ease-in'|'ease-out'|'ease-in-out'; chainable).
+        // Runs transition({ value: 0→1 }) over duration ms (easing: 'linear'|'ease'|'ease-in'|'ease-out'|'ease-in-out'; chainable).
         transition(transition: Function, duration: number = 0, easing: string = 'linear'): UnitTimer {
             return new UnitTimer().transition(transition, duration, easing);
         },

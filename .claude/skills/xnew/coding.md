@@ -110,9 +110,9 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 - `xnew.timeout(cb, ms)`, `xnew.interval(cb, ms, iterations=0)`,
   `xnew.transition(cb, ms, easing)`. They live under the unit (auto-cleared on
   finalize) and run their callback in scope.
-- Callback gets `{ timer }` (transition also `{ value }`, 0→1). Cancel with
-  `timer.clear()`. Prefer these over `setTimeout`/`setInterval` for anything tied
-  to a unit's lifetime.
+- timeout/interval callbacks get `{ count }` (iteration count from 0); transition
+  gets `{ value }` (0→1). Cancel with `clear()` on the returned timer. Prefer these
+  over `setTimeout`/`setInterval` for anything tied to a unit's lifetime.
 
 ## 9. Context & find
 

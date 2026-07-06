@@ -488,17 +488,14 @@ function StoryPageSwarm(unit) {
   xpixi.nest(new PIXI.Container());
 
   // 少しずつ湧いて増えていく（増殖感）。黒帯より上（テキスト帯に被らない領域）に位置・スケールをランダムに散らす。
-  let spawnedCount = 0;
-  xnew.interval(({ timer }) => {
-    spawnedCount++;
+  xnew.interval(() => {
     xnew(DriftingFactor, {
       id: randInt(xnew.context(BakedCharacters).texturesList.length),
       x: randRange(90, 710),
       y: randRange(90, 360),
       scale: randRange(0.5, 1.0),
     });
-    if (spawnedCount >= 64) timer.clear();
-  }, 200);
+  }, 200, 64);
 
   xnew(() => {
     xnew.extend(StoryDialog, { accent: '#9BE53C', tag: 'MISSION', bottomCqw: 5 });

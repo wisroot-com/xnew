@@ -800,14 +800,13 @@ class UnitTimer {
         return this.execute(null, transition, duration, 1, easing);
     }
     execute(timeout, transition, duration, iterations, easing) {
-        const timer = this;
         const snapshot = Unit.snapshot(Unit.currentUnit);
         const Component = (unit) => {
             let counter = 0;
             let current = new Timer(onTimeout, onTransition, duration, easing);
             function onTimeout() {
                 if (timeout)
-                    Unit.scope(snapshot, timeout, { timer });
+                    Unit.scope(snapshot, timeout, { count: counter });
                 if (unit._.phase === 'finalized') {
                     return;
                 }
@@ -821,7 +820,7 @@ class UnitTimer {
             }
             function onTransition(value) {
                 if (transition)
-                    Unit.scope(snapshot, transition, { value, timer });
+                    Unit.scope(snapshot, transition, { value });
             }
             unit.on('finalize', () => current.clear());
         };

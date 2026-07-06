@@ -507,7 +507,6 @@ export class UnitTimer {
     }
 
     private execute(timeout: Function | null, transition: Function | null, duration: number, iterations: number, easing?: string) {
-        const timer = this;
         const snapshot = Unit.snapshot(Unit.currentUnit);
 
         // Timer parameters are captured by closure, not passed as props.
@@ -516,7 +515,7 @@ export class UnitTimer {
             let current = new Timer(onTimeout, onTransition, duration, easing);
 
             function onTimeout() {
-                if (timeout) Unit.scope(snapshot, timeout, { timer });
+                if (timeout) Unit.scope(snapshot, timeout, { count: counter });
                 // if the callback called timer.clear(), the unit is finalized — do not reschedule.
                 if (unit._.phase === 'finalized') { return; }
                 if (iterations <= 0 || counter < iterations - 1) {
@@ -527,7 +526,7 @@ export class UnitTimer {
                 counter++;
             }
             function onTransition(value: number) {
-                if (transition) Unit.scope(snapshot, transition, { value, timer });
+                if (transition) Unit.scope(snapshot, transition, { value });
             }
 
             unit.on('finalize', () => current.clear());
