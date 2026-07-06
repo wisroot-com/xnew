@@ -55,6 +55,9 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   (`&:hover`, `@media`, descendant selectors). Identical definitions share one ref-counted
   `<style>`, removed when the last user unit finalizes. `@keyframes` names stay global;
   on the server (no DOM) keys map to themselves and nothing is injected.
+  Sharing across components: share the **definition object** (same defs → same names);
+  for theming, custom properties (`--vars`) pass through unrenamed and inherit down the
+  DOM — set them on a subtree root class, read via `var(--x, fallback)` in descendants.
 - `xnew.nest('<div …>')` nests a child element under the current element and makes
   it current (init-only). `xnew.extend(Base)` mixes another component into this unit.
 - DOM events are listened with `unit.on('click', ({ event }) => …)`. The payload is

@@ -13,7 +13,7 @@ Recommended reading order.
 | sample | shows |
 | --- | --- |
 | [element](core/element/) | creating / nesting DOM elements, DOM events (`click`, `input`, `change`) |
-| [css](core/css/) | `xnew.css` pseudo-scoped CSS — local class names, `&:hover`, collision-free reuse |
+| [css](core/css/) | `xnew.css` pseudo-scoped CSS — local class names, `&:hover`, collision-free reuse, custom-property theming |
 | [timer](core/timer/) | `xnew.interval` / `transition` / `timeout` chaining, `update` loop |
 | [contextfind](core/contextfind/) | `xnew.context` (reach an ancestor's defines), `xnew.find` (+ `key`) |
 | [customevent](core/customevent/) | `+event` broadcast, `-event` local, `xnew.protect` boundary |

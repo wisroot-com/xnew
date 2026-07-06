@@ -23,6 +23,7 @@
       xnew(Buttons);
       xnew(BlueCard);
       xnew(GreenCard);
+      xnew(Theme);
     });
 
     function Base(unit, { name }) {
@@ -85,6 +86,49 @@
         xnew('<span>', 'green card');
         xnew('<div>', `class="${css.card}"`);
       });
+    }
+
+    // Custom properties are passed through as-is and inherit down the DOM tree:
+    // the theme root sets --vars, and descendant components read them via var().
+    function Theme(unit) {
+      xnew.extend(Base, { name: 'xnew.css: custom properties (theme variables)' });
+
+      const css = xnew.css({
+        light: `
+          --color-primary: #3b82f6;
+          --color-surface: #dbeafe;
+        `,
+        dark: `
+          --color-primary: #93c5fd;
+          --color-surface: #1e3a5f;
+        `,
+      });
+
+      const root = xnew.nest(`<div class="${css.light} flex gap-x-2 flex-wrap items-center">`);
+
+      const button = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'switch to dark');
+      button.on('click', () => {
+        const dark = root.classList.contains(css.dark);
+        root.classList.replace(dark ? css.dark : css.light, dark ? css.light : css.dark);
+        button.element.textContent = dark ? 'switch to dark' : 'switch to light';
+      });
+
+      xnew(ThemedCard, { label: 'card A' });
+      xnew(ThemedCard, { label: 'card B' });
+    }
+
+    function ThemedCard(unit, { label }) {
+      const css = xnew.css({
+        card: `
+          width: 8rem; padding: 0.5rem; border-radius: 0.5rem;
+          background: var(--color-surface, white);
+          border: 1px solid var(--color-primary, gray);
+          color: var(--color-primary, black);
+          font-weight: bold;
+          transition: background 0.3s, color 0.3s;
+        `,
+      });
+      xnew(`<div class="${css.card}">`, label);
     }
   </script>
 </body>
