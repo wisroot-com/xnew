@@ -10,10 +10,9 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Unit } from '../../core/unit';
 import { OpenAndClose } from './OpenAndClose';
 
-export function Accordion(unit: Unit) {
+export function Accordion(unit: xnew.Unit) {
     const system = xnew.context(OpenAndClose);
 
     const outer = xnew.nest('<div style="overflow: hidden;">') as HTMLElement;

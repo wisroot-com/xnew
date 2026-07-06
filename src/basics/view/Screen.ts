@@ -10,10 +10,9 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Unit } from '../../core/unit';
 import { Aspect } from './Aspect';
 
-export function Screen(unit: Unit,
+export function Screen(unit: xnew.Unit,
     { width = 800, height = 600, fit = 'contain' }:
     { width?: number, height?: number, fit?: 'contain' | 'cover' } = {}
 ) {

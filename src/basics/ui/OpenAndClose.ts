@@ -11,9 +11,8 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Unit } from '../../core/unit';
 
-export function OpenAndClose(unit: Unit,
+export function OpenAndClose(unit: xnew.Unit,
     { open = true, duration = 200, easing = 'ease' }:
     { open?: boolean, duration?: number, easing?: string }
 ) {

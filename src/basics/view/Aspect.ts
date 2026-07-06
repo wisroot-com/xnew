@@ -11,9 +11,8 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Unit } from '../../core/unit';
 
-export function Aspect(unit: Unit,
+export function Aspect(unit: xnew.Unit,
     { aspect = 1.0, fit = 'contain' }:
     { aspect?: number, fit?: 'contain' | 'cover' } = {}
 ) {

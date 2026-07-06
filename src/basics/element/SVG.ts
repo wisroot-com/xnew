@@ -11,7 +11,6 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Unit } from '../../core/unit';
 
 interface SVGInterface {
     viewBox?: string;
@@ -26,7 +25,7 @@ interface SVGInterface {
     fillOpacity?: number;
 }
 
-export function SVG(unit: Unit,
+export function SVG(unit: xnew.Unit,
     {
         viewBox = '0 0 64 64',
         className = '',

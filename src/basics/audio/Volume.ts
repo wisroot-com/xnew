@@ -9,10 +9,10 @@
 // Usage: const mixer = xnew(xbasics.Volume); mixer.volume = 0.5;
 //----------------------------------------------------------------------------------------------------
 
-import { Unit } from '../../core/unit';
+import { xnew } from '../../core/xnew';
 import { master } from './bus';
 
-export function Volume(unit: Unit) {
+export function Volume(unit: xnew.Unit) {
     return {
         get volume(): number {
             return master.gain.value;

@@ -10,10 +10,9 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Unit } from '../../core/unit';
 import { OpenAndClose } from './OpenAndClose';
 
-export function Popup(unit: Unit) {
+export function Popup(unit: xnew.Unit) {
     const system = xnew.context(OpenAndClose);
 
     system.on('-closed', () => unit.finalize());

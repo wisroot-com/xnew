@@ -11,7 +11,6 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Unit, ComponentFn } from '../../core/unit';
 import { SVG } from '../element/SVG';
 import { OpenAndClose } from './OpenAndClose';
 import { Accordion } from './Accordion';
@@ -24,11 +23,11 @@ const paleColor = 'color-mix(in srgb, currentColor 20%, transparent)';
 // hidden native control overlaid on the styled row to capture interaction
 const hiddenInput = 'position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;';
 
-export function Panel(unit: Unit, { params }: PanelOptions) {
+export function Panel(unit: xnew.Unit, { params }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
 
     // resolve the initial value, mount the control and write changes back to `object`
-    function field(key: string, value: any, fallback: any, Component: ComponentFn<any, any>, props: object) {
+    function field(key: string, value: any, fallback: any, Component: xnew.Component<any, any>, props: object) {
         object[key] = value ?? object[key] ?? fallback;
         const control = xnew(Component, { key, value: object[key], ...props });
         control.on('input', ({ value }: { value: any }) => object[key] = value);
@@ -37,7 +36,7 @@ export function Panel(unit: Unit, { params }: PanelOptions) {
 
     return {
         group({ name, open, params }: PanelOptions, inner: Function) {
-            const group = xnew((unit: Unit) => {
+            const group = xnew((unit: xnew.Unit) => {
                 xnew.extend(Group, { name, open });
                 xnew.extend(Panel, { params: params ?? object });
                 inner(unit);
@@ -63,12 +62,12 @@ export function Panel(unit: Unit, { params }: PanelOptions) {
     }
 }
 
-function Group(group: Unit, { name, open = false }: { name?: string, open?: boolean }) {
+function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
     const openAndClose = xnew.extend(OpenAndClose, { open });
     if (name) {
-        xnew('<div style="height: 2em; margin: 0.125em 0; display: flex; align-items: center; cursor: pointer; user-select: none;">', (unit: Unit) => {
+        xnew('<div style="height: 2em; margin: 0.125em 0; display: flex; align-items: center; cursor: pointer; user-select: none;">', (unit: xnew.Unit) => {
             unit.on('click', () => openAndClose.toggle());
-            xnew((unit: Unit) => {
+            xnew((unit: xnew.Unit) => {
                 xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
                 xnew('<path d="M6 2 10 6 6 10"/>');
                 group.on('-transition', ({ value }: { value: number }) => unit.element.style.transform = `rotate(${value * 90}deg)`);
@@ -79,7 +78,7 @@ function Group(group: Unit, { name, open = false }: { name?: string, open?: bool
     xnew.extend(Accordion);
 }
 
-function Button(unit: Unit, { key = '' }: { key?: string }) {
+function Button(unit: xnew.Unit, { key = '' }: { key?: string }) {
     xnew.nest('<button style="margin: 0.125em 0; height: 2em; border: 1px solid; border-radius: 0.25em; cursor: pointer;">');
 
     unit.element.textContent = key;
@@ -97,11 +96,11 @@ function Button(unit: Unit, { key = '' }: { key?: string }) {
     });
 }
 
-function Separator(unit: Unit) {
+function Separator(unit: xnew.Unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
 }
 
-function Range(unit: Unit,
+function Range(unit: xnew.Unit,
     { key = '', value, min = 0, max = 100, step = 1 }:
     { key?: string, value?: number, min?: number, max?: number, step?: number }
 ) {
@@ -114,7 +113,7 @@ function Range(unit: Unit,
     const fill = xnew(`<div style="position: absolute; top: 0; left: 0; bottom: 0; width: ${ratio * 100}%; background: ${paleColor}; border: 1px solid currentColor; border-radius: 0.25em; transition: width 0.05s;">`);
 
     // overlay labels
-    const status = xnew('<div style="position: absolute; inset: 0; padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">', (unit: Unit) => {
+    const status = xnew('<div style="position: absolute; inset: 0; padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">', (unit: xnew.Unit) => {
         xnew('<div>', key);
         xnew('<div key="status">', value);
     });
@@ -130,13 +129,13 @@ function Range(unit: Unit,
     });
 }
 
-function Checkbox(unit: Unit, { key = '', value }: { key?: string, value?: boolean } = {}) {
+function Checkbox(unit: xnew.Unit, { key = '', value }: { key?: string, value?: boolean } = {}) {
     xnew.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; padding: 0 0.5em; display: flex; align-items: center; cursor: pointer; user-select: none;">`);
 
     xnew('<div style="flex: 1;">', key);
 
     const box = xnew(`<div style="width: 1.25em; height: 1.25em; border: 1px solid currentColor; border-radius: 0.25em; display: flex; align-items: center; justify-content: center;">`, () => {
-        xnew((unit: Unit) => {
+        xnew((unit: xnew.Unit) => {
             xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 1.25em; height: 1.25em; opacity: 0;', stroke: 'currentColor', strokeWidth: 2 });
             xnew('<path d="M2 6 5 9 10 3" />');
         });
@@ -154,7 +153,7 @@ function Checkbox(unit: Unit, { key = '', value }: { key?: string, value?: boole
     });
 }
 
-function Select(_: Unit, { key = '', value, items = [] }: { key?: string, value?: string, items?: string[] } = {}) {
+function Select(_: xnew.Unit, { key = '', value, items = [] }: { key?: string, value?: string, items?: string[] } = {}) {
     const initial = value ?? items[0] ?? '';
 
     xnew.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; padding: 0 0.5em; display: flex; align-items: center;">`);
@@ -168,13 +167,13 @@ function Select(_: Unit, { key = '', value, items = [] }: { key?: string, value?
 
     const button = xnew(`<div style="height: 2em; padding: 0 1.5em 0 0.5em; display: flex; align-items: center; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer; user-select: none; min-width: 3em; white-space: nowrap;">`, initial);
 
-    xnew((unit: Unit) => {
+    xnew((unit: xnew.Unit) => {
         xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', strokeWidth: 2, style: 'position: absolute; right: 1.0em; width: 0.75em; height: 0.75em; pointer-events: none;' });
         xnew('<path d="M2 4 6 8 10 4" />');
     });
 
     button.on('click', () => {
-        xnew((list: Unit) => {
+        xnew((list: xnew.Unit) => {
             xnew(OpenAndClose, { open: false });
             xnew.extend(Popup);
 

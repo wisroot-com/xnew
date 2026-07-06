@@ -10,7 +10,7 @@
 // Usage: xnew(xbasics.Synthesizer, { oscillator: { type: 'sine' }, amp: { envelope: ... } }).press('A4', '4n');
 //----------------------------------------------------------------------------------------------------
 
-import { Unit } from '../../core/unit';
+import { xnew } from '../../core/xnew';
 import { context, master } from './bus';
 
 const DEFAULT_BPM = 120;
@@ -175,7 +175,7 @@ function attachReverb(amp: GainNode, target: GainNode, reverb: ReverbOptions): R
 // component
 //----------------------------------------------------------------------------------------------------
 
-export function Synthesizer(unit: Unit, props: SynthesizerOptions) {
+export function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions) {
     // Press a note. `frequency`: Hz or note name ('A4'). `duration`: ms or note length ('4n') — with
     // one the note auto-releases, without one it sustains and returns { release }. `wait` (ms) delays
     // the attack.

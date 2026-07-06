@@ -11,11 +11,10 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Unit } from '../../core/unit';
 import { SVG } from '../element/SVG';
 import { Aspect } from '../view/Aspect';
 
-export function DPad(unit: Unit,
+export function DPad(unit: xnew.Unit,
     { diagonal = true, stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 }:
     { diagonal?: boolean, stroke?: string, strokeOpacity?: number, strokeWidth?: number, fill?: string, fillOpacity?: number } = {}
 ) {
@@ -30,13 +29,13 @@ export function DPad(unit: Unit,
     ];
 
     const targets = polygons.map((polygon) => {
-        return xnew((unit: Unit) => {
+        return xnew((unit: xnew.Unit) => {
             xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', fill, fillOpacity });
             xnew(polygon);
         });
     });
 
-    xnew((unit: Unit) => {
+    xnew((unit: xnew.Unit) => {
         xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', stroke, strokeOpacity, strokeWidth });
         xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
         xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');

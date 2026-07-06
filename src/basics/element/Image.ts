@@ -10,11 +10,10 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Unit } from '../../core/unit';
 
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
 
-export function Image(unit: Unit,
+export function Image(unit: xnew.Unit,
     { src, className = '', style = '' }:
     { src: ImageSource | Promise<ImageSource>, className?: string, style?: string }
 ) {

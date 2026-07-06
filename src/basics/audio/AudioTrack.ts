@@ -11,10 +11,9 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Unit } from '../../core/unit';
 import { context, master } from './bus';
 
-export function AudioTrack(unit: Unit, { url, volume, loop = false }: { url: string, volume?: number, loop?: boolean }) {
+export function AudioTrack(unit: xnew.Unit, { url, volume, loop = false }: { url: string, volume?: number, loop?: boolean }) {
     let buffer: AudioBuffer | undefined;
     let source: AudioBufferSourceNode | null = null;
     let startedAt: number | null = null;

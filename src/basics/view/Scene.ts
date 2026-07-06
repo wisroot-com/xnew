@@ -10,9 +10,8 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Unit } from '../../core/unit';
 
-export function Scene(unit: Unit) {
+export function Scene(unit: xnew.Unit) {
 
     return {
         change(Component: Function, props?: any) {

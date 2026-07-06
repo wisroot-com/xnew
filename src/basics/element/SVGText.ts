@@ -10,7 +10,6 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Unit } from '../../core/unit';
 import { SVG } from './SVG';
 
 interface SVGTextInterface {
@@ -29,7 +28,7 @@ interface SVGTextInterface {
 }
 
 
-export function SVGText(unit: Unit, {
+export function SVGText(unit: xnew.Unit, {
     text = '',
     fontSize = 20,
     anchor = { x: 0, y: 0 },
