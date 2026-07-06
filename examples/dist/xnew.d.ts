@@ -98,6 +98,7 @@ declare class Unit {
     static find(Component: Function, key?: any): Unit[];
     static type2units: MapSet<string, Unit>;
     on(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
+    once(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
     off(type?: string, listener?: Function): void;
     static owner2targets: MapSet<Unit, Unit>;
     static on(unit: Unit, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;

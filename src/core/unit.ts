@@ -260,7 +260,8 @@ export class Unit {
     static update(unit: Unit, delta: number = 0): void {
         if (unit._.phase === 'initialized') {
             unit._.children.forEach((child: Unit) => Unit.update(child, delta));
-            unit._.systems.update.forEach((entry) => entry.execute({ count: entry.count++, delta }));
+            // iterate a copy: a listener may remove itself (once / off) mid-dispatch
+            [...unit._.systems.update].forEach((entry) => entry.execute({ count: entry.count++, delta }));
         }
     }
 
@@ -361,8 +362,23 @@ export class Unit {
   
     public on(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void {
         const types = type.trim().split(/\s+/);
-        
+
         types.forEach((type) => Unit.on(this, type, listener, options));
+    }
+
+    // self-removing listener; with space-separated types each type fires once independently
+    public once(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void {
+        const owner = Unit.currentUnit;
+        const types = type.trim().split(/\s+/);
+
+        types.forEach((type) => {
+            // removal happens before invocation, so an emit inside the listener cannot re-fire it
+            const wrapper = (props: object) => {
+                Unit.off(this, owner, type, wrapper);
+                listener(props);
+            };
+            Unit.on(this, type, wrapper, options);
+        });
     }
 
     public off(type?: string, listener?: Function): void {

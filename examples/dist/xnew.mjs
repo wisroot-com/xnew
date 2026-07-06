@@ -581,7 +581,7 @@ class Unit {
     static update(unit, delta = 0) {
         if (unit._.phase === 'initialized') {
             unit._.children.forEach((child) => Unit.update(child, delta));
-            unit._.systems.update.forEach((entry) => entry.execute({ count: entry.count++, delta }));
+            [...unit._.systems.update].forEach((entry) => entry.execute({ count: entry.count++, delta }));
         }
     }
     static get current() {
@@ -665,6 +665,17 @@ class Unit {
     on(type, listener, options) {
         const types = type.trim().split(/\s+/);
         types.forEach((type) => Unit.on(this, type, listener, options));
+    }
+    once(type, listener, options) {
+        const owner = Unit.currentUnit;
+        const types = type.trim().split(/\s+/);
+        types.forEach((type) => {
+            const wrapper = (props) => {
+                Unit.off(this, owner, type, wrapper);
+                listener(props);
+            };
+            Unit.on(this, type, wrapper, options);
+        });
     }
     off(type, listener) {
         const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), 'update', 'finalize'];

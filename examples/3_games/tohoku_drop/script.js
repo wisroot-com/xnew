@@ -100,8 +100,7 @@ function GameScene(unit) {
 
   // xnew.timeout(() => xnew.emit('+gameover'), 1100);
 
-  unit.on('+gameover', () => {
-    unit.off('+gameover');
+  unit.once('+gameover', () => {
     playing.finalize();
     const image = xpixi.renderer.extract.base64({ target: xpixi.scene, frame: new PIXI.Rectangle(0, 0, xpixi.canvas.width, xpixi.canvas.height) });
     xnew(GameOverText);

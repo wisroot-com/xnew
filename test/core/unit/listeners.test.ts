@@ -53,6 +53,63 @@ describe('Unit.on / Unit.off', () => {
         });
     });
 
+    describe('once', () => {
+        it('fires the listener only on the first emit', () => {
+            const cb = jest.fn();
+            xnew((unit: Unit) => {
+                unit.once('-ping', cb);
+                xnew.emit('-ping', { value: 1 });
+                xnew.emit('-ping', { value: 2 });
+            });
+            expect(cb).toHaveBeenCalledTimes(1);
+            expect(cb).toHaveBeenCalledWith(expect.objectContaining({ type: '-ping', value: 1 }));
+        });
+
+        it('with space-separated types, each type fires once independently', () => {
+            const cb = jest.fn();
+            xnew((unit: Unit) => {
+                unit.once('-a -b', cb);
+                xnew.emit('-a');
+                xnew.emit('-a');
+                xnew.emit('-b');
+                xnew.emit('-b');
+            });
+            expect(cb).toHaveBeenCalledTimes(2);
+        });
+
+        it('is removed before invocation, so an emit inside the listener cannot re-fire it', () => {
+            const cb = jest.fn(() => xnew.emit('-ping'));
+            xnew((unit: Unit) => {
+                unit.once('-ping', cb);
+                xnew.emit('-ping');
+            });
+            expect(cb).toHaveBeenCalledTimes(1);
+        });
+
+        it('once(\'update\') fires once without skipping later update listeners in the same tick', () => {
+            const first = jest.fn();
+            const second = jest.fn();
+            const unit = xnew((unit: Unit) => {
+                unit.once('update', first);
+                unit.on('update', second);
+            });
+            Unit.update(Unit.engineRoot);
+            Unit.update(Unit.engineRoot);
+            expect(first).toHaveBeenCalledTimes(1);
+            expect(second).toHaveBeenCalledTimes(2);
+        });
+
+        it('off() by the owner removes a pending once listener', () => {
+            const cb = jest.fn();
+            xnew((unit: Unit) => {
+                unit.once('-ping', cb);
+                unit.off();
+                xnew.emit('-ping');
+            });
+            expect(cb).not.toHaveBeenCalled();
+        });
+    });
+
     describe('off', () => {
         it('off(type, listener) removes only that listener', () => {
             const a = jest.fn();

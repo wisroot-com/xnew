@@ -527,8 +527,7 @@ function GameScene(unit) {
     xnew(xbasics.AudioTrack, { url: asset('maou_bgm_cyber31.mp3') }).play({ fade: 1000, loop: true });
   });
 
-  unit.on('+gameover', () => {
-    unit.off('+gameover');
+  unit.once('+gameover', () => {
     bgm.finalize(); // ゲームオーバーで BGM 停止
     const score = scoreManager.score;
     const wave = waveManager.wave;

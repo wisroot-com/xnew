@@ -59,6 +59,10 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   - `wheel`: `{ event, delta }`, `drag*`: `{ event, position, delta }`
   - `window.`/`document.` prefix attaches to window/document; `.arrow`/`.wasd` give `{ event, vector }`.
 - `unit.on('a b c', fn)` registers one listener for several space-separated types.
+- `unit.once(type, fn)` registers a self-removing listener (removed *before* invocation,
+  so an emit inside the listener cannot re-fire it; with space-separated types each type
+  fires once independently). Use it instead of the `on` + `off(type)` dance for one-shot
+  events like `'+gameover'`. Unlike `on`, duplicate `once(type, fn)` calls register twice.
 - **Blanket `off()` is owner-scoped.** Each listener records the unit whose scope
   registered it; `unit.off()` / `unit.off(type)` remove only listeners the *calling*
   unit registered, so one unit cannot strip another component's internals (e.g.
