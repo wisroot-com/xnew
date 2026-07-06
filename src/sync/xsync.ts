@@ -277,8 +277,10 @@ export const xsync = {
         }
     },
     boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit {
-        return getEnvironment() === 'server'
-            ? bootServer(opts as BootServerOptions, Unit.current, args)
-            : bootClient(opts as BootClientOptions, Unit.current, args);
+        if (getEnvironment() === 'server') {
+            return bootServer(opts as BootServerOptions, Unit.current, args);
+        } else {
+            return bootClient(opts as BootClientOptions, Unit.current, args);
+        }
     },
 };
