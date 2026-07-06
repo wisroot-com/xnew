@@ -208,6 +208,14 @@ declare function Scene(unit: xnew.Unit): {
     add(Component: Function, props?: any): void;
 };
 
+declare function Split(unit: xnew.Unit, { direction, ratio, className }?: {
+    direction?: 'column' | 'row';
+    ratio?: (number | string)[];
+    className?: string;
+}): {
+    readonly panes: Unit[];
+};
+
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
 declare function Image(unit: xnew.Unit, { src, className, style }: {
     src: ImageSource | Promise<ImageSource>;
@@ -375,6 +383,7 @@ declare const xbasics: {
     Accordion: typeof Accordion;
     Popup: typeof Popup;
     Scene: typeof Scene;
+    Split: typeof Split;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;

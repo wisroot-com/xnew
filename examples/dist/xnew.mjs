@@ -1193,6 +1193,17 @@ function Scene(unit) {
     };
 }
 
+function Split(unit, { direction = 'column', ratio = [1, 1], className = '' } = {}) {
+    xnew.nest(`<div class="${className}" style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: ${direction};">`);
+    const panes = ratio.map((value) => {
+        const flex = typeof value === 'number' ? `${value} 1 0` : `0 0 ${value}`;
+        return xnew(`<div style="position: relative; flex: ${flex}; min-width: 0; min-height: 0; overflow: hidden;">`);
+    });
+    return {
+        get panes() { return panes; },
+    };
+}
+
 function Image(unit, { src, className = '', style = '' }) {
     xnew.nest(`<img class="${className}" style="${style}">`);
     const element = unit.element;
@@ -1900,6 +1911,7 @@ const xbasics = {
     Accordion,
     Popup,
     Scene,
+    Split,
     AudioTrack,
     Synthesizer,
     Volume,
