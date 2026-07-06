@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden">
+  <div id="main" class="relative w-full h-full"></div>
+  <script type="module">
+    import { xnew, xbasics } from '@mulsense/xnew';
+
+    // per-instance suffix for the SVG gradient id (ids are document-global)
+    let gradientCount = 0;
+
+    xnew(document.querySelector('#main'), Main);
+
+    function Main(unit) {
+      xnew.nest('<div class="w-full h-full flex items-end justify-center gap-10 pb-20 bg-slate-100">');
+      xnew(Blob, { size: 240 });
+      xnew(Mascot, { size: 120, shape: 'circle' });
+      xnew(Mascot, { size: 120, shape: 'triangle' });
+      xnew(Mascot, { size: 120, shape: 'square' });
+    }
+
+    // the xnew mascots (after website/static/img/introduction.svg): slime-like
+    // shapes that idle with a squishy vertical wobble and jump (squash -> leap
+    // -> land) on their own or on tap.
+    function Mascot(unit, { size = 120, shape = 'circle' } = {}) {
+      xnew.nest(`<div style="position: relative; width: ${size}px; height: ${size * 1.8}px; cursor: pointer;">`);
+
+      const shadow = xnew(`<div style="position: absolute; bottom: 0; left: 15%; width: 70%; height: ${size * 0.08}px; border-radius: 50%; background: rgba(0, 0, 0, 0.18);">`);
+      // each face leaves a different gap below its drawing in the viewBox;
+      // lower the body by that gap and squash around the visual bottom
+      const ground = { circle: { bottom: 0.04, origin: 98 }, triangle: { bottom: -0.02, origin: 93 }, square: { bottom: -0.11, origin: 84 } }[shape];
+      const body = xnew.nest(`<div style="position: absolute; bottom: ${size * ground.bottom}px; left: 0; width: ${size}px; height: ${size}px; transform-origin: 50% ${ground.origin}%; will-change: transform;">`);
+      const Face = { circle: CircleFace, triangle: TriangleFace, square: SquareFace }[shape];
+      const face = xnew(Face);
+
+      const gravity = 0.003;                 // px/ms^2
+      const jumpHeight = size * 0.7;         // px
+
+      let time = 0;
+      let state = 'idle';
+      let stateTime = 0;
+      let waitTime = 600;
+      let y = 0;                             // height above the ground
+      let vy = 0;
+
+      function enter(next) {
+        state = next;
+        stateTime = 0;
+        if (next === 'idle') {
+          waitTime = 1400 + Math.random() * 2200;
+        } else if (next === 'air') {
+          vy = Math.sqrt(2 * gravity * jumpHeight);
+        }
+      }
+
+      function jump() {
+        if (state === 'idle') {
+          enter('charge');
+        }
+      }
+
+      unit.on('pointerdown', jump);
+
+      unit.on('update', ({ delta }) => {
+        const dt = Math.min(delta, 50);
+        time += dt;
+        stateTime += dt;
+
+        let sy = 1;
+        if (state === 'idle') {
+          sy = 1 + 0.04 * Math.sin(time / 250);
+          if (stateTime > waitTime) {
+            enter('charge');
+          }
+        } else if (state === 'charge') {
+          const p = Math.min(stateTime / 150, 1);
+          sy = 1 - 0.25 * p;
+          if (p >= 1) {
+            enter('air');
+          }
+        } else if (state === 'air') {
+          vy -= gravity * dt;
+          y += vy * dt;
+          if (y <= 0) {
+            y = 0;
+            vy = 0;
+            enter('land');
+          } else {
+            sy = 1 + Math.min(0.25, Math.abs(vy) * 0.35);
+          }
+        } else if (state === 'land') {
+          const p = Math.min(stateTime / 260, 1);
+          sy = 1 - 0.3 * (1 - p) * (1 - p);
+          if (p >= 1) {
+            enter('idle');
+          }
+        }
+
+        const sx = 1 - (sy - 1) * 0.7;       // counter-scale to keep the volume slime-like
+        body.style.transform = `translateY(${-y}px) scale(${sx}, ${sy})`;
+        face.offsetEyes((1 - sy) * 30 - vy * 18); // eyes sink when squashed, rise when stretched / airborne
+
+        const k = Math.min(1, y / jumpHeight);
+        shadow.element.style.transform = `scale(${1 - 0.4 * k}, ${1 - 0.3 * k})`;
+        shadow.element.style.opacity = `${1 - 0.6 * k}`;
+      });
+
+      return { jump };
+    }
+
+    // two vertical-bar eyes in a <g>, movable as one via offset(dy)
+    function Eyes(unit, { color, positions, w = 10, h = 20 }) {
+      xnew.nest(`<g fill="${color}">`);
+      positions.forEach(([x, y]) => {
+        xnew(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${w / 2}">`);
+      });
+      return {
+        offset(dy) { unit.element.setAttribute('transform', `translate(0 ${dy})`); },
+      };
+    }
+
+    // returned by every face: a top-right highlight gradient unique to the instance
+    function bodyGradient(colors) {
+      const gradientId = `mascot-body-${gradientCount++}`;
+      xnew('<defs>', () => {
+        xnew(`<radialGradient id="${gradientId}" cx="0.72" cy="0.22" r="1.1">`, () => {
+          xnew(`<stop offset="0" stop-color="${colors[0]}">`);
+          xnew(`<stop offset="0.5" stop-color="${colors[1]}">`);
+          xnew(`<stop offset="1" stop-color="${colors[2]}">`);
+        });
+      });
+      return gradientId;
+    }
+
+    // green ball with two vertical-bar eyes, drawn after website/static/img/logo.png
+    function CircleFace(unit) {
+      xnew.extend(xbasics.SVG, { viewBox: '0 0 100 100' });
+      const gradientId = bodyGradient(['#cdf3da', '#2aab5d', '#148c42']);
+
+      xnew('<circle cx="50" cy="50" r="48" fill="#0a6c33">');
+      xnew(`<circle cx="50" cy="50" r="39" fill="url(#${gradientId})">`);
+      const eyes = xnew(Eyes, { color: '#175c33', positions: [[21.5, 45.5], [44.5, 52.5]] });
+
+      return {
+        offsetEyes(dy) { eyes.offset(dy); },
+      };
+    }
+
+    // orange triangle mascot
+    function TriangleFace(unit) {
+      xnew.extend(xbasics.SVG, { viewBox: '0 0 100 100' });
+      const gradientId = bodyGradient(['#ffdec7', '#f9862e', '#e05f10']);
+
+      xnew('<path d="M50,10 L5,88 H95 Z" fill="#c2410c" stroke="#c2410c" stroke-width="10" stroke-linejoin="round">');
+      xnew(`<path d="M50,28 L21,79 H79 Z" fill="url(#${gradientId})" stroke="url(#${gradientId})" stroke-width="8" stroke-linejoin="round">`);
+      const eyes = xnew(Eyes, { color: '#7c2d12', positions: [[33, 53], [49, 59]], w: 9, h: 18 });
+
+      return {
+        offsetEyes(dy) { eyes.offset(dy); },
+      };
+    }
+
+    // the amorphous gray creature on the left of introduction.svg: a lumpy
+    // outline whose control points undulate over time, with stray eye pairs
+    function Blob(unit, { size = 240 } = {}) {
+      xnew.nest(`<div style="position: relative; width: ${size}px; height: ${size}px;">`);
+      xnew(`<div style="position: absolute; bottom: 0; left: 10%; width: 80%; height: ${size * 0.06}px; border-radius: 50%; background: rgba(0, 0, 0, 0.18);">`);
+      xnew.extend(xbasics.SVG, { viewBox: '0 0 200 200' });
+      const gradientId = bodyGradient(['#aab2bd', '#6b7280', '#4b5563']);
+
+      const outline = xnew(`<path fill="url(#${gradientId})" stroke="#374151" stroke-width="9" stroke-linejoin="round">`);
+      const eyePairs = [
+        xnew(Eyes, { color: '#2f3b4e', positions: [[81, 45], [103, 51]] }),
+        xnew(Eyes, { color: '#2f3b4e', positions: [[39, 94], [61, 100]] }),
+        xnew(Eyes, { color: '#2f3b4e', positions: [[111, 92], [133, 98]] }),
+      ];
+
+      // lumpy base radii; dips sit between the eye pairs so the eyes stay inside the body
+      const bases = [1.0, 0.98, 0.8, 1.12, 0.98, 1.05, 0.72, 1.0, 1.0, 0.85];
+      const points = bases.map((base, i) => ({
+        base,
+        angle: (i / bases.length) * 2 * Math.PI,
+        freq: 1 / (500 + 90 * ((i * 7) % 5)),
+        phase: i * 2.4,
+      }));
+
+      // dy keeps the wobbling bottom glued to the ground line; the eyes ride along
+      function blobShape(time) {
+        let pts = points.map((p) => {
+          const r = 80 * p.base * (1 + 0.09 * Math.sin(time * p.freq + p.phase));
+          return [100 + r * Math.cos(p.angle), 100 + r * Math.sin(p.angle)];
+        });
+        const dy = 196 - Math.max(...pts.map((pt) => pt[1]));
+        pts = pts.map(([x, y]) => [x, y + dy]);
+
+        const mid = (a, b) => `${((a[0] + b[0]) / 2).toFixed(2)} ${((a[1] + b[1]) / 2).toFixed(2)}`;
+        let d = `M ${mid(pts[pts.length - 1], pts[0])}`;
+        pts.forEach((pt, i) => {
+          d += ` Q ${pt[0].toFixed(2)} ${pt[1].toFixed(2)} ${mid(pt, pts[(i + 1) % pts.length])}`;
+        });
+        return { d: d + ' Z', dy };
+      }
+
+      let time = 0;
+      unit.on('update', ({ delta }) => {
+        time += Math.min(delta, 50);
+        const { d, dy } = blobShape(time);
+        outline.element.setAttribute('d', d);
+        eyePairs.forEach((pair, i) => pair.offset(dy + 3 * Math.sin(time / 400 + i * 2.1)));
+      });
+    }
+
+    // cyan rounded-square mascot
+    function SquareFace(unit) {
+      xnew.extend(xbasics.SVG, { viewBox: '0 0 100 100' });
+      const gradientId = bodyGradient(['#d6f6fd', '#2ec3e6', '#089ec4']);
+
+      xnew('<rect x="4" y="16" width="92" height="68" rx="12" fill="#135e75">');
+      xnew(`<rect x="13" y="25" width="74" height="50" rx="7" fill="url(#${gradientId})">`);
+      const eyes = xnew(Eyes, { color: '#155e75', positions: [[29, 36], [52, 42]] });
+
+      return {
+        offsetEyes(dy) { eyes.offset(dy); },
+      };
+    }
+  </script>
+</body>
+
+</html>

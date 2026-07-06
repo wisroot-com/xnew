@@ -45,6 +45,7 @@ Recommended reading order.
 
 | sample | shows |
 | --- | --- |
+| [mascot](showcase/mascot/) | the xnew mascots (circle / triangle / square) — slime-like idle wobble + squash-and-stretch jump |
 | [typewriter](showcase/typewriter/) | dialog box with a typewriter text stream |
 | [screenshot](showcase/screenshot/) | capturing the screen to a PNG (html2canvas) |
 
