@@ -258,6 +258,16 @@ export class Unit {
 
     static engineRoot: Unit;
     static currentUnit: Unit;
+
+    // the current unit as read from outside unit.ts, initializing the engine on first access;
+    // inside unit.ts read only the raw fields (reading this getter during reset() would recurse before engineRoot is assigned)
+    static get current(): Unit {
+        if (Unit.engineRoot === undefined) {
+            Unit.reset();
+        }
+        return Unit.currentUnit;
+    }
+
     static reset(): void {
         Unit.engineRoot?.finalize();
         Unit.currentUnit = Unit.engineRoot = Unit.create(null);

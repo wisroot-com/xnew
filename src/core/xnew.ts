@@ -2,7 +2,7 @@
 // xnew — public entry point of the library
 //
 // xnew(...) creates a new Unit as a child of the currently active Unit (the first call auto-initializes
-// root and ticker). Each helper acts on the implicit Unit.currentUnit, so it is called from inside a
+// root and ticker). Each helper acts on the implicit Unit.current, so it is called from inside a
 // component function; the implementation is a thin forward to Unit static methods.
 //
 // - xnew.nest / extend                   : extend the unit under initialization
@@ -29,40 +29,37 @@ export interface XnewBase {
 export const xnew = Object.assign(
     // Creates a new Unit: xnew((target,) Component?, props?) — target is an element or a tag string like '<div>'.
     (function(...args: any[]): Unit {
-        if (Unit.engineRoot === undefined) Unit.reset();
-
         if (args[0] instanceof Unit) {
             const parent = args.shift() as Unit;
             const snapshot = parent._.lastSnapshot ?? Unit.snapshot(parent);
             return Unit.scope(snapshot, () => Unit.create(parent, ...args)) as Unit;
         } else {
-            const parent = Unit.currentUnit ?? null;
-            return Unit.create(parent, ...args);
+            return Unit.create(Unit.current, ...args);
         }
     }) as unknown as XnewBase,
     {
         // Nests a child element (an existing element or a tag string like '<div>'); only during initialization.
         nest(target: DomElement | string): HTMLElement | SVGElement {
-            if (Unit.currentUnit._.phase !== 'invoked') {
+            if (Unit.current._.phase !== 'invoked') {
                 throw new Error('xnew.nest can not be called after initialized.');
             }
-            return Unit.nest(Unit.currentUnit, target);
+            return Unit.nest(Unit.current, target);
         },
 
         // Extends the current unit with another component; only during initialization. Returns the defines.
         extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C> {
-            if (Unit.currentUnit._.phase !== 'invoked') {
+            if (Unit.current._.phase !== 'invoked') {
                 throw new Error('xnew.extend can not be called after initialized.');
             }
-            if (Unit.currentUnit._.Components.includes(Component) === true) {
+            if (Unit.current._.Components.includes(Component) === true) {
                 console.warn('Component is already extended in this unit:', Component);
             }
-            return Unit.extend(Unit.currentUnit, Component, props) as DefinesOf<C>;
+            return Unit.extend(Unit.current, Component, props) as DefinesOf<C>;
         },
 
         // Returns the nearest unit associated with the given component in the ancestor context chain.
         context(key: any): any {
-            return Unit.getContext(Unit.currentUnit, key);
+            return Unit.getContext(Unit.current, key);
         },
             
         // Registers a promise to the current unit (optional string key first). Accepts an executor (resolve, reject), a raw Promise, or a Unit — a Unit aggregates its keyed results without consuming its pool.
@@ -82,7 +79,7 @@ export const xnew = Object.assign(
                 source = new Promise(xnew.scope(promise));
             }
             const unitPromise = new UnitPromise(source, key);
-            Unit.currentUnit._.promises.push(unitPromise);
+            Unit.current._.promises.push(unitPromise);
             return unitPromise;
         }) as {
             (promise: Function | Promise<any> | Unit): UnitPromise;
@@ -91,7 +88,7 @@ export const xnew = Object.assign(
 
         // Wraps a callback so it later runs in the current unit scope (for external callbacks like setTimeout).
         scope(callback: any): any {
-            const snapshot = Unit.snapshot(Unit.currentUnit);
+            const snapshot = Unit.snapshot(Unit.current);
             return (...args: any[]) => Unit.scope(snapshot, callback, ...args);
         },
 
@@ -102,7 +99,7 @@ export const xnew = Object.assign(
 
         // Emits a custom event ('+event' = broadcast / '-event' = own unit only).
         emit(type: string, ...args: any[]): void {
-            return Unit.emit(Unit.currentUnit, type, ...args);
+            return Unit.emit(Unit.current, type, ...args);
         },
 
         // Runs callback({ timer }) once after duration ms (the timer follows the unit lifecycle; timer.clear() aborts).
@@ -122,7 +119,7 @@ export const xnew = Object.assign(
 
         // Marks the current unit as a protection boundary: descendants are hidden from '+event' emit / find outside the subtree (the unit itself stays visible).
         protect(): void {
-            Unit.currentUnit._.protected = true;
+            Unit.current._.protected = true;
         },
 
     }

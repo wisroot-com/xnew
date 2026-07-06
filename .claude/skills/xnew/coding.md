@@ -197,6 +197,12 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **Outside `unit.ts`, read the current unit via `Unit.current`, never the raw `Unit.currentUnit`.**
+  The getter lazily bootstraps the engine (root + ticker) on first access, so callers need no
+  `Unit.reset()` guard. Inside `unit.ts` (reset / initialize / scope) use only the raw fields —
+  reading the getter during `reset()` recurses infinitely before `engineRoot` is assigned.
+  (Tests may still read `Unit.currentUnit`: they assert the raw scope-restore behavior.)
+
 - **A `window.keydown.*` game-input handler that calls `preventDefault()` steals those keys
   from every form field on the page** (e.g. WASD became untypable in the multiplay chat).
   Skip the game branch when `event.target` is editable (`input, textarea, select` or

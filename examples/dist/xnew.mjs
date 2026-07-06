@@ -579,6 +579,12 @@ class Unit {
             unit._.systems.update.forEach((entry) => entry.execute({ count: entry.count++, delta }));
         }
     }
+    static get current() {
+        if (Unit.engineRoot === undefined) {
+            Unit.reset();
+        }
+        return Unit.currentUnit;
+    }
     static reset() {
         var _a;
         (_a = Unit.engineRoot) === null || _a === void 0 ? void 0 : _a.finalize();
@@ -837,36 +843,33 @@ class UnitTimer {
 }
 
 const xnew = Object.assign((function (...args) {
-    var _a, _b;
-    if (Unit.engineRoot === undefined)
-        Unit.reset();
+    var _a;
     if (args[0] instanceof Unit) {
         const parent = args.shift();
         const snapshot = (_a = parent._.lastSnapshot) !== null && _a !== void 0 ? _a : Unit.snapshot(parent);
         return Unit.scope(snapshot, () => Unit.create(parent, ...args));
     }
     else {
-        const parent = (_b = Unit.currentUnit) !== null && _b !== void 0 ? _b : null;
-        return Unit.create(parent, ...args);
+        return Unit.create(Unit.current, ...args);
     }
 }), {
     nest(target) {
-        if (Unit.currentUnit._.phase !== 'invoked') {
+        if (Unit.current._.phase !== 'invoked') {
             throw new Error('xnew.nest can not be called after initialized.');
         }
-        return Unit.nest(Unit.currentUnit, target);
+        return Unit.nest(Unit.current, target);
     },
     extend(Component, props) {
-        if (Unit.currentUnit._.phase !== 'invoked') {
+        if (Unit.current._.phase !== 'invoked') {
             throw new Error('xnew.extend can not be called after initialized.');
         }
-        if (Unit.currentUnit._.Components.includes(Component) === true) {
+        if (Unit.current._.Components.includes(Component) === true) {
             console.warn('Component is already extended in this unit:', Component);
         }
-        return Unit.extend(Unit.currentUnit, Component, props);
+        return Unit.extend(Unit.current, Component, props);
     },
     context(key) {
-        return Unit.getContext(Unit.currentUnit, key);
+        return Unit.getContext(Unit.current, key);
     },
     promise: (function (keyOrPromise, maybePromise) {
         const key = typeof keyOrPromise === 'string' ? keyOrPromise : undefined;
@@ -885,18 +888,18 @@ const xnew = Object.assign((function (...args) {
             source = new Promise(xnew.scope(promise));
         }
         const unitPromise = new UnitPromise(source, key);
-        Unit.currentUnit._.promises.push(unitPromise);
+        Unit.current._.promises.push(unitPromise);
         return unitPromise;
     }),
     scope(callback) {
-        const snapshot = Unit.snapshot(Unit.currentUnit);
+        const snapshot = Unit.snapshot(Unit.current);
         return (...args) => Unit.scope(snapshot, callback, ...args);
     },
     find(Component, opts) {
         return Unit.find(Component, opts === null || opts === void 0 ? void 0 : opts.key);
     },
     emit(type, ...args) {
-        return Unit.emit(Unit.currentUnit, type, ...args);
+        return Unit.emit(Unit.current, type, ...args);
     },
     timeout(callback, duration = 0) {
         return new UnitTimer().timeout(callback, duration);
@@ -908,7 +911,7 @@ const xnew = Object.assign((function (...args) {
         return new UnitTimer().transition(transition, duration, easing);
     },
     protect() {
-        Unit.currentUnit._.protected = true;
+        Unit.current._.protected = true;
     },
 });
 
@@ -1088,13 +1091,13 @@ function bootClient(opts, parent, args) {
 }
 const xsync = {
     server(callback, props) {
-        return getEnvironment() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) : {};
+        return getEnvironment() === 'server' ? Unit.extend(Unit.current, callback, props) : {};
     },
     client(callback, props) {
-        return getEnvironment() === 'client' ? Unit.extend(Unit.currentUnit, callback, props) : {};
+        return getEnvironment() === 'client' ? Unit.extend(Unit.current, callback, props) : {};
     },
     state(initial = {}) {
-        const data = syncOf(Unit.currentUnit);
+        const data = syncOf(Unit.current);
         for (const key of Object.keys(initial)) {
             if (!(key in data.state)) {
                 data.state[key] = initial[key];
@@ -1103,14 +1106,14 @@ const xsync = {
         return data.state;
     },
     register(Components) {
-        const unit = Unit.currentUnit;
+        const unit = Unit.current;
         if (unit._.phase !== 'invoked') {
             throw new Error('xsync.register must be called during component initialization.');
         }
         Object.assign(syncOf(unit).registry, Components);
     },
     get session() {
-        const info = rootInfoOf(Unit.currentUnit);
+        const info = rootInfoOf(Unit.current);
         const isServer = getEnvironment() === 'server';
         return {
             get room() { return info.room; },
@@ -1126,17 +1129,17 @@ const xsync = {
         };
     },
     emitToServer(type, props = {}) {
-        const info = rootInfoOf(Unit.currentUnit);
+        const info = rootInfoOf(Unit.current);
         if (getEnvironment() === 'server') {
-            Unit.emit(Unit.currentUnit, type, props);
+            Unit.emit(Unit.current, type, props);
         }
         else {
-            info.socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.currentUnit).id, data: props });
+            info.socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.current).id, data: props });
         }
     },
     emitToClients(type, props = {}, ids) {
-        const info = rootInfoOf(Unit.currentUnit);
-        const syncId = syncOf(Unit.currentUnit).id;
+        const info = rootInfoOf(Unit.current);
+        const syncId = syncOf(Unit.current).id;
         if (getEnvironment() === 'server') {
             relayToClients(info, type, undefined, syncId, props, ids);
         }
@@ -1145,12 +1148,9 @@ const xsync = {
         }
     },
     boot(opts, ...args) {
-        if (Unit.engineRoot === undefined) {
-            Unit.reset();
-        }
         return getEnvironment() === 'server'
-            ? bootServer(opts, Unit.currentUnit, args)
-            : bootClient(opts, Unit.currentUnit, args);
+            ? bootServer(opts, Unit.current, args)
+            : bootClient(opts, Unit.current, args);
     },
 };
 
