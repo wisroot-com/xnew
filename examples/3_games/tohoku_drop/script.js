@@ -8,7 +8,7 @@ import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import { xmatter } from '@mulsense/xnew/addons/xmatter';
-import { ResultBackground, ResultImage, ResultFooter, TitleText, TouchMessage, GameOverText, VolumeControl } from '../utils/ui.js';
+import { ResultBackground, ResultFooter, TitleText, TouchMessage, GameOverText, VolumeControl } from '../utils/ui.js';
 
 xnew(document.querySelector('#main'), Main);
 
@@ -55,7 +55,7 @@ function GameData(unit) {
 function TitleScene(unit) {
   xnew.extend(xbasics.Scene);
 
-  xnew(Background);
+  xnew(xbasics.Image, { src: './background.jpg', className: 'absolute inset-0 size-full -z-10 object-fill' });
   xnew(ShadowPlane);
   xnew(DirectionalLight, { x: 2, y: 12, z: 20 });
   xnew(AmbientLight);
@@ -82,7 +82,7 @@ function GameScene(unit) {
   });
   xnew.context(GameData).reset();
   
-  xnew(Background);
+  xnew(xbasics.Image, { src: './background.jpg', className: 'absolute inset-0 size-full -z-10 object-fill' });
   xnew(ShadowPlane);
   xnew(DirectionalLight, { x: 2, y: 5, z: 10 });
   xnew(AmbientLight);
@@ -124,18 +124,9 @@ function ResultScene(unit, { image }) {
   }, 500, 'ease');
 
   xnew(ResultBackground, { gradient: 'from-stone-300 to-stone-400', textColor: 'text-stone-400' });
-  xnew(ResultImage, { image, boxClass: 'bottom-[12cqw] left-[2cqw] size-[45cqw]' });
+  xnew(xbasics.Image, { src: image, className: 'absolute bottom-[12cqw] left-[2cqw] size-[45cqw] rounded-[1cqw] object-cover', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);' });
   xnew(ResultDetail);
   xnew(ResultFooter, { onBack: () => unit.change(TitleScene) });
-}
-
-function Background(unit) {
-  const object = xpixi.nest(new PIXI.Container());
-  xnew.promise(PIXI.Assets.load('./background.jpg')).then((texture) => {
-    const sprite = new PIXI.Sprite(texture);
-    sprite.scale.set(xpixi.canvas.width / texture.frame.width, xpixi.canvas.height / texture.frame.height);
-    object.addChild(sprite);
-  });
 }
 
 function ThreeTexture(unit) {

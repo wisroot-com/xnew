@@ -1519,6 +1519,32 @@ function Select(_, { key = '', value, items = [] } = {}) {
     }
 }
 
+function Image(unit, { src, className = '', style = '' }) {
+    xnew.nest(`<img class="${className}" style="${style}">`);
+    const element = unit.element;
+    let objectURL = null;
+    function apply(value) {
+        if (typeof value === 'string') {
+            element.src = value;
+        }
+        else {
+            objectURL = URL.createObjectURL(value instanceof Blob ? value : new Blob([value]));
+            element.src = objectURL;
+        }
+    }
+    if (src instanceof Promise) {
+        xnew.promise(src).then(apply);
+    }
+    else {
+        apply(src);
+    }
+    unit.on('finalize', () => {
+        if (objectURL !== null) {
+            URL.revokeObjectURL(objectURL);
+        }
+    });
+}
+
 var _a;
 const DEFAULT_MASTER_GAIN = 0.1;
 const DEFAULT_BPM = 120;
@@ -1836,6 +1862,7 @@ const xbasics = {
     SVGText,
     Aspect,
     Screen,
+    Image,
     OpenAndClose,
     AnalogStick,
     DPad,

@@ -9,7 +9,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { ResultBackground, ResultImage, ResultFooter, TitleText, TouchMessage, GameOverText, VolumeControl } from '../utils/ui.js';
+import { ResultBackground, ResultFooter, TitleText, TouchMessage, GameOverText, VolumeControl } from '../utils/ui.js';
 
 // id: 0=zundamon 1=kiritan 2=zunko 3=itako（ずんだ因子＝敵）
 const ENEMY_FILES = ['zundamon.vrm', 'kiritan.vrm', 'zunko.vrm', 'itako.vrm'];
@@ -553,7 +553,7 @@ function ResultScene(unit, { image, score, wave, kills, cleared }) {
   }, 500, 'ease');
 
   xnew(ResultBackground, { gradient: 'from-slate-900 to-blue-950', textColor: 'text-blue-800' });
-  xnew(ResultImage, { image, boxClass: 'bottom-[14cqw] left-[2cqw] w-[56cqw] aspect-4/3' });
+  xnew(xbasics.Image, { src: image, className: 'absolute bottom-[14cqw] left-[2cqw] w-[56cqw] aspect-4/3 rounded-[1cqw] object-cover', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);' });
   xnew(ResultDetail, { score, wave, kills, cleared });
   xnew(ResultFooter, { onBack: () => unit.change(TitleScene, { skipStory: true }) });
 

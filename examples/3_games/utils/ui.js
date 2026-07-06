@@ -9,7 +9,6 @@
 // - ScreenShot              : #main を白フェードで撮影して画像保存
 // - ResultFooter            : 「画面を保存」＋「戻る」フッター（onBack で戻り先を指定）
 // - ResultBackground        : リザルト背景（グラデ + 漂う/瞬く白丸 + "Result"）
-// - ResultImage             : リザルトのキャプチャ画像枠（boxClass で位置/サイズ指定）
 // - TitleText / TouchMessage: タイトルの見出し + 点滅する操作案内
 // - GameOverText            : 中央に降りてくる "Game Over"
 // - VolumeControl           : 右下の音量コントローラ
@@ -104,13 +103,6 @@ export function ResultBackground(unit, { gradient, textColor }) {
   for (let i = 0; i < 30; i++) {
     floatingCircle(1, (p) => `scale(${1 + Math.sin(p) * 0.1})`);
   }
-}
-
-// リザルトのキャプチャ画像枠。boxClass で位置・サイズ・アスペクトを指定する。
-export function ResultImage(unit, { image, boxClass }) {
-  xnew.nest(`<div class="absolute ${boxClass} rounded-[1cqw] overflow-hidden" style="box-shadow: 0 10px 30px rgba(0,0,0,0.3)">`);
-  const img = xnew('<img class="absolute inset-0 size-full object-cover">');
-  image?.then((src) => img.element.src = src);
 }
 
 // タイトルの見出し（縁取り SVGText）。text=文言 / color="text-..."。

@@ -289,6 +289,13 @@ declare function Scene(unit: Unit): {
     add(Component: Function, props?: any): void;
 };
 
+type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
+declare function Image(unit: Unit, { src, className, style }: {
+    src: ImageSource | Promise<ImageSource>;
+    className?: string;
+    style?: string;
+}): void;
+
 declare function AudioTrack(unit: Unit, { url, volume, loop }: {
     url: string;
     volume?: number;
@@ -352,6 +359,7 @@ declare const xbasics: {
     SVGText: typeof SVGText;
     Aspect: typeof Aspect;
     Screen: typeof Screen;
+    Image: typeof Image;
     OpenAndClose: typeof OpenAndClose;
     AnalogStick: typeof AnalogStick;
     DPad: typeof DPad;
