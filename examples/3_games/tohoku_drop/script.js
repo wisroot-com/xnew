@@ -515,8 +515,6 @@ function GameOverText(unit, { className = 'w-full' }) {
 }
 
 // スピーカーアイコン（muted で消音グリフに切り替わる）。
-const paleColor = 'color-mix(in srgb, currentColor 20%, transparent)';
-
 function SpeakerIcon(unit, { muted = false } = {}) {
   xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.5 });
   const path = muted
@@ -557,7 +555,7 @@ function VolumeController(unit, { anchor = 'left' } = {}) {
     const outer = xnew.nest(`<div style="position: absolute; ${outerSize};">`);
     xnew.nest(`<div style="position: relative; width: 100%; height: 100%; border: 1px solid currentColor; border-radius: 0.25em; box-sizing: border-box;">`);
 
-    const fill = xnew(`<div style="position: absolute; ${fillSize}; background: ${paleColor};">`);
+    const fill = xnew(`<div style="position: absolute; ${fillSize}; background: color-mix(in srgb, currentColor 20%, transparent);">`);
     const input = xnew(`<input type="range" min="0" max="100" value="${pct}" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;${isHoriz ? '' : ' writing-mode: vertical-lr; direction: rtl;'}">`);
 
     input.on('input', ({ event }) => {

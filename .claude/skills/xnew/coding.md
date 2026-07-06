@@ -197,6 +197,13 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **Anything a component reads must be declared above the module's entry `xnew(...)` call
+  (or be a hoisted `function`).** `xnew()` runs component bodies synchronously, so an entry
+  call mid-file evaluates the whole component tree during module evaluation — a `const`
+  placed later in the file is still in its TDZ and throws
+  `can't access lexical declaration '…' before initialization` (bit the 3_games samples
+  when a shared `const paleColor` moved from an imported ui.js into the same file).
+
 - **Outside `unit.ts`, read the current unit via `Unit.current`, never the raw `Unit.currentUnit`.**
   The getter lazily bootstraps the engine (root + ticker) on first access, so callers need no
   `Unit.reset()` guard. Inside `unit.ts` (reset / initialize / scope) use only the raw fields —
