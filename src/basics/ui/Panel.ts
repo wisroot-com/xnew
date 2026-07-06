@@ -4,15 +4,18 @@
 // Returns a builder API for laying out parameter rows backed by native form controls (range /
 // checkbox / select / button). Values are written through to a shared `params` object so the
 // panel can drive an external state bag without extra wiring. Groups can be nested and toggled
-// open/closed via the Accordion transition.
+// open/closed via the Accordion transition. The row controls (Group / Button / Range / Checkbox /
+// Select / Separator) are private components of this file.
 //
 // - Panel : component({ params }) returning { group, button, select, range, checkbox, separator }
 //----------------------------------------------------------------------------------------------------
 
-import { xnew } from '../core/xnew';
-import { Unit, ComponentFn } from '../core/unit';
-import { SVG } from './svg';
-import { OpenAndClose, Accordion, Popup } from './transition';
+import { xnew } from '../../core/xnew';
+import { Unit, ComponentFn } from '../../core/unit';
+import { SVG } from '../element/SVG';
+import { OpenAndClose } from './OpenAndClose';
+import { Accordion } from './Accordion';
+import { Popup } from './Popup';
 
 interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; }
 
@@ -78,7 +81,7 @@ function Group(group: Unit, { name, open = false }: { name?: string, open?: bool
 
 function Button(unit: Unit, { key = '' }: { key?: string }) {
     xnew.nest('<button style="margin: 0.125em 0; height: 2em; border: 1px solid; border-radius: 0.25em; cursor: pointer;">');
-    
+
     unit.element.textContent = key;
     unit.on('pointerover', () => {
         Object.assign(unit.element.style, { background: paleColor, borderColor: 'currentColor' });
@@ -169,12 +172,12 @@ function Select(_: Unit, { key = '', value, items = [] }: { key?: string, value?
         xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', strokeWidth: 2, style: 'position: absolute; right: 1.0em; width: 0.75em; height: 0.75em; pointer-events: none;' });
         xnew('<path d="M2 4 6 8 10 4" />');
     });
-    
+
     button.on('click', () => {
         xnew((list: Unit) => {
             xnew(OpenAndClose, { open: false });
             xnew.extend(Popup);
-            
+
             xnew.nest('<div style="position: absolute; padding: 0.25em 0;">');
             list.on('update', () => {
                 const rect = button.element.getBoundingClientRect();
@@ -213,4 +216,3 @@ function Select(_: Unit, { key = '', value, items = [] }: { key?: string, value?
         return 'Canvas';
     }
 }
-

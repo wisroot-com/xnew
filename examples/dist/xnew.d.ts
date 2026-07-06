@@ -190,17 +190,30 @@ declare const xsync: {
     boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
 };
 
-declare function OpenAndClose(unit: Unit, { open, duration, easing }: {
-    open?: boolean;
-    duration?: number;
-    easing?: string;
+declare function Aspect(unit: Unit, { aspect, fit }?: {
+    aspect?: number;
+    fit?: 'contain' | 'cover';
+}): void;
+
+declare function Screen(unit: Unit, { width, height, fit }?: {
+    width?: number;
+    height?: number;
+    fit?: 'contain' | 'cover';
 }): {
-    toggle(): void;
-    open(): void;
-    close(): void;
+    readonly canvas: DomElement;
 };
-declare function Accordion(unit: Unit): void;
-declare function Popup(unit: Unit): void;
+
+declare function Scene(unit: Unit): {
+    change(Component: Function, props?: any): void;
+    add(Component: Function, props?: any): void;
+};
+
+type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
+declare function Image(unit: Unit, { src, className, style }: {
+    src: ImageSource | Promise<ImageSource>;
+    className?: string;
+    style?: string;
+}): void;
 
 interface SVGInterface {
     viewBox?: string;
@@ -215,6 +228,7 @@ interface SVGInterface {
     fillOpacity?: number;
 }
 declare function SVG(unit: Unit, { viewBox, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGInterface): void;
+
 interface SVGTextInterface {
     text?: string;
     fontSize?: number;
@@ -234,69 +248,6 @@ interface SVGTextInterface {
 }
 declare function SVGText(unit: Unit, { text, fontSize, anchor, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGTextInterface): void;
 
-declare function AnalogStick(unit: Unit, { stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    fill?: string;
-    fillOpacity?: number;
-}): void;
-declare function DPad(unit: Unit, { diagonal, stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
-    diagonal?: boolean;
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    fill?: string;
-    fillOpacity?: number;
-}): void;
-
-interface PanelOptions {
-    name?: string;
-    open?: boolean;
-    params?: Record<string, any>;
-}
-declare function Panel(unit: Unit, { params }: PanelOptions): {
-    group({ name, open, params }: PanelOptions, inner: Function): Unit;
-    button(key: string): Unit;
-    select(key: string, { value, items }?: {
-        value?: string;
-        items?: string[];
-    }): Unit;
-    range(key: string, { value, min, max, step }?: {
-        value?: number;
-        min?: number;
-        max?: number;
-        step?: number;
-    }): Unit;
-    checkbox(key: string, { value }?: {
-        value?: boolean;
-    }): Unit;
-    separator(): void;
-};
-
-declare function Aspect(unit: Unit, { aspect, fit }?: {
-    aspect?: number;
-    fit?: 'contain' | 'cover';
-}): void;
-declare function Screen(unit: Unit, { width, height, fit }?: {
-    width?: number;
-    height?: number;
-    fit?: 'contain' | 'cover';
-}): {
-    readonly canvas: DomElement;
-};
-declare function Scene(unit: Unit): {
-    change(Component: Function, props?: any): void;
-    add(Component: Function, props?: any): void;
-};
-
-type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
-declare function Image(unit: Unit, { src, className, style }: {
-    src: ImageSource | Promise<ImageSource>;
-    className?: string;
-    style?: string;
-}): void;
-
 declare function AudioTrack(unit: Unit, { url, volume, loop }: {
     url: string;
     volume?: number;
@@ -314,6 +265,7 @@ declare function AudioTrack(unit: Unit, { url, volume, loop }: {
     readonly isLoaded: boolean;
     volume: number;
 };
+
 type SynthesizerOptions = {
     oscillator: OscillatorOptions;
     amp: AmpOptions;
@@ -351,8 +303,64 @@ declare function Synthesizer(unit: Unit, props: SynthesizerOptions): {
         release: () => void;
     } | undefined;
 };
+
 declare function Volume(unit: Unit): {
     volume: number;
+};
+
+declare function OpenAndClose(unit: Unit, { open, duration, easing }: {
+    open?: boolean;
+    duration?: number;
+    easing?: string;
+}): {
+    toggle(): void;
+    open(): void;
+    close(): void;
+};
+
+declare function Accordion(unit: Unit): void;
+
+declare function Popup(unit: Unit): void;
+
+declare function AnalogStick(unit: Unit, { stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
+    stroke?: string;
+    strokeOpacity?: number;
+    strokeWidth?: number;
+    fill?: string;
+    fillOpacity?: number;
+}): void;
+
+declare function DPad(unit: Unit, { diagonal, stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
+    diagonal?: boolean;
+    stroke?: string;
+    strokeOpacity?: number;
+    strokeWidth?: number;
+    fill?: string;
+    fillOpacity?: number;
+}): void;
+
+interface PanelOptions {
+    name?: string;
+    open?: boolean;
+    params?: Record<string, any>;
+}
+declare function Panel(unit: Unit, { params }: PanelOptions): {
+    group({ name, open, params }: PanelOptions, inner: Function): Unit;
+    button(key: string): Unit;
+    select(key: string, { value, items }?: {
+        value?: string;
+        items?: string[];
+    }): Unit;
+    range(key: string, { value, min, max, step }?: {
+        value?: number;
+        min?: number;
+        max?: number;
+        step?: number;
+    }): Unit;
+    checkbox(key: string, { value }?: {
+        value?: boolean;
+    }): Unit;
+    separator(): void;
 };
 
 declare const xbasics: {

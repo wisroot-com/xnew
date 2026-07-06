@@ -1161,6 +1161,415 @@ const xsync = {
     },
 };
 
+function Aspect(unit, { aspect = 1.0, fit = 'contain' } = {}) {
+    xnew.nest('<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; container-type: size;">');
+    xnew.nest(`<div style="position: relative; aspect-ratio: ${aspect}; container-type: size;">`);
+    if (fit === 'contain') {
+        unit.element.style.width = `min(100cqw, calc(100cqh * ${aspect}))`;
+    }
+    else {
+        unit.element.style.flexShrink = '0';
+        unit.element.style.width = `max(100cqw, calc(100cqh * ${aspect}))`;
+    }
+}
+
+function Screen(unit, { width = 800, height = 600, fit = 'contain' } = {}) {
+    xnew.extend(Aspect, { aspect: width / height, fit });
+    const canvas = xnew(`<canvas width="${width}" height="${height}" style="width: 100%; height: 100%; vertical-align: bottom;">`);
+    return {
+        get canvas() { return canvas.element; },
+    };
+}
+
+function Scene(unit) {
+    return {
+        change(Component, props) {
+            xnew(unit.parent, Component, props);
+            unit.finalize();
+        },
+        add(Component, props) {
+            xnew(unit, Component, props);
+        }
+    };
+}
+
+function Image(unit, { src, className = '', style = '' }) {
+    xnew.nest(`<img class="${className}" style="${style}">`);
+    const element = unit.element;
+    let objectURL = null;
+    function apply(value) {
+        if (typeof value === 'string') {
+            element.src = value;
+        }
+        else {
+            objectURL = URL.createObjectURL(value instanceof Blob ? value : new Blob([value]));
+            element.src = objectURL;
+        }
+    }
+    if (src instanceof Promise) {
+        xnew.promise(src).then(apply);
+    }
+    else {
+        apply(src);
+    }
+    unit.on('finalize', () => {
+        if (objectURL !== null) {
+            URL.revokeObjectURL(objectURL);
+        }
+    });
+}
+
+function SVG(unit, { viewBox = '0 0 64 64', className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'none', fillOpacity = 1 } = {}) {
+    xnew.nest(`<svg
+        viewBox="${viewBox}"
+        class="${className}"
+        style="${style}"
+        stroke="${stroke}"
+        stroke-opacity="${strokeOpacity}"
+        stroke-width="${strokeWidth}"
+        stroke-linejoin="${strokeLinejoin}"
+        stroke-linecap="${strokeLinecap}"
+        fill="${fill}"
+        fill-opacity="${fillOpacity}"
+    ">`);
+}
+
+function SVGText(unit, { text = '', fontSize = 20, anchor = { x: 0, y: 0 }, className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'currentColor', fillOpacity = 1 } = {}) {
+    xnew.extend(SVG, { className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
+    const svg = unit.element;
+    xnew.nest(`<text x="0" y="0" font-size="${fontSize}" paint-order="stroke fill">`);
+    unit.element.textContent = text;
+    function resize() {
+        const bbox = unit.element.getBBox();
+        const padding = 0;
+        svg.setAttribute('viewBox', `
+            ${bbox.x - padding}
+            ${bbox.y - padding}
+            ${bbox.width + padding * 2}
+            ${bbox.height + padding * 2}
+        `);
+        svg.style.width = (bbox.width + padding * 2) + 'px';
+    }
+    resize();
+    unit.on('resize', resize);
+    svg.style.overflow = 'visible';
+}
+
+var _a;
+const DEFAULT_MASTER_GAIN = 0.1;
+const AudioContextCtor = typeof window !== 'undefined' ? ((_a = window.AudioContext) !== null && _a !== void 0 ? _a : window.webkitAudioContext) : undefined;
+const context = typeof AudioContextCtor === 'function' ? new AudioContextCtor() : null;
+const master = context !== null ? context.createGain() : null;
+if (context !== null && master !== null) {
+    master.gain.value = DEFAULT_MASTER_GAIN;
+    master.connect(context.destination);
+}
+
+function AudioTrack(unit, { url, volume, loop = false }) {
+    let buffer;
+    let source = null;
+    let startedAt = null;
+    let pausedOffsetMs = 0;
+    let looping = loop;
+    const amp = context.createGain();
+    amp.gain.value = volume !== null && volume !== void 0 ? volume : 1.0;
+    amp.connect(master);
+    const fade = context.createGain();
+    fade.gain.value = 1.0;
+    fade.connect(amp);
+    const promise = fetch(url)
+        .then((response) => response.arrayBuffer())
+        .then((response) => context.decodeAudioData(response))
+        .then((response) => { buffer = response; });
+    xnew.promise(promise);
+    function forceStop() {
+        if (source !== null) {
+            source.onended = null;
+            try {
+                source.stop();
+            }
+            catch (_a) {
+            }
+            source.disconnect();
+            source = null;
+        }
+        startedAt = null;
+    }
+    function startSource(offsetMs, fadeMs) {
+        const node = context.createBufferSource();
+        source = node;
+        node.buffer = buffer;
+        node.loop = looping;
+        node.connect(fade);
+        const now = context.currentTime;
+        startedAt = now - offsetMs / 1000;
+        node.start(now, offsetMs / 1000);
+        fade.gain.cancelScheduledValues(now);
+        if (fadeMs > 0) {
+            fade.gain.setValueAtTime(0, now);
+            fade.gain.linearRampToValueAtTime(1.0, now + fadeMs / 1000);
+        }
+        else {
+            fade.gain.setValueAtTime(1.0, now);
+        }
+        node.onended = () => {
+            node.disconnect();
+            if (source === node) {
+                source = null;
+                startedAt = null;
+                pausedOffsetMs = 0;
+            }
+        };
+    }
+    function stopSource(node, fadeMs) {
+        const now = context.currentTime;
+        if (fadeMs > 0) {
+            fade.gain.setValueAtTime(1.0, now);
+            fade.gain.linearRampToValueAtTime(0, now + fadeMs / 1000);
+            node.stop(now + fadeMs / 1000);
+        }
+        else {
+            node.stop(now);
+        }
+    }
+    unit.on('finalize', () => {
+        forceStop();
+        amp.disconnect();
+        fade.disconnect();
+        pausedOffsetMs = 0;
+    });
+    return {
+        play: function play({ offset, fade: fadeMs = 0, loop: loopArg } = {}) {
+            if (buffer === undefined) {
+                promise.then(() => play({ offset, fade: fadeMs, loop: loopArg }));
+                return;
+            }
+            if (loopArg !== undefined) {
+                looping = loopArg;
+            }
+            if (startedAt !== null) {
+                forceStop();
+            }
+            startSource(offset !== null && offset !== void 0 ? offset : pausedOffsetMs, fadeMs);
+        },
+        pause({ fade: fadeMs = 0 } = {}) {
+            if (buffer === undefined || startedAt === null) {
+                return;
+            }
+            const elapsedSec = context.currentTime - startedAt;
+            const positionSec = looping ? elapsedSec % buffer.duration : Math.min(elapsedSec, buffer.duration);
+            pausedOffsetMs = positionSec * 1000;
+            const node = source;
+            source = null;
+            startedAt = null;
+            stopSource(node, fadeMs);
+        },
+        get isPlaying() {
+            return startedAt !== null;
+        },
+        get isLoaded() {
+            return buffer !== undefined;
+        },
+        get volume() {
+            return amp.gain.value;
+        },
+        set volume(value) {
+            amp.gain.value = value;
+        },
+    };
+}
+
+const DEFAULT_BPM = 120;
+const RELEASE_CLEANUP_DELAY_MS = 2000;
+const keymap = {
+    'A0': 27.500, 'A#0': 29.135, 'B0': 30.868,
+    'C1': 32.703, 'C#1': 34.648, 'D1': 36.708, 'D#1': 38.891, 'E1': 41.203, 'F1': 43.654, 'F#1': 46.249, 'G1': 48.999, 'G#1': 51.913, 'A1': 55.000, 'A#1': 58.270, 'B1': 61.735,
+    'C2': 65.406, 'C#2': 69.296, 'D2': 73.416, 'D#2': 77.782, 'E2': 82.407, 'F2': 87.307, 'F#2': 92.499, 'G2': 97.999, 'G#2': 103.826, 'A2': 110.000, 'A#2': 116.541, 'B2': 123.471,
+    'C3': 130.813, 'C#3': 138.591, 'D3': 146.832, 'D#3': 155.563, 'E3': 164.814, 'F3': 174.614, 'F#3': 184.997, 'G3': 195.998, 'G#3': 207.652, 'A3': 220.000, 'A#3': 233.082, 'B3': 246.942,
+    'C4': 261.626, 'C#4': 277.183, 'D4': 293.665, 'D#4': 311.127, 'E4': 329.628, 'F4': 349.228, 'F#4': 369.994, 'G4': 391.995, 'G#4': 415.305, 'A4': 440.000, 'A#4': 466.164, 'B4': 493.883,
+    'C5': 523.251, 'C#5': 554.365, 'D5': 587.330, 'D#5': 622.254, 'E5': 659.255, 'F5': 698.456, 'F#5': 739.989, 'G5': 783.991, 'G#5': 830.609, 'A5': 880.000, 'A#5': 932.328, 'B5': 987.767,
+    'C6': 1046.502, 'C#6': 1108.731, 'D6': 1174.659, 'D#6': 1244.508, 'E6': 1318.510, 'F6': 1396.913, 'F#6': 1479.978, 'G6': 1567.982, 'G#6': 1661.219, 'A6': 1760.000, 'A#6': 1864.655, 'B6': 1975.533,
+    'C7': 2093.005, 'C#7': 2217.461, 'D7': 2349.318, 'D#7': 2489.016, 'E7': 2637.020, 'F7': 2793.826, 'F#7': 2959.955, 'G7': 3135.963, 'G#7': 3322.438, 'A7': 3520.000, 'A#7': 3729.310, 'B7': 3951.066,
+    'C8': 4186.009,
+};
+const notemap = {
+    '1m': 4.000, '2n': 2.000, '4n': 1.000, '8n': 0.500, '16n': 0.250, '32n': 0.125,
+};
+function resolveFrequency(value) {
+    if (typeof value === 'string') {
+        return keymap[value];
+    }
+    else {
+        return value;
+    }
+}
+function resolveDurationSeconds(value, bpm) {
+    if (typeof value === 'string') {
+        return notemap[value] * 60 / bpm;
+    }
+    else if (typeof value === 'number') {
+        return value / 1000;
+    }
+    else {
+        return 0;
+    }
+}
+function semitoneOffset(baseFreq, amount) {
+    return baseFreq * (Math.pow(2.0, amount / 12.0) - 1.0);
+}
+function scheduleAttackDecay(param, start, base, amount, ADSR) {
+    const [a, d, s] = ADSR;
+    param.value = base;
+    param.setValueAtTime(base, start);
+    param.linearRampToValueAtTime(base + amount, start + a / 1000);
+    param.linearRampToValueAtTime(base + amount * s, start + (a + d) / 1000);
+}
+function scheduleRelease(param, start, dv, base, amount, ADSR) {
+    const [a, d, s, r] = ADSR;
+    const end = dv > 0 ? dv : (context.currentTime - start);
+    const rate = a === 0 ? 1.0 : Math.min(end / (a / 1000), 1.0);
+    if (rate < 1.0) {
+        param.cancelScheduledValues(start);
+        param.setValueAtTime(base, start);
+        param.linearRampToValueAtTime(base + amount * rate, start + (a / 1000) * rate);
+        param.linearRampToValueAtTime(base + amount * rate * s, start + ((a + d) / 1000) * rate);
+    }
+    param.linearRampToValueAtTime(base + amount * rate * s, start + Math.max(((a + d) / 1000) * rate, dv));
+    param.linearRampToValueAtTime(base, start + Math.max(((a + d) / 1000) * rate, end) + r / 1000);
+}
+function createImpulseResponse(timeMs, decay = 2.0) {
+    const length = context.sampleRate * timeMs / 1000;
+    const impulse = context.createBuffer(2, length, context.sampleRate);
+    const ch0 = impulse.getChannelData(0);
+    const ch1 = impulse.getChannelData(1);
+    for (let i = 0; i < length; i++) {
+        const k = Math.pow(1 - i / length, decay);
+        ch0[i] = (2 * Math.random() - 1) * k;
+        ch1[i] = (2 * Math.random() - 1) * k;
+    }
+    return impulse;
+}
+function attachLFO(target, baseFreq, lfo, start) {
+    const oscillator = context.createOscillator();
+    const depth = context.createGain();
+    depth.gain.value = semitoneOffset(baseFreq, lfo.amount);
+    oscillator.type = lfo.type;
+    oscillator.frequency.value = lfo.rate;
+    oscillator.start(start);
+    oscillator.connect(depth);
+    depth.connect(target.frequency);
+    return { oscillator, depth };
+}
+function attachReverb(amp, target, reverb) {
+    const convolver = context.createConvolver();
+    convolver.buffer = createImpulseResponse(reverb.time);
+    const depth = context.createGain();
+    depth.gain.value = reverb.mix;
+    target.gain.value *= (1.0 - reverb.mix);
+    amp.connect(convolver);
+    convolver.connect(depth);
+    depth.connect(master);
+    return { convolver, depth };
+}
+function Synthesizer(unit, props) {
+    function press(frequency, duration, wait) {
+        var _a;
+        const freq = resolveFrequency(frequency);
+        const dv = resolveDurationSeconds(duration, (_a = props.bpm) !== null && _a !== void 0 ? _a : DEFAULT_BPM);
+        const start = context.currentTime + (wait !== null && wait !== void 0 ? wait : 0) / 1000;
+        const oscillator = context.createOscillator();
+        oscillator.type = props.oscillator.type;
+        oscillator.frequency.value = freq;
+        const lfo = props.oscillator.LFO ? attachLFO(oscillator, freq, props.oscillator.LFO, start) : null;
+        const amp = context.createGain();
+        amp.gain.value = 0.0;
+        const target = context.createGain();
+        target.gain.value = 1.0;
+        amp.connect(target);
+        target.connect(master);
+        let filter = null;
+        if (props.filter) {
+            filter = context.createBiquadFilter();
+            filter.type = props.filter.type;
+            filter.frequency.value = props.filter.cutoff;
+            oscillator.connect(filter);
+            filter.connect(amp);
+        }
+        else {
+            oscillator.connect(amp);
+        }
+        const reverb = props.reverb ? attachReverb(amp, target, props.reverb) : null;
+        if (props.oscillator.envelope) {
+            const amount = semitoneOffset(freq, props.oscillator.envelope.amount);
+            scheduleAttackDecay(oscillator.frequency, start, freq, amount, props.oscillator.envelope.ADSR);
+        }
+        if (props.amp.envelope) {
+            scheduleAttackDecay(amp.gain, start, 0.0, props.amp.envelope.amount, props.amp.envelope.ADSR);
+        }
+        oscillator.start(start);
+        const oscillators = [oscillator];
+        const nodesToDisconnect = [oscillator, amp, target];
+        if (lfo) {
+            oscillators.push(lfo.oscillator);
+            nodesToDisconnect.push(lfo.oscillator, lfo.depth);
+        }
+        if (filter) {
+            nodesToDisconnect.push(filter);
+        }
+        if (reverb) {
+            nodesToDisconnect.push(reverb.convolver, reverb.depth);
+        }
+        const release = () => {
+            const end = dv > 0 ? dv : (context.currentTime - start);
+            let stop;
+            if (props.amp.envelope) {
+                const [a, d, , r] = props.amp.envelope.ADSR;
+                const aSec = a / 1000;
+                const dSec = d / 1000;
+                const rSec = r / 1000;
+                const rate = aSec === 0.0 ? 1.0 : Math.min(end / (aSec + 0.001), 1.0);
+                stop = start + Math.max((aSec + dSec) * rate, end) + rSec;
+            }
+            else {
+                stop = start + end;
+            }
+            if (props.oscillator.envelope) {
+                const amount = semitoneOffset(freq, props.oscillator.envelope.amount);
+                scheduleRelease(oscillator.frequency, start, dv, freq, amount, props.oscillator.envelope.ADSR);
+            }
+            if (props.amp.envelope) {
+                scheduleRelease(amp.gain, start, dv, 0.0, props.amp.envelope.amount, props.amp.envelope.ADSR);
+            }
+            for (const o of oscillators) {
+                o.stop(stop);
+            }
+            setTimeout(() => {
+                for (const n of nodesToDisconnect) {
+                    n.disconnect();
+                }
+            }, RELEASE_CLEANUP_DELAY_MS);
+        };
+        if (dv > 0) {
+            release();
+        }
+        else {
+            return { release };
+        }
+    }
+    return { press };
+}
+
+function Volume(unit) {
+    return {
+        get volume() {
+            return master.gain.value;
+        },
+        set volume(value) {
+            master.gain.value = value;
+        },
+    };
+}
+
 function OpenAndClose(unit, { open = true, duration = 200, easing = 'ease' }) {
     let value = open ? 1.0 : 0.0;
     let sign = open ? +1 : -1;
@@ -1188,6 +1597,7 @@ function OpenAndClose(unit, { open = true, duration = 200, easing = 'ease' }) {
         },
     };
 }
+
 function Accordion(unit) {
     const system = xnew.context(OpenAndClose);
     const outer = xnew.nest('<div style="overflow: hidden;">');
@@ -1197,6 +1607,7 @@ function Accordion(unit) {
         outer.style.opacity = value.toString();
     });
 }
+
 function Popup(unit) {
     const system = xnew.context(OpenAndClose);
     system.on('-closed', () => unit.finalize());
@@ -1206,71 +1617,6 @@ function Popup(unit) {
     system.on('-transition', ({ value }) => {
         unit.element.style.opacity = value.toString();
     });
-}
-
-function SVG(unit, { viewBox = '0 0 64 64', className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'none', fillOpacity = 1 } = {}) {
-    xnew.nest(`<svg
-        viewBox="${viewBox}"
-        class="${className}"
-        style="${style}"
-        stroke="${stroke}"
-        stroke-opacity="${strokeOpacity}"
-        stroke-width="${strokeWidth}"
-        stroke-linejoin="${strokeLinejoin}"
-        stroke-linecap="${strokeLinecap}"
-        fill="${fill}"
-        fill-opacity="${fillOpacity}"
-    ">`);
-}
-function SVGText(unit, { text = '', fontSize = 20, anchor = { x: 0, y: 0 }, className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'currentColor', fillOpacity = 1 } = {}) {
-    xnew.extend(SVG, { className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
-    const svg = unit.element;
-    xnew.nest(`<text x="0" y="0" font-size="${fontSize}" paint-order="stroke fill">`);
-    unit.element.textContent = text;
-    function resize() {
-        const bbox = unit.element.getBBox();
-        const padding = 0;
-        svg.setAttribute('viewBox', `
-            ${bbox.x - padding}
-            ${bbox.y - padding}
-            ${bbox.width + padding * 2}
-            ${bbox.height + padding * 2}
-        `);
-        svg.style.width = (bbox.width + padding * 2) + 'px';
-    }
-    resize();
-    unit.on('resize', resize);
-    svg.style.overflow = 'visible';
-}
-
-function Aspect(unit, { aspect = 1.0, fit = 'contain' } = {}) {
-    xnew.nest('<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; container-type: size;">');
-    xnew.nest(`<div style="position: relative; aspect-ratio: ${aspect}; container-type: size;">`);
-    if (fit === 'contain') {
-        unit.element.style.width = `min(100cqw, calc(100cqh * ${aspect}))`;
-    }
-    else {
-        unit.element.style.flexShrink = '0';
-        unit.element.style.width = `max(100cqw, calc(100cqh * ${aspect}))`;
-    }
-}
-function Screen(unit, { width = 800, height = 600, fit = 'contain' } = {}) {
-    xnew.extend(Aspect, { aspect: width / height, fit });
-    const canvas = xnew(`<canvas width="${width}" height="${height}" style="width: 100%; height: 100%; vertical-align: bottom;">`);
-    return {
-        get canvas() { return canvas.element; },
-    };
-}
-function Scene(unit) {
-    return {
-        change(Component, props) {
-            xnew(unit.parent, Component, props);
-            unit.finalize();
-        },
-        add(Component, props) {
-            xnew(unit, Component, props);
-        }
-    };
 }
 
 function AnalogStick(unit, { stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 } = {}) {
@@ -1303,6 +1649,7 @@ function AnalogStick(unit, { stroke = 'currentColor', strokeOpacity = 0.8, strok
         xnew.emit('-up', { vector: { x: 0, y: 0 } });
     });
 }
+
 function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 } = {}) {
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     xnew.nest(`<div style="width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;">`);
@@ -1527,344 +1874,6 @@ function Select(_, { key = '', value, items = [] } = {}) {
         }
         return 'Canvas';
     }
-}
-
-function Image(unit, { src, className = '', style = '' }) {
-    xnew.nest(`<img class="${className}" style="${style}">`);
-    const element = unit.element;
-    let objectURL = null;
-    function apply(value) {
-        if (typeof value === 'string') {
-            element.src = value;
-        }
-        else {
-            objectURL = URL.createObjectURL(value instanceof Blob ? value : new Blob([value]));
-            element.src = objectURL;
-        }
-    }
-    if (src instanceof Promise) {
-        xnew.promise(src).then(apply);
-    }
-    else {
-        apply(src);
-    }
-    unit.on('finalize', () => {
-        if (objectURL !== null) {
-            URL.revokeObjectURL(objectURL);
-        }
-    });
-}
-
-var _a;
-const DEFAULT_MASTER_GAIN = 0.1;
-const DEFAULT_BPM = 120;
-const RELEASE_CLEANUP_DELAY_MS = 2000;
-const AudioContextCtor = typeof window !== 'undefined' ? ((_a = window.AudioContext) !== null && _a !== void 0 ? _a : window.webkitAudioContext) : undefined;
-const context = typeof AudioContextCtor === 'function' ? new AudioContextCtor() : null;
-const master = context !== null ? context.createGain() : null;
-if (context !== null && master !== null) {
-    master.gain.value = DEFAULT_MASTER_GAIN;
-    master.connect(context.destination);
-}
-function AudioTrack(unit, { url, volume, loop = false }) {
-    let buffer;
-    let source = null;
-    let startedAt = null;
-    let pausedOffsetMs = 0;
-    let looping = loop;
-    const amp = context.createGain();
-    amp.gain.value = volume !== null && volume !== void 0 ? volume : 1.0;
-    amp.connect(master);
-    const fade = context.createGain();
-    fade.gain.value = 1.0;
-    fade.connect(amp);
-    const promise = fetch(url)
-        .then((response) => response.arrayBuffer())
-        .then((response) => context.decodeAudioData(response))
-        .then((response) => { buffer = response; });
-    xnew.promise(promise);
-    function forceStop() {
-        if (source !== null) {
-            source.onended = null;
-            try {
-                source.stop();
-            }
-            catch (_a) {
-            }
-            source.disconnect();
-            source = null;
-        }
-        startedAt = null;
-    }
-    function startSource(offsetMs, fadeMs) {
-        const node = context.createBufferSource();
-        source = node;
-        node.buffer = buffer;
-        node.loop = looping;
-        node.connect(fade);
-        const now = context.currentTime;
-        startedAt = now - offsetMs / 1000;
-        node.start(now, offsetMs / 1000);
-        fade.gain.cancelScheduledValues(now);
-        if (fadeMs > 0) {
-            fade.gain.setValueAtTime(0, now);
-            fade.gain.linearRampToValueAtTime(1.0, now + fadeMs / 1000);
-        }
-        else {
-            fade.gain.setValueAtTime(1.0, now);
-        }
-        node.onended = () => {
-            node.disconnect();
-            if (source === node) {
-                source = null;
-                startedAt = null;
-                pausedOffsetMs = 0;
-            }
-        };
-    }
-    function stopSource(node, fadeMs) {
-        const now = context.currentTime;
-        if (fadeMs > 0) {
-            fade.gain.setValueAtTime(1.0, now);
-            fade.gain.linearRampToValueAtTime(0, now + fadeMs / 1000);
-            node.stop(now + fadeMs / 1000);
-        }
-        else {
-            node.stop(now);
-        }
-    }
-    unit.on('finalize', () => {
-        forceStop();
-        amp.disconnect();
-        fade.disconnect();
-        pausedOffsetMs = 0;
-    });
-    return {
-        play: function play({ offset, fade: fadeMs = 0, loop: loopArg } = {}) {
-            if (buffer === undefined) {
-                promise.then(() => play({ offset, fade: fadeMs, loop: loopArg }));
-                return;
-            }
-            if (loopArg !== undefined) {
-                looping = loopArg;
-            }
-            if (startedAt !== null) {
-                forceStop();
-            }
-            startSource(offset !== null && offset !== void 0 ? offset : pausedOffsetMs, fadeMs);
-        },
-        pause({ fade: fadeMs = 0 } = {}) {
-            if (buffer === undefined || startedAt === null) {
-                return;
-            }
-            const elapsedSec = context.currentTime - startedAt;
-            const positionSec = looping ? elapsedSec % buffer.duration : Math.min(elapsedSec, buffer.duration);
-            pausedOffsetMs = positionSec * 1000;
-            const node = source;
-            source = null;
-            startedAt = null;
-            stopSource(node, fadeMs);
-        },
-        get isPlaying() {
-            return startedAt !== null;
-        },
-        get isLoaded() {
-            return buffer !== undefined;
-        },
-        get volume() {
-            return amp.gain.value;
-        },
-        set volume(value) {
-            amp.gain.value = value;
-        },
-    };
-}
-const keymap = {
-    'A0': 27.500, 'A#0': 29.135, 'B0': 30.868,
-    'C1': 32.703, 'C#1': 34.648, 'D1': 36.708, 'D#1': 38.891, 'E1': 41.203, 'F1': 43.654, 'F#1': 46.249, 'G1': 48.999, 'G#1': 51.913, 'A1': 55.000, 'A#1': 58.270, 'B1': 61.735,
-    'C2': 65.406, 'C#2': 69.296, 'D2': 73.416, 'D#2': 77.782, 'E2': 82.407, 'F2': 87.307, 'F#2': 92.499, 'G2': 97.999, 'G#2': 103.826, 'A2': 110.000, 'A#2': 116.541, 'B2': 123.471,
-    'C3': 130.813, 'C#3': 138.591, 'D3': 146.832, 'D#3': 155.563, 'E3': 164.814, 'F3': 174.614, 'F#3': 184.997, 'G3': 195.998, 'G#3': 207.652, 'A3': 220.000, 'A#3': 233.082, 'B3': 246.942,
-    'C4': 261.626, 'C#4': 277.183, 'D4': 293.665, 'D#4': 311.127, 'E4': 329.628, 'F4': 349.228, 'F#4': 369.994, 'G4': 391.995, 'G#4': 415.305, 'A4': 440.000, 'A#4': 466.164, 'B4': 493.883,
-    'C5': 523.251, 'C#5': 554.365, 'D5': 587.330, 'D#5': 622.254, 'E5': 659.255, 'F5': 698.456, 'F#5': 739.989, 'G5': 783.991, 'G#5': 830.609, 'A5': 880.000, 'A#5': 932.328, 'B5': 987.767,
-    'C6': 1046.502, 'C#6': 1108.731, 'D6': 1174.659, 'D#6': 1244.508, 'E6': 1318.510, 'F6': 1396.913, 'F#6': 1479.978, 'G6': 1567.982, 'G#6': 1661.219, 'A6': 1760.000, 'A#6': 1864.655, 'B6': 1975.533,
-    'C7': 2093.005, 'C#7': 2217.461, 'D7': 2349.318, 'D#7': 2489.016, 'E7': 2637.020, 'F7': 2793.826, 'F#7': 2959.955, 'G7': 3135.963, 'G#7': 3322.438, 'A7': 3520.000, 'A#7': 3729.310, 'B7': 3951.066,
-    'C8': 4186.009,
-};
-const notemap = {
-    '1m': 4.000, '2n': 2.000, '4n': 1.000, '8n': 0.500, '16n': 0.250, '32n': 0.125,
-};
-function resolveFrequency(value) {
-    if (typeof value === 'string') {
-        return keymap[value];
-    }
-    else {
-        return value;
-    }
-}
-function resolveDurationSeconds(value, bpm) {
-    if (typeof value === 'string') {
-        return notemap[value] * 60 / bpm;
-    }
-    else if (typeof value === 'number') {
-        return value / 1000;
-    }
-    else {
-        return 0;
-    }
-}
-function semitoneOffset(baseFreq, amount) {
-    return baseFreq * (Math.pow(2.0, amount / 12.0) - 1.0);
-}
-function scheduleAttackDecay(param, start, base, amount, ADSR) {
-    const [a, d, s] = ADSR;
-    param.value = base;
-    param.setValueAtTime(base, start);
-    param.linearRampToValueAtTime(base + amount, start + a / 1000);
-    param.linearRampToValueAtTime(base + amount * s, start + (a + d) / 1000);
-}
-function scheduleRelease(param, start, dv, base, amount, ADSR) {
-    const [a, d, s, r] = ADSR;
-    const end = dv > 0 ? dv : (context.currentTime - start);
-    const rate = a === 0 ? 1.0 : Math.min(end / (a / 1000), 1.0);
-    if (rate < 1.0) {
-        param.cancelScheduledValues(start);
-        param.setValueAtTime(base, start);
-        param.linearRampToValueAtTime(base + amount * rate, start + (a / 1000) * rate);
-        param.linearRampToValueAtTime(base + amount * rate * s, start + ((a + d) / 1000) * rate);
-    }
-    param.linearRampToValueAtTime(base + amount * rate * s, start + Math.max(((a + d) / 1000) * rate, dv));
-    param.linearRampToValueAtTime(base, start + Math.max(((a + d) / 1000) * rate, end) + r / 1000);
-}
-function createImpulseResponse(timeMs, decay = 2.0) {
-    const length = context.sampleRate * timeMs / 1000;
-    const impulse = context.createBuffer(2, length, context.sampleRate);
-    const ch0 = impulse.getChannelData(0);
-    const ch1 = impulse.getChannelData(1);
-    for (let i = 0; i < length; i++) {
-        const k = Math.pow(1 - i / length, decay);
-        ch0[i] = (2 * Math.random() - 1) * k;
-        ch1[i] = (2 * Math.random() - 1) * k;
-    }
-    return impulse;
-}
-function attachLFO(target, baseFreq, lfo, start) {
-    const oscillator = context.createOscillator();
-    const depth = context.createGain();
-    depth.gain.value = semitoneOffset(baseFreq, lfo.amount);
-    oscillator.type = lfo.type;
-    oscillator.frequency.value = lfo.rate;
-    oscillator.start(start);
-    oscillator.connect(depth);
-    depth.connect(target.frequency);
-    return { oscillator, depth };
-}
-function attachReverb(amp, target, reverb) {
-    const convolver = context.createConvolver();
-    convolver.buffer = createImpulseResponse(reverb.time);
-    const depth = context.createGain();
-    depth.gain.value = reverb.mix;
-    target.gain.value *= (1.0 - reverb.mix);
-    amp.connect(convolver);
-    convolver.connect(depth);
-    depth.connect(master);
-    return { convolver, depth };
-}
-function Synthesizer(unit, props) {
-    function press(frequency, duration, wait) {
-        var _a;
-        const freq = resolveFrequency(frequency);
-        const dv = resolveDurationSeconds(duration, (_a = props.bpm) !== null && _a !== void 0 ? _a : DEFAULT_BPM);
-        const start = context.currentTime + (wait !== null && wait !== void 0 ? wait : 0) / 1000;
-        const oscillator = context.createOscillator();
-        oscillator.type = props.oscillator.type;
-        oscillator.frequency.value = freq;
-        const lfo = props.oscillator.LFO ? attachLFO(oscillator, freq, props.oscillator.LFO, start) : null;
-        const amp = context.createGain();
-        amp.gain.value = 0.0;
-        const target = context.createGain();
-        target.gain.value = 1.0;
-        amp.connect(target);
-        target.connect(master);
-        let filter = null;
-        if (props.filter) {
-            filter = context.createBiquadFilter();
-            filter.type = props.filter.type;
-            filter.frequency.value = props.filter.cutoff;
-            oscillator.connect(filter);
-            filter.connect(amp);
-        }
-        else {
-            oscillator.connect(amp);
-        }
-        const reverb = props.reverb ? attachReverb(amp, target, props.reverb) : null;
-        if (props.oscillator.envelope) {
-            const amount = semitoneOffset(freq, props.oscillator.envelope.amount);
-            scheduleAttackDecay(oscillator.frequency, start, freq, amount, props.oscillator.envelope.ADSR);
-        }
-        if (props.amp.envelope) {
-            scheduleAttackDecay(amp.gain, start, 0.0, props.amp.envelope.amount, props.amp.envelope.ADSR);
-        }
-        oscillator.start(start);
-        const oscillators = [oscillator];
-        const nodesToDisconnect = [oscillator, amp, target];
-        if (lfo) {
-            oscillators.push(lfo.oscillator);
-            nodesToDisconnect.push(lfo.oscillator, lfo.depth);
-        }
-        if (filter) {
-            nodesToDisconnect.push(filter);
-        }
-        if (reverb) {
-            nodesToDisconnect.push(reverb.convolver, reverb.depth);
-        }
-        const release = () => {
-            const end = dv > 0 ? dv : (context.currentTime - start);
-            let stop;
-            if (props.amp.envelope) {
-                const [a, d, , r] = props.amp.envelope.ADSR;
-                const aSec = a / 1000;
-                const dSec = d / 1000;
-                const rSec = r / 1000;
-                const rate = aSec === 0.0 ? 1.0 : Math.min(end / (aSec + 0.001), 1.0);
-                stop = start + Math.max((aSec + dSec) * rate, end) + rSec;
-            }
-            else {
-                stop = start + end;
-            }
-            if (props.oscillator.envelope) {
-                const amount = semitoneOffset(freq, props.oscillator.envelope.amount);
-                scheduleRelease(oscillator.frequency, start, dv, freq, amount, props.oscillator.envelope.ADSR);
-            }
-            if (props.amp.envelope) {
-                scheduleRelease(amp.gain, start, dv, 0.0, props.amp.envelope.amount, props.amp.envelope.ADSR);
-            }
-            for (const o of oscillators) {
-                o.stop(stop);
-            }
-            setTimeout(() => {
-                for (const n of nodesToDisconnect) {
-                    n.disconnect();
-                }
-            }, RELEASE_CLEANUP_DELAY_MS);
-        };
-        if (dv > 0) {
-            release();
-        }
-        else {
-            return { release };
-        }
-    }
-    return { press };
-}
-function Volume(unit) {
-    return {
-        get volume() {
-            return master.gain.value;
-        },
-        set volume(value) {
-            master.gain.value = value;
-        },
-    };
 }
 
 const xbasics = {

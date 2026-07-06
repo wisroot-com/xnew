@@ -1,6 +1,6 @@
-import { Unit } from '../../src/core/unit';
-import { xnew } from '../../src/core/xnew';
-import { Image } from '../../src/basics/element';
+import { Unit } from '../../../src/core/unit';
+import { xnew } from '../../../src/core/xnew';
+import { Image } from '../../../src/basics/element/Image';
 
 describe('basics Image', () => {
     // jsdom does not implement object URLs — stub them
