@@ -542,9 +542,17 @@ function ResultScene(unit, { image, score, wave, kills, cleared }) {
   }, 500, 'ease');
 
   xnew(ResultBackground, { gradient: 'from-slate-900 to-blue-950', textColor: 'text-blue-800' });
-  xnew(xbasics.Image, { src: image, className: 'absolute bottom-[14cqw] left-[2cqw] w-[56cqw] aspect-4/3 rounded-[1cqw] object-cover', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);' });
-  xnew(ResultDetail, { score, wave, kills, cleared });
-  xnew(ResultFooter, { onBack: () => unit.change(TitleScene, { skipStory: true }) });
+
+  // 画面割り: 上下 80:20、上部分をさらに左右 50:50
+  xnew((unit) => {
+    xnew.extend(xbasics.Split, { direction: 'column', ratio: [80, 20] });
+    xnew(unit.panes[0], (unit) => {
+      xnew.extend(xbasics.Split, { direction: 'row', ratio: [50, 50] });
+      xnew(unit.panes[0], xbasics.Image, { src: image, className: 'absolute inset-x-0 bottom-[2cqw] mx-auto w-[46cqw] aspect-4/3 rounded-[1cqw] object-cover', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);' });
+      xnew(unit.panes[1], ResultDetail, { score, wave, kills, cleared });
+    });
+    xnew(unit.panes[1], ResultFooter);
+  });
 
   unit.on('window.keydown.space', ({ event }) => { event.preventDefault(); unit.change(TitleScene, { skipStory: true }); });
 }
@@ -1588,7 +1596,7 @@ function SoundFX(unit) {
 // ---- Result screen ----
 
 function ResultDetail(unit, { score, wave, kills = [0, 0, 0, 0], cleared = false }) {
-  xnew.nest('<div class="absolute bottom-[10cqw] right-[2cqw] w-[38cqw] bg-gray-100 px-[1.5cqw] py-[2.5cqw] rounded-[1cqw] font-bold" style="box-shadow: 0 8px 20px rgba(0,0,0,0.2);">');
+  xnew.nest('<div class="absolute inset-x-0 bottom-[2cqw] mx-auto w-[38cqw] bg-gray-100 px-[1.5cqw] py-[2.5cqw] rounded-[1cqw] font-bold" style="box-shadow: 0 8px 20px rgba(0,0,0,0.2);">');
   xnew('<div class="text-[3.5cqw] text-center text-red-400 mb-[1.5cqw]">', '🦠 駆逐した数 🦠');
 
   // 敵キャラ別の撃破数（ベイク先頭フレーム＝正面のアイコン × 撃破数）を2列で
@@ -1656,8 +1664,8 @@ function ScreenShot(unit) {
   xnew.transition(({ value }) => cover.element.style.opacity = 1 - value, 1000)
     .timeout(() => {
       html2canvas(unit.element, { scale: 2, logging: false, useCORS: true }).then((canvas) => {
-        // 下部 13% のフッターを除いた領域を切り出して PNG としてダウンロードする。
-        const [width, height] = [canvas.width, Math.floor(canvas.height * 0.87)];
+        // 下部 20% のフッターを除いた領域を切り出して PNG としてダウンロードする。
+        const [width, height] = [canvas.width, Math.floor(canvas.height * 0.80)];
         const cropped = document.createElement('canvas');
         [cropped.width, cropped.height] = [width, height];
         cropped.getContext('2d').drawImage(canvas, 0, 0, width, height, 0, 0, width, height);
@@ -1670,9 +1678,9 @@ function ScreenShot(unit) {
     });
 }
 
-// リザルトのフッター。「画面を保存」(ScreenShot) と「戻る」(onBack) の2ボタン。
-function ResultFooter(unit, { onBack }) {
-  xnew.nest('<div class="absolute bottom-0 w-full h-[13cqh] px-[2cqw] flex justify-between text-stone-500">');
+// リザルトのフッター。「画面を保存」(ScreenShot) と「戻る」(タイトルへシーン遷移) の2ボタン。
+function ResultFooter(unit) {
+  xnew.nest('<div class="size-full px-[2cqw] flex justify-between text-stone-500">');
   xnew('<div class="flex items-center gap-x-[2cqw]">', () => {
     const button = xnew('<div class="relative size-[9cqw] cursor-pointer hover:scale-110">', Camera);
     button.on('click', () => xnew(ScreenShot));
@@ -1682,14 +1690,14 @@ function ResultFooter(unit, { onBack }) {
   xnew('<div class="flex items-center gap-x-[2cqw]">', () => {
     xnew('<div class="text-[3cqw] font-bold">', '戻る');
     const button = xnew('<div class="relative size-[9cqw] cursor-pointer hover:scale-110">', ArrowUturnLeft);
-    button.on('click', () => onBack());
+    button.on('click', () => xnew.context(xbasics.Scene).change(TitleScene, { skipStory: true }));
   });
 }
 
 // リザルト背景：斜めグラデ + 大きな "Result" + 漂う/瞬く白丸。
 // gradient="from-... to-..."（bg-linear-to-br 用）/ textColor="text-..."。
 function ResultBackground(unit, { gradient, textColor }) {
-  xnew.nest(`<div class="relative size-full bg-linear-to-br ${gradient}">`);
+  xnew.nest(`<div class="absolute inset-0 size-full bg-linear-to-br ${gradient}">`);
   xnew(`<div class="absolute top-0 left-[4cqw] text-[14cqw] ${textColor}">`, 'Result');
 
   // ランダム配置した白丸を sin で明滅させる。transform は種類ごとに変える（浮遊 / きらめき）。
