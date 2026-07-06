@@ -5,7 +5,7 @@
 // in the buffer. On pause that position is frozen into `pausedOffsetMs`, which `play()` resumes from
 // unless given an explicit offset. Web Audio nodes are released on finalize.
 //
-// - AudioTrack : component({ url, volume, loop }) returning { play, pause, isPlaying, isLoaded, volume }
+// - AudioTrack : component({ url, volume, loop }) returning { play, pause, status, volume }
 //
 // Usage: xnew(xbasics.AudioTrack, { url: 'bgm.mp3', loop: true }).play();
 //----------------------------------------------------------------------------------------------------
@@ -17,6 +17,7 @@ export function AudioTrack(unit: xnew.Unit, { url, volume, loop = false }: { url
     let buffer: AudioBuffer | undefined;
     let source: AudioBufferSourceNode | null = null;
     let startedAt: number | null = null;
+    let paused = false;
     let pausedOffsetMs = 0;
     let looping = loop;
 
@@ -114,6 +115,7 @@ export function AudioTrack(unit: xnew.Unit, { url, volume, loop = false }: { url
             if (startedAt !== null) {
                 forceStop();
             }
+            paused = false;
             startSource(offset ?? pausedOffsetMs, fadeMs);
         },
         pause({ fade: fadeMs = 0 }: { fade?: number } = {}): void {
@@ -122,6 +124,7 @@ export function AudioTrack(unit: xnew.Unit, { url, volume, loop = false }: { url
             }
             const elapsedSec = context.currentTime - startedAt;
             const positionSec = looping ? elapsedSec % buffer.duration : Math.min(elapsedSec, buffer.duration);
+            paused = true;
             pausedOffsetMs = positionSec * 1000;
 
             // Detach before scheduling the stop, so its onended (guarded on `source === node`) skips
@@ -131,11 +134,16 @@ export function AudioTrack(unit: xnew.Unit, { url, volume, loop = false }: { url
             startedAt = null;
             stopSource(node, fadeMs);
         },
-        get isPlaying(): boolean {
-            return startedAt !== null;
-        },
-        get isLoaded(): boolean {
-            return buffer !== undefined;
+        get status(): 'loading' | 'loaded' | 'playing' | 'paused' {
+            if (buffer === undefined) {
+                return 'loading';
+            } else if (startedAt !== null) {
+                return 'playing';
+            } else if (paused) {
+                return 'paused';
+            } else {
+                return 'loaded';
+            }
         },
         get volume(): number {
             return amp.gain.value;

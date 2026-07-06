@@ -1269,6 +1269,7 @@ function AudioTrack(unit, { url, volume, loop = false }) {
     let buffer;
     let source = null;
     let startedAt = null;
+    let paused = false;
     let pausedOffsetMs = 0;
     let looping = loop;
     const amp = context.createGain();
@@ -1350,6 +1351,7 @@ function AudioTrack(unit, { url, volume, loop = false }) {
             if (startedAt !== null) {
                 forceStop();
             }
+            paused = false;
             startSource(offset !== null && offset !== void 0 ? offset : pausedOffsetMs, fadeMs);
         },
         pause({ fade: fadeMs = 0 } = {}) {
@@ -1358,17 +1360,26 @@ function AudioTrack(unit, { url, volume, loop = false }) {
             }
             const elapsedSec = context.currentTime - startedAt;
             const positionSec = looping ? elapsedSec % buffer.duration : Math.min(elapsedSec, buffer.duration);
+            paused = true;
             pausedOffsetMs = positionSec * 1000;
             const node = source;
             source = null;
             startedAt = null;
             stopSource(node, fadeMs);
         },
-        get isPlaying() {
-            return startedAt !== null;
-        },
-        get isLoaded() {
-            return buffer !== undefined;
+        get status() {
+            if (buffer === undefined) {
+                return 'loading';
+            }
+            else if (startedAt !== null) {
+                return 'playing';
+            }
+            else if (paused) {
+                return 'paused';
+            }
+            else {
+                return 'loaded';
+            }
         },
         get volume() {
             return amp.gain.value;

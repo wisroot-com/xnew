@@ -45,8 +45,7 @@ function Main(unit) {
 
 ## アクセサ
 
-- `isPlaying` — 再生中かどうか（`boolean`、読み取り専用）。
-- `isLoaded` — デコードが完了しているか（`boolean`、読み取り専用）。
+- `status` — 現在の状態（`'loading' | 'loaded' | 'playing' | 'paused'`、読み取り専用）。デコード完了前は `'loading'`、再生中は `'playing'`、`pause()` による一時停止中は `'paused'`、それ以外（再生前・再生終了後）は `'loaded'` になります。
 - `volume` — このトラックの音量（`number`、読み書き可能）。
 
 :::note

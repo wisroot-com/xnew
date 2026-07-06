@@ -190,12 +190,12 @@ declare const xsync: {
     boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
 };
 
-declare function Aspect(unit: Unit, { aspect, fit }?: {
+declare function Aspect(unit: xnew.Unit, { aspect, fit }?: {
     aspect?: number;
     fit?: 'contain' | 'cover';
 }): void;
 
-declare function Screen(unit: Unit, { width, height, fit }?: {
+declare function Screen(unit: xnew.Unit, { width, height, fit }?: {
     width?: number;
     height?: number;
     fit?: 'contain' | 'cover';
@@ -203,13 +203,13 @@ declare function Screen(unit: Unit, { width, height, fit }?: {
     readonly canvas: DomElement;
 };
 
-declare function Scene(unit: Unit): {
+declare function Scene(unit: xnew.Unit): {
     change(Component: Function, props?: any): void;
     add(Component: Function, props?: any): void;
 };
 
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
-declare function Image(unit: Unit, { src, className, style }: {
+declare function Image(unit: xnew.Unit, { src, className, style }: {
     src: ImageSource | Promise<ImageSource>;
     className?: string;
     style?: string;
@@ -227,7 +227,7 @@ interface SVGInterface {
     fill?: string;
     fillOpacity?: number;
 }
-declare function SVG(unit: Unit, { viewBox, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGInterface): void;
+declare function SVG(unit: xnew.Unit, { viewBox, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGInterface): void;
 
 interface SVGTextInterface {
     text?: string;
@@ -246,9 +246,9 @@ interface SVGTextInterface {
     fill?: string;
     fillOpacity?: number;
 }
-declare function SVGText(unit: Unit, { text, fontSize, anchor, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGTextInterface): void;
+declare function SVGText(unit: xnew.Unit, { text, fontSize, anchor, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGTextInterface): void;
 
-declare function AudioTrack(unit: Unit, { url, volume, loop }: {
+declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
     url: string;
     volume?: number;
     loop?: boolean;
@@ -261,8 +261,7 @@ declare function AudioTrack(unit: Unit, { url, volume, loop }: {
     pause({ fade: fadeMs }?: {
         fade?: number;
     }): void;
-    readonly isPlaying: boolean;
-    readonly isLoaded: boolean;
+    readonly status: "loading" | "loaded" | "playing" | "paused";
     volume: number;
 };
 
@@ -298,17 +297,17 @@ type LFO = {
     type: OscillatorType;
     rate: number;
 };
-declare function Synthesizer(unit: Unit, props: SynthesizerOptions): {
+declare function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions): {
     press: (frequency: number | string, duration?: number | string, wait?: number) => {
         release: () => void;
     } | undefined;
 };
 
-declare function Volume(unit: Unit): {
+declare function Volume(unit: xnew.Unit): {
     volume: number;
 };
 
-declare function OpenAndClose(unit: Unit, { open, duration, easing }: {
+declare function OpenAndClose(unit: xnew.Unit, { open, duration, easing }: {
     open?: boolean;
     duration?: number;
     easing?: string;
@@ -318,11 +317,11 @@ declare function OpenAndClose(unit: Unit, { open, duration, easing }: {
     close(): void;
 };
 
-declare function Accordion(unit: Unit): void;
+declare function Accordion(unit: xnew.Unit): void;
 
-declare function Popup(unit: Unit): void;
+declare function Popup(unit: xnew.Unit): void;
 
-declare function AnalogStick(unit: Unit, { stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
+declare function AnalogStick(unit: xnew.Unit, { stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
     stroke?: string;
     strokeOpacity?: number;
     strokeWidth?: number;
@@ -330,7 +329,7 @@ declare function AnalogStick(unit: Unit, { stroke, strokeOpacity, strokeWidth, f
     fillOpacity?: number;
 }): void;
 
-declare function DPad(unit: Unit, { diagonal, stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
+declare function DPad(unit: xnew.Unit, { diagonal, stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
     diagonal?: boolean;
     stroke?: string;
     strokeOpacity?: number;
@@ -344,7 +343,7 @@ interface PanelOptions {
     open?: boolean;
     params?: Record<string, any>;
 }
-declare function Panel(unit: Unit, { params }: PanelOptions): {
+declare function Panel(unit: xnew.Unit, { params }: PanelOptions): {
     group({ name, open, params }: PanelOptions, inner: Function): Unit;
     button(key: string): Unit;
     select(key: string, { value, items }?: {
