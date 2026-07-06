@@ -524,8 +524,14 @@ function GameScene(unit) {
     const kills = [...scoreManager.kills];
     // 最終 wave(4) のゲージを 100% 到達済みなら「クリア」扱い（wave4 は次へ進まないので waveScore で判定）
     const cleared = wave >= WAVE_GOALS.length && scoreManager.waveScore >= WAVE_GOALS[WAVE_GOALS.length - 1];
-    const image = xpixi.renderer.extract.base64({ target: xpixi.scene, frame: new PIXI.Rectangle(0, 0, xpixi.canvas.width, xpixi.canvas.height) });
-    xnew(GameOverText, { className: 'left-0 right-[25cqw]' });
+    const gameover = xnew(GameOverText, { className: 'left-0 right-[25cqw]' });
+
+    // pixi extract では DOM の UI が写らないため、html2canvas で画面ごと撮る。
+    xpixi.renderer.render(xpixi.scene); // preserveDrawingBuffer なしでも同一タスク内の描画直後なら canvas が写る
+    const image = html2canvas(document.querySelector('#main'), {
+      scale: 2, logging: false, useCORS: true,
+      ignoreElements: (element) => element === gameover.element,
+    }).then((canvas) => canvas.toDataURL('image/png'));
     xnew.timeout(() => unit.change(ResultScene, { image, score, wave, kills, cleared }), 2000);
   });
 }
