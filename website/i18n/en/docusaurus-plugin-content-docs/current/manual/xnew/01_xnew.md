@@ -62,9 +62,12 @@ const unit = xnew(MyComponent);
 
 unit.on('click', ({ event }) => console.log('clicked'));
 
-unit.off('click'); // remove all 'click' listeners
-unit.off();        // remove all listeners
+unit.off('click');     // remove the 'click' listeners you registered
+unit.off();            // remove all listeners you registered
+unit.off('click', fn); // an explicit listener is removed regardless of who registered it
 ```
+
+Each listener records which unit's scope registered it. Blanket removal without an explicit listener only targets **listeners registered by the calling unit**, so it never strips listeners another component registered for its own internals. When the registering unit is finalized, its listeners registered on other units are detached automatically.
 
 ## Lifecycle events
 

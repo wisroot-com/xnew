@@ -72,6 +72,12 @@ const config = {
           if (existingPath.startsWith('/docs/examples/games/')) {
             aliases.push(existingPath.replace('/docs/examples/games/', '/docs/examples/game/'));
           }
+          if (existingPath.startsWith('/docs/examples/xnew/')) {
+            aliases.push(existingPath.replace('/docs/examples/xnew/', '/docs/examples/basics/'));
+          }
+          if (existingPath.startsWith('/docs/examples/addons/')) {
+            aliases.push(existingPath.replace('/docs/examples/addons/', '/docs/examples/extends/'));
+          }
 
           return aliases.length > 0 ? aliases : undefined;
         },
@@ -162,7 +168,7 @@ const config = {
               },
               {
                 label: 'examples',
-                to: '/docs/examples/basics/element',
+                to: '/docs/examples/xnew/element',
               },
             ],
           },

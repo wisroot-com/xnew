@@ -1,7 +1,7 @@
 declare class UnitPromise {
     private promise;
-    key?: string;
-    constructor(promise: Promise<any>, key?: string);
+    key?: string | undefined;
+    constructor(promise: Promise<any>, key?: string | undefined);
     private chain;
     then(callback: Function): UnitPromise;
     catch(callback: Function): UnitPromise;

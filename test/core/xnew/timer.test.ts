@@ -20,12 +20,11 @@ describe('xnew timer helpers', () => {
             jest.advanceTimersByTime(1000);
             expect(cb).not.toHaveBeenCalled();
         });
-        it('passes the owning timer to the callback', () => {
-            let received: any;
-            let returned: any;
-            xnew(() => { returned = xnew.timeout(({ timer }: any) => { received = timer; }, 100); });
+        it('passes count 0 to the callback', () => {
+            const cb = jest.fn();
+            xnew(() => { xnew.timeout(cb, 100); });
             jest.advanceTimersByTime(100);
-            expect(received).toBe(returned);
+            expect(cb).toHaveBeenCalledWith({ count: 0 });
         });
     });
 
@@ -44,16 +43,16 @@ describe('xnew timer helpers', () => {
             jest.advanceTimersByTime(50 * 5);
             expect(cb).toHaveBeenCalledTimes(5);
         });
-        it('passes the owning timer to the callback', () => {
-            let received: any;
-            let returned: any;
-            xnew(() => { returned = xnew.interval(({ timer }: any) => { received = timer; }, 50, 1); });
-            jest.advanceTimersByTime(50);
-            expect(received).toBe(returned);
+        it('passes the current count to the callback, starting at 0', () => {
+            const counts: number[] = [];
+            xnew(() => { xnew.interval(({ count }: any) => { counts.push(count); }, 50, 3); });
+            jest.advanceTimersByTime(50 * 3);
+            expect(counts).toEqual([0, 1, 2]);
         });
-        it('can stop itself via the timer argument', () => {
-            const cb = jest.fn(({ timer }: any) => { if (timer) { timer.clear(); } });
-            xnew(() => { xnew.interval(cb, 50, 0); });
+        it('can stop itself via the returned timer', () => {
+            let timer: any;
+            const cb = jest.fn(() => { timer.clear(); });
+            xnew(() => { timer = xnew.interval(cb, 50, 0); });
             jest.advanceTimersByTime(50 * 5);
             expect(cb).toHaveBeenCalledTimes(1);
         });

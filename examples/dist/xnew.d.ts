@@ -21,7 +21,7 @@ declare class MapMap<Key1, Key2, Value> extends Map<Key1, Map<Key2, Value>> {
 }
 
 type DomElement = HTMLElement | SVGElement;
-declare class Eventor {
+declare class EventBinder {
     private map;
     add(element: DomElement, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
     remove(type: string, listener: Function): void;
@@ -38,25 +38,23 @@ interface Snapshot {
     element: DomElement;
     Component: Function | null;
 }
-type Phase = 'invoked' | 'initialized' | 'finalizing' | 'finalized';
 type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends [void] ? {} : Exclude<R, void | undefined>) : {};
 type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
-type SystemEvent = 'update' | 'finalize';
 declare class Unit {
     [key: string]: any;
     _: {
-        id: number;
         parent: Unit | null;
         children: Unit[];
-        phase: Phase;
+        phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
-        systems: Record<SystemEvent, {
+        systems: Record<'update' | 'finalize', {
             listener: Function;
             execute: Function;
             count: number;
+            owner: Unit;
         }[]>;
         currentElement: DomElement;
         currentContext: Context;
@@ -68,11 +66,10 @@ declare class Unit {
         }[];
         Components: Function[];
         listeners: MapMap<string, Function, {
-            element: DomElement;
-            Component: Function | null;
             execute: Function;
+            owner: Unit;
         }>;
-        eventor: Eventor;
+        events: EventBinder;
         key: any;
     };
     constructor(parent?: Unit | null);
@@ -81,7 +78,6 @@ declare class Unit {
     get parent(): Unit | null;
     get element(): DomElement;
     finalize(): void;
-    static finalize(unit: Unit): void;
     static nest(unit: Unit, target: DomElement | string, textContent?: string | number): DomElement;
     static extend(unit: Unit, Component: Function, props?: Object): {
         [key: string]: any;
@@ -89,7 +85,7 @@ declare class Unit {
     static update(unit: Unit, delta?: number): void;
     static engineRoot: Unit;
     static currentUnit: Unit;
-    static nextId: number;
+    static get current(): Unit;
     static reset(): void;
     static scope(snapshot: Snapshot, func: Function, ...args: any[]): any;
     static snapshot(unit: Unit): Snapshot;
@@ -102,15 +98,17 @@ declare class Unit {
     static find(Component: Function, key?: any): Unit[];
     static type2units: MapSet<string, Unit>;
     on(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
+    once(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
     off(type?: string, listener?: Function): void;
+    static owner2targets: MapSet<Unit, Unit>;
     static on(unit: Unit, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
-    static off(unit: Unit, type: string, listener?: Function): void;
+    static off(unit: Unit, owner: Unit | null, type: string, listener?: Function): void;
     static emit(unit: Unit, type: string, props?: object): void;
 }
 declare class UnitPromise {
     private promise;
-    key?: string;
-    constructor(promise: Promise<any>, key?: string);
+    key?: string | undefined;
+    constructor(promise: Promise<any>, key?: string | undefined);
     private chain;
     then(callback: Function): UnitPromise;
     catch(callback: Function): UnitPromise;
@@ -139,6 +137,7 @@ interface XnewBase {
 declare const xnew: XnewBase & {
     nest(target: DomElement | string): HTMLElement | SVGElement;
     extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
+    css<T extends Record<string, string>>(defs: T): Record<keyof T, string>;
     context(key: any): any;
     promise: {
         (promise: Function | Promise<any> | Unit): UnitPromise;
@@ -192,20 +191,38 @@ declare const xsync: {
     boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
 };
 
-interface TransitionOptions {
-    duration?: number;
-    easing?: string;
-}
-declare function OpenAndClose(unit: Unit, { open, transition }: {
-    open?: boolean;
-    transition?: TransitionOptions;
+declare function Aspect(unit: xnew.Unit, { aspect, fit }?: {
+    aspect?: number;
+    fit?: 'contain' | 'cover';
+}): void;
+
+declare function Screen(unit: xnew.Unit, { width, height, fit }?: {
+    width?: number;
+    height?: number;
+    fit?: 'contain' | 'cover';
 }): {
-    toggle(): void;
-    open(): void;
-    close(): void;
+    readonly canvas: DomElement;
 };
-declare function Accordion(unit: Unit): void;
-declare function Popup(unit: Unit): void;
+
+declare function Scene(unit: xnew.Unit): {
+    change(Component: Function, props?: any): void;
+    add(Component: Function, props?: any): void;
+};
+
+declare function Split(unit: xnew.Unit, { direction, ratio, className }?: {
+    direction?: 'column' | 'row';
+    ratio?: (number | string)[];
+    className?: string;
+}): {
+    readonly panes: Unit[];
+};
+
+type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
+declare function Image(unit: xnew.Unit, { src, className, style }: {
+    src: ImageSource | Promise<ImageSource>;
+    className?: string;
+    style?: string;
+}): void;
 
 interface SVGInterface {
     viewBox?: string;
@@ -219,7 +236,8 @@ interface SVGInterface {
     fill?: string;
     fillOpacity?: number;
 }
-declare function SVG(unit: Unit, { viewBox, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGInterface): void;
+declare function SVG(unit: xnew.Unit, { viewBox, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGInterface): void;
+
 interface SVGTextInterface {
     text?: string;
     fontSize?: number;
@@ -237,65 +255,9 @@ interface SVGTextInterface {
     fill?: string;
     fillOpacity?: number;
 }
-declare function SVGText(unit: Unit, { text, fontSize, anchor, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGTextInterface): void;
+declare function SVGText(unit: xnew.Unit, { text, fontSize, anchor, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGTextInterface): void;
 
-declare function AnalogStick(unit: Unit, { stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    fill?: string;
-    fillOpacity?: number;
-}): void;
-declare function DPad(unit: Unit, { diagonal, stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
-    diagonal?: boolean;
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    fill?: string;
-    fillOpacity?: number;
-}): void;
-
-interface PanelOptions {
-    name?: string;
-    open?: boolean;
-    params?: Record<string, any>;
-}
-declare function Panel(unit: Unit, { params }: PanelOptions): {
-    group({ name, open, params }: PanelOptions, inner: Function): Unit;
-    button(key: string): Unit;
-    select(key: string, { value, items }?: {
-        value?: string;
-        items?: string[];
-    }): Unit;
-    range(key: string, { value, min, max, step }?: {
-        value?: number;
-        min?: number;
-        max?: number;
-        step?: number;
-    }): Unit;
-    checkbox(key: string, { value }?: {
-        value?: boolean;
-    }): Unit;
-    separator(): void;
-};
-
-declare function Aspect(unit: Unit, { aspect, fit }?: {
-    aspect?: number;
-    fit?: 'contain' | 'cover';
-}): void;
-declare function Screen(unit: Unit, { width, height, fit }?: {
-    width?: number;
-    height?: number;
-    fit?: 'contain' | 'cover';
-}): {
-    readonly canvas: DomElement;
-};
-declare function Scene(unit: Unit): {
-    change(Component: Function, props?: any): void;
-    add(Component: Function, props?: any): void;
-};
-
-declare function AudioTrack(unit: Unit, { url, volume, loop }: {
+declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
     url: string;
     volume?: number;
     loop?: boolean;
@@ -308,10 +270,10 @@ declare function AudioTrack(unit: Unit, { url, volume, loop }: {
     pause({ fade: fadeMs }?: {
         fade?: number;
     }): void;
-    readonly isPlaying: boolean;
-    readonly isLoaded: boolean;
+    readonly status: "loading" | "loaded" | "playing" | "paused";
     volume: number;
 };
+
 type SynthesizerOptions = {
     oscillator: OscillatorOptions;
     amp: AmpOptions;
@@ -344,13 +306,69 @@ type LFO = {
     type: OscillatorType;
     rate: number;
 };
-declare function Synthesizer(unit: Unit, props: SynthesizerOptions): {
+declare function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions): {
     press: (frequency: number | string, duration?: number | string, wait?: number) => {
         release: () => void;
     } | undefined;
 };
-declare function Volume(unit: Unit): {
+
+declare function Volume(unit: xnew.Unit): {
     volume: number;
+};
+
+declare function OpenAndClose(unit: xnew.Unit, { open, duration, easing }: {
+    open?: boolean;
+    duration?: number;
+    easing?: string;
+}): {
+    toggle(): void;
+    open(): void;
+    close(): void;
+};
+
+declare function Accordion(unit: xnew.Unit): void;
+
+declare function Popup(unit: xnew.Unit): void;
+
+declare function AnalogStick(unit: xnew.Unit, { stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
+    stroke?: string;
+    strokeOpacity?: number;
+    strokeWidth?: number;
+    fill?: string;
+    fillOpacity?: number;
+}): void;
+
+declare function DPad(unit: xnew.Unit, { diagonal, stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
+    diagonal?: boolean;
+    stroke?: string;
+    strokeOpacity?: number;
+    strokeWidth?: number;
+    fill?: string;
+    fillOpacity?: number;
+}): void;
+
+interface PanelOptions {
+    name?: string;
+    open?: boolean;
+    params?: Record<string, any>;
+}
+declare function Panel(unit: xnew.Unit, { params }: PanelOptions): {
+    group({ name, open, params }: PanelOptions, inner: Function): Unit;
+    button(key: string): Unit;
+    select(key: string, { value, items }?: {
+        value?: string;
+        items?: string[];
+    }): Unit;
+    range(key: string, { value, min, max, step }?: {
+        value?: number;
+        min?: number;
+        max?: number;
+        step?: number;
+    }): Unit;
+    checkbox(key: string, { value }?: {
+        value?: boolean;
+    }): Unit;
+    separator(): void;
 };
 
 declare const xbasics: {
@@ -358,6 +376,7 @@ declare const xbasics: {
     SVGText: typeof SVGText;
     Aspect: typeof Aspect;
     Screen: typeof Screen;
+    Image: typeof Image;
     OpenAndClose: typeof OpenAndClose;
     AnalogStick: typeof AnalogStick;
     DPad: typeof DPad;
@@ -365,6 +384,7 @@ declare const xbasics: {
     Accordion: typeof Accordion;
     Popup: typeof Popup;
     Scene: typeof Scene;
+    Split: typeof Split;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;

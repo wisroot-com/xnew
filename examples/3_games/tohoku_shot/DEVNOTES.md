@@ -292,5 +292,5 @@ TitleScene ──tap/Space──▶ StoryScene ──2ページ目のtap/Space�
 - 背景: `Background` `BackgroundBase` `Mote` `PulseGlow`
 - 自機/弾/敵: `Player` `Shot` `Enemy` `Star` `ScorePopup` `EnemyCorpse` `PlayerExplosion`
 - 演出/音/UI: `HitBurst` `CameraShake` `ShotEnergy` `SoundFX` `ScoreManager` `ScoreGauge` `GameOverText`
-- リザルト: `ResultBackground` `ResultImage` `ResultDetail` `ResultFooter` `ScreenShot`
+- リザルト: `ResultBackground` `ResultDetail` `ResultFooter` `ScreenShot`
 - ヘルパー: `VolumeControl` `TitleText` `TouchMessage` `Camera` `ArrowUturnLeft`

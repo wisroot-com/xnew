@@ -31,6 +31,22 @@ describe('xnew() creation', () => {
         expect(unit.parent).toBe(root);
     });
 
+    it('initializes the engine lazily on the first xnew() call, not at module load', () => {
+        jest.isolateModules(() => {
+            const { Unit: FreshUnit } = require('../../../src/core/unit');
+            const { xnew: freshXnew } = require('../../../src/core/xnew');
+
+            // importing the library must not start the engine (no ticker side effect)
+            expect(FreshUnit.engineRoot).toBeUndefined();
+
+            const unit = freshXnew(() => {});
+            expect(FreshUnit.engineRoot).toBeInstanceOf(FreshUnit);
+            expect(unit.parent).toBe(FreshUnit.engineRoot);
+
+            FreshUnit.engineRoot.finalize();
+        });
+    });
+
     it('creates a child whose parent is the enclosing unit', () => {
         let outer!: Unit, inner!: Unit;
         xnew((u: Unit) => { outer = u; inner = xnew(); });

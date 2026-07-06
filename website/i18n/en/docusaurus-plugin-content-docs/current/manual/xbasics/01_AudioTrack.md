@@ -45,8 +45,7 @@ Pauses playback. The position is kept, and the next `play()` resumes from there.
 
 ## Accessors
 
-- `isPlaying` — Whether it is currently playing (`boolean`, read-only).
-- `isLoaded` — Whether decoding has finished (`boolean`, read-only).
+- `status` — Current state (`'loading' | 'loaded' | 'playing' | 'paused'`, read-only). `'loading'` until decoding finishes, `'playing'` while playing, `'paused'` while paused by `pause()`, and `'loaded'` otherwise (before the first play, or after playback ends).
 - `volume` — Volume of this track (`number`, read/write).
 
 :::note
@@ -55,4 +54,4 @@ To control the overall master volume, use `xbasics.Volume`. Pull it in with `xne
 
 ## Demo
 
-<iframe style={{width:'100%',height:'400px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_basics/music/index.html" ></iframe>
+<iframe style={{width:'100%',height:'400px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/basics/audiotrack/index.html" ></iframe>

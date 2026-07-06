@@ -225,27 +225,27 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
 
 export const xsync = {
     server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {} {
-        return getEnvironment() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) as DefinesOf<C> : {};
+        return getEnvironment() === 'server' ? Unit.extend(Unit.current, callback, props) as DefinesOf<C> : {};
     },
     client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {} {
-        return getEnvironment() === 'client' ? Unit.extend(Unit.currentUnit, callback, props) as DefinesOf<C> : {};
+        return getEnvironment() === 'client' ? Unit.extend(Unit.current, callback, props) as DefinesOf<C> : {};
     },
     state(initial: Record<string, any> = {}): Record<string, any> {
-        const data = syncOf(Unit.currentUnit);
+        const data = syncOf(Unit.current);
         for (const key of Object.keys(initial)) {
             if (!(key in data.state)) { data.state[key] = initial[key]; }
         }
         return data.state;
     },
     register(Components: Record<string, Function>): void {
-        const unit = Unit.currentUnit;
+        const unit = Unit.current;
         if (unit._.phase !== 'invoked') {
             throw new Error('xsync.register must be called during component initialization.');
         }
         Object.assign(syncOf(unit).registry, Components);
     },
     get session(): { room: RoomStatus; clients: ClientStatus[]; myself: ClientStatus } {
-        const info = rootInfoOf(Unit.currentUnit);
+        const info = rootInfoOf(Unit.current);
         const isServer = getEnvironment() === 'server';
         return {
             get room(): RoomStatus { return info.room; },
@@ -260,16 +260,16 @@ export const xsync = {
         };
     },
     emitToServer(type: string, props: Record<string, any> = {}): void {
-        const info = rootInfoOf(Unit.currentUnit);
+        const info = rootInfoOf(Unit.current);
         if (getEnvironment() === 'server') {
-            Unit.emit(Unit.currentUnit, type, props);
+            Unit.emit(Unit.current, type, props);
         } else {
-            (info as ClientInfo).socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.currentUnit).id, data: props });
+            (info as ClientInfo).socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.current).id, data: props });
         }
     },
     emitToClients(type: string, props: Record<string, any> = {}, ids?: string[]): void {
-        const info = rootInfoOf(Unit.currentUnit);
-        const syncId = syncOf(Unit.currentUnit).id;
+        const info = rootInfoOf(Unit.current);
+        const syncId = syncOf(Unit.current).id;
         if (getEnvironment() === 'server') {
             relayToClients(info as ServerInfo, type, undefined, syncId, props, ids);
         } else {
@@ -277,9 +277,10 @@ export const xsync = {
         }
     },
     boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit {
-        if (Unit.engineRoot === undefined) { Unit.reset(); }
-        return getEnvironment() === 'server'
-            ? bootServer(opts as BootServerOptions, Unit.currentUnit, args)
-            : bootClient(opts as BootClientOptions, Unit.currentUnit, args);
+        if (getEnvironment() === 'server') {
+            return bootServer(opts as BootServerOptions, Unit.current, args);
+        } else {
+            return bootClient(opts as BootClientOptions, Unit.current, args);
+        }
     },
 };

@@ -8,7 +8,7 @@ import { xnew, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import { xmatter } from '@mulsense/xnew/addons/xmatter';
-import { ResultBackground, ResultImage, ResultFooter, TitleText, TouchMessage, GameOverText, VolumeControl } from '../utils/ui.js';
+import html2canvas from 'html2canvas-pro';
 
 xnew(document.querySelector('#main'), Main);
 
@@ -55,13 +55,13 @@ function GameData(unit) {
 function TitleScene(unit) {
   xnew.extend(xbasics.Scene);
 
-  xnew(Background);
+  xnew(xbasics.Image, { src: './background.jpg', className: 'absolute inset-0 size-full -z-10 object-fill' });
   xnew(ShadowPlane);
   xnew(DirectionalLight, { x: 2, y: 12, z: 20 });
   xnew(AmbientLight);
 
   for (let id = 0; id < 7; id++) {
-    const position = convert3d(140 + id * 90, 450);
+    const position = xthree.coord2dTo3d(140 + id * 90, 450);
     const rotation = { x: 10 / 180 * Math.PI, y: (-10 - 3 * id) / 180 * Math.PI, z: 0 };
     xnew(Model, { position, rotation, id, scale: 0.8 });
   }
@@ -82,7 +82,7 @@ function GameScene(unit) {
   });
   xnew.context(GameData).reset();
   
-  xnew(Background);
+  xnew(xbasics.Image, { src: './background.jpg', className: 'absolute inset-0 size-full -z-10 object-fill' });
   xnew(ShadowPlane);
   xnew(DirectionalLight, { x: 2, y: 5, z: 10 });
   xnew(AmbientLight);
@@ -100,11 +100,16 @@ function GameScene(unit) {
 
   // xnew.timeout(() => xnew.emit('+gameover'), 1100);
 
-  unit.on('+gameover', () => {
-    unit.off('+gameover');
+  unit.once('+gameover', () => {
     playing.finalize();
-    const image = xpixi.renderer.extract.base64({ target: xpixi.scene, frame: new PIXI.Rectangle(0, 0, xpixi.canvas.width, xpixi.canvas.height) });
-    xnew(GameOverText);
+    const gameover = xnew(GameOverText);
+
+    // 背景が DOM(xbasics.Image) になり pixi extract では写らないため、html2canvas で画面ごと撮る。
+    xpixi.renderer.render(xpixi.scene); // preserveDrawingBuffer なしでも同一タスク内の描画直後なら canvas が写る
+    const image = html2canvas(document.querySelector('#main'), {
+      scale: 2, logging: false, useCORS: true,
+      ignoreElements: (element) => element === gameover.element,
+    }).then((canvas) => canvas.toDataURL('image/png'));
 
     xnew.timeout(() => {
       unit.change(ResultScene, { image });
@@ -124,18 +129,9 @@ function ResultScene(unit, { image }) {
   }, 500, 'ease');
 
   xnew(ResultBackground, { gradient: 'from-stone-300 to-stone-400', textColor: 'text-stone-400' });
-  xnew(ResultImage, { image, boxClass: 'bottom-[12cqw] left-[2cqw] size-[45cqw]' });
+  xnew(xbasics.Image, { src: image, className: 'absolute bottom-[12cqw] left-[2cqw] size-[45cqw] rounded-[1cqw] object-cover', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);' });
   xnew(ResultDetail);
   xnew(ResultFooter, { onBack: () => unit.change(TitleScene) });
-}
-
-function Background(unit) {
-  const object = xpixi.nest(new PIXI.Container());
-  xnew.promise(PIXI.Assets.load('./background.jpg')).then((texture) => {
-    const sprite = new PIXI.Sprite(texture);
-    sprite.scale.set(xpixi.canvas.width / texture.frame.width, xpixi.canvas.height / texture.frame.height);
-    object.addChild(sprite);
-  });
 }
 
 function ThreeTexture(unit) {
@@ -216,19 +212,19 @@ function Queue(unit) {
   const balls = [...Array(4)].map(() => Math.floor(Math.random() * 3));
   xnew.emit('+relode:done', { id: 0 });
 
-  const position = convert3d(10 + 70, 70);
+  const position = xthree.coord2dTo3d(10 + 70, 70);
   const rotation = { x: 30 / 180 * Math.PI, y: 60 / 180 * Math.PI, z: 0 };
   let model = xnew(Model, { position, rotation, id: balls[0], scale: 0.6 });
 
   unit.on('+reload', () => {
-    const position = convert3d(10, 70);
+    const position = xthree.coord2dTo3d(10, 70);
     const rotation = { x: 30 / 180 * Math.PI, y: 60 / 180 * Math.PI, z: 0 };
     model.finalize();
     model = xnew(Model, { position, rotation, id: balls[1], scale: 0.6 });
 
     balls.push(Math.floor(Math.random() * 3));
     xnew.transition(({ value }) => {
-      const position = convert3d(10 + value * 70, 70);
+      const position = xthree.coord2dTo3d(10 + value * 70, 70);
       model.threeObject.position.set(position.x, position.y, position.z);
     }, 500).timeout(() => xnew.emit('+relode:done', { id: balls.shift() }));
   });
@@ -297,7 +293,7 @@ function Cursor(unit) {
   const offset = 50;
   let model = null
   unit.on('+relode:done', ({ id }) => {
-    const position = convert3d(object.x, object.y + offset);
+    const position = xthree.coord2dTo3d(object.x, object.y + offset);
     model = xnew(Model, { position, id, scale: 0.5 });
   });
   unit.on('+drop', () => {
@@ -310,7 +306,7 @@ function Cursor(unit) {
   });
   unit.on('update', () => {
     object.rotation += 0.02;
-    const position = convert3d(object.x, object.y + offset);
+    const position = xthree.coord2dTo3d(object.x, object.y + offset);
     model?.threeObject.position.set(position.x, position.y, position.z);
   });
 }
@@ -334,7 +330,7 @@ function ModelBall(ball, { x, y, id = 0 }) {
   xnew.context(xbasics.Scene).add(StarParticles, { x, y });
   
   ball.on('update', () => {
-    const position = convert3d(ball.pixiObject.x, ball.pixiObject.y);
+    const position = xthree.coord2dTo3d(ball.pixiObject.x, ball.pixiObject.y);
     model.threeObject.position.set(position.x, position.y, position.z);
     model.threeObject.rotation.z = -ball.pixiObject.rotation;
     if (ball.pixiObject.y > xpixi.canvas.height) {
@@ -408,8 +404,181 @@ function Circle(unit, { x, y, radius, color = 0xFFFFFF, alpha = 1.0, options = {
   });
 }
 
-// helpers
-function convert3d(x, y, z = 0) {
-  return { x: (x - xpixi.canvas.width / 2) / 70, y: - (y - xpixi.canvas.height / 2) / 70, z: z };
+// ---- UI parts (title / result / volume) ----
+
+// 丸枠アイコン: 外周の円 + 中央70%に path 群。Camera / ArrowUturnLeft で共有。
+function RingIcon(unit, { paths }) {
+  xnew('<div style="position: absolute; inset: 0; margin: auto; width: 100%; height: 100%;">', () => {
+    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor' });
+    xnew('<circle cx="12" cy="12" r="11">');
+  });
+  xnew('<div style="position: absolute; inset: 0; margin: auto; width: 70%; height: 70%;">', () => {
+    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.5 });
+    for (const d of paths) {
+      xnew(`<path d="${d}">`);
+    }
+  });
+}
+
+function Camera(_unit) {
+  xnew.extend(RingIcon, { paths: [
+    'M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23q-.57.08-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a48 48 0 0 0-1.134-.175a2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.19 2.19 0 0 0-1.736-1.039a49 49 0 0 0-5.232 0a2.19 2.19 0 0 0-1.736 1.039z',
+    'M16.5 12.75a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m2.25-2.25h.008v.008h-.008z',
+  ] });
+}
+
+function ArrowUturnLeft(_unit) {
+  xnew.extend(RingIcon, { paths: ['M9 15L3 9m0 0l6-6M3 9h12a6 6 0 0 1 0 12h-3'] });
+}
+
+// #main を白で覆ってからフェードアウトしつつ撮影し、PNG をダウンロードする。
+function ScreenShot(unit) {
+  xnew.nest(document.querySelector('#main'));
+  const cover = xnew('<div class="absolute inset-0 size-full z-10 bg-white">');
+  xnew.transition(({ value }) => cover.element.style.opacity = 1 - value, 1000)
+    .timeout(() => {
+      html2canvas(unit.element, { scale: 2, logging: false, useCORS: true }).then((canvas) => {
+        // 下部 13% のフッターを除いた領域を切り出して PNG としてダウンロードする。
+        const [width, height] = [canvas.width, Math.floor(canvas.height * 0.87)];
+        const cropped = document.createElement('canvas');
+        [cropped.width, cropped.height] = [width, height];
+        cropped.getContext('2d').drawImage(canvas, 0, 0, width, height, 0, 0, width, height);
+        const link = document.createElement('a');
+        link.download = 'image.png';
+        link.href = cropped.toDataURL('image/png');
+        link.click();
+      });
+      unit.finalize();
+    });
+}
+
+// リザルトのフッター。「画面を保存」(ScreenShot) と「戻る」(onBack) の2ボタン。
+function ResultFooter(unit, { onBack }) {
+  xnew.nest('<div class="absolute bottom-0 w-full h-[13cqh] px-[2cqw] flex justify-between text-stone-500">');
+  xnew('<div class="flex items-center gap-x-[2cqw]">', () => {
+    const button = xnew('<div class="relative size-[9cqw] cursor-pointer hover:scale-110">', Camera);
+    button.on('click', () => xnew(ScreenShot));
+    xnew('<div class="text-[3cqw] font-bold">', '画面を保存');
+  });
+
+  xnew('<div class="flex items-center gap-x-[2cqw]">', () => {
+    xnew('<div class="text-[3cqw] font-bold">', '戻る');
+    const button = xnew('<div class="relative size-[9cqw] cursor-pointer hover:scale-110">', ArrowUturnLeft);
+    button.on('click', () => onBack());
+  });
+}
+
+// リザルト背景：斜めグラデ + 大きな "Result" + 漂う/瞬く白丸。
+// gradient="from-... to-..."（bg-linear-to-br 用）/ textColor="text-..."。
+function ResultBackground(unit, { gradient, textColor }) {
+  xnew.nest(`<div class="relative size-full bg-linear-to-br ${gradient}">`);
+  xnew(`<div class="absolute top-0 left-[4cqw] text-[14cqw] ${textColor}">`, 'Result');
+
+  // ランダム配置した白丸を sin で明滅させる。transform は種類ごとに変える（浮遊 / きらめき）。
+  function floatingCircle(sizeCqw, transform) {
+    const [x, y] = [Math.random() * 100, Math.random() * 100];
+    const circle = xnew(`<div class="absolute rounded-full bg-white" style="width: ${sizeCqw}cqw; height: ${sizeCqw}cqw; left: ${x}%; top: ${y}%; opacity: 0.2;">`);
+    circle.on('update', ({ count }) => {
+      const p = count * 0.02;
+      Object.assign(circle.element.style, { opacity: Math.sin(p) * 0.1 + 0.2, transform: transform(p) });
+    });
+  }
+
+  for (let i = 0; i < 20; i++) {
+    floatingCircle(Math.random() * 2 + 2, (p) => `translateY(${Math.sin(p) * 20}px)`);
+  }
+  for (let i = 0; i < 30; i++) {
+    floatingCircle(1, (p) => `scale(${1 + Math.sin(p) * 0.1})`);
+  }
+}
+
+// タイトルの見出し（縁取り SVGText）。text=文言 / color="text-..."。
+function TitleText(unit, { text, color }) {
+  xnew.nest(`<div class="absolute w-full top-[16cqw] text-center ${color} font-bold">`);
+  xnew(xbasics.SVGText, { text, fontSize: '10cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
+}
+
+// 点滅する "touch start"。color="text-..."。
+function TouchMessage(unit, { color }) {
+  xnew.nest(`<div class="absolute w-full top-[30cqw] text-center ${color} font-bold">`);
+  xnew(xbasics.SVGText, { text: 'touch start', fontSize: '6cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
+  unit.on('update', ({ count }) => unit.element.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
+}
+
+// 中央に降りてくる "Game Over"。className で横位置を調整（既定は全幅中央）。
+function GameOverText(unit, { className = 'w-full' }) {
+  xnew.nest(`<div class="absolute ${className} text-center text-red-400 font-bold">`);
+  xnew(xbasics.SVGText, { text: 'Game Over', fontSize: '12cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
+  xnew.transition(({ value }) => {
+    Object.assign(unit.element.style, { opacity: value, top: `${10 + value * 15}cqw` });
+  }, 1000, 'ease');
+}
+
+// スピーカーアイコン（muted で消音グリフに切り替わる）。
+function SpeakerIcon(unit, { muted = false } = {}) {
+  xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.5 });
+  const path = muted
+    ? 'M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z'
+    : 'M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z';
+  xnew(`<path d="${path}" />`);
+}
+
+// スピーカーアイコン + アンカー方向に開くスライダー。xbasics.Volume をマスター音量への橋渡しに使う。
+function VolumeController(unit, { anchor = 'left' } = {}) {
+  const volume = xnew.extend(xbasics.Volume);
+  xnew.extend(xbasics.Aspect, { aspect: 1.0, fit: 'contain' });
+  unit.on('pointerdown', ({ event }) => event.stopPropagation());
+
+  const system = xnew(xbasics.OpenAndClose, { open: false, duration: 250, easing: 'ease' });
+
+  const button = xnew((unit) => {
+    xnew.nest('<div style="width: 100%; height: 100%; cursor: pointer;">');
+    unit.on('click', () => system.toggle());
+    let icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
+    return {
+      update() {
+        icon?.finalize();
+        icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
+      }
+    };
+  });
+
+  xnew(() => {
+    const isHoriz = anchor === 'left' || anchor === 'right';
+    const cqUnit = isHoriz ? 'cqw' : 'cqh';
+    const fillProp = isHoriz ? 'width' : 'height';
+    const pct = volume.volume * 100;
+
+    const outerSize = isHoriz ? `top: 20%; bottom: 20%; width: 0${cqUnit}` : `left: 20%; right: 20%; height: 0${cqUnit}`;
+    const fillSize = isHoriz ? `top: 0; left: 0; bottom: 0; width: ${pct}%; height: 100%` : `bottom: 0; left: 0; right: 0; width: 100%; height: ${pct}%`;
+
+    const outer = xnew.nest(`<div style="position: absolute; ${outerSize};">`);
+    xnew.nest(`<div style="position: relative; width: 100%; height: 100%; border: 1px solid currentColor; border-radius: 0.25em; box-sizing: border-box;">`);
+
+    const fill = xnew(`<div style="position: absolute; ${fillSize}; background: color-mix(in srgb, currentColor 20%, transparent);">`);
+    const input = xnew(`<input type="range" min="0" max="100" value="${pct}" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;${isHoriz ? '' : ' writing-mode: vertical-lr; direction: rtl;'}">`);
+
+    input.on('input', ({ event }) => {
+      const v = Number(event.target.value);
+      fill.element.style[fillProp] = `${v}%`;
+      volume.volume = v / 100;
+      button.update();
+    });
+
+    system.on('-transition', ({ value }) => {
+      outer.style[anchor] = `-${value * 400 + 20}${cqUnit}`;
+      outer.style[fillProp] = `${value * 400}${cqUnit}`;
+      outer.style.opacity = value.toString();
+      outer.style.pointerEvents = value < 0.9 ? 'none' : 'auto';
+    });
+  });
+
+  unit.on('click.outside', () => system.close());
+}
+
+// 右下の音量コントローラ。className で文字色等を調整。
+function VolumeControl(unit, { className = 'text-stone-300 z-10' } = {}) {
+  xnew(`<div class="absolute right-[2cqw] bottom-[2cqw] size-[6cqw] ${className}">`,
+    VolumeController, { anchor: 'left' });
 }
 

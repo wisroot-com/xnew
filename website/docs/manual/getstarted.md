@@ -113,7 +113,7 @@ unit.element; // Access the created DOM element
 
 `xnew.nest()` はネストの基準を切り替え、これ以降の要素を指定したコンテナの内側に配置します。HTML を直接書き連ねずに、構造化されたレイアウトを組み立てられます。
 
-<iframe style={{width:'100%',height:'120px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/0_manual/element.html" ></iframe>
+<iframe style={{width:'100%',height:'120px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/manual/element.html" ></iframe>
 
 ```html
 <!DOCTYPE html>
@@ -178,7 +178,7 @@ unit.element; // Access the created DOM element
 
 下のボックスをクリックすると CSS 回転アニメーションが開始・停止します。
 
-<iframe style={{width:'100%',height:'300px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/0_manual/box.html" ></iframe>
+<iframe style={{width:'100%',height:'300px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/manual/box.html" ></iframe>
 
 ```html
 <!DOCTYPE html>

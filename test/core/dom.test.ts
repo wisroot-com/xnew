@@ -1,10 +1,10 @@
-import { Eventor, isDomElement } from '../../src/core/dom';
+import { EventBinder, isDomElement } from '../../src/core/dom';
 
 //----------------------------------------------------------------------------------------------------
-// dom — DomElement type guard (isDomElement) + Eventor (DOM event binding).
+// dom — DomElement type guard (isDomElement) + EventBinder (DOM event binding).
 //
 // Real public surface (verified against src/core/dom.ts):
-//   new Eventor()                                   — no constructor args
+//   new EventBinder()                                   — no constructor args
 //   add(element, type, listener, options?)          — element first, then type, then listener
 //   remove(type, listener)                          — note: NO element argument
 //
@@ -26,15 +26,15 @@ const RECT = {
     left: 10, top: 20, right: 0, bottom: 0, width: 0, height: 0, x: 10, y: 20, toJSON() {},
 } as DOMRect;
 
-describe('Eventor', () => {
+describe('EventBinder', () => {
     let element: HTMLElement;
-    let eventor: Eventor;
+    let binder: EventBinder;
 
     beforeEach(() => {
         jest.useFakeTimers();
         element = document.createElement('div');
         document.body.appendChild(element);
-        eventor = new Eventor();
+        binder = new EventBinder();
     });
 
     afterEach(() => {
@@ -45,7 +45,7 @@ describe('Eventor', () => {
     describe('deferred registration', () => {
         it('defers registration by one tick', () => {
             const listener = jest.fn();
-            eventor.add(element, 'click', listener);
+            binder.add(element, 'click', listener);
 
             // Before the deferred tick: native listener is not attached yet.
             element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -58,8 +58,8 @@ describe('Eventor', () => {
 
         it('remove() cancels a pending registration before the tick', () => {
             const listener = jest.fn();
-            eventor.add(element, 'click', listener);
-            eventor.remove('click', listener);
+            binder.add(element, 'click', listener);
+            binder.remove('click', listener);
 
             jest.runOnlyPendingTimers();
             element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -68,10 +68,10 @@ describe('Eventor', () => {
 
         it('remove() stops a registered listener after the tick', () => {
             const listener = jest.fn();
-            eventor.add(element, 'click', listener);
+            binder.add(element, 'click', listener);
             jest.runOnlyPendingTimers();
 
-            eventor.remove('click', listener);
+            binder.remove('click', listener);
             element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
             expect(listener).not.toHaveBeenCalled();
         });
@@ -84,7 +84,7 @@ describe('Eventor', () => {
 
         it('passes { event, position } for a click (clientXY minus rect origin)', () => {
             const listener = jest.fn();
-            eventor.add(element, 'click', listener);
+            binder.add(element, 'click', listener);
             jest.runOnlyPendingTimers();
 
             const event = new MouseEvent('click', { clientX: 25, clientY: 45, bubbles: true });
@@ -96,7 +96,7 @@ describe('Eventor', () => {
 
         it('binds mousedown as a basic { event } listener (no special handler)', () => {
             const listener = jest.fn();
-            eventor.add(element, 'mousedown', listener);
+            binder.add(element, 'mousedown', listener);
             jest.runOnlyPendingTimers();
 
             const event = new MouseEvent('mousedown', { clientX: 30, clientY: 70, bubbles: true });
@@ -107,7 +107,7 @@ describe('Eventor', () => {
 
         it('passes { event, position } for a pointerdown', () => {
             const listener = jest.fn();
-            eventor.add(element, 'pointerdown', listener);
+            binder.add(element, 'pointerdown', listener);
             jest.runOnlyPendingTimers();
 
             const event = new MouseEvent('pointerdown', { clientX: 10, clientY: 20, bubbles: true });
@@ -126,7 +126,7 @@ describe('Eventor', () => {
             document.body.appendChild(outside);
 
             const listener = jest.fn();
-            eventor.add(element, 'click.outside', listener);
+            binder.add(element, 'click.outside', listener);
             jest.runOnlyPendingTimers();
 
             // Click inside the element: ignored.
@@ -150,7 +150,7 @@ describe('Eventor', () => {
             document.body.appendChild(input);
 
             const listener = jest.fn();
-            eventor.add(input, 'change', listener);
+            binder.add(input, 'change', listener);
             jest.runOnlyPendingTimers();
 
             const event = new Event('change', { bubbles: true });
@@ -167,7 +167,7 @@ describe('Eventor', () => {
             document.body.appendChild(input);
 
             const listener = jest.fn();
-            eventor.add(input, 'change', listener);
+            binder.add(input, 'change', listener);
             jest.runOnlyPendingTimers();
 
             const event = new Event('change', { bubbles: true });
@@ -184,7 +184,7 @@ describe('Eventor', () => {
             document.body.appendChild(input);
 
             const listener = jest.fn();
-            eventor.add(input, 'input', listener);
+            binder.add(input, 'input', listener);
             jest.runOnlyPendingTimers();
 
             const event = new Event('input', { bubbles: true });
@@ -196,26 +196,83 @@ describe('Eventor', () => {
     });
 
     describe('wheel', () => {
-        it('passes { event, delta } from legacy wheelDelta props', () => {
+        it('passes { event, delta } from standard deltaX/deltaY', () => {
             const listener = jest.fn();
-            eventor.add(element, 'wheel', listener);
+            binder.add(element, 'wheel', listener);
             jest.runOnlyPendingTimers();
 
-            // jsdom does not populate the legacy wheelDeltaX/Y props that the handler reads,
-            // so assign them on the event instance to exercise the real payload mapping.
-            const event = new WheelEvent('wheel', { bubbles: true });
-            Object.defineProperty(event, 'wheelDeltaX', { value: -30 });
-            Object.defineProperty(event, 'wheelDeltaY', { value: 120 });
+            const event = new WheelEvent('wheel', { deltaX: -30, deltaY: 120, bubbles: true });
             element.dispatchEvent(event);
 
             expect(listener).toHaveBeenCalledWith({ event, delta: { x: -30, y: 120 } });
         });
     });
 
+    describe('drag', () => {
+        const pointer = (type: string, pointerId: number, clientX = 0, clientY = 0): Event => {
+            const event = new MouseEvent(type, { clientX, clientY, bubbles: true });
+            Object.defineProperty(event, 'pointerId', { value: pointerId });
+            return event;
+        };
+
+        beforeEach(() => {
+            jest.spyOn(element, 'getBoundingClientRect').mockReturnValue(RECT);
+        });
+
+        it('emits dragstart / dragmove / dragend across pointerdown → move → up', () => {
+            const start = jest.fn();
+            const move = jest.fn();
+            const end = jest.fn();
+            binder.add(element, 'dragstart', start);
+            binder.add(element, 'dragmove', move);
+            binder.add(element, 'dragend', end);
+            jest.runOnlyPendingTimers();
+
+            element.dispatchEvent(pointer('pointerdown', 1, 10, 20));
+            expect(start).toHaveBeenCalledTimes(1);
+            expect(start.mock.calls[0][0]).toMatchObject({ position: { x: 0, y: 0 }, delta: { x: 0, y: 0 } });
+
+            jest.runOnlyPendingTimers(); // the inner window listeners attach one tick later
+            window.dispatchEvent(pointer('pointermove', 1, 15, 26));
+            expect(move).toHaveBeenCalledTimes(1);
+            expect(move.mock.calls[0][0]).toMatchObject({ position: { x: 5, y: 6 }, delta: { x: 5, y: 6 } });
+
+            window.dispatchEvent(pointer('pointerup', 1, 15, 26));
+            expect(end).toHaveBeenCalledTimes(1);
+
+            // after the drag ended, window listeners are detached
+            window.dispatchEvent(pointer('pointermove', 1, 30, 40));
+            expect(move).toHaveBeenCalledTimes(1);
+        });
+
+        it('ignores a second pointer while a drag is active', () => {
+            const start = jest.fn();
+            const move = jest.fn();
+            binder.add(element, 'dragstart', start);
+            binder.add(element, 'dragmove', move);
+            jest.runOnlyPendingTimers();
+
+            element.dispatchEvent(pointer('pointerdown', 1, 10, 20));
+            element.dispatchEvent(pointer('pointerdown', 2, 50, 60));
+            expect(start).toHaveBeenCalledTimes(1);
+            jest.runOnlyPendingTimers(); // the inner window listeners attach one tick later
+
+            // the second pointer lifting must not end the first pointer's drag
+            window.dispatchEvent(pointer('pointerup', 2, 50, 60));
+            window.dispatchEvent(pointer('pointermove', 1, 15, 26));
+            expect(move).toHaveBeenCalledTimes(1);
+
+            // a new drag is accepted once the first pointer is released
+            window.dispatchEvent(pointer('pointerup', 1, 15, 26));
+            element.dispatchEvent(pointer('pointerdown', 2, 50, 60));
+            expect(start).toHaveBeenCalledTimes(2);
+        });
+    });
+
     describe('basic element event', () => {
         it('passes { event } for an unrecognized event type', () => {
             const listener = jest.fn();
-            eventor.add(element, 'focus', listener);
+            binder.add(element, 'focus', listener);
             jest.runOnlyPendingTimers();
 
             const event = new Event('focus');
@@ -228,7 +285,7 @@ describe('Eventor', () => {
     describe('window basic event', () => {
         it('strips the "window." prefix and binds on window with { event }', () => {
             const listener = jest.fn();
-            eventor.add(element, 'window.resize', listener);
+            binder.add(element, 'window.resize', listener);
             jest.runOnlyPendingTimers();
 
             const event = new Event('resize');
@@ -241,7 +298,7 @@ describe('Eventor', () => {
     describe('document basic event', () => {
         it('strips the "document." prefix and binds on document with { event }', () => {
             const listener = jest.fn();
-            eventor.add(element, 'document.visibilitychange', listener);
+            binder.add(element, 'document.visibilitychange', listener);
             jest.runOnlyPendingTimers();
 
             const event = new Event('visibilitychange');
@@ -254,7 +311,7 @@ describe('Eventor', () => {
     describe('window keyboard', () => {
         it('passes { event } for window.keydown and filters repeat events', () => {
             const listener = jest.fn();
-            eventor.add(element, 'window.keydown', listener);
+            binder.add(element, 'window.keydown', listener);
             jest.runOnlyPendingTimers();
 
             const repeated = new KeyboardEvent('keydown', { code: 'KeyX', repeat: true });
@@ -268,7 +325,7 @@ describe('Eventor', () => {
 
         it('accumulates arrow keys into a vector (down = +y, up = -y)', () => {
             const listener = jest.fn();
-            eventor.add(element, 'window.keydown.arrow', listener);
+            binder.add(element, 'window.keydown.arrow', listener);
             jest.runOnlyPendingTimers();
 
             window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowUp' }));
@@ -286,7 +343,7 @@ describe('Eventor', () => {
             const listener = jest.fn();
             // keydown.arrow and keyup.arrow share a keymap only within one add(); the keyup
             // variant tracks its own state, so register keyup.arrow and prime keys via keydown.
-            eventor.add(element, 'window.keyup.arrow', listener);
+            binder.add(element, 'window.keyup.arrow', listener);
             jest.runOnlyPendingTimers();
 
             // keydown updates the internal keymap (does not fire this listener);
@@ -303,7 +360,7 @@ describe('Eventor', () => {
 
         it('accumulates wasd keys into a vector (W = -y, D = +x)', () => {
             const listener = jest.fn();
-            eventor.add(element, 'window.keydown.wasd', listener);
+            binder.add(element, 'window.keydown.wasd', listener);
             jest.runOnlyPendingTimers();
 
             window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
@@ -319,7 +376,7 @@ describe('Eventor', () => {
 
         it('filters repeat events on the wasd binding', () => {
             const listener = jest.fn();
-            eventor.add(element, 'window.keydown.wasd', listener);
+            binder.add(element, 'window.keydown.wasd', listener);
             jest.runOnlyPendingTimers();
 
             window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', repeat: true }));
@@ -328,7 +385,7 @@ describe('Eventor', () => {
 
         it('fires a named-key binding only for the matching key', () => {
             const listener = jest.fn();
-            eventor.add(element, 'window.keydown.space', listener);
+            binder.add(element, 'window.keydown.space', listener);
             jest.runOnlyPendingTimers();
 
             window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA' }));
@@ -343,8 +400,8 @@ describe('Eventor', () => {
         it('resolves letter / arrow aliases for named keys', () => {
             const onA = jest.fn();
             const onUp = jest.fn();
-            eventor.add(element, 'window.keydown.a', onA);
-            eventor.add(element, 'window.keyup.up', onUp);
+            binder.add(element, 'window.keydown.a', onA);
+            binder.add(element, 'window.keyup.up', onUp);
             jest.runOnlyPendingTimers();
 
             window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA' }));
@@ -355,7 +412,7 @@ describe('Eventor', () => {
 
         it('always strips repeat on named keys', () => {
             const strict = jest.fn();
-            eventor.add(element, 'window.keydown.space', strict);
+            binder.add(element, 'window.keydown.space', strict);
             jest.runOnlyPendingTimers();
 
             window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', repeat: true }));
@@ -369,7 +426,7 @@ describe('Eventor', () => {
     describe('keyboard without the window. prefix (binds to the element, not the window)', () => {
         it('binds bare keydown to the element as a normal event (no window binding)', () => {
             const listener = jest.fn();
-            eventor.add(element, 'keydown', listener);
+            binder.add(element, 'keydown', listener);
             jest.runOnlyPendingTimers();
 
             // window へ送っても要素のリスナには届かない（window ではなく要素にバインドされるため）
@@ -384,7 +441,7 @@ describe('Eventor', () => {
 
         it('does not treat bare keydown.arrow as a window vector binding', () => {
             const listener = jest.fn();
-            eventor.add(element, 'keydown.arrow', listener);
+            binder.add(element, 'keydown.arrow', listener);
             jest.runOnlyPendingTimers();
 
             window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowUp' }));
@@ -393,7 +450,7 @@ describe('Eventor', () => {
 
         it('does not treat bare keydown.space as a window named-key binding', () => {
             const listener = jest.fn();
-            eventor.add(element, 'keydown.space', listener);
+            binder.add(element, 'keydown.space', listener);
             jest.runOnlyPendingTimers();
 
             window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));

@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // time — runtime-agnostic tickers and timers (rAF in the browser / setTimeout in Node)
 //
-// - Ticker : calls back at the target FPS (passes delta = ms elapsed since the previous frame)
+// - Ticker : calls back at the target FPS (passes delta = measured ms since the previous call)
 // - Timer  : setTimeout timer with easing; auto-pauses on visibilitychange (browser only)
 //----------------------------------------------------------------------------------------------------
 
@@ -14,35 +14,42 @@ export class Ticker {
 
     constructor(callback: Function, fps: number = 60) {
         const interval = 1000 / fps;
-        const minDelta = interval * 0.9;
-        let previous = 0;
+        // absolute schedule (next += interval): the fractional remainder carries over, so the
+        // average rate holds the target fps even when the frame rate is not a multiple of it
+        let previous = Date.now();
+        let next = previous + interval;
 
-        const tick = (): void => {
-            if (typeof requestAnimationFrame !== 'undefined') {
-                // rAF fires at the display refresh rate, so throttle down to the target fps.
+        if (typeof requestAnimationFrame !== 'undefined') {
+            const tolerance = interval * 0.1; // rAF frames can land slightly early
+            const tick = (): void => {
                 const now = Date.now();
-                if (previous === 0) {
-                    // First tick only records the start time (callback begins next frame). Without this,
-                    // delta would be Date.now() (a huge epoch value) and it would fire synchronously on construction.
+                if (now >= next - tolerance) {
+                    callback(now - previous);
                     previous = now;
-                } else {
-                    const delta = now - previous;
-                    if (delta > minDelta) {
-                        callback(delta); // pass elapsed ms to the callback (becomes the update / render delta)
-                        previous += delta;
+                    next += interval;
+                    if (next < now) {
+                        next = now + interval; // resync after a stall (e.g. hidden tab)
                     }
                 }
-                const id = requestAnimationFrame(tick);
-                this.cancel = () => cancelAnimationFrame(id);
-            } else {
-                // setTimeout already fires at the target interval, so no throttling is needed.
-                callback(interval);
-                const id = setTimeout(tick, interval);
-                this.cancel = () => clearTimeout(id);
-            }
-        };
-
-        tick();
+                id = requestAnimationFrame(tick);
+            };
+            let id = requestAnimationFrame(tick);
+            this.cancel = () => cancelAnimationFrame(id);
+        } else {
+            let id: ReturnType<typeof setTimeout>;
+            const tick = (): void => {
+                const now = Date.now();
+                callback(now - previous);
+                previous = now;
+                next += interval;
+                if (next < now) {
+                    next = now + interval;
+                }
+                id = setTimeout(tick, next - now);
+            };
+            id = setTimeout(tick, interval);
+            this.cancel = () => clearTimeout(id);
+        }
     }
 
     clear(): void {
@@ -76,11 +83,12 @@ function ease(p: number, easing?: string): number {
 }
 
 export class Timer {
-    private id: number | null = null;
-    private time: { start: number, processed: number } = { start: 0.0, processed: 0.0 };
-    private request: boolean = true;
+    private id: ReturnType<typeof setTimeout> | null = null;
+    private startTime: number = 0.0;
+    private processed: number = 0.0;
+    private cleared: boolean = false;
     private visibilityListener: () => void;
-    private ticker: Ticker;
+    private ticker: Ticker | null = null;
 
     constructor(
         private timeout: Function | null,
@@ -88,9 +96,7 @@ export class Timer {
         private duration: number,
         private easing?: string,
     ) {
-        this.ticker = new Ticker(() => this.animation());
-
-        this.visibilityListener = () => document.hidden === false ? this._start() : this._stop();
+        this.visibilityListener = () => document.hidden === false ? this.start() : this.stop();
         if (typeof document !== 'undefined') {
             document.addEventListener('visibilitychange', this.visibilityListener);
         }
@@ -99,12 +105,8 @@ export class Timer {
         this.start();
     }
 
-    private animation(): void {
-        const p = Math.min(this.elapsed() / this.duration, 1.0);
-        this.transition?.(ease(p, this.easing));
-    }
-
     public clear(): void {
+        this.cleared = true;
         if (this.id !== null) {
             clearTimeout(this.id);
             this.id = null;
@@ -112,43 +114,37 @@ export class Timer {
         if (typeof document !== 'undefined') {
             document.removeEventListener('visibilitychange', this.visibilityListener);
         }
-        this.ticker.clear();
+        this.ticker?.clear();
+        this.ticker = null;
     }
 
-    public elapsed(): number {
-        return this.time.processed + (this.id !== null ? (Date.now() - this.time.start) : 0);
-    }
-
-    public start(): void {
-        this.request = true;
-        this._start();
-    }
-
-    public stop(): void {
-        this._stop();
-        this.request = false;
-    }
-
-    private _start(): void {
-        if (this.request === true && this.id === null) {
+    private start(): void {
+        if (this.cleared === false && this.id === null) {
             this.id = setTimeout(() => {
                 this.id = null;
-                this.time = { start: 0.0, processed: 0.0 };
-
+                this.clear(); // clean up first so a throwing callback cannot leak the ticker / listener
                 this.transition?.(1.0);
                 this.timeout?.();
-
-                this.clear();
-            }, this.duration - this.time.processed) as unknown as number;
-            this.time.start = Date.now();
+            }, this.duration - this.processed);
+            this.startTime = Date.now();
+            
+            if (this.duration > 0.0) {
+                this.ticker = new Ticker(() => {
+                    const elapsed = this.processed + (Date.now() - this.startTime);
+                    const p = Math.min(elapsed / this.duration, 1.0);
+                    this.transition?.(ease(p, this.easing));
+                });
+            }
         }
     }
 
-    private _stop(): void {
-        if (this.request === true && this.id !== null) {
-            this.time.processed = this.time.processed + Date.now() - this.time.start;
+    private stop(): void {
+        if (this.id !== null) {
+            this.processed += Date.now() - this.startTime;
             clearTimeout(this.id);
             this.id = null;
+            this.ticker?.clear();
+            this.ticker = null;
         }
     }
 }

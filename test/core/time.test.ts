@@ -43,6 +43,25 @@ describe('Ticker', () => {
         }
     });
 
+    it('holds the target fps on average when the frame rate is not a multiple of it', () => {
+        // fake rAF fires every 16ms; "reset from fire time" pacing would quantize 50fps to ~31fps
+        const cb = jest.fn();
+        new Ticker(cb, 50);
+        jest.advanceTimersByTime(1000);
+        expect(cb.mock.calls.length).toBeGreaterThanOrEqual(46);
+        expect(cb.mock.calls.length).toBeLessThanOrEqual(52);
+    });
+
+    it('keeps the sum of reported deltas equal to elapsed wall-clock time', () => {
+        // remainder-carry pacing ("previous = now - delta % interval") would double-count time
+        const cb = jest.fn();
+        new Ticker(cb, 50);
+        jest.advanceTimersByTime(1000);
+        const total = cb.mock.calls.reduce((sum, c) => sum + (c[0] as number), 0);
+        expect(total).toBeLessThanOrEqual(1000);
+        expect(total).toBeGreaterThan(900);
+    });
+
     it('falls back to setTimeout when requestAnimationFrame is unavailable', () => {
         const raf = global.requestAnimationFrame;
         (global as any).requestAnimationFrame = undefined;
@@ -108,12 +127,12 @@ describe('Timer', () => {
         expect(cb).not.toHaveBeenCalled();
     });
 
-    it('pauses the elapsed clock on stop() and resumes on start()', () => {
+    it('pauses the countdown on stop() and resumes on start() (visibilitychange path)', () => {
+        // driven directly because jsdom cannot dispatch visibilitychange with a controllable hidden state
         const cb = jest.fn();
-        const timer = new Timer(cb, null, 500);
+        const timer = new Timer(cb, null, 500) as any;
         jest.advanceTimersByTime(300);
         timer.stop();
-        // While stopped, advancing time must not fire the timeout.
         jest.advanceTimersByTime(1000);
         expect(cb).not.toHaveBeenCalled();
         timer.start();
@@ -142,6 +161,37 @@ describe('Timer', () => {
         jest.advanceTimersByTime(500);
         expect(linear.at(-1)).toBe(1);
         expect(eased.at(-1)).toBe(1);
+    });
+
+    it('does not invoke transition while paused', () => {
+        const cb = jest.fn();
+        const timer = new Timer(null, cb, 1000) as any;
+        jest.advanceTimersByTime(100);
+        timer.stop();
+        const callsWhilePaused = cb.mock.calls.length;
+        jest.advanceTimersByTime(500);
+        expect(cb.mock.calls.length).toBe(callsWhilePaused);
+        timer.start();
+        jest.advanceTimersByTime(900);
+        expect(cb.mock.calls.at(-1)![0]).toBe(1);
+    });
+
+    it('stays dead after clear() even if start() is called', () => {
+        const cb = jest.fn();
+        const timer = new Timer(cb, null, 100) as any;
+        timer.clear();
+        timer.start();
+        jest.advanceTimersByTime(1000);
+        expect(cb).not.toHaveBeenCalled();
+    });
+
+    it('cleans up even if the timeout callback throws', () => {
+        const transition = jest.fn();
+        new Timer(() => { throw new Error('boom'); }, transition, 100);
+        expect(() => jest.advanceTimersByTime(100)).toThrow('boom');
+        const callsAfterThrow = transition.mock.calls.length;
+        jest.advanceTimersByTime(500);
+        expect(transition.mock.calls.length).toBe(callsAfterThrow);
     });
 
     it('does not throw when document is undefined (SSR)', () => {

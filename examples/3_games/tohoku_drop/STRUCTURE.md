@@ -80,7 +80,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     ResultScene -->|xnew| ResultBackground["ResultBackground: リザルト画面の背景"]
-    ResultScene -->|xnew| ResultImage["ResultImage: ゲーム終了時のスクショ画像"]
+    ResultScene -->|xnew| xbasicsImage["xbasics.Image: ゲーム終了時のスクショ画像"]
     ResultScene -->|xnew| ResultDetail["ResultDetail: キャラ別スコアと合計の内訳"]
     ResultScene -->|xnew| ResultFooter["ResultFooter: タイトルに戻るボタン"]
 ```

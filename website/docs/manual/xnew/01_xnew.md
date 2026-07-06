@@ -62,9 +62,12 @@ const unit = xnew(MyComponent);
 
 unit.on('click', ({ event }) => console.log('clicked'));
 
-unit.off('click');        // 'click' のリスナーをすべて解除
-unit.off();               // すべてのリスナーを解除
+unit.off('click');        // 自分が登録した 'click' のリスナーを解除
+unit.off();               // 自分が登録したすべてのリスナーを解除
+unit.off('click', fn);    // リスナーを明示すれば登録者に関係なく解除
 ```
+
+リスナーには「どの unit のスコープから登録されたか」が記録されます。リスナーを明示しない一括解除は**呼び出し元の unit が登録したものだけ**を対象とするため、他のコンポーネントが内部動作のために登録したリスナーを誤って消すことはありません。また、登録元の unit が finalize されると、他の unit に登録したリスナーも自動的に解除されます。
 
 ## ライフサイクルイベント
 

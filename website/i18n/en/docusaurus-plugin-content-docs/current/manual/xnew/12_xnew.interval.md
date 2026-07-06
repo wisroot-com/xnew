@@ -9,7 +9,7 @@ const timer = xnew.interval(callback, duration, iterations);
 ```
 
 **Parameters:**
-- `callback`: Function to execute at each interval. Receives `{ timer }` (`timer` is the timer instance — call `timer.clear()` to stop from inside the callback)
+- `callback`: Function to execute at each interval. Receives `{ count }` (`count` is the current iteration count, starting at `0`)
 - `duration`: Time in milliseconds between executions
 - `iterations` *(optional)*: number of times to run. `0` (default) means unlimited
 
@@ -34,19 +34,17 @@ xnew('<div>', (unit) => {
 
 ### Canceling an Interval
 
-The callback receives its own `timer`, so it can stop itself without an external variable.
+Call `clear()` on the returned timer to stop it. The callback receives the current iteration count as `count`.
 
 ```js
 xnew('<div>', (unit) => {
   unit.element.textContent = 'Starting countdown...';
 
-  let count = 0;
-  xnew.interval(({ timer }) => {
-    count++;
-    unit.element.textContent = `Count: ${count}`;
+  const timer = xnew.interval(({ count }) => {
+    unit.element.textContent = `Count: ${count + 1}`;
 
     // Stop after 10 iterations
-    if (count >= 10) {
+    if (count + 1 >= 10) {
       timer.clear();
       unit.element.textContent = 'Countdown complete!';
     }

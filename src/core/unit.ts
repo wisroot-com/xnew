@@ -1,19 +1,21 @@
 //----------------------------------------------------------------------------------------------------
 // Unit — the lifecycle, ownership, and scoping primitive of xnew
 //
-// A Unit bundles DOM elements, Components, children, listeners, and promises into one disposable
-// node driven by invoked → initialized → finalizing → finalized. Deferred callbacks (DOM events,
-// timers, promise continuations) re-enter Unit.scope via a Snapshot, so they run as if still
-// inside the original component.
+// A Unit bundles DOM elements, components, children, listeners, and promises into one disposable
+// node (invoked → initialized → finalizing → finalized). Deferred callbacks re-enter the original
+// unit scope via a Snapshot.
 //
 // - Unit        : core class — lifecycle, listeners, contexts, emit
-// - UnitPromise : promise wrapper resuming in the captured Unit scope; aggregated by xnew.promise(unit)
+// - UnitPromise : promise wrapper resuming in the captured unit scope
 // - UnitTimer   : queued timer backing xnew.timeout / interval / transition
+//
+// Listeners record their owner unit: off removes only the entries the caller registered, and a
+// finalized owner's listeners on other units are detached automatically.
 //----------------------------------------------------------------------------------------------------
 
 import { MapSet, MapMap } from './map';
 import { Ticker, Timer } from './time';
-import { Eventor, isDomElement, DomElement } from './dom';
+import { EventBinder, isDomElement, DomElement } from './dom';
 
 //----------------------------------------------------------------------------------------------------
 // definitions
@@ -47,7 +49,7 @@ export class Unit {
         protected: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
-        systems: Record<'update' | 'finalize', { listener: Function, execute: Function, count: number }[]>;
+        systems: Record<'update' | 'finalize', { listener: Function, execute: Function, count: number, owner: Unit }[]>;
 
         currentElement: DomElement;
         currentContext: Context;
@@ -57,8 +59,8 @@ export class Unit {
 
         nestElements: { element: DomElement, owned: boolean }[];
         Components: Function[];
-        listeners: MapMap<string, Function, { element: DomElement, Component: Function | null, execute: Function }>;
-        eventor: Eventor;
+        listeners: MapMap<string, Function, { execute: Function, owner: Unit }>;
+        events: EventBinder;
 
         key: any;   // reserved prop for find(key) (global unique assumed)
     };
@@ -92,7 +94,7 @@ export class Unit {
             listeners: new MapMap(),
             defines: {},
             systems: { update: [], finalize: [] },
-            eventor: new Eventor(),
+            events: new EventBinder(),
             key: null,
         };
     }
@@ -145,22 +147,26 @@ export class Unit {
     }
 
     public finalize(): void {
-        Unit.finalize(this);
-    }
+        if (this._.phase !== 'finalized' && this._.phase !== 'finalizing') {
+            this._.phase = 'finalizing';
 
-    static finalize(unit: Unit): void {
-        if (unit._.phase !== 'finalized' && unit._.phase !== 'finalizing') {
-            unit._.phase = 'finalizing';
+            [...this._.children].reverse().forEach((child: Unit) => child.finalize());
+            [...this._.systems.finalize].reverse().forEach(({ execute }) => execute());
 
-            [...unit._.children].reverse().forEach((child: Unit) => child.finalize());
-            [...unit._.systems.finalize].reverse().forEach(({ execute }) => execute());
-            unit.off();
+            // detach the listeners this unit registered on other units
+            Unit.owner2targets.get(this)?.forEach((target) => {
+                [...target._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(target, this, type));
+            });
+            Unit.owner2targets.delete(this);
 
-            [...unit._.nestElements].reverse().filter(item => item.owned).forEach(item => item.element.remove());
-            unit._.Components.forEach((Component) => Unit.component2units.delete(Component, unit));
-            
+            // clear all listeners on this unit regardless of owner
+            [...this._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(this, null, type));
+
+            [...this._.nestElements].reverse().filter(item => item.owned).forEach(item => item.element.remove());
+            this._.Components.forEach((Component) => Unit.component2units.delete(Component, this));
+
             // remove contexts
-            const contexts = Unit.unit2Contexts.get(unit);
+            const contexts = Unit.unit2Contexts.get(this);
             contexts?.forEach((context: Context) => {
                 let temp = context.previous;
                 while(temp !== null) {
@@ -173,16 +179,16 @@ export class Unit {
                     temp = temp.previous;
                 }
             });
-            Unit.unit2Contexts.delete(unit);
-            unit._.currentContext = { previous: null };
+            Unit.unit2Contexts.delete(this);
+            this._.currentContext = { previous: null };
 
-            Object.keys(unit._.defines).forEach((key) => delete unit[key]);
-            unit._.defines = {};
+            Object.keys(this._.defines).forEach((key) => delete this[key]);
+            this._.defines = {};
 
-            if (unit._.parent) {
-                unit._.parent._.children = unit._.parent._.children.filter((u: Unit) => u !== unit);
+            if (this._.parent) {
+                this._.parent._.children = this._.parent._.children.filter((u: Unit) => u !== this);
             }
-            unit._.phase = 'finalized';
+            this._.phase = 'finalized';
         }
     }
 
@@ -254,12 +260,23 @@ export class Unit {
     static update(unit: Unit, delta: number = 0): void {
         if (unit._.phase === 'initialized') {
             unit._.children.forEach((child: Unit) => Unit.update(child, delta));
-            unit._.systems.update.forEach((entry) => entry.execute({ count: entry.count++, delta }));
+            // iterate a copy: a listener may remove itself (once / off) mid-dispatch
+            [...unit._.systems.update].forEach((entry) => entry.execute({ count: entry.count++, delta }));
         }
     }
 
     static engineRoot: Unit;
     static currentUnit: Unit;
+
+    // the current unit as read from outside unit.ts, initializing the engine on first access;
+    // inside unit.ts read only the raw fields (reading this getter during reset() would recurse before engineRoot is assigned)
+    static get current(): Unit {
+        if (Unit.engineRoot === undefined) {
+            Unit.reset();
+        }
+        return Unit.currentUnit;
+    }
+
     static reset(): void {
         Unit.engineRoot?.finalize();
         Unit.currentUnit = Unit.engineRoot = Unit.create(null);
@@ -345,43 +362,66 @@ export class Unit {
   
     public on(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void {
         const types = type.trim().split(/\s+/);
-        
+
         types.forEach((type) => Unit.on(this, type, listener, options));
+    }
+
+    // self-removing listener; with space-separated types each type fires once independently
+    public once(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void {
+        const owner = Unit.currentUnit;
+        const types = type.trim().split(/\s+/);
+
+        types.forEach((type) => {
+            // removal happens before invocation, so an emit inside the listener cannot re-fire it
+            const wrapper = (props: object) => {
+                Unit.off(this, owner, type, wrapper);
+                listener(props);
+            };
+            Unit.on(this, type, wrapper, options);
+        });
     }
 
     public off(type?: string, listener?: Function): void {
         const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), 'update', 'finalize'];
 
-        types.forEach((type) => Unit.off(this, type, listener));
+        types.forEach((type) => Unit.off(this, Unit.currentUnit, type, listener));
     }
     
+    // owner (the unit whose scope called on) → the units it registered listeners on
+    static owner2targets = new MapSet<Unit, Unit>();
+
     static on(unit: Unit, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void {
-        const snapshot = Unit.snapshot(Unit.currentUnit);
+        const owner = Unit.currentUnit;
+        const snapshot = Unit.snapshot(owner);
         const execute = (props: object = {}) => {
             Unit.scope(snapshot, listener, Object.assign({ type }, props));
         }
         if (type === 'update' || type === 'finalize') {
-            // lifecycle-only: registered in systems, never in the dispatch path (listeners / type2units / eventor).
-            unit._.systems[type].push({ listener, execute, count: 0 });
+            // lifecycle-only: registered in systems, never in the dispatch path (listeners / type2units / events).
+            unit._.systems[type].push({ listener, execute, count: 0, owner });
         } else if (unit._.listeners.has(type, listener) === false) {
-            unit._.listeners.set(type, listener, { element: unit.element, Component: unit._.currentComponent, execute });
+            unit._.listeners.set(type, listener, { execute, owner });
             Unit.type2units.add(type, unit);
             if (/^[A-Za-z]/.test(type) && unit.element !== null) {
-                unit._.eventor.add(unit.element, type, execute, options);
+                unit._.events.add(unit.element, type, execute, options);
             }
+        }
+        if (owner !== unit) {
+            Unit.owner2targets.add(owner, unit);
         }
     }
 
-    static off(unit: Unit, type: string, listener?: Function): void {
+    // remove the entries that `owner` registered (owner: null matches any owner; listener narrows further)
+    static off(unit: Unit, owner: Unit | null, type: string, listener?: Function): void {
+        const match = (lis: Function, own: Unit) => (owner === null || own === owner) && (listener === undefined || lis === listener);
         if (type === 'update' || type === 'finalize') {
-            unit._.systems[type] = unit._.systems[type].filter(({ listener: lis }) => listener ? lis !== listener : false);
+            unit._.systems[type] = unit._.systems[type].filter((entry) => match(entry.listener, entry.owner) === false);
         } else {
-            (listener ? [listener] : [...unit._.listeners.keys(type)]).forEach((listener) => {
-                const item = unit._.listeners.get(type, listener);
-                if (item !== undefined) {
-                    unit._.listeners.delete(type, listener);
+            [...(unit._.listeners.get(type)?.entries() ?? [])].forEach(([lis, item]) => {
+                if (match(lis, item.owner)) {
+                    unit._.listeners.delete(type, lis);
                     if (/^[A-Za-z]/.test(type)) {
-                        unit._.eventor.remove(type, item.execute);
+                        unit._.events.remove(type, item.execute);
                     }
                 }
             });
@@ -410,9 +450,7 @@ export class Unit {
 //----------------------------------------------------------------------------------------------------
 
 export class UnitPromise {
-    private promise: Promise<any>;
-    public key?: string;
-    constructor(promise: Promise<any>, key?: string) { this.promise = promise; this.key = key; }
+    constructor(private promise: Promise<any>, public key?: string) {}
 
     // then / catch / finally run the callback in the captured scope; the return value becomes the
     // chain value (a returned UnitPromise unwraps to its inner promise for async continuation).
@@ -424,15 +462,9 @@ export class UnitPromise {
         });
         return this;
     }
-    public then(callback: Function): UnitPromise {
-        return this.chain('then', callback);
-    }
-    public catch(callback: Function): UnitPromise {
-        return this.chain('catch', callback);
-    }
-    public finally(callback: Function): UnitPromise {
-        return this.chain('finally', callback);
-    }
+    public then(callback: Function): UnitPromise { return this.chain('then', callback); }
+    public catch(callback: Function): UnitPromise { return this.chain('catch', callback); }
+    public finally(callback: Function): UnitPromise { return this.chain('finally', callback); }
 
     // Aggregate promises into one Promise resolving to an object: keyed entries are included
     // (a `name[]` key pushes into out[name] in registration order); unkeyed ones are awaited only.
@@ -475,7 +507,6 @@ export class UnitTimer {
     }
 
     private execute(timeout: Function | null, transition: Function | null, duration: number, iterations: number, easing?: string) {
-        const timer = this;
         const snapshot = Unit.snapshot(Unit.currentUnit);
 
         // Timer parameters are captured by closure, not passed as props.
@@ -484,7 +515,7 @@ export class UnitTimer {
             let current = new Timer(onTimeout, onTransition, duration, easing);
 
             function onTimeout() {
-                if (timeout) Unit.scope(snapshot, timeout, { timer });
+                if (timeout) Unit.scope(snapshot, timeout, { count: counter });
                 // if the callback called timer.clear(), the unit is finalized — do not reschedule.
                 if (unit._.phase === 'finalized') { return; }
                 if (iterations <= 0 || counter < iterations - 1) {
@@ -495,7 +526,7 @@ export class UnitTimer {
                 counter++;
             }
             function onTransition(value: number) {
-                if (transition) Unit.scope(snapshot, transition, { value, timer });
+                if (transition) Unit.scope(snapshot, transition, { value });
             }
 
             unit.on('finalize', () => current.clear());

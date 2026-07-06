@@ -9,10 +9,17 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { ResultBackground, ResultImage, ResultFooter, TitleText, TouchMessage, GameOverText, VolumeControl } from '../utils/ui.js';
+import html2canvas from 'html2canvas-pro';
 
-// id: 0=zundamon 1=kiritan 2=zunko 3=itako（ずんだ因子＝敵）
-const ENEMY_FILES = ['zundamon.vrm', 'kiritan.vrm', 'zunko.vrm', 'itako.vrm'];
+// ずんだ因子（敵）のテーブル（添字 = 敵 id。wave N の主役 = id N-1）。
+// code はターゲット表示・警告画面の識別コード / color は wave のメインカラー（黄緑・明るいこげ茶・緑・白）/
+// score は撃破時の得点 / splitTo は被弾時に分裂するキャラの id（null なら分裂しない）。
+const ENEMIES = [
+  { file: 'zundamon.vrm', code: 'ZD-0x01', color: 0x9BE53C, score: 1, splitTo: null },
+  { file: 'kiritan.vrm',  code: 'KT-0x02', color: 0xC8923C, score: 2, splitTo: 0    },
+  { file: 'zunko.vrm',    code: 'ZK-0x03', color: 0x3FD96B, score: 4, splitTo: 1    },
+  { file: 'itako.vrm',    code: 'IT-0x04', color: 0xFFFFFF, score: 8, splitTo: 2    },
+];
 // 自機は中国うさぎ（体内の免疫システム）。後ろ向きに表示する。
 const PLAYER_FILE = 'usagi.vrm';
 
@@ -20,7 +27,7 @@ const PLAYER_FILE = 'usagi.vrm';
 const asset = (name) => `../../assets/${name}`;
 
 // その wave で主役になる敵 id（wave1→0 … wave4 以降はイタコ=3 で頭打ち）。
-const enemyIdForWave = (wave) => Math.min(wave - 1, ENEMY_FILES.length - 1);
+const enemyIdForWave = (wave) => Math.min(wave - 1, ENEMIES.length - 1);
 
 // ベイク設定。フレーム数を減らすほど GPU 常駐テクスチャと起動時負荷が減る（その分コマが粗くなる）。
 // 再生周期は 360 枚時代（60fps で約6秒/ループ）を保つよう BAKE_ANIMATION_SPEED で補正する。
@@ -33,14 +40,16 @@ const BAKE_FRAME_SIZE = 96; // ベイク1フレームの解像度(px)
 const PANEL_W = 200;
 const PLAY_RIGHT = 800 - PANEL_W;
 
+// リザルト画面のフッター高さ（画面高さに対する割合）。画面割り(Split)と ScreenShot のクロップで共有。
+const RESULT_FOOTER_RATIO = 0.2;
+
 // 自機⇄敵の当たり判定半径。中心間距離 < PLAYER_HIT_R + ENEMY_HIT_R で被弾。
 // それぞれの半径でうっすら円を描き、円が重なる＝被弾と分かるようにする。
 const PLAYER_HIT_R = 14;
 const ENEMY_HIT_R = 10;
 
-// 各 wave のメインカラー（wave1:黄緑 / 2:明るいこげ茶 / 3:緑 / 4:白）。endless は最後の色。
-const WAVE_COLORS = [0x9BE53C, 0xC8923C, 0x3FD96B, 0xFFFFFF];
-const waveColor = (wave) => WAVE_COLORS[Math.min(wave - 1, WAVE_COLORS.length - 1)];
+// wave のメインカラー（= その wave の主役キャラの色。endless は最後の色）。
+const waveColor = (wave) => ENEMIES[enemyIdForWave(wave)].color;
 const cssHex = (n) => '#' + n.toString(16).padStart(6, '0');
 const waveCss = (wave) => cssHex(waveColor(wave)); // wave のメインカラー(css hex)
 
@@ -68,20 +77,11 @@ const hitNearestEnemy = (object, r, hit, vulnOnly = false) => {
   return false;
 };
 
-// 敵 id ごとのサイバーな識別コード（ターゲット表示／警告画面の「謎文字」に使う）
-const ENEMY_CODES = ['ZD-0x01', 'KT-0x02', 'ZK-0x03', 'IT-0x04'];
 // ランダムな16進文字列（len 桁）。流れる解析数字に使う。
 const randHex = (len) => randInt(16 ** len).toString(16).toUpperCase().padStart(len, '0');
 // 解析ストリーム/警告画面で流す「謎文字」の文字集合と、そこから n 文字。
 const STREAM_CHARS = '0123456789ABCDEF<>/\\|=+*#░▒▓';
 const randStream = (n, chars = STREAM_CHARS) => Array.from({ length: n }, () => pick(chars)).join('');
-
-// wave 色などを wave 番号に追従させるコンポーネント。生成時に apply(1) を即適用し、以降 +wave で apply(wave) を呼ぶ。
-// apply は wave 番号を受け取り自前で色を引く（waveColor(1) === WAVE_COLORS[0]）。
-function FollowWave(unit, { apply }) {
-  apply(1);
-  unit.on('+wave', ({ wave }) => apply(wave));
-}
 
 // ベイク済みテクスチャの AnimatedSprite を nest 直下に配置。textures 直指定か id で texturesList[id] を引く。
 // frame: 'random' で開始コマをランダム化 / 数値で固定（length-1 にクランプ）。位置等は .sprite で制御。
@@ -181,7 +181,7 @@ function BakedCharacters(unit) {
 
   // 焼くジョブ: 敵4体（spin）→ 自機（固定）。
   const jobs = [
-    ...ENEMY_FILES.map((file) => ({ url: asset(file), spin: true })),
+    ...ENEMIES.map((enemy) => ({ url: asset(enemy.file), spin: true })),
     { url: asset(PLAYER_FILE), spin: false },
   ];
 
@@ -275,7 +275,7 @@ function BakedCharacters(unit) {
   });
 
   return {
-    get texturesList() { return jobs.slice(0, ENEMY_FILES.length).map((job) => job.textures); },
+    get texturesList() { return jobs.slice(0, ENEMIES.length).map((job) => job.textures); },
     get playerTextures() { return jobs[jobs.length - 1].textures; },
   };
 }
@@ -458,7 +458,7 @@ function StoryPageHit(unit) {
   const FLY = 40; // 飛来フレーム数（約0.7秒）
   let impacted = false, hitT = 0;
   unit.on('update', ({ count }) => {
-    if (arrow === null) return;
+    if (arrow === null || usagi === null) return;
     if (!impacted) {
       const p = Math.min(1, count / FLY);
       const e = p * p; // 加速して突き刺さる
@@ -488,17 +488,14 @@ function StoryPageSwarm(unit) {
   xpixi.nest(new PIXI.Container());
 
   // 少しずつ湧いて増えていく（増殖感）。黒帯より上（テキスト帯に被らない領域）に位置・スケールをランダムに散らす。
-  let spawnedCount = 0;
-  xnew.interval(({ timer }) => {
-    spawnedCount++;
+  xnew.interval(() => {
     xnew(DriftingFactor, {
       id: randInt(xnew.context(BakedCharacters).texturesList.length),
       x: randRange(90, 710),
       y: randRange(90, 360),
       scale: randRange(0.5, 1.0),
     });
-    if (spawnedCount >= 64) timer.clear();
-  }, 200);
+  }, 200, 64);
 
   xnew(() => {
     xnew.extend(StoryDialog, { accent: '#9BE53C', tag: 'MISSION', bottomCqw: 5 });
@@ -527,16 +524,21 @@ function GameScene(unit) {
     xnew(xbasics.AudioTrack, { url: asset('maou_bgm_cyber31.mp3') }).play({ fade: 1000, loop: true });
   });
 
-  unit.on('+gameover', () => {
-    unit.off('+gameover');
+  unit.once('+gameover', () => {
     bgm.finalize(); // ゲームオーバーで BGM 停止
     const score = scoreManager.score;
     const wave = waveManager.wave;
     const kills = [...scoreManager.kills];
     // 最終 wave(4) のゲージを 100% 到達済みなら「クリア」扱い（wave4 は次へ進まないので waveScore で判定）
     const cleared = wave >= WAVE_GOALS.length && scoreManager.waveScore >= WAVE_GOALS[WAVE_GOALS.length - 1];
-    const image = xpixi.renderer.extract.base64({ target: xpixi.scene, frame: new PIXI.Rectangle(0, 0, xpixi.canvas.width, xpixi.canvas.height) });
-    xnew(GameOverText, { className: 'left-0 right-[25cqw]' });
+    const gameover = xnew(GameOverText, { className: 'left-0 right-[25cqw]' });
+
+    // pixi extract では DOM の UI が写らないため、html2canvas で画面ごと撮る。
+    xpixi.renderer.render(xpixi.scene); // preserveDrawingBuffer なしでも同一タスク内の描画直後なら canvas が写る
+    const image = html2canvas(document.querySelector('#main'), {
+      scale: 2, logging: false, useCORS: true,
+      ignoreElements: (element) => element === gameover.element,
+    }).then((canvas) => canvas.toDataURL('image/png'));
     xnew.timeout(() => unit.change(ResultScene, { image, score, wave, kills, cleared }), 2000);
   });
 }
@@ -553,9 +555,17 @@ function ResultScene(unit, { image, score, wave, kills, cleared }) {
   }, 500, 'ease');
 
   xnew(ResultBackground, { gradient: 'from-slate-900 to-blue-950', textColor: 'text-blue-800' });
-  xnew(ResultImage, { image, boxClass: 'bottom-[14cqw] left-[2cqw] w-[56cqw] aspect-4/3' });
-  xnew(ResultDetail, { score, wave, kills, cleared });
-  xnew(ResultFooter, { onBack: () => unit.change(TitleScene, { skipStory: true }) });
+
+  // 画面割り: 上下 80:20、上部分をさらに左右 50:50
+  xnew((unit) => {
+    xnew.extend(xbasics.Split, { direction: 'column', ratio: [1 - RESULT_FOOTER_RATIO, RESULT_FOOTER_RATIO] });
+    xnew(unit.panes[0], (unit) => {
+      xnew.extend(xbasics.Split, { direction: 'row', ratio: [50, 50] });
+      xnew(unit.panes[0], xbasics.Image, { src: image, className: 'absolute inset-x-0 bottom-[2cqw] mx-auto w-[46cqw] aspect-4/3 rounded-[1cqw] object-cover', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);' });
+      xnew(unit.panes[1], ResultDetail, { score, wave, kills, cleared });
+    });
+    xnew(unit.panes[1], ResultFooter);
+  });
 
   unit.on('window.keydown.space', ({ event }) => { event.preventDefault(); unit.change(TitleScene, { skipStory: true }); });
 }
@@ -566,6 +576,10 @@ function ResultScene(unit, { image, score, wave, kills, cleared }) {
 // waveScore がこの値に達すると次 wave へ。wave4 はゲージは満タンになるが次へは進まない（エンドレス）。
 const WAVE_GOALS = [1024, 2048, 3072, 4096];
 
+// 警告画面の表示開始から湧き再開までの時間。WaveTransition の演出
+// （フェードイン450 + 表示2100 + フェードアウト450 ≒ 2550ms）を覆う長さにする。
+const WAVE_WARNING_MS = 2800;
+
 function WaveManager(unit) {
   let wave = 0;
   let transitioning = false;
@@ -575,29 +589,31 @@ function WaveManager(unit) {
     xnew.emit('+wave', { wave });
   }
 
-  function nextWave() {
+  // 警告画面を出し、表示が終わるまで湧きを transitioning で止める（onDone は湧き再開の直前に呼ぶ）
+  function showWarning(next, onDone) {
     transitioning = true;
+    xnew.context(xbasics.Scene).add(WaveTransition, { wave: next });
+    xnew.timeout(() => { onDone?.(); transitioning = false; }, WAVE_WARNING_MS);
+  }
+
+  function nextWave() {
     const next = wave + 1;
     // 画面内の敵を一旦フェードアウト（得点は入らない）
     for (const enemy of xnew.find(Enemy)) enemy.fadeOut();
-    // 警告 → 次 wave への切替表示
-    xnew.context(xbasics.Scene).add(WaveTransition, { wave: next });
-    xnew.timeout(() => { startWave(next); transitioning = false; }, 2800);
+    showWarning(next, () => startWave(next));
   }
 
-  // wave1 も警告画面を出してから開始（初回も同じ導入演出）。湧きは transitioning で演出終了まで止める。
+  // wave1 も警告画面を出してから開始（初回も同じ導入演出）。
   // wave は即 1 にする（0 のままだと ScoreGauge のしきい値計算が NaN になり恒久的に壊れる）。
   startWave(1);
-  transitioning = true;
-  xnew.context(xbasics.Scene).add(WaveTransition, { wave: 1 });
-  xnew.timeout(() => { transitioning = false; }, 2800);
+  showWarning(1);
 
   let spawnTick = 0;
   const spawn = xnew.interval(() => {
     spawnTick++;
     if (transitioning) return;
-    // その wave の目標スコアに達したら次の wave へ（wave4 は到達してもエンドレスで移行しない）
-    if (wave < 4 && xnew.context(ScoreManager).waveScore >= WAVE_GOALS[wave - 1]) {
+    // その wave の目標スコアに達したら次の wave へ（最終 wave は到達してもエンドレスで移行しない）
+    if (wave < WAVE_GOALS.length && xnew.context(ScoreManager).waveScore >= WAVE_GOALS[wave - 1]) {
       nextWave();
       return;
     }
@@ -617,7 +633,7 @@ function WaveManager(unit) {
 // wave 切替時のサイバーな警告画面（プレイ領域）。HUDフレーム + グリッチ WAVE 表示 + 流れる hex + 脅威解析バー。
 function WaveTransition(unit, { wave }) {
   const color = waveCss(wave);
-  const code = ENEMY_CODES[enemyIdForWave(wave)];
+  const code = ENEMIES[enemyIdForWave(wave)].code;
   xnew.nest('<div class="absolute left-0 right-[25cqw] top-0 bottom-0 overflow-hidden pointer-events-none" style="font-family: monospace;">');
   unit.element.style.color = color; // 文字はすべて wave 色を継承
 
@@ -702,13 +718,15 @@ function WaveTransition(unit, { wave }) {
 }
 
 // 右パネル上部の "Wave N" 表示（wave のメインカラーに追従）
-function WaveLabel(unit) {
+function WaveLabel(unit, { wave = 1 } = {}) {
   xnew.nest('<div class="absolute top-[1.5cqw] right-0 w-[25cqw] text-center font-bold text-lime-400">');
   const text = xnew(xbasics.SVGText, { text: 'Wave 1', fontSize: '6cqw', stroke: '#102008', strokeWidth: '0.2cqw', className: 'inline-block' });
-  xnew(FollowWave, { apply: (wave) => {
+  function update({ wave }) {
     text.element.textContent = `Wave ${wave}`;
     unit.element.style.color = waveCss(wave); // SVGText の fill=currentColor が追従
-  } });
+  }
+  update({ wave });
+  unit.on('+wave', update);
 }
 
 // セグメント風メーターの箱（枠 + fill + セグメント隙間 + 走査）。走査(scan)は fill 割合に追従して
@@ -749,7 +767,7 @@ function CyberBar(unit, { boxClass, boxStyle, fillWidth, fillStyle = '', segment
 }
 
 // 次の wave までの進捗を示す「解析メーター」（画面左上）。色は wave のメインカラー。
-function ScoreGauge(unit) {
+function ScoreGauge(unit, { wave = 1 } = {}) {
   xnew.nest('<div class="absolute top-[2cqw] left-[2cqw] right-[44cqw]" style="font-family: monospace;">');
 
   // 見出し行（ラベル + パーセント）
@@ -767,13 +785,15 @@ function ScoreGauge(unit) {
     scanW: 3, scanAlpha: 0.5, scanSpeed: 0.04, scanMargin: 3,
   });
 
-  function applyColor(c) {
+  function update({ wave }) {
+    const c = waveCss(wave);
     bar.fill.element.style.background = c;
     bar.frame.element.style.borderColor = c;
     labelEl.element.style.color = c;
     pctEl.element.style.color = c;
   }
-  xnew(FollowWave, { apply: (wave) => applyColor(waveCss(wave)) });
+  update({ wave });
+  unit.on('+wave', update);
 
   let shown = 0;
   unit.on('update', () => {
@@ -804,16 +824,17 @@ function SidePanel(unit) {
 }
 
 // 半透明（約50%）のパネル背景 + 区切り線（区切り線は wave のメインカラーに追従）
-function PanelBackdrop(_unit) {
+function PanelBackdrop(unit, { wave = 1 } = {}) {
   xpixi.nest(new PIXI.Container());
   xpixi.add(new PIXI.Graphics().rect(PLAY_RIGHT, 0, PANEL_W, 600).fill({ color: 0x05121A, alpha: 0.5 }));
 
   const divider = xpixi.add(new PIXI.Graphics());
-  const drawDivider = (color) => {
+  function update({ wave }) {
     divider.clear();
-    divider.moveTo(PLAY_RIGHT, 0).lineTo(PLAY_RIGHT, 600).stroke({ color, width: 2, alpha: 0.55 });
-  };
-  xnew(FollowWave, { apply: (wave) => drawDivider(waveColor(wave)) });
+    divider.moveTo(PLAY_RIGHT, 0).lineTo(PLAY_RIGHT, 600).stroke({ color: waveColor(wave), width: 2, alpha: 0.55 });
+  }
+  update({ wave });
+  unit.on('+wave', update);
 }
 
 // その wave で登場する敵キャラを表示（wave1:ずんだもん 2:きりたん 3:ずん子 4:イタコ）
@@ -839,7 +860,7 @@ function WaveEnemyDisplay(unit) {
 
 // 敵キャラを囲うサイバーなターゲットレティクル（色は wave 連動）。
 // 多重リング（逆回転）+ レーダー掃引 + 呼吸するロックオンブラケット + 周回する解析ブリップ。
-function TargetReticle(unit) {
+function TargetReticle(unit, { wave = 1 } = {}) {
   xpixi.nest(new PIXI.Container({ position: { x: PLAY_RIGHT + PANEL_W / 2, y: TARGET_Y } }));
   const R = 46;
 
@@ -863,7 +884,7 @@ function TargetReticle(unit) {
     dots.push({ g, radius: randRange(24, 50), ang: randAngle(), spd: randRange(0.01, 0.04) * randSign(), size: randRange(1.1, 2.5) });
   }
 
-  let color = WAVE_COLORS[0];
+  let color = ENEMIES[0].color;
 
   function draw(c) {
     color = c;
@@ -913,7 +934,11 @@ function TargetReticle(unit) {
     }
   }
 
-  xnew(FollowWave, { apply: (wave) => draw(waveColor(wave)) });
+  function update({ wave }) {
+    draw(waveColor(wave));
+  }
+  update({ wave });
+  unit.on('+wave', update);
 
   unit.on('update', ({ count: t }) => {
     outer.rotation += 0.006;
@@ -940,7 +965,7 @@ function TargetReticle(unit) {
 
 // レティクル周辺に「解析中っぽい」謎文字を表示する HUD（色は wave 連動）。
 // ヘッダー / 四隅の座標ラベル / 円の左右を流れる hex レール / 下部の解析リードアウト。
-function TargetInfo(unit) {
+function TargetInfo(unit, { wave = 1 } = {}) {
   xnew.nest('<div class="absolute right-0 top-0 bottom-0 w-[25cqw] pointer-events-none" style="font-family: monospace; color:#9BE53C;">');
 
   // ヘッダー
@@ -974,12 +999,13 @@ function TargetInfo(unit) {
     stream = xnew('<div class="text-[1.2cqw] tracking-[0.1em]" style="opacity:0.7;">', '> 8A F2 1C 04');
   });
 
-  function applyWave(wave) {
+  function update({ wave }) {
     const id = enemyIdForWave(wave);
-    idLine.element.textContent = `ID ${ENEMY_CODES[id]} ${'▮'.repeat(id + 1)}`;
+    idLine.element.textContent = `ID ${ENEMIES[id].code} ${'▮'.repeat(id + 1)}`;
     unit.element.style.color = waveCss(wave); // 全テキストが継承
   }
-  xnew(FollowWave, { apply: applyWave });
+  update({ wave });
+  unit.on('+wave', update);
 
   const rightTokens = ['OK', '!!', 'ACK', '▮▮', '·▮·', 'SYN'];
   unit.on('update', ({ count: t }) => {
@@ -1027,7 +1053,7 @@ function UsagiFace(unit) {
     back = xpixi.add(new PIXI.Sprite()); fit(back, textures[0]);
     front = xpixi.add(new PIXI.Sprite()); fit(front, textures[0]);
 
-    // 0:余裕(〜20) 1:普通(〜40) 2:焦り(40〜)
+    // 0:余裕(〜30) 1:普通(〜60) 2:焦り(60〜)
     unit.on('update', () => {
       const count = xnew.find(Enemy).length;
       const idx = count <= 30 ? 0 : (count <= 60 ? 1 : 2);
@@ -1127,22 +1153,24 @@ function Controller(unit) {
   unit.on('window.keydown.arrow window.keyup.arrow window.keydown.wasd window.keyup.wasd', ({ vector }) => xnew.emit('+move', { vector }));
 }
 
-function ScoreManager(unit) {
+function ScoreManager(unit, { wave = 1 } = {}) {
   // 画面右上にスコアをコンピュータの解析表示風（等幅・ゼロ埋め）で表示。色は wave 連動。
   xnew.nest('<div class="absolute top-[1.6cqw] right-[26cqw] text-right" style="font-family: monospace;">');
   const label = xnew('<div class="text-[1.5cqw] tracking-[0.3em]">', 'SCORE');
   const text = xnew('<div class="text-[4.2cqw] leading-none font-bold">', '000000');
 
-  function applyColor(c) {
+  function update({ wave }) {
+    const c = waveCss(wave);
     label.element.style.color = c;
     text.element.style.color = c;
     text.element.style.textShadow = `0 0 0.8cqw ${c}, 0 0.1cqw 0.1cqw rgba(0,0,0,0.6)`;
   }
   let sum = 0;        // 合計スコア（リザルト表示用）
   let waveScore = 0;  // 現在の wave 内で稼いだスコア（wave 開始ごとに 0 リセット）
-  const kills = [0, 0, 0, 0]; // 敵 id 別の撃破数
+  const kills = ENEMIES.map(() => 0); // 敵 id 別の撃破数
 
-  xnew(FollowWave, { apply: (wave) => applyColor(waveCss(wave)) });
+  update({ wave });
+  unit.on('+wave', update);
   unit.on('+wave', () => { waveScore = 0; }); // wave 開始ごとに wave 内スコアをリセット
 
   return {
@@ -1244,7 +1272,7 @@ function Shot(unit, { x, y }) {
     if (object.y < 0) { unit.finalize(); return; }
 
     // ショットは上方向。当たった敵を撃破して自身を消す。
-    if (hitNearestEnemy(object, 30, (e) => e.clash(ENEMY_DATA[e.id].score, { x: 0, y: -1 }))) {
+    if (hitNearestEnemy(object, 30, (e) => e.clash(ENEMIES[e.id].score, { x: 0, y: -1 }))) {
       unit.finalize();
     }
   });
@@ -1253,14 +1281,6 @@ function Shot(unit, { x, y }) {
 }
 
 // ---- Enemy system ----
-
-// splitTo: 被弾時に分裂するキャラのid（nullなら分裂しない）
-const ENEMY_DATA = [
-  { score: 1,  splitTo: null },
-  { score: 2,  splitTo: 0   },
-  { score: 4,  splitTo: 1   },
-  { score: 8,  splitTo: 2   },
-];
 
 function Enemy(unit, { id, x, y, invincible = false, knockback = null }) {
   const object = xpixi.nest(new PIXI.Container());
@@ -1331,7 +1351,7 @@ function Enemy(unit, { id, x, y, invincible = false, knockback = null }) {
       if (fading) return; // 退場中は得点なし
       if (fromStar && !vulnerable) return; // 星チェーンは無敵中スキップ
 
-      const data = ENEMY_DATA[id];
+      const data = ENEMIES[id];
       const scene = xnew.context(xbasics.Scene);
       const baseAngle = Math.atan2(direction.y, direction.x); // 当たった方向
 
@@ -1586,20 +1606,26 @@ function SoundFX(unit) {
 
 // ---- Result screen ----
 
+// 敵アイコン（ベイク先頭フレーム＝正面）の dataURL の Promise。初回のリザルトで一度だけ抽出してキャッシュする。
+let _enemyIcons = null;
+
 function ResultDetail(unit, { score, wave, kills = [0, 0, 0, 0], cleared = false }) {
-  xnew.nest('<div class="absolute bottom-[10cqw] right-[2cqw] w-[38cqw] bg-gray-100 px-[1.5cqw] py-[2.5cqw] rounded-[1cqw] font-bold" style="box-shadow: 0 8px 20px rgba(0,0,0,0.2);">');
+  xnew.nest('<div class="absolute inset-x-0 bottom-[2cqw] mx-auto w-[38cqw] bg-gray-100 px-[1.5cqw] py-[2.5cqw] rounded-[1cqw] font-bold" style="box-shadow: 0 8px 20px rgba(0,0,0,0.2);">');
   xnew('<div class="text-[3.5cqw] text-center text-red-400 mb-[1.5cqw]">', '🦠 駆逐した数 🦠');
 
-  // 敵キャラ別の撃破数（ベイク先頭フレーム＝正面のアイコン × 撃破数）を2列で
-  const tl = xnew.context(BakedCharacters).texturesList;
+  // 敵キャラ別の撃破数（アイコン × 撃破数）を2列で
+  _enemyIcons = _enemyIcons ?? xnew.context(BakedCharacters).texturesList.map((textures) => {
+    const sprite = new PIXI.Sprite(textures[0]);
+    return xpixi.renderer.extract.base64(sprite).finally(() => sprite.destroy());
+  });
   xnew('<div class="grid grid-cols-2 gap-x-[1cqw] gap-y-[1.5cqw]">', () => {
-    for (let i = 0; i < tl.length; i++) {
+    _enemyIcons.forEach((iconSrc, i) => {
       xnew('<div class="flex items-center justify-center gap-x-[1cqw]">', () => {
         const icon = xnew('<img class="w-[7cqw] h-[7cqw] object-contain">');
-        xpixi.renderer.extract.base64(new PIXI.Sprite(tl[i][0])).then((src) => icon.element.src = src);
+        iconSrc.then((src) => icon.element.src = src);
         xnew('<div class="text-[3.5cqw] text-cyan-700">', `× ${kills[i] ?? 0}`);
       });
-    }
+    });
   });
 
   xnew('<div class="mx-[1cqw] my-[2cqw] border-t-[0.4cqw] border-dashed border-cyan-600">');
@@ -1619,5 +1645,183 @@ function ResultDetail(unit, { score, wave, kills = [0, 0, 0, 0], cleared = false
       xnew(i === reached ? '<div class="text-[3.2cqw] text-blue-500">' : '<div class="text-[2cqw] opacity-20">', tier.label);
     });
   });
+}
+
+// ---- UI parts (title / result / volume) ----
+
+// 丸枠アイコン: 外周の円 + 中央70%に path 群。Camera / ArrowUturnLeft で共有。
+function RingIcon(unit, { paths }) {
+  xnew('<div style="position: absolute; inset: 0; margin: auto; width: 100%; height: 100%;">', () => {
+    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor' });
+    xnew('<circle cx="12" cy="12" r="11">');
+  });
+  xnew('<div style="position: absolute; inset: 0; margin: auto; width: 70%; height: 70%;">', () => {
+    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.5 });
+    for (const d of paths) {
+      xnew(`<path d="${d}">`);
+    }
+  });
+}
+
+function Camera(_unit) {
+  xnew.extend(RingIcon, { paths: [
+    'M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23q-.57.08-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a48 48 0 0 0-1.134-.175a2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.19 2.19 0 0 0-1.736-1.039a49 49 0 0 0-5.232 0a2.19 2.19 0 0 0-1.736 1.039z',
+    'M16.5 12.75a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m2.25-2.25h.008v.008h-.008z',
+  ] });
+}
+
+function ArrowUturnLeft(_unit) {
+  xnew.extend(RingIcon, { paths: ['M9 15L3 9m0 0l6-6M3 9h12a6 6 0 0 1 0 12h-3'] });
+}
+
+// #main を白で覆ってからフェードアウトしつつ撮影し、PNG をダウンロードする。
+function ScreenShot(unit) {
+  xnew.nest(document.querySelector('#main'));
+  const cover = xnew('<div class="absolute inset-0 size-full z-10 bg-white">');
+  xnew.transition(({ value }) => cover.element.style.opacity = 1 - value, 1000)
+    .timeout(() => {
+      html2canvas(unit.element, { scale: 2, logging: false, useCORS: true }).then((canvas) => {
+        // 下部のフッターを除いた領域を切り出して PNG としてダウンロードする。
+        const [width, height] = [canvas.width, Math.floor(canvas.height * (1 - RESULT_FOOTER_RATIO))];
+        const cropped = document.createElement('canvas');
+        [cropped.width, cropped.height] = [width, height];
+        cropped.getContext('2d').drawImage(canvas, 0, 0, width, height, 0, 0, width, height);
+        const link = document.createElement('a');
+        link.download = 'image.png';
+        link.href = cropped.toDataURL('image/png');
+        link.click();
+      });
+      unit.finalize();
+    });
+}
+
+// リザルトのフッター。「画面を保存」(ScreenShot) と「戻る」(タイトルへシーン遷移) の2ボタン。
+function ResultFooter(unit) {
+  xnew.nest('<div class="size-full px-[2cqw] flex justify-between text-stone-500">');
+  xnew('<div class="flex items-center gap-x-[2cqw]">', () => {
+    const button = xnew('<div class="relative size-[9cqw] cursor-pointer hover:scale-110">', Camera);
+    button.on('click', () => xnew(ScreenShot));
+    xnew('<div class="text-[3cqw] font-bold">', '画面を保存');
+  });
+
+  xnew('<div class="flex items-center gap-x-[2cqw]">', () => {
+    xnew('<div class="text-[3cqw] font-bold">', '戻る');
+    const button = xnew('<div class="relative size-[9cqw] cursor-pointer hover:scale-110">', ArrowUturnLeft);
+    button.on('click', () => xnew.context(xbasics.Scene).change(TitleScene, { skipStory: true }));
+  });
+}
+
+// リザルト背景：斜めグラデ + 大きな "Result" + 漂う/瞬く白丸。
+// gradient="from-... to-..."（bg-linear-to-br 用）/ textColor="text-..."。
+function ResultBackground(unit, { gradient, textColor }) {
+  xnew.nest(`<div class="absolute inset-0 size-full bg-linear-to-br ${gradient}">`);
+  xnew(`<div class="absolute top-0 left-[4cqw] text-[14cqw] ${textColor}">`, 'Result');
+
+  // ランダム配置した白丸を sin で明滅させる。transform は種類ごとに変える（浮遊 / きらめき）。
+  function floatingCircle(sizeCqw, transform) {
+    const [x, y] = [Math.random() * 100, Math.random() * 100];
+    const circle = xnew(`<div class="absolute rounded-full bg-white" style="width: ${sizeCqw}cqw; height: ${sizeCqw}cqw; left: ${x}%; top: ${y}%; opacity: 0.2;">`);
+    circle.on('update', ({ count }) => {
+      const p = count * 0.02;
+      Object.assign(circle.element.style, { opacity: Math.sin(p) * 0.1 + 0.2, transform: transform(p) });
+    });
+  }
+
+  for (let i = 0; i < 20; i++) {
+    floatingCircle(Math.random() * 2 + 2, (p) => `translateY(${Math.sin(p) * 20}px)`);
+  }
+  for (let i = 0; i < 30; i++) {
+    floatingCircle(1, (p) => `scale(${1 + Math.sin(p) * 0.1})`);
+  }
+}
+
+// タイトルの見出し（縁取り SVGText）。text=文言 / color="text-..."。
+function TitleText(unit, { text, color }) {
+  xnew.nest(`<div class="absolute w-full top-[16cqw] text-center ${color} font-bold">`);
+  xnew(xbasics.SVGText, { text, fontSize: '10cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
+}
+
+// 点滅する "touch start"。color="text-..."。
+function TouchMessage(unit, { color }) {
+  xnew.nest(`<div class="absolute w-full top-[30cqw] text-center ${color} font-bold">`);
+  xnew(xbasics.SVGText, { text: 'touch start', fontSize: '6cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
+  unit.on('update', ({ count }) => unit.element.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
+}
+
+// 中央に降りてくる "Game Over"。className で横位置を調整（既定は全幅中央）。
+function GameOverText(unit, { className = 'w-full' }) {
+  xnew.nest(`<div class="absolute ${className} text-center text-red-400 font-bold">`);
+  xnew(xbasics.SVGText, { text: 'Game Over', fontSize: '12cqw', stroke: '#EEEEEE', strokeWidth: '0.2cqw', className: 'inline-block' });
+  xnew.transition(({ value }) => {
+    Object.assign(unit.element.style, { opacity: value, top: `${10 + value * 15}cqw` });
+  }, 1000, 'ease');
+}
+
+// スピーカーアイコン（muted で消音グリフに切り替わる）。
+function SpeakerIcon(unit, { muted = false } = {}) {
+  xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.5 });
+  const path = muted
+    ? 'M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z'
+    : 'M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z';
+  xnew(`<path d="${path}" />`);
+}
+
+// スピーカーアイコン + アンカー方向に開くスライダー。xbasics.Volume をマスター音量への橋渡しに使う。
+function VolumeController(unit, { anchor = 'left' } = {}) {
+  const volume = xnew.extend(xbasics.Volume);
+  xnew.extend(xbasics.Aspect, { aspect: 1.0, fit: 'contain' });
+  unit.on('pointerdown', ({ event }) => event.stopPropagation());
+
+  const system = xnew(xbasics.OpenAndClose, { open: false, duration: 250, easing: 'ease' });
+
+  const button = xnew((unit) => {
+    xnew.nest('<div style="width: 100%; height: 100%; cursor: pointer;">');
+    unit.on('click', () => system.toggle());
+    let icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
+    return {
+      update() {
+        icon?.finalize();
+        icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
+      }
+    };
+  });
+
+  xnew(() => {
+    const isHoriz = anchor === 'left' || anchor === 'right';
+    const cqUnit = isHoriz ? 'cqw' : 'cqh';
+    const fillProp = isHoriz ? 'width' : 'height';
+    const pct = volume.volume * 100;
+
+    const outerSize = isHoriz ? `top: 20%; bottom: 20%; width: 0${cqUnit}` : `left: 20%; right: 20%; height: 0${cqUnit}`;
+    const fillSize = isHoriz ? `top: 0; left: 0; bottom: 0; width: ${pct}%; height: 100%` : `bottom: 0; left: 0; right: 0; width: 100%; height: ${pct}%`;
+
+    const outer = xnew.nest(`<div style="position: absolute; ${outerSize};">`);
+    xnew.nest(`<div style="position: relative; width: 100%; height: 100%; border: 1px solid currentColor; border-radius: 0.25em; box-sizing: border-box;">`);
+
+    const fill = xnew(`<div style="position: absolute; ${fillSize}; background: color-mix(in srgb, currentColor 20%, transparent);">`);
+    const input = xnew(`<input type="range" min="0" max="100" value="${pct}" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;${isHoriz ? '' : ' writing-mode: vertical-lr; direction: rtl;'}">`);
+
+    input.on('input', ({ event }) => {
+      const v = Number(event.target.value);
+      fill.element.style[fillProp] = `${v}%`;
+      volume.volume = v / 100;
+      button.update();
+    });
+
+    system.on('-transition', ({ value }) => {
+      outer.style[anchor] = `-${value * 400 + 20}${cqUnit}`;
+      outer.style[fillProp] = `${value * 400}${cqUnit}`;
+      outer.style.opacity = value.toString();
+      outer.style.pointerEvents = value < 0.9 ? 'none' : 'auto';
+    });
+  });
+
+  unit.on('click.outside', () => system.close());
+}
+
+// 右下の音量コントローラ。className で文字色等を調整。
+function VolumeControl(unit, { className = 'text-stone-300 z-10' } = {}) {
+  xnew(`<div class="absolute right-[2cqw] bottom-[2cqw] size-[6cqw] ${className}">`,
+    VolumeController, { anchor: 'left' });
 }
 

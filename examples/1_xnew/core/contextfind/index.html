@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen">
+  <div id="main" class="relative w-full h-full overflow-hidden"></div>
+
+  <script type="module">
+    import { xnew } from '@mulsense/xnew';
+
+    xnew(document.querySelector('#main'), Main);
+
+    function Main(unit) {
+      xnew.nest('<div class="p-4 flex items-start gap-4 flex-wrap">');
+      xnew(ContextDemo);
+      xnew(FindDemo);
+    }
+
+    // --- xnew.context: a deep descendant reaches the nearest ancestor extended with Console ---
+
+    function ContextDemo(unit) {
+      xnew.nest('<div class="flex-1 min-w-64 p-3 border-2 rounded-lg border-blue-500 bg-blue-50 flex flex-col gap-3">');
+      xnew('<p class="font-bold text-blue-800">', 'xnew.context');
+
+      xnew.extend(Console);
+
+      xnew((unit) => {
+        xnew.nest('<div class="p-3 border rounded-lg border-blue-300 bg-white">');
+        xnew('<p class="text-sm text-blue-700">', 'child');
+
+        xnew((unit) => {
+          xnew.nest('<div class="mt-2 p-3 border rounded-lg border-blue-300 bg-blue-50 flex flex-col items-start gap-2">');
+          xnew('<p class="text-sm text-blue-700">', 'grandchild');
+
+          let count = 0;
+          xnew(Button, { name: 'print via context' }).on('click', () => {
+            // climbs the ancestors and returns the unit extended with Console
+            xnew.context(Console).print(`hello from grandchild (${++count})`);
+          });
+        });
+      });
+    }
+
+    function Console(unit) {
+      const log = xnew('<div class="p-2 rounded bg-gray-200 text-sm min-h-12">');
+      return {
+        print(text) {
+          xnew(log, '<p>', text);
+        }
+      };
+    }
+
+    // --- xnew.find: collect units by component (optionally narrowed by key) ---
+
+    function FindDemo(unit) {
+      xnew.nest('<div class="flex-1 min-w-64 p-3 border-2 rounded-lg border-green-600 bg-green-50 flex flex-col gap-3">');
+      xnew('<p class="font-bold text-green-800">', 'xnew.find');
+
+      xnew('<div class="flex gap-2">', () => {
+        xnew(Lamp, { key: 'A' });
+        xnew(Lamp, { key: 'B' });
+        xnew(Lamp, { key: 'C' });
+      });
+
+      xnew('<div class="flex gap-2 flex-wrap">', () => {
+        xnew(Button, { name: 'find all' }).on('click', () => {
+          xnew.find(Lamp).forEach((lamp) => lamp.flash());
+        });
+        xnew(Button, { name: "find { key: 'B' }" }).on('click', () => {
+          xnew.find(Lamp, { key: 'B' }).forEach((lamp) => lamp.flash());
+        });
+      });
+    }
+
+    function Lamp(unit, { key }) {
+      const box = xnew.nest('<div class="w-16 h-16 rounded-lg border border-green-600 bg-white flex items-center justify-center font-bold text-green-800 transition-colors duration-150">');
+      unit.element.textContent = key;
+      return {
+        flash() {
+          box.classList.add('bg-yellow-300');
+          xnew.timeout(() => box.classList.remove('bg-yellow-300'), 300);
+        }
+      };
+    }
+
+    // ---
+
+    function Button(unit, { name = 'button' }) {
+      xnew.nest('<button class="px-3 py-1 border rounded-lg cursor-pointer bg-white hover:bg-gray-100 border-gray-300 text-gray-700">');
+      unit.element.textContent = name;
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden">
+  <div id="main" class="relative w-full h-full"></div>
+  <script type="module">
+    import { xnew, xbasics } from '@mulsense/xnew';
+
+    xnew(document.querySelector('#main'), (unit) => {
+      xnew.extend(xbasics.Screen, { width: 512, height: 512 });
+
+      const context = unit.canvas.getContext('2d');
+
+      context.fillStyle = "rgb(0,0,0)";
+      context.fillRect(0, 0, unit.canvas.width, unit.canvas.height);
+      
+      unit.on('dragstart dragmove', ({ type, position, delta }) => {
+        const scaleX = unit.canvas.width / unit.element.clientWidth;
+        const scaleY = unit.canvas.height / unit.element.clientHeight;
+
+        context.beginPath();
+        context.fillStyle = 'white';
+        if (type === 'dragmove') {
+          const length = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+          for (let i = 0; i < length; i++) {
+            context.arc((position.x - delta.x * i / length) * scaleX, (position.y - delta.y * i / length) * scaleY, 1, 0, Math.PI * 2, true);
+          }
+        } else {
+          context.arc(position.x * scaleX, position.y * scaleY, 1, 0, Math.PI * 2, true);
+        }
+        context.fill();
+      });
+
+      xnew('<div class="absolute bottom-0 left-0 right-0">', () => {
+        const text1 = xnew('<div class="text-white text-lg text-center">', 'pointer over/out');
+        const text2 = xnew('<div class="text-white text-lg text-center">', 'pointer');
+        const text3 = xnew('<div class="text-white text-lg text-center">', 'drag');
+        unit.on('pointerover pointerout', ({ type, position }) => {
+          text1.element.textContent = `${type} {x:${position.x}, y:${position.y}}`;
+        });
+        unit.on('pointerdown pointermove pointerup', ({ type, position, delta }) => {
+          text2.element.textContent = `${type} {x:${Math.floor(position.x)}, y:${Math.floor(position.y)}}`;
+        });
+        unit.on('dragstart dragmove dragend', ({ type, position, delta }) => {
+          text3.element.textContent = `${type} {x:${Math.floor(position.x)}, y:${Math.floor(position.y)}}`;
+        });
+      })
+    });
+  </script>
+</body>
+
+</html>

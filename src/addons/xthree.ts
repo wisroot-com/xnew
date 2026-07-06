@@ -16,8 +16,12 @@
 //
 // `finalize()` tears down the Root Unit, releasing the renderer (dispose + forceContextLoss). The same
 // release also runs on normal tree teardown, so the WebGL context is never leaked.
+// `coord2dTo3d(x, y, z)` / `coord3dTo2d(x, y, z)` convert between canvas pixels and world space
+// through the camera (2d→3d intersects the view ray with the world z plane), so 2D overlays and
+// 3D placement stay consistent without hand-tuned scale factors.
 //
-// - xthree : { initialize, nest, add, remove, dispose, finalize, renderer, camera, scene, canvas }
+// - xthree : { initialize, nest, add, remove, dispose, finalize, coord2dTo3d, coord3dTo2d,
+//              renderer, camera, scene, canvas }
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '@mulsense/xnew';
@@ -53,6 +57,26 @@ export const xthree = {
     dispose(object: any) {
         object.parent?.remove(object);
         disposeObject(object);
+    },
+    // canvas ピクセル座標 (x, y) を、カメラから見てワールド z 平面上に載る 3D 座標へ変換する。
+    coord2dTo3d(x: number, y: number, z: number = 0): THREE.Vector3 {
+        const root = xnew.context(Root);
+        const camera = root.camera as THREE.Camera;
+        camera.updateMatrixWorld();
+        const nx = (x / root.canvas.width) * 2 - 1;
+        const ny = -(y / root.canvas.height) * 2 + 1;
+        // near / far 面の逆投影で視線レイを作り、z 平面との交点を取る（perspective / orthographic 共通）。
+        const near = new THREE.Vector3(nx, ny, -1).unproject(camera);
+        const direction = new THREE.Vector3(nx, ny, +1).unproject(camera).sub(near);
+        return near.add(direction.multiplyScalar((z - near.z) / direction.z));
+    },
+    // ワールド座標 (x, y, z) を canvas ピクセル座標へ変換する。
+    coord3dTo2d(x: number, y: number, z: number): THREE.Vector2 {
+        const root = xnew.context(Root);
+        const camera = root.camera as THREE.Camera;
+        camera.updateMatrixWorld();
+        const projected = new THREE.Vector3(x, y, z).project(camera);
+        return new THREE.Vector2((projected.x + 1) / 2 * root.canvas.width, (1 - projected.y) / 2 * root.canvas.height);
     },
     // Root unit を畳んで保持リソース（renderer + WebGL コンテキスト）を解放する。
     finalize() {

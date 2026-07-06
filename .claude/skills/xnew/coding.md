@@ -49,6 +49,15 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
 ## 4. DOM: element, nest, events
 
 - `unit.element` is the unit's current DOM element.
+- `xnew.css({ name: 'decls…' })` registers pseudo-scoped CSS: each key is a **local**
+  class name, the return value maps it to a page-unique class to embed in tag strings
+  (`xnew.nest(`<div class="${css.name}">`)`). Native CSS nesting works inside a block
+  (`&:hover`, `@media`, descendant selectors). Identical definitions share one ref-counted
+  `<style>`, removed when the last user unit finalizes. `@keyframes` names stay global;
+  on the server (no DOM) keys map to themselves and nothing is injected.
+  Sharing across components: share the **definition object** (same defs → same names);
+  for theming, custom properties (`--vars`) pass through unrenamed and inherit down the
+  DOM — set them on a subtree root class, read via `var(--x, fallback)` in descendants.
 - `xnew.nest('<div …>')` nests a child element under the current element and makes
   it current (init-only). `xnew.extend(Base)` mixes another component into this unit.
 - DOM events are listened with `unit.on('click', ({ event }) => …)`. The payload is
@@ -59,6 +68,17 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   - `wheel`: `{ event, delta }`, `drag*`: `{ event, position, delta }`
   - `window.`/`document.` prefix attaches to window/document; `.arrow`/`.wasd` give `{ event, vector }`.
 - `unit.on('a b c', fn)` registers one listener for several space-separated types.
+- `unit.once(type, fn)` registers a self-removing listener (removed *before* invocation,
+  so an emit inside the listener cannot re-fire it; with space-separated types each type
+  fires once independently). Use it instead of the `on` + `off(type)` dance for one-shot
+  events like `'+gameover'`. Unlike `on`, duplicate `once(type, fn)` calls register twice.
+- **Blanket `off()` is owner-scoped.** Each listener records the unit whose scope
+  registered it; `unit.off()` / `unit.off(type)` remove only listeners the *calling*
+  unit registered, so one unit cannot strip another component's internals (e.g.
+  `system.off()` no longer breaks Accordion/Popup subscribed via `context`).
+  `unit.off(type, listener)` with an explicit listener removes regardless of owner.
+  When a unit finalizes, its listeners registered on *other* units are detached
+  automatically (no stale cross-unit residue).
 
 ## 5. Lifecycle events
 
@@ -99,9 +119,9 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 - `xnew.timeout(cb, ms)`, `xnew.interval(cb, ms, iterations=0)`,
   `xnew.transition(cb, ms, easing)`. They live under the unit (auto-cleared on
   finalize) and run their callback in scope.
-- Callback gets `{ timer }` (transition also `{ value }`, 0→1). Cancel with
-  `timer.clear()`. Prefer these over `setTimeout`/`setInterval` for anything tied
-  to a unit's lifetime.
+- timeout/interval callbacks get `{ count }` (iteration count from 0); transition
+  gets `{ value }` (0→1). Cancel with `clear()` on the returned timer. Prefer these
+  over `setTimeout`/`setInterval` for anything tied to a unit's lifetime.
 
 ## 9. Context & find
 
@@ -189,6 +209,35 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
+
+- **An inline component must not implicitly return a unit: write `() => { xnew(Child); }`,
+  not `() => xnew(Child)`.** A component's return value is merged as defines, so the returned
+  child unit's internals collide and throw `The property "_" already exists.`
+
+- **Don't wrap "apply now + follow an event" in a helper component; write a local `update`
+  and reuse it for the initial call and the listener.** Take the initial value as a defaulted
+  prop and do `update({ wave }); unit.on('+wave', update);` — a wrapper unit (e.g. the removed
+  `FollowWave`) hides the hardcoded initial-value assumption and adds a needless unit. Keeping
+  xnew core minimal is preferred over adding sticky/replayed events for this.
+
+- **Anything a component reads must be declared above the module's entry `xnew(...)` call
+  (or be a hoisted `function`).** `xnew()` runs component bodies synchronously, so an entry
+  call mid-file evaluates the whole component tree during module evaluation — a `const`
+  placed later in the file is still in its TDZ and throws
+  `can't access lexical declaration '…' before initialization` (bit the 3_games samples
+  when a shared `const paleColor` moved from an imported ui.js into the same file).
+
+- **Outside `unit.ts`, read the current unit via `Unit.current`, never the raw `Unit.currentUnit`.**
+  The getter lazily bootstraps the engine (root + ticker) on first access, so callers need no
+  `Unit.reset()` guard. Inside `unit.ts` (reset / initialize / scope) use only the raw fields —
+  reading the getter during `reset()` recurses infinitely before `engineRoot` is assigned.
+  (Tests may still read `Unit.currentUnit`: they assert the raw scope-restore behavior.)
+
+- **A `window.keydown.*` game-input handler that calls `preventDefault()` steals those keys
+  from every form field on the page** (e.g. WASD became untypable in the multiplay chat).
+  Skip the game branch when `event.target` is editable (`input, textarea, select` or
+  `isContentEditable`), and send a stop on `window.focusin` into an editable element so a
+  held key doesn't keep the player moving.
 
 - **The public barrel exposes three tiers: `xnew` (core) / `xsync` (networking) / `xbasics`
   (networking-free components), all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
