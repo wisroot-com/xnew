@@ -11,8 +11,15 @@ import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import html2canvas from 'html2canvas-pro';
 
-// id: 0=zundamon 1=kiritan 2=zunko 3=itako（ずんだ因子＝敵）
-const ENEMY_FILES = ['zundamon.vrm', 'kiritan.vrm', 'zunko.vrm', 'itako.vrm'];
+// ずんだ因子（敵）のテーブル（添字 = 敵 id。wave N の主役 = id N-1）。
+// code はターゲット表示・警告画面の識別コード / color は wave のメインカラー（黄緑・明るいこげ茶・緑・白）/
+// score は撃破時の得点 / splitTo は被弾時に分裂するキャラの id（null なら分裂しない）。
+const ENEMIES = [
+  { file: 'zundamon.vrm', code: 'ZD-0x01', color: 0x9BE53C, score: 1, splitTo: null },
+  { file: 'kiritan.vrm',  code: 'KT-0x02', color: 0xC8923C, score: 2, splitTo: 0    },
+  { file: 'zunko.vrm',    code: 'ZK-0x03', color: 0x3FD96B, score: 4, splitTo: 1    },
+  { file: 'itako.vrm',    code: 'IT-0x04', color: 0xFFFFFF, score: 8, splitTo: 2    },
+];
 // 自機は中国うさぎ（体内の免疫システム）。後ろ向きに表示する。
 const PLAYER_FILE = 'usagi.vrm';
 
@@ -20,7 +27,7 @@ const PLAYER_FILE = 'usagi.vrm';
 const asset = (name) => `../../assets/${name}`;
 
 // その wave で主役になる敵 id（wave1→0 … wave4 以降はイタコ=3 で頭打ち）。
-const enemyIdForWave = (wave) => Math.min(wave - 1, ENEMY_FILES.length - 1);
+const enemyIdForWave = (wave) => Math.min(wave - 1, ENEMIES.length - 1);
 
 // ベイク設定。フレーム数を減らすほど GPU 常駐テクスチャと起動時負荷が減る（その分コマが粗くなる）。
 // 再生周期は 360 枚時代（60fps で約6秒/ループ）を保つよう BAKE_ANIMATION_SPEED で補正する。
@@ -33,14 +40,16 @@ const BAKE_FRAME_SIZE = 96; // ベイク1フレームの解像度(px)
 const PANEL_W = 200;
 const PLAY_RIGHT = 800 - PANEL_W;
 
+// リザルト画面のフッター高さ（画面高さに対する割合）。画面割り(Split)と ScreenShot のクロップで共有。
+const RESULT_FOOTER_RATIO = 0.2;
+
 // 自機⇄敵の当たり判定半径。中心間距離 < PLAYER_HIT_R + ENEMY_HIT_R で被弾。
 // それぞれの半径でうっすら円を描き、円が重なる＝被弾と分かるようにする。
 const PLAYER_HIT_R = 14;
 const ENEMY_HIT_R = 10;
 
-// 各 wave のメインカラー（wave1:黄緑 / 2:明るいこげ茶 / 3:緑 / 4:白）。endless は最後の色。
-const WAVE_COLORS = [0x9BE53C, 0xC8923C, 0x3FD96B, 0xFFFFFF];
-const waveColor = (wave) => WAVE_COLORS[Math.min(wave - 1, WAVE_COLORS.length - 1)];
+// wave のメインカラー（= その wave の主役キャラの色。endless は最後の色）。
+const waveColor = (wave) => ENEMIES[enemyIdForWave(wave)].color;
 const cssHex = (n) => '#' + n.toString(16).padStart(6, '0');
 const waveCss = (wave) => cssHex(waveColor(wave)); // wave のメインカラー(css hex)
 
@@ -68,8 +77,6 @@ const hitNearestEnemy = (object, r, hit, vulnOnly = false) => {
   return false;
 };
 
-// 敵 id ごとのサイバーな識別コード（ターゲット表示／警告画面の「謎文字」に使う）
-const ENEMY_CODES = ['ZD-0x01', 'KT-0x02', 'ZK-0x03', 'IT-0x04'];
 // ランダムな16進文字列（len 桁）。流れる解析数字に使う。
 const randHex = (len) => randInt(16 ** len).toString(16).toUpperCase().padStart(len, '0');
 // 解析ストリーム/警告画面で流す「謎文字」の文字集合と、そこから n 文字。
@@ -174,7 +181,7 @@ function BakedCharacters(unit) {
 
   // 焼くジョブ: 敵4体（spin）→ 自機（固定）。
   const jobs = [
-    ...ENEMY_FILES.map((file) => ({ url: asset(file), spin: true })),
+    ...ENEMIES.map((enemy) => ({ url: asset(enemy.file), spin: true })),
     { url: asset(PLAYER_FILE), spin: false },
   ];
 
@@ -268,7 +275,7 @@ function BakedCharacters(unit) {
   });
 
   return {
-    get texturesList() { return jobs.slice(0, ENEMY_FILES.length).map((job) => job.textures); },
+    get texturesList() { return jobs.slice(0, ENEMIES.length).map((job) => job.textures); },
     get playerTextures() { return jobs[jobs.length - 1].textures; },
   };
 }
@@ -451,7 +458,7 @@ function StoryPageHit(unit) {
   const FLY = 40; // 飛来フレーム数（約0.7秒）
   let impacted = false, hitT = 0;
   unit.on('update', ({ count }) => {
-    if (arrow === null) return;
+    if (arrow === null || usagi === null) return;
     if (!impacted) {
       const p = Math.min(1, count / FLY);
       const e = p * p; // 加速して突き刺さる
@@ -551,7 +558,7 @@ function ResultScene(unit, { image, score, wave, kills, cleared }) {
 
   // 画面割り: 上下 80:20、上部分をさらに左右 50:50
   xnew((unit) => {
-    xnew.extend(xbasics.Split, { direction: 'column', ratio: [80, 20] });
+    xnew.extend(xbasics.Split, { direction: 'column', ratio: [1 - RESULT_FOOTER_RATIO, RESULT_FOOTER_RATIO] });
     xnew(unit.panes[0], (unit) => {
       xnew.extend(xbasics.Split, { direction: 'row', ratio: [50, 50] });
       xnew(unit.panes[0], xbasics.Image, { src: image, className: 'absolute inset-x-0 bottom-[2cqw] mx-auto w-[46cqw] aspect-4/3 rounded-[1cqw] object-cover', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);' });
@@ -569,6 +576,10 @@ function ResultScene(unit, { image, score, wave, kills, cleared }) {
 // waveScore がこの値に達すると次 wave へ。wave4 はゲージは満タンになるが次へは進まない（エンドレス）。
 const WAVE_GOALS = [1024, 2048, 3072, 4096];
 
+// 警告画面の表示開始から湧き再開までの時間。WaveTransition の演出
+// （フェードイン450 + 表示2100 + フェードアウト450 ≒ 2550ms）を覆う長さにする。
+const WAVE_WARNING_MS = 2800;
+
 function WaveManager(unit) {
   let wave = 0;
   let transitioning = false;
@@ -578,29 +589,31 @@ function WaveManager(unit) {
     xnew.emit('+wave', { wave });
   }
 
-  function nextWave() {
+  // 警告画面を出し、表示が終わるまで湧きを transitioning で止める（onDone は湧き再開の直前に呼ぶ）
+  function showWarning(next, onDone) {
     transitioning = true;
+    xnew.context(xbasics.Scene).add(WaveTransition, { wave: next });
+    xnew.timeout(() => { onDone?.(); transitioning = false; }, WAVE_WARNING_MS);
+  }
+
+  function nextWave() {
     const next = wave + 1;
     // 画面内の敵を一旦フェードアウト（得点は入らない）
     for (const enemy of xnew.find(Enemy)) enemy.fadeOut();
-    // 警告 → 次 wave への切替表示
-    xnew.context(xbasics.Scene).add(WaveTransition, { wave: next });
-    xnew.timeout(() => { startWave(next); transitioning = false; }, 2800);
+    showWarning(next, () => startWave(next));
   }
 
-  // wave1 も警告画面を出してから開始（初回も同じ導入演出）。湧きは transitioning で演出終了まで止める。
+  // wave1 も警告画面を出してから開始（初回も同じ導入演出）。
   // wave は即 1 にする（0 のままだと ScoreGauge のしきい値計算が NaN になり恒久的に壊れる）。
   startWave(1);
-  transitioning = true;
-  xnew.context(xbasics.Scene).add(WaveTransition, { wave: 1 });
-  xnew.timeout(() => { transitioning = false; }, 2800);
+  showWarning(1);
 
   let spawnTick = 0;
   const spawn = xnew.interval(() => {
     spawnTick++;
     if (transitioning) return;
-    // その wave の目標スコアに達したら次の wave へ（wave4 は到達してもエンドレスで移行しない）
-    if (wave < 4 && xnew.context(ScoreManager).waveScore >= WAVE_GOALS[wave - 1]) {
+    // その wave の目標スコアに達したら次の wave へ（最終 wave は到達してもエンドレスで移行しない）
+    if (wave < WAVE_GOALS.length && xnew.context(ScoreManager).waveScore >= WAVE_GOALS[wave - 1]) {
       nextWave();
       return;
     }
@@ -620,7 +633,7 @@ function WaveManager(unit) {
 // wave 切替時のサイバーな警告画面（プレイ領域）。HUDフレーム + グリッチ WAVE 表示 + 流れる hex + 脅威解析バー。
 function WaveTransition(unit, { wave }) {
   const color = waveCss(wave);
-  const code = ENEMY_CODES[enemyIdForWave(wave)];
+  const code = ENEMIES[enemyIdForWave(wave)].code;
   xnew.nest('<div class="absolute left-0 right-[25cqw] top-0 bottom-0 overflow-hidden pointer-events-none" style="font-family: monospace;">');
   unit.element.style.color = color; // 文字はすべて wave 色を継承
 
@@ -871,7 +884,7 @@ function TargetReticle(unit, { wave = 1 } = {}) {
     dots.push({ g, radius: randRange(24, 50), ang: randAngle(), spd: randRange(0.01, 0.04) * randSign(), size: randRange(1.1, 2.5) });
   }
 
-  let color = WAVE_COLORS[0];
+  let color = ENEMIES[0].color;
 
   function draw(c) {
     color = c;
@@ -988,7 +1001,7 @@ function TargetInfo(unit, { wave = 1 } = {}) {
 
   function update({ wave }) {
     const id = enemyIdForWave(wave);
-    idLine.element.textContent = `ID ${ENEMY_CODES[id]} ${'▮'.repeat(id + 1)}`;
+    idLine.element.textContent = `ID ${ENEMIES[id].code} ${'▮'.repeat(id + 1)}`;
     unit.element.style.color = waveCss(wave); // 全テキストが継承
   }
   update({ wave });
@@ -1040,7 +1053,7 @@ function UsagiFace(unit) {
     back = xpixi.add(new PIXI.Sprite()); fit(back, textures[0]);
     front = xpixi.add(new PIXI.Sprite()); fit(front, textures[0]);
 
-    // 0:余裕(〜20) 1:普通(〜40) 2:焦り(40〜)
+    // 0:余裕(〜30) 1:普通(〜60) 2:焦り(60〜)
     unit.on('update', () => {
       const count = xnew.find(Enemy).length;
       const idx = count <= 30 ? 0 : (count <= 60 ? 1 : 2);
@@ -1154,7 +1167,7 @@ function ScoreManager(unit, { wave = 1 } = {}) {
   }
   let sum = 0;        // 合計スコア（リザルト表示用）
   let waveScore = 0;  // 現在の wave 内で稼いだスコア（wave 開始ごとに 0 リセット）
-  const kills = [0, 0, 0, 0]; // 敵 id 別の撃破数
+  const kills = ENEMIES.map(() => 0); // 敵 id 別の撃破数
 
   update({ wave });
   unit.on('+wave', update);
@@ -1259,7 +1272,7 @@ function Shot(unit, { x, y }) {
     if (object.y < 0) { unit.finalize(); return; }
 
     // ショットは上方向。当たった敵を撃破して自身を消す。
-    if (hitNearestEnemy(object, 30, (e) => e.clash(ENEMY_DATA[e.id].score, { x: 0, y: -1 }))) {
+    if (hitNearestEnemy(object, 30, (e) => e.clash(ENEMIES[e.id].score, { x: 0, y: -1 }))) {
       unit.finalize();
     }
   });
@@ -1268,14 +1281,6 @@ function Shot(unit, { x, y }) {
 }
 
 // ---- Enemy system ----
-
-// splitTo: 被弾時に分裂するキャラのid（nullなら分裂しない）
-const ENEMY_DATA = [
-  { score: 1,  splitTo: null },
-  { score: 2,  splitTo: 0   },
-  { score: 4,  splitTo: 1   },
-  { score: 8,  splitTo: 2   },
-];
 
 function Enemy(unit, { id, x, y, invincible = false, knockback = null }) {
   const object = xpixi.nest(new PIXI.Container());
@@ -1346,7 +1351,7 @@ function Enemy(unit, { id, x, y, invincible = false, knockback = null }) {
       if (fading) return; // 退場中は得点なし
       if (fromStar && !vulnerable) return; // 星チェーンは無敵中スキップ
 
-      const data = ENEMY_DATA[id];
+      const data = ENEMIES[id];
       const scene = xnew.context(xbasics.Scene);
       const baseAngle = Math.atan2(direction.y, direction.x); // 当たった方向
 
@@ -1601,20 +1606,26 @@ function SoundFX(unit) {
 
 // ---- Result screen ----
 
+// 敵アイコン（ベイク先頭フレーム＝正面）の dataURL の Promise。初回のリザルトで一度だけ抽出してキャッシュする。
+let _enemyIcons = null;
+
 function ResultDetail(unit, { score, wave, kills = [0, 0, 0, 0], cleared = false }) {
   xnew.nest('<div class="absolute inset-x-0 bottom-[2cqw] mx-auto w-[38cqw] bg-gray-100 px-[1.5cqw] py-[2.5cqw] rounded-[1cqw] font-bold" style="box-shadow: 0 8px 20px rgba(0,0,0,0.2);">');
   xnew('<div class="text-[3.5cqw] text-center text-red-400 mb-[1.5cqw]">', '🦠 駆逐した数 🦠');
 
-  // 敵キャラ別の撃破数（ベイク先頭フレーム＝正面のアイコン × 撃破数）を2列で
-  const tl = xnew.context(BakedCharacters).texturesList;
+  // 敵キャラ別の撃破数（アイコン × 撃破数）を2列で
+  _enemyIcons = _enemyIcons ?? xnew.context(BakedCharacters).texturesList.map((textures) => {
+    const sprite = new PIXI.Sprite(textures[0]);
+    return xpixi.renderer.extract.base64(sprite).finally(() => sprite.destroy());
+  });
   xnew('<div class="grid grid-cols-2 gap-x-[1cqw] gap-y-[1.5cqw]">', () => {
-    for (let i = 0; i < tl.length; i++) {
+    _enemyIcons.forEach((iconSrc, i) => {
       xnew('<div class="flex items-center justify-center gap-x-[1cqw]">', () => {
         const icon = xnew('<img class="w-[7cqw] h-[7cqw] object-contain">');
-        xpixi.renderer.extract.base64(new PIXI.Sprite(tl[i][0])).then((src) => icon.element.src = src);
+        iconSrc.then((src) => icon.element.src = src);
         xnew('<div class="text-[3.5cqw] text-cyan-700">', `× ${kills[i] ?? 0}`);
       });
-    }
+    });
   });
 
   xnew('<div class="mx-[1cqw] my-[2cqw] border-t-[0.4cqw] border-dashed border-cyan-600">');
@@ -1670,8 +1681,8 @@ function ScreenShot(unit) {
   xnew.transition(({ value }) => cover.element.style.opacity = 1 - value, 1000)
     .timeout(() => {
       html2canvas(unit.element, { scale: 2, logging: false, useCORS: true }).then((canvas) => {
-        // 下部 20% のフッターを除いた領域を切り出して PNG としてダウンロードする。
-        const [width, height] = [canvas.width, Math.floor(canvas.height * 0.80)];
+        // 下部のフッターを除いた領域を切り出して PNG としてダウンロードする。
+        const [width, height] = [canvas.width, Math.floor(canvas.height * (1 - RESULT_FOOTER_RATIO))];
         const cropped = document.createElement('canvas');
         [cropped.width, cropped.height] = [width, height];
         cropped.getContext('2d').drawImage(canvas, 0, 0, width, height, 0, 0, width, height);
