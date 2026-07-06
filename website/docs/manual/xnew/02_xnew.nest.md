@@ -29,8 +29,7 @@ xnew((unit) => {
   xnew.nest('<header>');
   // Now unit.element === header
 
-  xnew.nest('<h1>');
-  unit.element.textContent = 'Welcome';
+  xnew('<h1>', 'Welcome');
   // h1 is created inside header
 });
 
