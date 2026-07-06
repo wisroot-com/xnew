@@ -210,6 +210,10 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **An inline component must not implicitly return a unit: write `() => { xnew(Child); }`,
+  not `() => xnew(Child)`.** A component's return value is merged as defines, so the returned
+  child unit's internals collide and throw `The property "_" already exists.`
+
 - **Don't wrap "apply now + follow an event" in a helper component; write a local `update`
   and reuse it for the initial call and the listener.** Take the initial value as a defaulted
   prop and do `update({ wave }); unit.on('+wave', update);` — a wrapper unit (e.g. the removed

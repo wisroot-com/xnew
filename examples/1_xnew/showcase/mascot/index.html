@@ -18,17 +18,53 @@
   <script type="module">
     import { xnew, xbasics } from '@mulsense/xnew';
 
-    // per-instance suffix for the SVG gradient id (ids are document-global)
-    let gradientCount = 0;
+    // per-instance suffix for SVG gradient / marker ids (ids are document-global)
+    let uniqueCount = 0;
 
     xnew(document.querySelector('#main'), Main);
 
+    // laid out after website/static/img/introduction.svg as three width-proportional
+    // blocks — ① blob 40% / ② arrow 20% / ③ mascots 40% — so the scene scales with
+    // the container width
     function Main(unit) {
-      xnew.nest('<div class="w-full h-full flex items-end justify-center gap-10 pb-20 bg-slate-100">');
-      xnew(Blob, { size: 240 });
-      xnew(Mascot, { size: 120, shape: 'circle' });
-      xnew(Mascot, { size: 120, shape: 'triangle' });
-      xnew(Mascot, { size: 120, shape: 'square' });
+      xnew.nest('<div class="w-full h-full bg-slate-100 flex items-end" style="padding-bottom: 8%;">');
+      xnew('<div style="width: 40%; display: flex; justify-content: center;">', () => {
+        xnew('<div style="width: 70%;">', () => { xnew(Blob); });
+      });
+      xnew('<div style="width: 20%; padding-bottom: 12%; display: flex; justify-content: center;">', () => {
+        xnew('<div style="width: 75%;">', () => { xnew(Arrow); });
+      });
+      xnew('<div style="width: 40%; display: flex; justify-content: center;">', () => {
+        xnew('<div style="width: 70%;">', () => { xnew(MascotTrio); });
+      });
+    }
+
+    // the three mascots in a fixed 275x300 design box (a loose triangle formation),
+    // scaled to the parent width so their pixel spacing stays proportional
+    function MascotTrio(unit) {
+      const frame = xnew.nest('<div style="position: relative; width: 100%; aspect-ratio: 275 / 300;">');
+      unit.on('resize', fit);
+      const group = xnew.nest('<div style="position: absolute; left: 0; bottom: 0; width: 275px; height: 300px; transform-origin: 0 100%;">');
+      xnew('<div class="absolute" style="left: 78px; bottom: 128px;">', () => { xnew(Mascot, { size: 120, shape: 'triangle' }); });
+      xnew('<div class="absolute" style="left: 0; bottom: 12px;">', () => { xnew(Mascot, { size: 120, shape: 'circle' }); });
+      xnew('<div class="absolute" style="left: 145px; bottom: 0;">', () => { xnew(Mascot, { size: 120, shape: 'square' }); });
+
+      function fit() {
+        group.style.transform = `scale(${frame.getBoundingClientRect().width / 275})`;
+      }
+      fit();
+    }
+
+    // curved arrow from the blob to the components, after introduction.svg
+    function Arrow(unit) {
+      const markerId = `mascot-arrow-${uniqueCount++}`;
+      xnew.extend(xbasics.SVG, { viewBox: '0 0 160 64' });
+      xnew('<defs>', () => {
+        xnew(`<marker id="${markerId}" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="2.2" markerHeight="2.2" orient="auto-start-reverse">`, () => {
+          xnew('<path d="M 0,0 L 10,5 L 0,10 Z" fill="#002d12">');
+        });
+      });
+      xnew(`<path d="M 10,44 Q 80,16 138,38" fill="none" stroke="#002d12" stroke-width="14" stroke-linecap="round" marker-end="url(#${markerId})">`);
     }
 
     // the xnew mascots (after website/static/img/introduction.svg): slime-like
@@ -133,7 +169,7 @@
 
     // returned by every face: a top-right highlight gradient unique to the instance
     function bodyGradient(colors) {
-      const gradientId = `mascot-body-${gradientCount++}`;
+      const gradientId = `mascot-body-${uniqueCount++}`;
       xnew('<defs>', () => {
         xnew(`<radialGradient id="${gradientId}" cx="0.72" cy="0.22" r="1.1">`, () => {
           xnew(`<stop offset="0" stop-color="${colors[0]}">`);
@@ -174,10 +210,10 @@
 
     // the amorphous gray creature on the left of introduction.svg: a lumpy
     // outline whose control points undulate over time, with stray eye pairs
-    function Blob(unit, { size = 240 } = {}) {
-      xnew.nest(`<div style="position: relative; width: ${size}px; height: ${size}px;">`);
-      xnew(`<div style="position: absolute; bottom: 0; left: 10%; width: 80%; height: ${size * 0.06}px; border-radius: 50%; background: rgba(0, 0, 0, 0.18);">`);
-      xnew.extend(xbasics.SVG, { viewBox: '0 0 200 200' });
+    function Blob(unit) {
+      xnew.nest('<div style="position: relative; width: 100%; aspect-ratio: 1 / 1;">');
+      xnew('<div style="position: absolute; bottom: 0; left: 10%; width: 80%; height: 6%; border-radius: 50%; background: rgba(0, 0, 0, 0.18);">');
+      xnew.extend(xbasics.SVG, { viewBox: '0 0 200 200', style: 'position: absolute; inset: 0; width: 100%; height: 100%;' });
       const gradientId = bodyGradient(['#aab2bd', '#6b7280', '#4b5563']);
 
       const outline = xnew(`<path fill="url(#${gradientId})" stroke="#374151" stroke-width="9" stroke-linejoin="round">`);
