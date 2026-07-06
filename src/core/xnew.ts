@@ -6,6 +6,7 @@
 // component function; the implementation is a thin forward to Unit static methods.
 //
 // - xnew.nest / extend                   : extend the unit under initialization
+// - xnew.css                             : pseudo-scoped css (local class names → unique generated classes)
 // - xnew.find / context                  : search by component / resolve ancestor context
 // - xnew.promise                         : register a promise to the unit (xnew.promise(unit) aggregates its results)
 // - xnew.scope / emit / protect          : scope capture / '+global' '-local' events / visibility boundary
@@ -15,6 +16,7 @@
 
 import { Unit, UnitPromise, UnitTimer, ComponentFn, DefinesOf, PropsOf } from './unit';
 import { DomElement } from './dom';
+import { applyCss } from './css';
 
 // Call signatures of xnew(...); passing a Component merges its defines into the return type.
 export interface XnewBase {
@@ -55,6 +57,11 @@ export const xnew = Object.assign(
                 console.warn('Component is already extended in this unit:', Component);
             }
             return Unit.extend(Unit.current, Component, props) as DefinesOf<C>;
+        },
+
+        // Registers pseudo-scoped CSS: keys are local class names, values their declaration blocks (native CSS nesting works inside, e.g. &:hover / @media). Returns { localName: uniqueClassName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it finalizes.
+        css<T extends Record<string, string>>(defs: T): Record<keyof T, string> {
+            return applyCss(Unit.current, defs) as Record<keyof T, string>;
         },
 
         // Returns the nearest unit associated with the given component in the ancestor context chain.

@@ -137,6 +137,7 @@ interface XnewBase {
 declare const xnew: XnewBase & {
     nest(target: DomElement | string): HTMLElement | SVGElement;
     extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
+    css<T extends Record<string, string>>(defs: T): Record<keyof T, string>;
     context(key: any): any;
     promise: {
         (promise: Function | Promise<any> | Unit): UnitPromise;

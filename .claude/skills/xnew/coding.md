@@ -49,6 +49,12 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
 ## 4. DOM: element, nest, events
 
 - `unit.element` is the unit's current DOM element.
+- `xnew.css({ name: 'decls…' })` registers pseudo-scoped CSS: each key is a **local**
+  class name, the return value maps it to a page-unique class to embed in tag strings
+  (`xnew.nest(`<div class="${css.name}">`)`). Native CSS nesting works inside a block
+  (`&:hover`, `@media`, descendant selectors). Identical definitions share one ref-counted
+  `<style>`, removed when the last user unit finalizes. `@keyframes` names stay global;
+  on the server (no DOM) keys map to themselves and nothing is injected.
 - `xnew.nest('<div …>')` nests a child element under the current element and makes
   it current (init-only). `xnew.extend(Base)` mixes another component into this unit.
 - DOM events are listened with `unit.on('click', ({ event }) => …)`. The payload is

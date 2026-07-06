@@ -846,6 +846,40 @@ class UnitTimer {
     }
 }
 
+const registry = new Map();
+let counter = 0;
+function applyCss(unit, defs) {
+    var _a;
+    if (((_a = globalThis.document) === null || _a === void 0 ? void 0 : _a.head) === undefined) {
+        return Object.fromEntries(Object.keys(defs).map((name) => [name, name]));
+    }
+    const key = JSON.stringify(defs);
+    let entry = registry.get(key);
+    if (entry === undefined) {
+        const id = counter++;
+        const names = {};
+        const text = Object.entries(defs).map(([name, block]) => {
+            names[name] = `xnew${id}-${name}`;
+            return `.${names[name]} {\n${block}\n}`;
+        }).join('\n');
+        const style = document.createElement('style');
+        style.textContent = text;
+        document.head.appendChild(style);
+        entry = { names, refs: 0, style };
+        registry.set(key, entry);
+    }
+    const held = entry;
+    held.refs++;
+    unit.on('finalize', () => {
+        held.refs--;
+        if (held.refs === 0) {
+            held.style.remove();
+            registry.delete(key);
+        }
+    });
+    return held.names;
+}
+
 const xnew = Object.assign((function (...args) {
     var _a;
     if (args[0] instanceof Unit) {
@@ -871,6 +905,9 @@ const xnew = Object.assign((function (...args) {
             console.warn('Component is already extended in this unit:', Component);
         }
         return Unit.extend(Unit.current, Component, props);
+    },
+    css(defs) {
+        return applyCss(Unit.current, defs);
     },
     context(key) {
         return Unit.getContext(Unit.current, key);
