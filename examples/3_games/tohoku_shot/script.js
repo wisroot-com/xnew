@@ -76,13 +76,6 @@ const randHex = (len) => randInt(16 ** len).toString(16).toUpperCase().padStart(
 const STREAM_CHARS = '0123456789ABCDEF<>/\\|=+*#░▒▓';
 const randStream = (n, chars = STREAM_CHARS) => Array.from({ length: n }, () => pick(chars)).join('');
 
-// wave 色などを wave 番号に追従させるコンポーネント。生成時に apply(1) を即適用し、以降 +wave で apply(wave) を呼ぶ。
-// apply は wave 番号を受け取り自前で色を引く（waveColor(1) === WAVE_COLORS[0]）。
-function FollowWave(unit, { apply }) {
-  apply(1);
-  unit.on('+wave', ({ wave }) => apply(wave));
-}
-
 // ベイク済みテクスチャの AnimatedSprite を nest 直下に配置。textures 直指定か id で texturesList[id] を引く。
 // frame: 'random' で開始コマをランダム化 / 数値で固定（length-1 にクランプ）。位置等は .sprite で制御。
 function BakedSprite(_unit, { textures, id, scale = 1, frame, play = true } = {}) {
@@ -698,13 +691,15 @@ function WaveTransition(unit, { wave }) {
 }
 
 // 右パネル上部の "Wave N" 表示（wave のメインカラーに追従）
-function WaveLabel(unit) {
+function WaveLabel(unit, { wave = 1 } = {}) {
   xnew.nest('<div class="absolute top-[1.5cqw] right-0 w-[25cqw] text-center font-bold text-lime-400">');
   const text = xnew(xbasics.SVGText, { text: 'Wave 1', fontSize: '6cqw', stroke: '#102008', strokeWidth: '0.2cqw', className: 'inline-block' });
-  xnew(FollowWave, { apply: (wave) => {
+  function update({ wave }) {
     text.element.textContent = `Wave ${wave}`;
     unit.element.style.color = waveCss(wave); // SVGText の fill=currentColor が追従
-  } });
+  }
+  update({ wave });
+  unit.on('+wave', update);
 }
 
 // セグメント風メーターの箱（枠 + fill + セグメント隙間 + 走査）。走査(scan)は fill 割合に追従して
@@ -745,7 +740,7 @@ function CyberBar(unit, { boxClass, boxStyle, fillWidth, fillStyle = '', segment
 }
 
 // 次の wave までの進捗を示す「解析メーター」（画面左上）。色は wave のメインカラー。
-function ScoreGauge(unit) {
+function ScoreGauge(unit, { wave = 1 } = {}) {
   xnew.nest('<div class="absolute top-[2cqw] left-[2cqw] right-[44cqw]" style="font-family: monospace;">');
 
   // 見出し行（ラベル + パーセント）
@@ -763,13 +758,15 @@ function ScoreGauge(unit) {
     scanW: 3, scanAlpha: 0.5, scanSpeed: 0.04, scanMargin: 3,
   });
 
-  function applyColor(c) {
+  function update({ wave }) {
+    const c = waveCss(wave);
     bar.fill.element.style.background = c;
     bar.frame.element.style.borderColor = c;
     labelEl.element.style.color = c;
     pctEl.element.style.color = c;
   }
-  xnew(FollowWave, { apply: (wave) => applyColor(waveCss(wave)) });
+  update({ wave });
+  unit.on('+wave', update);
 
   let shown = 0;
   unit.on('update', () => {
@@ -800,16 +797,17 @@ function SidePanel(unit) {
 }
 
 // 半透明（約50%）のパネル背景 + 区切り線（区切り線は wave のメインカラーに追従）
-function PanelBackdrop(_unit) {
+function PanelBackdrop(unit, { wave = 1 } = {}) {
   xpixi.nest(new PIXI.Container());
   xpixi.add(new PIXI.Graphics().rect(PLAY_RIGHT, 0, PANEL_W, 600).fill({ color: 0x05121A, alpha: 0.5 }));
 
   const divider = xpixi.add(new PIXI.Graphics());
-  const drawDivider = (color) => {
+  function update({ wave }) {
     divider.clear();
-    divider.moveTo(PLAY_RIGHT, 0).lineTo(PLAY_RIGHT, 600).stroke({ color, width: 2, alpha: 0.55 });
-  };
-  xnew(FollowWave, { apply: (wave) => drawDivider(waveColor(wave)) });
+    divider.moveTo(PLAY_RIGHT, 0).lineTo(PLAY_RIGHT, 600).stroke({ color: waveColor(wave), width: 2, alpha: 0.55 });
+  }
+  update({ wave });
+  unit.on('+wave', update);
 }
 
 // その wave で登場する敵キャラを表示（wave1:ずんだもん 2:きりたん 3:ずん子 4:イタコ）
@@ -835,7 +833,7 @@ function WaveEnemyDisplay(unit) {
 
 // 敵キャラを囲うサイバーなターゲットレティクル（色は wave 連動）。
 // 多重リング（逆回転）+ レーダー掃引 + 呼吸するロックオンブラケット + 周回する解析ブリップ。
-function TargetReticle(unit) {
+function TargetReticle(unit, { wave = 1 } = {}) {
   xpixi.nest(new PIXI.Container({ position: { x: PLAY_RIGHT + PANEL_W / 2, y: TARGET_Y } }));
   const R = 46;
 
@@ -909,7 +907,11 @@ function TargetReticle(unit) {
     }
   }
 
-  xnew(FollowWave, { apply: (wave) => draw(waveColor(wave)) });
+  function update({ wave }) {
+    draw(waveColor(wave));
+  }
+  update({ wave });
+  unit.on('+wave', update);
 
   unit.on('update', ({ count: t }) => {
     outer.rotation += 0.006;
@@ -936,7 +938,7 @@ function TargetReticle(unit) {
 
 // レティクル周辺に「解析中っぽい」謎文字を表示する HUD（色は wave 連動）。
 // ヘッダー / 四隅の座標ラベル / 円の左右を流れる hex レール / 下部の解析リードアウト。
-function TargetInfo(unit) {
+function TargetInfo(unit, { wave = 1 } = {}) {
   xnew.nest('<div class="absolute right-0 top-0 bottom-0 w-[25cqw] pointer-events-none" style="font-family: monospace; color:#9BE53C;">');
 
   // ヘッダー
@@ -970,12 +972,13 @@ function TargetInfo(unit) {
     stream = xnew('<div class="text-[1.2cqw] tracking-[0.1em]" style="opacity:0.7;">', '> 8A F2 1C 04');
   });
 
-  function applyWave(wave) {
+  function update({ wave }) {
     const id = enemyIdForWave(wave);
     idLine.element.textContent = `ID ${ENEMY_CODES[id]} ${'▮'.repeat(id + 1)}`;
     unit.element.style.color = waveCss(wave); // 全テキストが継承
   }
-  xnew(FollowWave, { apply: applyWave });
+  update({ wave });
+  unit.on('+wave', update);
 
   const rightTokens = ['OK', '!!', 'ACK', '▮▮', '·▮·', 'SYN'];
   unit.on('update', ({ count: t }) => {
@@ -1123,13 +1126,14 @@ function Controller(unit) {
   unit.on('window.keydown.arrow window.keyup.arrow window.keydown.wasd window.keyup.wasd', ({ vector }) => xnew.emit('+move', { vector }));
 }
 
-function ScoreManager(unit) {
+function ScoreManager(unit, { wave = 1 } = {}) {
   // 画面右上にスコアをコンピュータの解析表示風（等幅・ゼロ埋め）で表示。色は wave 連動。
   xnew.nest('<div class="absolute top-[1.6cqw] right-[26cqw] text-right" style="font-family: monospace;">');
   const label = xnew('<div class="text-[1.5cqw] tracking-[0.3em]">', 'SCORE');
   const text = xnew('<div class="text-[4.2cqw] leading-none font-bold">', '000000');
 
-  function applyColor(c) {
+  function update({ wave }) {
+    const c = waveCss(wave);
     label.element.style.color = c;
     text.element.style.color = c;
     text.element.style.textShadow = `0 0 0.8cqw ${c}, 0 0.1cqw 0.1cqw rgba(0,0,0,0.6)`;
@@ -1138,7 +1142,8 @@ function ScoreManager(unit) {
   let waveScore = 0;  // 現在の wave 内で稼いだスコア（wave 開始ごとに 0 リセット）
   const kills = [0, 0, 0, 0]; // 敵 id 別の撃破数
 
-  xnew(FollowWave, { apply: (wave) => applyColor(waveCss(wave)) });
+  update({ wave });
+  unit.on('+wave', update);
   unit.on('+wave', () => { waveScore = 0; }); // wave 開始ごとに wave 内スコアをリセット
 
   return {

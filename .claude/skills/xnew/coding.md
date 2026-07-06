@@ -201,6 +201,12 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **Don't wrap "apply now + follow an event" in a helper component; write a local `update`
+  and reuse it for the initial call and the listener.** Take the initial value as a defaulted
+  prop and do `update({ wave }); unit.on('+wave', update);` — a wrapper unit (e.g. the removed
+  `FollowWave`) hides the hardcoded initial-value assumption and adds a needless unit. Keeping
+  xnew core minimal is preferred over adding sticky/replayed events for this.
+
 - **Anything a component reads must be declared above the module's entry `xnew(...)` call
   (or be a hoisted `function`).** `xnew()` runs component bodies synchronously, so an entry
   call mid-file evaluates the whole component tree during module evaluation — a `const`
