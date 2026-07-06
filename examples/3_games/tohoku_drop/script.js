@@ -102,8 +102,14 @@ function GameScene(unit) {
 
   unit.once('+gameover', () => {
     playing.finalize();
-    const image = xpixi.renderer.extract.base64({ target: xpixi.scene, frame: new PIXI.Rectangle(0, 0, xpixi.canvas.width, xpixi.canvas.height) });
-    xnew(GameOverText);
+    const gameover = xnew(GameOverText);
+
+    // 背景が DOM(xbasics.Image) になり pixi extract では写らないため、html2canvas で画面ごと撮る。
+    xpixi.renderer.render(xpixi.scene); // preserveDrawingBuffer なしでも同一タスク内の描画直後なら canvas が写る
+    const image = html2canvas(document.querySelector('#main'), {
+      scale: 2, logging: false, useCORS: true,
+      ignoreElements: (element) => element === gameover.element,
+    }).then((canvas) => canvas.toDataURL('image/png'));
 
     xnew.timeout(() => {
       unit.change(ResultScene, { image });
