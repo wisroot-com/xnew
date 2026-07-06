@@ -27,7 +27,7 @@
     // blocks — ① blob 40% / ② arrow 20% / ③ mascots 40% — so the scene scales with
     // the container width
     function Main(unit) {
-      xnew.nest('<div class="w-full h-full bg-slate-100 flex items-end" style="padding-bottom: 8%;">');
+      xnew.nest('<div class="w-full h-full bg-white flex items-end" style="padding-bottom: 8%;">');
       xnew('<div style="width: 40%; display: flex; justify-content: center;">', () => {
         xnew('<div style="width: 70%;">', () => { xnew(Blob); });
       });

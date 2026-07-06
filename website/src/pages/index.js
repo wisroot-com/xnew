@@ -37,7 +37,7 @@ export default function Home() {
       <HomepageHeader />
       <main>
         <div style={{textAlign: 'center', fontSize: '24px'}}>
-          <img width="600" src ="/xnew/img/introduction.svg"/>
+          <img width="600" src ="/xnew/img/mascot.gif"/>
           <p><b>xnew</b> is a JavaScript / TypeScript library for component-oriented programming,<br/>
           providing a flexible architecture well-suited for applications with dynamic scenes and games.</p>
         </div>
