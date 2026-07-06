@@ -117,13 +117,13 @@ describe('Unit.on / Unit.off', () => {
             expect(theirs).toHaveBeenCalledTimes(1);
         });
 
-        it('off(type, listener) removes a listener regardless of owner', () => {
+        it('off(type, listener) from a non-owner unit keeps the listener', () => {
             const cb = jest.fn();
             const system = xnew((unit: Unit) => ({ ping() { xnew.emit('-ping'); } }));
             xnew((unit: Unit) => { system.on('-ping', cb); });
             xnew((unit: Unit) => { system.off('-ping', cb); });
             system.ping();
-            expect(cb).not.toHaveBeenCalled();
+            expect(cb).toHaveBeenCalledTimes(1);
         });
 
         it('off(\'update\') from a non-owner unit keeps other units\' update listeners', () => {

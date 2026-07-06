@@ -482,11 +482,16 @@ class Unit {
         return this._.currentElement;
     }
     finalize() {
+        var _a;
         if (this._.phase !== 'finalized' && this._.phase !== 'finalizing') {
             this._.phase = 'finalizing';
             [...this._.children].reverse().forEach((child) => child.finalize());
             [...this._.systems.finalize].reverse().forEach(({ execute }) => execute());
-            Unit.offAll(this);
+            (_a = Unit.owner2targets.get(this)) === null || _a === void 0 ? void 0 : _a.forEach((target) => {
+                [...target._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(target, this, type));
+            });
+            Unit.owner2targets.delete(this);
+            [...this._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(this, null, type));
             [...this._.nestElements].reverse().filter(item => item.owned).forEach(item => item.element.remove());
             this._.Components.forEach((Component) => Unit.component2units.delete(Component, this));
             const contexts = Unit.unit2Contexts.get(this);
@@ -663,7 +668,7 @@ class Unit {
     }
     off(type, listener) {
         const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), 'update', 'finalize'];
-        types.forEach((type) => Unit.off(this, type, listener));
+        types.forEach((type) => Unit.off(this, Unit.currentUnit, type, listener));
     }
     static on(unit, type, listener, options) {
         const owner = Unit.currentUnit;
@@ -685,27 +690,16 @@ class Unit {
             Unit.owner2targets.add(owner, unit);
         }
     }
-    static off(unit, type, listener) {
-        const owner = Unit.currentUnit;
-        Unit.remove(unit, type, (lis, own) => listener !== undefined ? lis === listener : own === owner);
-    }
-    static offAll(unit) {
-        var _a;
-        (_a = Unit.owner2targets.get(unit)) === null || _a === void 0 ? void 0 : _a.forEach((target) => {
-            [...target._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.remove(target, type, (_, own) => own === unit));
-        });
-        Unit.owner2targets.delete(unit);
-        [...unit._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.remove(unit, type, () => true));
-    }
-    static remove(unit, type, match) {
+    static off(unit, owner, type, listener) {
         var _a, _b;
+        const match = (lis, own) => (owner === null || own === owner) && (listener === undefined || lis === listener);
         if (type === 'update' || type === 'finalize') {
             unit._.systems[type] = unit._.systems[type].filter((entry) => match(entry.listener, entry.owner) === false);
         }
         else {
-            [...((_b = (_a = unit._.listeners.get(type)) === null || _a === void 0 ? void 0 : _a.entries()) !== null && _b !== void 0 ? _b : [])].forEach(([listener, item]) => {
-                if (match(listener, item.owner)) {
-                    unit._.listeners.delete(type, listener);
+            [...((_b = (_a = unit._.listeners.get(type)) === null || _a === void 0 ? void 0 : _a.entries()) !== null && _b !== void 0 ? _b : [])].forEach(([lis, item]) => {
+                if (match(lis, item.owner)) {
+                    unit._.listeners.delete(type, lis);
                     if (/^[A-Za-z]/.test(type)) {
                         unit._.events.remove(type, item.execute);
                     }
@@ -1148,9 +1142,12 @@ const xsync = {
         }
     },
     boot(opts, ...args) {
-        return getEnvironment() === 'server'
-            ? bootServer(opts, Unit.current, args)
-            : bootClient(opts, Unit.current, args);
+        if (getEnvironment() === 'server') {
+            return bootServer(opts, Unit.current, args);
+        }
+        else {
+            return bootClient(opts, Unit.current, args);
+        }
     },
 };
 

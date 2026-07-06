@@ -9,7 +9,7 @@
 // - UnitPromise : promise wrapper resuming in the captured unit scope
 // - UnitTimer   : queued timer backing xnew.timeout / interval / transition
 //
-// Listeners record their owner unit: blanket off(type?) removes only the caller's own, and a
+// Listeners record their owner unit: off removes only the entries the caller registered, and a
 // finalized owner's listeners on other units are detached automatically.
 //----------------------------------------------------------------------------------------------------
 
@@ -152,7 +152,15 @@ export class Unit {
 
             [...this._.children].reverse().forEach((child: Unit) => child.finalize());
             [...this._.systems.finalize].reverse().forEach(({ execute }) => execute());
-            Unit.offAll(this);
+
+            // detach the listeners this unit registered on other units
+            Unit.owner2targets.get(this)?.forEach((target) => {
+                [...target._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(target, this, type));
+            });
+            Unit.owner2targets.delete(this);
+
+            // clear all listeners on this unit regardless of owner
+            [...this._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(this, null, type));
 
             [...this._.nestElements].reverse().filter(item => item.owned).forEach(item => item.element.remove());
             this._.Components.forEach((Component) => Unit.component2units.delete(Component, this));
@@ -360,7 +368,7 @@ export class Unit {
     public off(type?: string, listener?: Function): void {
         const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), 'update', 'finalize'];
 
-        types.forEach((type) => Unit.off(this, type, listener));
+        types.forEach((type) => Unit.off(this, Unit.currentUnit, type, listener));
     }
     
     // owner (the unit whose scope called on) → the units it registered listeners on
@@ -387,30 +395,15 @@ export class Unit {
         }
     }
 
-    // blanket off (no listener) removes only the caller's own entries; off(type, listener) ignores owner
-    static off(unit: Unit, type: string, listener?: Function): void {
-        const owner = Unit.currentUnit;
-        Unit.remove(unit, type, (lis, own) => listener !== undefined ? lis === listener : own === owner);
-    }
-
-    // finalize-only: clear all listeners on this unit, and detach those it registered on other units
-    static offAll(unit: Unit): void {
-        Unit.owner2targets.get(unit)?.forEach((target) => {
-            [...target._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.remove(target, type, (_, own) => own === unit));
-        });
-        Unit.owner2targets.delete(unit);
-
-        [...unit._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.remove(unit, type, () => true));
-    }
-
-    // remove the entries of `type` whose (listener, owner) matches; shared by off / offAll
-    static remove(unit: Unit, type: string, match: (listener: Function, owner: Unit) => boolean): void {
+    // remove the entries that `owner` registered (owner: null matches any owner; listener narrows further)
+    static off(unit: Unit, owner: Unit | null, type: string, listener?: Function): void {
+        const match = (lis: Function, own: Unit) => (owner === null || own === owner) && (listener === undefined || lis === listener);
         if (type === 'update' || type === 'finalize') {
             unit._.systems[type] = unit._.systems[type].filter((entry) => match(entry.listener, entry.owner) === false);
         } else {
-            [...(unit._.listeners.get(type)?.entries() ?? [])].forEach(([listener, item]) => {
-                if (match(listener, item.owner)) {
-                    unit._.listeners.delete(type, listener);
+            [...(unit._.listeners.get(type)?.entries() ?? [])].forEach(([lis, item]) => {
+                if (match(lis, item.owner)) {
+                    unit._.listeners.delete(type, lis);
                     if (/^[A-Za-z]/.test(type)) {
                         unit._.events.remove(type, item.execute);
                     }

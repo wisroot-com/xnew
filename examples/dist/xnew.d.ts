@@ -101,9 +101,7 @@ declare class Unit {
     off(type?: string, listener?: Function): void;
     static owner2targets: MapSet<Unit, Unit>;
     static on(unit: Unit, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
-    static off(unit: Unit, type: string, listener?: Function): void;
-    static offAll(unit: Unit): void;
-    static remove(unit: Unit, type: string, match: (listener: Function, owner: Unit) => boolean): void;
+    static off(unit: Unit, owner: Unit | null, type: string, listener?: Function): void;
     static emit(unit: Unit, type: string, props?: object): void;
 }
 declare class UnitPromise {
