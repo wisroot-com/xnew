@@ -148,8 +148,6 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   container), and `unit.add(Component, props)` (child under the scene unit,
   finalized together with it on the next swap; returns the unit). From a descendant, use
   `xnew.context(xbasics.Scene).add(...)` / `xnew.context(xbasics.Stage).change(...)`.
-  `xbasics.PageStack` (`{ root }`, defines `push/pop/replace/depth/page`, emits
-  `-pagechange`) remains for push/pop history (lobby ↔ room, nested menus).
   Scenes are recreated from props; they do not preserve state across moves.
 - **Stage `scenes` is a flat named map; address scenes by label, not position.**
   A scene is always `[Component, props]` (props optional) — bare `Component` values

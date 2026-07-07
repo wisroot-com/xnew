@@ -1316,43 +1316,6 @@ function Split(unit, { direction = 'column', ratio = [1, 1], className = '' } = 
     };
 }
 
-function PageStack(unit, { root } = {}) {
-    const stack = [];
-    let page = null;
-    function mount() {
-        const [Component, props] = stack[stack.length - 1];
-        page = xnew(unit, Component, props);
-    }
-    if (root !== undefined) {
-        stack.push(Array.isArray(root) ? root : [root, undefined]);
-        mount();
-    }
-    return {
-        push(Component, props) {
-            page === null || page === void 0 ? void 0 : page.finalize();
-            stack.push([Component, props]);
-            mount();
-            xnew.emit('-pagechange', { depth: stack.length });
-        },
-        pop() {
-            if (stack.length > 1) {
-                page === null || page === void 0 ? void 0 : page.finalize();
-                stack.pop();
-                mount();
-                xnew.emit('-pagechange', { depth: stack.length });
-            }
-        },
-        replace(Component, props) {
-            page === null || page === void 0 ? void 0 : page.finalize();
-            stack[Math.max(0, stack.length - 1)] = [Component, props];
-            mount();
-            xnew.emit('-pagechange', { depth: stack.length });
-        },
-        get depth() { return stack.length; },
-        get page() { return page; },
-    };
-}
-
 function Image(unit, { src, className = '', style = '' }) {
     xnew.nest(`<img class="${className}" style="${style}">`);
     const element = unit.element;
@@ -2062,7 +2025,6 @@ const xbasics = {
     Scene,
     Split,
     Stage,
-    PageStack,
     AudioTrack,
     Synthesizer,
     Volume,

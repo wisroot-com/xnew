@@ -5,7 +5,7 @@
 // so callers write `xnew(xbasics.Panel)` etc. Networking components deliberately live under
 // `xsync`, not here, so xbasics stays transport-free.
 //
-// - xbasics : { Aspect, Screen, Scene, Split, Stage, PageStack,      // view/
+// - xbasics : { Aspect, Screen, Scene, Split, Stage,                 // view/
 //               Image, SVG, SVGText,                                 // element/
 //               AudioTrack, Synthesizer, Volume,                     // audio/
 //               OpenAndClose, Accordion, Popup, AnalogStick, DPad, Panel }  // ui/
@@ -16,7 +16,6 @@ import { Screen } from './view/Screen';
 import { Scene } from './view/Scene';
 import { Split } from './view/Split';
 import { Stage } from './view/Stage';
-import { PageStack } from './view/PageStack';
 import { Image } from './element/Image';
 import { SVG } from './element/SVG';
 import { SVGText } from './element/SVGText';
@@ -45,7 +44,6 @@ export const xbasics = {
     Scene,
     Split,
     Stage,
-    PageStack,
     AudioTrack,
     Synthesizer,
     Volume,
