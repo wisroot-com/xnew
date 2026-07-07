@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden bg-slate-900 text-white">
+  <div id="main" class="relative w-full h-full"></div>
+  <script type="module">
+    import { xnew, xbasics } from '@mulsense/xnew';
+
+    xnew(document.querySelector('#main'), () => {
+      xnew.nest('<div class="absolute inset-0 flex flex-col items-center justify-center gap-5 select-none">');
+      xnew(StoryDemo);    // manual flow: next/prev/go + cooldown + -complete
+      xnew(CarouselDemo); // loop: true + auto-advance
+      xnew(EventLog);     // shows the events Pages emits
+    });
+
+    // ---- demo 1: manual page flow ----------------------------------------------------------------
+    // click the page (or the buttons) to navigate; every Pages event is broadcast to the log below.
+    function StoryDemo(unit) {
+      xnew.nest('<div class="flex flex-col gap-2">');
+
+      const entries = [
+        [Page, { title: 'PAGE 1', text: 'click to advance', color: 'bg-sky-700' }],
+        [Page, { title: 'PAGE 2', text: 'prev / dots / next also work', color: 'bg-emerald-700' }],
+        [Page, { title: 'PAGE 3', text: 'next here emits -complete', color: 'bg-rose-700' }],
+      ];
+
+      // page viewport (Pages mounts the current page under itself, inside this box)
+      const viewport = xnew('<div class="relative w-96 h-48 rounded-lg overflow-hidden border border-slate-600 cursor-pointer">');
+      const pages = xnew(viewport, xbasics.Pages, { pages: entries, cooldown: 300 });
+      viewport.on('click', () => pages.next());
+
+      pages.on('-pagechange', ({ index, from }) => xnew.emit('+log', { text: `-pagechange { index: ${index}, from: ${from} }` }));
+      pages.on('-complete', ({ index }) => xnew.emit('+log', { text: `-complete { index: ${index} }` }));
+
+      // controls: prev / dots / next + index readout
+      let dots, status;
+      xnew('<div class="w-96 flex items-center justify-center gap-3 text-sm">', () => {
+        xnew('<button class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 cursor-pointer">', '◀ prev')
+          .on('click', () => pages.prev());
+        dots = entries.map((_, i) => {
+          const dot = xnew('<button class="w-3 h-3 rounded-full bg-white cursor-pointer">');
+          dot.on('click', () => pages.go(i));
+          return dot;
+        });
+        xnew('<button class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 cursor-pointer">', 'next ▶')
+          .on('click', () => pages.next());
+        status = xnew('<span class="w-12 text-right text-slate-400">');
+      });
+
+      function paint() {
+        dots.forEach((dot, i) => dot.element.style.opacity = i === pages.index ? '1' : '0.3');
+        status.element.textContent = `${pages.index + 1} / ${pages.length}`;
+      }
+      paint();
+      pages.on('-pagechange', paint);
+    }
+
+    function Page(unit, { title, text, color }) {
+      xnew.nest(`<div class="size-full flex flex-col items-center justify-center gap-2 ${color}">`);
+      xnew('<h1 class="text-2xl font-bold">', title);
+      xnew('<p class="text-sm text-white/70">', text);
+    }
+
+    // ---- demo 2: looping carousel ----------------------------------------------------------------
+    // loop: true wraps next() past the last page; a timer auto-advances (no -complete in loop mode).
+    function CarouselDemo(unit) {
+      xnew.nest('<div class="relative w-96 h-14 rounded-lg overflow-hidden border border-slate-600">');
+      const pages = xnew(xbasics.Pages, {
+        pages: [
+          [Banner, { text: 'loop: true — wraps around', color: 'bg-indigo-700' }],
+          [Banner, { text: 'auto-advance via xnew.interval', color: 'bg-cyan-700' }],
+          [Banner, { text: 'page state is not preserved', color: 'bg-fuchsia-700' }],
+        ],
+        loop: true,
+      });
+      xnew.interval(() => pages.next(), 1500);
+    }
+
+    function Banner(unit, { text, color }) {
+      xnew.nest(`<div class="size-full flex items-center justify-center text-sm ${color}">`);
+      xnew('<p>', text);
+    }
+
+    // ---- event log --------------------------------------------------------------------------------
+    function EventLog(unit) {
+      xnew.nest('<div class="w-96 h-28 overflow-y-auto rounded-lg bg-black/60 font-mono text-xs text-emerald-300 p-2">');
+      unit.on('+log', ({ text }) => {
+        xnew('<div>', `> ${text}`);
+        unit.element.scrollTop = unit.element.scrollHeight;
+      });
+    }
+  </script>
+</body>
+
+</html>

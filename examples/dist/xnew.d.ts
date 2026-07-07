@@ -217,6 +217,29 @@ declare function Split(unit: xnew.Unit, { direction, ratio, className }?: {
     readonly panes: Unit[];
 };
 
+declare function Pages(unit: xnew.Unit, { pages, loop, cooldown }?: {
+    pages?: (Function | [Function, any])[];
+    loop?: boolean;
+    cooldown?: number;
+}): {
+    next(): void;
+    prev(): void;
+    go(i: number): void;
+    readonly index: number;
+    readonly length: number;
+    readonly page: Unit | null;
+};
+
+declare function PageStack(unit: xnew.Unit, { root }?: {
+    root?: Function | [Function, any];
+}): {
+    push(Component: Function, props?: any): void;
+    pop(): void;
+    replace(Component: Function, props?: any): void;
+    readonly depth: number;
+    readonly page: Unit | null;
+};
+
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
 declare function Image(unit: xnew.Unit, { src, className, style }: {
     src: ImageSource | Promise<ImageSource>;
@@ -385,6 +408,8 @@ declare const xbasics: {
     Popup: typeof Popup;
     Scene: typeof Scene;
     Split: typeof Split;
+    Pages: typeof Pages;
+    PageStack: typeof PageStack;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;

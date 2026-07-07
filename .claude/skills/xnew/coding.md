@@ -139,6 +139,12 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   must share a common parent container — do not mount a scene directly on a raw
   element, or its replacement lands under `engineRoot`.
 - `unit.add(Component, props)` mounts a child under the current scene.
+- **Don't hand-roll page flows inside a scene** — use `xbasics.Pages`
+  (`{ pages: [A, [B, props]], loop, cooldown }`, defines `next/prev/go/index/length/page`,
+  emits `-pagechange` / `-complete`) for sequential pages, and `xbasics.PageStack`
+  (`{ root }`, defines `push/pop/replace/depth/page`, emits `-pagechange`) for
+  push/pop history (lobby ↔ room, nested menus). Pages/PageStack recreate pages
+  from props; they do not preserve page state across moves.
 
 ## 11. sync — multiplayer (server ↔ client)
 
