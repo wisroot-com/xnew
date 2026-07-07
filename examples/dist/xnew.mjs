@@ -1218,36 +1218,13 @@ function Screen(unit, { width = 800, height = 600, fit = 'contain' } = {}) {
     };
 }
 
-function Scene(unit) {
-    return {
-        change(Component, props) {
-            xnew(unit.parent, Component, props);
-            unit.finalize();
-        },
-        add(Component, props) {
-            xnew(unit, Component, props);
-        }
-    };
-}
-
-function Split(unit, { direction = 'column', ratio = [1, 1], className = '' } = {}) {
-    xnew.nest(`<div class="${className}" style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: ${direction};">`);
-    const panes = ratio.map((value) => {
-        const flex = typeof value === 'number' ? `${value} 1 0` : `0 0 ${value}`;
-        return xnew(`<div style="position: relative; flex: ${flex}; min-width: 0; min-height: 0; overflow: hidden;">`);
-    });
-    return {
-        get panes() { return panes; },
-    };
-}
-
-function isPage(e) {
+function isScene(e) {
     return Array.isArray(e) && typeof e[0] === 'function';
 }
-function Stage(unit, { pages = {} } = {}) {
+function Stage(unit, { scenes = {}, initial } = {}) {
     const table = new Map();
-    for (const [name, node] of Object.entries(pages)) {
-        if (isPage(node)) {
+    for (const [name, node] of Object.entries(scenes)) {
+        if (isScene(node)) {
             table.set(name, [[node], false]);
         }
         else if (Array.isArray(node)) {
@@ -1256,25 +1233,25 @@ function Stage(unit, { pages = {} } = {}) {
     }
     let label = null;
     let index = null;
-    let pageUnit = null;
+    let sceneUnit = null;
     function mount(nextLabel, nextIndex) {
         [label, index] = [nextLabel, nextIndex];
         const [Component, props] = table.get(nextLabel)[0][nextIndex !== null && nextIndex !== void 0 ? nextIndex : 0];
-        pageUnit = xnew(unit, Component, props);
+        sceneUnit = xnew(unit, Component, props);
     }
-    const first = table.keys().next().value;
-    if (first !== undefined) {
-        mount(first, table.get(first)[1] ? 0 : null);
+    const start = (initial !== undefined && table.has(initial)) ? initial : table.keys().next().value;
+    if (start !== undefined) {
+        mount(start, table.get(start)[1] ? 0 : null);
     }
     function swap(nextLabel, nextIndex) {
         if (nextLabel !== label || nextIndex !== index) {
             const [fromLabel, fromIndex] = [label, index];
             const finish = () => {
-                pageUnit === null || pageUnit === void 0 ? void 0 : pageUnit.finalize();
+                sceneUnit === null || sceneUnit === void 0 ? void 0 : sceneUnit.finalize();
                 mount(nextLabel, nextIndex);
-                xnew.emit('-pagechange', { label, index, fromLabel, fromIndex });
+                xnew.emit('-scenechange', { label, index, fromLabel, fromIndex });
             };
-            const timer = (pageUnit !== null && typeof pageUnit.leave === 'function') ? pageUnit.leave() : undefined;
+            const timer = (sceneUnit !== null && typeof sceneUnit.leave === 'function') ? sceneUnit.leave() : undefined;
             if (timer && typeof timer.timeout === 'function') {
                 timer.timeout(finish);
             }
@@ -1304,9 +1281,38 @@ function Stage(unit, { pages = {} } = {}) {
                 unit.change(label, index - 1);
             }
         },
-        get page() {
-            return pageUnit === null ? null : { label, index, unit: pageUnit };
+        get scene() {
+            return sceneUnit === null ? null : { label, index, unit: sceneUnit };
         },
+    };
+}
+
+function Scene(unit) {
+    return {
+        change(target, option) {
+            var _a;
+            if (typeof target === 'string') {
+                (_a = xnew.context(Stage)) === null || _a === void 0 ? void 0 : _a.change(target, option);
+            }
+            else {
+                xnew(unit.parent, target, option);
+                unit.finalize();
+            }
+        },
+        add(Component, props) {
+            return xnew(unit, Component, props);
+        }
+    };
+}
+
+function Split(unit, { direction = 'column', ratio = [1, 1], className = '' } = {}) {
+    xnew.nest(`<div class="${className}" style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: ${direction};">`);
+    const panes = ratio.map((value) => {
+        const flex = typeof value === 'number' ? `${value} 1 0` : `0 0 ${value}`;
+        return xnew(`<div style="position: relative; flex: ${flex}; min-width: 0; min-height: 0; overflow: hidden;">`);
+    });
+    return {
+        get panes() { return panes; },
     };
 }
 

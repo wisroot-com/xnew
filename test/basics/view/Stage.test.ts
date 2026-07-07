@@ -16,7 +16,7 @@ describe('basics Stage', () => {
     };
 
     const makeStage = (track: (name: string) => Function, options: any = {}) => xnew(Stage, {
-        pages: {
+        scenes: {
             intro: [track('intro')],
             story: [[track('s0')], [track('s1')], [track('s2')]],
             good: [track('good')],
@@ -31,8 +31,8 @@ describe('basics Stage', () => {
             const stage = makeStage(track);
 
             expect(log).toEqual(['intro:in']);
-            expect(stage.page).toEqual(expect.objectContaining({ label: 'intro', index: null }));
-            expect(stage.page?.unit).toBeInstanceOf(Unit);
+            expect(stage.scene).toEqual(expect.objectContaining({ label: 'intro', index: null }));
+            expect(stage.scene?.unit).toBeInstanceOf(Unit);
         });
 
         it('change(label) finalizes the current page and mounts the labeled one', () => {
@@ -42,7 +42,7 @@ describe('basics Stage', () => {
             stage.change('bad');
 
             expect(log).toEqual(['intro:in', 'intro:out', 'bad:in']);
-            expect(stage.page).toEqual(expect.objectContaining({ label: 'bad', index: null }));
+            expect(stage.scene).toEqual(expect.objectContaining({ label: 'bad', index: null }));
         });
 
         it('change(arrayLabel) mounts the first element with index 0', () => {
@@ -51,7 +51,7 @@ describe('basics Stage', () => {
 
             stage.change('story');
 
-            expect(stage.page).toEqual(expect.objectContaining({ label: 'story', index: 0 }));
+            expect(stage.scene).toEqual(expect.objectContaining({ label: 'story', index: 0 }));
         });
 
         it('change(arrayLabel, i) mounts the i-th element', () => {
@@ -60,7 +60,7 @@ describe('basics Stage', () => {
 
             stage.change('story', 2);
 
-            expect(stage.page).toEqual(expect.objectContaining({ label: 'story', index: 2 }));
+            expect(stage.scene).toEqual(expect.objectContaining({ label: 'story', index: 2 }));
         });
 
         it('ignores unknown labels and out-of-range indices', () => {
@@ -71,7 +71,7 @@ describe('basics Stage', () => {
             stage.change('story', 9);
             stage.change('story', -1);
 
-            expect(stage.page?.label).toBe('intro');
+            expect(stage.scene?.label).toBe('intro');
             expect(log).toEqual(['intro:in']);
         });
 
@@ -79,7 +79,7 @@ describe('basics Stage', () => {
             const { log, track } = lifecycle();
             const stage = makeStage(track);
             const changed = jest.fn();
-            stage.on('-pagechange', changed);
+            stage.on('-scenechange', changed);
 
             stage.change('intro');
             stage.change('story', 1);
@@ -89,11 +89,11 @@ describe('basics Stage', () => {
             expect(log).toEqual(['intro:in', 'intro:out', 's1:in']);
         });
 
-        it('emits -pagechange with label/index and fromLabel/fromIndex', () => {
+        it('emits -scenechange with label/index and fromLabel/fromIndex', () => {
             const { track } = lifecycle();
             const stage = makeStage(track);
             const changed = jest.fn();
-            stage.on('-pagechange', changed);
+            stage.on('-scenechange', changed);
 
             stage.change('story', 1);
             expect(changed).toHaveBeenLastCalledWith(expect.objectContaining({
@@ -110,30 +110,54 @@ describe('basics Stage', () => {
             const received: any[] = [];
             const P = (_unit: xnew.Unit, props: any) => { received.push(props); };
             const stage = xnew(Stage, {
-                pages: {
+                scenes: {
                     single: [P, { tag: 'single' }],
                     list: [[P, { tag: 'l0' }], [P]], // elements always in [Component, props] form
                 },
             });
 
-            expect(stage.page).toEqual(expect.objectContaining({ label: 'single', index: null }));
+            expect(stage.scene).toEqual(expect.objectContaining({ label: 'single', index: null }));
             stage.change('list');
-            expect(stage.page).toEqual(expect.objectContaining({ label: 'list', index: 0 }));
+            expect(stage.scene).toEqual(expect.objectContaining({ label: 'list', index: 0 }));
             expect(received).toEqual([{ tag: 'single' }, { tag: 'l0' }]);
         });
 
         it('finalizes the current page together with the Stage unit', () => {
             const { log, track } = lifecycle();
-            const stage = xnew(Stage, { pages: { only: [track('A')] } });
+            const stage = xnew(Stage, { scenes: { only: [track('A')] } });
 
             stage.finalize();
 
             expect(log).toEqual(['A:in', 'A:out']);
         });
 
-        it('page is null when the stage has no pages', () => {
+        it('scene is null when the stage has no scenes', () => {
             const stage = xnew(Stage);
-            expect(stage.page).toBeNull();
+            expect(stage.scene).toBeNull();
+        });
+    });
+
+    describe('initial', () => {
+        it('mounts the scene given by initial', () => {
+            const { log, track } = lifecycle();
+            const stage = makeStage(track, { initial: 'good' });
+
+            expect(log).toEqual(['good:in']);
+            expect(stage.scene).toEqual(expect.objectContaining({ label: 'good', index: null }));
+        });
+
+        it('initial pointing at an array label mounts its first element', () => {
+            const { track } = lifecycle();
+            const stage = makeStage(track, { initial: 'story' });
+
+            expect(stage.scene).toEqual(expect.objectContaining({ label: 'story', index: 0 }));
+        });
+
+        it('falls back to the first defined label when initial is unknown or omitted', () => {
+            const { track } = lifecycle();
+
+            expect(makeStage(track).scene?.label).toBe('intro');
+            expect(makeStage(track, { initial: 'nowhere' }).scene?.label).toBe('intro');
         });
     });
 
@@ -144,9 +168,9 @@ describe('basics Stage', () => {
             stage.change('story');
 
             stage.next();
-            expect(stage.page).toEqual(expect.objectContaining({ label: 'story', index: 1 }));
+            expect(stage.scene).toEqual(expect.objectContaining({ label: 'story', index: 1 }));
             stage.prev();
-            expect(stage.page).toEqual(expect.objectContaining({ label: 'story', index: 0 }));
+            expect(stage.scene).toEqual(expect.objectContaining({ label: 'story', index: 0 }));
         });
 
         it('does not move at the ends of the array', () => {
@@ -155,11 +179,11 @@ describe('basics Stage', () => {
 
             stage.change('story');
             stage.prev();
-            expect(stage.page?.index).toBe(0);
+            expect(stage.scene?.index).toBe(0);
 
             stage.change('story', 2);
             stage.next();
-            expect(stage.page?.index).toBe(2);
+            expect(stage.scene?.index).toBe(2);
         });
 
         it('does nothing when the current page is not an array element (index null)', () => {
@@ -169,7 +193,7 @@ describe('basics Stage', () => {
             stage.next();
             stage.prev();
 
-            expect(stage.page).toEqual(expect.objectContaining({ label: 'intro', index: null }));
+            expect(stage.scene).toEqual(expect.objectContaining({ label: 'intro', index: null }));
             expect(log).toEqual(['intro:in']);
         });
     });
@@ -182,29 +206,29 @@ describe('basics Stage', () => {
         };
 
         // annotated: built outside the xnew call, so [fn] needs the tuple type stated explicitly
-        const pagesWithLeave = (log: string[], track: (name: string) => Function, wait: () => any):
-            { pages: { [label: string]: [Function] } } => ({
-            pages: { a: [leavingPage(log, 'A', wait)], b: [track('B')], c: [track('C')] },
+        const scenesWithLeave = (log: string[], track: (name: string) => Function, wait: () => any):
+            { scenes: { [label: string]: [Function] } } => ({
+            scenes: { a: [leavingPage(log, 'A', wait)], b: [track('B')], c: [track('C')] },
         });
 
         it('waits for a returned UnitTimer (xnew.transition) before finalizing the old page', () => {
             const { log, track } = lifecycle();
             const values: number[] = [];
-            const stage = xnew(Stage, pagesWithLeave(log, track, () => xnew.transition(({ value }: any) => values.push(value), 300)));
+            const stage = xnew(Stage, scenesWithLeave(log, track, () => xnew.transition(({ value }: any) => values.push(value), 300)));
 
             stage.change('b');
             expect(log).toEqual(['A:in', 'A:leave']); // old page still alive, B not mounted
-            expect(stage.page?.label).toBe('a');       // current page is still A
+            expect(stage.scene?.label).toBe('a');       // current page is still A
 
             jest.advanceTimersByTime(301);
             expect(log).toEqual(['A:in', 'A:leave', 'A:out', 'B:in']);
             expect(values[values.length - 1]).toBe(1); // leave transition ran to completion
-            expect(stage.page?.label).toBe('b');
+            expect(stage.scene?.label).toBe('b');
         });
 
         it('swaps immediately when leave() returns nothing', () => {
             const { log, track } = lifecycle();
-            const stage = xnew(Stage, pagesWithLeave(log, track, () => undefined));
+            const stage = xnew(Stage, scenesWithLeave(log, track, () => undefined));
 
             stage.change('b');
             expect(log).toEqual(['A:in', 'A:leave', 'A:out', 'B:in']);

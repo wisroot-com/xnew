@@ -205,8 +205,8 @@ declare function Screen(unit: xnew.Unit, { width, height, fit }?: {
 };
 
 declare function Scene(unit: xnew.Unit): {
-    change(Component: Function, props?: any): void;
-    add(Component: Function, props?: any): void;
+    change(target: string | Function, option?: any): void;
+    add(Component: Function, props?: any): xnew.Unit;
 };
 
 declare function Split(unit: xnew.Unit, { direction, ratio, className }?: {
@@ -217,16 +217,17 @@ declare function Split(unit: xnew.Unit, { direction, ratio, className }?: {
     readonly panes: Unit[];
 };
 
-type StagePage = [Function, any?];
-declare function Stage(unit: xnew.Unit, { pages }?: {
-    pages?: {
-        [label: string]: StagePage | StagePage[];
+type StageScene = [Function, any?];
+declare function Stage(unit: xnew.Unit, { scenes, initial }?: {
+    scenes?: {
+        [label: string]: StageScene | StageScene[];
     };
+    initial?: string;
 }): {
     change(target: string, index?: number): void;
     next(): void;
     prev(): void;
-    readonly page: {
+    readonly scene: {
         label: string | null;
         index: number | null;
         unit: Unit;

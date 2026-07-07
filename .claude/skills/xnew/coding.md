@@ -135,35 +135,37 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 - `key` is a **reserved prop** used by `find(..., { key })`; assume it is globally
   unique.
 
-## 10. Scene navigation (`xnew.basics.Scene`)
+## 10. Page navigation (`xbasics.Stage` + `xbasics.Scene`)
 
-- `unit.change(Component, props)` mounts the next component as a **sibling** (under
-  `unit.parent`) and then finalizes the current scene. Therefore swappable scenes
-  must share a common parent container — do not mount a scene directly on a raw
-  element, or its replacement lands under `engineRoot`.
-- `unit.add(Component, props)` mounts a child under the current scene.
-- **Don't hand-roll page flows inside a scene** — use `xbasics.Stage`
-  (`{ pages }`, defines `change/next/prev/page`, emits
-  `-pagechange { label, index, fromLabel, fromIndex }`) for page navigation, and
+- **Stage owns scene navigation; Scene is the scene-side mixin bound to it.**
+  `xbasics.Stage` (`{ scenes, initial }`, defines `change/next/prev/scene`, emits
+  `-scenechange { label, index, fromLabel, fromIndex }`) hosts one active scene;
+  `initial` names the starting label (default: the first defined label; unknown →
+  first). A scene does `xnew.extend(xbasics.Scene)` to get `unit.change(label, index?)`
+  (delegates to the nearest ancestor Stage; no-op without one),
+  `unit.change(Component, props?)` (standalone Stage-less navigation: sibling
+  swap under `unit.parent` + self-finalize — scenes must share a parent
+  container), and `unit.add(Component, props)` (child under the scene unit,
+  finalized together with it on the next swap; returns the unit). From a descendant, use
+  `xnew.context(xbasics.Scene).add(...)` / `xnew.context(xbasics.Stage).change(...)`.
   `xbasics.PageStack` (`{ root }`, defines `push/pop/replace/depth/page`, emits
-  `-pagechange`) for push/pop history (lobby ↔ room, nested menus). Both recreate
-  pages from props; they do not preserve page state across moves.
-- **Stage `pages` is a flat named map; address pages by label, not position.**
-  A page is always `[Component, props]` (props optional) — bare `Component` values
-  are NOT accepted. A value is a single page or an array of pages
+  `-pagechange`) remains for push/pop history (lobby ↔ room, nested menus).
+  Scenes are recreated from props; they do not preserve state across moves.
+- **Stage `scenes` is a flat named map; address scenes by label, not position.**
+  A scene is always `[Component, props]` (props optional) — bare `Component` values
+  are NOT accepted. A value is a single scene or an array of scenes
   (`[[A, props], [B, props]]`; a bare Component first element makes the whole
-  array read as one page). `change('xxx')`
-  → the labeled page (array → element 0), `change('xxx', index)` → index-th element; unknown
-  labels / out-of-range indices / the current page are ignored. `next()`/`prev()`
-  move only within the current array (no-op when `page.index` is null or at the
-  ends). `stage.page` → `{ label, index, unit }` (index null unless an array
-  element; from inside a page use `xnew.context(xbasics.Stage)`). The first
-  defined page mounts on creation.
-- **Stage leave protocol (out-in): a page opts into an exit transition by returning a
+  array read as one scene). `change('xxx')`
+  → the labeled scene (array → element 0), `change('xxx', index)` → index-th element; unknown
+  labels / out-of-range indices / the current scene are ignored. `next()`/`prev()`
+  move only within the current array (no-op when `scene.index` is null or at the
+  ends). `stage.scene` → `{ label, index, unit }` (index null unless an array
+  element; from inside a scene use `xnew.context(xbasics.Stage)`).
+- **Stage leave protocol (out-in): a scene opts into an exit transition by returning a
   `leave()` define; entrance effects need no protocol (do them in the component body).**
   Stage calls `leave()` before the swap and waits for its return value — return the
   timer from `xnew.transition(...)` directly, or nothing (immediate) — then finalizes
-  the old page and mounts the next. Navigation during a pending leave transition is
+  the old scene and mounts the next. Navigation during a pending leave transition is
   currently unguarded — avoid navigating until it settles.
 
 ## 11. sync — multiplayer (server ↔ client)

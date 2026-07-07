@@ -21,21 +21,21 @@
     xnew(document.querySelector('#main'), () => {
       xnew.nest('<div class="absolute inset-0 flex flex-col items-center justify-center gap-5 select-none">');
       xnew(StoryDemo);    // branching flow: change(label) / next / prev + leave() transitions
-      xnew(CarouselDemo); // array label + auto-advance using page.index
+      xnew(CarouselDemo); // array label + auto-advance using scene.index
       xnew(EventLog);     // shows the events Stage emits
     });
 
-    // ---- demo 1: branching page flow -------------------------------------------------------------
-    // pages is a flat named map: a value is a single page or an array of pages. click the page for
+    // ---- demo 1: branching scene flow -------------------------------------------------------------
+    // scenes is a flat named map: a value is a single scene or an array of scenes. click the scene for
     // next() (moves within the current array only); the buttons jump by label. every Stage event is
-    // broadcast to the log below. each page implements the leave protocol (fade out-in).
+    // broadcast to the log below. each scene implements the leave protocol (fade out-in).
     function StoryDemo(unit) {
       xnew.nest('<div class="flex flex-col gap-2">');
 
-      // page viewport (Stage mounts the current page under itself, inside this box)
+      // scene viewport (Stage mounts the current scene under itself, inside this box)
       const viewport = xnew('<div class="relative w-96 h-48 rounded-lg overflow-hidden border border-slate-600 cursor-pointer">');
       const stage = xnew(viewport, xbasics.Stage, {
-        pages: {
+        scenes: {
           intro: [Page, { title: 'INTRO', text: 'buttons: change(label) / click: next()', color: 'bg-sky-700' }],
           story: [
             [Page, { title: 'STORY 1', text: 'story, index 0 — click to advance', color: 'bg-emerald-700' }],
@@ -45,11 +45,12 @@
           good: [Page, { title: 'GOOD END', text: 'label: good', color: 'bg-amber-600' }],
           bad:  [Page, { title: 'BAD END', text: 'label: bad', color: 'bg-rose-700' }],
         },
+        initial: 'intro',
       });
       viewport.on('click', () => stage.next());
 
-      stage.on('-pagechange', ({ label, index, fromLabel, fromIndex }) =>
-        xnew.emit('+log', { text: `-pagechange { label: ${label}, index: ${index}, from: ${fromLabel}[${fromIndex}] }` }));
+      stage.on('-scenechange', ({ label, index, fromLabel, fromIndex }) =>
+        xnew.emit('+log', { text: `-scenechange { label: ${label}, index: ${index}, from: ${fromLabel}[${fromIndex}] }` }));
 
       // controls: prev/next (within the current array) + label jumps
       let status;
@@ -74,15 +75,15 @@
       });
 
       function paint() {
-        const page = stage.page;
-        status.element.textContent = `label: ${page.label}  index: ${page.index}`;
+        const scene = stage.scene;
+        status.element.textContent = `label: ${scene.label}  index: ${scene.index}`;
       }
       paint();
-      stage.on('-pagechange', paint);
+      stage.on('-scenechange', paint);
     }
 
     // leave protocol: entrance is self-managed in the body; leave() returns the exit transition,
-    // and Stage finalizes this page only after it completes.
+    // and Stage finalizes this scene only after it completes.
     function Page(unit, { title, text, color }) {
       xnew.nest(`<div class="size-full flex flex-col items-center justify-center gap-2 ${color}" style="opacity:0;">`);
       xnew.transition(({ value }) => unit.element.style.opacity = `${value}`, 250);
@@ -96,21 +97,21 @@
     }
 
     // ---- demo 2: looping carousel ----------------------------------------------------------------
-    // next() stops at the array end, so the auto-advance wraps by computing the index from page.
+    // next() stops at the array end, so the auto-advance wraps by computing the index from scene.
     function CarouselDemo(unit) {
       xnew.nest('<div class="relative w-96 h-14 rounded-lg overflow-hidden border border-slate-600">');
       const stage = xnew(xbasics.Stage, {
-        pages: {
+        scenes: {
           banners: [
-            [Banner, { text: 'an array label — page.index cycles', color: 'bg-indigo-700' }],
+            [Banner, { text: 'an array label — scene.index cycles', color: 'bg-indigo-700' }],
             [Banner, { text: 'auto-advance via xnew.interval', color: 'bg-cyan-700' }],
-            [Banner, { text: 'page state is not preserved', color: 'bg-fuchsia-700' }],
+            [Banner, { text: 'scene state is not preserved', color: 'bg-fuchsia-700' }],
           ],
         },
       });
       xnew.interval(() => {
-        const page = stage.page;
-        stage.change('banners', (page.index + 1) % 3);
+        const scene = stage.scene;
+        stage.change('banners', (scene.index + 1) % 3);
       }, 1500);
     }
 

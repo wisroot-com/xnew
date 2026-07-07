@@ -1,44 +1,45 @@
 //----------------------------------------------------------------------------------------------------
-// Stage — swap container that hosts one active page and coordinates page transitions
+// Stage — scene container that holds the label → scene map and hosts one active scene
 //
-// Navigation is owned by the container so pages stay plain components; pages are addressed by
-// label, and the only transition contract a page may opt into is a `leave()` define, awaited
-// before the page is finalized. The member surface is deliberately minimal.
+// Navigation is owned by the container so scenes stay plain components; scenes are addressed by
+// label, and the only transition contract a scene may opt into is a `leave()` define, awaited
+// before the scene is finalized. The member surface is deliberately minimal.
 //
-// - Stage : component({ pages }) returning { change, next, prev, page }
-//   - pages    : flat named map — a page is always [Component, props] (props optional).
-//                A value is a single page or an array of pages ([[A, props], [B, props], …]).
-//                The first defined page mounts on creation.
-//   - change(label)        : go to the labeled page (array label → its first element)
+// - Stage : component({ scenes, initial }) returning { change, next, prev, scene }
+//   - scenes   : flat named map — a scene is always [Component, props] (props optional).
+//                A value is a single scene or an array of scenes ([[A, props], [B, props], …]).
+//   - initial  : label of the scene to mount on creation (default: the first defined label)
+//   - change(label)        : go to the labeled scene (array label → its first element)
 //   - change(label, index) : array label → its index-th element
-//                Unknown labels, out-of-range indices, and the current page are ignored.
+//                Unknown labels, out-of-range indices, and the current scene are ignored.
 //   - next() / prev()      : move within the current array (label kept, index ± 1); ignored
-//                when the current page is not an array element (index null) or at the ends
-//   - page     : { label, index, unit } of the current page (index is null unless the page
+//                when the current scene is not an array element (index null) or at the ends
+//   - scene    : { label, index, unit } of the current scene (index is null unless the scene
 //                is an array element); null when the stage is empty
-//   - emits '-pagechange' { label, index, fromLabel, fromIndex } on every move
+//   - emits '-scenechange' { label, index, fromLabel, fromIndex } on every move
 //
-// Leave protocol (out-in): if the current page defines `leave()`, it is called before the swap and
+// Leave protocol (out-in): if the current scene defines `leave()`, it is called before the swap and
 // its return value tells the stage how long to wait before finalizing — a timer (return
-// `xnew.transition(...)` directly) or nothing (immediate). The next page mounts after the old one
-// is finalized; entrance effects are the page's own business (do them in the component body).
+// `xnew.transition(...)` directly) or nothing (immediate). The next scene mounts after the old one
+// is finalized; entrance effects are the scene's own business (do them in the component body).
 //
-// Caveats: a value whose first element is a Function is a single page — inside an array of
-// pages, write every element in [Component, props] form (a bare Component first element would
-// make the whole array read as one page). Navigation during a pending leave transition is
+// Caveats: a value whose first element is a Function is a single scene — inside an array of
+// scenes, write every element in [Component, props] form (a bare Component first element would
+// make the whole array read as one scene). Navigation during a pending leave transition is
 // currently unguarded — avoid calling change/next/prev until it settles.
 //
 // Usage:
 //   const stage = xnew(xbasics.Stage, {
-//       pages: {
-//           intro: [Intro],
+//       scenes: {
+//           title: [Title],
 //           story: [[PageA, propsA], [PageB, propsB]],   // story, index 0..1 (next/prev walk these)
 //           ending: [Ending, props],
 //       },
+//       initial: 'title',
 //   });
 //   stage.next();               // within the current array only
 //   stage.change('story', 1);
-//   stage.change('ending');     // e.g. from inside a page: xnew.context(xbasics.Stage).change(...)
+//   stage.change('ending');     // from inside a scene, extend xbasics.Scene and use unit.change(...)
 //
 //   function PageA(unit) {
 //       xnew.nest('<div style="opacity:0;">');
@@ -51,22 +52,22 @@
 
 import { xnew } from '../../core/xnew';
 
-type StagePage = [Function, any?]; // a page: [Component, props] (props optional)
+type StageScene = [Function, any?]; // a scene: [Component, props] (props optional)
 
-// a single page starts with a Function; an array of pages starts with an array
-function isPage(e: any): boolean {
+// a single scene starts with a Function; an array of scenes starts with an array
+function isScene(e: any): boolean {
     return Array.isArray(e) && typeof e[0] === 'function';
 }
 
 export function Stage(unit: xnew.Unit,
-    { pages = {} }:
-    { pages?: { [label: string]: StagePage | StagePage[] } } = {}
+    { scenes = {}, initial }:
+    { scenes?: { [label: string]: StageScene | StageScene[] }, initial?: string } = {}
 ) {
-    // label → [pages, isArray] (single pages keep index null)
-    const table = new Map<string, [StagePage[], boolean]>();
-    for (const [name, node] of Object.entries(pages)) {
-        if (isPage(node)) {
-            table.set(name, [[node as StagePage], false]);
+    // label → [scenes, isArray] (single scenes keep index null)
+    const table = new Map<string, [StageScene[], boolean]>();
+    for (const [name, node] of Object.entries(scenes)) {
+        if (isScene(node)) {
+            table.set(name, [[node as StageScene], false]);
         } else if (Array.isArray(node)) {
             table.set(name, [node, true]);
         }
@@ -74,30 +75,30 @@ export function Stage(unit: xnew.Unit,
 
     let label: string | null = null;
     let index: number | null = null;
-    let pageUnit: xnew.Unit | null = null;
+    let sceneUnit: xnew.Unit | null = null;
 
     function mount(nextLabel: string, nextIndex: number | null): void {
         [label, index] = [nextLabel, nextIndex];
         const [Component, props] = table.get(nextLabel)![0][nextIndex ?? 0];
-        pageUnit = xnew(unit, Component, props);
+        sceneUnit = xnew(unit, Component, props);
     }
-    const first = table.keys().next().value;
-    if (first !== undefined) {
-        mount(first, table.get(first)![1] ? 0 : null);
+    const start = (initial !== undefined && table.has(initial)) ? initial : table.keys().next().value;
+    if (start !== undefined) {
+        mount(start, table.get(start)![1] ? 0 : null);
     }
 
-    // out-in swap: wait for the current page's leave() (if any), finalize it, then mount the next.
-    // moving to the current page is ignored.
+    // out-in swap: wait for the current scene's leave() (if any), finalize it, then mount the next.
+    // moving to the current scene is ignored.
     function swap(nextLabel: string, nextIndex: number | null): void {
         if (nextLabel !== label || nextIndex !== index) {
             const [fromLabel, fromIndex] = [label, index];
             const finish = () => {
-                pageUnit?.finalize();
+                sceneUnit?.finalize();
                 mount(nextLabel, nextIndex);
-                xnew.emit('-pagechange', { label, index, fromLabel, fromIndex });
+                xnew.emit('-scenechange', { label, index, fromLabel, fromIndex });
             };
 
-            const timer = (pageUnit !== null && typeof pageUnit.leave === 'function') ? pageUnit.leave() : undefined;
+            const timer = (sceneUnit !== null && typeof sceneUnit.leave === 'function') ? sceneUnit.leave() : undefined;
             if (timer && typeof timer.timeout === 'function') {
                 timer.timeout(finish); // UnitTimer: chain onto the leave transition
             } else {
@@ -127,8 +128,8 @@ export function Stage(unit: xnew.Unit,
                 unit.change(label!, index - 1);
             }
         },
-        get page() {
-            return pageUnit === null ? null : { label, index, unit: pageUnit };
+        get scene() {
+            return sceneUnit === null ? null : { label, index, unit: sceneUnit };
         },
     };
 }
