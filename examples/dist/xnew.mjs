@@ -1241,67 +1241,72 @@ function Split(unit, { direction = 'column', ratio = [1, 1], className = '' } = 
     };
 }
 
-function Pages(unit, { pages = [], loop = false, cooldown = 0 } = {}) {
-    let index = 0;
-    let busy = false;
-    let page = null;
-    function mount(i) {
-        const entry = pages[i];
-        const [Component, props] = Array.isArray(entry) ? entry : [entry, undefined];
-        page = xnew(unit, Component, props);
-    }
-    if (pages.length > 0) {
-        mount(0);
-    }
-    function arm() {
-        if (cooldown > 0) {
-            busy = true;
-            xnew.timeout(() => { busy = false; }, cooldown);
+function isPage(e) {
+    return Array.isArray(e) && typeof e[0] === 'function';
+}
+function Stage(unit, { pages = {} } = {}) {
+    const table = new Map();
+    for (const [name, node] of Object.entries(pages)) {
+        if (isPage(node)) {
+            table.set(name, [[node], false]);
+        }
+        else if (Array.isArray(node)) {
+            table.set(name, [node, true]);
         }
     }
-    function navigate(next) {
-        if (next !== index && next >= 0 && next < pages.length) {
-            arm();
-            const from = index;
-            index = next;
-            page === null || page === void 0 ? void 0 : page.finalize();
-            mount(index);
-            xnew.emit('-pagechange', { index, from });
+    let label = null;
+    let index = null;
+    let pageUnit = null;
+    function mount(nextLabel, nextIndex) {
+        [label, index] = [nextLabel, nextIndex];
+        const [Component, props] = table.get(nextLabel)[0][nextIndex !== null && nextIndex !== void 0 ? nextIndex : 0];
+        pageUnit = xnew(unit, Component, props);
+    }
+    const first = table.keys().next().value;
+    if (first !== undefined) {
+        mount(first, table.get(first)[1] ? 0 : null);
+    }
+    function swap(nextLabel, nextIndex) {
+        if (nextLabel !== label || nextIndex !== index) {
+            const [fromLabel, fromIndex] = [label, index];
+            const finish = () => {
+                pageUnit === null || pageUnit === void 0 ? void 0 : pageUnit.finalize();
+                mount(nextLabel, nextIndex);
+                xnew.emit('-pagechange', { label, index, fromLabel, fromIndex });
+            };
+            const timer = (pageUnit !== null && typeof pageUnit.leave === 'function') ? pageUnit.leave() : undefined;
+            if (timer && typeof timer.timeout === 'function') {
+                timer.timeout(finish);
+            }
+            else {
+                finish();
+            }
         }
     }
     return {
+        change(target, index) {
+            const entry = table.get(target);
+            if (entry !== undefined) {
+                const [list, isArray] = entry;
+                const nextIndex = isArray ? (index !== null && index !== void 0 ? index : 0) : null;
+                if (isArray === false || (nextIndex >= 0 && nextIndex < list.length)) {
+                    swap(target, nextIndex);
+                }
+            }
+        },
         next() {
-            if (busy === false) {
-                if (index + 1 < pages.length) {
-                    navigate(index + 1);
-                }
-                else if (loop === true) {
-                    navigate(0);
-                }
-                else if (pages.length > 0) {
-                    arm();
-                    xnew.emit('-complete', { index });
-                }
+            if (index !== null) {
+                unit.change(label, index + 1);
             }
         },
         prev() {
-            if (busy === false) {
-                if (index - 1 >= 0) {
-                    navigate(index - 1);
-                }
-                else if (loop === true) {
-                    navigate(pages.length - 1);
-                }
+            if (index !== null) {
+                unit.change(label, index - 1);
             }
         },
-        go(i) {
-            if (busy === false) {
-                navigate(i);
-            }
+        get page() {
+            return pageUnit === null ? null : { label, index, unit: pageUnit };
         },
-        get index() { return index; },
-        get length() { return pages.length; },
-        get page() { return page; },
     };
 }
 
@@ -2050,7 +2055,7 @@ const xbasics = {
     Popup,
     Scene,
     Split,
-    Pages,
+    Stage,
     PageStack,
     AudioTrack,
     Synthesizer,

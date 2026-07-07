@@ -217,17 +217,20 @@ declare function Split(unit: xnew.Unit, { direction, ratio, className }?: {
     readonly panes: Unit[];
 };
 
-declare function Pages(unit: xnew.Unit, { pages, loop, cooldown }?: {
-    pages?: (Function | [Function, any])[];
-    loop?: boolean;
-    cooldown?: number;
+type StagePage = [Function, any?];
+declare function Stage(unit: xnew.Unit, { pages }?: {
+    pages?: {
+        [label: string]: StagePage | StagePage[];
+    };
 }): {
+    change(target: string, index?: number): void;
     next(): void;
     prev(): void;
-    go(i: number): void;
-    readonly index: number;
-    readonly length: number;
-    readonly page: Unit | null;
+    readonly page: {
+        label: string | null;
+        index: number | null;
+        unit: Unit;
+    } | null;
 };
 
 declare function PageStack(unit: xnew.Unit, { root }?: {
@@ -408,7 +411,7 @@ declare const xbasics: {
     Popup: typeof Popup;
     Scene: typeof Scene;
     Split: typeof Split;
-    Pages: typeof Pages;
+    Stage: typeof Stage;
     PageStack: typeof PageStack;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;

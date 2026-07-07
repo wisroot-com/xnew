@@ -32,6 +32,9 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   Reading your own defines via `unit.x` works at runtime only after the body has
   finished attaching them (so only inside deferred callbacks), and it bypasses
   the typed locals you already have.
+- **Return the defines object literal directly** — no `const defines = { … }; return defines;`.
+  When one define calls a sibling define, call it as `unit.x(...)` (safe: defines are
+  attached before any define can run), not through a named local object.
 
 ## 3. Creating units — `xnew(...)`
 
@@ -139,12 +142,29 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   must share a common parent container — do not mount a scene directly on a raw
   element, or its replacement lands under `engineRoot`.
 - `unit.add(Component, props)` mounts a child under the current scene.
-- **Don't hand-roll page flows inside a scene** — use `xbasics.Pages`
-  (`{ pages: [A, [B, props]], loop, cooldown }`, defines `next/prev/go/index/length/page`,
-  emits `-pagechange` / `-complete`) for sequential pages, and `xbasics.PageStack`
-  (`{ root }`, defines `push/pop/replace/depth/page`, emits `-pagechange`) for
-  push/pop history (lobby ↔ room, nested menus). Pages/PageStack recreate pages
-  from props; they do not preserve page state across moves.
+- **Don't hand-roll page flows inside a scene** — use `xbasics.Stage`
+  (`{ pages }`, defines `change/next/prev/page`, emits
+  `-pagechange { label, index, fromLabel, fromIndex }`) for page navigation, and
+  `xbasics.PageStack` (`{ root }`, defines `push/pop/replace/depth/page`, emits
+  `-pagechange`) for push/pop history (lobby ↔ room, nested menus). Both recreate
+  pages from props; they do not preserve page state across moves.
+- **Stage `pages` is a flat named map; address pages by label, not position.**
+  A page is always `[Component, props]` (props optional) — bare `Component` values
+  are NOT accepted. A value is a single page or an array of pages
+  (`[[A, props], [B, props]]`; a bare Component first element makes the whole
+  array read as one page). `change('xxx')`
+  → the labeled page (array → element 0), `change('xxx', index)` → index-th element; unknown
+  labels / out-of-range indices / the current page are ignored. `next()`/`prev()`
+  move only within the current array (no-op when `page.index` is null or at the
+  ends). `stage.page` → `{ label, index, unit }` (index null unless an array
+  element; from inside a page use `xnew.context(xbasics.Stage)`). The first
+  defined page mounts on creation.
+- **Stage leave protocol (out-in): a page opts into an exit transition by returning a
+  `leave()` define; entrance effects need no protocol (do them in the component body).**
+  Stage calls `leave()` before the swap and waits for its return value — return the
+  timer from `xnew.transition(...)` directly, or nothing (immediate) — then finalizes
+  the old page and mounts the next. Navigation during a pending leave transition is
+  currently unguarded — avoid navigating until it settles.
 
 ## 11. sync — multiplayer (server ↔ client)
 
