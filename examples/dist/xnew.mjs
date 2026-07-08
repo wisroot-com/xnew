@@ -1808,7 +1808,8 @@ function Panel(unit, { params, nested }) {
     const object = params !== null && params !== void 0 ? params : {};
     if (!nested) {
         const cls = xnew.css(sharedCss);
-        xnew.nest(`<div class="${cls.scroll}" style="box-sizing: border-box; max-height: inherit; padding: 0.25em;">`);
+        xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
+        xnew.nest(`<div class="${cls.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
     return {
         group({ name, open, params }, inner) {

@@ -28,9 +28,11 @@ export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
 
     if (!nested) {
-        // own scroll container inheriting the mount element's max-height, so the panel scrolls once the host constrains it
+        // own scroll container inheriting the mount element's max-height, so the panel scrolls once the host constrains it;
+        // the vertical padding sits outside the scrollport so the scrollbar stays clear of the host's rounded corners
         const cls = xnew.css(sharedCss);
-        xnew.nest(`<div class="${cls.scroll}" style="box-sizing: border-box; max-height: inherit; padding: 0.25em;">`);
+        xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
+        xnew.nest(`<div class="${cls.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
 
     return {

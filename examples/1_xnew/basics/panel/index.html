@@ -34,10 +34,14 @@
       panel.group({ name: 'My Panel', open: true }, (group) => {
 
         group.group({ name: 'background', open: true }, (subgroup) => {
-          const colors = { gray: '#f3f4f6', yellow: '#fef9c3', blue: '#dbeafe' };
-          for (const [name, color] of Object.entries(colors)) {
+          const colors = {
+            'light gray': { background: '#f3f4f6', color: '#14532d' },
+            'dark gray':  { background: '#1f2937', color: '#d1d5db' },
+            'dark navy':  { background: '#172554', color: '#bfdbfe' },
+          };
+          for (const [name, { background, color }] of Object.entries(colors)) {
             subgroup.button(name).on('click', () => {
-              panelbg.style.background = color;
+              Object.assign(panelbg.style, { background, color });
               xnew.emit('+console', { text: `${name} button clicked` });
             });
           }
