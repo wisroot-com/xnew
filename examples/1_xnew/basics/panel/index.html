@@ -43,7 +43,7 @@
 
         group.range('data', { value: 20, min: 0, max: 60, step: 2 }).on('input', ({ value }) => xnew.emit('+console', { text: `data changed to ${value}` }));
         group.checkbox('flag').on('input', ({ value }) => xnew.emit('+console', { text: `flag changed to ${value}` }));
-        group.select('color', { items: ['red', 'green', 'blue'] }).on('input', ({ value }) => xnew.emit('+console', { text: `color changed to ${value}` }));
+        group.select('color', { items: ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta', 'brown', 'gray', 'black', 'white'] }).on('input', ({ value }) => xnew.emit('+console', { text: `color changed to ${value}` }));
         group.separator();
 
         const show = group.checkbox('show');

@@ -1910,51 +1910,28 @@ function Select(unit, { key = '', value, items = [] } = {}) {
     var _a;
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
     const cls = xnew.css(sharedCss);
-    xnew.nest(`<div class="${cls.row}" style="padding: 0 0.5em;">`);
-    xnew('<div style="flex: 1;">', key);
-    const button = xnew(`<div class="${cls.frame} ${cls.clickable}" style="height: 2em; padding: 0 1.5em 0 0.5em; display: flex; align-items: center; min-width: 3em; white-space: nowrap;">`, initial);
-    xnew((unit) => {
-        xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', strokeWidth: 2, style: 'position: absolute; right: 1.0em; width: 0.75em; height: 0.75em; pointer-events: none;' });
-        xnew('<path d="M2 4 6 8 10 4" />');
-    });
-    button.on('click', () => {
-        xnew((list) => {
-            xnew(OpenAndClose, { open: false });
-            xnew.extend(Popup);
-            xnew.nest('<div style="position: absolute; padding: 0.25em 0;">');
-            list.on('update', () => {
-                const rect = button.element.getBoundingClientRect();
-                list.element.style.right = (window.innerWidth - rect.right) + 'px';
-                list.element.style.top = rect.bottom + 'px';
-                list.element.style.background = getEffectiveBg(button.element);
+    xnew.nest('<div>');
+    const row = xnew(`<div class="${cls.row} ${cls.clickable}" style="padding: 0 0.5em;">`);
+    xnew(row, '<div style="flex: 1;">', key);
+    const button = xnew(row, `<div class="${cls.frame}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; min-width: 3em; white-space: nowrap;">`, initial);
+    const list = xnew((list) => {
+        xnew.extend(OpenAndClose, { open: false });
+        xnew.extend(Accordion);
+        xnew.nest('<div style="max-height: 12em; overflow-y: auto;">');
+        for (const item of items) {
+            const div = xnew(`<div class="${cls.clickable} ${cls.hover}" style="height: 2em; padding: 0 1em; display: flex; align-items: center;">`, item);
+            div.on('click', () => {
+                button.element.textContent = item;
+                unit.element.value = item;
+                unit.element.dispatchEvent(new Event('input', { bubbles: false }));
+                list.close();
             });
-            xnew.extend(Accordion);
-            xnew.nest(`<div class="${cls.frame}" style="position: relative; overflow: hidden;">`);
-            for (const item of items) {
-                const div = xnew(`<div class="${cls.clickable} ${cls.hover}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center;">`, item);
-                div.on('click', () => {
-                    button.element.textContent = item;
-                    unit.element.value = item;
-                    unit.element.dispatchEvent(new Event('input', { bubbles: false }));
-                    list.finalize();
-                });
-            }
-            list.on('click.outside', () => list.finalize());
-        });
+        }
     });
+    row.on('click', () => list.toggle());
     xnew.nest(`<select name="${key}" style="display: none;">`);
     for (const item of items) {
         xnew(`<option value="${item}" ${item === initial ? 'selected' : ''}>`, item);
-    }
-    function getEffectiveBg(element) {
-        let current = element.parentElement;
-        while (current) {
-            const bg = getComputedStyle(current).backgroundColor;
-            if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent')
-                return bg;
-            current = current.parentElement;
-        }
-        return 'Canvas';
     }
 }
 

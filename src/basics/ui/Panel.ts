@@ -4,8 +4,9 @@
 // Returns a builder API for laying out parameter rows backed by native form controls (range /
 // checkbox / select / button). Values are written through to a shared `params` object so the
 // panel can drive an external state bag without extra wiring. Groups can be nested and toggled
-// open/closed via the Accordion transition. The row controls (Group / Button / Range / Checkbox /
-// Select / Separator) are private components of this file.
+// open/closed via the Accordion transition; Select expands its option list in place the same way,
+// so the list always sits on the panel's own surface (no popup background to match). The row
+// controls (Group / Button / Range / Checkbox / Select / Separator) are private components of this file.
 //
 // - Panel : component({ params }) returning { group, button, select, range, checkbox, separator }
 //----------------------------------------------------------------------------------------------------
@@ -15,7 +16,6 @@ import { SVG } from '../element/SVG';
 import { sharedCss } from '../styles';
 import { OpenAndClose } from './OpenAndClose';
 import { Accordion } from './Accordion';
-import { Popup } from './Popup';
 
 interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; }
 
@@ -144,57 +144,32 @@ function Select(unit: xnew.Unit, { key = '', value, items = [] }: { key?: string
     const initial = value ?? items[0] ?? '';
     const cls = xnew.css(sharedCss);
 
-    xnew.nest(`<div class="${cls.row}" style="padding: 0 0.5em;">`);
-    xnew('<div style="flex: 1;">', key);
+    xnew.nest('<div>');
 
-    const button = xnew(`<div class="${cls.frame} ${cls.clickable}" style="height: 2em; padding: 0 1.5em 0 0.5em; display: flex; align-items: center; min-width: 3em; white-space: nowrap;">`, initial);
+    const row = xnew(`<div class="${cls.row} ${cls.clickable}" style="padding: 0 0.5em;">`);
+    xnew(row, '<div style="flex: 1;">', key);
+    const button = xnew(row, `<div class="${cls.frame}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; min-width: 3em; white-space: nowrap;">`, initial);
 
-    xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', strokeWidth: 2, style: 'position: absolute; right: 1.0em; width: 0.75em; height: 0.75em; pointer-events: none;' });
-        xnew('<path d="M2 4 6 8 10 4" />');
-    });
-
-    button.on('click', () => {
-        xnew((list: xnew.Unit) => {
-            xnew(OpenAndClose, { open: false });
-            xnew.extend(Popup);
-
-            xnew.nest('<div style="position: absolute; padding: 0.25em 0;">');
-            list.on('update', () => {
-                const rect = button.element.getBoundingClientRect();
-                list.element.style.right = (window.innerWidth - rect.right) + 'px';
-                list.element.style.top = rect.bottom + 'px';
-                list.element.style.background = getEffectiveBg(button.element);
+    // options expand in place below the row, so the list never leaves the panel surface
+    const list = xnew((list: xnew.Unit) => {
+        xnew.extend(OpenAndClose, { open: false });
+        xnew.extend(Accordion);
+        xnew.nest('<div style="max-height: 12em; overflow-y: auto;">');
+        for (const item of items) {
+            const div = xnew(`<div class="${cls.clickable} ${cls.hover}" style="height: 2em; padding: 0 1em; display: flex; align-items: center;">`, item);
+            div.on('click', () => {
+                button.element.textContent = item;
+                (unit.element as HTMLSelectElement).value = item;
+                unit.element.dispatchEvent(new Event('input', { bubbles: false }));
+                list.close();
             });
-
-            xnew.extend(Accordion);
-            xnew.nest(`<div class="${cls.frame}" style="position: relative; overflow: hidden;">`);
-
-            for (const item of items) {
-                const div = xnew(`<div class="${cls.clickable} ${cls.hover}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center;">`, item);
-                div.on('click', () => {
-                    button.element.textContent = item;
-                    (unit.element as HTMLSelectElement).value = item;
-                    unit.element.dispatchEvent(new Event('input', { bubbles: false }));
-                    list.finalize();
-                });
-            }
-            list.on('click.outside', () => list.finalize());
-        });
+        }
     });
+
+    row.on('click', () => list.toggle());
 
     xnew.nest(`<select name="${key}" style="display: none;">`);
     for (const item of items) {
         xnew(`<option value="${item}" ${item === initial ? 'selected' : ''}>`, item);
-    }
-
-    function getEffectiveBg(element: Element): string {
-        let current: Element | null = element.parentElement;
-        while (current) {
-            const bg = getComputedStyle(current).backgroundColor;
-            if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') return bg;
-            current = current.parentElement;
-        }
-        return 'Canvas';
     }
 }
