@@ -29,15 +29,19 @@
 
     function MyPanel(unit) {
       xnew.nest('<div class="absolute top-2 right-2 w-48 text-sm">');
-      xnew.nest('<div class="max-h-[calc(100vh-1rem)] overflow-y-auto p-1 border rounded-lg shadow-lg bg-gray-100 text-green-900">');
+      const panelbg = xnew.nest('<div class="max-h-[calc(100vh-1rem)] overflow-y-auto p-1 border rounded-lg shadow-lg bg-gray-100 text-green-900">');
       const panel = xnew(xbasics.Panel);
-      
+
       panel.group({ name: 'My Panel', open: true }, (group) => {
 
-        group.group({ name: 'group 1', open: true }, (subgroup) => {
-          subgroup.button('button1').on('click', () => xnew.emit('+console', { text: 'button1 clicked' }));
-          subgroup.button('button2').on('click', () => xnew.emit('+console', { text: 'button2 clicked' }));
-          subgroup.button('button3').on('click', () => xnew.emit('+console', { text: 'button3 clicked' }));
+        group.group({ name: 'background', open: true }, (subgroup) => {
+          const colors = { gray: '#f3f4f6', yellow: '#fef9c3', blue: '#dbeafe' };
+          for (const [name, color] of Object.entries(colors)) {
+            subgroup.button(name).on('click', () => {
+              panelbg.style.background = color;
+              xnew.emit('+console', { text: `${name} button clicked` });
+            });
+          }
           subgroup.separator();
         });
 
