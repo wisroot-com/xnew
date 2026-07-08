@@ -154,7 +154,7 @@ function Select(unit: xnew.Unit, { key = '', value, items = [] }: { key?: string
     const list = xnew((list: xnew.Unit) => {
         xnew.extend(OpenAndClose, { open: false });
         xnew.extend(Accordion);
-        xnew.nest('<div style="max-height: 12em; overflow-y: auto;">');
+        xnew.nest(`<div class="${cls.scroll}" style="max-height: 12em;">`);
         for (const item of items) {
             const div = xnew(`<div class="${cls.clickable} ${cls.hover}" style="height: 2em; padding: 0 1em; display: flex; align-items: center;">`, item);
             div.on('click', () => {

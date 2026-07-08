@@ -1706,6 +1706,7 @@ const sharedCss = {
     pale: `background: ${paleColor};`,
     hover: `&:hover { background: ${paleColor}; }`,
     press: '&:active { filter: brightness(0.5); }',
+    scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
     hiddenInput: 'position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;',
 };
 
@@ -1917,7 +1918,7 @@ function Select(unit, { key = '', value, items = [] } = {}) {
     const list = xnew((list) => {
         xnew.extend(OpenAndClose, { open: false });
         xnew.extend(Accordion);
-        xnew.nest('<div style="max-height: 12em; overflow-y: auto;">');
+        xnew.nest(`<div class="${cls.scroll}" style="max-height: 12em;">`);
         for (const item of items) {
             const div = xnew(`<div class="${cls.clickable} ${cls.hover}" style="height: 2em; padding: 0 1em; display: flex; align-items: center;">`, item);
             div.on('click', () => {

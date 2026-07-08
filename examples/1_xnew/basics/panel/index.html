@@ -29,7 +29,8 @@
 
     function MyPanel(unit) {
       xnew.nest('<div class="absolute top-2 right-2 w-48 text-sm">');
-      const panelbg = xnew.nest('<div class="max-h-[calc(100vh-1rem)] overflow-y-auto p-1 border rounded-lg shadow-lg bg-gray-100 text-green-900">');
+      const panelbg = xnew.nest('<div class="py-1 border rounded-lg overflow-hidden shadow-lg bg-gray-100 text-green-900">');
+      xnew.nest('<div class="max-h-[calc(100vh-1.5rem)] overflow-y-auto px-1" style="scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;">');
       const panel = xnew(xbasics.Panel);
 
       panel.group({ name: 'My Panel', open: true }, (group) => {
