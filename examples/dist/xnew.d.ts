@@ -206,12 +206,10 @@ declare function Scene(unit: xnew.Unit): {
     add(Component: Function, props?: any): xnew.Unit;
 };
 
-declare function Split(unit: xnew.Unit, { direction, ratio, className }?: {
+declare function Split(unit: xnew.Unit, { direction }?: {
     direction?: 'column' | 'row';
-    ratio?: (number | string)[];
-    className?: string;
 }): {
-    readonly panes: Unit[];
+    pane(size?: number | string, component?: xnew.Component, props?: object): Unit;
 };
 
 type SceneEntry = [Function, any?];

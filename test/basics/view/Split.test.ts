@@ -12,35 +12,48 @@ describe('basics Split', () => {
         jest.useRealTimers();
     });
 
-    it('nests a flex root and creates one pane per ratio entry', () => {
-        const split = xnew(Split, { direction: 'row', ratio: [80, 20], className: 'layout' });
+    it('nests a flex root and appends one pane per pane() call', () => {
+        const split = xnew(Split, { direction: 'row' });
         const root = split.element as HTMLElement;
+        const left = split.pane(80);
+        const right = split.pane(20);
 
         expect(root.style.display).toBe('flex');
         expect(root.style.flexDirection).toBe('row');
-        expect(root.className).toBe('layout');
-        expect(split.panes.length).toBe(2);
-        expect(split.panes.every((pane: xnew.Unit) => pane.element.parentElement === root)).toBe(true);
+        expect(left.element.parentElement).toBe(root);
+        expect(right.element.parentElement).toBe(root);
     });
 
-    it('defaults to a column split into two equal panes', () => {
+    it('defaults to a column split and a flexible size-1 pane', () => {
         const split = xnew(Split);
+        const pane = split.pane();
 
         expect((split.element as HTMLElement).style.flexDirection).toBe('column');
-        expect(split.panes.length).toBe(2);
-        expect(split.panes[0].element.getAttribute('style')).toContain('flex: 1 1 0');
+        expect(pane.element.getAttribute('style')).toContain('flex: 1 1 0');
     });
 
-    it('maps number entries to flexible ratios and string entries to fixed sizes', () => {
-        const split = xnew(Split, { ratio: [80, '13cqh'] });
+    it('maps number sizes to flexible ratios and string sizes to fixed sizes', () => {
+        const split = xnew(Split);
 
-        expect(split.panes[0].element.getAttribute('style')).toContain('flex: 80 1 0');
-        expect(split.panes[1].element.getAttribute('style')).toContain('flex: 0 0 13cqh');
+        expect(split.pane(80).element.getAttribute('style')).toContain('flex: 80 1 0');
+        expect(split.pane('13cqh').element.getAttribute('style')).toContain('flex: 0 0 13cqh');
+    });
+
+    it('mounts an optional component inside the pane', () => {
+        xnew((unit: xnew.Unit) => {
+            xnew.extend(Split, { direction: 'column' });
+            const pane = unit.pane('3rem', () => {
+                xnew('<span>', 'hello');
+            });
+
+            expect(pane.element.querySelector('span')?.textContent).toBe('hello');
+        });
     });
 
     it('exposes panes as child units that host children and DOM events', () => {
-        const split = xnew(Split, { ratio: [50, 50] });
-        const [left, right] = split.panes;
+        const split = xnew(Split);
+        const left = split.pane(50);
+        const right = split.pane(50);
 
         const child = xnew(left, '<span>', 'hello');
         expect(left.element.contains(child.element)).toBe(true);
@@ -53,8 +66,8 @@ describe('basics Split', () => {
     });
 
     it('finalizes panes together with the split', () => {
-        const split = xnew(Split, { ratio: [1, 1] });
-        const [pane] = split.panes;
+        const split = xnew(Split);
+        const pane = split.pane(1);
         const finalized = jest.fn();
         pane.on('finalize', finalized);
 

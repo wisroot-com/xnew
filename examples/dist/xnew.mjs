@@ -1247,14 +1247,14 @@ function Scene(unit) {
     };
 }
 
-function Split(unit, { direction = 'column', ratio = [1, 1], className = '' } = {}) {
-    xnew.nest(`<div class="${className}" style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: ${direction};">`);
-    const panes = ratio.map((value) => {
-        const flex = typeof value === 'number' ? `${value} 1 0` : `0 0 ${value}`;
-        return xnew(`<div style="position: relative; flex: ${flex}; min-width: 0; min-height: 0; overflow: hidden;">`);
-    });
+function Split(unit, { direction = 'column' } = {}) {
+    xnew.nest(`<div style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: ${direction};">`);
     return {
-        get panes() { return panes; },
+        pane(size = 1, component, props) {
+            const flex = typeof size === 'number' ? `${size} 1 0` : `0 0 ${size}`;
+            const tag = `<div style="position: relative; flex: ${flex}; min-width: 0; min-height: 0; overflow: hidden;">`;
+            return component !== undefined ? xnew(tag, component, props) : xnew(tag);
+        },
     };
 }
 
