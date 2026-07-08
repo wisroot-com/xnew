@@ -1695,18 +1695,33 @@ function Popup(unit) {
     });
 }
 
+const paleColor = 'color-mix(in srgb, currentColor 20%, transparent)';
+const sharedCss = {
+    fill: 'width: 100%; height: 100%;',
+    overlay: 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; box-sizing: border-box;',
+    touchArea: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
+    row: 'position: relative; height: 2em; margin: 0.125em 0; display: flex; align-items: center;',
+    clickable: 'cursor: pointer; user-select: none;',
+    frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
+    pale: `background: ${paleColor};`,
+    hover: `&:hover { background: ${paleColor}; }`,
+    press: '&:active { filter: brightness(0.5); }',
+    hiddenInput: 'position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;',
+};
+
 function AnalogStick(unit, { stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 } = {}) {
+    const cls = xnew.css(sharedCss);
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew.nest(`<div style="width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;">`);
+    xnew.nest(`<div class="${cls.touchArea}">`);
     xnew((unit) => {
-        xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', stroke, strokeOpacity, strokeWidth, fill, fillOpacity });
+        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, fill, fillOpacity });
         xnew('<polygon points="32  7 27 13 37 13">');
         xnew('<polygon points="32 57 27 51 37 51">');
         xnew('<polygon points=" 7 32 13 27 13 37">');
         xnew('<polygon points="57 32 51 27 51 37">');
     });
     const target = xnew((unit) => {
-        xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', stroke, strokeOpacity, strokeWidth, fill, fillOpacity });
+        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, fill, fillOpacity });
         xnew('<circle cx="32" cy="32" r="14">');
     });
     unit.on('dragstart dragmove', ({ type, position }) => {
@@ -1727,8 +1742,9 @@ function AnalogStick(unit, { stroke = 'currentColor', strokeOpacity = 0.8, strok
 }
 
 function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 } = {}) {
+    const cls = xnew.css(sharedCss);
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew.nest(`<div style="width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;">`);
+    xnew.nest(`<div class="${cls.touchArea}">`);
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
         '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
@@ -1737,12 +1753,12 @@ function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 
     ];
     const targets = polygons.map((polygon) => {
         return xnew((unit) => {
-            xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', fill, fillOpacity });
+            xnew.extend(SVG, { className: cls.overlay, fill, fillOpacity });
             xnew(polygon);
         });
     });
     xnew((unit) => {
-        xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', stroke, strokeOpacity, strokeWidth });
+        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth });
         xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
         xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
         xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');
@@ -1787,8 +1803,6 @@ function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 
     });
 }
 
-const paleColor = 'color-mix(in srgb, currentColor 20%, transparent)';
-const hiddenInput = 'position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;';
 function Panel(unit, { params }) {
     const object = params !== null && params !== void 0 ? params : {};
     return {
@@ -1833,7 +1847,8 @@ function Panel(unit, { params }) {
 function Group(group, { name, open = false }) {
     const openAndClose = xnew.extend(OpenAndClose, { open });
     if (name) {
-        xnew('<div style="height: 2em; margin: 0.125em 0; display: flex; align-items: center; cursor: pointer; user-select: none;">', (unit) => {
+        const cls = xnew.css(sharedCss);
+        xnew(`<div class="${cls.row} ${cls.clickable}">`, (unit) => {
             unit.on('click', () => openAndClose.toggle());
             xnew((unit) => {
                 xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
@@ -1846,34 +1861,23 @@ function Group(group, { name, open = false }) {
     xnew.extend(Accordion);
 }
 function Button(unit, { key = '' }) {
-    xnew.nest('<button style="margin: 0.125em 0; height: 2em; border: 1px solid; border-radius: 0.25em; cursor: pointer;">');
-    unit.element.textContent = key;
-    unit.on('pointerover', () => {
-        Object.assign(unit.element.style, { background: paleColor, borderColor: 'currentColor' });
-    });
-    unit.on('pointerout', () => {
-        Object.assign(unit.element.style, { background: '', borderColor: '' });
-    });
-    unit.on('pointerdown', () => {
-        unit.element.style.filter = 'brightness(0.5)';
-    });
-    unit.on('pointerup', () => {
-        unit.element.style.filter = '';
-    });
+    const cls = xnew.css(sharedCss);
+    xnew.nest(`<button class="${cls.row} ${cls.clickable} ${cls.frame} ${cls.hover} ${cls.press}" style="justify-content: center;">`, key);
 }
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
 }
 function Range(unit, { key = '', value, min = 0, max = 100, step = 1 }) {
     value = value !== null && value !== void 0 ? value : min;
-    xnew.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; cursor: pointer; user-select: none;">`);
+    const cls = xnew.css(sharedCss);
+    xnew.nest(`<div class="${cls.row} ${cls.clickable}">`);
     const ratio = (value - min) / (max - min);
-    const fill = xnew(`<div style="position: absolute; top: 0; left: 0; bottom: 0; width: ${ratio * 100}%; background: ${paleColor}; border: 1px solid currentColor; border-radius: 0.25em; transition: width 0.05s;">`);
-    const status = xnew('<div style="position: absolute; inset: 0; padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">', (unit) => {
+    const fill = xnew(`<div class="${cls.frame} ${cls.pale}" style="position: absolute; top: 0; left: 0; bottom: 0; width: ${ratio * 100}%; transition: width 0.05s;">`);
+    const status = xnew(`<div class="${cls.overlay}" style="padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">`, (unit) => {
         xnew('<div>', key);
         xnew('<div key="status">', value);
     });
-    xnew.nest(`<input type="range" name="${key}" min="${min}" max="${max}" step="${step}" value="${value}" style="${hiddenInput}">`);
+    xnew.nest(`<input type="range" name="${key}" min="${min}" max="${max}" step="${step}" value="${value}" class="${cls.hiddenInput}">`);
     unit.on('input', ({ event }) => {
         const v = Number(event.target.value);
         const r = (v - min) / (max - min);
@@ -1882,9 +1886,10 @@ function Range(unit, { key = '', value, min = 0, max = 100, step = 1 }) {
     });
 }
 function Checkbox(unit, { key = '', value } = {}) {
-    xnew.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; padding: 0 0.5em; display: flex; align-items: center; cursor: pointer; user-select: none;">`);
+    const cls = xnew.css(sharedCss);
+    xnew.nest(`<div class="${cls.row} ${cls.clickable}" style="padding: 0 0.5em;">`);
     xnew('<div style="flex: 1;">', key);
-    const box = xnew(`<div style="width: 1.25em; height: 1.25em; border: 1px solid currentColor; border-radius: 0.25em; display: flex; align-items: center; justify-content: center;">`, () => {
+    const box = xnew(`<div class="${cls.frame}" style="width: 1.25em; height: 1.25em; display: flex; align-items: center; justify-content: center;">`, () => {
         xnew((unit) => {
             xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 1.25em; height: 1.25em; opacity: 0;', stroke: 'currentColor', strokeWidth: 2 });
             xnew('<path d="M2 6 5 9 10 3" />');
@@ -1892,11 +1897,11 @@ function Checkbox(unit, { key = '', value } = {}) {
     });
     const check = box.element.querySelector('svg');
     const update = (checked) => {
-        box.element.style.background = checked ? paleColor : '';
+        box.element.classList.toggle(cls.pale, checked);
         check.style.opacity = checked ? '1' : '0';
     };
     update(!!value);
-    xnew.nest(`<input type="checkbox" name="${key}" ${value ? 'checked' : ''} style="${hiddenInput}">`);
+    xnew.nest(`<input type="checkbox" name="${key}" ${value ? 'checked' : ''} class="${cls.hiddenInput}">`);
     unit.on('input', ({ value }) => {
         update(value);
     });
@@ -1904,9 +1909,10 @@ function Checkbox(unit, { key = '', value } = {}) {
 function Select(unit, { key = '', value, items = [] } = {}) {
     var _a;
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
-    xnew.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; padding: 0 0.5em; display: flex; align-items: center;">`);
+    const cls = xnew.css(sharedCss);
+    xnew.nest(`<div class="${cls.row}" style="padding: 0 0.5em;">`);
     xnew('<div style="flex: 1;">', key);
-    const button = xnew(`<div style="height: 2em; padding: 0 1.5em 0 0.5em; display: flex; align-items: center; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer; user-select: none; min-width: 3em; white-space: nowrap;">`, initial);
+    const button = xnew(`<div class="${cls.frame} ${cls.clickable}" style="height: 2em; padding: 0 1.5em 0 0.5em; display: flex; align-items: center; min-width: 3em; white-space: nowrap;">`, initial);
     xnew((unit) => {
         xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', strokeWidth: 2, style: 'position: absolute; right: 1.0em; width: 0.75em; height: 0.75em; pointer-events: none;' });
         xnew('<path d="M2 4 6 8 10 4" />');
@@ -1923,11 +1929,9 @@ function Select(unit, { key = '', value, items = [] } = {}) {
                 list.element.style.background = getEffectiveBg(button.element);
             });
             xnew.extend(Accordion);
-            xnew.nest(`<div style="position: relative; border: 1px solid currentColor; border-radius: 0.25em; overflow: hidden;">`);
+            xnew.nest(`<div class="${cls.frame}" style="position: relative; overflow: hidden;">`);
             for (const item of items) {
-                const div = xnew(`<div style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, item);
-                div.on('pointerover', () => div.element.style.background = paleColor);
-                div.on('pointerout', () => div.element.style.background = '');
+                const div = xnew(`<div class="${cls.clickable} ${cls.hover}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center;">`, item);
                 div.on('click', () => {
                     button.element.textContent = item;
                     unit.element.value = item;

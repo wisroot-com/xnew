@@ -12,16 +12,12 @@
 
 import { xnew } from '../../core/xnew';
 import { SVG } from '../element/SVG';
+import { sharedCss } from '../styles';
 import { OpenAndClose } from './OpenAndClose';
 import { Accordion } from './Accordion';
 import { Popup } from './Popup';
 
 interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; }
-
-const paleColor = 'color-mix(in srgb, currentColor 20%, transparent)';
-
-// hidden native control overlaid on the styled row to capture interaction
-const hiddenInput = 'position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;';
 
 export function Panel(unit: xnew.Unit, { params }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
@@ -66,7 +62,8 @@ export function Panel(unit: xnew.Unit, { params }: PanelOptions) {
 function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
     const openAndClose = xnew.extend(OpenAndClose, { open });
     if (name) {
-        xnew('<div style="height: 2em; margin: 0.125em 0; display: flex; align-items: center; cursor: pointer; user-select: none;">', (unit: xnew.Unit) => {
+        const cls = xnew.css(sharedCss);
+        xnew(`<div class="${cls.row} ${cls.clickable}">`, (unit: xnew.Unit) => {
             unit.on('click', () => openAndClose.toggle());
             xnew((unit: xnew.Unit) => {
                 xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
@@ -80,21 +77,8 @@ function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?:
 }
 
 function Button(unit: xnew.Unit, { key = '' }: { key?: string }) {
-    xnew.nest('<button style="margin: 0.125em 0; height: 2em; border: 1px solid; border-radius: 0.25em; cursor: pointer;">');
-
-    unit.element.textContent = key;
-    unit.on('pointerover', () => {
-        Object.assign(unit.element.style, { background: paleColor, borderColor: 'currentColor' });
-    });
-    unit.on('pointerout', () => {
-        Object.assign(unit.element.style, { background: '', borderColor: '' });
-    });
-    unit.on('pointerdown', () => {
-        unit.element.style.filter = 'brightness(0.5)';
-    });
-    unit.on('pointerup', () => {
-        unit.element.style.filter = '';
-    });
+    const cls = xnew.css(sharedCss);
+    xnew.nest(`<button class="${cls.row} ${cls.clickable} ${cls.frame} ${cls.hover} ${cls.press}" style="justify-content: center;">`, key);
 }
 
 function Separator(unit: xnew.Unit) {
@@ -106,21 +90,22 @@ function Range(unit: xnew.Unit,
     { key?: string, value?: number, min?: number, max?: number, step?: number }
 ) {
     value = value ?? min;
+    const cls = xnew.css(sharedCss);
 
-    xnew.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; cursor: pointer; user-select: none;">`);
+    xnew.nest(`<div class="${cls.row} ${cls.clickable}">`);
 
     // fill bar
     const ratio = (value - min) / (max - min);
-    const fill = xnew(`<div style="position: absolute; top: 0; left: 0; bottom: 0; width: ${ratio * 100}%; background: ${paleColor}; border: 1px solid currentColor; border-radius: 0.25em; transition: width 0.05s;">`);
+    const fill = xnew(`<div class="${cls.frame} ${cls.pale}" style="position: absolute; top: 0; left: 0; bottom: 0; width: ${ratio * 100}%; transition: width 0.05s;">`);
 
     // overlay labels
-    const status = xnew('<div style="position: absolute; inset: 0; padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">', (unit: xnew.Unit) => {
+    const status = xnew(`<div class="${cls.overlay}" style="padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">`, (unit: xnew.Unit) => {
         xnew('<div>', key);
         xnew('<div key="status">', value);
     });
 
     // hidden native input for interaction
-    xnew.nest(`<input type="range" name="${key}" min="${min}" max="${max}" step="${step}" value="${value}" style="${hiddenInput}">`);
+    xnew.nest(`<input type="range" name="${key}" min="${min}" max="${max}" step="${step}" value="${value}" class="${cls.hiddenInput}">`);
 
     unit.on('input', ({ event }: { event: Event }) => {
         const v = Number((event.target as HTMLInputElement).value);
@@ -131,11 +116,12 @@ function Range(unit: xnew.Unit,
 }
 
 function Checkbox(unit: xnew.Unit, { key = '', value }: { key?: string, value?: boolean } = {}) {
-    xnew.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; padding: 0 0.5em; display: flex; align-items: center; cursor: pointer; user-select: none;">`);
+    const cls = xnew.css(sharedCss);
+    xnew.nest(`<div class="${cls.row} ${cls.clickable}" style="padding: 0 0.5em;">`);
 
     xnew('<div style="flex: 1;">', key);
 
-    const box = xnew(`<div style="width: 1.25em; height: 1.25em; border: 1px solid currentColor; border-radius: 0.25em; display: flex; align-items: center; justify-content: center;">`, () => {
+    const box = xnew(`<div class="${cls.frame}" style="width: 1.25em; height: 1.25em; display: flex; align-items: center; justify-content: center;">`, () => {
         xnew((unit: xnew.Unit) => {
             xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 1.25em; height: 1.25em; opacity: 0;', stroke: 'currentColor', strokeWidth: 2 });
             xnew('<path d="M2 6 5 9 10 3" />');
@@ -144,11 +130,11 @@ function Checkbox(unit: xnew.Unit, { key = '', value }: { key?: string, value?: 
     const check = box.element.querySelector('svg') as SVGElement;
 
     const update = (checked: boolean) => {
-        box.element.style.background = checked ? paleColor : '';
+        box.element.classList.toggle(cls.pale, checked);
         check.style.opacity = checked ? '1' : '0';
     };
     update(!!value);
-    xnew.nest(`<input type="checkbox" name="${key}" ${value ? 'checked' : ''} style="${hiddenInput}">`);
+    xnew.nest(`<input type="checkbox" name="${key}" ${value ? 'checked' : ''} class="${cls.hiddenInput}">`);
     unit.on('input', ({ value }: { value: boolean }) => {
         update(value);
     });
@@ -156,11 +142,12 @@ function Checkbox(unit: xnew.Unit, { key = '', value }: { key?: string, value?: 
 
 function Select(unit: xnew.Unit, { key = '', value, items = [] }: { key?: string, value?: string, items?: string[] } = {}) {
     const initial = value ?? items[0] ?? '';
+    const cls = xnew.css(sharedCss);
 
-    xnew.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; padding: 0 0.5em; display: flex; align-items: center;">`);
+    xnew.nest(`<div class="${cls.row}" style="padding: 0 0.5em;">`);
     xnew('<div style="flex: 1;">', key);
 
-    const button = xnew(`<div style="height: 2em; padding: 0 1.5em 0 0.5em; display: flex; align-items: center; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer; user-select: none; min-width: 3em; white-space: nowrap;">`, initial);
+    const button = xnew(`<div class="${cls.frame} ${cls.clickable}" style="height: 2em; padding: 0 1.5em 0 0.5em; display: flex; align-items: center; min-width: 3em; white-space: nowrap;">`, initial);
 
     xnew((unit: xnew.Unit) => {
         xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', strokeWidth: 2, style: 'position: absolute; right: 1.0em; width: 0.75em; height: 0.75em; pointer-events: none;' });
@@ -181,12 +168,10 @@ function Select(unit: xnew.Unit, { key = '', value, items = [] }: { key?: string
             });
 
             xnew.extend(Accordion);
-            xnew.nest(`<div style="position: relative; border: 1px solid currentColor; border-radius: 0.25em; overflow: hidden;">`);
+            xnew.nest(`<div class="${cls.frame}" style="position: relative; overflow: hidden;">`);
 
             for (const item of items) {
-                const div = xnew(`<div style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, item);
-                div.on('pointerover', () => div.element.style.background = paleColor);
-                div.on('pointerout', () => div.element.style.background = '');
+                const div = xnew(`<div class="${cls.clickable} ${cls.hover}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center;">`, item);
                 div.on('click', () => {
                     button.element.textContent = item;
                     (unit.element as HTMLSelectElement).value = item;

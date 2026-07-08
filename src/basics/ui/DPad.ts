@@ -12,14 +12,16 @@
 
 import { xnew } from '../../core/xnew';
 import { SVG } from '../element/SVG';
+import { sharedCss } from '../styles';
 import { Aspect } from '../view/Aspect';
 
 export function DPad(unit: xnew.Unit,
     { diagonal = true, stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 }:
     { diagonal?: boolean, stroke?: string, strokeOpacity?: number, strokeWidth?: number, fill?: string, fillOpacity?: number } = {}
 ) {
+    const cls = xnew.css(sharedCss);
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew.nest(`<div style="width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;">`);
+    xnew.nest(`<div class="${cls.touchArea}">`);
 
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
@@ -30,13 +32,13 @@ export function DPad(unit: xnew.Unit,
 
     const targets = polygons.map((polygon) => {
         return xnew((unit: xnew.Unit) => {
-            xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', fill, fillOpacity });
+            xnew.extend(SVG, { className: cls.overlay, fill, fillOpacity });
             xnew(polygon);
         });
     });
 
     xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', stroke, strokeOpacity, strokeWidth });
+        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth });
         xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
         xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
         xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');
