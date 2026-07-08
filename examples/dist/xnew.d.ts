@@ -205,7 +205,7 @@ declare function Screen(unit: xnew.Unit, { width, height, fit }?: {
 };
 
 declare function Scene(unit: xnew.Unit): {
-    change(target: string | Function, option?: any): void;
+    change(target: string | Function, props?: any): void;
     add(Component: Function, props?: any): xnew.Unit;
 };
 
@@ -217,21 +217,13 @@ declare function Split(unit: xnew.Unit, { direction, ratio, className }?: {
     readonly panes: Unit[];
 };
 
-type StageScene = [Function, any?];
-declare function Stage(unit: xnew.Unit, { scenes, initial }?: {
-    scenes?: {
-        [label: string]: StageScene | StageScene[];
+type SceneEntry = [Function, any?];
+declare function SceneList(unit: xnew.Unit, { list }?: {
+    list?: {
+        [label: string]: SceneEntry;
     };
-    initial?: string;
 }): {
-    change(target: string, index?: number): void;
-    next(): void;
-    prev(): void;
-    readonly scene: {
-        label: string | null;
-        index: number | null;
-        unit: Unit;
-    } | null;
+    resolve(label: string): SceneEntry | undefined;
 };
 
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
@@ -401,8 +393,8 @@ declare const xbasics: {
     Accordion: typeof Accordion;
     Popup: typeof Popup;
     Scene: typeof Scene;
+    SceneList: typeof SceneList;
     Split: typeof Split;
-    Stage: typeof Stage;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;

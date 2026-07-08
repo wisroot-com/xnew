@@ -1,41 +1,61 @@
 //----------------------------------------------------------------------------------------------------
-// Scene — page-side mixin that binds a unit to its ancestor Stage
+// Scene — scene-swap navigator mixin (the unit swaps itself for the next scene)
 //
-// A Stage scene extends Scene to navigate from inside itself (`unit.change` delegates to the
-// nearest ancestor Stage) and to host runtime children that die with the scene (`unit.add`).
-// Outside a Stage, `change(Component, props)` still swaps scenes as siblings.
+// A scene component extends Scene to move to the next scene from inside itself: `change` mounts
+// the next component under unit.parent and finalizes this unit, so the mounted unit itself is the
+// navigation state. Labels resolve through an optional SceneList; the only transition contract a
+// scene may opt into is a `leave()` define, awaited before the swap.
 //
 // - Scene : component returning { change, add }
-//   - change(label, index?)    : same effect as xnew.context(xbasics.Stage).change(label, index);
-//                                no-op when there is no ancestor Stage
-//   - change(Component, props?) : standalone (Stage-less) navigation — mounts the next component
-//                                under unit.parent and finalizes this scene, so swappable scenes
-//                                must share a common parent container
-//   - add(Component, props)    : mount a child under this scene unit and return it — finalized
-//                                together with the scene when it leaves
+//   - change(Component, props?) : mount the next scene as a sibling (under unit.parent) and
+//                                 finalize this one — swappable scenes must share a parent
+//   - change(label)             : resolve [Component, props] via xnew.context(xbasics.SceneList)
+//                                 and do the same swap; no-op for unknown labels / no SceneList
+//   - add(Component, props)     : mount a child under this scene unit and return it — finalized
+//                                 together with the scene when it leaves
+//
+// Leave protocol (out-in): if this scene defines `leave()`, change calls it and waits for its
+// return value — a timer (return `xnew.transition(...)` directly) or nothing (immediate) — before
+// swapping. Entrance effects are the next scene's own business (do them in the component body).
+// While a leave is pending, further change calls on this scene are ignored (per-scene guard).
 //
 // Usage:
-//   const stage = xnew(xbasics.Stage, { scenes: { title: [Title], play: [Play] }, initial: 'title' });
+//   xnew(xbasics.SceneList, { list: { title: [Title], play: [Play] } });
+//   xnew(Title);
 //
 //   function Play(unit) {
 //       xnew.extend(xbasics.Scene);
 //       unit.add(Enemy, { id: 0 });                  // or from a descendant:
 //       unit.on('-gameover', () => unit.change('title'));  //   xnew.context(xbasics.Scene).add(...)
+//       return {
+//           leave() { return xnew.transition(({ value }) => unit.element.style.opacity = `${1 - value}`, 300); },
+//       };
 //   }
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Stage } from './Stage';
+import { SceneList } from './SceneList';
 
 export function Scene(unit: xnew.Unit) {
+    let leaving = false;
 
     return {
-        change(target: string | Function, option?: any): void {
-            if (typeof target === 'string') {
-                xnew.context(Stage)?.change(target, option);
-            } else {
-                xnew(unit.parent, target, option);
-                unit.finalize();
+        change(target: string | Function, props?: any): void {
+            const entry = typeof target === 'string' ? xnew.context(SceneList)?.resolve(target) : [target, props];
+            if (leaving === false && entry !== undefined) {
+                leaving = true;
+                const [Component, nextProps] = entry;
+                const finish = () => {
+                    xnew(unit.parent, Component, nextProps);
+                    unit.finalize();
+                };
+
+                const timer = typeof unit.leave === 'function' ? unit.leave() : undefined;
+                if (timer && typeof timer.timeout === 'function') {
+                    timer.timeout(finish); // UnitTimer: chain onto the leave transition
+                } else {
+                    finish();
+                }
             }
         },
         add(Component: Function, props?: any): xnew.Unit {

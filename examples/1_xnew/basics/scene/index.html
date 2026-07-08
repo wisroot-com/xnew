@@ -18,20 +18,21 @@
   <script type="module">
     import { xnew, xbasics } from '@mulsense/xnew';
 
-    // Stage owns the scenes; each scene extends Scene so unit.change(label) delegates to the Stage
-    // and unit.add mounts runtime children that die with the scene.
+    // Scene is the navigator: each scene extends Scene so unit.change swaps this unit for the next
+    // one, and unit.add mounts runtime children that die with the scene. The SceneList only holds
+    // the label table — create it BEFORE the first scene, then mount the first scene yourself.
     let score = 0; // runtime state shared across scenes (scene props are static)
 
     xnew(document.querySelector('#main'), (unit) => {
       xnew.nest('<div class="absolute w-96 h-64 inset-0 m-auto border rounded-lg overflow-hidden bg-slate-800 text-white select-none">');
-      xnew(xbasics.Stage, {
-        scenes: {
+      xnew(xbasics.SceneList, {
+        list: {
           title: [Title],
           play: [Play],
           result: [Result],
         },
-        initial: 'title',
       });
+      xnew(Title);
     });
 
     function Title(unit) {

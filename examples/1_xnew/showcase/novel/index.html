@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden bg-black text-white">
+  <div id="main" class="relative w-full h-full"></div>
+  <script type="module">
+    import { xnew, xbasics } from '@mulsense/xnew';
+
+    // ---- mini sound novel ------------------------------------------------------------------------
+    // layering pattern: things that outlive a page (background, character sprites) live as
+    // persistent units inside NovelScene; a novel "page" is one line of SCRIPT data, applied as a
+    // diff (omitted fields carry over). scenes navigate themselves by label (Scene + SceneList)
+    // for the screen-level flow (title → novel → endings), and the background layer crossfades
+    // by stacking a new layer only when its label actually changes.
+
+    const CHARAS = {
+      mio:  { face: '👧', label: 'ミオ' },
+      kuro: { face: '🐈‍⬛', label: 'クロ' },
+    };
+
+    // one entry = one page. bg/left/right: omitted = carry over, null = hide. speaker dims the other side.
+    const SCRIPT = [
+      { bg: 'platform', left: 'mio', speaker: 'mio', name: 'ミオ', text: 'うそ……終電、行っちゃった……。' },
+      { right: 'kuro', speaker: 'kuro', name: '？？？', text: 'おや、乗り遅れたのかい。お嬢さん。' },
+      { speaker: 'mio', name: 'ミオ', text: 'えっ、誰!?　……いま、猫がしゃべった……？' },
+      { speaker: 'kuro', name: 'クロ', text: 'クロだ。この駅の主をやっている。夜勤のようなものさ。' },
+      { speaker: 'mio', name: 'ミオ', text: '駅の主……。私はミオ。あの、始発って何時ですか……？' },
+      { speaker: 'kuro', name: 'クロ', text: '五時十二分。まだ五時間もあるな。外は冷える、待合室へおいで。' },
+      { bg: 'waiting', speaker: 'kuro', name: 'クロ', text: 'ここはストーブがある。昔は駅員が、よく茶を淹れてくれたものだ。' },
+      { speaker: 'mio', name: 'ミオ', text: 'クロさんは、ずっとこの駅にいるんですか？' },
+      { speaker: 'kuro', name: 'クロ', text: 'ああ。……もっとも、この駅は来月で廃止になるがね。最後まで見届けるのが主の仕事だ。' },
+      { speaker: 'mio', name: 'ミオ', text: 'そうなんだ……。なんだか、寂しいですね。' },
+      { speaker: 'kuro', name: 'クロ', text: 'なに、終わりは始まりさ。——ほら、空が白んできた。' },
+      {
+        bg: 'dawn', speaker: 'kuro', name: 'クロ', text: 'さて、ミオ。君はどうする？',
+        choice: [
+          { text: '始発を待つ', to: 'endTrain' },
+          { text: 'クロについていく', to: 'endCat' },
+        ],
+      },
+    ];
+
+    xnew(document.querySelector('#main'), () => {
+      xnew(xbasics.SceneList, {
+        list: {
+          title: [Title],
+          novel: [NovelScene],
+          endTrain: [Ending, { emoji: '🚃', title: '一番列車', text: 'ミオは一番列車に乗って帰った。コートのポケットには、黒い毛がひとすじ。——次の週末、また会いに行こう。' }],
+          endCat:   [Ending, { emoji: '🐾', title: '駅の主見習い', text: 'クロについて改札の奥へ。そこには猫たちだけの小さな駅があった。ミオは今日から、主見習いである。' }],
+        },
+      });
+      xnew(Title);
+    });
+
+    // ---- scenes ------------------------------------------------------------------------------------
+
+    function Title(unit) {
+      xnew.extend(xbasics.Scene);
+      xnew.nest('<div class="absolute inset-0 bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 flex flex-col items-center justify-center gap-6 cursor-pointer select-none" style="opacity:0;">');
+      xnew.transition(({ value }) => unit.element.style.opacity = `${value}`, 400);
+      xnew('<div class="text-6xl">', '🚉');
+      xnew('<h1 class="text-4xl font-bold tracking-[0.3em]">', 'まよなかステーション');
+      xnew('<p class="text-slate-400 animate-pulse">', 'click to start');
+      unit.on('pointerdown', () => unit.change('novel'));
+      return { leave() { return xnew.transition(({ value }) => unit.element.style.opacity = `${1 - value}`, 400); } };
+    }
+
+    function NovelScene(unit) {
+      xnew.extend(xbasics.Scene);
+      xnew.nest('<div class="absolute inset-0 select-none cursor-pointer" style="opacity:0;">');
+      xnew.transition(({ value }) => unit.element.style.opacity = `${value}`, 400);
+
+      // persistent layers: they live across pages and only react to diffs
+      const bg = xnew(Background);
+      const charas = xnew(CharacterLayer);
+      const dialog = xnew(DialogBox);
+
+      let index = 0;
+      let chosen = false;
+      function show(i) {
+        const line = SCRIPT[i];
+        if (line.bg !== undefined) {
+          bg.set(line.bg); // same label → the layer ignores it (that IS the diff check)
+        }
+        charas.apply(line);
+        dialog.show(line);
+        if (line.choice !== undefined) {
+          // reveal the choices once the line finishes typing
+          const watcher = xnew(() => {});
+          watcher.on('update', () => {
+            if (dialog.completed) {
+              watcher.finalize();
+              xnew(unit, Choices, { choice: line.choice });
+            }
+          });
+        }
+      }
+
+      unit.on('pointerdown', () => {
+        if (chosen === true || (SCRIPT[index].choice !== undefined && dialog.completed)) {
+          // choices (or a made choice) own the input now
+        } else if (dialog.completed === false) {
+          dialog.skip();
+        } else if (index + 1 < SCRIPT.length) {
+          show(++index);
+        }
+      });
+
+      show(0);
+      return {
+        choose() { chosen = true; },
+        leave() { return xnew.transition(({ value }) => unit.element.style.opacity = `${1 - value}`, 600); },
+      };
+    }
+
+    function Ending(unit, { emoji, title, text }) {
+      xnew.extend(xbasics.Scene);
+      xnew.nest('<div class="absolute inset-0 bg-gradient-to-b from-slate-950 to-indigo-950 flex flex-col items-center justify-center gap-6 px-10 text-center cursor-pointer select-none" style="opacity:0;">');
+      xnew.transition(({ value }) => unit.element.style.opacity = `${value}`, 600);
+      xnew('<div class="text-6xl">', emoji);
+      xnew('<h1 class="text-2xl font-bold tracking-[0.3em] text-amber-200">', `— ${title} —`);
+      xnew('<p class="max-w-xl leading-relaxed text-slate-300">', text);
+      xnew('<p class="text-slate-500 animate-pulse text-sm">', 'click to return to title');
+      unit.on('pointerdown', () => unit.change('title'));
+      return { leave() { return xnew.transition(({ value }) => unit.element.style.opacity = `${1 - value}`, 400); } };
+    }
+
+    // ---- persistent layers ---------------------------------------------------------------------------
+
+    // background: crossfade by stacking — a new layer fades in on top only when the label actually
+    // changes (the label comparison IS the diff check), and the covered layer is removed afterwards.
+    const BGS = {
+      platform: { className: 'bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-800', deco: '🌙', label: '3番線ホーム' },
+      waiting:  { className: 'bg-gradient-to-b from-stone-950 via-amber-950 to-stone-900', deco: '💡', label: '待合室' },
+      dawn:     { className: 'bg-gradient-to-b from-indigo-950 via-rose-900 to-amber-700', deco: '🌄', label: '夜明け' },
+    };
+
+    function Background(unit) {
+      xnew.nest('<div class="absolute inset-0">');
+      let label = null;
+      let current = null;
+      return {
+        set(next) {
+          if (next !== label && BGS[next] !== undefined) {
+            label = next;
+            const old = current;
+            current = xnew(unit, BG, BGS[next]);
+            if (old !== null) {
+              xnew.timeout(() => old.finalize(), 600); // remove once the new layer covers it
+            }
+          }
+        },
+      };
+    }
+
+    function BG(unit, { className, deco, label }) {
+      xnew.nest(`<div class="absolute inset-0 ${className}" style="opacity:0;">`);
+      xnew.transition(({ value }) => unit.element.style.opacity = `${value}`, 600);
+      xnew('<div class="absolute top-8 right-12 text-7xl opacity-50">', deco);
+      xnew('<div class="absolute top-4 left-4 text-xs tracking-[0.3em] text-white/40">', `◈ ${label}`);
+    }
+
+    // character sprites: two slots that only move when their value changes (undefined = carry over)
+    function CharacterLayer(unit) {
+      xnew.nest('<div class="absolute inset-0 pointer-events-none">');
+      const slots = {
+        left:  { chara: null, content: null, el: xnew('<div class="absolute bottom-36 left-16 flex flex-col items-center gap-2 transition-all duration-300" style="opacity:0;">') },
+        right: { chara: null, content: null, el: xnew('<div class="absolute bottom-36 right-16 flex flex-col items-center gap-2 transition-all duration-300" style="opacity:0;">') },
+      };
+      return {
+        apply({ left, right, speaker }) {
+          for (const [side, chara] of [['left', left], ['right', right]]) {
+            const slot = slots[side];
+            if (chara !== undefined && chara !== slot.chara) {
+              slot.chara = chara;
+              slot.content?.finalize();
+              slot.content = chara === null ? null : xnew(slot.el, () => {
+                xnew('<div class="text-8xl drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">', CHARAS[chara].face);
+                xnew('<div class="text-xs tracking-widest text-white/60">', CHARAS[chara].label);
+              });
+              slot.el.element.style.opacity = chara !== null ? '1' : '0';
+            }
+            // speaker highlight: dim and shrink the side that is not talking
+            const active = slot.chara !== null && slot.chara === speaker;
+            slot.el.element.style.filter = active ? 'none' : 'brightness(0.45)';
+            slot.el.element.style.transform = active ? 'scale(1)' : 'scale(0.92)';
+          }
+        },
+      };
+    }
+
+    // ---- dialog (absorbed from the typewriter showcase) ------------------------------------------------
+
+    function DialogBox(unit) {
+      xnew.nest('<div class="absolute bottom-0 left-0 right-0 px-6 pb-6">');
+      let current = null;
+      return {
+        show({ name, text }) {
+          current?.finalize();
+          current = xnew(unit, Script, { name, text });
+        },
+        get completed() { return current === null || current.completed; },
+        skip() { current?.skip(); },
+      };
+    }
+
+    function Script(unit, { name = '', text = '' } = {}) {
+      xnew.nest('<div class="overflow-hidden">');
+
+      xnew('<div class="px-4 pt-2 pb-1 inline-block bg-indigo-900/90 rounded-t-xl text-indigo-200 text-sm font-bold tracking-widest">', name);
+
+      const textArea = xnew('<div class="bg-slate-900/85 backdrop-blur-sm px-5 py-4 text-white text-base leading-relaxed min-h-[4.5rem] rounded-b-xl rounded-tr-xl">');
+
+      const stream = xnew(Typewriter, { text, speed: 40 });
+
+      unit.on('update', () => {
+        textArea.element.textContent = stream.current;
+        if (stream.completed) {
+          unit.off('update');
+        }
+      });
+
+      return {
+        get completed() { return stream.completed; },
+        skip() {
+          stream.skip();
+          textArea.element.textContent = stream.current;
+        },
+      };
+    }
+
+    function Typewriter(unit, { text = '', speed = 40 } = {}) {
+      let current = '';
+      let completed = false;
+
+      let index = 0;
+      const interval = xnew.interval(() => {
+        index++;
+        current = text.substring(0, index);
+        if (index >= text.length) {
+          completed = true;
+          interval.clear();
+        }
+      }, speed);
+
+      return {
+        get current() { return current; },
+        get completed() { return completed; },
+        skip() {
+          interval.clear();
+          current = text;
+          completed = true;
+        },
+      };
+    }
+
+    // ---- choices ---------------------------------------------------------------------------------------
+
+    function Choices(unit, { choice }) {
+      xnew.nest('<div class="absolute inset-x-0 bottom-40 flex flex-col items-center gap-3">');
+      xnew.context(NovelScene).choose(); // hand the input over to the buttons
+      for (const { text, to } of choice) {
+        const button = xnew('<button class="w-72 px-4 py-2 rounded-xl bg-indigo-800/90 hover:bg-indigo-600 border border-indigo-400/40 tracking-widest cursor-pointer" style="opacity:0;">', `▶ ${text}`);
+        xnew.transition(({ value }) => button.element.style.opacity = `${value}`, 300);
+        button.on('click', () => xnew.context(xbasics.Scene).change(to));
+      }
+    }
+  </script>
+</body>
+
+</html>

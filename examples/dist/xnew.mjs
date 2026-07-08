@@ -1218,85 +1218,35 @@ function Screen(unit, { width = 800, height = 600, fit = 'contain' } = {}) {
     };
 }
 
-function isScene(e) {
-    return Array.isArray(e) && typeof e[0] === 'function';
-}
-function Stage(unit, { scenes = {}, initial } = {}) {
-    const table = new Map();
-    for (const [name, node] of Object.entries(scenes)) {
-        if (isScene(node)) {
-            table.set(name, [[node], false]);
-        }
-        else if (Array.isArray(node)) {
-            table.set(name, [node, true]);
-        }
-    }
-    let label = null;
-    let index = null;
-    let sceneUnit = null;
-    function mount(nextLabel, nextIndex) {
-        [label, index] = [nextLabel, nextIndex];
-        const [Component, props] = table.get(nextLabel)[0][nextIndex !== null && nextIndex !== void 0 ? nextIndex : 0];
-        sceneUnit = xnew(unit, Component, props);
-    }
-    const start = (initial !== undefined && table.has(initial)) ? initial : table.keys().next().value;
-    if (start !== undefined) {
-        mount(start, table.get(start)[1] ? 0 : null);
-    }
-    function swap(nextLabel, nextIndex) {
-        if (nextLabel !== label || nextIndex !== index) {
-            const [fromLabel, fromIndex] = [label, index];
-            const finish = () => {
-                sceneUnit === null || sceneUnit === void 0 ? void 0 : sceneUnit.finalize();
-                mount(nextLabel, nextIndex);
-                xnew.emit('-scenechange', { label, index, fromLabel, fromIndex });
-            };
-            const timer = (sceneUnit !== null && typeof sceneUnit.leave === 'function') ? sceneUnit.leave() : undefined;
-            if (timer && typeof timer.timeout === 'function') {
-                timer.timeout(finish);
-            }
-            else {
-                finish();
-            }
-        }
-    }
+function SceneList(unit, { list = {} } = {}) {
     return {
-        change(target, index) {
-            const entry = table.get(target);
-            if (entry !== undefined) {
-                const [list, isArray] = entry;
-                const nextIndex = isArray ? (index !== null && index !== void 0 ? index : 0) : null;
-                if (isArray === false || (nextIndex >= 0 && nextIndex < list.length)) {
-                    swap(target, nextIndex);
-                }
-            }
-        },
-        next() {
-            if (index !== null) {
-                unit.change(label, index + 1);
-            }
-        },
-        prev() {
-            if (index !== null) {
-                unit.change(label, index - 1);
-            }
-        },
-        get scene() {
-            return sceneUnit === null ? null : { label, index, unit: sceneUnit };
+        resolve(label) {
+            const entry = list[label];
+            return (Array.isArray(entry) && typeof entry[0] === 'function') ? entry : undefined;
         },
     };
 }
 
 function Scene(unit) {
+    let leaving = false;
     return {
-        change(target, option) {
+        change(target, props) {
             var _a;
-            if (typeof target === 'string') {
-                (_a = xnew.context(Stage)) === null || _a === void 0 ? void 0 : _a.change(target, option);
-            }
-            else {
-                xnew(unit.parent, target, option);
-                unit.finalize();
+            const entry = typeof target === 'string' ? (_a = xnew.context(SceneList)) === null || _a === void 0 ? void 0 : _a.resolve(target) : [target, props];
+            if (leaving === false && entry !== undefined) {
+                leaving = true;
+                const [Component, nextProps] = entry;
+                const finish = () => {
+                    xnew(unit.parent, Component, nextProps);
+                    unit.finalize();
+                };
+                const timer = typeof unit.leave === 'function' ? unit.leave() : undefined;
+                if (timer && typeof timer.timeout === 'function') {
+                    timer.timeout(finish);
+                }
+                else {
+                    finish();
+                }
             }
         },
         add(Component, props) {
@@ -2023,8 +1973,8 @@ const xbasics = {
     Accordion,
     Popup,
     Scene,
+    SceneList,
     Split,
-    Stage,
     AudioTrack,
     Synthesizer,
     Volume,

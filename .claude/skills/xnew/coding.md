@@ -135,36 +135,32 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 - `key` is a **reserved prop** used by `find(..., { key })`; assume it is globally
   unique.
 
-## 10. Page navigation (`xbasics.Stage` + `xbasics.Scene`)
+## 10. Scene navigation (`xbasics.Scene` + optional `xbasics.SceneList`)
 
-- **Stage owns scene navigation; Scene is the scene-side mixin bound to it.**
-  `xbasics.Stage` (`{ scenes, initial }`, defines `change/next/prev/scene`, emits
-  `-scenechange { label, index, fromLabel, fromIndex }`) hosts one active scene;
-  `initial` names the starting label (default: the first defined label; unknown →
-  first). A scene does `xnew.extend(xbasics.Scene)` to get `unit.change(label, index?)`
-  (delegates to the nearest ancestor Stage; no-op without one),
-  `unit.change(Component, props?)` (standalone Stage-less navigation: sibling
-  swap under `unit.parent` + self-finalize — scenes must share a parent
-  container), and `unit.add(Component, props)` (child under the scene unit,
-  finalized together with it on the next swap; returns the unit). From a descendant, use
-  `xnew.context(xbasics.Scene).add(...)` / `xnew.context(xbasics.Stage).change(...)`.
-  Scenes are recreated from props; they do not preserve state across moves.
-- **Stage `scenes` is a flat named map; address scenes by label, not position.**
-  A scene is always `[Component, props]` (props optional) — bare `Component` values
-  are NOT accepted. A value is a single scene or an array of scenes
-  (`[[A, props], [B, props]]`; a bare Component first element makes the whole
-  array read as one scene). `change('xxx')`
-  → the labeled scene (array → element 0), `change('xxx', index)` → index-th element; unknown
-  labels / out-of-range indices / the current scene are ignored. `next()`/`prev()`
-  move only within the current array (no-op when `scene.index` is null or at the
-  ends). `stage.scene` → `{ label, index, unit }` (index null unless an array
-  element; from inside a scene use `xnew.context(xbasics.Stage)`).
-- **Stage leave protocol (out-in): a scene opts into an exit transition by returning a
+- **Scene is the navigator; the mounted unit itself is the navigation state.**
+  A scene component does `xnew.extend(xbasics.Scene)` to get:
+  `unit.change(Component, props?)` — mount the next scene under `unit.parent` and
+  finalize this one (swappable scenes must share a parent container);
+  `unit.change(label)` — resolve `[Component, props]` via
+  `xnew.context(xbasics.SceneList)` and do the same swap (no-op for unknown labels
+  or without a SceneList; no index form); and `unit.add(Component, props)` — child
+  under the scene unit, finalized together with it (returns the unit). From a
+  descendant, use `xnew.context(xbasics.Scene).change/add(...)`. Scenes are
+  recreated from props; they do not preserve state across moves.
+- **SceneList is an optional pure lookup table — it creates nothing.**
+  `xnew(xbasics.SceneList, { list: { title: [Title], play: [Play, props] } })`;
+  every value is exactly one `[Component, props]` scene (no arrays, no bare
+  Components, no initial). Create it BEFORE the first scene in the same scope
+  (or an ancestor) — context entries chain through the scope, so a preceding
+  sibling is visible — then mount the first scene yourself: `xnew(Title)`.
+  With nested SceneLists, `change(label)` resolves only the NEAREST one (no
+  fallthrough to outer lists).
+- **Scene leave protocol (out-in): a scene opts into an exit transition by returning a
   `leave()` define; entrance effects need no protocol (do them in the component body).**
-  Stage calls `leave()` before the swap and waits for its return value — return the
-  timer from `xnew.transition(...)` directly, or nothing (immediate) — then finalizes
-  the old scene and mounts the next. Navigation during a pending leave transition is
-  currently unguarded — avoid navigating until it settles.
+  `change` calls the unit's own `leave()` and waits for its return value — return the
+  timer from `xnew.transition(...)` directly, or nothing (immediate) — then mounts the
+  next scene and finalizes itself. While a leave is pending, further `change` calls on
+  that scene are ignored (per-scene guard).
 
 ## 11. sync — multiplayer (server ↔ client)
 
