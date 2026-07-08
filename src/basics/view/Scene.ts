@@ -44,17 +44,17 @@ export function Scene(unit: xnew.Unit) {
             const entry = typeof target === 'string' ? xnew.context(SceneList)?.resolve(target) : [target, props];
             if (leaving === false && entry !== undefined) {
                 leaving = true;
-                const [Component, nextProps] = entry;
-                const finish = () => {
-                    xnew(unit.parent, Component, nextProps);
-                    unit.finalize();
-                };
 
                 const timer = typeof unit.leave === 'function' ? unit.leave() : undefined;
                 if (timer && typeof timer.timeout === 'function') {
-                    timer.timeout(finish); // UnitTimer: chain onto the leave transition
+                    timer.timeout(finalize); // UnitTimer: chain onto the leave transition
                 } else {
-                    finish();
+                    finalize();
+                }
+                
+                function finalize() {
+                    xnew(unit.parent, ...entry);
+                    unit.finalize();
                 }
             }
         },
