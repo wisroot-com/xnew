@@ -9,6 +9,10 @@
 // controls (Group / Button / Range / Checkbox / Select / Separator) are private components of this file.
 //
 // - Panel : component({ params }) returning { group, button, select, range, checkbox, separator }
+//
+// Caveat: Panel nests its own scroll container (thin translucent scrollbar that lets the surface
+// behind show through) inheriting the mount element's max-height — set a max-height on the mount
+// element (without vertical padding) and the panel scrolls inside it.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -17,16 +21,23 @@ import { sharedCss } from '../styles';
 import { OpenAndClose } from './OpenAndClose';
 import { Accordion } from './Accordion';
 
-interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; }
+// nested is internal: group() marks its inner Panel so only the root creates the scroll container
+interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; nested?: boolean; }
 
-export function Panel(unit: xnew.Unit, { params }: PanelOptions) {
+export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
+
+    if (!nested) {
+        // own scroll container inheriting the mount element's max-height, so the panel scrolls once the host constrains it
+        const cls = xnew.css(sharedCss);
+        xnew.nest(`<div class="${cls.scroll}" style="box-sizing: border-box; max-height: inherit; padding: 0.25em;">`);
+    }
 
     return {
         group({ name, open, params }: PanelOptions, inner: Function) {
             const group = xnew((unit: xnew.Unit) => {
                 xnew.extend(Group, { name, open });
-                xnew.extend(Panel, { params: params ?? object });
+                xnew.extend(Panel, { params: params ?? object, nested: true });
                 inner(unit);
             });
             return group;

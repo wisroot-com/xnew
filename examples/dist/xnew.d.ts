@@ -357,8 +357,9 @@ interface PanelOptions {
     name?: string;
     open?: boolean;
     params?: Record<string, any>;
+    nested?: boolean;
 }
-declare function Panel(unit: xnew.Unit, { params }: PanelOptions): {
+declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
     group({ name, open, params }: PanelOptions, inner: Function): Unit;
     button(key: string): Unit;
     select(key: string, { value, items }?: {

@@ -1804,13 +1804,17 @@ function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 
     });
 }
 
-function Panel(unit, { params }) {
+function Panel(unit, { params, nested }) {
     const object = params !== null && params !== void 0 ? params : {};
+    if (!nested) {
+        const cls = xnew.css(sharedCss);
+        xnew.nest(`<div class="${cls.scroll}" style="box-sizing: border-box; max-height: inherit; padding: 0.25em;">`);
+    }
     return {
         group({ name, open, params }, inner) {
             const group = xnew((unit) => {
                 xnew.extend(Group, { name, open });
-                xnew.extend(Panel, { params: params !== null && params !== void 0 ? params : object });
+                xnew.extend(Panel, { params: params !== null && params !== void 0 ? params : object, nested: true });
                 inner(unit);
             });
             return group;
