@@ -11,20 +11,20 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { SVG } from '../element/SVG';
+import { SVG, SVGStyleInterface } from '../element/SVG';
 import { sharedCss } from '../styles';
 import { Aspect } from '../view/Aspect';
 
 export function AnalogStick(unit: xnew.Unit,
-    { stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 }:
-    { stroke?: string, strokeOpacity?: number, strokeWidth?: number, fill?: string, fillOpacity?: number } = {}
+    { stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 }:
+    SVGStyleInterface = {}
 ) {
     const cls = xnew.css(sharedCss);
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     xnew.nest(`<div class="${cls.touchArea}">`);
 
     xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, fill, fillOpacity });
+        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
         xnew('<polygon points="32  7 27 13 37 13">');
         xnew('<polygon points="32 57 27 51 37 51">');
         xnew('<polygon points=" 7 32 13 27 13 37">');
@@ -32,7 +32,7 @@ export function AnalogStick(unit: xnew.Unit,
     });
 
     const target = xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, fill, fillOpacity });
+        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
         xnew('<circle cx="32" cy="32" r="14">');
     });
 
@@ -45,8 +45,7 @@ export function AnalogStick(unit: xnew.Unit,
         const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
 
         Object.assign(target.element.style, { filter: 'brightness(80%)', left: `${vector.x * size / 4}px`, top: `${vector.y * size / 4}px` });
-        const nexttype = { dragstart: '-down', dragmove: '-move' }[type] as string;
-        xnew.emit(nexttype, { vector });
+        xnew.emit({ dragstart: '-down', dragmove: '-move' }[type] as string, { vector });
     });
 
     unit.on('dragend', () => {

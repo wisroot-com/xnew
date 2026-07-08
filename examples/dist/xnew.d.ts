@@ -231,10 +231,7 @@ declare function Image(unit: xnew.Unit, { src, className, style }: {
     style?: string;
 }): void;
 
-interface SVGInterface {
-    viewBox?: string;
-    className?: string;
-    style?: string;
+interface SVGStyleInterface {
     stroke?: string;
     strokeOpacity?: number;
     strokeWidth?: number;
@@ -242,6 +239,11 @@ interface SVGInterface {
     strokeLinecap?: string;
     fill?: string;
     fillOpacity?: number;
+}
+interface SVGInterface extends SVGStyleInterface {
+    viewBox?: string;
+    className?: string;
+    style?: string;
 }
 declare function SVG(unit: xnew.Unit, { viewBox, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGInterface): void;
 
@@ -324,22 +326,11 @@ declare function Accordion(unit: xnew.Unit): void;
 
 declare function Popup(unit: xnew.Unit): void;
 
-declare function AnalogStick(unit: xnew.Unit, { stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    fill?: string;
-    fillOpacity?: number;
-}): void;
+declare function AnalogStick(unit: xnew.Unit, { stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGStyleInterface): void;
 
-declare function DPad(unit: xnew.Unit, { diagonal, stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
+declare function DPad(unit: xnew.Unit, { diagonal, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: {
     diagonal?: boolean;
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    fill?: string;
-    fillOpacity?: number;
-}): void;
+} & SVGStyleInterface): void;
 
 interface PanelOptions {
     name?: string;

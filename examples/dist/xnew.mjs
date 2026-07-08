@@ -1739,19 +1739,19 @@ const sharedCss = {
     hiddenInput: 'position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;',
 };
 
-function AnalogStick(unit, { stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 } = {}) {
+function AnalogStick(unit, { stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 } = {}) {
     const cls = xnew.css(sharedCss);
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     xnew.nest(`<div class="${cls.touchArea}">`);
     xnew((unit) => {
-        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, fill, fillOpacity });
+        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
         xnew('<polygon points="32  7 27 13 37 13">');
         xnew('<polygon points="32 57 27 51 37 51">');
         xnew('<polygon points=" 7 32 13 27 13 37">');
         xnew('<polygon points="57 32 51 27 51 37">');
     });
     const target = xnew((unit) => {
-        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, fill, fillOpacity });
+        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
         xnew('<circle cx="32" cy="32" r="14">');
     });
     unit.on('dragstart dragmove', ({ type, position }) => {
@@ -1762,8 +1762,7 @@ function AnalogStick(unit, { stroke = 'currentColor', strokeOpacity = 0.8, strok
         const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
         const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
         Object.assign(target.element.style, { filter: 'brightness(80%)', left: `${vector.x * size / 4}px`, top: `${vector.y * size / 4}px` });
-        const nexttype = { dragstart: '-down', dragmove: '-move' }[type];
-        xnew.emit(nexttype, { vector });
+        xnew.emit({ dragstart: '-down', dragmove: '-move' }[type], { vector });
     });
     unit.on('dragend', () => {
         Object.assign(target.element.style, { filter: '', left: '0px', top: '0px' });
@@ -1771,7 +1770,7 @@ function AnalogStick(unit, { stroke = 'currentColor', strokeOpacity = 0.8, strok
     });
 }
 
-function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 } = {}) {
+function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 } = {}) {
     const cls = xnew.css(sharedCss);
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     xnew.nest(`<div class="${cls.touchArea}">`);
@@ -1788,7 +1787,7 @@ function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 
         });
     });
     xnew((unit) => {
-        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth });
+        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap });
         xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
         xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
         xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');
@@ -1821,8 +1820,7 @@ function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 
         targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
         targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
         targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
-        const nexttype = { dragstart: '-down', dragmove: '-move' }[type];
-        xnew.emit(nexttype, { vector });
+        xnew.emit({ dragstart: '-down', dragmove: '-move' }[type], { vector });
     });
     unit.on('dragend', () => {
         targets[0].element.style.filter = '';

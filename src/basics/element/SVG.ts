@@ -5,18 +5,17 @@
 // so callers can drop in <path> / <polygon> / <circle> children without re-specifying the same
 // presentation attributes on every shape.
 //
-// - SVG          : component({ viewBox, stroke, fill, ... }) — generic SVG root
-// - SVGInterface : the props shape, shared with SVGText
+// - SVG               : component({ viewBox, stroke, fill, ... }) — generic SVG root
+// - SVGInterface      : the props shape, shared with SVGText
+// - SVGStyleInterface : the basic stroke / fill presentation props, shared with the
+//                       SVG-drawn components (AnalogStick / DPad)
 //
 // Usage: xnew(xbasics.SVG, { viewBox: '0 0 64 64', stroke: 'currentColor' });
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 
-export interface SVGInterface {
-    viewBox?: string;
-    className?: string;
-    style?: string;
+export interface SVGStyleInterface {
     stroke?: string;
     strokeOpacity?: number;
     strokeWidth?: number;
@@ -24,6 +23,12 @@ export interface SVGInterface {
     strokeLinecap?: string;
     fill?: string;
     fillOpacity?: number;
+}
+
+export interface SVGInterface extends SVGStyleInterface {
+    viewBox?: string;
+    className?: string;
+    style?: string;
 }
 
 export function SVG(unit: xnew.Unit,

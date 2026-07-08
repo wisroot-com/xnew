@@ -11,13 +11,13 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { SVG } from '../element/SVG';
+import { SVG, SVGStyleInterface } from '../element/SVG';
 import { sharedCss } from '../styles';
 import { Aspect } from '../view/Aspect';
 
 export function DPad(unit: xnew.Unit,
-    { diagonal = true, stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 }:
-    { diagonal?: boolean, stroke?: string, strokeOpacity?: number, strokeWidth?: number, fill?: string, fillOpacity?: number } = {}
+    { diagonal = true, stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 }:
+    { diagonal?: boolean } & SVGStyleInterface = {}
 ) {
     const cls = xnew.css(sharedCss);
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
@@ -38,7 +38,7 @@ export function DPad(unit: xnew.Unit,
     });
 
     xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth });
+        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap });
         xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
         xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
         xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');
@@ -71,8 +71,7 @@ export function DPad(unit: xnew.Unit,
         targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
         targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
         targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
-        const nexttype = { dragstart: '-down', dragmove: '-move' }[type] as string;
-        xnew.emit(nexttype, { vector });
+        xnew.emit({ dragstart: '-down', dragmove: '-move' }[type] as string, { vector });
     });
 
     unit.on('dragend', () => {
