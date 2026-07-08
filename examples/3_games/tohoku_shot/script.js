@@ -559,12 +559,15 @@ function ResultScene(unit, { image, score, wave, kills, cleared }) {
   // 画面割り: 上下 80:20、上部分をさらに左右 50:50
   xnew((unit) => {
     xnew.extend(xbasics.Split, { direction: 'column' });
-    unit.pane(1 - RESULT_FOOTER_RATIO, (upper) => {
-      xnew.extend(xbasics.Split, { direction: 'row' });
-      upper.pane(50, xbasics.Image, { src: image, className: 'absolute inset-x-0 bottom-[2cqw] mx-auto w-[46cqw] aspect-4/3 rounded-[1cqw] object-cover', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);' });
-      upper.pane(50, ResultDetail, { score, wave, kills, cleared });
+    unit.pane({ size: 1 - RESULT_FOOTER_RATIO, direction: 'row' }, (upper) => {
+      upper.pane({ size: 50 }, () => {
+        xnew(xbasics.Image, { src: image, className: 'absolute inset-x-0 bottom-[2cqw] mx-auto w-[46cqw] aspect-4/3 rounded-[1cqw] object-cover', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);' });
+      });
+      upper.pane({ size: 50 }, () => {
+        xnew(ResultDetail, { score, wave, kills, cleared });
+      });
     });
-    unit.pane(RESULT_FOOTER_RATIO, ResultFooter);
+    unit.pane({ size: RESULT_FOOTER_RATIO }, ResultFooter);
   });
 
   unit.on('window.keydown.space', ({ event }) => { event.preventDefault(); unit.change(TitleScene, { skipStory: true }); });

@@ -1250,10 +1250,17 @@ function Scene(unit) {
 function Split(unit, { direction = 'column' } = {}) {
     xnew.nest(`<div style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: ${direction};">`);
     return {
-        pane(size = 1, component, props) {
+        pane({ size, direction }, component) {
             const flex = typeof size === 'number' ? `${size} 1 0` : `0 0 ${size}`;
             const tag = `<div style="position: relative; flex: ${flex}; min-width: 0; min-height: 0; overflow: hidden;">`;
-            return component !== undefined ? xnew(tag, component, props) : xnew(tag);
+            return xnew(tag, () => {
+                if (direction !== undefined) {
+                    xnew.extend(Split, { direction });
+                }
+                if (component !== undefined) {
+                    xnew.extend(component);
+                }
+            });
         },
     };
 }

@@ -21,24 +21,32 @@
     xnew(document.querySelector('#main'), (unit) => {
       xnew.extend(xbasics.Split, { direction: 'column' });
 
-      // string → fixed size, number → flexible ratio
-      unit.pane('3rem', Pane, { label: "header '3rem'", className: 'bg-slate-700 text-slate-100' });
+      // string size → fixed size, number size → flexible ratio
+      unit.pane({ size: '3rem' }, () => {
+        xnew(Block, { label: "header '3rem'", className: 'bg-slate-700 text-slate-100' });
+      });
 
-      unit.pane(1, (main) => {
-        xnew.extend(xbasics.Split, { direction: 'row' });
-        main.pane(25, Pane, { label: 'side 25', className: 'bg-emerald-100 text-emerald-900' });
+      unit.pane({ size: 1, direction: 'row' }, (main) => {
+        main.pane({ size: 25 }, () => {
+          xnew(Block, { label: 'side 25', className: 'bg-emerald-100 text-emerald-900' });
+        });
 
-        main.pane(75, (content) => {
-          xnew.extend(xbasics.Split, { direction: 'column' });
-          content.pane(60, Pane, { label: 'content 75 × upper 60', className: 'bg-sky-100 text-sky-900' });
-          content.pane(40, Pane, { label: 'content 75 × lower 40', className: 'bg-amber-100 text-amber-900' });
+        main.pane({ size: 75, direction: 'column' }, (content) => {
+          content.pane({ size: 60 }, () => {
+            xnew(Block, { label: 'content 75 × upper 60', className: 'bg-sky-100 text-sky-900' });
+          });
+          content.pane({ size: 40 }, () => {
+            xnew(Block, { label: 'content 75 × lower 40', className: 'bg-amber-100 text-amber-900' });
+          });
         });
       });
 
-      unit.pane('2rem', Pane, { label: "footer '2rem'", className: 'bg-slate-700 text-slate-100' });
+      unit.pane({ size: '2rem' }, () => {
+        xnew(Block, { label: "footer '2rem'", className: 'bg-slate-700 text-slate-100' });
+      });
     });
 
-    function Pane(unit, { label, className }) {
+    function Block(unit, { label, className }) {
       xnew.nest(`<div class="w-full h-full flex items-center justify-center border border-white/50 text-sm ${className}">`, label);
     }
   </script>
