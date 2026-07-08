@@ -61,8 +61,13 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   Sharing across components: share the **definition object** (same defs → same names);
   for theming, custom properties (`--vars`) pass through unrenamed and inherit down the
   DOM — set them on a subtree root class, read via `var(--x, fallback)` in descendants.
-- `xnew.nest('<div …>')` nests a child element under the current element and makes
-  it current (init-only). `xnew.extend(Base)` mixes another component into this unit.
+- `xnew.nest('<div …>', textContent?)` creates a child element from a **tag string
+  only** — an existing element is rejected (`invalid tag string`); the optional second
+  argument sets the element's text. It nests the new element under
+  the current element and makes it current (init-only). To render into an existing
+  element, bind it at unit creation instead: `xnew(element, Component)` (also works
+  as a boot target: `xsync.boot(opts, element, Component)`). `xnew.extend(Base)`
+  mixes another component into this unit.
 - DOM events are listened with `unit.on('click', ({ event }) => …)`. The payload is
   always `{ type, … }` plus event-specific fields:
   - default: `{ event }`

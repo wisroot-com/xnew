@@ -5,11 +5,12 @@
 ## 使い方
 
 ```js
-const element = xnew.nest(tag);
+const element = xnew.nest(tag, textContent);
 ```
 
 **パラメータ:**
 - `tag`: 要素を生成するための HTML 文字列 (例: `'<div>'`、`'<span class="highlight">'`)
+- `textContent` (省略可): 生成した要素に設定するテキスト
 
 **戻り値:**
 - 生成された HTMLElement (`unit.element` も同じ要素を指すようになります)

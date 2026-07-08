@@ -492,7 +492,7 @@ class Unit {
             });
             Unit.owner2targets.delete(this);
             [...this._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(this, null, type));
-            [...this._.nestElements].reverse().filter(item => item.owned).forEach(item => item.element.remove());
+            [...this._.nestElements].reverse().forEach((element) => element.remove());
             this._.Components.forEach((Component) => Unit.component2units.delete(Component, this));
             const contexts = Unit.unit2Contexts.get(this);
             contexts === null || contexts === void 0 ? void 0 : contexts.forEach((context) => {
@@ -517,27 +517,20 @@ class Unit {
             this._.phase = 'finalized';
         }
     }
-    static nest(unit, target, textContent) {
-        if (isDomElement(target)) {
-            unit._.nestElements.push({ element: target, owned: false });
-            unit._.currentElement = target;
-            return target;
+    static nest(unit, tag, textContent) {
+        const match = typeof tag === 'string' ? tag.match(/<((\w+)[^>]*?)\/?>/) : null;
+        if (match !== null) {
+            unit._.currentElement.insertAdjacentHTML('beforeend', `<${match[1]}></${match[2]}>`);
+            const element = unit._.currentElement.children[unit._.currentElement.children.length - 1];
+            unit._.currentElement = element;
+            if (textContent !== undefined) {
+                element.textContent = textContent;
+            }
+            unit._.nestElements.push(element);
+            return element;
         }
         else {
-            const match = target.match(/<((\w+)[^>]*?)\/?>/);
-            if (match !== null) {
-                unit._.currentElement.insertAdjacentHTML('beforeend', `<${match[1]}></${match[2]}>`);
-                const element = unit._.currentElement.children[unit._.currentElement.children.length - 1];
-                unit._.currentElement = element;
-                if (textContent !== undefined) {
-                    element.textContent = textContent.toString();
-                }
-                unit._.nestElements.push({ element, owned: true });
-                return element;
-            }
-            else {
-                throw new Error(`xnew.nest: invalid tag string [${target}]`);
-            }
+            throw new Error(`xnew.nest: invalid tag string [${tag}]`);
         }
     }
     static extend(unit, Component, props) {
@@ -891,11 +884,11 @@ const xnew = Object.assign((function (...args) {
         return Unit.create(Unit.current, ...args);
     }
 }), {
-    nest(target) {
+    nest(tag, textContent) {
         if (Unit.current._.phase !== 'invoked') {
             throw new Error('xnew.nest can not be called after initialized.');
         }
-        return Unit.nest(Unit.current, target);
+        return Unit.nest(Unit.current, tag, textContent);
     },
     extend(Component, props) {
         if (Unit.current._.phase !== 'invoked') {
@@ -1908,16 +1901,11 @@ function Checkbox(unit, { key = '', value } = {}) {
         update(value);
     });
 }
-function Select(_, { key = '', value, items = [] } = {}) {
+function Select(unit, { key = '', value, items = [] } = {}) {
     var _a;
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
     xnew.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; padding: 0 0.5em; display: flex; align-items: center;">`);
     xnew('<div style="flex: 1;">', key);
-    const native = xnew(`<select name="${key}" style="display: none;">`, () => {
-        for (const item of items) {
-            xnew(`<option value="${item}" ${item === initial ? 'selected' : ''}>`, item);
-        }
-    });
     const button = xnew(`<div style="height: 2em; padding: 0 1.5em 0 0.5em; display: flex; align-items: center; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer; user-select: none; min-width: 3em; white-space: nowrap;">`, initial);
     xnew((unit) => {
         xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', strokeWidth: 2, style: 'position: absolute; right: 1.0em; width: 0.75em; height: 0.75em; pointer-events: none;' });
@@ -1942,15 +1930,18 @@ function Select(_, { key = '', value, items = [] } = {}) {
                 div.on('pointerout', () => div.element.style.background = '');
                 div.on('click', () => {
                     button.element.textContent = item;
-                    native.element.value = item;
-                    native.element.dispatchEvent(new Event('input', { bubbles: false }));
+                    unit.element.value = item;
+                    unit.element.dispatchEvent(new Event('input', { bubbles: false }));
                     list.finalize();
                 });
             }
             list.on('click.outside', () => list.finalize());
         });
     });
-    xnew.nest(native.element);
+    xnew.nest(`<select name="${key}" style="display: none;">`);
+    for (const item of items) {
+        xnew(`<option value="${item}" ${item === initial ? 'selected' : ''}>`, item);
+    }
     function getEffectiveBg(element) {
         let current = element.parentElement;
         while (current) {

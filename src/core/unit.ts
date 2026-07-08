@@ -57,7 +57,7 @@ export class Unit {
 
         lastSnapshot: Snapshot | null;
 
-        nestElements: { element: DomElement, owned: boolean }[];
+        nestElements: DomElement[];
         Components: Function[];
         listeners: MapMap<string, Function, { execute: Function, owner: Unit }>;
         events: EventBinder;
@@ -162,7 +162,7 @@ export class Unit {
             // clear all listeners on this unit regardless of owner
             [...this._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(this, null, type));
 
-            [...this._.nestElements].reverse().filter(item => item.owned).forEach(item => item.element.remove());
+            [...this._.nestElements].reverse().forEach((element) => element.remove());
             this._.Components.forEach((Component) => Unit.component2units.delete(Component, this));
 
             // remove contexts
@@ -192,25 +192,19 @@ export class Unit {
         }
     }
 
-    static nest(unit: Unit, target: DomElement | string, textContent?: string | number): DomElement {
-        if (isDomElement(target)) {
-            unit._.nestElements.push({ element: target, owned: false });
-            unit._.currentElement = target;
-            return target;
-        } else {
-            const match = target.match(/<((\w+)[^>]*?)\/?>/);
-            if (match !== null) {
-                unit._.currentElement.insertAdjacentHTML('beforeend', `<${match[1]}></${match[2]}>`);
-                const element = unit._.currentElement.children[unit._.currentElement.children.length - 1] as DomElement;
-                unit._.currentElement = element;
-                if (textContent !== undefined) {
-                    element.textContent = textContent.toString();
-                }
-                unit._.nestElements.push({ element, owned: true });
-                return element;
-            } else {
-                throw new Error(`xnew.nest: invalid tag string [${target}]`);
+    static nest(unit: Unit, tag: string, textContent?: string): DomElement {
+        const match = typeof tag === 'string' ? tag.match(/<((\w+)[^>]*?)\/?>/) : null;
+        if (match !== null) {
+            unit._.currentElement.insertAdjacentHTML('beforeend', `<${match[1]}></${match[2]}>`);
+            const element = unit._.currentElement.children[unit._.currentElement.children.length - 1] as DomElement;
+            unit._.currentElement = element;
+            if (textContent !== undefined) {
+                element.textContent = textContent;
             }
+            unit._.nestElements.push(element);
+            return element;
+        } else {
+            throw new Error(`xnew.nest: invalid tag string [${tag}]`);
         }
     }
 

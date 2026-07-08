@@ -43,18 +43,17 @@ describe('server/client mirror (server/client blocks)', () => {
         expect(client._.children.length).toBe(1);
     });
 
-    it('routes a single shared Main root to server/client by mode and mounts replicas into the nested element', () => {
+    it('routes a single shared Main root to server/client by mode and mounts replicas into the boot target element', () => {
         const view = document.createElement('div');   // 既存の描画先（例の #view 相当）
 
-        // server/client 共通の非同期ルート。中で xsync.server / xsync.client に分岐する。
+        // server/client 共通の非同期ルート。server 環境でのみ xsync.server ブロックが実行される。
         function Main() {
             xsync.register({ Mover });               // server/client 共通: Mover を直接の同期子として宣言
             xsync.server(() => { xnew(Mover); });        // server: ロジックツリー
-            xsync.client(() => { xnew.nest(view); });    // client: 既存要素を描画先にする
         }
 
         const server = bootServer({ io: hub.io }, Main);
-        const client = bootClient({ socket: hub.connect() }, Main);
+        const client = bootClient({ socket: hub.connect() }, view, Main);   // client: 既存要素を boot の target にして描画先にする
 
         asServer(() => Unit.update(server));   // capture + 'sync' → client apply（同時にトポロジを確認）
 
@@ -67,7 +66,7 @@ describe('server/client mirror (server/client blocks)', () => {
 
         asClient(() => Unit.update(client));
 
-        // client Main の下に replica Mover が生成され、nest した既存 view 要素の配下に mount される。
+        // client Main の下に replica Mover が生成され、boot に渡した既存 view 要素の配下に mount される。
         const replicaMover = client._.children[0];
         expect(replicaMover).toBeDefined();
         expect(syncOf(replicaMover).state!.position).toBe(1);

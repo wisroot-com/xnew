@@ -1674,9 +1674,8 @@ function ArrowUturnLeft(_unit) {
   xnew.extend(RingIcon, { paths: ['M9 15L3 9m0 0l6-6M3 9h12a6 6 0 0 1 0 12h-3'] });
 }
 
-// #main を白で覆ってからフェードアウトしつつ撮影し、PNG をダウンロードする。
+// 生成時に渡された要素を白で覆ってからフェードアウトしつつ撮影し、PNG をダウンロードする。
 function ScreenShot(unit) {
-  xnew.nest(document.querySelector('#main'));
   const cover = xnew('<div class="absolute inset-0 size-full z-10 bg-white">');
   xnew.transition(({ value }) => cover.element.style.opacity = 1 - value, 1000)
     .timeout(() => {
@@ -1700,7 +1699,7 @@ function ResultFooter(unit) {
   xnew.nest('<div class="size-full px-[2cqw] flex justify-between text-stone-500">');
   xnew('<div class="flex items-center gap-x-[2cqw]">', () => {
     const button = xnew('<div class="relative size-[9cqw] cursor-pointer hover:scale-110">', Camera);
-    button.on('click', () => xnew(ScreenShot));
+    button.on('click', () => xnew(document.querySelector('#main'), ScreenShot));
     xnew('<div class="text-[3cqw] font-bold">', '画面を保存');
   });
 

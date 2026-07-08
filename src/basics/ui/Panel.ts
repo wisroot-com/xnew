@@ -154,17 +154,11 @@ function Checkbox(unit: xnew.Unit, { key = '', value }: { key?: string, value?: 
     });
 }
 
-function Select(_: xnew.Unit, { key = '', value, items = [] }: { key?: string, value?: string, items?: string[] } = {}) {
+function Select(unit: xnew.Unit, { key = '', value, items = [] }: { key?: string, value?: string, items?: string[] } = {}) {
     const initial = value ?? items[0] ?? '';
 
     xnew.nest(`<div style="position: relative; height: 2em; margin: 0.125em 0; padding: 0 0.5em; display: flex; align-items: center;">`);
     xnew('<div style="flex: 1;">', key);
-
-    const native = xnew(`<select name="${key}" style="display: none;">`, () => {
-        for (const item of items) {
-            xnew(`<option value="${item}" ${item === initial ? 'selected' : ''}>`, item);
-        }
-    });
 
     const button = xnew(`<div style="height: 2em; padding: 0 1.5em 0 0.5em; display: flex; align-items: center; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer; user-select: none; min-width: 3em; white-space: nowrap;">`, initial);
 
@@ -195,8 +189,8 @@ function Select(_: xnew.Unit, { key = '', value, items = [] }: { key?: string, v
                 div.on('pointerout', () => div.element.style.background = '');
                 div.on('click', () => {
                     button.element.textContent = item;
-                    (native.element as HTMLSelectElement).value = item;
-                    native.element.dispatchEvent(new Event('input', { bubbles: false }));
+                    (unit.element as HTMLSelectElement).value = item;
+                    unit.element.dispatchEvent(new Event('input', { bubbles: false }));
                     list.finalize();
                 });
             }
@@ -204,7 +198,10 @@ function Select(_: xnew.Unit, { key = '', value, items = [] }: { key?: string, v
         });
     });
 
-    xnew.nest(native.element);
+    xnew.nest(`<select name="${key}" style="display: none;">`);
+    for (const item of items) {
+        xnew(`<option value="${item}" ${item === initial ? 'selected' : ''}>`, item);
+    }
 
     function getEffectiveBg(element: Element): string {
         let current: Element | null = element.parentElement;

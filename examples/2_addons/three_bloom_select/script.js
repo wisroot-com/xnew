@@ -31,7 +31,7 @@ function Main(unit) {
 
   const renderer = xnew(Renderer);
   xnew(Controller);
-  xnew(Panel);
+  xnew(document.body, Panel);
   xnew(Contents);
 
   unit.on('update', () => {
@@ -163,7 +163,6 @@ function Controller(unit) {
 }
 
 function Panel(panel) {
-  xnew.nest(document.body);
   const render = xnew.context(Renderer);
   const params = {
     threshold: render.bloom.threshold,

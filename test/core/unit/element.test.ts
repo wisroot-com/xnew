@@ -49,12 +49,16 @@ describe('Unit element hosting', () => {
             expect(nested).toBe(document.getElementById('nested'));
         });
 
-        it('returns the provided DOM element unchanged', () => {
+        it('sets the text content when given as the second argument', () => {
+            let nested!: HTMLElement | SVGElement;
+            xnew(() => { nested = xnew.nest('<p id="with-text">', 'hello'); });
+            expect(nested.textContent).toBe('hello');
+        });
+
+        it('rejects a DOM element target (tag strings only)', () => {
             const ext = document.createElement('span');
             document.body.appendChild(ext);
-            let nested!: HTMLElement | SVGElement;
-            xnew(() => { nested = xnew.nest(ext); });
-            expect(nested).toBe(ext);
+            expect(() => xnew(() => { xnew.nest(ext as any); })).toThrow('xnew.nest: invalid tag string');
             ext.remove();
         });
     });
@@ -67,13 +71,14 @@ describe('Unit element hosting', () => {
             expect(document.getElementById('owned')).toBeNull();
         });
 
-        it('keeps externally provided elements on finalize', () => {
+        it('keeps an externally provided base element on finalize', () => {
             const ext = document.createElement('div');
             ext.id = 'external';
             document.body.appendChild(ext);
-            const unit = xnew(() => { xnew.nest(ext); });
-            expect(document.getElementById('external')).toBe(ext);
+            const unit = xnew(ext, () => { xnew.nest('<div id="inner">'); });
+            expect(document.getElementById('inner')).not.toBeNull();
             unit.finalize();
+            expect(document.getElementById('inner')).toBeNull();
             expect(document.getElementById('external')).toBe(ext);
             ext.remove();
         });

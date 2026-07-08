@@ -60,10 +60,7 @@ declare class Unit {
         currentContext: Context;
         currentComponent: Function | null;
         lastSnapshot: Snapshot | null;
-        nestElements: {
-            element: DomElement;
-            owned: boolean;
-        }[];
+        nestElements: DomElement[];
         Components: Function[];
         listeners: MapMap<string, Function, {
             execute: Function;
@@ -78,7 +75,7 @@ declare class Unit {
     get parent(): Unit | null;
     get element(): DomElement;
     finalize(): void;
-    static nest(unit: Unit, target: DomElement | string, textContent?: string | number): DomElement;
+    static nest(unit: Unit, tag: string, textContent?: string): DomElement;
     static extend(unit: Unit, Component: Function, props?: Object): {
         [key: string]: any;
     };
@@ -135,7 +132,7 @@ interface XnewBase {
     (): Unit;
 }
 declare const xnew: XnewBase & {
-    nest(target: DomElement | string): HTMLElement | SVGElement;
+    nest(tag: string, textContent?: string): HTMLElement | SVGElement;
     extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
     css<T extends Record<string, string>>(defs: T): Record<keyof T, string>;
     context(key: any): any;

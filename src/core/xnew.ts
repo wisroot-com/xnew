@@ -40,12 +40,12 @@ export const xnew = Object.assign(
         }
     }) as unknown as XnewBase,
     {
-        // Nests a child element (an existing element or a tag string like '<div>'); only during initialization.
-        nest(target: DomElement | string): HTMLElement | SVGElement {
+        // Nests a new child element created from a tag string like '<div>' (with optional text content); only during initialization.
+        nest(tag: string, textContent?: string): HTMLElement | SVGElement {
             if (Unit.current._.phase !== 'invoked') {
                 throw new Error('xnew.nest can not be called after initialized.');
             }
-            return Unit.nest(Unit.current, target);
+            return Unit.nest(Unit.current, tag, textContent);
         },
 
         // Extends the current unit with another component; only during initialization. Returns the defines.
