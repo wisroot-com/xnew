@@ -1235,17 +1235,16 @@ function Scene(unit) {
             const entry = typeof target === 'string' ? (_a = xnew.context(SceneList)) === null || _a === void 0 ? void 0 : _a.resolve(target) : [target, props];
             if (leaving === false && entry !== undefined) {
                 leaving = true;
-                const [Component, nextProps] = entry;
-                const finish = () => {
-                    xnew(unit.parent, Component, nextProps);
-                    unit.finalize();
-                };
                 const timer = typeof unit.leave === 'function' ? unit.leave() : undefined;
                 if (timer && typeof timer.timeout === 'function') {
-                    timer.timeout(finish);
+                    timer.timeout(finalize);
                 }
                 else {
-                    finish();
+                    finalize();
+                }
+                function finalize() {
+                    xnew(unit.parent, ...entry);
+                    unit.finalize();
                 }
             }
         },
@@ -1799,13 +1798,6 @@ const paleColor = 'color-mix(in srgb, currentColor 20%, transparent)';
 const hiddenInput = 'position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;';
 function Panel(unit, { params }) {
     const object = params !== null && params !== void 0 ? params : {};
-    function field(key, value, fallback, Component, props) {
-        var _a;
-        object[key] = (_a = value !== null && value !== void 0 ? value : object[key]) !== null && _a !== void 0 ? _a : fallback;
-        const control = xnew(Component, Object.assign({ key, value: object[key] }, props));
-        control.on('input', ({ value }) => object[key] = value);
-        return control;
-    }
     return {
         group({ name, open, params }, inner) {
             const group = xnew((unit) => {
@@ -1820,14 +1812,25 @@ function Panel(unit, { params }) {
             return button;
         },
         select(key, { value, items = [] } = {}) {
-            var _a;
-            return field(key, value, (_a = items[0]) !== null && _a !== void 0 ? _a : '', Select, { items });
+            var _a, _b;
+            object[key] = (_b = (_a = value !== null && value !== void 0 ? value : object[key]) !== null && _a !== void 0 ? _a : items[0]) !== null && _b !== void 0 ? _b : '';
+            const select = xnew(Select, { key, value: object[key], items });
+            select.on('input', ({ value }) => object[key] = value);
+            return select;
         },
         range(key, { value, min = 0, max = 100, step = 1 } = {}) {
-            return field(key, value, min, Range, { min, max, step });
+            var _a;
+            object[key] = (_a = value !== null && value !== void 0 ? value : object[key]) !== null && _a !== void 0 ? _a : min;
+            const range = xnew(Range, { key, value: object[key], min, max, step });
+            range.on('input', ({ value }) => object[key] = value);
+            return range;
         },
         checkbox(key, { value } = {}) {
-            return field(key, value, false, Checkbox, {});
+            var _a;
+            object[key] = (_a = value !== null && value !== void 0 ? value : object[key]) !== null && _a !== void 0 ? _a : false;
+            const checkbox = xnew(Checkbox, { key, value: object[key] });
+            checkbox.on('input', ({ value }) => object[key] = value);
+            return checkbox;
         },
         separator() {
             xnew(Separator);

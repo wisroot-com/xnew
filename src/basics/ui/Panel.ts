@@ -26,14 +26,6 @@ const hiddenInput = 'position: absolute; inset: 0; width: 100%; height: 100%; op
 export function Panel(unit: xnew.Unit, { params }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
 
-    // resolve the initial value, mount the control and write changes back to `object`
-    function field(key: string, value: any, fallback: any, Component: xnew.Component<any, any>, props: object) {
-        object[key] = value ?? object[key] ?? fallback;
-        const control = xnew(Component, { key, value: object[key], ...props });
-        control.on('input', ({ value }: { value: any }) => object[key] = value);
-        return control;
-    }
-
     return {
         group({ name, open, params }: PanelOptions, inner: Function) {
             const group = xnew((unit: xnew.Unit) => {
@@ -48,13 +40,22 @@ export function Panel(unit: xnew.Unit, { params }: PanelOptions) {
             return button;
         },
         select(key: string, { value, items = [] }: { value?: string, items?: string[] } = {}) {
-            return field(key, value, items[0] ?? '', Select, { items });
+            object[key] = value ?? object[key] ?? items[0] ?? '';
+            const select = xnew(Select, { key, value: object[key], items });
+            select.on('input', ({ value }: { value: string }) => object[key] = value);
+            return select;
         },
         range(key: string, { value, min = 0, max = 100, step = 1 }: { value?: number, min?: number, max?: number, step?: number } = {}) {
-            return field(key, value, min, Range, { min, max, step });
+            object[key] = value ?? object[key] ?? min;
+            const range = xnew(Range, { key, value: object[key], min, max, step });
+            range.on('input', ({ value }: { value: number }) => object[key] = value);
+            return range;
         },
         checkbox(key: string, { value }: { value?: boolean } = {}) {
-            return field(key, value, false, Checkbox, {});
+            object[key] = value ?? object[key] ?? false;
+            const checkbox = xnew(Checkbox, { key, value: object[key] });
+            checkbox.on('input', ({ value }: { value: boolean }) => object[key] = value);
+            return checkbox;
         },
         separator() {
             xnew(Separator);
