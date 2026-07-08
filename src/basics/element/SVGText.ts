@@ -4,45 +4,24 @@
 // Extends SVG with a <text> child and resizes the viewBox to the text's bbox, so the element's
 // footprint matches the rendered glyphs.
 //
-// - SVGText : component({ text, fontSize, ... })
+// - SVGText : component({ text, fontSize, ... }) — plus every SVG presentation prop
 //
 // Usage: xnew(xbasics.SVGText, { text: 'GAME OVER', fontSize: 24, fill: 'currentColor' });
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { SVG } from './SVG';
+import { SVG, SVGInterface } from './SVG';
 
-interface SVGTextInterface {
+interface SVGTextInterface extends SVGInterface {
     text?: string;
     fontSize?: number;
-    anchor?: { x: number, y: number };
-    className?: string;
-    style?: string;
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    strokeLinejoin?: string;
-    strokeLinecap?: string;
-    fill?: string;
-    fillOpacity?: number;
 }
 
-
-export function SVGText(unit: xnew.Unit, {
-    text = '',
-    fontSize = 20,
-    anchor = { x: 0, y: 0 },
-    className = '',
-    style = '',
-    stroke = 'none',
-    strokeOpacity = 1,
-    strokeWidth = 1,
-    strokeLinejoin = 'round',
-    strokeLinecap = 'round',
-    fill = 'currentColor',
-    fillOpacity = 1
-}: SVGTextInterface = {}) {
-    xnew.extend(SVG, { className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
+export function SVGText(unit: xnew.Unit,
+    { text = '', fontSize = 20, ...svgProps }: SVGTextInterface = {}
+) {
+    // text defaults to visible fill; every other prop passes through to SVG untouched
+    xnew.extend(SVG, { fill: 'currentColor', ...svgProps });
     const svg = unit.element as SVGSVGElement;
 
     xnew.nest(`<text x="0" y="0" font-size="${fontSize}" paint-order="stroke fill">`);
@@ -50,15 +29,8 @@ export function SVGText(unit: xnew.Unit, {
 
     function resize() {
         const bbox = (unit.element as SVGGraphicsElement).getBBox();
-        const padding = 0;
-        svg.setAttribute('viewBox', `
-            ${bbox.x - padding}
-            ${bbox.y - padding}
-            ${bbox.width + padding * 2}
-            ${bbox.height + padding * 2}
-        `);
-
-        svg.style.width = (bbox.width + padding * 2) + 'px';
+        svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+        svg.style.width = bbox.width + 'px';
     }
     resize();
     unit.on('resize', resize);

@@ -14,8 +14,8 @@
 import { Aspect } from './view/Aspect';
 import { Screen } from './view/Screen';
 import { Scene } from './view/Scene';
-import { Split } from './view/Split';
 import { SceneList } from './view/SceneList';
+import { Split } from './view/Split';
 import { Image } from './element/Image';
 import { SVG } from './element/SVG';
 import { SVGText } from './element/SVGText';
@@ -30,21 +30,21 @@ import { DPad } from './ui/DPad';
 import { Panel } from './ui/Panel';
 
 export const xbasics = {
-    SVG,
-    SVGText,
     Aspect,
     Screen,
-    Image,
-    OpenAndClose,
-    AnalogStick,
-    DPad,
-    Panel,
-    Accordion,
-    Popup,
     Scene,
     SceneList,
     Split,
+    Image,
+    SVG,
+    SVGText,
     AudioTrack,
     Synthesizer,
     Volume,
+    OpenAndClose,
+    Accordion,
+    Popup,
+    AnalogStick,
+    DPad,
+    Panel,
 };

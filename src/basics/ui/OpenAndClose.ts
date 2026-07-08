@@ -18,13 +18,14 @@ export function OpenAndClose(unit: xnew.Unit,
 ) {
     let value = open ? 1.0 : 0.0;
     let sign: number = open ? +1 : -1;
+    // deferred initial emit: presentation layers subscribe after this body, so publish the starting value next tick
     let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
 
     // animate `value` toward 1 (dir +1, open) or 0 (dir -1, close), scaling duration by remaining distance
     function animate(dir: number) {
         sign = dir;
         const d = dir > 0 ? 1 - value : value;
-        timer?.clear();
+        timer.clear();
         timer = xnew.transition(({ value: x }: { value: number }) => {
             const remaining = x < 1.0 ? (1 - x) * d : 0.0;
             value = dir > 0 ? 1.0 - remaining : remaining;

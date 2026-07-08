@@ -37,16 +37,14 @@ export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
 
     return {
         group({ name, open, params }: PanelOptions, inner: Function) {
-            const group = xnew((unit: xnew.Unit) => {
+            return xnew((unit: xnew.Unit) => {
                 xnew.extend(Group, { name, open });
                 xnew.extend(Panel, { params: params ?? object, nested: true });
                 inner(unit);
             });
-            return group;
         },
         button(key: string) {
-            const button = xnew(Button, { key });
-            return button;
+            return xnew(Button, { key });
         },
         select(key: string, { value, items = [] }: { value?: string, items?: string[] } = {}) {
             object[key] = value ?? object[key] ?? items[0] ?? '';
@@ -108,23 +106,23 @@ function Range(unit: xnew.Unit,
     xnew.nest(`<div class="${cls.row} ${cls.clickable}">`);
 
     // fill bar
-    const ratio = (value - min) / (max - min);
-    const fill = xnew(`<div class="${cls.frame} ${cls.pale}" style="position: absolute; top: 0; left: 0; bottom: 0; width: ${ratio * 100}%; transition: width 0.05s;">`);
+    const fill = xnew(`<div class="${cls.frame} ${cls.pale}" style="position: absolute; top: 0; left: 0; bottom: 0; transition: width 0.05s;">`);
 
     // overlay labels
-    const status = xnew(`<div class="${cls.overlay}" style="padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">`, (unit: xnew.Unit) => {
-        xnew('<div>', key);
-        xnew('<div key="status">', value);
-    });
+    const overlay = xnew(`<div class="${cls.overlay}" style="padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">`);
+    xnew(overlay, '<div>', key);
+    const status = xnew(overlay, '<div>');
+
+    const update = (v: number) => {
+        fill.element.style.width = `${(v - min) / (max - min) * 100}%`;
+        status.element.textContent = String(v);
+    };
+    update(value);
 
     // hidden native input for interaction
     xnew.nest(`<input type="range" name="${key}" min="${min}" max="${max}" step="${step}" value="${value}" class="${cls.hiddenInput}">`);
-
-    unit.on('input', ({ event }: { event: Event }) => {
-        const v = Number((event.target as HTMLInputElement).value);
-        const r = (v - min) / (max - min);
-        fill.element.style.width = `${r * 100}%`;
-        status.element.querySelector('[key="status"]')!.textContent = String(v);
+    unit.on('input', ({ value }: { value: number }) => {
+        update(value);
     });
 }
 

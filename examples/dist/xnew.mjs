@@ -1303,24 +1303,53 @@ function SVG(unit, { viewBox = '0 0 64 64', className = '', style = '', stroke =
         stroke-linecap="${strokeLinecap}"
         fill="${fill}"
         fill-opacity="${fillOpacity}"
-    ">`);
+    >`);
 }
 
-function SVGText(unit, { text = '', fontSize = 20, anchor = { x: 0, y: 0 }, className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'currentColor', fillOpacity = 1 } = {}) {
-    xnew.extend(SVG, { className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
+
+
+function __rest(s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+}
+
+typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    var e = new Error(message);
+    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
+
+function SVGText(unit, _a = {}) {
+    var { text = '', fontSize = 20 } = _a, svgProps = __rest(_a, ["text", "fontSize"]);
+    xnew.extend(SVG, Object.assign({ fill: 'currentColor' }, svgProps));
     const svg = unit.element;
     xnew.nest(`<text x="0" y="0" font-size="${fontSize}" paint-order="stroke fill">`);
     unit.element.textContent = text;
     function resize() {
         const bbox = unit.element.getBBox();
-        const padding = 0;
-        svg.setAttribute('viewBox', `
-            ${bbox.x - padding}
-            ${bbox.y - padding}
-            ${bbox.width + padding * 2}
-            ${bbox.height + padding * 2}
-        `);
-        svg.style.width = (bbox.width + padding * 2) + 'px';
+        svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+        svg.style.width = bbox.width + 'px';
     }
     resize();
     unit.on('resize', resize);
@@ -1518,7 +1547,9 @@ function scheduleRelease(param, start, dv, base, amount, ADSR) {
         param.linearRampToValueAtTime(base + amount * rate * s, start + ((a + d) / 1000) * rate);
     }
     param.linearRampToValueAtTime(base + amount * rate * s, start + Math.max(((a + d) / 1000) * rate, dv));
-    param.linearRampToValueAtTime(base, start + Math.max(((a + d) / 1000) * rate, end) + r / 1000);
+    const stop = start + Math.max(((a + d) / 1000) * rate, end) + r / 1000;
+    param.linearRampToValueAtTime(base, stop);
+    return stop;
 }
 function createImpulseResponse(timeMs, decay = 2.0) {
     const length = context.sampleRate * timeMs / 1000;
@@ -1603,25 +1634,16 @@ function Synthesizer(unit, props) {
             nodesToDisconnect.push(reverb.convolver, reverb.depth);
         }
         const release = () => {
-            const end = dv > 0 ? dv : (context.currentTime - start);
-            let stop;
-            if (props.amp.envelope) {
-                const [a, d, , r] = props.amp.envelope.ADSR;
-                const aSec = a / 1000;
-                const dSec = d / 1000;
-                const rSec = r / 1000;
-                const rate = aSec === 0.0 ? 1.0 : Math.min(end / (aSec + 0.001), 1.0);
-                stop = start + Math.max((aSec + dSec) * rate, end) + rSec;
-            }
-            else {
-                stop = start + end;
-            }
             if (props.oscillator.envelope) {
                 const amount = semitoneOffset(freq, props.oscillator.envelope.amount);
                 scheduleRelease(oscillator.frequency, start, dv, freq, amount, props.oscillator.envelope.ADSR);
             }
+            let stop;
             if (props.amp.envelope) {
-                scheduleRelease(amp.gain, start, dv, 0.0, props.amp.envelope.amount, props.amp.envelope.ADSR);
+                stop = scheduleRelease(amp.gain, start, dv, 0.0, props.amp.envelope.amount, props.amp.envelope.ADSR);
+            }
+            else {
+                stop = start + (dv > 0 ? dv : (context.currentTime - start));
             }
             for (const o of oscillators) {
                 o.stop(stop);
@@ -1660,7 +1682,7 @@ function OpenAndClose(unit, { open = true, duration = 200, easing = 'ease' }) {
     function animate(dir) {
         sign = dir;
         const d = dir > 0 ? 1 - value : value;
-        timer === null || timer === void 0 ? void 0 : timer.clear();
+        timer.clear();
         timer = xnew.transition(({ value: x }) => {
             const remaining = x < 1.0 ? (1 - x) * d : 0.0;
             value = dir > 0 ? 1.0 - remaining : remaining;
@@ -1820,16 +1842,14 @@ function Panel(unit, { params, nested }) {
     }
     return {
         group({ name, open, params }, inner) {
-            const group = xnew((unit) => {
+            return xnew((unit) => {
                 xnew.extend(Group, { name, open });
                 xnew.extend(Panel, { params: params !== null && params !== void 0 ? params : object, nested: true });
                 inner(unit);
             });
-            return group;
         },
         button(key) {
-            const button = xnew(Button, { key });
-            return button;
+            return xnew(Button, { key });
         },
         select(key, { value, items = [] } = {}) {
             var _a, _b;
@@ -1884,18 +1904,18 @@ function Range(unit, { key = '', value, min = 0, max = 100, step = 1 }) {
     value = value !== null && value !== void 0 ? value : min;
     const cls = xnew.css(sharedCss);
     xnew.nest(`<div class="${cls.row} ${cls.clickable}">`);
-    const ratio = (value - min) / (max - min);
-    const fill = xnew(`<div class="${cls.frame} ${cls.pale}" style="position: absolute; top: 0; left: 0; bottom: 0; width: ${ratio * 100}%; transition: width 0.05s;">`);
-    const status = xnew(`<div class="${cls.overlay}" style="padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">`, (unit) => {
-        xnew('<div>', key);
-        xnew('<div key="status">', value);
-    });
+    const fill = xnew(`<div class="${cls.frame} ${cls.pale}" style="position: absolute; top: 0; left: 0; bottom: 0; transition: width 0.05s;">`);
+    const overlay = xnew(`<div class="${cls.overlay}" style="padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">`);
+    xnew(overlay, '<div>', key);
+    const status = xnew(overlay, '<div>');
+    const update = (v) => {
+        fill.element.style.width = `${(v - min) / (max - min) * 100}%`;
+        status.element.textContent = String(v);
+    };
+    update(value);
     xnew.nest(`<input type="range" name="${key}" min="${min}" max="${max}" step="${step}" value="${value}" class="${cls.hiddenInput}">`);
-    unit.on('input', ({ event }) => {
-        const v = Number(event.target.value);
-        const r = (v - min) / (max - min);
-        fill.element.style.width = `${r * 100}%`;
-        status.element.querySelector('[key="status"]').textContent = String(v);
+    unit.on('input', ({ value }) => {
+        update(value);
     });
 }
 function Checkbox(unit, { key = '', value } = {}) {
@@ -1949,23 +1969,23 @@ function Select(unit, { key = '', value, items = [] } = {}) {
 }
 
 const xbasics = {
-    SVG,
-    SVGText,
     Aspect,
     Screen,
-    Image,
-    OpenAndClose,
-    AnalogStick,
-    DPad,
-    Panel,
-    Accordion,
-    Popup,
     Scene,
     SceneList,
     Split,
+    Image,
+    SVG,
+    SVGText,
     AudioTrack,
     Synthesizer,
     Volume,
+    OpenAndClose,
+    Accordion,
+    Popup,
+    AnalogStick,
+    DPad,
+    Panel,
 };
 
 export { xbasics, xnew, xsync };

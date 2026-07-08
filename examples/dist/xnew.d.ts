@@ -206,15 +206,6 @@ declare function Scene(unit: xnew.Unit): {
     add(Component: Function, props?: any): xnew.Unit;
 };
 
-declare function Split(unit: xnew.Unit, { direction }?: {
-    direction?: 'column' | 'row';
-}): {
-    pane({ size, direction }: {
-        size: number | string;
-        direction?: "column" | "row";
-    }, component?: xnew.Component): Unit;
-};
-
 type SceneEntry = [Function, any?];
 declare function SceneList(unit: xnew.Unit, { list }?: {
     list?: {
@@ -222,6 +213,15 @@ declare function SceneList(unit: xnew.Unit, { list }?: {
     };
 }): {
     resolve(label: string): SceneEntry | undefined;
+};
+
+declare function Split(unit: xnew.Unit, { direction }?: {
+    direction?: 'column' | 'row';
+}): {
+    pane({ size, direction }: {
+        size: number | string;
+        direction?: "column" | "row";
+    }, component?: xnew.Component): Unit;
 };
 
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
@@ -245,24 +245,11 @@ interface SVGInterface {
 }
 declare function SVG(unit: xnew.Unit, { viewBox, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGInterface): void;
 
-interface SVGTextInterface {
+interface SVGTextInterface extends SVGInterface {
     text?: string;
     fontSize?: number;
-    anchor?: {
-        x: number;
-        y: number;
-    };
-    className?: string;
-    style?: string;
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    strokeLinejoin?: string;
-    strokeLinecap?: string;
-    fill?: string;
-    fillOpacity?: number;
 }
-declare function SVGText(unit: xnew.Unit, { text, fontSize, anchor, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGTextInterface): void;
+declare function SVGText(unit: xnew.Unit, { text, fontSize, ...svgProps }?: SVGTextInterface): void;
 
 declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
     url: string;
@@ -380,23 +367,23 @@ declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
 };
 
 declare const xbasics: {
-    SVG: typeof SVG;
-    SVGText: typeof SVGText;
     Aspect: typeof Aspect;
     Screen: typeof Screen;
-    Image: typeof Image;
-    OpenAndClose: typeof OpenAndClose;
-    AnalogStick: typeof AnalogStick;
-    DPad: typeof DPad;
-    Panel: typeof Panel;
-    Accordion: typeof Accordion;
-    Popup: typeof Popup;
     Scene: typeof Scene;
     SceneList: typeof SceneList;
     Split: typeof Split;
+    Image: typeof Image;
+    SVG: typeof SVG;
+    SVGText: typeof SVGText;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;
+    OpenAndClose: typeof OpenAndClose;
+    Accordion: typeof Accordion;
+    Popup: typeof Popup;
+    AnalogStick: typeof AnalogStick;
+    DPad: typeof DPad;
+    Panel: typeof Panel;
 };
 
 export { xbasics, xnew, xsync };
