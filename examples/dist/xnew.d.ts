@@ -305,6 +305,14 @@ declare function InputRadio(unit: xnew.Unit, { value, items, name, className, st
     style?: string;
 }): void;
 
+declare function InputSelect(unit: xnew.Unit, { value, items, name, className, style }?: {
+    value?: string;
+    items?: string[];
+    name?: string;
+    className?: string;
+    style?: string;
+}): void;
+
 declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
     url: string;
     volume?: number;
@@ -424,6 +432,7 @@ declare const xbasics: {
     InputNumber: typeof InputNumber;
     InputSwitch: typeof InputSwitch;
     InputRadio: typeof InputRadio;
+    InputSelect: typeof InputSelect;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;

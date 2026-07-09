@@ -1510,6 +1510,56 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
     });
 }
 
+function InputSelect(unit, { value, items = [], name = '', className = '', style = '' } = {}) {
+    var _a;
+    const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
+    const cls = xnew.css(sharedCss);
+    xnew.nest(`<div class="${cls.frame} ${cls.clickable} ${cls.hover} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; ${style}">`);
+    const frame = unit.element;
+    const label = xnew('<div style="flex: 1 1 0; padding: 0 0.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">', initial);
+    xnew(() => {
+        xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
+        xnew('<path d="M3.5 4.5 6 2 8.5 4.5 M3.5 7.5 6 10 8.5 7.5"/>');
+    });
+    let select;
+    let dropdown = null;
+    const closeDropdown = () => {
+        dropdown === null || dropdown === void 0 ? void 0 : dropdown.finalize();
+        dropdown = null;
+    };
+    const openDropdown = () => {
+        dropdown = xnew(frame, (list) => {
+            list.on('pointerdown.outside', () => closeDropdown());
+            xnew.nest(`<div class="${cls.frame} ${cls.scroll}" style="position: absolute; top: calc(100% + 0.25em); left: 0; right: 0; z-index: 1000; max-height: 12em; background: Canvas;">`);
+            for (const item of items) {
+                const option = xnew(`<div class="${cls.clickable} ${cls.hover}${item === select.value ? ` ${cls.pale}` : ''}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; white-space: nowrap;">`, item);
+                option.on('click', ({ event }) => {
+                    event.stopPropagation();
+                    select.value = item;
+                    select.dispatchEvent(new Event('input', { bubbles: false }));
+                    closeDropdown();
+                });
+            }
+        });
+    };
+    unit.on('click', () => {
+        if (dropdown === null) {
+            openDropdown();
+        }
+        else {
+            closeDropdown();
+        }
+    });
+    xnew.nest(`<select${name ? ` name="${name}"` : ''} style="display: none;">`);
+    for (const item of items) {
+        xnew(`<option value="${item}"${item === initial ? ' selected' : ''}>`, item);
+    }
+    select = unit.element;
+    unit.on('input', ({ value }) => {
+        label.element.textContent = value;
+    });
+}
+
 var _a;
 const DEFAULT_MASTER_GAIN = 0.1;
 const AudioContextCtor = typeof window !== 'undefined' ? ((_a = window.AudioContext) !== null && _a !== void 0 ? _a : window.webkitAudioContext) : undefined;
@@ -2099,6 +2149,7 @@ const xbasics = {
     InputNumber,
     InputSwitch,
     InputRadio,
+    InputSelect,
     AudioTrack,
     Synthesizer,
     Volume,

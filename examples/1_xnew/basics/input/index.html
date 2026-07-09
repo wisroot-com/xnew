@@ -28,7 +28,7 @@
     });
 
     function MyInputs(unit) {
-      xnew.nest('<div class="m-0.5 mt-2 p-4 w-80 text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg flex flex-col gap-4">');
+      xnew.nest('<div class="m-0.5 mt-2 p-4 w-[40rem] text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg grid grid-cols-2 gap-4">');
 
       xnew('<div>', (unit) => {
         xnew('<div class="mb-1">', 'InputText');
@@ -52,6 +52,12 @@
         xnew('<div class="mb-1">', 'InputRadio');
         xnew('<div class="h-8">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'mid' })
           .on('input', ({ value }) => xnew.emit('+console', { text: `radio changed to ${value}` }));
+      });
+
+      xnew('<div>', (unit) => {
+        xnew('<div class="mb-1">', 'InputSelect');
+        xnew('<div class="h-8 w-40">', xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'] })
+          .on('input', ({ value }) => xnew.emit('+console', { text: `select changed to ${value}` }));
       });
 
       xnew('<div>', (unit) => {
