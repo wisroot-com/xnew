@@ -68,7 +68,8 @@ export function InputSelect(unit: xnew.Unit,
                     // keep the bubble from reaching the frame's toggle below
                     event.stopPropagation();
                     select.value = item;
-                    select.dispatchEvent(new Event('input', { bubbles: false }));
+                    // bubbles like a native input event so hosts wrapping the control can listen above it
+                    select.dispatchEvent(new Event('input', { bubbles: true }));
                     closeDropdown();
                 });
             }

@@ -1,12 +1,11 @@
 //----------------------------------------------------------------------------------------------------
 // Panel — stackable form-style settings panel
 //
-// Returns a builder API for laying out parameter rows backed by native form controls (range /
-// checkbox / select / button). Values are written through to a shared `params` object so the
+// Returns a builder API for laying out parameter rows backed by the Input* elements (range /
+// checkbox / select) and buttons. Values are written through to a shared `params` object so the
 // panel can drive an external state bag without extra wiring. Groups can be nested and toggled
-// open/closed via the Accordion transition; Select expands its option list in place the same way,
-// so the list always sits on the panel's own surface (no popup background to match). The row
-// controls (Group / Button / Range / Checkbox / Select / Separator) are private components of this file.
+// open/closed via the Accordion transition. The row controls (Group / Button / Range / Checkbox /
+// Select / Separator) are private components of this file.
 //
 // - Panel : component({ params }) returning { group, button, select, range, checkbox, separator }
 //
@@ -19,6 +18,7 @@ import { xnew } from '../../core/xnew';
 import { SVG } from '../element/SVG';
 import { InputRange } from '../element/InputRange';
 import { InputCheckbox } from '../element/InputCheckbox';
+import { InputSelect } from '../element/InputSelect';
 import { sharedCss } from '../styles';
 import { OpenAndClose } from './OpenAndClose';
 import { Accordion } from './Accordion';
@@ -130,35 +130,11 @@ function Checkbox(unit: xnew.Unit, { key = '', value }: { key?: string, value?: 
 }
 
 function Select(unit: xnew.Unit, { key = '', value, items = [] }: { key?: string, value?: string, items?: string[] } = {}) {
-    const initial = value ?? items[0] ?? '';
     const cls = xnew.css(sharedCss);
+    // label row; the pulldown itself is InputSelect, whose input event bubbles up to this row
+    xnew.nest(`<div class="${cls.row}" style="padding: 0 0.5em;">`);
 
-    xnew.nest('<div>');
+    xnew('<div style="flex: 1;">', key);
 
-    const row = xnew(`<div class="${cls.row} ${cls.clickable}" style="padding: 0 0.5em;">`);
-    xnew(row, '<div style="flex: 1;">', key);
-    const button = xnew(row, `<div class="${cls.frame}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; min-width: 3em; white-space: nowrap;">`, initial);
-
-    // options expand in place below the row, so the list never leaves the panel surface
-    const list = xnew((list: xnew.Unit) => {
-        xnew.extend(OpenAndClose, { open: false });
-        xnew.extend(Accordion);
-        xnew.nest(`<div class="${cls.scroll}" style="max-height: 12em;">`);
-        for (const item of items) {
-            const div = xnew(`<div class="${cls.clickable} ${cls.hover}" style="height: 2em; padding: 0 1em; display: flex; align-items: center;">`, item);
-            div.on('click', () => {
-                button.element.textContent = item;
-                (unit.element as HTMLSelectElement).value = item;
-                unit.element.dispatchEvent(new Event('input', { bubbles: false }));
-                list.close();
-            });
-        }
-    });
-
-    row.on('click', () => list.toggle());
-
-    xnew.nest(`<select name="${key}" style="display: none;">`);
-    for (const item of items) {
-        xnew(`<option value="${item}" ${item === initial ? 'selected' : ''}>`, item);
-    }
+    xnew('<div style="height: 2em; min-width: 3em;">', InputSelect, { name: key, value, items });
 }

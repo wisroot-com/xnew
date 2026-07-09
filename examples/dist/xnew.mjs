@@ -1547,7 +1547,7 @@ function InputSelect(unit, { value, items = [], name = '', className = '', style
                 option.on('click', ({ event }) => {
                     event.stopPropagation();
                     select.value = item;
-                    select.dispatchEvent(new Event('input', { bubbles: false }));
+                    select.dispatchEvent(new Event('input', { bubbles: true }));
                     closeDropdown();
                 });
             }
@@ -2117,32 +2117,10 @@ function Checkbox(unit, { key = '', value } = {}) {
     xnew('<div style="width: 1.25em; height: 1.25em;">', InputCheckbox, { name: key, value });
 }
 function Select(unit, { key = '', value, items = [] } = {}) {
-    var _a;
-    const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
     const cls = xnew.css(sharedCss);
-    xnew.nest('<div>');
-    const row = xnew(`<div class="${cls.row} ${cls.clickable}" style="padding: 0 0.5em;">`);
-    xnew(row, '<div style="flex: 1;">', key);
-    const button = xnew(row, `<div class="${cls.frame}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; min-width: 3em; white-space: nowrap;">`, initial);
-    const list = xnew((list) => {
-        xnew.extend(OpenAndClose, { open: false });
-        xnew.extend(Accordion);
-        xnew.nest(`<div class="${cls.scroll}" style="max-height: 12em;">`);
-        for (const item of items) {
-            const div = xnew(`<div class="${cls.clickable} ${cls.hover}" style="height: 2em; padding: 0 1em; display: flex; align-items: center;">`, item);
-            div.on('click', () => {
-                button.element.textContent = item;
-                unit.element.value = item;
-                unit.element.dispatchEvent(new Event('input', { bubbles: false }));
-                list.close();
-            });
-        }
-    });
-    row.on('click', () => list.toggle());
-    xnew.nest(`<select name="${key}" style="display: none;">`);
-    for (const item of items) {
-        xnew(`<option value="${item}" ${item === initial ? 'selected' : ''}>`, item);
-    }
+    xnew.nest(`<div class="${cls.row}" style="padding: 0 0.5em;">`);
+    xnew('<div style="flex: 1;">', key);
+    xnew('<div style="height: 2em; min-width: 3em;">', InputSelect, { name: key, value, items });
 }
 
 const xbasics = {
