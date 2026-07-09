@@ -237,6 +237,13 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **`xnew(parentUnit, Component)` mounts into the parent's END-OF-BODY element (its `lastSnapshot`),
+  so if the body ends on a hidden native control (e.g. a `<select>` nested for form semantics),
+  children land inside it — and `<select>.insertAdjacentHTML('<div>')` is silently dropped by the
+  parser, leaving `currentElement` undefined and corrupting every later nest.** For popups/overlays
+  spawned from a callback, bind an explicit element instead: `xnew(safeElement, Component, props)`
+  (bit InputSelect: its dropdown vanished into the hidden select).
+
 - **Don't read the host's `unit.element` inside a callback registered on a child unit that was
   created before a later `xnew.nest(...)` — it sees the nest chain as of that child's creation,
   not the final element.** The callback runs in the child's scope, which snapshots the host's

@@ -1433,9 +1433,9 @@ function InputNumber(unit, { value, min, max, step, name = '', placeholder = '',
     const num = xnew.css(numberCss);
     const container = xnew.nest(`<div class="${cls.frame} ${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; ${style}">`);
     let element;
-    const spinButton = (direction, path, edge) => {
+    const spinButton = (direction, path) => {
         const button = xnew(container, () => {
-            xnew.nest(`<div class="${cls.clickable} ${cls.hover} ${cls.press}" style="width: 1.5em; display: flex; align-items: center; justify-content: center; border-${edge}: 1px solid currentColor;">`);
+            xnew.nest(`<div class="${cls.clickable} ${cls.hover} ${cls.press}" style="width: 2em; display: flex; align-items: center; justify-content: center;">`);
             xnew((unit) => {
                 xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 0.9em; height: 0.9em;' });
                 xnew(`<path d="${path}"/>`);
@@ -1451,7 +1451,7 @@ function InputNumber(unit, { value, min, max, step, name = '', placeholder = '',
             element.dispatchEvent(new Event('input', { bubbles: true }));
         });
     };
-    spinButton(-1, 'M7.5 3 4.5 6 7.5 9', 'right');
+    spinButton(-1, 'M7.5 3 4.5 6 7.5 9');
     const attrs = [
         name ? ` name="${name}"` : '',
         min !== undefined ? ` min="${min}"` : '',
@@ -1464,7 +1464,50 @@ function InputNumber(unit, { value, min, max, step, name = '', placeholder = '',
         element.value = String(value);
     }
     element.placeholder = placeholder;
-    spinButton(+1, 'M4.5 3 7.5 6 4.5 9', 'left');
+    spinButton(+1, 'M4.5 3 7.5 6 4.5 9');
+}
+
+function InputToggle(unit, { value = false, name = '', className = '', style = '' } = {}) {
+    const cls = xnew.css(sharedCss);
+    xnew.nest(`<div class="${cls.frame} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; border-radius: 1em; ${style}">`);
+    const track = unit.element;
+    const knob = xnew('<div style="position: absolute; top: 0.15em; bottom: 0.15em; aspect-ratio: 1 / 1; border-radius: 50%; background: currentColor; transition: left 0.15s, transform 0.15s;">');
+    const update = (checked) => {
+        track.classList.toggle(cls.pale, checked);
+        knob.element.style.left = checked ? 'calc(100% - 0.15em)' : '0.15em';
+        knob.element.style.transform = checked ? 'translateX(-100%)' : 'translateX(0)';
+    };
+    update(value);
+    xnew.nest(`<input type="checkbox"${name ? ` name="${name}"` : ''}${value ? ' checked' : ''} class="${cls.hiddenInput}">`);
+    unit.on('input', ({ value }) => {
+        update(value);
+    });
+}
+
+let radioGroupId = 0;
+function InputRadio(unit, { value, items = [], name = '', className = '', style = '' } = {}) {
+    var _a;
+    const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
+    const cls = xnew.css(sharedCss);
+    const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
+    xnew.nest(`<div class="${cls.frame} ${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; ${style}">`);
+    const segments = [];
+    items.forEach((item, index) => {
+        const segment = xnew(`<div class="${cls.clickable} ${cls.hover}" style="flex: 1 1 0; position: relative; display: flex; align-items: center; justify-content: center; white-space: nowrap;${index > 0 ? ' border-left: 1px solid currentColor;' : ''}">`, () => {
+            xnew('<div>', item);
+            xnew(`<input type="radio" name="${group}" value="${item}"${item === initial ? ' checked' : ''} class="${cls.hiddenInput}">`);
+        });
+        segments.push([segment, item]);
+    });
+    const update = (selected) => {
+        for (const [segment, item] of segments) {
+            segment.element.classList.toggle(cls.pale, item === selected);
+        }
+    };
+    update(initial);
+    unit.on('input', ({ value }) => {
+        update(value);
+    });
 }
 
 var _a;
@@ -2054,6 +2097,8 @@ const xbasics = {
     InputCheckbox,
     InputText,
     InputNumber,
+    InputToggle,
+    InputRadio,
     AudioTrack,
     Synthesizer,
     Volume,

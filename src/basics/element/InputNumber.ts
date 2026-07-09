@@ -34,9 +34,9 @@ export function InputNumber(unit: xnew.Unit,
     // custom spin buttons flanking the field (stepUp / stepDown keep the native min / max / step semantics);
     // element is captured after nest — a listener owned by the left button sees the pre-input nest state via unit.element
     let element: HTMLInputElement;
-    const spinButton = (direction: number, path: string, edge: string) => {
+    const spinButton = (direction: number, path: string) => {
         const button = xnew(container, () => {
-            xnew.nest(`<div class="${cls.clickable} ${cls.hover} ${cls.press}" style="width: 1.5em; display: flex; align-items: center; justify-content: center; border-${edge}: 1px solid currentColor;">`);
+            xnew.nest(`<div class="${cls.clickable} ${cls.hover} ${cls.press}" style="width: 2em; display: flex; align-items: center; justify-content: center;">`);
             xnew((unit: xnew.Unit) => {
                 xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 0.9em; height: 0.9em;' });
                 xnew(`<path d="${path}"/>`);
@@ -52,7 +52,7 @@ export function InputNumber(unit: xnew.Unit,
         });
     };
 
-    spinButton(-1, 'M7.5 3 4.5 6 7.5 9', 'right');
+    spinButton(-1, 'M7.5 3 4.5 6 7.5 9');
 
     const attrs = [
         name ? ` name="${name}"` : '',
@@ -68,5 +68,5 @@ export function InputNumber(unit: xnew.Unit,
     }
     element.placeholder = placeholder;
 
-    spinButton(+1, 'M4.5 3 7.5 6 4.5 9', 'left');
+    spinButton(+1, 'M4.5 3 7.5 6 4.5 9');
 }

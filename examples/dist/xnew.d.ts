@@ -290,6 +290,21 @@ declare function InputNumber(unit: xnew.Unit, { value, min, max, step, name, pla
     style?: string;
 }): void;
 
+declare function InputToggle(unit: xnew.Unit, { value, name, className, style }?: {
+    value?: boolean;
+    name?: string;
+    className?: string;
+    style?: string;
+}): void;
+
+declare function InputRadio(unit: xnew.Unit, { value, items, name, className, style }?: {
+    value?: string;
+    items?: string[];
+    name?: string;
+    className?: string;
+    style?: string;
+}): void;
+
 declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
     url: string;
     volume?: number;
@@ -407,6 +422,8 @@ declare const xbasics: {
     InputCheckbox: typeof InputCheckbox;
     InputText: typeof InputText;
     InputNumber: typeof InputNumber;
+    InputToggle: typeof InputToggle;
+    InputRadio: typeof InputRadio;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;

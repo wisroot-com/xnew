@@ -43,6 +43,18 @@
       });
 
       xnew('<div>', (unit) => {
+        xnew('<div class="mb-1">', 'InputToggle');
+        xnew('<div class="w-12 h-6">', xbasics.InputToggle, { value: true })
+          .on('input', ({ value }) => xnew.emit('+console', { text: `toggle changed to ${value}` }));
+      });
+
+      xnew('<div>', (unit) => {
+        xnew('<div class="mb-1">', 'InputRadio');
+        xnew('<div class="h-8">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'mid' })
+          .on('input', ({ value }) => xnew.emit('+console', { text: `radio changed to ${value}` }));
+      });
+
+      xnew('<div>', (unit) => {
         xnew('<div class="mb-1">', 'InputCheckbox');
         xnew('<div class="w-6 h-6">', xbasics.InputCheckbox, { value: true })
           .on('input', ({ value }) => xnew.emit('+console', { text: `checkbox changed to ${value}` }));
