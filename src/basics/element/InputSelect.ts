@@ -22,7 +22,7 @@ export function InputSelect(unit: xnew.Unit,
     const initial = value ?? items[0] ?? '';
     const cls = xnew.css(sharedCss);
 
-    xnew.nest(`<div class="${cls.frame} ${cls.clickable} ${cls.hover} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; ${style}">`);
+    xnew.nest(`<div class="${cls.clickable} ${cls.hover} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; border: 1px solid currentColor; border-radius: 0.25em; ${style}">`);
     const frame = unit.element as HTMLElement;
 
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
@@ -68,7 +68,7 @@ export function InputSelect(unit: xnew.Unit,
 
             // fixed + viewport coords escape overflow-clipping ancestors (e.g. a panel's scroll container);
             // max-content lets the list outgrow the button so long items stay readable
-            const menu = xnew.nest(`<div class="${cls.frame} ${cls.scroll}" style="position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000; max-height: 12em; border-radius: 0; background: ${surfaceColor()};">`) as HTMLElement;
+            const menu = xnew.nest(`<div class="${cls.scroll}" style="position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000; max-height: 12em; border: 1px solid currentColor; background: ${surfaceColor()};">`) as HTMLElement;
 
             // re-anchored every frame, so scrolling never shifts the list off the button
             const anchor = () => {

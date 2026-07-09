@@ -29,7 +29,7 @@ export function InputRange(unit: xnew.Unit,
     const fillAnchor = horizontal
         ? 'top: 0; left: 0; bottom: 0; transition: width 0.05s;'
         : 'left: 0; right: 0; bottom: 0; transition: height 0.05s;';
-    const fill = xnew(`<div class="${cls.frame} ${cls.pale}" style="position: absolute; ${fillAnchor}">`);
+    const fill = xnew(`<div class="${cls.pale}" style="position: absolute; border: 1px solid currentColor; border-radius: 0.25em; ${fillAnchor}">`);
 
     const update = (v: number) => {
         const percent = `${(v - min) / (max - min) * 100}%`;
@@ -42,8 +42,8 @@ export function InputRange(unit: xnew.Unit,
     update(value);
 
     // hidden native input for interaction (vertical flips the native control's axis)
-    const inputStyle = horizontal ? '' : ' style="writing-mode: vertical-lr; direction: rtl;"';
-    xnew.nest(`<input type="range"${name ? ` name="${name}"` : ''} min="${min}" max="${max}" step="${step}" value="${value}" class="${cls.hiddenInput}"${inputStyle}>`);
+    const inputAxis = horizontal ? '' : ' writing-mode: vertical-lr; direction: rtl;';
+    xnew.nest(`<input type="range"${name ? ` name="${name}"` : ''} min="${min}" max="${max}" step="${step}" value="${value}" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;${inputAxis}">`);
     unit.on('input', ({ value }: { value: number }) => {
         update(value);
     });

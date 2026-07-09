@@ -24,13 +24,13 @@ export function InputRadio(unit: xnew.Unit,
     const cls = xnew.css(sharedCss);
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
 
-    xnew.nest(`<div class="${cls.frame} ${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; ${style}">`);
+    xnew.nest(`<div class="${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; border: 1px solid currentColor; border-radius: 0.25em; ${style}">`);
 
     const segments: [xnew.Unit, string][] = [];
     items.forEach((item, index) => {
         const segment = xnew(`<div class="${cls.clickable} ${cls.hover}" style="flex: 1 1 0; position: relative; display: flex; align-items: center; justify-content: center; white-space: nowrap;${index > 0 ? ' border-left: 1px solid currentColor;' : ''}">`, () => {
             xnew('<div>', item);
-            xnew(`<input type="radio" name="${group}" value="${item}"${item === initial ? ' checked' : ''} class="${cls.hiddenInput}">`);
+            xnew(`<input type="radio" name="${group}" value="${item}"${item === initial ? ' checked' : ''} style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;">`);
         });
         segments.push([segment, item]);
     });

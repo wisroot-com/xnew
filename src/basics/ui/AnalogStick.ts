@@ -12,19 +12,21 @@
 
 import { xnew } from '../../core/xnew';
 import { SVG, SVGStyleInterface } from '../element/SVG';
-import { sharedCss } from '../styles';
 import { Aspect } from '../view/Aspect';
+
+// pointer-operated surface + full-size stacked SVG layers
+const touchArea = 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;';
+const overlay = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
 
 export function AnalogStick(unit: xnew.Unit,
     { stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 }:
     SVGStyleInterface = {}
 ) {
-    const cls = xnew.css(sharedCss);
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew.nest(`<div class="${cls.touchArea}">`);
+    xnew.nest(`<div style="${touchArea}">`);
 
     xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
+        xnew.extend(SVG, { style: overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
         xnew('<polygon points="32  7 27 13 37 13">');
         xnew('<polygon points="32 57 27 51 37 51">');
         xnew('<polygon points=" 7 32 13 27 13 37">');
@@ -32,7 +34,7 @@ export function AnalogStick(unit: xnew.Unit,
     });
 
     const target = xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { className: cls.overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
+        xnew.extend(SVG, { style: overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
         xnew('<circle cx="32" cy="32" r="14">');
     });
 

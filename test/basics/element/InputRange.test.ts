@@ -71,7 +71,7 @@ describe('basics InputRange', () => {
 
         expect(fill.style.width).toBe('50%');
         expect(fill.style.height).toBe('');
-        expect((unit.element as HTMLInputElement).getAttribute('style')).toBe(null);
+        expect((unit.element as HTMLInputElement).getAttribute('style')).not.toContain('writing-mode');
     });
 
     it('fills vertically with orientation: vertical (height grows, native axis flipped)', () => {

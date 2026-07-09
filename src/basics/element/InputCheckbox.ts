@@ -21,7 +21,7 @@ export function InputCheckbox(unit: xnew.Unit,
 ) {
     const cls = xnew.css(sharedCss);
 
-    xnew.nest(`<div class="${cls.clickable} ${cls.frame} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; ${style}">`);
+    xnew.nest(`<div class="${cls.clickable} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border: 1px solid currentColor; border-radius: 0.25em; ${style}">`);
     const box = unit.element;
 
     // check mark (transparent while unchecked)
@@ -37,7 +37,7 @@ export function InputCheckbox(unit: xnew.Unit,
     update(value);
 
     // hidden native input for interaction
-    xnew.nest(`<input type="checkbox"${name ? ` name="${name}"` : ''}${value ? ' checked' : ''} class="${cls.hiddenInput}">`);
+    xnew.nest(`<input type="checkbox"${name ? ` name="${name}"` : ''}${value ? ' checked' : ''} style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;">`);
     unit.on('input', ({ value }: { value: boolean }) => {
         update(value);
     });

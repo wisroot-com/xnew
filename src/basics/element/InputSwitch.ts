@@ -20,7 +20,7 @@ export function InputSwitch(unit: xnew.Unit,
 ) {
     const cls = xnew.css(sharedCss);
 
-    xnew.nest(`<div class="${cls.frame} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; border-radius: 1em; ${style}">`);
+    xnew.nest(`<div class="${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; border: 1px solid currentColor; border-radius: 1em; ${style}">`);
     const track = unit.element as HTMLElement;
 
     // aspect-ratio keeps the knob square at any track size, so the slide needs no size math
@@ -33,7 +33,7 @@ export function InputSwitch(unit: xnew.Unit,
     };
     update(value);
 
-    xnew.nest(`<input type="checkbox"${name ? ` name="${name}"` : ''}${value ? ' checked' : ''} class="${cls.hiddenInput}">`);
+    xnew.nest(`<input type="checkbox"${name ? ` name="${name}"` : ''}${value ? ' checked' : ''} style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;">`);
     unit.on('input', ({ value }: { value: boolean }) => {
         update(value);
     });
