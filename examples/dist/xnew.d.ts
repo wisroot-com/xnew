@@ -290,7 +290,7 @@ declare function InputNumber(unit: xnew.Unit, { value, min, max, step, name, pla
     style?: string;
 }): void;
 
-declare function InputToggle(unit: xnew.Unit, { value, name, className, style }?: {
+declare function InputSwitch(unit: xnew.Unit, { value, name, className, style }?: {
     value?: boolean;
     name?: string;
     className?: string;
@@ -422,7 +422,7 @@ declare const xbasics: {
     InputCheckbox: typeof InputCheckbox;
     InputText: typeof InputText;
     InputNumber: typeof InputNumber;
-    InputToggle: typeof InputToggle;
+    InputSwitch: typeof InputSwitch;
     InputRadio: typeof InputRadio;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;

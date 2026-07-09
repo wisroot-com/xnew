@@ -8,7 +8,7 @@
 // - xbasics : { Aspect, Screen, Scene, SceneList, Split,             // view/
 //               Image, SVG, SVGText,                                 // element/
 //               InputRange, InputCheckbox, InputText, InputNumber,  // element/ (form inputs)
-//               InputToggle, InputRadio,                             // element/ (form inputs)
+//               InputSwitch, InputRadio, InputSelect,                // element/ (form inputs)
 //               AudioTrack, Synthesizer, Volume,                     // audio/
 //               OpenAndClose, Accordion, Popup, AnalogStick, DPad, Panel }  // ui/
 //----------------------------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ import { InputRange } from './element/InputRange';
 import { InputCheckbox } from './element/InputCheckbox';
 import { InputText } from './element/InputText';
 import { InputNumber } from './element/InputNumber';
-import { InputToggle } from './element/InputToggle';
+import { InputSwitch } from './element/InputSwitch';
 import { InputRadio } from './element/InputRadio';
 import { AudioTrack } from './audio/AudioTrack';
 import { Synthesizer } from './audio/Synthesizer';
@@ -50,7 +50,7 @@ export const xbasics = {
     InputCheckbox,
     InputText,
     InputNumber,
-    InputToggle,
+    InputSwitch,
     InputRadio,
     AudioTrack,
     Synthesizer,

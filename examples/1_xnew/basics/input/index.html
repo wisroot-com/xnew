@@ -43,9 +43,9 @@
       });
 
       xnew('<div>', (unit) => {
-        xnew('<div class="mb-1">', 'InputToggle');
-        xnew('<div class="w-12 h-6">', xbasics.InputToggle, { value: true })
-          .on('input', ({ value }) => xnew.emit('+console', { text: `toggle changed to ${value}` }));
+        xnew('<div class="mb-1">', 'InputSwitch');
+        xnew('<div class="w-12 h-6">', xbasics.InputSwitch, { value: true })
+          .on('input', ({ value }) => xnew.emit('+console', { text: `switch changed to ${value}` }));
       });
 
       xnew('<div>', (unit) => {

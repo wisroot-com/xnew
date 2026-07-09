@@ -1,20 +1,20 @@
 //----------------------------------------------------------------------------------------------------
-// InputToggle — sliding on / off switch backed by a hidden native <input type="checkbox">
+// InputSwitch — sliding on / off switch backed by a hidden native <input type="checkbox">
 //
 // The invisible native control captures interaction (click / keyboard) while the visible surface
 // is a rounded track with a knob sliding between the edges, so callers get the familiar switch
 // look with native checkbox semantics.
 //
-// - InputToggle : component({ value, name, className, style }) — emits 'input' with { value } (boolean)
+// - InputSwitch : component({ value, name, className, style }) — emits 'input' with { value } (boolean)
 //
-// Usage: const toggle = xnew('<div style="width: 3em; height: 1.5em;">', xbasics.InputToggle, { value: true });
-//        toggle.on('input', ({ value }) => ...);
+// Usage: const sw = xnew('<div style="width: 3em; height: 1.5em;">', xbasics.InputSwitch, { value: true });
+//        sw.on('input', ({ value }) => ...);
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 import { sharedCss } from '../styles';
 
-export function InputToggle(unit: xnew.Unit,
+export function InputSwitch(unit: xnew.Unit,
     { value = false, name = '', className = '', style = '' }:
     { value?: boolean, name?: string, className?: string, style?: string } = {}
 ) {

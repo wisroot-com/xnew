@@ -1467,7 +1467,7 @@ function InputNumber(unit, { value, min, max, step, name = '', placeholder = '',
     spinButton(+1, 'M4.5 3 7.5 6 4.5 9');
 }
 
-function InputToggle(unit, { value = false, name = '', className = '', style = '' } = {}) {
+function InputSwitch(unit, { value = false, name = '', className = '', style = '' } = {}) {
     const cls = xnew.css(sharedCss);
     xnew.nest(`<div class="${cls.frame} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; border-radius: 1em; ${style}">`);
     const track = unit.element;
@@ -2097,7 +2097,7 @@ const xbasics = {
     InputCheckbox,
     InputText,
     InputNumber,
-    InputToggle,
+    InputSwitch,
     InputRadio,
     AudioTrack,
     Synthesizer,

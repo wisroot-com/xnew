@@ -1,8 +1,8 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
-import { InputToggle } from '../../../src/basics/element/InputToggle';
+import { InputSwitch } from '../../../src/basics/element/InputSwitch';
 
-describe('basics InputToggle', () => {
+describe('basics InputSwitch', () => {
     beforeEach(() => {
         jest.useFakeTimers();
         Unit.reset();
@@ -21,7 +21,7 @@ describe('basics InputToggle', () => {
     }
 
     it('nests a hidden native checkbox with the given state', () => {
-        const unit = xnew(InputToggle, { value: true, name: 'sound' });
+        const unit = xnew(InputSwitch, { value: true, name: 'sound' });
         const input = unit.element as HTMLInputElement;
 
         expect(input.tagName).toBe('INPUT');
@@ -31,21 +31,21 @@ describe('basics InputToggle', () => {
     });
 
     it('parks the knob on the left while off', () => {
-        const unit = xnew(InputToggle);
+        const unit = xnew(InputSwitch);
 
         expect(knobOf(unit).style.left).toBe('0.15em');
         expect(knobOf(unit).style.transform).toBe('translateX(0)');
     });
 
     it('parks the knob on the right while on', () => {
-        const unit = xnew(InputToggle, { value: true });
+        const unit = xnew(InputSwitch, { value: true });
 
         expect(knobOf(unit).style.left).toBe('calc(100% - 0.15em)');
         expect(knobOf(unit).style.transform).toBe('translateX(-100%)');
     });
 
     it('slides the knob and delivers a boolean value on input', () => {
-        const unit = xnew(InputToggle);
+        const unit = xnew(InputSwitch);
         const input = unit.element as HTMLInputElement;
 
         const received: boolean[] = [];
