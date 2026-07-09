@@ -1372,7 +1372,7 @@ const sharedCss = {
     textInput: `box-sizing: border-box; width: 100%; height: 100%; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; &:focus { background: ${paleColor}; }`,
 };
 
-function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = 'horizontal', name = '', className = '', style = '' } = {}) {
+function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = 'horizontal', label = '', name = '', className = '', style = '' } = {}) {
     value = value !== null && value !== void 0 ? value : min;
     const cls = xnew.css(sharedCss);
     const horizontal = orientation !== 'vertical';
@@ -1381,6 +1381,12 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = '
         ? 'top: 0; left: 0; bottom: 0; transition: width 0.05s;'
         : 'left: 0; right: 0; bottom: 0; transition: height 0.05s;';
     const fill = xnew(`<div class="${cls.frame} ${cls.pale}" style="position: absolute; ${fillAnchor}">`);
+    let status = null;
+    if (label !== '') {
+        const overlay = xnew(`<div class="${cls.overlay}" style="padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">`);
+        xnew(overlay, '<div>', label);
+        status = xnew(overlay, '<div>', String(value));
+    }
     const update = (v) => {
         const percent = `${(v - min) / (max - min) * 100}%`;
         if (horizontal) {
@@ -1388,6 +1394,9 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = '
         }
         else {
             fill.element.style.height = percent;
+        }
+        if (status !== null) {
+            status.element.textContent = String(v);
         }
     };
     update(value);
@@ -2099,16 +2108,9 @@ function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
 }
 function Range(unit, { name = '', value, min = 0, max = 100, step = 1 }) {
-    value = value !== null && value !== void 0 ? value : min;
     const cls = xnew.css(sharedCss);
     xnew.nest(`<div class="${cls.row} ${cls.clickable}">`);
-    xnew(InputRange, { name, value, min, max, step });
-    const overlay = xnew(`<div class="${cls.overlay}" style="padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">`);
-    xnew(overlay, '<div>', name);
-    const status = xnew(overlay, '<div>', String(value));
-    unit.on('input', ({ value }) => {
-        status.element.textContent = String(value);
-    });
+    xnew(InputRange, { name, label: name, value, min, max, step });
 }
 function Checkbox(unit, { name = '', value } = {}) {
     const cls = xnew.css(sharedCss);

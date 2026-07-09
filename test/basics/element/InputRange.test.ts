@@ -102,6 +102,26 @@ describe('basics InputRange', () => {
         expect((anonymous.element as HTMLInputElement).hasAttribute('name')).toBe(false);
     });
 
+    it('overlays the label and live value when label is given', () => {
+        const unit = xnew(InputRange, { value: 30, label: 'volume' });
+        const overlay = (unit.element.parentElement as HTMLElement).children[1] as HTMLElement;
+
+        expect(overlay.textContent).toBe('volume30');
+
+        jest.advanceTimersByTime(0);
+        (unit.element as HTMLInputElement).value = '55';
+        unit.element.dispatchEvent(new Event('input', { bubbles: false }));
+
+        expect(overlay.textContent).toBe('volume55');
+    });
+
+    it('renders no overlay without a label', () => {
+        const unit = xnew(InputRange, { value: 30 });
+
+        // fill bar + hidden input only
+        expect((unit.element.parentElement as HTMLElement).children).toHaveLength(2);
+    });
+
     it('applies className and style to the container', () => {
         const unit = xnew(InputRange, { className: 'gauge', style: 'height: 2em;' });
         const container = unit.element.parentElement as HTMLElement;

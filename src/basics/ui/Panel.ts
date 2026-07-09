@@ -102,21 +102,11 @@ function Range(unit: xnew.Unit,
     { name = '', value, min = 0, max = 100, step = 1 }:
     { name?: string, value?: number, min?: number, max?: number, step?: number }
 ) {
-    value = value ?? min;
     const cls = xnew.css(sharedCss);
 
     xnew.nest(`<div class="${cls.row} ${cls.clickable}">`);
 
-    xnew(InputRange, { name, value, min, max, step });
-
-    // overlay labels (after the gauge so the text paints above the fill bar)
-    const overlay = xnew(`<div class="${cls.overlay}" style="padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">`);
-    xnew(overlay, '<div>', name);
-    const status = xnew(overlay, '<div>', String(value));
-
-    unit.on('input', ({ value }: { value: number }) => {
-        status.element.textContent = String(value);
-    });
+    xnew(InputRange, { name, label: name, value, min, max, step });
 }
 
 function Checkbox(unit: xnew.Unit, { name = '', value }: { name?: string, value?: boolean } = {}) {
