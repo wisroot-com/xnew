@@ -17,6 +17,8 @@
 
 import { xnew } from '../../core/xnew';
 import { SVG } from '../element/SVG';
+import { InputRange } from '../element/InputRange';
+import { InputCheckbox } from '../element/InputCheckbox';
 import { sharedCss } from '../styles';
 import { OpenAndClose } from './OpenAndClose';
 import { Accordion } from './Accordion';
@@ -105,50 +107,26 @@ function Range(unit: xnew.Unit,
 
     xnew.nest(`<div class="${cls.row} ${cls.clickable}">`);
 
-    // fill bar
-    const fill = xnew(`<div class="${cls.frame} ${cls.pale}" style="position: absolute; top: 0; left: 0; bottom: 0; transition: width 0.05s;">`);
+    xnew(InputRange, { name: key, value, min, max, step });
 
-    // overlay labels
+    // overlay labels (after the gauge so the text paints above the fill bar)
     const overlay = xnew(`<div class="${cls.overlay}" style="padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">`);
     xnew(overlay, '<div>', key);
-    const status = xnew(overlay, '<div>');
+    const status = xnew(overlay, '<div>', String(value));
 
-    const update = (v: number) => {
-        fill.element.style.width = `${(v - min) / (max - min) * 100}%`;
-        status.element.textContent = String(v);
-    };
-    update(value);
-
-    // hidden native input for interaction
-    xnew.nest(`<input type="range" name="${key}" min="${min}" max="${max}" step="${step}" value="${value}" class="${cls.hiddenInput}">`);
     unit.on('input', ({ value }: { value: number }) => {
-        update(value);
+        status.element.textContent = String(value);
     });
 }
 
 function Checkbox(unit: xnew.Unit, { key = '', value }: { key?: string, value?: boolean } = {}) {
     const cls = xnew.css(sharedCss);
-    xnew.nest(`<div class="${cls.row} ${cls.clickable}" style="padding: 0 0.5em;">`);
+    // label row so a click anywhere in the row reaches the boxed native input
+    xnew.nest(`<label class="${cls.row} ${cls.clickable}" style="padding: 0 0.5em;">`);
 
     xnew('<div style="flex: 1;">', key);
 
-    const box = xnew(`<div class="${cls.frame}" style="width: 1.25em; height: 1.25em; display: flex; align-items: center; justify-content: center;">`, () => {
-        xnew((unit: xnew.Unit) => {
-            xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 1.25em; height: 1.25em; opacity: 0;', stroke: 'currentColor', strokeWidth: 2 });
-            xnew('<path d="M2 6 5 9 10 3" />');
-        });
-    });
-    const check = box.element.querySelector('svg') as SVGElement;
-
-    const update = (checked: boolean) => {
-        box.element.classList.toggle(cls.pale, checked);
-        check.style.opacity = checked ? '1' : '0';
-    };
-    update(!!value);
-    xnew.nest(`<input type="checkbox" name="${key}" ${value ? 'checked' : ''} class="${cls.hiddenInput}">`);
-    unit.on('input', ({ value }: { value: boolean }) => {
-        update(value);
-    });
+    xnew('<div style="width: 1.25em; height: 1.25em;">', InputCheckbox, { name: key, value });
 }
 
 function Select(unit: xnew.Unit, { key = '', value, items = [] }: { key?: string, value?: string, items?: string[] } = {}) {

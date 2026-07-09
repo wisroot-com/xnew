@@ -253,6 +253,24 @@ interface SVGTextInterface extends SVGInterface {
 }
 declare function SVGText(unit: xnew.Unit, { text, fontSize, ...svgProps }?: SVGTextInterface): void;
 
+declare function InputRange(unit: xnew.Unit, { value, min, max, step, orientation, name, className, style }?: {
+    value?: number;
+    min?: number;
+    max?: number;
+    step?: number;
+    orientation?: 'horizontal' | 'vertical';
+    name?: string;
+    className?: string;
+    style?: string;
+}): void;
+
+declare function InputCheckbox(unit: xnew.Unit, { value, name, className, style }?: {
+    value?: boolean;
+    name?: string;
+    className?: string;
+    style?: string;
+}): void;
+
 declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
     url: string;
     volume?: number;
@@ -366,6 +384,8 @@ declare const xbasics: {
     Image: typeof Image;
     SVG: typeof SVG;
     SVGText: typeof SVGText;
+    InputRange: typeof InputRange;
+    InputCheckbox: typeof InputCheckbox;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;

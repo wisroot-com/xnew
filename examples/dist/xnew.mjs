@@ -1356,6 +1356,66 @@ function SVGText(unit, _a = {}) {
     svg.style.overflow = 'visible';
 }
 
+const paleColor = 'color-mix(in srgb, currentColor 20%, transparent)';
+const sharedCss = {
+    fill: 'width: 100%; height: 100%;',
+    overlay: 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; box-sizing: border-box;',
+    touchArea: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
+    row: 'position: relative; height: 2em; margin: 0.125em 0; display: flex; align-items: center;',
+    clickable: 'cursor: pointer; user-select: none;',
+    frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
+    pale: `background: ${paleColor};`,
+    hover: `&:hover { background: ${paleColor}; }`,
+    press: '&:active { filter: brightness(0.5); }',
+    scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
+    hiddenInput: 'position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;',
+};
+
+function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = 'horizontal', name = '', className = '', style = '' } = {}) {
+    value = value !== null && value !== void 0 ? value : min;
+    const cls = xnew.css(sharedCss);
+    const horizontal = orientation !== 'vertical';
+    xnew.nest(`<div class="${cls.clickable} ${className}" style="position: relative; width: 100%; height: 100%; ${style}">`);
+    const fillAnchor = horizontal
+        ? 'top: 0; left: 0; bottom: 0; transition: width 0.05s;'
+        : 'left: 0; right: 0; bottom: 0; transition: height 0.05s;';
+    const fill = xnew(`<div class="${cls.frame} ${cls.pale}" style="position: absolute; ${fillAnchor}">`);
+    const update = (v) => {
+        const percent = `${(v - min) / (max - min) * 100}%`;
+        if (horizontal) {
+            fill.element.style.width = percent;
+        }
+        else {
+            fill.element.style.height = percent;
+        }
+    };
+    update(value);
+    const inputStyle = horizontal ? '' : ' style="writing-mode: vertical-lr; direction: rtl;"';
+    xnew.nest(`<input type="range"${name ? ` name="${name}"` : ''} min="${min}" max="${max}" step="${step}" value="${value}" class="${cls.hiddenInput}"${inputStyle}>`);
+    unit.on('input', ({ value }) => {
+        update(value);
+    });
+}
+
+function InputCheckbox(unit, { value = false, name = '', className = '', style = '' } = {}) {
+    const cls = xnew.css(sharedCss);
+    xnew.nest(`<div class="${cls.clickable} ${cls.frame} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; ${style}">`);
+    const box = unit.element;
+    const check = xnew((unit) => {
+        xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 100%; height: 100%;', stroke: 'currentColor', strokeWidth: 2 });
+        xnew('<path d="M2 6 5 9 10 3"/>');
+    });
+    const update = (checked) => {
+        box.classList.toggle(cls.pale, checked);
+        check.element.style.opacity = checked ? '1' : '0';
+    };
+    update(value);
+    xnew.nest(`<input type="checkbox"${name ? ` name="${name}"` : ''}${value ? ' checked' : ''} class="${cls.hiddenInput}">`);
+    unit.on('input', ({ value }) => {
+        update(value);
+    });
+}
+
 var _a;
 const DEFAULT_MASTER_GAIN = 0.1;
 const AudioContextCtor = typeof window !== 'undefined' ? ((_a = window.AudioContext) !== null && _a !== void 0 ? _a : window.webkitAudioContext) : undefined;
@@ -1724,21 +1784,6 @@ function Popup(unit) {
     });
 }
 
-const paleColor = 'color-mix(in srgb, currentColor 20%, transparent)';
-const sharedCss = {
-    fill: 'width: 100%; height: 100%;',
-    overlay: 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; box-sizing: border-box;',
-    touchArea: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
-    row: 'position: relative; height: 2em; margin: 0.125em 0; display: flex; align-items: center;',
-    clickable: 'cursor: pointer; user-select: none;',
-    frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
-    pale: `background: ${paleColor};`,
-    hover: `&:hover { background: ${paleColor}; }`,
-    press: '&:active { filter: brightness(0.5); }',
-    scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
-    hiddenInput: 'position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;',
-};
-
 function AnalogStick(unit, { stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 } = {}) {
     const cls = xnew.css(sharedCss);
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
@@ -1902,40 +1947,19 @@ function Range(unit, { key = '', value, min = 0, max = 100, step = 1 }) {
     value = value !== null && value !== void 0 ? value : min;
     const cls = xnew.css(sharedCss);
     xnew.nest(`<div class="${cls.row} ${cls.clickable}">`);
-    const fill = xnew(`<div class="${cls.frame} ${cls.pale}" style="position: absolute; top: 0; left: 0; bottom: 0; transition: width 0.05s;">`);
+    xnew(InputRange, { name: key, value, min, max, step });
     const overlay = xnew(`<div class="${cls.overlay}" style="padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">`);
     xnew(overlay, '<div>', key);
-    const status = xnew(overlay, '<div>');
-    const update = (v) => {
-        fill.element.style.width = `${(v - min) / (max - min) * 100}%`;
-        status.element.textContent = String(v);
-    };
-    update(value);
-    xnew.nest(`<input type="range" name="${key}" min="${min}" max="${max}" step="${step}" value="${value}" class="${cls.hiddenInput}">`);
+    const status = xnew(overlay, '<div>', String(value));
     unit.on('input', ({ value }) => {
-        update(value);
+        status.element.textContent = String(value);
     });
 }
 function Checkbox(unit, { key = '', value } = {}) {
     const cls = xnew.css(sharedCss);
-    xnew.nest(`<div class="${cls.row} ${cls.clickable}" style="padding: 0 0.5em;">`);
+    xnew.nest(`<label class="${cls.row} ${cls.clickable}" style="padding: 0 0.5em;">`);
     xnew('<div style="flex: 1;">', key);
-    const box = xnew(`<div class="${cls.frame}" style="width: 1.25em; height: 1.25em; display: flex; align-items: center; justify-content: center;">`, () => {
-        xnew((unit) => {
-            xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 1.25em; height: 1.25em; opacity: 0;', stroke: 'currentColor', strokeWidth: 2 });
-            xnew('<path d="M2 6 5 9 10 3" />');
-        });
-    });
-    const check = box.element.querySelector('svg');
-    const update = (checked) => {
-        box.element.classList.toggle(cls.pale, checked);
-        check.style.opacity = checked ? '1' : '0';
-    };
-    update(!!value);
-    xnew.nest(`<input type="checkbox" name="${key}" ${value ? 'checked' : ''} class="${cls.hiddenInput}">`);
-    unit.on('input', ({ value }) => {
-        update(value);
-    });
+    xnew('<div style="width: 1.25em; height: 1.25em;">', InputCheckbox, { name: key, value });
 }
 function Select(unit, { key = '', value, items = [] } = {}) {
     var _a;
@@ -1975,6 +1999,8 @@ const xbasics = {
     Image,
     SVG,
     SVGText,
+    InputRange,
+    InputCheckbox,
     AudioTrack,
     Synthesizer,
     Volume,
