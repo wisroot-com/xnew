@@ -67,9 +67,11 @@ describe('basics InputSelect', () => {
         expect(dropdown).not.toBeNull();
         expect(dropdown.textContent).toBe('lowmidhigh');
         // fixed + max-content: the list escapes overflow-clipping ancestors and outgrows the button
+        // fixed + anchored to the button's viewport rect (all zero under jsdom), so ancestors cannot clip it
         expect(dropdown.style.position).toBe('fixed');
-        // via the attribute: jsdom's style parser drops the max-content keyword
-        expect(dropdown.getAttribute('style')).toContain('width: max-content');
+        expect(dropdown.style.left).toBe('0px');
+        expect(dropdown.style.top).toBe('0px');
+        expect(dropdown.style.minWidth).toBe('0px');
 
         frameOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
         expect(dropdownOf(unit)).toBeNull();

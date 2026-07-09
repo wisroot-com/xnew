@@ -1545,8 +1545,15 @@ function InputSelect(unit, { value, items = [], name = '', className = '', style
             frame.classList.remove(cls.hover);
             list.on('finalize', () => frame.classList.add(cls.hover));
             list.on('pointerdown.outside', () => closeDropdown());
-            const rect = frame.getBoundingClientRect();
-            xnew.nest(`<div class="${cls.frame} ${cls.scroll}" style="position: fixed; left: ${rect.left}px; top: ${rect.bottom}px; margin-top: 0.25em; min-width: ${rect.width}px; width: max-content; z-index: 1000; max-height: 12em; background: ${surfaceColor()};">`);
+            const menu = xnew.nest(`<div class="${cls.frame} ${cls.scroll}" style="position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000; max-height: 12em; border-radius: 0; background: ${surfaceColor()};">`);
+            const anchor = () => {
+                const rect = frame.getBoundingClientRect();
+                menu.style.left = `${rect.left}px`;
+                menu.style.top = `${rect.bottom}px`;
+                menu.style.minWidth = `${rect.width}px`;
+            };
+            anchor();
+            list.on('update', anchor);
             for (const item of items) {
                 const option = xnew(`<div class="${cls.clickable} ${cls.hover}${item === select.value ? ` ${cls.pale}` : ''}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; white-space: nowrap;">`, item);
                 option.on('click', ({ event }) => {
