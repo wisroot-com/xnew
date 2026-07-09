@@ -253,13 +253,12 @@ interface SVGTextInterface extends SVGInterface {
 }
 declare function SVGText(unit: xnew.Unit, { text, fontSize, ...svgProps }?: SVGTextInterface): void;
 
-declare function InputRange(unit: xnew.Unit, { value, min, max, step, orientation, label, name, className, style }?: {
+declare function InputRange(unit: xnew.Unit, { value, min, max, step, orientation, name, className, style }?: {
     value?: number;
     min?: number;
     max?: number;
     step?: number;
     orientation?: 'horizontal' | 'vertical';
-    label?: string;
     name?: string;
     className?: string;
     style?: string;
