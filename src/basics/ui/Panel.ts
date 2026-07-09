@@ -45,22 +45,22 @@ export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
                 inner(unit);
             });
         },
-        button(name: string) {
+        button({ name = '' }: { name?: string } = {}) {
             return xnew(Button, { name });
         },
-        select(name: string, { value, items = [] }: { value?: string, items?: string[] } = {}) {
+        select({ name = '', value, items = [] }: { name?: string, value?: string, items?: string[] } = {}) {
             object[name] = value ?? object[name] ?? items[0] ?? '';
             const select = xnew(Select, { name, value: object[name], items });
             select.on('input', ({ value }: { value: string }) => object[name] = value);
             return select;
         },
-        range(name: string, { value, min = 0, max = 100, step = 1 }: { value?: number, min?: number, max?: number, step?: number } = {}) {
+        range({ name = '', value, min = 0, max = 100, step = 1 }: { name?: string, value?: number, min?: number, max?: number, step?: number } = {}) {
             object[name] = value ?? object[name] ?? min;
             const range = xnew(Range, { name, value: object[name], min, max, step });
             range.on('input', ({ value }: { value: number }) => object[name] = value);
             return range;
         },
-        checkbox(name: string, { value }: { value?: boolean } = {}) {
+        checkbox({ name = '', value }: { name?: string, value?: boolean } = {}) {
             object[name] = value ?? object[name] ?? false;
             const checkbox = xnew(Checkbox, { name, value: object[name] });
             checkbox.on('input', ({ value }: { value: boolean }) => object[name] = value);

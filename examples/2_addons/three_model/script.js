@@ -161,19 +161,19 @@ function Panel(unit) {
   xnew.nest('<div class="absolute text-sm w-36 top-2 right-2 p-1 bg-white border rounded shadow-lg pointer-events-auto">');
   const panel = xnew(xbasics.Panel, { name: 'GUI', open: true });
 
-  panel.select('action', { value: 'idle', items: model.actions('base') }).on('input', ({ value }) => {
+  panel.select({ name: 'action', value: 'idle', items: model.actions('base') }).on('input', ({ value }) => {
     model.crossfade(value);
   });
 
   xnew('<p>', 'weights');
   for (const name of model.actions('additive')) {
-    panel.range(name, { value: model.settings[name].weight, min: 0, max: 1, step: 0.01 })
+    panel.range({ name, value: model.settings[name].weight, min: 0, max: 1, step: 0.01 })
     .on('input', ({ event }) => {
       model.settings[name].weight = parseFloat(event.target.value);
       model.activate(model.settings[name].action, parseFloat(event.target.value));
     });
   }
-  panel.range('speed', { value: 1.0, min: 0.01, max: 2.00, step: 0.01 }).on('input', ({ event, value }) => {
+  panel.range({ name: 'speed', value: 1.0, min: 0.01, max: 2.00, step: 0.01 }).on('input', ({ event, value }) => {
     model.speed = value;
   });
 }

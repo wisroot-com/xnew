@@ -400,18 +400,23 @@ interface PanelOptions {
 }
 declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
     group({ name, open, params }: PanelOptions, inner: Function): Unit;
-    button(name: string): Unit;
-    select(name: string, { value, items }?: {
+    button({ name }?: {
+        name?: string;
+    }): Unit;
+    select({ name, value, items }?: {
+        name?: string;
         value?: string;
         items?: string[];
     }): Unit;
-    range(name: string, { value, min, max, step }?: {
+    range({ name, value, min, max, step }?: {
+        name?: string;
         value?: number;
         min?: number;
         max?: number;
         step?: number;
     }): Unit;
-    checkbox(name: string, { value }?: {
+    checkbox({ name, value }?: {
+        name?: string;
         value?: boolean;
     }): Unit;
     separator(): void;

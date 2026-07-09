@@ -260,13 +260,13 @@ function GUIPanel(unit) {
 
   const panel = xnew(xbasics.Panel, { name: 'GUI', open: true, params });
 
-  panel.range('pixelSize', { min: 1, max: 16, step: 1 }).on('input', ({ value }) => {
+  panel.range({ name: 'pixelSize', min: 1, max: 16, step: 1 }).on('input', ({ value }) => {
     rpp.setPixelSize(value);
   });
-  panel.range('normalEdgeStrength', { min: 0, max: 2, step: 0.1 }).on('input', ({ value }) => {
+  panel.range({ name: 'normalEdgeStrength', min: 0, max: 2, step: 0.1 }).on('input', ({ value }) => {
     rpp.normalEdgeStrength = value;
   });
-  panel.range('depthEdgeStrength', { min: 0, max: 1, step: 0.1 }).on('input', ({ value }) => {
+  panel.range({ name: 'depthEdgeStrength', min: 0, max: 1, step: 0.1 }).on('input', ({ value }) => {
     rpp.depthEdgeStrength = value;
   });
 }

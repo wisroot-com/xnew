@@ -2046,24 +2046,24 @@ function Panel(unit, { params, nested }) {
                 inner(unit);
             });
         },
-        button(name) {
+        button({ name = '' } = {}) {
             return xnew(Button, { name });
         },
-        select(name, { value, items = [] } = {}) {
+        select({ name = '', value, items = [] } = {}) {
             var _a, _b;
             object[name] = (_b = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : items[0]) !== null && _b !== void 0 ? _b : '';
             const select = xnew(Select, { name, value: object[name], items });
             select.on('input', ({ value }) => object[name] = value);
             return select;
         },
-        range(name, { value, min = 0, max = 100, step = 1 } = {}) {
+        range({ name = '', value, min = 0, max = 100, step = 1 } = {}) {
             var _a;
             object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : min;
             const range = xnew(Range, { name, value: object[name], min, max, step });
             range.on('input', ({ value }) => object[name] = value);
             return range;
         },
-        checkbox(name, { value } = {}) {
+        checkbox({ name = '', value } = {}) {
             var _a;
             object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : false;
             const checkbox = xnew(Checkbox, { name, value: object[name] });

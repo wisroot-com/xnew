@@ -40,7 +40,7 @@
             'dark navy':  { background: '#172554', color: '#bfdbfe' },
           };
           for (const [name, { background, color }] of Object.entries(colors)) {
-            subgroup.button(name).on('click', () => {
+            subgroup.button({ name }).on('click', () => {
               Object.assign(panelbg.style, { background, color });
               xnew.emit('+console', { text: `${name} button clicked` });
             });
@@ -48,12 +48,12 @@
           subgroup.separator();
         });
 
-        group.range('data', { value: 20, min: 0, max: 60, step: 2 }).on('input', ({ value }) => xnew.emit('+console', { text: `data changed to ${value}` }));
-        group.checkbox('flag').on('input', ({ value }) => xnew.emit('+console', { text: `flag changed to ${value}` }));
-        group.select('color', { items: ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta', 'brown', 'gray', 'black', 'white'] }).on('input', ({ value }) => xnew.emit('+console', { text: `color changed to ${value}` }));
+        group.range({ name: 'data', value: 20, min: 0, max: 60, step: 2 }).on('input', ({ value }) => xnew.emit('+console', { text: `data changed to ${value}` }));
+        group.checkbox({ name: 'flag' }).on('input', ({ value }) => xnew.emit('+console', { text: `flag changed to ${value}` }));
+        group.select({ name: 'color', items: ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta', 'brown', 'gray', 'black', 'white'] }).on('input', ({ value }) => xnew.emit('+console', { text: `color changed to ${value}` }));
         group.separator();
 
-        const show = group.checkbox('show');
+        const show = group.checkbox({ name: 'show' });
         const subgroup = panel.group({ open: false }, (subgroup) => {
           xnew('<p class="m-1">', 'hellow');
         });

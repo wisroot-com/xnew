@@ -174,17 +174,17 @@ function Panel(panel) {
 
   xnew.extend(xbasics.Panel, { name: 'GUI', open: true, params });
 
-  panel.range('threshold', { min: 0, max: 1, step: 0.01 }).on('input', ({ value }) => {
+  panel.range({ name: 'threshold', min: 0, max: 1, step: 0.01 }).on('input', ({ value }) => {
     render.bloom.threshold = value;
   });
-  panel.range('strength', { min: 0, max: 3, step: 0.01 }).on('input', ({ value }) => {
+  panel.range({ name: 'strength', min: 0, max: 3, step: 0.01 }).on('input', ({ value }) => {
     render.bloom.strength = value;
     render.mix.material.uniforms.bloomStrength.value = render.bloom.strength;
   });
-  panel.range('radius', { min: 0, max: 1, step: 0.01 }).on('input', ({ value }) => {
+  panel.range({ name: 'radius', min: 0, max: 1, step: 0.01 }).on('input', ({ value }) => {
     render.bloom.radius = value;
   });
-  panel.range('exposure', { min: 0.1, max: 2, step: 0.1 }).on('input', ({ value }) => {
+  panel.range({ name: 'exposure', min: 0.1, max: 2, step: 0.1 }).on('input', ({ value }) => {
     xthree.renderer.toneMappingExposure = Math.pow(value, 4.0);
   });
 }

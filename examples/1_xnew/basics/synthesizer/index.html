@@ -301,37 +301,37 @@
       panel.group({ name: 'oscillator', open: true }, (group) => {
         xnew(WaveSelect, { target: state.oscillator });
         toggleGroup(group, 'pitch envelope', state.pitch, (sub) => {
-          sub.range('amount', { min: -24, max: 24, step: 1 }).on('input', emitParams);
+          sub.range({ name: 'amount', min: -24, max: 24, step: 1 }).on('input', emitParams);
           envelopeRows(sub);
         });
         toggleGroup(group, 'LFO', state.lfo, (sub) => {
           xnew(WaveSelect, { target: state.lfo });
-          sub.range('amount', { min: 0, max: 12, step: 0.5 }).on('input', emitParams);
-          sub.range('rate', { min: 1, max: 20, step: 1 }).on('input', emitParams);
+          sub.range({ name: 'amount', min: 0, max: 12, step: 0.5 }).on('input', emitParams);
+          sub.range({ name: 'rate', min: 1, max: 20, step: 1 }).on('input', emitParams);
         });
       });
 
       toggleGroup(panel, 'filter', state.filter, (sub) => {
-        sub.select('type', { items: ['lowpass', 'highpass', 'bandpass'] }).on('input', emitParams);
-        sub.range('cutoff', { min: 100, max: 8000, step: 100 }).on('input', emitParams);
+        sub.select({ name: 'type', items: ['lowpass', 'highpass', 'bandpass'] }).on('input', emitParams);
+        sub.range({ name: 'cutoff', min: 100, max: 8000, step: 100 }).on('input', emitParams);
       });
 
       panel.group({ name: 'amp', open: true, params: state.amp }, (group) => {
         xnew(EnvelopeCurve, { env: state.amp });
-        group.range('amount', { min: 0, max: 1, step: 0.05 }).on('input', emitParams);
+        group.range({ name: 'amount', min: 0, max: 1, step: 0.05 }).on('input', emitParams);
         envelopeRows(group);
       });
 
       toggleGroup(panel, 'reverb', state.reverb, (sub) => {
-        sub.range('time', { min: 100, max: 2000, step: 100 }).on('input', emitParams);
-        sub.range('mix', { min: 0, max: 1, step: 0.05 }).on('input', emitParams);
+        sub.range({ name: 'time', min: 100, max: 2000, step: 100 }).on('input', emitParams);
+        sub.range({ name: 'mix', min: 0, max: 1, step: 0.05 }).on('input', emitParams);
       });
     }
 
     // named group with an 'enabled' checkbox that opens / closes its parameter rows
     function toggleGroup(panel, name, params, inner) {
       panel.group({ name, params, open: params.enabled }, (group) => {
-        const enabled = group.checkbox('enabled');
+        const enabled = group.checkbox({ name: 'enabled' });
         const sub = group.group({ open: params.enabled }, inner);
         enabled.on('input', ({ value }) => {
           value ? sub.open() : sub.close();
@@ -341,10 +341,10 @@
     }
 
     function envelopeRows(group) {
-      group.range('attack', { min: 0, max: 1000, step: 10 }).on('input', emitParams);
-      group.range('decay', { min: 0, max: 1000, step: 10 }).on('input', emitParams);
-      group.range('sustain', { min: 0, max: 1, step: 0.05 }).on('input', emitParams);
-      group.range('release', { min: 0, max: 1000, step: 10 }).on('input', emitParams);
+      group.range({ name: 'attack', min: 0, max: 1000, step: 10 }).on('input', emitParams);
+      group.range({ name: 'decay', min: 0, max: 1000, step: 10 }).on('input', emitParams);
+      group.range({ name: 'sustain', min: 0, max: 1, step: 0.05 }).on('input', emitParams);
+      group.range({ name: 'release', min: 0, max: 1000, step: 10 }).on('input', emitParams);
     }
 
     function WaveSelect(unit, { target }) {
