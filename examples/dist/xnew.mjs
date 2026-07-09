@@ -1519,7 +1519,7 @@ function InputSelect(unit, { value, items = [], name = '', className = '', style
     const label = xnew('<div style="flex: 1 1 0; padding: 0 0.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">', initial);
     xnew(() => {
         xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
-        xnew('<path d="M3.5 4.5 6 2 8.5 4.5 M3.5 7.5 6 10 8.5 7.5"/>');
+        xnew('<path d="M3.5 4.5 6 7.5 8.5 4.5"/>');
     });
     let select;
     let dropdown = null;

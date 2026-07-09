@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputSelect — listbox-style pulldown backed by a hidden native <select>
 //
-// A framed button (current value + up/down chevron) opens a floating option list styled like the
+// A framed button (current value + down chevron) opens a floating option list styled like the
 // other Input* elements — the native popup cannot be styled — while the hidden select keeps
 // native form semantics.
 //
@@ -29,7 +29,7 @@ export function InputSelect(unit: xnew.Unit,
 
     xnew(() => {
         xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
-        xnew('<path d="M3.5 4.5 6 2 8.5 4.5 M3.5 7.5 6 10 8.5 7.5"/>');
+        xnew('<path d="M3.5 4.5 6 7.5 8.5 4.5"/>');
     });
 
     let select: HTMLSelectElement;
