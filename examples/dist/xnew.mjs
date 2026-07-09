@@ -1369,6 +1369,7 @@ const sharedCss = {
     press: '&:active { filter: brightness(0.5); }',
     scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
     hiddenInput: 'position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;',
+    textInput: `box-sizing: border-box; width: 100%; height: 100%; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; &:focus { background: ${paleColor}; }`,
 };
 
 function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = 'horizontal', name = '', className = '', style = '' } = {}) {
@@ -1414,6 +1415,56 @@ function InputCheckbox(unit, { value = false, name = '', className = '', style =
     unit.on('input', ({ value }) => {
         update(value);
     });
+}
+
+function InputText(unit, { value = '', name = '', placeholder = '', className = '', style = '' } = {}) {
+    const cls = xnew.css(sharedCss);
+    xnew.nest(`<input type="text"${name ? ` name="${name}"` : ''} class="${cls.frame} ${cls.textInput} ${className}" style="${style}">`);
+    const element = unit.element;
+    element.value = value;
+    element.placeholder = placeholder;
+}
+
+const numberCss = {
+    noSpinner: '-moz-appearance: textfield; appearance: textfield; &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }',
+};
+function InputNumber(unit, { value, min, max, step, name = '', placeholder = '', className = '', style = '' } = {}) {
+    const cls = xnew.css(sharedCss);
+    const num = xnew.css(numberCss);
+    const container = xnew.nest(`<div class="${cls.frame} ${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; ${style}">`);
+    let element;
+    const spinButton = (direction, path, edge) => {
+        const button = xnew(container, () => {
+            xnew.nest(`<div class="${cls.clickable} ${cls.hover} ${cls.press}" style="width: 1.5em; display: flex; align-items: center; justify-content: center; border-${edge}: 1px solid currentColor;">`);
+            xnew((unit) => {
+                xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 0.9em; height: 0.9em;' });
+                xnew(`<path d="${path}"/>`);
+            });
+        });
+        button.on('click', () => {
+            if (direction > 0) {
+                element.stepUp();
+            }
+            else {
+                element.stepDown();
+            }
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+    };
+    spinButton(-1, 'M7.5 3 4.5 6 7.5 9', 'right');
+    const attrs = [
+        name ? ` name="${name}"` : '',
+        min !== undefined ? ` min="${min}"` : '',
+        max !== undefined ? ` max="${max}"` : '',
+        step !== undefined ? ` step="${step}"` : '',
+    ].join('');
+    xnew.nest(`<input type="number"${attrs} class="${cls.textInput} ${num.noSpinner}" style="flex: 1 1 0; width: auto; min-width: 0; text-align: center;">`);
+    element = unit.element;
+    if (value !== undefined) {
+        element.value = String(value);
+    }
+    element.placeholder = placeholder;
+    spinButton(+1, 'M4.5 3 7.5 6 4.5 9', 'left');
 }
 
 var _a;
@@ -2001,6 +2052,8 @@ const xbasics = {
     SVGText,
     InputRange,
     InputCheckbox,
+    InputText,
+    InputNumber,
     AudioTrack,
     Synthesizer,
     Volume,

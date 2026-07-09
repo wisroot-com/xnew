@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden">
+  <div id="main" class="relative w-full h-full"></div>
+  <script type="module">
+    import { xnew, xbasics } from '@mulsense/xnew';
+
+    xnew(document.querySelector('#main'), (unit) => {
+      xnew.nest('<div class="p-2">');
+
+      const textunit = xnew('<div class="m-0.5 p-1 rounded bg-gray-200">', 'Console');
+      textunit.on('+console', ({ text }) => textunit.element.textContent = text);
+
+      xnew(MyInputs);
+    });
+
+    function MyInputs(unit) {
+      xnew.nest('<div class="m-0.5 mt-2 p-4 w-80 text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg flex flex-col gap-4">');
+
+      xnew('<div>', (unit) => {
+        xnew('<div class="mb-1">', 'InputText');
+        xnew('<div class="h-8">', xbasics.InputText, { placeholder: 'type here' })
+          .on('input', ({ value }) => xnew.emit('+console', { text: `text changed to "${value}"` }));
+      });
+
+      xnew('<div>', (unit) => {
+        xnew('<div class="mb-1">', 'InputNumber');
+        xnew('<div class="h-8 w-32">', xbasics.InputNumber, { value: 10, min: 0, max: 100, step: 5 })
+          .on('input', ({ value }) => xnew.emit('+console', { text: `number changed to ${value}` }));
+      });
+
+      xnew('<div>', (unit) => {
+        xnew('<div class="mb-1">', 'InputCheckbox');
+        xnew('<div class="w-6 h-6">', xbasics.InputCheckbox, { value: true })
+          .on('input', ({ value }) => xnew.emit('+console', { text: `checkbox changed to ${value}` }));
+      });
+
+      xnew('<div>', (unit) => {
+        xnew('<div class="mb-1">', 'InputRange');
+        xnew('<div class="h-6">', xbasics.InputRange, { value: 30 })
+          .on('input', ({ value }) => xnew.emit('+console', { text: `range changed to ${value}` }));
+      });
+
+      xnew('<div>', (unit) => {
+        xnew('<div class="mb-1">', 'InputRange (vertical)');
+        xnew('<div class="w-6 h-32">', xbasics.InputRange, { value: 30, orientation: 'vertical' })
+          .on('input', ({ value }) => xnew.emit('+console', { text: `vertical range changed to ${value}` }));
+      });
+    }
+  </script>
+</body>
+
+</html>

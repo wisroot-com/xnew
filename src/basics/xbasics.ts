@@ -6,7 +6,8 @@
 // `xsync`, not here, so xbasics stays transport-free.
 //
 // - xbasics : { Aspect, Screen, Scene, SceneList, Split,             // view/
-//               Image, SVG, SVGText, InputRange, InputCheckbox,      // element/
+//               Image, SVG, SVGText,                                 // element/
+//               InputRange, InputCheckbox, InputText, InputNumber,   // element/ (form inputs)
 //               AudioTrack, Synthesizer, Volume,                     // audio/
 //               OpenAndClose, Accordion, Popup, AnalogStick, DPad, Panel }  // ui/
 //----------------------------------------------------------------------------------------------------
@@ -21,6 +22,8 @@ import { SVG } from './element/SVG';
 import { SVGText } from './element/SVGText';
 import { InputRange } from './element/InputRange';
 import { InputCheckbox } from './element/InputCheckbox';
+import { InputText } from './element/InputText';
+import { InputNumber } from './element/InputNumber';
 import { AudioTrack } from './audio/AudioTrack';
 import { Synthesizer } from './audio/Synthesizer';
 import { Volume } from './audio/Volume';
@@ -42,6 +45,8 @@ export const xbasics = {
     SVGText,
     InputRange,
     InputCheckbox,
+    InputText,
+    InputNumber,
     AudioTrack,
     Synthesizer,
     Volume,

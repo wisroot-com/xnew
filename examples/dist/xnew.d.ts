@@ -271,6 +271,25 @@ declare function InputCheckbox(unit: xnew.Unit, { value, name, className, style 
     style?: string;
 }): void;
 
+declare function InputText(unit: xnew.Unit, { value, name, placeholder, className, style }?: {
+    value?: string;
+    name?: string;
+    placeholder?: string;
+    className?: string;
+    style?: string;
+}): void;
+
+declare function InputNumber(unit: xnew.Unit, { value, min, max, step, name, placeholder, className, style }?: {
+    value?: number;
+    min?: number;
+    max?: number;
+    step?: number;
+    name?: string;
+    placeholder?: string;
+    className?: string;
+    style?: string;
+}): void;
+
 declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
     url: string;
     volume?: number;
@@ -386,6 +405,8 @@ declare const xbasics: {
     SVGText: typeof SVGText;
     InputRange: typeof InputRange;
     InputCheckbox: typeof InputCheckbox;
+    InputText: typeof InputText;
+    InputNumber: typeof InputNumber;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;

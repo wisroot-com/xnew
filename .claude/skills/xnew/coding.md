@@ -237,6 +237,13 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **Don't read the host's `unit.element` inside a callback registered on a child unit that was
+  created before a later `xnew.nest(...)` — it sees the nest chain as of that child's creation,
+  not the final element.** The callback runs in the child's scope, which snapshots the host's
+  current element at creation time (bit InputNumber: the left spin button's click handler got the
+  container instead of the later-nested `<input>`, while the right button — created after the
+  nest — saw the input). Capture the element into a local after nesting and close over that.
+
 - **An inline component must not implicitly return a unit: write `() => { xnew(Child); }`,
   not `() => xnew(Child)`.** A component's return value is merged as defines, so the returned
   child unit's internals collide and throw `The property "_" already exists.`

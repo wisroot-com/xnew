@@ -5,7 +5,7 @@
 // truth, and xnew.css dedupes it into a single ref-counted <style>.
 //
 // - sharedCss : defs for xnew.css — fill / overlay / touchArea / row / clickable / frame /
-//               pale / hover / press / scroll / hiddenInput
+//               pale / hover / press / scroll / hiddenInput / textInput
 //
 // Usage: const cls = xnew.css(sharedCss); xnew.nest(`<div class="${cls.row} ${cls.clickable}">`);
 //----------------------------------------------------------------------------------------------------
@@ -29,4 +29,6 @@ export const sharedCss = {
     scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
     // hidden native control overlaid on a styled row to capture interaction
     hiddenInput: 'position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;',
+    // visible native text control; transparent + inherit so it sits on any surface (pair with frame)
+    textInput: `box-sizing: border-box; width: 100%; height: 100%; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; &:focus { background: ${paleColor}; }`,
 };

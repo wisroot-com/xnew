@@ -28,6 +28,7 @@ Recommended reading order.
 | [screen](basics/screen/) | `Screen` (fixed-resolution canvas, `fit`), `Aspect` |
 | [split](basics/split/) | `Split` — `pane()` builder (ratio / fixed size), nested splits for screen layout |
 | [scene](basics/scene/) | `Scene` navigation — `change` (swap sibling scenes) / `add` (overlay) |
+| [input](basics/input/) | `InputText` / `InputNumber` / `InputCheckbox` / `InputRange` (horizontal / vertical) form elements |
 | [panel](basics/panel/) | `Panel` — groups, buttons, range / checkbox / select |
 | [openandclose](basics/openandclose/) | `OpenAndClose` + `Accordion` / `Popup` (accordion, modal, menu) |
 | [controller](basics/controller/) | `DPad` / `AnalogStick` virtual game pad |
