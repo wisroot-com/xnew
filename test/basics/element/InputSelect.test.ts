@@ -88,6 +88,27 @@ describe('basics InputSelect', () => {
         expect(options.map((o) => o.classList.contains(highlight))).toEqual([false, true, false]);
     });
 
+    it('suppresses the button hover tint while the option list is open', () => {
+        const unit = xnew(InputSelect, { items: ['low', 'mid'] });
+        const classes = Array.from(frameOf(unit).classList);
+
+        open(unit);
+        expect(Array.from(frameOf(unit).classList)).toHaveLength(classes.length - 1);
+
+        frameOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
+        expect(Array.from(frameOf(unit).classList).sort()).toEqual([...classes].sort());
+    });
+
+    it('wears the surface color behind the control on the option list', () => {
+        const host = document.createElement('div');
+        host.style.backgroundColor = 'rgb(1, 2, 3)';
+        document.body.appendChild(host);
+        const unit = xnew(host, InputSelect, { items: ['low', 'mid'] });
+
+        expect(open(unit).style.backgroundColor).toBe('rgb(1, 2, 3)');
+        host.remove();
+    });
+
     it('closes the option list on a pointerdown outside the control', () => {
         const unit = xnew(InputSelect, { items: ['low', 'mid'] });
 

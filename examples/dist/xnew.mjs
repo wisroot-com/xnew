@@ -1523,14 +1523,25 @@ function InputSelect(unit, { value, items = [], name = '', className = '', style
     });
     let select;
     let dropdown = null;
+    const surfaceColor = () => {
+        for (let element = frame.parentElement; element !== null; element = element.parentElement) {
+            const color = getComputedStyle(element).backgroundColor;
+            if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
+                return color;
+            }
+        }
+        return 'Canvas';
+    };
     const closeDropdown = () => {
         dropdown === null || dropdown === void 0 ? void 0 : dropdown.finalize();
         dropdown = null;
     };
     const openDropdown = () => {
         dropdown = xnew(frame, (list) => {
+            frame.classList.remove(cls.hover);
+            list.on('finalize', () => frame.classList.add(cls.hover));
             list.on('pointerdown.outside', () => closeDropdown());
-            xnew.nest(`<div class="${cls.frame} ${cls.scroll}" style="position: absolute; top: calc(100% + 0.25em); left: 0; right: 0; z-index: 1000; max-height: 12em; background: Canvas;">`);
+            xnew.nest(`<div class="${cls.frame} ${cls.scroll}" style="position: absolute; top: calc(100% + 0.25em); left: 0; right: 0; z-index: 1000; max-height: 12em; background: ${surfaceColor()};">`);
             for (const item of items) {
                 const option = xnew(`<div class="${cls.clickable} ${cls.hover}${item === select.value ? ` ${cls.pale}` : ''}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; white-space: nowrap;">`, item);
                 option.on('click', ({ event }) => {

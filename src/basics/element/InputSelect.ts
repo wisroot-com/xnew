@@ -35,6 +35,18 @@ export function InputSelect(unit: xnew.Unit,
     let select: HTMLSelectElement;
     let dropdown: xnew.Unit | null = null;
 
+    // the floating list wears the surface color behind the control (the button face is transparent,
+    // and reading the frame itself would capture its hover tint)
+    const surfaceColor = () => {
+        for (let element = frame.parentElement; element !== null; element = element.parentElement) {
+            const color = getComputedStyle(element).backgroundColor;
+            if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
+                return color;
+            }
+        }
+        return 'Canvas';
+    };
+
     const closeDropdown = () => {
         dropdown?.finalize();
         dropdown = null;
@@ -42,11 +54,14 @@ export function InputSelect(unit: xnew.Unit,
     const openDropdown = () => {
         // bound to the frame element (not the current hidden select) so the list lands beside the button
         dropdown = xnew(frame, (list: xnew.Unit) => {
+            // the button hover tint is suppressed while the list is open, restored on any close path
+            frame.classList.remove(cls.hover);
+            list.on('finalize', () => frame.classList.add(cls.hover));
+
             // registered while the list's element is still the frame, so 'outside' means outside the whole control
             list.on('pointerdown.outside', () => closeDropdown());
 
-            // Canvas keeps the floating list opaque over whatever sits behind the control
-            xnew.nest(`<div class="${cls.frame} ${cls.scroll}" style="position: absolute; top: calc(100% + 0.25em); left: 0; right: 0; z-index: 1000; max-height: 12em; background: Canvas;">`);
+            xnew.nest(`<div class="${cls.frame} ${cls.scroll}" style="position: absolute; top: calc(100% + 0.25em); left: 0; right: 0; z-index: 1000; max-height: 12em; background: ${surfaceColor()};">`);
             for (const item of items) {
                 const option = xnew(`<div class="${cls.clickable} ${cls.hover}${item === select.value ? ` ${cls.pale}` : ''}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; white-space: nowrap;">`, item);
                 option.on('click', ({ event }: { event: PointerEvent }) => {
