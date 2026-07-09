@@ -16,8 +16,9 @@ describe('basics InputSelect', () => {
         return unit.element.parentElement as HTMLElement;
     }
 
+    // the first frame child is the label box: visible label first, then the hidden per-item sizers
     function labelOf(unit: xnew.Unit): HTMLElement {
-        return frameOf(unit).querySelector('div') as HTMLElement;
+        return frameOf(unit).firstElementChild?.firstElementChild as HTMLElement;
     }
 
     function dropdownOf(unit: xnew.Unit): HTMLElement | null {
@@ -50,6 +51,14 @@ describe('basics InputSelect', () => {
         expect(labelOf(unit).textContent).toBe('low');
     });
 
+    it('reserves the width of every item with hidden sizers in the button', () => {
+        const unit = xnew(InputSelect, { items: ['low', 'a much longer option'] });
+        const sizers = Array.from((labelOf(unit).parentElement as HTMLElement).children).slice(1) as HTMLElement[];
+
+        expect(sizers.map((s) => s.textContent)).toEqual(['low', 'a much longer option']);
+        expect(sizers.every((s) => s.style.visibility === 'hidden' && s.style.height === '0px')).toBe(true);
+    });
+
     it('toggles the floating option list on click', () => {
         const unit = xnew(InputSelect, { items: ['low', 'mid', 'high'] });
 
@@ -57,6 +66,10 @@ describe('basics InputSelect', () => {
         const dropdown = open(unit);
         expect(dropdown).not.toBeNull();
         expect(dropdown.textContent).toBe('lowmidhigh');
+        // fixed + max-content: the list escapes overflow-clipping ancestors and outgrows the button
+        expect(dropdown.style.position).toBe('fixed');
+        // via the attribute: jsdom's style parser drops the max-content keyword
+        expect(dropdown.getAttribute('style')).toContain('width: max-content');
 
         frameOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
         expect(dropdownOf(unit)).toBeNull();

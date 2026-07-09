@@ -25,7 +25,12 @@ export function InputSelect(unit: xnew.Unit,
     xnew.nest(`<div class="${cls.frame} ${cls.clickable} ${cls.hover} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; ${style}">`);
     const frame = unit.element as HTMLElement;
 
-    const label = xnew('<div style="flex: 1 1 0; padding: 0 0.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">', initial);
+    const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
+    const label = xnew(labelBox, '<div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">', initial);
+    // invisible sizers: every item reserves its own width, so the button fits the longest one
+    for (const item of items) {
+        xnew(labelBox, '<div style="visibility: hidden; height: 0; white-space: nowrap;">', item);
+    }
 
     xnew(() => {
         xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
@@ -61,7 +66,10 @@ export function InputSelect(unit: xnew.Unit,
             // registered while the list's element is still the frame, so 'outside' means outside the whole control
             list.on('pointerdown.outside', () => closeDropdown());
 
-            xnew.nest(`<div class="${cls.frame} ${cls.scroll}" style="position: absolute; top: calc(100% + 0.25em); left: 0; right: 0; z-index: 1000; max-height: 12em; background: ${surfaceColor()};">`);
+            // fixed + viewport coords escape overflow-clipping ancestors (e.g. a panel's scroll container);
+            // max-content lets the list outgrow the button so long items stay readable
+            const rect = frame.getBoundingClientRect();
+            xnew.nest(`<div class="${cls.frame} ${cls.scroll}" style="position: fixed; left: ${rect.left}px; top: ${rect.bottom}px; margin-top: 0.25em; min-width: ${rect.width}px; width: max-content; z-index: 1000; max-height: 12em; background: ${surfaceColor()};">`);
             for (const item of items) {
                 const option = xnew(`<div class="${cls.clickable} ${cls.hover}${item === select.value ? ` ${cls.pale}` : ''}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; white-space: nowrap;">`, item);
                 option.on('click', ({ event }: { event: PointerEvent }) => {
