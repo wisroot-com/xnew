@@ -2046,28 +2046,28 @@ function Panel(unit, { params, nested }) {
                 inner(unit);
             });
         },
-        button(key) {
-            return xnew(Button, { key });
+        button(name) {
+            return xnew(Button, { name });
         },
-        select(key, { value, items = [] } = {}) {
+        select(name, { value, items = [] } = {}) {
             var _a, _b;
-            object[key] = (_b = (_a = value !== null && value !== void 0 ? value : object[key]) !== null && _a !== void 0 ? _a : items[0]) !== null && _b !== void 0 ? _b : '';
-            const select = xnew(Select, { key, value: object[key], items });
-            select.on('input', ({ value }) => object[key] = value);
+            object[name] = (_b = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : items[0]) !== null && _b !== void 0 ? _b : '';
+            const select = xnew(Select, { name, value: object[name], items });
+            select.on('input', ({ value }) => object[name] = value);
             return select;
         },
-        range(key, { value, min = 0, max = 100, step = 1 } = {}) {
+        range(name, { value, min = 0, max = 100, step = 1 } = {}) {
             var _a;
-            object[key] = (_a = value !== null && value !== void 0 ? value : object[key]) !== null && _a !== void 0 ? _a : min;
-            const range = xnew(Range, { key, value: object[key], min, max, step });
-            range.on('input', ({ value }) => object[key] = value);
+            object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : min;
+            const range = xnew(Range, { name, value: object[name], min, max, step });
+            range.on('input', ({ value }) => object[name] = value);
             return range;
         },
-        checkbox(key, { value } = {}) {
+        checkbox(name, { value } = {}) {
             var _a;
-            object[key] = (_a = value !== null && value !== void 0 ? value : object[key]) !== null && _a !== void 0 ? _a : false;
-            const checkbox = xnew(Checkbox, { key, value: object[key] });
-            checkbox.on('input', ({ value }) => object[key] = value);
+            object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : false;
+            const checkbox = xnew(Checkbox, { name, value: object[name] });
+            checkbox.on('input', ({ value }) => object[name] = value);
             return checkbox;
         },
         separator() {
@@ -2091,36 +2091,36 @@ function Group(group, { name, open = false }) {
     }
     xnew.extend(Accordion);
 }
-function Button(unit, { key = '' }) {
+function Button(unit, { name = '' }) {
     const cls = xnew.css(sharedCss);
-    xnew.nest(`<button class="${cls.row} ${cls.clickable} ${cls.frame} ${cls.hover} ${cls.press}" style="justify-content: center;">`, key);
+    xnew.nest(`<button class="${cls.row} ${cls.clickable} ${cls.frame} ${cls.hover} ${cls.press}" style="justify-content: center;">`, name);
 }
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
 }
-function Range(unit, { key = '', value, min = 0, max = 100, step = 1 }) {
+function Range(unit, { name = '', value, min = 0, max = 100, step = 1 }) {
     value = value !== null && value !== void 0 ? value : min;
     const cls = xnew.css(sharedCss);
     xnew.nest(`<div class="${cls.row} ${cls.clickable}">`);
-    xnew(InputRange, { name: key, value, min, max, step });
+    xnew(InputRange, { name, value, min, max, step });
     const overlay = xnew(`<div class="${cls.overlay}" style="padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">`);
-    xnew(overlay, '<div>', key);
+    xnew(overlay, '<div>', name);
     const status = xnew(overlay, '<div>', String(value));
     unit.on('input', ({ value }) => {
         status.element.textContent = String(value);
     });
 }
-function Checkbox(unit, { key = '', value } = {}) {
+function Checkbox(unit, { name = '', value } = {}) {
     const cls = xnew.css(sharedCss);
     xnew.nest(`<label class="${cls.row} ${cls.clickable}" style="padding: 0 0.5em;">`);
-    xnew('<div style="flex: 1;">', key);
-    xnew('<div style="width: 1.25em; height: 1.25em;">', InputCheckbox, { name: key, value });
+    xnew('<div style="flex: 1;">', name);
+    xnew('<div style="width: 1.25em; height: 1.25em;">', InputCheckbox, { name, value });
 }
-function Select(unit, { key = '', value, items = [] } = {}) {
+function Select(unit, { name = '', value, items = [] } = {}) {
     const cls = xnew.css(sharedCss);
     xnew.nest(`<div class="${cls.row}" style="padding: 0 0.5em;">`);
-    xnew('<div style="flex: 1;">', key);
-    xnew('<div style="height: 2em; min-width: 3em;">', InputSelect, { name: key, value, items });
+    xnew('<div style="flex: 1;">', name);
+    xnew('<div style="height: 2em; min-width: 3em;">', InputSelect, { name, value, items });
 }
 
 const xbasics = {

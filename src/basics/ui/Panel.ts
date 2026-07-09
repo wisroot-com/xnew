@@ -45,25 +45,25 @@ export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
                 inner(unit);
             });
         },
-        button(key: string) {
-            return xnew(Button, { key });
+        button(name: string) {
+            return xnew(Button, { name });
         },
-        select(key: string, { value, items = [] }: { value?: string, items?: string[] } = {}) {
-            object[key] = value ?? object[key] ?? items[0] ?? '';
-            const select = xnew(Select, { key, value: object[key], items });
-            select.on('input', ({ value }: { value: string }) => object[key] = value);
+        select(name: string, { value, items = [] }: { value?: string, items?: string[] } = {}) {
+            object[name] = value ?? object[name] ?? items[0] ?? '';
+            const select = xnew(Select, { name, value: object[name], items });
+            select.on('input', ({ value }: { value: string }) => object[name] = value);
             return select;
         },
-        range(key: string, { value, min = 0, max = 100, step = 1 }: { value?: number, min?: number, max?: number, step?: number } = {}) {
-            object[key] = value ?? object[key] ?? min;
-            const range = xnew(Range, { key, value: object[key], min, max, step });
-            range.on('input', ({ value }: { value: number }) => object[key] = value);
+        range(name: string, { value, min = 0, max = 100, step = 1 }: { value?: number, min?: number, max?: number, step?: number } = {}) {
+            object[name] = value ?? object[name] ?? min;
+            const range = xnew(Range, { name, value: object[name], min, max, step });
+            range.on('input', ({ value }: { value: number }) => object[name] = value);
             return range;
         },
-        checkbox(key: string, { value }: { value?: boolean } = {}) {
-            object[key] = value ?? object[key] ?? false;
-            const checkbox = xnew(Checkbox, { key, value: object[key] });
-            checkbox.on('input', ({ value }: { value: boolean }) => object[key] = value);
+        checkbox(name: string, { value }: { value?: boolean } = {}) {
+            object[name] = value ?? object[name] ?? false;
+            const checkbox = xnew(Checkbox, { name, value: object[name] });
+            checkbox.on('input', ({ value }: { value: boolean }) => object[name] = value);
             return checkbox;
         },
         separator() {
@@ -89,9 +89,9 @@ function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?:
     xnew.extend(Accordion);
 }
 
-function Button(unit: xnew.Unit, { key = '' }: { key?: string }) {
+function Button(unit: xnew.Unit, { name = '' }: { name?: string }) {
     const cls = xnew.css(sharedCss);
-    xnew.nest(`<button class="${cls.row} ${cls.clickable} ${cls.frame} ${cls.hover} ${cls.press}" style="justify-content: center;">`, key);
+    xnew.nest(`<button class="${cls.row} ${cls.clickable} ${cls.frame} ${cls.hover} ${cls.press}" style="justify-content: center;">`, name);
 }
 
 function Separator(unit: xnew.Unit) {
@@ -99,19 +99,19 @@ function Separator(unit: xnew.Unit) {
 }
 
 function Range(unit: xnew.Unit,
-    { key = '', value, min = 0, max = 100, step = 1 }:
-    { key?: string, value?: number, min?: number, max?: number, step?: number }
+    { name = '', value, min = 0, max = 100, step = 1 }:
+    { name?: string, value?: number, min?: number, max?: number, step?: number }
 ) {
     value = value ?? min;
     const cls = xnew.css(sharedCss);
 
     xnew.nest(`<div class="${cls.row} ${cls.clickable}">`);
 
-    xnew(InputRange, { name: key, value, min, max, step });
+    xnew(InputRange, { name, value, min, max, step });
 
     // overlay labels (after the gauge so the text paints above the fill bar)
     const overlay = xnew(`<div class="${cls.overlay}" style="padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">`);
-    xnew(overlay, '<div>', key);
+    xnew(overlay, '<div>', name);
     const status = xnew(overlay, '<div>', String(value));
 
     unit.on('input', ({ value }: { value: number }) => {
@@ -119,22 +119,22 @@ function Range(unit: xnew.Unit,
     });
 }
 
-function Checkbox(unit: xnew.Unit, { key = '', value }: { key?: string, value?: boolean } = {}) {
+function Checkbox(unit: xnew.Unit, { name = '', value }: { name?: string, value?: boolean } = {}) {
     const cls = xnew.css(sharedCss);
     // label row so a click anywhere in the row reaches the boxed native input
     xnew.nest(`<label class="${cls.row} ${cls.clickable}" style="padding: 0 0.5em;">`);
 
-    xnew('<div style="flex: 1;">', key);
+    xnew('<div style="flex: 1;">', name);
 
-    xnew('<div style="width: 1.25em; height: 1.25em;">', InputCheckbox, { name: key, value });
+    xnew('<div style="width: 1.25em; height: 1.25em;">', InputCheckbox, { name, value });
 }
 
-function Select(unit: xnew.Unit, { key = '', value, items = [] }: { key?: string, value?: string, items?: string[] } = {}) {
+function Select(unit: xnew.Unit, { name = '', value, items = [] }: { name?: string, value?: string, items?: string[] } = {}) {
     const cls = xnew.css(sharedCss);
     // label row; the pulldown itself is InputSelect, whose input event bubbles up to this row
     xnew.nest(`<div class="${cls.row}" style="padding: 0 0.5em;">`);
 
-    xnew('<div style="flex: 1;">', key);
+    xnew('<div style="flex: 1;">', name);
 
-    xnew('<div style="height: 2em; min-width: 3em;">', InputSelect, { name: key, value, items });
+    xnew('<div style="height: 2em; min-width: 3em;">', InputSelect, { name, value, items });
 }
