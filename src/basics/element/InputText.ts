@@ -20,7 +20,7 @@ export function InputText(unit: xnew.Unit,
     const cls = xnew.css(sharedCss);
 
     // transparent + inherit so the native control sits on any surface
-    xnew.nest(`<input type="text"${name ? ` name="${name}"` : ''} class="${cls.fill} ${cls.frame} ${cls.focus} ${className}" style="padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; ${style}">`);
+    xnew.nest(`<input type="text"${name ? ` name="${name}"` : ''} class="${cls.fill} ${cls.frame} ${cls.focusTint} ${className}" style="padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; ${style}">`);
 
     // value / placeholder are set as properties so arbitrary text cannot break the tag string
     const element = unit.element as HTMLInputElement;

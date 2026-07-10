@@ -27,7 +27,7 @@ export function InputSwitch(unit: xnew.Unit,
     const knob = xnew('<div style="position: absolute; top: 0.15em; bottom: 0.15em; aspect-ratio: 1 / 1; border-radius: 50%; background: currentColor; transition: left 0.15s, transform 0.15s;">');
 
     const update = (checked: boolean) => {
-        track.classList.toggle(cls.pale, checked);
+        track.classList.toggle(cls.tint, checked);
         knob.element.style.left = checked ? 'calc(100% - 0.15em)' : '0.15em';
         knob.element.style.transform = checked ? 'translateX(-100%)' : 'translateX(0)';
     };

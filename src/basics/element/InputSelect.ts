@@ -22,7 +22,7 @@ export function InputSelect(unit: xnew.Unit,
     const initial = value ?? items[0] ?? '';
     const cls = xnew.css(sharedCss);
 
-    xnew.nest(`<div class="${cls.fill} ${cls.frame} ${cls.clickable} ${cls.hover} ${className}" style="position: relative; display: flex; align-items: center; ${style}">`);
+    xnew.nest(`<div class="${cls.fill} ${cls.frame} ${cls.clickable} ${cls.hoverTint} ${className}" style="position: relative; display: flex; align-items: center; ${style}">`);
     const frame = unit.element as HTMLElement;
 
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
@@ -60,8 +60,8 @@ export function InputSelect(unit: xnew.Unit,
         // bound to the frame element (not the current hidden select) so the list lands beside the button
         dropdown = xnew(frame, (list: xnew.Unit) => {
             // the button hover tint is suppressed while the list is open, restored on any close path
-            frame.classList.remove(cls.hover);
-            list.on('finalize', () => frame.classList.add(cls.hover));
+            frame.classList.remove(cls.hoverTint);
+            list.on('finalize', () => frame.classList.add(cls.hoverTint));
 
             // registered while the list's element is still the frame, so 'outside' means outside the whole control
             list.on('pointerdown.outside', () => closeDropdown());
@@ -80,7 +80,7 @@ export function InputSelect(unit: xnew.Unit,
             anchor();
             list.on('update', anchor);
             for (const item of items) {
-                const option = xnew(`<div class="${cls.clickable} ${cls.hover}${item === select.value ? ` ${cls.pale}` : ''}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; white-space: nowrap;">`, item);
+                const option = xnew(`<div class="${cls.clickable} ${cls.hoverTint}${item === select.value ? ` ${cls.tint}` : ''}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; white-space: nowrap;">`, item);
                 option.on('click', ({ event }: { event: PointerEvent }) => {
                     // keep the bubble from reaching the frame's toggle below
                     event.stopPropagation();

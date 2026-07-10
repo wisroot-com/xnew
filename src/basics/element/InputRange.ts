@@ -29,7 +29,7 @@ export function InputRange(unit: xnew.Unit,
     const fillAnchor = horizontal
         ? 'top: 0; left: 0; bottom: 0; transition: width 0.05s;'
         : 'left: 0; right: 0; bottom: 0; transition: height 0.05s;';
-    const fill = xnew(`<div class="${cls.frame} ${cls.pale}" style="position: absolute; ${fillAnchor}">`);
+    const fill = xnew(`<div class="${cls.frame} ${cls.tint}" style="position: absolute; ${fillAnchor}">`);
 
     const update = (v: number) => {
         const percent = `${(v - min) / (max - min) * 100}%`;

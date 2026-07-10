@@ -37,7 +37,7 @@ export function InputNumber(unit: xnew.Unit,
     let element: HTMLInputElement;
     const spinButton = (direction: number, path: string) => {
         const button = xnew(container, () => {
-            xnew.nest(`<div class="${cls.clickable} ${cls.hover} ${num.press}" style="width: 2em; display: flex; align-items: center; justify-content: center;">`);
+            xnew.nest(`<div class="${cls.clickable} ${cls.hoverTint} ${num.press}" style="width: 2em; display: flex; align-items: center; justify-content: center;">`);
             xnew((unit: xnew.Unit) => {
                 xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 0.9em; height: 0.9em;' });
                 xnew(`<path d="${path}"/>`);
@@ -62,7 +62,7 @@ export function InputNumber(unit: xnew.Unit,
         step !== undefined ? ` step="${step}"` : '',
     ].join('');
     // transparent + inherit so the native control sits on any surface
-    xnew.nest(`<input type="number"${attrs} class="${cls.fill} ${cls.focus} ${num.noSpinner}" style="flex: 1 1 0; width: auto; min-width: 0; text-align: center; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none;">`);
+    xnew.nest(`<input type="number"${attrs} class="${cls.fill} ${cls.focusTint} ${num.noSpinner}" style="flex: 1 1 0; width: auto; min-width: 0; text-align: center; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none;">`);
 
     element = unit.element as HTMLInputElement;
     if (value !== undefined) {

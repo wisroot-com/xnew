@@ -31,7 +31,7 @@ export function InputCheckbox(unit: xnew.Unit,
     });
 
     const update = (checked: boolean) => {
-        box.classList.toggle(cls.pale, checked);
+        box.classList.toggle(cls.tint, checked);
         check.element.style.opacity = checked ? '1' : '0';
     };
     update(value);
