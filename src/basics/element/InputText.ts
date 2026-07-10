@@ -14,7 +14,7 @@
 import { xnew } from '../../core/xnew';
 
 export function InputText(unit: xnew.Unit,
-    { className = '', key, ...others }:
+    { className = '', ...others }:
     { className?: string, [key: string]: any } = {}
 ) {
     // transparent + inherit so the native control sits on any surface

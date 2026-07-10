@@ -262,6 +262,11 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **A component may forward its rest props into an ElementDef as-is (`xnew.nest({ …, ...others })`)
+  without stripping the reserved `key` prop.** If a caller passes `key`, it lands as a harmless
+  nonstandard attribute — accepted by design (2026-07); don't add a `key` destructuring just for
+  DOM hygiene (see `basics/element/InputText.ts`).
+
 - **A unit created inside a deferred callback (promise `.then`, timer) is NOT visible via
   `xnew.context` to units mounted later with `xnew(parentUnit, ...)` (e.g. `Scene.change`).**
   `Unit.scope` restores the parent's context chain after the callback, and explicit-parent mounts

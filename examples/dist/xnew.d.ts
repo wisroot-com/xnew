@@ -293,7 +293,7 @@ declare function InputCheckbox(unit: xnew.Unit, { value, name, className, style 
     style?: string;
 }): void;
 
-declare function InputText(unit: xnew.Unit, { className, key, ...others }?: {
+declare function InputText(unit: xnew.Unit, { className, ...others }?: {
     className?: string;
     [key: string]: any;
 }): void;

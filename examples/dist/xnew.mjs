@@ -1533,7 +1533,7 @@ function InputCheckbox(unit, { value = false, name = '', className = '', style =
 }
 
 function InputText(unit, _a = {}) {
-    var { className = '', key } = _a, others = __rest(_a, ["className", "key"]);
+    var { className = '' } = _a, others = __rest(_a, ["className"]);
     const cls = xnew.css({
         input: {
             layer: 'xbasics',
