@@ -4,9 +4,10 @@
 // The same framed look as Panel's rows (frame + hover tint + press feedback) as a standalone
 // element, so a single button matches the panel design without pulling in the whole panel.
 //
-// - Button : component({ name, className, style }) — emits 'click' with { event, position }
+// - Button : component({ textContent, className, ...rest }) — rest members (style, name, …) pass
+//            through to the <button>; emits 'click' with { event, position }
 //
-// Usage: const button = xnew('<div style="width: 8em; height: 2em;">', xbasics.Button, { name: 'start' });
+// Usage: const button = xnew('<div style="width: 8em; height: 2em;">', xbasics.Button, { textContent: 'start' });
 //        button.on('click', () => ...);
 //----------------------------------------------------------------------------------------------------
 

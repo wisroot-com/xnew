@@ -12,8 +12,8 @@ describe('basics InputRange', () => {
         jest.useRealTimers();
     });
 
-    // container children: track outline first, then the fill bar
-    function fillOf(unit: xnew.Unit): HTMLElement {
+    // container children: the outline first, then the value bar
+    function barOf(unit: xnew.Unit): HTMLElement {
         return unit.element.parentElement?.querySelectorAll('div')[1] as HTMLElement;
     }
 
@@ -22,27 +22,27 @@ describe('basics InputRange', () => {
         const input = unit.element as HTMLInputElement;
 
         expect(input.tagName).toBe('INPUT');
-        expect(input.getAttribute('type')).toBe('range');
-        expect(input.getAttribute('min')).toBe('10');
-        expect(input.getAttribute('max')).toBe('50');
-        expect(input.getAttribute('step')).toBe('5');
-        expect(input.getAttribute('value')).toBe('30');
+        expect(input.type).toBe('range');
+        expect(input.min).toBe('10');
+        expect(input.max).toBe('50');
+        expect(input.step).toBe('5');
+        expect(input.value).toBe('30');
     });
 
-    it('sets the initial fill width from value / min / max', () => {
+    it('sets the initial bar width from value / min / max', () => {
         const unit = xnew(InputRange, { value: 30, min: 10, max: 50 });
 
-        expect(fillOf(unit).style.width).toBe('50%');
+        expect(barOf(unit).style.width).toBe('50%');
     });
 
-    it('defaults value to min (empty fill)', () => {
+    it('defaults value to min (empty bar)', () => {
         const unit = xnew(InputRange, { min: 20, max: 100 });
 
-        expect((unit.element as HTMLInputElement).getAttribute('value')).toBe('20');
-        expect(fillOf(unit).style.width).toBe('0%');
+        expect((unit.element as HTMLInputElement).value).toBe('20');
+        expect(barOf(unit).style.width).toBe('0%');
     });
 
-    it('updates the fill width on input', () => {
+    it('updates the bar width on input', () => {
         const unit = xnew(InputRange, { value: 0 });
         const input = unit.element as HTMLInputElement;
         jest.advanceTimersByTime(0);
@@ -50,7 +50,7 @@ describe('basics InputRange', () => {
         input.value = '75';
         input.dispatchEvent(new Event('input', { bubbles: false }));
 
-        expect(fillOf(unit).style.width).toBe('75%');
+        expect(barOf(unit).style.width).toBe('75%');
     });
 
     it('delivers a numeric value to input listeners', () => {
@@ -66,33 +66,12 @@ describe('basics InputRange', () => {
         expect(received).toEqual([40]);
     });
 
-    it('fills horizontally by default (width grows, native axis untouched)', () => {
+    it('grows the bar width only (height stays free)', () => {
         const unit = xnew(InputRange, { value: 50 });
-        const fill = fillOf(unit);
+        const bar = barOf(unit);
 
-        expect(fill.style.width).toBe('50%');
-        expect(fill.style.height).toBe('');
-        expect((unit.element as HTMLInputElement).getAttribute('style')).not.toContain('writing-mode');
-    });
-
-    it('fills vertically with orientation: vertical (height grows, native axis flipped)', () => {
-        const unit = xnew(InputRange, { value: 50, orientation: 'vertical' });
-        const fill = fillOf(unit);
-
-        expect(fill.style.height).toBe('50%');
-        expect(fill.style.width).toBe('');
-        expect((unit.element as HTMLInputElement).getAttribute('style')).toContain('writing-mode: vertical-lr');
-    });
-
-    it('updates the fill height on input when vertical', () => {
-        const unit = xnew(InputRange, { value: 0, orientation: 'vertical' });
-        const input = unit.element as HTMLInputElement;
-        jest.advanceTimersByTime(0);
-
-        input.value = '75';
-        input.dispatchEvent(new Event('input', { bubbles: false }));
-
-        expect(fillOf(unit).style.height).toBe('75%');
+        expect(bar.style.width).toBe('50%');
+        expect(bar.style.height).toBe('');
     });
 
     it('sets the name attribute only when given', () => {
@@ -103,12 +82,14 @@ describe('basics InputRange', () => {
         expect((anonymous.element as HTMLInputElement).hasAttribute('name')).toBe(false);
     });
 
-    it('outlines the track with a border fainter than the fill frame', () => {
+    it('marks the max extent with an outline fainter than the bar border', () => {
         const unit = xnew(InputRange, { value: 30 });
-        const track = unit.element.parentElement?.querySelector('div') as HTMLElement;
+        const outline = unit.element.parentElement?.querySelector('div') as HTMLElement;
+        const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
-        expect(track.getAttribute('style')).toContain('border: 1px solid color-mix(in srgb, currentColor 40%, transparent);');
-        expect(track.getAttribute('style')).toContain('inset: 0;');
+        expect(outline.className).toMatch(/xnew\d+-outline/);
+        expect(styleText).toContain('border: 1px solid color-mix(in srgb, currentColor 40%, transparent);');
+        expect(styleText).toContain('inset: 0;');
     });
 
     it('applies className and style to the container', () => {

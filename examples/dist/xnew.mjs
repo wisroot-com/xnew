@@ -1342,7 +1342,42 @@ function Split(unit, { direction = 'column' } = {}) {
     };
 }
 
-function Button$1(unit, { name = '', className = '', style = '' } = {}) {
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
+
+
+function __rest(s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+}
+
+typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    var e = new Error(message);
+    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
+
+function Button$1(unit, _a = {}) {
+    var { textContent = '', className = '' } = _a, others = __rest(_a, ["textContent", "className"]);
     const cls = xnew.css({
         button: {
             layer: 'xbasics',
@@ -1358,7 +1393,7 @@ function Button$1(unit, { name = '', className = '', style = '' } = {}) {
             `,
         },
     });
-    xnew.nest(`<button type="button" class="${cls.button} ${className}" style="${style}">`, name);
+    xnew.nest(Object.assign({ tag: 'button', type: 'button', className: `${cls.button} ${className}` }, others), textContent);
 }
 
 function Image(unit, { src, className = '', style = '' }) {
@@ -1402,40 +1437,6 @@ function SVG(unit, { viewBox = '0 0 64 64', className = '', style = '', stroke =
     >`);
 }
 
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
-
-
-function __rest(s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-}
-
-typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
-    var e = new Error(message);
-    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
-};
-
 function SVGText(unit, _a = {}) {
     var { text = '', fontSize = 20 } = _a, othres = __rest(_a, ["text", "fontSize"]);
     xnew.extend(SVG, Object.assign({ fill: 'currentColor' }, othres));
@@ -1476,33 +1477,51 @@ function Spinner(unit, { className = '', style = '' } = {}) {
     xnew.nest(`<div class="${cls.spinner} ${className}" style="${style}">`);
 }
 
-function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = 'horizontal', name = '', className = '', style = '' } = {}) {
+function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className = '', style = '' } = {}) {
     value = value !== null && value !== void 0 ? value : min;
     const cls = xnew.css({
-        fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
-        clickable: { layer: 'xbasics', body: 'cursor: pointer; user-select: none;' },
-        frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
-        tint: { layer: 'xbasics', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
+        container: {
+            layer: 'xbasics',
+            body: `
+                box-sizing: border-box; width: 100%; height: 100%;
+                position: relative;
+                cursor: pointer; user-select: none;
+            `,
+        },
+        outline: {
+            layer: 'xbasics',
+            body: `
+                position: absolute; inset: 0;
+                border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+                border-radius: 0.25em;
+            `,
+        },
+        bar: {
+            layer: 'xbasics',
+            body: `
+                position: absolute; top: 0; left: 0; bottom: 0;
+                box-sizing: border-box;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                background: color-mix(in srgb, currentColor 20%, transparent);
+                transition: width 0.05s;
+            `,
+        },
+        input: {
+            layer: 'xbasics',
+            body: `
+                position: absolute; inset: 0; width: 100%; height: 100%;
+                opacity: 0; cursor: pointer; margin: 0;
+            `,
+        },
     });
-    const horizontal = orientation !== 'vertical';
-    xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${className}" style="position: relative; ${style}">`);
-    xnew('<div style="position: absolute; inset: 0; border: 1px solid color-mix(in srgb, currentColor 40%, transparent); border-radius: 0.25em;">');
-    const fillAnchor = horizontal
-        ? 'top: 0; left: 0; bottom: 0; transition: width 0.05s;'
-        : 'left: 0; right: 0; bottom: 0; transition: height 0.05s;';
-    const fill = xnew(`<div class="${cls.frame} ${cls.tint}" style="position: absolute; box-sizing: border-box; ${fillAnchor}">`);
+    xnew.nest(`<div class="${cls.container} ${className}" style="${style}">`);
+    xnew(`<div class="${cls.outline}">`);
+    const bar = xnew(`<div class="${cls.bar}">`);
     const update = (v) => {
-        const percent = `${(v - min) / (max - min) * 100}%`;
-        if (horizontal) {
-            fill.element.style.width = percent;
-        }
-        else {
-            fill.element.style.height = percent;
-        }
+        bar.element.style.width = `${(v - min) / (max - min) * 100}%`;
     };
     update(value);
-    const inputAxis = horizontal ? '' : ' writing-mode: vertical-lr; direction: rtl;';
-    xnew.nest(`<input type="range"${name ? ` name="${name}"` : ''} min="${min}" max="${max}" step="${step}" value="${value}" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;${inputAxis}">`);
+    xnew.nest({ tag: 'input', type: 'range', name, min, max, step, value, className: cls.input });
     unit.on('input', ({ value }) => {
         update(value);
     });

@@ -13,23 +13,23 @@ describe('basics Button', () => {
     });
 
     it('nests a native button with the given label', () => {
-        const unit = xnew(Button, { name: 'start' });
+        const unit = xnew(Button, { textContent: 'start' });
         const button = unit.element as HTMLButtonElement;
 
         expect(button.tagName).toBe('BUTTON');
-        expect(button.getAttribute('type')).toBe('button');
+        expect(button.type).toBe('button');
         expect(button.textContent).toBe('start');
     });
 
     it('keeps arbitrary text intact (label is set as text, not markup)', () => {
-        const unit = xnew(Button, { name: '<b>"a" & \'b\'</b>' });
+        const unit = xnew(Button, { textContent: '<b>"a" & \'b\'</b>' });
 
         expect(unit.element.textContent).toBe('<b>"a" & \'b\'</b>');
         expect(unit.element.children.length).toBe(0);
     });
 
     it('delivers click events to listeners', () => {
-        const unit = xnew(Button, { name: 'go' });
+        const unit = xnew(Button, { textContent: 'go' });
 
         let clicked = 0;
         unit.on('click', () => clicked++);

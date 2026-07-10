@@ -551,7 +551,7 @@ function VolumeController(unit, { anchor = 'left' } = {}) {
     const outer = xnew.nest(`<div style="position: absolute; ${outerSize};">`);
 
     // スライダー本体は xbasics.InputRange(トラック枠線 + フィルバー + 隠しネイティブ input)
-    xnew(xbasics.InputRange, { value: volume.volume * 100, orientation: isHoriz ? 'horizontal' : 'vertical' })
+    xnew(xbasics.InputRange, { value: volume.volume * 100 })
       .on('input', ({ value }) => {
         volume.volume = value / 100;
         button.update();

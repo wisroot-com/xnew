@@ -237,10 +237,10 @@ declare function Split(unit: xnew.Unit, { direction }?: {
     }, component?: xnew.Component): Unit;
 };
 
-declare function Button(unit: xnew.Unit, { name, className, style }?: {
-    name?: string;
+declare function Button(unit: xnew.Unit, { textContent, className, ...others }?: {
+    textContent?: string;
     className?: string;
-    style?: string;
+    [key: string]: any;
 }): void;
 
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
@@ -275,12 +275,11 @@ declare function Spinner(unit: xnew.Unit, { className, style }?: {
     style?: string;
 }): void;
 
-declare function InputRange(unit: xnew.Unit, { value, min, max, step, orientation, name, className, style }?: {
+declare function InputRange(unit: xnew.Unit, { value, min, max, step, name, className, style }?: {
     value?: number;
     min?: number;
     max?: number;
     step?: number;
-    orientation?: 'horizontal' | 'vertical';
     name?: string;
     className?: string;
     style?: string;
