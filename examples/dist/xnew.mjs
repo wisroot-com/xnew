@@ -1511,6 +1511,9 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className
             body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;
+                appearance: none;
+                &::-webkit-slider-thumb { appearance: none; width: 0; }
+                &::-moz-range-thumb { width: 0; border: none; }
             `,
         },
     });

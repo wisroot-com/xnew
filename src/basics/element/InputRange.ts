@@ -49,12 +49,17 @@ export function InputRange(unit: xnew.Unit,
                 transition: width 0.05s;
             `,
         },
-        // invisible native control stretched over the whole surface
+        // invisible native control stretched over the whole surface; the thumb is shrunk to zero
+        // width so the pointer→value mapping spans the full width and the bar tip tracks the cursor
+        // (natively the thumb center only travels between the half-thumb insets)
         input: {
             layer: 'xbasics',
             body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;
+                appearance: none;
+                &::-webkit-slider-thumb { appearance: none; width: 0; }
+                &::-moz-range-thumb { width: 0; border: none; }
             `,
         },
     });
