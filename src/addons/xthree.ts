@@ -2,7 +2,8 @@
 // xthree — Three.js integration
 //
 // Ties the Three scene graph to the xnew unit tree: objects attached via nest / add are detached
-// automatically when the owning unit finalizes. Detach never disposes GPU resources (geometry /
+// automatically when the owning unit finalizes, and the renderer + WebGL context are released when
+// the unit that called initialize finalizes. Detach never disposes GPU resources (geometry /
 // material / texture may be shared) — release them explicitly with dispose.
 //
 // - initialize({ canvas, camera }) : mount the Root unit owning WebGLRenderer + Scene + Camera
@@ -11,7 +12,6 @@
 // - remove(object3D)               : detach from its parent (no dispose)
 // - dispose(object3D)              : detach and dispose its geometry / material / texture
 // - coord2dTo3d / coord3dTo2d      : convert between canvas pixels and world space via the camera
-// - finalize()                     : tear down the Root unit (renderer dispose + context loss)
 // - renderer / camera / scene / canvas : Root unit accessors
 //
 // Caveat: nest is stateful — two nest calls in the same unit create two nesting levels;
@@ -68,9 +68,6 @@ export const xthree = {
         const projected = new THREE.Vector3(x, y, z).project(camera);
         return new THREE.Vector2((projected.x + 1) / 2 * root.canvas.width, (1 - projected.y) / 2 * root.canvas.height);
     },
-    finalize() {
-        xnew.context(Root)?.release();
-    },
     get renderer() {
         return xnew.context(Root)?.renderer;
     },
@@ -92,7 +89,7 @@ function Root(unit: xnew.Unit, { canvas, camera }: any) {
     camera = camera ?? new THREE.PerspectiveCamera(45, renderer.domElement.width / renderer.domElement.height);
     const scene = new THREE.Scene();
 
-    // release the renderer on both explicit finalize() and normal tree teardown
+    // release the renderer + WebGL context on tree teardown
     unit.on('finalize', () => {
         renderer.dispose();
         renderer.forceContextLoss?.();
@@ -103,7 +100,6 @@ function Root(unit: xnew.Unit, { canvas, camera }: any) {
         get camera() { return camera; },
         get renderer() { return renderer; },
         get scene() { return scene; },
-        release: () => unit.finalize(),
     }
 }
 

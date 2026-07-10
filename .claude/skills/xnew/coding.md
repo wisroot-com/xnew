@@ -237,6 +237,12 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **A unit created inside a deferred callback (promise `.then`, timer) is NOT visible via
+  `xnew.context` to units mounted later with `xnew(parentUnit, ...)` (e.g. `Scene.change`).**
+  `Unit.scope` restores the parent's context chain after the callback, and explicit-parent mounts
+  use the parent's `lastSnapshot` (end of body) — so create context-provider units in the body
+  and fill their data later via a define (bit tohoku_shot's `Assets` holder for baked textures).
+
 - **`xnew(parentUnit, Component)` mounts into the parent's END-OF-BODY element (its `lastSnapshot`),
   so if the body ends on a hidden native control (e.g. a `<select>` nested for form semantics),
   children land inside it — and `<select>.insertAdjacentHTML('<div>')` is silently dropped by the

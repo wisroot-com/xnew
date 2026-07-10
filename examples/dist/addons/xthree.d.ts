@@ -22,7 +22,6 @@ declare const xthree: {
     dispose(object: any): void;
     coord2dTo3d(x: number, y: number, z?: number): THREE.Vector3;
     coord3dTo2d(x: number, y: number, z: number): THREE.Vector2;
-    finalize(): void;
     readonly renderer: any;
     readonly camera: THREE.Camera;
     readonly scene: THREE.Scene;

@@ -86,7 +86,7 @@ const randStream = (n, chars = STREAM_CHARS) => Array.from({ length: n }, () => 
 // ベイク済みテクスチャの AnimatedSprite を nest 直下に配置。textures 直指定か id で texturesList[id] を引く。
 // frame: 'random' で開始コマをランダム化 / 数値で固定（length-1 にクランプ）。位置等は .sprite で制御。
 function BakedSprite(_unit, { textures, id, scale = 1, frame, play = true } = {}) {
-  const tex = textures ?? xnew.context(BakedCharacters).texturesList[id];
+  const tex = textures ?? xnew.context(Assets).texturesList[id];
   const sprite = new PIXI.AnimatedSprite(tex);
   sprite.anchor.set(0.5);
   sprite.animationSpeed = BAKE_ANIMATION_SPEED;
@@ -128,10 +128,30 @@ function Main(unit) {
 }
 
 function Contents(unit) {
-  const assets = xnew(BakedCharacters);
+  const assets = xnew(Assets);
   xnew.promise(assets).then(() => {
     xnew(TitleScene);
   });
+}
+
+// ベイク済みテクスチャを保持するコンポーネント。各所から xnew.context(Assets) で引く。
+// 内部で BakedCharacters を焼き、焼き上がりでテクスチャを取り込んでから
+// BakedCharacters ごと畳む（xthree の終了処理が走る）。
+function Assets(_unit) {
+  let texturesList = [];
+  let playerTextures = [];
+
+  const chars = xnew(BakedCharacters);
+  xnew.promise(chars).then(() => {
+    texturesList = chars.texturesList;
+    playerTextures = chars.playerTextures;
+    chars.finalize();
+  });
+
+  return {
+    get texturesList() { return texturesList; },
+    get playerTextures() { return playerTextures; },
+  };
 }
 
 // ---- Character baking (VRM -> AnimatedSprite textures) ----
@@ -267,10 +287,9 @@ function BakedCharacters(unit) {
       };
       unit.on('update', handler);
     }).then(() => {
-      // 後段パスを解放し xthree.finalize で Root（renderer + WebGL コンテキスト）を畳む。
+      // 後段パスを解放する。Root（renderer + WebGL コンテキスト）は Assets がこの unit ごと畳んで解放する。
       composer.dispose();
       ssaoPass.dispose();
-      xthree.finalize();
     });
   });
 
@@ -490,7 +509,7 @@ function StoryPageSwarm(unit) {
   // 少しずつ湧いて増えていく（増殖感）。黒帯より上（テキスト帯に被らない領域）に位置・スケールをランダムに散らす。
   xnew.interval(() => {
     xnew(DriftingFactor, {
-      id: randInt(xnew.context(BakedCharacters).texturesList.length),
+      id: randInt(xnew.context(Assets).texturesList.length),
       x: randRange(90, 710),
       y: randRange(90, 360),
       scale: randRange(0.5, 1.0),
@@ -1194,7 +1213,7 @@ function Player(unit) {
   object.position.set(PLAY_RIGHT / 2, 500);
 
   // 自機＝中国うさぎ（後ろ向きベイク）
-  const sprite = xnew(BakedSprite, { textures: xnew.context(BakedCharacters).playerTextures, scale: 0.7 }).sprite;
+  const sprite = xnew(BakedSprite, { textures: xnew.context(Assets).playerTextures, scale: 0.7 }).sprite;
 
   // 当たり判定を可視化する円（キャラの上に重ねて表示）
   const hitRing = xpixi.add(hitCircle(PLAYER_HIT_R, 0x33FFFF, 0.18, 2.5, 0.9));
@@ -1617,7 +1636,7 @@ function ResultDetail(unit, { score, wave, kills = [0, 0, 0, 0], cleared = false
   xnew('<div class="text-[3.5cqw] text-center text-red-400 mb-[1.5cqw]">', '🦠 駆逐した数 🦠');
 
   // 敵キャラ別の撃破数（アイコン × 撃破数）を2列で
-  _enemyIcons = _enemyIcons ?? xnew.context(BakedCharacters).texturesList.map((textures) => {
+  _enemyIcons = _enemyIcons ?? xnew.context(Assets).texturesList.map((textures) => {
     const sprite = new PIXI.Sprite(textures[0]);
     return xpixi.renderer.extract.base64(sprite).finally(() => sprite.destroy());
   });
