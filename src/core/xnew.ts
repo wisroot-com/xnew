@@ -15,14 +15,14 @@
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, UnitPromise, UnitTimer, ComponentFn, DefinesOf, PropsOf } from './unit';
-import { DomElement } from './dom';
+import { DomElement, DomElementDef } from './dom';
 import { applyCss, CssDef } from './css';
 
 // Call signatures of xnew(...); passing a Component merges its defines into the return type.
 export interface XnewBase {
     <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
-    <C extends ComponentFn<any, any>>(target: DomElement | string, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
-    (target: DomElement | string, content?: string | number): Unit;
+    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
+    (target: DomElement | string | DomElementDef, content?: string | number): Unit;
     (content: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
@@ -40,8 +40,8 @@ export const xnew = Object.assign(
         }
     }) as unknown as XnewBase,
     {
-        // Nests a new child element created from a tag string like '<div>' (with optional text content); only during initialization.
-        nest(tag: string, textContent?: string): HTMLElement | SVGElement {
+        // Nests a new child element created from a tag string like '<div>' or an element definition object { tag, className?, style?, …members } (with optional text content); only during initialization. In the object form, className / style are embedded (escaped) in the generated tag string; every other member is assigned onto the created element afterwards (property when it exists — value, placeholder, name, checked, … — else setAttribute), and undefined / null / false members are skipped so attributes can be conditional.
+        nest(tag: string | DomElementDef, textContent?: string): HTMLElement | SVGElement {
             if (Unit.current._.phase !== 'invoked') {
                 throw new Error('xnew.nest can not be called after initialized.');
             }
@@ -136,5 +136,6 @@ export const xnew = Object.assign(
 export namespace xnew {
     export type Unit = InstanceType<typeof Unit>;
     export type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
+    export type ElementDef = DomElementDef;
 }
 

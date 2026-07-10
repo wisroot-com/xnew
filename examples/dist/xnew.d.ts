@@ -21,6 +21,12 @@ declare class MapMap<Key1, Key2, Value> extends Map<Key1, Map<Key2, Value>> {
 }
 
 type DomElement = HTMLElement | SVGElement;
+interface DomElementDef {
+    tag: string;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}
 declare class EventBinder {
     private map;
     add(element: DomElement, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
@@ -75,7 +81,7 @@ declare class Unit {
     get parent(): Unit | null;
     get element(): DomElement;
     finalize(): void;
-    static nest(unit: Unit, tag: string, textContent?: string): DomElement;
+    static nest(unit: Unit, tag: string | DomElementDef, textContent?: string): DomElement;
     static extend(unit: Unit, Component: Function, props?: Object): {
         [key: string]: any;
     };
@@ -131,14 +137,14 @@ interface CssDef {
 
 interface XnewBase {
     <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
-    <C extends ComponentFn<any, any>>(target: DomElement | string, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
-    (target: DomElement | string, content?: string | number): Unit;
+    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
+    (target: DomElement | string | DomElementDef, content?: string | number): Unit;
     (content: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
 }
 declare const xnew: XnewBase & {
-    nest(tag: string, textContent?: string): HTMLElement | SVGElement;
+    nest(tag: string | DomElementDef, textContent?: string): HTMLElement | SVGElement;
     extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
     css<T extends Record<string, string | CssDef>>(defs: T): Record<keyof T, string>;
     context(key: any): any;
@@ -159,6 +165,7 @@ declare const xnew: XnewBase & {
 declare namespace xnew {
     type Unit = InstanceType<typeof Unit>;
     type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
+    type ElementDef = DomElementDef;
 }
 
 interface ClientStatus {
@@ -286,12 +293,9 @@ declare function InputCheckbox(unit: xnew.Unit, { value, name, className, style 
     style?: string;
 }): void;
 
-declare function InputText(unit: xnew.Unit, { value, name, placeholder, className, style }?: {
-    value?: string;
-    name?: string;
-    placeholder?: string;
+declare function InputText(unit: xnew.Unit, { className, key, ...others }?: {
     className?: string;
-    style?: string;
+    [key: string]: any;
 }): void;
 
 declare function InputNumber(unit: xnew.Unit, { value, min, max, step, name, placeholder, className, style }?: {

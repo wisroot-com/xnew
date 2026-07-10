@@ -78,9 +78,17 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   Sharing across components: share the **definition object** (same defs → same names);
   for theming, custom properties (`--vars`) pass through unrenamed and inherit down the
   DOM — set them on a subtree root class, read via `var(--x, fallback)` in descendants.
-- `xnew.nest('<div …>', textContent?)` creates a child element from a **tag string
-  only** — an existing element is rejected (`invalid tag string`); the optional second
-  argument sets the element's text. It nests the new element under
+- `xnew.nest(tagOrDef, textContent?)` creates a child element from a **tag string**
+  (`'<div …>'`) or an **element definition object** — an existing element is rejected
+  (`invalid tag string`); the optional second argument sets the element's text. The object
+  form `{ tag, className?, style?, …members }` is for computed / conditional attributes:
+  `className` / `style` are embedded (escaped) in the generated tag string; every other
+  member is assigned onto the created element afterwards (property when it exists —
+  `value`, `placeholder`, `name`, `checked`, … — else `setAttribute`), so arbitrary text
+  cannot break the tag string; `undefined` / `null` / `false` members are skipped
+  (`name: name ? name : undefined`). `xnew(...)` accepts the same object in the tag-string
+  position. **Use the tag string for static markup, the object form once attributes are
+  computed or conditional.** It nests the new element under
   the current element and makes it current (init-only). To render into an existing
   element, bind it at unit creation instead: `xnew(element, Component)` (also works
   as a boot target: `xsync.boot(opts, element, Component)`). `xnew.extend(Base)`

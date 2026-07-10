@@ -234,6 +234,42 @@ class Timer {
 function isDomElement(value) {
     return (typeof HTMLElement !== 'undefined' && value instanceof HTMLElement) || (typeof SVGElement !== 'undefined' && value instanceof SVGElement);
 }
+function isElementDef(value) {
+    return typeof value === 'object' && value !== null && isDomElement(value) === false && typeof value.tag === 'string';
+}
+const tagName = /^[A-Za-z][A-Za-z0-9]*$/;
+function buildTag(tag) {
+    if (isElementDef(tag) === true) {
+        if (tagName.test(tag.tag) === false) {
+            throw new Error(`xnew: invalid tag name "${tag.tag}".`);
+        }
+        const escape = (value) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+        let attributes = '';
+        const members = [];
+        for (const [key, value] of Object.entries(tag)) {
+            if (key === 'tag' || value === undefined || value === null || value === false) ;
+            else if (key === 'className') {
+                attributes += ` class="${escape(String(value))}"`;
+            }
+            else if (key === 'style') {
+                attributes += ` style="${escape(String(value))}"`;
+            }
+            else {
+                members.push([key, value]);
+            }
+        }
+        return { text: `<${tag.tag}${attributes}></${tag.tag}>`, members };
+    }
+    else {
+        const match = typeof tag === 'string' ? tag.match(/<((\w+)[^>]*?)\/?>/) : null;
+        if (match !== null) {
+            return { text: `<${match[1]}></${match[2]}>`, members: [] };
+        }
+        else {
+            throw new Error(`xnew.nest: invalid tag string [${tag}]`);
+        }
+    }
+}
 const factories = new Map();
 function attach(target, type, execute, options) {
     let initialized = false;
@@ -450,7 +486,7 @@ class Unit {
         if (isDomElement(args[0])) {
             unit._.currentElement = args.shift();
         }
-        else if (typeof args[0] === 'string') {
+        else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
             Unit.nest(unit, args.shift());
         }
         const Component = args[0];
@@ -518,20 +554,23 @@ class Unit {
         }
     }
     static nest(unit, tag, textContent) {
-        const match = typeof tag === 'string' ? tag.match(/<((\w+)[^>]*?)\/?>/) : null;
-        if (match !== null) {
-            unit._.currentElement.insertAdjacentHTML('beforeend', `<${match[1]}></${match[2]}>`);
-            const element = unit._.currentElement.children[unit._.currentElement.children.length - 1];
-            unit._.currentElement = element;
-            if (textContent !== undefined) {
-                element.textContent = textContent;
+        const { text, members } = buildTag(tag);
+        unit._.currentElement.insertAdjacentHTML('beforeend', text);
+        const element = unit._.currentElement.children[unit._.currentElement.children.length - 1];
+        unit._.currentElement = element;
+        if (textContent !== undefined) {
+            element.textContent = textContent;
+        }
+        unit._.nestElements.push(element);
+        for (const [key, value] of members) {
+            if (key in element) {
+                element[key] = value;
             }
-            unit._.nestElements.push(element);
-            return element;
+            else {
+                element.setAttribute(key, String(value));
+            }
         }
-        else {
-            throw new Error(`xnew.nest: invalid tag string [${tag}]`);
-        }
+        return element;
     }
     static extend(unit, Component, props) {
         var _a;
@@ -1493,16 +1532,22 @@ function InputCheckbox(unit, { value = false, name = '', className = '', style =
     });
 }
 
-function InputText(unit, { value = '', name = '', placeholder = '', className = '', style = '' } = {}) {
+function InputText(unit, _a = {}) {
+    var { className = '', key } = _a, others = __rest(_a, ["className", "key"]);
     const cls = xnew.css({
-        fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
-        frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
-        focusTint: { layer: 'xbasics', body: '&:focus { background: color-mix(in srgb, currentColor 20%, transparent); }' },
+        input: {
+            layer: 'xbasics',
+            body: `
+                box-sizing: border-box; width: 100%; height: 100%;
+                padding: 0 0.5em; margin: 0;
+                background: transparent; color: inherit; font: inherit;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                outline: none;
+                &:focus { background: color-mix(in srgb, currentColor 20%, transparent); }
+            `,
+        },
     });
-    xnew.nest(`<input type="text"${name ? ` name="${name}"` : ''} class="${cls.fill} ${cls.frame} ${cls.focusTint} ${className}" style="padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; ${style}">`);
-    const element = unit.element;
-    element.value = value;
-    element.placeholder = placeholder;
+    xnew.nest(Object.assign({ tag: 'input', type: 'text', className: `${cls.input} ${className}` }, others));
 }
 
 function InputNumber(unit, { value, min, max, step, name = '', placeholder = '', className = '', style = '' } = {}) {

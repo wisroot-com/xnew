@@ -6,6 +6,8 @@
 // mouse / touch stay undefined on purpose (unified on pointer); binding is deferred by 1 tick.
 //
 // - DomElement / isDomElement : element types xnew can host (HTML | SVG) and its type guard
+// - ElementDef : object form of a tag string ({ tag, className?, style?, …members }) accepted by
+//   xnew / xnew.nest — for computed / conditional attributes that are awkward in a tag string
 // - EventBinder : manages (type, listener) → finalize, resolving dictionary → passthrough
 //
 // Payloads: change|input {event,value} / click|pointer* {event,position} (+ .outside) / wheel {event,delta} /
@@ -19,6 +21,54 @@ export type DomElement = HTMLElement | SVGElement;
 
 export function isDomElement(value: unknown): value is DomElement {
     return (typeof HTMLElement !== 'undefined' && value instanceof HTMLElement) || (typeof SVGElement !== 'undefined' && value instanceof SVGElement);
+}
+
+//----------------------------------------------------------------------------------------------------
+// element definition object — the tag-string alternative for computed / conditional attributes
+//----------------------------------------------------------------------------------------------------
+
+// source name kept distinct from the public member (xnew.ElementDef), or the d.ts self-references
+export interface DomElementDef { tag: string; className?: string; style?: string; [key: string]: any; }
+
+export function isElementDef(value: unknown): value is DomElementDef {
+    return typeof value === 'object' && value !== null && isDomElement(value) === false && typeof (value as { tag?: unknown }).tag === 'string';
+}
+
+const tagName = /^[A-Za-z][A-Za-z0-9]*$/;
+
+// resolves a tag string or a definition object into insertable HTML text plus the members to
+// assign after creation (invalid inputs throw here). In the object form, className / style are
+// embedded in the text (escaped); every other member is returned for post-assignment, so
+// arbitrary text (value, placeholder, …) cannot break the tag string.
+export function buildTag(tag: string | DomElementDef): { text: string; members: [string, any][] } {
+    if (isElementDef(tag) === true) {
+        if (tagName.test(tag.tag) === false) {
+            throw new Error(`xnew: invalid tag name "${tag.tag}".`);
+        }
+        const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+
+        let attributes = '';
+        const members: [string, any][] = [];
+        for (const [key, value] of Object.entries(tag)) {
+            if (key === 'tag' || value === undefined || value === null || value === false) {
+                // skipped, so members can be conditional (name: name ? name : undefined)
+            } else if (key === 'className') {
+                attributes += ` class="${escape(String(value))}"`;
+            } else if (key === 'style') {
+                attributes += ` style="${escape(String(value))}"`;
+            } else {
+                members.push([key, value]);
+            }
+        }
+        return { text: `<${tag.tag}${attributes}></${tag.tag}>`, members };
+    } else {
+        const match = typeof tag === 'string' ? tag.match(/<((\w+)[^>]*?)\/?>/) : null;
+        if (match !== null) {
+            return { text: `<${match[1]}></${match[2]}>`, members: [] };
+        } else {
+            throw new Error(`xnew.nest: invalid tag string [${tag}]`);
+        }
+    }
 }
 
 interface EventProps { element: DomElement; type: string; listener: Function; options?: boolean | AddEventListenerOptions }

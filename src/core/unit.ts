@@ -15,7 +15,7 @@
 
 import { MapSet, MapMap } from './map';
 import { Ticker, Timer } from './time';
-import { EventBinder, isDomElement, DomElement } from './dom';
+import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, buildTag } from './dom';
 
 //----------------------------------------------------------------------------------------------------
 // definitions
@@ -108,8 +108,8 @@ export class Unit {
     static initialize(unit: Unit, ...args: any[]): void {
         if (isDomElement(args[0])) {
             unit._.currentElement = args.shift() as DomElement;
-        } else if (typeof args[0] === 'string') {
-            Unit.nest(unit, args.shift() as string);
+        } else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
+            Unit.nest(unit, args.shift() as string | DomElementDef);
         }
 
         const Component = args[0] as Function | string | number | undefined;
@@ -192,20 +192,25 @@ export class Unit {
         }
     }
 
-    static nest(unit: Unit, tag: string, textContent?: string): DomElement {
-        const match = typeof tag === 'string' ? tag.match(/<((\w+)[^>]*?)\/?>/) : null;
-        if (match !== null) {
-            unit._.currentElement.insertAdjacentHTML('beforeend', `<${match[1]}></${match[2]}>`);
-            const element = unit._.currentElement.children[unit._.currentElement.children.length - 1] as DomElement;
-            unit._.currentElement = element;
-            if (textContent !== undefined) {
-                element.textContent = textContent;
-            }
-            unit._.nestElements.push(element);
-            return element;
-        } else {
-            throw new Error(`xnew.nest: invalid tag string [${tag}]`);
+    static nest(unit: Unit, tag: string | DomElementDef, textContent?: string): DomElement {
+        const { text, members } = buildTag(tag);
+
+        unit._.currentElement.insertAdjacentHTML('beforeend', text);
+        const element = unit._.currentElement.children[unit._.currentElement.children.length - 1] as DomElement;
+        unit._.currentElement = element;
+        if (textContent !== undefined) {
+            element.textContent = textContent;
         }
+        unit._.nestElements.push(element);
+
+        for (const [key, value] of members) {
+            if (key in element) {
+                (element as any)[key] = value;
+            } else {
+                element.setAttribute(key, String(value));
+            }
+        }
+        return element;
     }
 
     static extend(unit: Unit, Component: Function, props?: Object): { [key: string]: any } {
