@@ -45,21 +45,21 @@
 
       xnew('<div>', (unit) => {
         xnew('<div class="mb-1">', 'Button');
-        xnew('<div class="h-8">', xbasics.Button, { textContent: 'start' })
+        xnew(xbasics.Button, { text: 'start', className: 'h-8' })
           .on('click', () => xnew.emit('+console', { text: '"start" clicked' }));
       });
 
       // className adds an unlayered page class that overrides the @layer xbasics defaults
       xnew('<div>', (unit) => {
         xnew('<div class="mb-1">', 'Button (className)');
-        xnew('<div class="h-8">', xbasics.Button, { textContent: 'pill', className: 'custom' })
+        xnew(xbasics.Button, { text: 'pill', className: 'h-8 custom' })
           .on('click', () => xnew.emit('+console', { text: '"pill" clicked' }));
       });
 
       // the style prop lands on the style attribute, above every stylesheet
       xnew('<div>', (unit) => {
         xnew('<div class="mb-1">', 'Button (style)');
-        xnew('<div class="h-8">', xbasics.Button, { textContent: 'inline', style: 'border-radius: 9999px; background: #fef3c7;' })
+        xnew(xbasics.Button, { text: 'inline', className: 'h-8 rounded-full bg-yellow-100' })
           .on('click', () => xnew.emit('+console', { text: '"inline" clicked' }));
       });
     }

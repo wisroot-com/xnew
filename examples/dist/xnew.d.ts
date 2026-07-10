@@ -237,8 +237,8 @@ declare function Split(unit: xnew.Unit, { direction }?: {
     }, component?: xnew.Component): Unit;
 };
 
-declare function Button(unit: xnew.Unit, { textContent, className, ...others }?: {
-    textContent?: string;
+declare function Button(unit: xnew.Unit, { text, className, ...others }?: {
+    text?: string;
     className?: string;
     [key: string]: any;
 }): void;

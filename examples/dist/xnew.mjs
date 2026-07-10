@@ -1377,7 +1377,7 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
 };
 
 function Button$1(unit, _a = {}) {
-    var { textContent = '', className = '' } = _a, others = __rest(_a, ["textContent", "className"]);
+    var { text = '', className = '' } = _a, others = __rest(_a, ["text", "className"]);
     const cls = xnew.css({
         button: {
             layer: 'xbasics',
@@ -1393,7 +1393,7 @@ function Button$1(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'button', type: 'button', className: `${cls.button} ${className}` }, others), textContent);
+    xnew.nest(Object.assign({ tag: 'button', type: 'button', className: `${cls.button} ${className}` }, others), text);
 }
 
 function Image(unit, { src, className = '', style = '' }) {

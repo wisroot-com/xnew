@@ -4,18 +4,18 @@
 // The same framed look as Panel's rows (frame + hover tint + press feedback) as a standalone
 // element, so a single button matches the panel design without pulling in the whole panel.
 //
-// - Button : component({ textContent, className, ...rest }) — rest members (style, name, …) pass
+// - Button : component({ text, className, ...rest }) — rest members (style, name, …) pass
 //            through to the <button>; emits 'click' with { event, position }
 //
-// Usage: const button = xnew('<div style="width: 8em; height: 2em;">', xbasics.Button, { textContent: 'start' });
+// Usage: const button = xnew('<div style="width: 8em; height: 2em;">', xbasics.Button, { text: 'start' });
 //        button.on('click', () => ...);
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 
 export function Button(unit: xnew.Unit,
-    { textContent = '', className = '', ...others }:
-    { textContent?: string, className?: string, [key: string]: any } = {}
+    { text = '', className = '', ...others }:
+    { text?: string, className?: string, [key: string]: any } = {}
 ) {
     // transparent + inherit so the native control sits on any surface
     const cls = xnew.css({
@@ -34,5 +34,5 @@ export function Button(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'button', type: 'button', className: `${cls.button} ${className}`, ...others }, textContent);
+    xnew.nest({ tag: 'button', type: 'button', className: `${cls.button} ${className}`, ...others }, text);
 }
