@@ -6,9 +6,8 @@
 // presentation attributes on every shape.
 //
 // - SVG               : component({ viewBox, stroke, fill, ... }) — generic SVG root
-// - SVGInterface      : the props shape, shared with SVGText
 // - SVGStyleInterface : the basic stroke / fill presentation props, shared with the
-//                       SVG-drawn components (AnalogStick / DPad)
+//                       SVG-drawn components (SVGText / AnalogStick / DPad)
 //
 // Usage: xnew(xbasics.SVG, { viewBox: '0 0 64 64', stroke: 'currentColor' });
 //----------------------------------------------------------------------------------------------------
@@ -25,12 +24,6 @@ export interface SVGStyleInterface {
     fillOpacity?: number;
 }
 
-export interface SVGInterface extends SVGStyleInterface {
-    viewBox?: string;
-    className?: string;
-    style?: string;
-}
-
 export function SVG(unit: xnew.Unit,
     {
         viewBox = '0 0 64 64',
@@ -44,7 +37,7 @@ export function SVG(unit: xnew.Unit,
         fill = 'none',
         fillOpacity = 1
     }:
-    SVGInterface = {}
+    { viewBox?: string; className?: string; style?: string; } & SVGStyleInterface = {}
 ) {
     xnew.nest(`<svg
         viewBox="${viewBox}"

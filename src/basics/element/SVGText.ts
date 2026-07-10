@@ -10,15 +10,10 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { SVG, SVGInterface } from './SVG';
-
-interface SVGTextInterface extends SVGInterface {
-    text?: string;
-    fontSize?: number;
-}
+import { SVG, SVGStyleInterface } from './SVG';
 
 export function SVGText(unit: xnew.Unit,
-    { text = '', fontSize = 20, ...svgProps }: SVGTextInterface = {}
+    { text = '', fontSize = 20, ...svgProps }: { text?: string; fontSize?: number; } & SVGStyleInterface = {}
 ) {
     // text defaults to visible fill; every other prop passes through to SVG untouched
     xnew.extend(SVG, { fill: 'currentColor', ...svgProps });

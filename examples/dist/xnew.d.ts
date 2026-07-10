@@ -240,18 +240,16 @@ interface SVGStyleInterface {
     fill?: string;
     fillOpacity?: number;
 }
-interface SVGInterface extends SVGStyleInterface {
+declare function SVG(unit: xnew.Unit, { viewBox, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: {
     viewBox?: string;
     className?: string;
     style?: string;
-}
-declare function SVG(unit: xnew.Unit, { viewBox, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGInterface): void;
+} & SVGStyleInterface): void;
 
-interface SVGTextInterface extends SVGInterface {
+declare function SVGText(unit: xnew.Unit, { text, fontSize, ...svgProps }?: {
     text?: string;
     fontSize?: number;
-}
-declare function SVGText(unit: xnew.Unit, { text, fontSize, ...svgProps }?: SVGTextInterface): void;
+} & SVGStyleInterface): void;
 
 declare function InputRange(unit: xnew.Unit, { value, min, max, step, orientation, name, className, style }?: {
     value?: number;
