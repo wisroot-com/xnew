@@ -11,7 +11,6 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { sharedCss } from '../styles';
 
 // radios are exclusive only within a shared name; unnamed groups get a generated one
 let radioGroupId = 0;
@@ -21,7 +20,13 @@ export function InputRadio(unit: xnew.Unit,
     { value?: string, items?: string[], name?: string, className?: string, style?: string } = {}
 ) {
     const initial = value ?? items[0] ?? '';
-    const cls = xnew.css(sharedCss);
+    const cls = xnew.css('xnew', {
+        fill: 'box-sizing: border-box; width: 100%; height: 100%;',
+        frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
+        clickable: 'cursor: pointer; user-select: none;',
+        hoverTint: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }',
+        tint: 'background: color-mix(in srgb, currentColor 20%, transparent);',
+    });
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
 
     xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="display: flex; align-items: stretch; overflow: hidden; ${style}">`);

@@ -11,14 +11,25 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { sharedCss } from '../styles';
 
 export function Button(unit: xnew.Unit,
     { name = '', className = '', style = '' }:
     { name?: string, className?: string, style?: string } = {}
 ) {
-    const cls = xnew.css(sharedCss);
+    // transparent + inherit so the native control sits on any surface
+    const cls = xnew.css('xnew', {
+        button: `
+            box-sizing: border-box; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            padding: 0 0.5em; margin: 0;
+            background: transparent; color: inherit; font: inherit;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            cursor: pointer; user-select: none;
+            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:active { filter: brightness(0.5); }
+        `,
+    });
 
-    // transparent + inherit so the native control sits on any surface; label is set as text, not markup
-    xnew.nest(`<button type="button" class="${cls.fill} ${cls.clickable} ${cls.frame} ${cls.hoverTint} ${cls.press} ${className}" style="display: flex; justify-content: center; align-items: center; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; ${style}">`, name);
+    // label is set as text, not markup
+    xnew.nest(`<button type="button" class="${cls.button} ${className}" style="${style}">`, name);
 }

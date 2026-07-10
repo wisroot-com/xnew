@@ -14,20 +14,22 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { sharedCss } from '../styles';
 import { SVG } from './SVG';
-
-// the native spinner is hidden because the custom buttons replace it
-const numberCss = {
-    noSpinner: '-moz-appearance: textfield; appearance: textfield; &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }',
-};
 
 export function InputNumber(unit: xnew.Unit,
     { value, min, max, step, name = '', placeholder = '', className = '', style = '' }:
     { value?: number, min?: number, max?: number, step?: number, name?: string, placeholder?: string, className?: string, style?: string } = {}
 ) {
-    const cls = xnew.css(sharedCss);
-    const num = xnew.css(numberCss);
+    const cls = xnew.css('xnew', {
+        fill: 'box-sizing: border-box; width: 100%; height: 100%;',
+        frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
+        clickable: 'cursor: pointer; user-select: none;',
+        hoverTint: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }',
+        focusTint: '&:focus { background: color-mix(in srgb, currentColor 20%, transparent); }',
+        press: '&:active { filter: brightness(0.5); }',
+        // the native spinner is hidden because the custom buttons replace it
+        noSpinner: '-moz-appearance: textfield; appearance: textfield; &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }',
+    });
 
     const container = xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="display: flex; align-items: stretch; overflow: hidden; ${style}">`);
 
@@ -61,7 +63,7 @@ export function InputNumber(unit: xnew.Unit,
         step !== undefined ? ` step="${step}"` : '',
     ].join('');
     // transparent + inherit so the native control sits on any surface
-    xnew.nest(`<input type="number"${attrs} class="${cls.fill} ${cls.focusTint} ${num.noSpinner}" style="flex: 1 1 0; width: auto; min-width: 0; text-align: center; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none;">`);
+    xnew.nest(`<input type="number"${attrs} class="${cls.fill} ${cls.focusTint} ${cls.noSpinner}" style="flex: 1 1 0; width: auto; min-width: 0; text-align: center; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none;">`);
 
     element = unit.element as HTMLInputElement;
     if (value !== undefined) {

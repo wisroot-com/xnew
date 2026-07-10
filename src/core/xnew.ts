@@ -59,9 +59,13 @@ export const xnew = Object.assign(
             return Unit.extend(Unit.current, Component, props) as DefinesOf<C>;
         },
 
-        // Registers pseudo-scoped CSS: keys are local class names, values their declaration blocks (native CSS nesting works inside, e.g. &:hover / @media). Returns { localName: uniqueClassName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it finalizes.
-        css<T extends Record<string, string>>(defs: T): Record<keyof T, string> {
-            return applyCss(Unit.current, defs) as Record<keyof T, string>;
+        // Registers pseudo-scoped CSS: keys are local class names, values their declaration blocks (native CSS nesting works inside, e.g. &:hover / @media). Returns { localName: uniqueClassName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it finalizes. A leading string argument names a cascade layer to wrap the rules in — xnew.css('xnew', defs) — while xnew.css(defs) stays unlayered.
+        css<T extends Record<string, string>>(layer: string | T, defs?: T): Record<keyof T, string> {
+            if (typeof layer === 'string') {
+                return applyCss(Unit.current, defs as T, layer) as Record<keyof T, string>;
+            } else {
+                return applyCss(Unit.current, layer) as Record<keyof T, string>;
+            }
         },
 
         // Returns the nearest unit associated with the given component in the ancestor context chain.

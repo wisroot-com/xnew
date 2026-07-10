@@ -12,7 +12,6 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { sharedCss } from '../styles';
 import { SVG } from './SVG';
 
 export function InputSelect(unit: xnew.Unit,
@@ -20,7 +19,14 @@ export function InputSelect(unit: xnew.Unit,
     { value?: string, items?: string[], name?: string, className?: string, style?: string } = {}
 ) {
     const initial = value ?? items[0] ?? '';
-    const cls = xnew.css(sharedCss);
+    const cls = xnew.css('xnew', {
+        fill: 'box-sizing: border-box; width: 100%; height: 100%;',
+        frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
+        clickable: 'cursor: pointer; user-select: none;',
+        hoverTint: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }',
+        tint: 'background: color-mix(in srgb, currentColor 20%, transparent);',
+        scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
+    });
 
     xnew.nest(`<div class="${cls.fill} ${cls.frame} ${cls.clickable} ${cls.hoverTint} ${className}" style="position: relative; display: flex; align-items: center; ${style}">`);
     const frame = unit.element as HTMLElement;

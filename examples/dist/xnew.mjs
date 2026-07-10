@@ -841,12 +841,12 @@ class UnitTimer {
 
 const registry = new Map();
 let counter = 0;
-function applyCss(unit, defs) {
+function applyCss(unit, defs, layer) {
     var _a;
     if (((_a = globalThis.document) === null || _a === void 0 ? void 0 : _a.head) === undefined) {
         return Object.fromEntries(Object.keys(defs).map((name) => [name, name]));
     }
-    const key = JSON.stringify(defs);
+    const key = JSON.stringify([layer !== null && layer !== void 0 ? layer : '', defs]);
     let entry = registry.get(key);
     if (entry === undefined) {
         const id = counter++;
@@ -856,7 +856,7 @@ function applyCss(unit, defs) {
             return `.${names[name]} {\n${block}\n}`;
         }).join('\n');
         const style = document.createElement('style');
-        style.textContent = `@layer xnew {\n${text}\n}`;
+        style.textContent = layer !== undefined ? `@layer ${layer} {\n${text}\n}` : text;
         document.head.appendChild(style);
         entry = { names, refs: 0, style };
         registry.set(key, entry);
@@ -899,8 +899,13 @@ const xnew = Object.assign((function (...args) {
         }
         return Unit.extend(Unit.current, Component, props);
     },
-    css(defs) {
-        return applyCss(Unit.current, defs);
+    css(layer, defs) {
+        if (typeof layer === 'string') {
+            return applyCss(Unit.current, defs, layer);
+        }
+        else {
+            return applyCss(Unit.current, layer);
+        }
     },
     context(key) {
         return Unit.getContext(Unit.current, key);
@@ -1265,21 +1270,20 @@ function Split(unit, { direction = 'column' } = {}) {
     };
 }
 
-const tintColor = 'color-mix(in srgb, currentColor 20%, transparent)';
-const sharedCss = {
-    fill: 'box-sizing: border-box; width: 100%; height: 100%;',
-    clickable: 'cursor: pointer; user-select: none;',
-    frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
-    tint: `background: ${tintColor};`,
-    hoverTint: `&:hover { background: ${tintColor}; }`,
-    focusTint: `&:focus { background: ${tintColor}; }`,
-    press: '&:active { filter: brightness(0.5); }',
-    scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
-};
-
 function Button$1(unit, { name = '', className = '', style = '' } = {}) {
-    const cls = xnew.css(sharedCss);
-    xnew.nest(`<button type="button" class="${cls.fill} ${cls.clickable} ${cls.frame} ${cls.hoverTint} ${cls.press} ${className}" style="display: flex; justify-content: center; align-items: center; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; ${style}">`, name);
+    const cls = xnew.css('xnew', {
+        button: `
+            box-sizing: border-box; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            padding: 0 0.5em; margin: 0;
+            background: transparent; color: inherit; font: inherit;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            cursor: pointer; user-select: none;
+            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:active { filter: brightness(0.5); }
+        `,
+    });
+    xnew.nest(`<button type="button" class="${cls.button} ${className}" style="${style}">`, name);
 }
 
 function Image(unit, { src, className = '', style = '' }) {
@@ -1375,7 +1379,12 @@ function SVGText(unit, _a = {}) {
 
 function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = 'horizontal', name = '', className = '', style = '' } = {}) {
     value = value !== null && value !== void 0 ? value : min;
-    const cls = xnew.css(sharedCss);
+    const cls = xnew.css('xnew', {
+        fill: 'box-sizing: border-box; width: 100%; height: 100%;',
+        clickable: 'cursor: pointer; user-select: none;',
+        frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
+        tint: 'background: color-mix(in srgb, currentColor 20%, transparent);',
+    });
     const horizontal = orientation !== 'vertical';
     xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${className}" style="position: relative; ${style}">`);
     xnew('<div style="position: absolute; inset: 0; border: 1px solid color-mix(in srgb, currentColor 40%, transparent); border-radius: 0.25em;">');
@@ -1401,7 +1410,12 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = '
 }
 
 function InputCheckbox(unit, { value = false, name = '', className = '', style = '' } = {}) {
-    const cls = xnew.css(sharedCss);
+    const cls = xnew.css('xnew', {
+        fill: 'box-sizing: border-box; width: 100%; height: 100%;',
+        clickable: 'cursor: pointer; user-select: none;',
+        frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
+        tint: 'background: color-mix(in srgb, currentColor 20%, transparent);',
+    });
     xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${cls.frame} ${className}" style="position: relative; display: flex; align-items: center; justify-content: center; ${style}">`);
     const box = unit.element;
     const check = xnew((unit) => {
@@ -1420,19 +1434,27 @@ function InputCheckbox(unit, { value = false, name = '', className = '', style =
 }
 
 function InputText(unit, { value = '', name = '', placeholder = '', className = '', style = '' } = {}) {
-    const cls = xnew.css(sharedCss);
+    const cls = xnew.css('xnew', {
+        fill: 'box-sizing: border-box; width: 100%; height: 100%;',
+        frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
+        focusTint: '&:focus { background: color-mix(in srgb, currentColor 20%, transparent); }',
+    });
     xnew.nest(`<input type="text"${name ? ` name="${name}"` : ''} class="${cls.fill} ${cls.frame} ${cls.focusTint} ${className}" style="padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; ${style}">`);
     const element = unit.element;
     element.value = value;
     element.placeholder = placeholder;
 }
 
-const numberCss = {
-    noSpinner: '-moz-appearance: textfield; appearance: textfield; &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }',
-};
 function InputNumber(unit, { value, min, max, step, name = '', placeholder = '', className = '', style = '' } = {}) {
-    const cls = xnew.css(sharedCss);
-    const num = xnew.css(numberCss);
+    const cls = xnew.css('xnew', {
+        fill: 'box-sizing: border-box; width: 100%; height: 100%;',
+        frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
+        clickable: 'cursor: pointer; user-select: none;',
+        hoverTint: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }',
+        focusTint: '&:focus { background: color-mix(in srgb, currentColor 20%, transparent); }',
+        press: '&:active { filter: brightness(0.5); }',
+        noSpinner: '-moz-appearance: textfield; appearance: textfield; &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }',
+    });
     const container = xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="display: flex; align-items: stretch; overflow: hidden; ${style}">`);
     let element;
     const spinButton = (direction, path) => {
@@ -1460,7 +1482,7 @@ function InputNumber(unit, { value, min, max, step, name = '', placeholder = '',
         max !== undefined ? ` max="${max}"` : '',
         step !== undefined ? ` step="${step}"` : '',
     ].join('');
-    xnew.nest(`<input type="number"${attrs} class="${cls.fill} ${cls.focusTint} ${num.noSpinner}" style="flex: 1 1 0; width: auto; min-width: 0; text-align: center; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none;">`);
+    xnew.nest(`<input type="number"${attrs} class="${cls.fill} ${cls.focusTint} ${cls.noSpinner}" style="flex: 1 1 0; width: auto; min-width: 0; text-align: center; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none;">`);
     element = unit.element;
     if (value !== undefined) {
         element.value = String(value);
@@ -1470,7 +1492,11 @@ function InputNumber(unit, { value, min, max, step, name = '', placeholder = '',
 }
 
 function InputSwitch(unit, { value = false, name = '', className = '', style = '' } = {}) {
-    const cls = xnew.css(sharedCss);
+    const cls = xnew.css('xnew', {
+        fill: 'box-sizing: border-box; width: 100%; height: 100%;',
+        frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
+        tint: 'background: color-mix(in srgb, currentColor 20%, transparent);',
+    });
     xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="position: relative; border-radius: 1em; ${style}">`);
     const track = unit.element;
     const knob = xnew('<div style="position: absolute; top: 0.15em; bottom: 0.15em; aspect-ratio: 1 / 1; border-radius: 50%; background: currentColor; transition: left 0.15s, transform 0.15s;">');
@@ -1490,7 +1516,13 @@ let radioGroupId = 0;
 function InputRadio(unit, { value, items = [], name = '', className = '', style = '' } = {}) {
     var _a;
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
-    const cls = xnew.css(sharedCss);
+    const cls = xnew.css('xnew', {
+        fill: 'box-sizing: border-box; width: 100%; height: 100%;',
+        frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
+        clickable: 'cursor: pointer; user-select: none;',
+        hoverTint: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }',
+        tint: 'background: color-mix(in srgb, currentColor 20%, transparent);',
+    });
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
     xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="display: flex; align-items: stretch; overflow: hidden; ${style}">`);
     const segments = [];
@@ -1515,7 +1547,14 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
 function InputSelect(unit, { value, items = [], name = '', className = '', style = '' } = {}) {
     var _a;
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
-    const cls = xnew.css(sharedCss);
+    const cls = xnew.css('xnew', {
+        fill: 'box-sizing: border-box; width: 100%; height: 100%;',
+        frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
+        clickable: 'cursor: pointer; user-select: none;',
+        hoverTint: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }',
+        tint: 'background: color-mix(in srgb, currentColor 20%, transparent);',
+        scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
+    });
     xnew.nest(`<div class="${cls.fill} ${cls.frame} ${cls.clickable} ${cls.hoverTint} ${className}" style="position: relative; display: flex; align-items: center; ${style}">`);
     const frame = unit.element;
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
@@ -2048,10 +2087,15 @@ function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 
 }
 
 const rowStyle = 'position: relative; height: 2em; margin: 0.125em 0; display: flex; align-items: center;';
+const clickableCss = {
+    clickable: 'cursor: pointer; user-select: none;',
+};
 function Panel(unit, { params, nested }) {
     const object = params !== null && params !== void 0 ? params : {};
     if (!nested) {
-        const cls = xnew.css(sharedCss);
+        const cls = xnew.css('xnew', {
+            scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
+        });
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
         xnew.nest(`<div class="${cls.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
@@ -2095,7 +2139,7 @@ function Panel(unit, { params, nested }) {
 function Group(group, { name, open = false }) {
     const openAndClose = xnew.extend(OpenAndClose, { open });
     if (name) {
-        const cls = xnew.css(sharedCss);
+        const cls = xnew.css('xnew', clickableCss);
         xnew(`<div class="${cls.clickable}" style="${rowStyle}">`, (unit) => {
             unit.on('click', () => openAndClose.toggle());
             xnew((unit) => {
@@ -2109,15 +2153,22 @@ function Group(group, { name, open = false }) {
     xnew.extend(Accordion);
 }
 function Button(unit, { name = '' }) {
-    const cls = xnew.css(sharedCss);
-    xnew.nest(`<button class="${cls.clickable} ${cls.frame} ${cls.hoverTint} ${cls.press}" style="${rowStyle} justify-content: center;">`, name);
+    const cls = xnew.css('xnew', {
+        button: `
+            cursor: pointer; user-select: none;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:active { filter: brightness(0.5); }
+        `,
+    });
+    xnew.nest(`<button class="${cls.button}" style="${rowStyle} justify-content: center;">`, name);
 }
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
 }
 function Range(unit, { name = '', value, min = 0, max = 100, step = 1 }) {
     value = value !== null && value !== void 0 ? value : min;
-    const cls = xnew.css(sharedCss);
+    const cls = xnew.css('xnew', clickableCss);
     xnew.nest(`<div class="${cls.clickable}" style="${rowStyle}">`);
     xnew(InputRange, { name, value, min, max, step });
     const overlay = xnew('<div style="position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">');
@@ -2128,7 +2179,7 @@ function Range(unit, { name = '', value, min = 0, max = 100, step = 1 }) {
     });
 }
 function Checkbox(unit, { name = '', value } = {}) {
-    const cls = xnew.css(sharedCss);
+    const cls = xnew.css('xnew', clickableCss);
     xnew.nest(`<label class="${cls.clickable}" style="${rowStyle} padding: 0 0.5em;">`);
     xnew('<div style="flex: 1;">', name);
     xnew('<div style="width: 1.25em; height: 1.25em;">', InputCheckbox, { name, value });
