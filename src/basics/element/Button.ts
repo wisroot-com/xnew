@@ -13,8 +13,8 @@
 import { xnew } from '../../core/xnew';
 
 export function Button(unit: xnew.Unit,
-    { name = '', className = '', style = '' }:
-    { name?: string, className?: string, style?: string } = {}
+    { textContent = '', className = '', ...others }:
+    { textContent?: string, className?: string, [key: string]: any } = {}
 ) {
     // transparent + inherit so the native control sits on any surface
     const cls = xnew.css({
@@ -33,6 +33,5 @@ export function Button(unit: xnew.Unit,
         },
     });
 
-    // label is set as text, not markup
-    xnew.nest(`<button type="button" class="${cls.button} ${className}" style="${style}">`, name);
+    xnew.nest({ tag: 'button', type: 'button', className: `${cls.button} ${className}`, ...others }, textContent);
 }

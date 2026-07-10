@@ -45,21 +45,21 @@
 
       xnew('<div>', (unit) => {
         xnew('<div class="mb-1">', 'Button');
-        xnew('<div class="h-8">', xbasics.Button, { name: 'start' })
+        xnew('<div class="h-8">', xbasics.Button, { textContent: 'start' })
           .on('click', () => xnew.emit('+console', { text: '"start" clicked' }));
       });
 
       // className adds an unlayered page class that overrides the @layer xbasics defaults
       xnew('<div>', (unit) => {
         xnew('<div class="mb-1">', 'Button (className)');
-        xnew('<div class="h-8">', xbasics.Button, { name: 'pill', className: 'custom' })
+        xnew('<div class="h-8">', xbasics.Button, { textContent: 'pill', className: 'custom' })
           .on('click', () => xnew.emit('+console', { text: '"pill" clicked' }));
       });
 
       // the style prop lands on the style attribute, above every stylesheet
       xnew('<div>', (unit) => {
         xnew('<div class="mb-1">', 'Button (style)');
-        xnew('<div class="h-8">', xbasics.Button, { name: 'inline', style: 'border-radius: 9999px; background: #fef3c7;' })
+        xnew('<div class="h-8">', xbasics.Button, { textContent: 'inline', style: 'border-radius: 9999px; background: #fef3c7;' })
           .on('click', () => xnew.emit('+console', { text: '"inline" clicked' }));
       });
     }
@@ -107,12 +107,6 @@
         xnew('<div class="mb-1">', 'InputRange');
         xnew('<div class="h-6">', xbasics.InputRange, { value: 30 })
           .on('input', ({ value }) => xnew.emit('+console', { text: `range changed to ${value}` }));
-      });
-
-      xnew('<div>', (unit) => {
-        xnew('<div class="mb-1">', 'InputRange (vertical)');
-        xnew('<div class="w-6 h-32">', xbasics.InputRange, { value: 30, orientation: 'vertical' })
-          .on('input', ({ value }) => xnew.emit('+console', { text: `vertical range changed to ${value}` }));
       });
     }
   </script>
