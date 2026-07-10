@@ -29,10 +29,6 @@ interface PanelOptions { name?: string; open?: boolean; params?: Record<string, 
 // one form row of the panel
 const rowStyle = 'position: relative; height: 2em; margin: 0.125em 0; display: flex; align-items: center;';
 
-const panelCss = {
-    press: '&:active { filter: brightness(0.5); }',
-};
-
 export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
 
@@ -98,8 +94,7 @@ function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?:
 
 function Button(unit: xnew.Unit, { name = '' }: { name?: string }) {
     const cls = xnew.css(sharedCss);
-    const btn = xnew.css(panelCss);
-    xnew.nest(`<button class="${cls.clickable} ${cls.frame} ${cls.hoverTint} ${btn.press}" style="${rowStyle} justify-content: center;">`, name);
+    xnew.nest(`<button class="${cls.clickable} ${cls.frame} ${cls.hoverTint} ${cls.press}" style="${rowStyle} justify-content: center;">`, name);
 }
 
 function Separator(unit: xnew.Unit) {

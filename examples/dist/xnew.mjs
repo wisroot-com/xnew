@@ -1364,6 +1364,7 @@ const sharedCss = {
     tint: `background: ${tintColor};`,
     hoverTint: `&:hover { background: ${tintColor}; }`,
     focusTint: `&:focus { background: ${tintColor}; }`,
+    press: '&:active { filter: brightness(0.5); }',
     scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
 };
 
@@ -1423,7 +1424,6 @@ function InputText(unit, { value = '', name = '', placeholder = '', className = 
 
 const numberCss = {
     noSpinner: '-moz-appearance: textfield; appearance: textfield; &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }',
-    press: '&:active { filter: brightness(0.5); }',
 };
 function InputNumber(unit, { value, min, max, step, name = '', placeholder = '', className = '', style = '' } = {}) {
     const cls = xnew.css(sharedCss);
@@ -1432,7 +1432,7 @@ function InputNumber(unit, { value, min, max, step, name = '', placeholder = '',
     let element;
     const spinButton = (direction, path) => {
         const button = xnew(container, () => {
-            xnew.nest(`<div class="${cls.clickable} ${cls.hoverTint} ${num.press}" style="width: 2em; display: flex; align-items: center; justify-content: center;">`);
+            xnew.nest(`<div class="${cls.clickable} ${cls.hoverTint} ${cls.press}" style="width: 2em; display: flex; align-items: center; justify-content: center;">`);
             xnew((unit) => {
                 xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 0.9em; height: 0.9em;' });
                 xnew(`<path d="${path}"/>`);
@@ -2043,9 +2043,6 @@ function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 
 }
 
 const rowStyle = 'position: relative; height: 2em; margin: 0.125em 0; display: flex; align-items: center;';
-const panelCss = {
-    press: '&:active { filter: brightness(0.5); }',
-};
 function Panel(unit, { params, nested }) {
     const object = params !== null && params !== void 0 ? params : {};
     if (!nested) {
@@ -2108,8 +2105,7 @@ function Group(group, { name, open = false }) {
 }
 function Button(unit, { name = '' }) {
     const cls = xnew.css(sharedCss);
-    const btn = xnew.css(panelCss);
-    xnew.nest(`<button class="${cls.clickable} ${cls.frame} ${cls.hoverTint} ${btn.press}" style="${rowStyle} justify-content: center;">`, name);
+    xnew.nest(`<button class="${cls.clickable} ${cls.frame} ${cls.hoverTint} ${cls.press}" style="${rowStyle} justify-content: center;">`, name);
 }
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);

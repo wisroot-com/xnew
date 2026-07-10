@@ -17,10 +17,9 @@ import { xnew } from '../../core/xnew';
 import { sharedCss } from '../styles';
 import { SVG } from './SVG';
 
+// the native spinner is hidden because the custom buttons replace it
 const numberCss = {
-    // the native spinner is hidden because the custom buttons replace it
     noSpinner: '-moz-appearance: textfield; appearance: textfield; &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }',
-    press: '&:active { filter: brightness(0.5); }',
 };
 
 export function InputNumber(unit: xnew.Unit,
@@ -37,7 +36,7 @@ export function InputNumber(unit: xnew.Unit,
     let element: HTMLInputElement;
     const spinButton = (direction: number, path: string) => {
         const button = xnew(container, () => {
-            xnew.nest(`<div class="${cls.clickable} ${cls.hoverTint} ${num.press}" style="width: 2em; display: flex; align-items: center; justify-content: center;">`);
+            xnew.nest(`<div class="${cls.clickable} ${cls.hoverTint} ${cls.press}" style="width: 2em; display: flex; align-items: center; justify-content: center;">`);
             xnew((unit: xnew.Unit) => {
                 xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 0.9em; height: 0.9em;' });
                 xnew(`<path d="${path}"/>`);
