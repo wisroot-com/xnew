@@ -1791,28 +1791,21 @@ function VolumeController(unit, { anchor = 'left' } = {}) {
   xnew(() => {
     const isHoriz = anchor === 'left' || anchor === 'right';
     const cqUnit = isHoriz ? 'cqw' : 'cqh';
-    const fillProp = isHoriz ? 'width' : 'height';
-    const pct = volume.volume * 100;
+    const sizeProp = isHoriz ? 'width' : 'height';
 
     const outerSize = isHoriz ? `top: 20%; bottom: 20%; width: 0${cqUnit}` : `left: 20%; right: 20%; height: 0${cqUnit}`;
-    const fillSize = isHoriz ? `top: 0; left: 0; bottom: 0; width: ${pct}%; height: 100%` : `bottom: 0; left: 0; right: 0; width: 100%; height: ${pct}%`;
-
     const outer = xnew.nest(`<div style="position: absolute; ${outerSize};">`);
-    xnew.nest(`<div style="position: relative; width: 100%; height: 100%; border: 1px solid currentColor; border-radius: 0.25em; box-sizing: border-box;">`);
 
-    const fill = xnew(`<div style="position: absolute; ${fillSize}; background: color-mix(in srgb, currentColor 20%, transparent);">`);
-    const input = xnew(`<input type="range" min="0" max="100" value="${pct}" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;${isHoriz ? '' : ' writing-mode: vertical-lr; direction: rtl;'}">`);
-
-    input.on('input', ({ event }) => {
-      const v = Number(event.target.value);
-      fill.element.style[fillProp] = `${v}%`;
-      volume.volume = v / 100;
-      button.update();
-    });
+    // スライダー本体は xbasics.InputRange(トラック枠線 + フィルバー + 隠しネイティブ input)
+    xnew(xbasics.InputRange, { value: volume.volume * 100, orientation: isHoriz ? 'horizontal' : 'vertical' })
+      .on('input', ({ value }) => {
+        volume.volume = value / 100;
+        button.update();
+      });
 
     system.on('-transition', ({ value }) => {
       outer.style[anchor] = `-${value * 400 + 20}${cqUnit}`;
-      outer.style[fillProp] = `${value * 400}${cqUnit}`;
+      outer.style[sizeProp] = `${value * 400}${cqUnit}`;
       outer.style.opacity = value.toString();
       outer.style.pointerEvents = value < 0.9 ? 'none' : 'auto';
     });
