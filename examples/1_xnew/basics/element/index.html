@@ -108,6 +108,15 @@
         xnew(xbasics.InputRange, { value: 30 })
           .on('input', ({ value }) => xnew.emit('+console', { text: `range changed to ${value}` }));
       });
+
+      // designs decorates the internal parts (background / meter) per instance
+      xnew('<div>', (unit) => {
+        xnew('<div class="mb-1">', 'InputRange (designs)');
+        xnew(xbasics.InputRange, {
+          value: 60,
+          designs: { meter: { style: 'background: #fbbf24; border-color: #b45309;' } },
+        }).on('input', ({ value }) => xnew.emit('+console', { text: `designed range changed to ${value}` }));
+      });
     }
   </script>
 </body>

@@ -2,21 +2,23 @@
 // InputRange — text-free gauge backed by a hidden native <input type="range">
 //
 // The invisible native control captures interaction (drag / touch / keyboard) while the visible
-// surface is a growing value bar inside a faint outline (the max extent), so callers get a gauge
-// look with native range semantics.
+// surface is a value-driven meter layer growing over a full-extent background layer (default look:
+// a fill bar inside a faint outline), so callers get a gauge look with native range semantics.
 //
-// - InputRange : component({ value, min, max, step, name, className, style })
-//                — emits 'input' with { value }; fills left→right
+// - InputRange : component({ value, min, max, step, name, className, style, designs })
+//                — emits 'input' with { value }; fills left→right;
+//                  designs: { background?, meter? } — a Design ({ className?, style? }) per part
 //
-// Usage: const gauge = xnew(xbasics.InputRange, { value: 50 });
+// Usage: const gauge = xnew(xbasics.InputRange, { value: 50, designs: { meter: { style: 'background: gold;' } } });
 //        gauge.on('input', ({ value }) => ...);
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { Design } from '../design';
 
 export function InputRange(unit: xnew.Unit,
-    { value, min = 0, max = 100, step = 1, name, className = '', style = '' }:
-    { value?: number, min?: number, max?: number, step?: number, name?: string, className?: string, style?: string } = {}
+    { value, min = 0, max = 100, step = 1, name, className = '', style = '', designs = {} }:
+    { value?: number, min?: number, max?: number, step?: number, name?: string, className?: string, style?: string, designs?: { background?: Design, meter?: Design } } = {}
 ) {
     value = value ?? min;
     const cls = xnew.css({
@@ -29,8 +31,8 @@ export function InputRange(unit: xnew.Unit,
                 cursor: pointer; user-select: none;
             `,
         },
-        // faint border marking the max extent
-        outline: {
+        // static full-extent layer (default: a faint outline of the max extent)
+        background: {
             layer: 'xbasics',
             body: `
                 position: absolute; inset: 0;
@@ -38,8 +40,8 @@ export function InputRange(unit: xnew.Unit,
                 border-radius: 0.25em;
             `,
         },
-        // value bar; border-box so its border lands exactly on the outline at max
-        bar: {
+        // value-driven layer (default: a bordered fill bar; border-box so it lands on the background at max)
+        meter: {
             layer: 'xbasics',
             body: `
                 position: absolute; top: 0; left: 0; bottom: 0;
@@ -64,14 +66,14 @@ export function InputRange(unit: xnew.Unit,
         },
     });
 
-    xnew.nest(`<div class="${cls.container} ${className}" style="${style}">`);
+    xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
 
-    xnew(`<div class="${cls.outline}">`);
+    xnew({ tag: 'div', className: `${cls.background} ${designs.background?.className ?? ''}`, style: designs.background?.style });
 
-    const bar = xnew(`<div class="${cls.bar}">`);
+    const meter = xnew({ tag: 'div', className: `${cls.meter} ${designs.meter?.className ?? ''}`, style: designs.meter?.style });
 
     const update = (v: number) => {
-        bar.element.style.width = `${(v - min) / (max - min) * 100}%`;
+        meter.element.style.width = `${(v - min) / (max - min) * 100}%`;
     };
     update(value);
 

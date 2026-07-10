@@ -78,6 +78,11 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   Sharing across components: share the **definition object** (same defs → same names);
   for theming, custom properties (`--vars`) pass through unrenamed and inherit down the
   DOM — set them on a subtree root class, read via `var(--x, fallback)` in descendants.
+- **Internal parts of a basics component are decorated via its `designs` prop** — one
+  `Design` (`{ className?, style? }`, from `src/basics/design.ts`) per named part, e.g.
+  InputRange's `designs: { background?, meter? }`. Generated class names are page-unique, so
+  page CSS cannot target parts directly; `designs` is the supported hook (never expose
+  stable global part classes).
 - `xnew.nest(tagOrDef, textContent?)` creates a child element from a **tag string**
   (`'<div …>'`) or an **element definition object** — an existing element is rejected
   (`invalid tag string`); the optional second argument sets the element's text. The object

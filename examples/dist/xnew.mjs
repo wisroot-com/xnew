@@ -1477,7 +1477,8 @@ function Spinner(unit, { className = '', style = '' } = {}) {
     xnew.nest(`<div class="${cls.spinner} ${className}" style="${style}">`);
 }
 
-function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className = '', style = '' } = {}) {
+function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className = '', style = '', designs = {} } = {}) {
+    var _a, _b, _c, _d, _e, _f;
     value = value !== null && value !== void 0 ? value : min;
     const cls = xnew.css({
         container: {
@@ -1488,7 +1489,7 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className
                 cursor: pointer; user-select: none;
             `,
         },
-        outline: {
+        background: {
             layer: 'xbasics',
             body: `
                 position: absolute; inset: 0;
@@ -1496,7 +1497,7 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className
                 border-radius: 0.25em;
             `,
         },
-        bar: {
+        meter: {
             layer: 'xbasics',
             body: `
                 position: absolute; top: 0; left: 0; bottom: 0;
@@ -1517,11 +1518,11 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className
             `,
         },
     });
-    xnew.nest(`<div class="${cls.container} ${className}" style="${style}">`);
-    xnew(`<div class="${cls.outline}">`);
-    const bar = xnew(`<div class="${cls.bar}">`);
+    xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
+    xnew({ tag: 'div', className: `${cls.background} ${(_b = (_a = designs.background) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = designs.background) === null || _c === void 0 ? void 0 : _c.style });
+    const meter = xnew({ tag: 'div', className: `${cls.meter} ${(_e = (_d = designs.meter) === null || _d === void 0 ? void 0 : _d.className) !== null && _e !== void 0 ? _e : ''}`, style: (_f = designs.meter) === null || _f === void 0 ? void 0 : _f.style });
     const update = (v) => {
-        bar.element.style.width = `${(v - min) / (max - min) * 100}%`;
+        meter.element.style.width = `${(v - min) / (max - min) * 100}%`;
     };
     update(value);
     xnew.nest({ tag: 'input', type: 'range', name, min, max, step, value, className: cls.input });

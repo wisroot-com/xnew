@@ -275,7 +275,12 @@ declare function Spinner(unit: xnew.Unit, { className, style }?: {
     style?: string;
 }): void;
 
-declare function InputRange(unit: xnew.Unit, { value, min, max, step, name, className, style }?: {
+interface Design {
+    className?: string;
+    style?: string;
+}
+
+declare function InputRange(unit: xnew.Unit, { value, min, max, step, name, className, style, designs }?: {
     value?: number;
     min?: number;
     max?: number;
@@ -283,6 +288,10 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, name, clas
     name?: string;
     className?: string;
     style?: string;
+    designs?: {
+        background?: Design;
+        meter?: Design;
+    };
 }): void;
 
 declare function InputCheckbox(unit: xnew.Unit, { value, name, className, style }?: {

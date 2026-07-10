@@ -12,8 +12,8 @@ describe('basics InputRange', () => {
         jest.useRealTimers();
     });
 
-    // container children: the outline first, then the value bar
-    function barOf(unit: xnew.Unit): HTMLElement {
+    // container children: the background first, then the meter
+    function meterOf(unit: xnew.Unit): HTMLElement {
         return unit.element.parentElement?.querySelectorAll('div')[1] as HTMLElement;
     }
 
@@ -29,20 +29,20 @@ describe('basics InputRange', () => {
         expect(input.value).toBe('30');
     });
 
-    it('sets the initial bar width from value / min / max', () => {
+    it('sets the initial meter width from value / min / max', () => {
         const unit = xnew(InputRange, { value: 30, min: 10, max: 50 });
 
-        expect(barOf(unit).style.width).toBe('50%');
+        expect(meterOf(unit).style.width).toBe('50%');
     });
 
-    it('defaults value to min (empty bar)', () => {
+    it('defaults value to min (empty meter)', () => {
         const unit = xnew(InputRange, { min: 20, max: 100 });
 
         expect((unit.element as HTMLInputElement).value).toBe('20');
-        expect(barOf(unit).style.width).toBe('0%');
+        expect(meterOf(unit).style.width).toBe('0%');
     });
 
-    it('updates the bar width on input', () => {
+    it('updates the meter width on input', () => {
         const unit = xnew(InputRange, { value: 0 });
         const input = unit.element as HTMLInputElement;
         jest.advanceTimersByTime(0);
@@ -50,7 +50,7 @@ describe('basics InputRange', () => {
         input.value = '75';
         input.dispatchEvent(new Event('input', { bubbles: false }));
 
-        expect(barOf(unit).style.width).toBe('75%');
+        expect(meterOf(unit).style.width).toBe('75%');
     });
 
     it('delivers a numeric value to input listeners', () => {
@@ -66,12 +66,12 @@ describe('basics InputRange', () => {
         expect(received).toEqual([40]);
     });
 
-    it('grows the bar width only (height stays free)', () => {
+    it('grows the meter width only (height stays free)', () => {
         const unit = xnew(InputRange, { value: 50 });
-        const bar = barOf(unit);
+        const meter = meterOf(unit);
 
-        expect(bar.style.width).toBe('50%');
-        expect(bar.style.height).toBe('');
+        expect(meter.style.width).toBe('50%');
+        expect(meter.style.height).toBe('');
     });
 
     it('sets the name attribute only when given', () => {
@@ -82,12 +82,12 @@ describe('basics InputRange', () => {
         expect((anonymous.element as HTMLInputElement).hasAttribute('name')).toBe(false);
     });
 
-    it('marks the max extent with an outline fainter than the bar border', () => {
+    it('marks the max extent with a background fainter than the meter border', () => {
         const unit = xnew(InputRange, { value: 30 });
-        const outline = unit.element.parentElement?.querySelector('div') as HTMLElement;
+        const background = unit.element.parentElement?.querySelector('div') as HTMLElement;
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
-        expect(outline.className).toMatch(/xnew\d+-outline/);
+        expect(background.className).toMatch(/xnew\d+-background/);
         expect(styleText).toContain('border: 1px solid color-mix(in srgb, currentColor 40%, transparent);');
         expect(styleText).toContain('inset: 0;');
     });
@@ -98,5 +98,21 @@ describe('basics InputRange', () => {
 
         expect(container.className).toContain('gauge');
         expect(container.getAttribute('style')).toContain('height: 2em;');
+    });
+
+    it('applies designs to the background and meter parts', () => {
+        const unit = xnew(InputRange, {
+            designs: {
+                background: { className: 'rail', style: 'border-radius: 0;' },
+                meter: { className: 'gold', style: 'background: gold;' },
+            },
+        });
+        const background = unit.element.parentElement?.querySelectorAll('div')[0] as HTMLElement;
+        const meter = meterOf(unit);
+
+        expect(background.className).toContain('rail');
+        expect(background.getAttribute('style')).toContain('border-radius: 0;');
+        expect(meter.className).toContain('gold');
+        expect(meter.getAttribute('style')).toContain('background: gold;');
     });
 });
