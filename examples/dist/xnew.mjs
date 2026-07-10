@@ -1265,6 +1265,23 @@ function Split(unit, { direction = 'column' } = {}) {
     };
 }
 
+const tintColor = 'color-mix(in srgb, currentColor 20%, transparent)';
+const sharedCss = {
+    fill: 'box-sizing: border-box; width: 100%; height: 100%;',
+    clickable: 'cursor: pointer; user-select: none;',
+    frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
+    tint: `background: ${tintColor};`,
+    hoverTint: `&:hover { background: ${tintColor}; }`,
+    focusTint: `&:focus { background: ${tintColor}; }`,
+    press: '&:active { filter: brightness(0.5); }',
+    scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
+};
+
+function Button$1(unit, { name = '', className = '', style = '' } = {}) {
+    const cls = xnew.css(sharedCss);
+    xnew.nest(`<button type="button" class="${cls.fill} ${cls.clickable} ${cls.frame} ${cls.hoverTint} ${cls.press} ${className}" style="display: flex; justify-content: center; align-items: center; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; ${style}">`, name);
+}
+
 function Image(unit, { src, className = '', style = '' }) {
     xnew.nest(`<img class="${className}" style="${style}">`);
     const element = unit.element;
@@ -1341,8 +1358,8 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
 };
 
 function SVGText(unit, _a = {}) {
-    var { text = '', fontSize = 20 } = _a, svgProps = __rest(_a, ["text", "fontSize"]);
-    xnew.extend(SVG, Object.assign({ fill: 'currentColor' }, svgProps));
+    var { text = '', fontSize = 20 } = _a, othres = __rest(_a, ["text", "fontSize"]);
+    xnew.extend(SVG, Object.assign({ fill: 'currentColor' }, othres));
     const svg = unit.element;
     xnew.nest(`<text x="0" y="0" font-size="${fontSize}" paint-order="stroke fill">`);
     unit.element.textContent = text;
@@ -1355,18 +1372,6 @@ function SVGText(unit, _a = {}) {
     unit.on('resize', resize);
     svg.style.overflow = 'visible';
 }
-
-const tintColor = 'color-mix(in srgb, currentColor 20%, transparent)';
-const sharedCss = {
-    fill: 'box-sizing: border-box; width: 100%; height: 100%;',
-    clickable: 'cursor: pointer; user-select: none;',
-    frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
-    tint: `background: ${tintColor};`,
-    hoverTint: `&:hover { background: ${tintColor}; }`,
-    focusTint: `&:focus { background: ${tintColor}; }`,
-    press: '&:active { filter: brightness(0.5); }',
-    scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
-};
 
 function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = 'horizontal', name = '', className = '', style = '' } = {}) {
     value = value !== null && value !== void 0 ? value : min;
@@ -2140,6 +2145,7 @@ const xbasics = {
     Scene,
     SceneList,
     Split,
+    Button: Button$1,
     Image,
     SVG,
     SVGText,

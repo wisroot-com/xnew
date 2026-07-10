@@ -224,6 +224,12 @@ declare function Split(unit: xnew.Unit, { direction }?: {
     }, component?: xnew.Component): Unit;
 };
 
+declare function Button(unit: xnew.Unit, { name, className, style }?: {
+    name?: string;
+    className?: string;
+    style?: string;
+}): void;
+
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
 declare function Image(unit: xnew.Unit, { src, className, style }: {
     src: ImageSource | Promise<ImageSource>;
@@ -246,7 +252,7 @@ declare function SVG(unit: xnew.Unit, { viewBox, className, style, stroke, strok
     style?: string;
 } & SVGStyleInterface): void;
 
-declare function SVGText(unit: xnew.Unit, { text, fontSize, ...svgProps }?: {
+declare function SVGText(unit: xnew.Unit, { text, fontSize, ...othres }?: {
     text?: string;
     fontSize?: number;
 } & SVGStyleInterface): void;
@@ -426,6 +432,7 @@ declare const xbasics: {
     Scene: typeof Scene;
     SceneList: typeof SceneList;
     Split: typeof Split;
+    Button: typeof Button;
     Image: typeof Image;
     SVG: typeof SVG;
     SVGText: typeof SVGText;
