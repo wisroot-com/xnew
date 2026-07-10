@@ -2,7 +2,8 @@
 // InputRange — text-free gauge backed by a hidden native <input type="range">
 //
 // The invisible native control captures interaction (drag / touch / keyboard) while the visible
-// surface is just a growing fill bar, so callers get a gauge look with native range semantics.
+// surface is a growing fill bar inside a faintly outlined track (the max extent), so callers get
+// a gauge look with native range semantics.
 //
 // - InputRange : component({ value, min, max, step, orientation, name, className, style })
 //                — emits 'input' with { value }; orientation: 'horizontal' (default, fills left→right)
@@ -25,11 +26,14 @@ export function InputRange(unit: xnew.Unit,
 
     xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${className}" style="position: relative; ${style}">`);
 
-    // fill bar
+    // track outline (the max extent), fainter than the fill bar's frame
+    xnew('<div style="position: absolute; inset: 0; border: 1px solid color-mix(in srgb, currentColor 40%, transparent); border-radius: 0.25em;">');
+
+    // fill bar; border-box so its outline lands exactly on the track outline at max
     const fillAnchor = horizontal
         ? 'top: 0; left: 0; bottom: 0; transition: width 0.05s;'
         : 'left: 0; right: 0; bottom: 0; transition: height 0.05s;';
-    const fill = xnew(`<div class="${cls.frame} ${cls.tint}" style="position: absolute; ${fillAnchor}">`);
+    const fill = xnew(`<div class="${cls.frame} ${cls.tint}" style="position: absolute; box-sizing: border-box; ${fillAnchor}">`);
 
     const update = (v: number) => {
         const percent = `${(v - min) / (max - min) * 100}%`;

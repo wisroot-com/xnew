@@ -12,8 +12,9 @@ describe('basics InputRange', () => {
         jest.useRealTimers();
     });
 
+    // container children: track outline first, then the fill bar
     function fillOf(unit: xnew.Unit): HTMLElement {
-        return unit.element.parentElement?.querySelector('div') as HTMLElement;
+        return unit.element.parentElement?.querySelectorAll('div')[1] as HTMLElement;
     }
 
     it('nests a hidden native range input with the given attributes', () => {
@@ -100,6 +101,14 @@ describe('basics InputRange', () => {
 
         expect((named.element as HTMLInputElement).getAttribute('name')).toBe('volume');
         expect((anonymous.element as HTMLInputElement).hasAttribute('name')).toBe(false);
+    });
+
+    it('outlines the track with a border fainter than the fill frame', () => {
+        const unit = xnew(InputRange, { value: 30 });
+        const track = unit.element.parentElement?.querySelector('div') as HTMLElement;
+
+        expect(track.getAttribute('style')).toContain('border: 1px solid color-mix(in srgb, currentColor 40%, transparent);');
+        expect(track.getAttribute('style')).toContain('inset: 0;');
     });
 
     it('applies className and style to the container', () => {

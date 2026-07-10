@@ -1372,10 +1372,11 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = '
     const cls = xnew.css(sharedCss);
     const horizontal = orientation !== 'vertical';
     xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${className}" style="position: relative; ${style}">`);
+    xnew('<div style="position: absolute; inset: 0; border: 1px solid color-mix(in srgb, currentColor 40%, transparent); border-radius: 0.25em;">');
     const fillAnchor = horizontal
         ? 'top: 0; left: 0; bottom: 0; transition: width 0.05s;'
         : 'left: 0; right: 0; bottom: 0; transition: height 0.05s;';
-    const fill = xnew(`<div class="${cls.frame} ${cls.tint}" style="position: absolute; ${fillAnchor}">`);
+    const fill = xnew(`<div class="${cls.frame} ${cls.tint}" style="position: absolute; box-sizing: border-box; ${fillAnchor}">`);
     const update = (v) => {
         const percent = `${(v - min) / (max - min) * 100}%`;
         if (horizontal) {
