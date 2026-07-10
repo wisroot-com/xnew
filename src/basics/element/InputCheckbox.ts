@@ -18,12 +18,12 @@ export function InputCheckbox(unit: xnew.Unit,
     { value = false, name = '', className = '', style = '' }:
     { value?: boolean, name?: string, className?: string, style?: string } = {}
 ) {
-    const cls = xnew.css('xnew', {
-        fill: 'box-sizing: border-box; width: 100%; height: 100%;',
-        clickable: 'cursor: pointer; user-select: none;',
-        frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
-        tint: 'background: color-mix(in srgb, currentColor 20%, transparent);',
-    });
+    const cls = xnew.css`@layer xnew {
+        .$fill { box-sizing: border-box; width: 100%; height: 100%; }
+        .$clickable { cursor: pointer; user-select: none; }
+        .$frame { border: 1px solid currentColor; border-radius: 0.25em; }
+        .$tint { background: color-mix(in srgb, currentColor 20%, transparent); }
+    }`;
 
     xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${cls.frame} ${className}" style="position: relative; display: flex; align-items: center; justify-content: center; ${style}">`);
     const box = unit.element;

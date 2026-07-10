@@ -134,7 +134,7 @@ interface XnewBase {
 declare const xnew: XnewBase & {
     nest(tag: string, textContent?: string): HTMLElement | SVGElement;
     extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
-    css<T extends Record<string, string>>(layer: string | T, defs?: T): Record<keyof T, string>;
+    css(strings: TemplateStringsArray, ...values: (string | number)[]): Record<string, string>;
     context(key: any): any;
     promise: {
         (promise: Function | Promise<any> | Unit): UnitPromise;
@@ -256,6 +256,11 @@ declare function SVGText(unit: xnew.Unit, { text, fontSize, ...othres }?: {
     text?: string;
     fontSize?: number;
 } & SVGStyleInterface): void;
+
+declare function Spinner(unit: xnew.Unit, { className, style }?: {
+    className?: string;
+    style?: string;
+}): void;
 
 declare function InputRange(unit: xnew.Unit, { value, min, max, step, orientation, name, className, style }?: {
     value?: number;
@@ -436,6 +441,7 @@ declare const xbasics: {
     Image: typeof Image;
     SVG: typeof SVG;
     SVGText: typeof SVGText;
+    Spinner: typeof Spinner;
     InputRange: typeof InputRange;
     InputCheckbox: typeof InputCheckbox;
     InputText: typeof InputText;

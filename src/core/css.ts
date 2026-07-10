@@ -1,21 +1,17 @@
 //----------------------------------------------------------------------------------------------------
-// css — pseudo-scoped CSS backing xnew.css (local class names → unique generated class names)
+// css — pseudo-scoped CSS backing xnew.css ($names in plain CSS → unique generated names)
 //
-// True local CSS is impossible in the light DOM, so scoping is emulated by renaming: each local key
-// becomes a page-unique class, so definitions in different components never collide by name.
+// True local CSS is impossible in the light DOM, so scoping is emulated by renaming: every $name
+// in the text is replaced with a page-unique identifier, so definitions in different components
+// never collide by name.
 //
-// - applyCss : inject a <style> for a definition map and return { localName: generatedClassName }
+// - applyCss : substitute $names in a plain-CSS text, inject it verbatim as a <style>,
+//              and return { name: generatedName }
 //
-// Each value is wrapped as `.generated { ...value... }`, so native CSS nesting applies inside
-// (&:hover, @media, descendant selectors). Identical definition maps share one ref-counted <style>,
-// removed when the last unit using it finalizes. @keyframes names stay global. Without a DOM
-// (server side), nothing is injected and keys map to themselves.
-//
-// The optional `layer` argument emits the rules inside `@layer <name>`; without it they stay
-// unlayered (normal strength). xbasics components pass 'xnew' so their defaults lose to any page
-// CSS regardless of specificity or order. Pages should declare `@layer xnew;` up front (before
-// other layered CSS) to pin it as the weakest layer; otherwise the runtime-injected layer lands
-// after static layers and outranks them.
+// The text is plain CSS injected as-is, so @layer / @keyframes / @media / selectors need no
+// special casing; class names and @keyframes names are scoped alike by marking them with $.
+// Identical texts share one ref-counted <style>, removed when the last unit using it finalizes.
+// Without a DOM (server side), nothing is injected and $names map to themselves.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit } from './unit';
@@ -25,27 +21,30 @@ interface CssEntry { names: Record<string, string>; refs: number; style: HTMLSty
 const registry = new Map<string, CssEntry>();
 let counter = 0;
 
-export function applyCss(unit: Unit, defs: Record<string, string>, layer?: string): Record<string, string> {
+// a letter must follow '$', so attribute selectors like [href$="…"] are never rewritten
+const namePattern = /\$([A-Za-z][A-Za-z0-9_-]*)/g;
+
+export function applyCss(unit: Unit, source: string): Record<string, string> {
     if (globalThis.document?.head === undefined) {
-        return Object.fromEntries(Object.keys(defs).map((name) => [name, name]));
+        const names: Record<string, string> = {};
+        for (const match of source.matchAll(namePattern)) {
+            names[match[1]] = match[1];
+        }
+        return names;
     }
 
-    const key = JSON.stringify([layer ?? '', defs]);
-    let entry = registry.get(key);
+    let entry = registry.get(source);
     if (entry === undefined) {
         const id = counter++;
         const names: Record<string, string> = {};
-        const text = Object.entries(defs).map(([name, block]) => {
-            names[name] = `xnew${id}-${name}`;
-            return `.${names[name]} {\n${block}\n}`;
-        }).join('\n');
+        const text = source.replace(namePattern, (_, name) => (names[name] = `xnew${id}-${name}`));
 
         const style = document.createElement('style');
-        style.textContent = layer !== undefined ? `@layer ${layer} {\n${text}\n}` : text;
+        style.textContent = text;
         document.head.appendChild(style);
 
         entry = { names, refs: 0, style };
-        registry.set(key, entry);
+        registry.set(source, entry);
     }
 
     const held = entry;
@@ -54,7 +53,7 @@ export function applyCss(unit: Unit, defs: Record<string, string>, layer?: strin
         held.refs--;
         if (held.refs === 0) {
             held.style.remove();
-            registry.delete(key);
+            registry.delete(source);
         }
     });
     return held.names;

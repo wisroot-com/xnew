@@ -17,8 +17,8 @@ export function Button(unit: xnew.Unit,
     { name?: string, className?: string, style?: string } = {}
 ) {
     // transparent + inherit so the native control sits on any surface
-    const cls = xnew.css('xnew', {
-        button: `
+    const cls = xnew.css`@layer xnew {
+        .$button {
             box-sizing: border-box; width: 100%; height: 100%;
             display: flex; justify-content: center; align-items: center;
             padding: 0 0.5em; margin: 0;
@@ -27,8 +27,8 @@ export function Button(unit: xnew.Unit,
             cursor: pointer; user-select: none;
             &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
             &:active { filter: brightness(0.5); }
-        `,
-    });
+        }
+    }`;
 
     // label is set as text, not markup
     xnew.nest(`<button type="button" class="${cls.button} ${className}" style="${style}">`, name);

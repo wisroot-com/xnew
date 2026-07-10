@@ -16,11 +16,11 @@ export function InputText(unit: xnew.Unit,
     { value = '', name = '', placeholder = '', className = '', style = '' }:
     { value?: string, name?: string, placeholder?: string, className?: string, style?: string } = {}
 ) {
-    const cls = xnew.css('xnew', {
-        fill: 'box-sizing: border-box; width: 100%; height: 100%;',
-        frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
-        focusTint: '&:focus { background: color-mix(in srgb, currentColor 20%, transparent); }',
-    });
+    const cls = xnew.css`@layer xnew {
+        .$fill { box-sizing: border-box; width: 100%; height: 100%; }
+        .$frame { border: 1px solid currentColor; border-radius: 0.25em; }
+        .$focusTint:focus { background: color-mix(in srgb, currentColor 20%, transparent); }
+    }`;
 
     // transparent + inherit so the native control sits on any surface
     xnew.nest(`<input type="text"${name ? ` name="${name}"` : ''} class="${cls.fill} ${cls.frame} ${cls.focusTint} ${className}" style="padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; ${style}">`);
