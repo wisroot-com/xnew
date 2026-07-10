@@ -9,10 +9,10 @@ describe('xnew.css', () => {
         return [...document.head.querySelectorAll('style')];
     }
 
-    it('returns a unique generated name per $name', () => {
+    it('returns a unique class name per local key', () => {
         let css!: Record<string, string>;
         xnew(() => {
-            css = xnew.css`.$frame { color: red; } .$icon { width: 16px; }`;
+            css = xnew.css({ frame: 'color: red;', icon: 'width: 16px;' });
         });
         expect(Object.keys(css)).toEqual(['frame', 'icon']);
         expect(css.frame).toMatch(/^xnew\d+-frame$/);
@@ -20,79 +20,135 @@ describe('xnew.css', () => {
         expect(css.frame).not.toBe(css.icon);
     });
 
-    it('injects one <style> with the text verbatim, $names substituted', () => {
+    it('injects one <style> wrapping each block in its generated class, unlayered by default', () => {
         let css!: Record<string, string>;
         xnew(() => {
-            css = xnew.css`.$frame { color: red; }`;
+            css = xnew.css({ frame: 'color: red;' });
         });
         const styles = styleElements();
         expect(styles).toHaveLength(1);
-        expect(styles[0].textContent).toBe(`.${css.frame} { color: red; }`);
+        expect(styles[0].textContent).not.toContain('@layer');
+        expect(styles[0].textContent).toContain(`.${css.frame} {`);
+        expect(styles[0].textContent).toContain('color: red;');
     });
 
-    it('keeps @layer blocks as written', () => {
+    it('wraps an entry with a layer in @layer', () => {
         let css!: Record<string, string>;
         xnew(() => {
-            css = xnew.css`@layer xnew { .$frame { color: red; } }`;
+            css = xnew.css({ frame: { layer: 'xnew', body: 'color: red;' } });
         });
         const text = styleElements()[0].textContent!;
         expect(text).toMatch(/^@layer xnew \{/);
-        expect(text).toContain(`.${css.frame} { color: red; }`);
+        expect(text).toContain(`.${css.frame} {`);
     });
 
-    it('scopes an @keyframes name and its references alike', () => {
+    it('layers each entry independently', () => {
         let css!: Record<string, string>;
         xnew(() => {
-            css = xnew.css`
-                @keyframes $turn { to { transform: rotate(1turn); } }
-                .$box { animation: $turn 1s linear infinite; }
-            `;
+            css = xnew.css({
+                frame: { layer: 'xnew', body: 'color: red;' },
+                plain: 'color: blue;',
+            });
+        });
+        const text = styleElements()[0].textContent!;
+        expect(text).toMatch(new RegExp(`@layer xnew \\{\\s*\\.${css.frame} \\{`));
+        expect(text).toMatch(new RegExp(`\\}\\s*\\.${css.plain} \\{`));
+    });
+
+    it('emits an entry with at "@keyframes" as a scoped keyframes rule', () => {
+        let css!: Record<string, string>;
+        xnew(() => {
+            css = xnew.css({
+                turn: { at: '@keyframes', body: 'to { transform: rotate(1turn); }' },
+            });
         });
         const text = styleElements()[0].textContent!;
         expect(css.turn).toMatch(/^xnew\d+-turn$/);
         expect(text).toContain(`@keyframes ${css.turn} {`);
+        expect(text).not.toContain(`.${css.turn}`);
+    });
+
+    it('resolves a $key reference to the generated name of that entry', () => {
+        let css!: Record<string, string>;
+        xnew(() => {
+            css = xnew.css({
+                turn: { at: '@keyframes', body: 'to { transform: rotate(1turn); }' },
+                box: 'animation: $turn 1s linear infinite;',
+            });
+        });
+        const text = styleElements()[0].textContent!;
         expect(text).toContain(`animation: ${css.turn} 1s linear infinite;`);
+    });
+
+    it('throws on an unknown $key reference', () => {
+        expect(() => {
+            xnew(() => {
+                xnew.css({ box: 'animation: $missing 1s;' });
+            });
+        }).toThrow('unknown reference "$missing"');
+    });
+
+    it('throws on a key that is not a plain local name', () => {
+        for (const name of ['.global', '@keyframes spin', 'a b', '*']) {
+            expect(() => {
+                xnew(() => {
+                    xnew.css({ [name]: 'color: red;' });
+                });
+            }).toThrow('invalid local name');
+        }
+    });
+
+    it('throws on an invalid at-rule or layer (injection is rejected)', () => {
+        expect(() => {
+            xnew(() => {
+                xnew.css({ bad: { at: 'body, .x', body: 'color: red;' } });
+            });
+        }).toThrow('invalid at-rule');
+        expect(() => {
+            xnew(() => {
+                xnew.css({ bad: { layer: 'x } body { color: red; }', body: 'color: red;' } });
+            });
+        }).toThrow('invalid layer');
     });
 
     it('leaves attribute selectors like [href$="…"] untouched', () => {
         let css!: Record<string, string>;
         xnew(() => {
-            css = xnew.css`.$link[href$=".png"] { color: red; }`;
+            css = xnew.css({ link: '&[href$=".png"] { color: red; }' });
         });
-        expect(Object.keys(css)).toEqual(['link']);
         expect(styleElements()[0].textContent).toContain('[href$=".png"]');
+        expect(Object.keys(css)).toEqual(['link']);
     });
 
-    it('joins interpolated values into the text', () => {
-        const color = 'green';
-        let css!: Record<string, string>;
-        xnew(() => {
-            css = xnew.css`.$frame { color: ${color}; }`;
-        });
-        expect(styleElements()[0].textContent).toBe(`.${css.frame} { color: green; }`);
+    it('keeps layered and unlayered definitions of the same body separate', () => {
+        let plain!: Record<string, string>, layered!: Record<string, string>;
+        xnew(() => { plain = xnew.css({ frame: 'color: red;' }); });
+        xnew(() => { layered = xnew.css({ frame: { layer: 'xnew', body: 'color: red;' } }); });
+        expect(styleElements()).toHaveLength(2);
+        expect(layered.frame).not.toBe(plain.frame);
     });
 
-    it('shares one <style> and the same names across units with an identical text', () => {
-        const make = () => xnew.css`.$frame { color: red; }`;
+    it('shares one <style> and the same names across units with an identical definition', () => {
+        const defs = { frame: 'color: red;' };
         let a!: Record<string, string>, b!: Record<string, string>;
-        xnew(() => { a = make(); });
-        xnew(() => { b = make(); });
+        xnew(() => { a = xnew.css(defs); });
+        xnew(() => { b = xnew.css(defs); });
         expect(styleElements()).toHaveLength(1);
         expect(b.frame).toBe(a.frame);
     });
 
-    it('generates distinct names for different texts with the same $name', () => {
+    it('generates distinct names for different definitions with the same local key', () => {
         let a!: Record<string, string>, b!: Record<string, string>;
-        xnew(() => { a = xnew.css`.$frame { color: red; }`; });
-        xnew(() => { b = xnew.css`.$frame { color: blue; }`; });
+        xnew(() => { a = xnew.css({ frame: 'color: red;' }); });
+        xnew(() => { b = xnew.css({ frame: 'color: blue;' }); });
         expect(styleElements()).toHaveLength(2);
         expect(b.frame).not.toBe(a.frame);
     });
 
-    it('removes the <style> only when the last unit using the text finalizes', () => {
-        const make = () => xnew.css`.$frame { color: red; }`;
-        const first = xnew(() => { make(); });
-        const second = xnew(() => { make(); });
+    it('removes the <style> only when the last unit using the definition finalizes', () => {
+        const defs = { frame: 'color: red;' };
+        const first = xnew(() => { xnew.css(defs); });
+        const second = xnew(() => { xnew.css(defs); });
 
         first.finalize();
         expect(styleElements()).toHaveLength(1);
@@ -101,13 +157,13 @@ describe('xnew.css', () => {
         expect(styleElements()).toHaveLength(0);
     });
 
-    it('reuses the removed text by injecting a fresh <style>', () => {
-        const make = () => xnew.css`.$frame { color: red; }`;
-        const first = xnew(() => { make(); });
+    it('reuses the removed definition by injecting a fresh <style>', () => {
+        const defs = { frame: 'color: red;' };
+        const first = xnew(() => { xnew.css(defs); });
         first.finalize();
         expect(styleElements()).toHaveLength(0);
 
-        xnew(() => { make(); });
+        xnew(() => { xnew.css(defs); });
         expect(styleElements()).toHaveLength(1);
     });
 
@@ -115,7 +171,7 @@ describe('xnew.css', () => {
         let css!: Record<string, string>;
         const unit = xnew(() => {});
         Unit.scope(unit._.lastSnapshot!, () => {
-            css = xnew.css`.$late { color: green; }`;
+            css = xnew.css({ late: 'color: green;' });
         });
         expect(css.late).toMatch(/^xnew\d+-late$/);
         expect(styleElements()).toHaveLength(1);

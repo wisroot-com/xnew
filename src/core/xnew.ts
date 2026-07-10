@@ -6,7 +6,7 @@
 // component function; the implementation is a thin forward to Unit static methods.
 //
 // - xnew.nest / extend                   : extend the unit under initialization
-// - xnew.css                             : pseudo-scoped css (tagged template; $names → unique generated names)
+// - xnew.css                             : pseudo-scoped css (local names → unique generated names, scoping enforced)
 // - xnew.find / context                  : search by component / resolve ancestor context
 // - xnew.promise                         : register a promise to the unit (xnew.promise(unit) aggregates its results)
 // - xnew.scope / emit / protect          : scope capture / '+global' '-local' events / visibility boundary
@@ -16,7 +16,7 @@
 
 import { Unit, UnitPromise, UnitTimer, ComponentFn, DefinesOf, PropsOf } from './unit';
 import { DomElement } from './dom';
-import { applyCss } from './css';
+import { applyCss, CssDef } from './css';
 
 // Call signatures of xnew(...); passing a Component merges its defines into the return type.
 export interface XnewBase {
@@ -59,10 +59,9 @@ export const xnew = Object.assign(
             return Unit.extend(Unit.current, Component, props) as DefinesOf<C>;
         },
 
-        // Registers pseudo-scoped CSS from a tagged template of plain CSS: every $name (a letter must follow '$') is renamed to a page-unique identifier — class names and @keyframes names alike — and the text is injected verbatim, so @layer / @keyframes / @media / nesting work as-is. Returns { name: generatedName } to embed in tag strings; the injected <style> is shared per identical text and removed when the last unit using it finalizes.
-        css(strings: TemplateStringsArray, ...values: (string | number)[]): Record<string, string> {
-            const source = strings.reduce((text, chunk, index) => text + String(values[index - 1]) + chunk);
-            return applyCss(Unit.current, source);
+        // Registers pseudo-scoped CSS: each key is a local name, always renamed to a page-unique one (scoping is mandatory — invalid keys throw). A value is either a declaration block string, wrapped as .xnewN-key { … } (native nesting works inside, e.g. &:hover / @media), or an object { layer?, at?, body }: at names an at-rule to hang the generated name on ({ at: '@keyframes', body } → @keyframes xnewN-key; absent: a class rule), and layer wraps that entry in @layer (xbasics entries set layer: 'xnew'). $key inside a body references another entry's generated name (unknown references throw). Returns { key: generatedName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it finalizes.
+        css<T extends Record<string, string | CssDef>>(defs: T): Record<keyof T, string> {
+            return applyCss(Unit.current, defs) as Record<keyof T, string>;
         },
 
         // Returns the nearest unit associated with the given component in the ancestor context chain.

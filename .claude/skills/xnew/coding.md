@@ -52,26 +52,32 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
 ## 4. DOM: element, nest, events
 
 - `unit.element` is the unit's current DOM element.
-- `xnew.css` is a **tagged template of plain CSS**: mark every name to scope with `$`
-  (`.$frame { … }`, `@keyframes $turn { … }`). Each `$name` is renamed to a page-unique
-  identifier — class names and `@keyframes` names alike — and the text is injected verbatim,
-  so `@layer` / `@keyframes` / `@media` / native nesting all work as written. The return
-  value maps `name → generatedName` to embed in tag strings
-  (`xnew.nest(`<div class="${css.frame}">`)`); it is `Record<string, string>`, so key typos
-  are NOT compile-checked. A letter must follow `$` (attribute selectors like `[href$=".png"]`
-  are untouched). Identical texts share one ref-counted `<style>`, removed when the last user
-  unit finalizes; on the server (no DOM) $names map to themselves and nothing is injected.
-  **Every xnew.css text inside `src/basics/` must be wrapped in `@layer xnew { … }`** —
-  component defaults are weakest-by-design: any unlayered page CSS (or a later layer)
-  overrides them regardless of specificity or order. Pages declare `@layer xnew;` up front
-  to pin the layer first; without it, the runtime-injected layer lands after static layers
-  and outranks them. Caveat: with the layer pinned first, Tailwind v4's preflight (`base`
-  layer) also outranks it and wipes component defaults (`border: 0 solid` etc.) — on
-  Tailwind pages pin with `@layer theme, base, xnew, components, utilities;` instead.
-  Sharing across components/call sites: identical template text → same names (wrap the call
-  in a local function to reuse one definition, see `ui/Panel.ts`); for theming, custom
-  properties (`--vars`) pass through unrenamed and inherit down the DOM — set them on a
-  subtree root class, read via `var(--x, fallback)` in descendants.
+- `xnew.css({ name: 'decls…' })` registers pseudo-scoped CSS with **mandatory scoping**
+  (single argument): every key is a local name, always renamed to a page-unique one, and keys
+  must match `[A-Za-z][A-Za-z0-9_-]*` (anything else throws) — there is no way to emit a
+  global rule. A value is either a **declaration block string**, wrapped as
+  `.xnewN-key { … }` (native CSS nesting works inside: `&:hover`, `@media`, descendant
+  selectors), or an **object** `{ layer?, at?, body }`: `at` names an at-rule to hang the
+  generated name on — `turn: { at: '@keyframes', body: 'from {…} to {…}' }` emits a
+  **scoped animation** `@keyframes xnewN-turn { … }` (absent: a class rule) — and `layer`
+  wraps that entry in `@layer` (invalid at-rules / layers throw). `$key` inside a body
+  references another entry's generated name — `animation: $turn 0.8s linear infinite;` —
+  and an unknown `$key` throws (a letter must follow `$`, so `[href$=".png"]` is untouched).
+  The return value maps each key to its generated name (typed via `keyof`) to embed in tag
+  strings (`xnew.nest(`<div class="${css.name}">`)`). Identical definitions share one
+  ref-counted `<style>`, removed when the last user unit finalizes; on the server (no DOM)
+  keys map to themselves and nothing is injected.
+  Entries without `layer` stay unlayered (normal strength). **Every xnew.css entry inside
+  `src/basics/` must set `layer: 'xnew'`** — component defaults are weakest-by-design:
+  any unlayered page CSS (or a later layer) overrides them regardless of specificity or order.
+  Pages declare `@layer xnew;` up front to pin the layer first; without it, the runtime-injected
+  layer lands after static layers and outranks them. Caveat: with the layer pinned first,
+  Tailwind v4's preflight (`base` layer) also outranks it and wipes component defaults
+  (`border: 0 solid` etc.) — on Tailwind pages pin with
+  `@layer theme, base, xnew, components, utilities;` instead.
+  Sharing across components: share the **definition object** (same defs → same names);
+  for theming, custom properties (`--vars`) pass through unrenamed and inherit down the
+  DOM — set them on a subtree root class, read via `var(--x, fallback)` in descendants.
 - `xnew.nest('<div …>', textContent?)` creates a child element from a **tag string
   only** — an existing element is rejected (`invalid tag string`); the optional second
   argument sets the element's text. It nests the new element under

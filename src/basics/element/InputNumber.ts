@@ -20,19 +20,16 @@ export function InputNumber(unit: xnew.Unit,
     { value, min, max, step, name = '', placeholder = '', className = '', style = '' }:
     { value?: number, min?: number, max?: number, step?: number, name?: string, placeholder?: string, className?: string, style?: string } = {}
 ) {
-    const cls = xnew.css`@layer xnew {
-        .$fill { box-sizing: border-box; width: 100%; height: 100%; }
-        .$frame { border: 1px solid currentColor; border-radius: 0.25em; }
-        .$clickable { cursor: pointer; user-select: none; }
-        .$hoverTint:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-        .$focusTint:focus { background: color-mix(in srgb, currentColor 20%, transparent); }
-        .$press:active { filter: brightness(0.5); }
-        /* the native spinner is hidden because the custom buttons replace it */
-        .$noSpinner {
-            -moz-appearance: textfield; appearance: textfield;
-            &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
-        }
-    }`;
+    const cls = xnew.css({
+        fill: { layer: 'xnew', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
+        frame: { layer: 'xnew', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
+        clickable: { layer: 'xnew', body: 'cursor: pointer; user-select: none;' },
+        hoverTint: { layer: 'xnew', body: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }' },
+        focusTint: { layer: 'xnew', body: '&:focus { background: color-mix(in srgb, currentColor 20%, transparent); }' },
+        press: { layer: 'xnew', body: '&:active { filter: brightness(0.5); }' },
+        // the native spinner is hidden because the custom buttons replace it
+        noSpinner: { layer: 'xnew', body: '-moz-appearance: textfield; appearance: textfield; &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }' },
+    });
 
     const container = xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="display: flex; align-items: stretch; overflow: hidden; ${style}">`);
 

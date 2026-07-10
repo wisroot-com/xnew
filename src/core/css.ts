@@ -1,50 +1,94 @@
 //----------------------------------------------------------------------------------------------------
-// css — pseudo-scoped CSS backing xnew.css ($names in plain CSS → unique generated names)
+// css — pseudo-scoped CSS backing xnew.css (local names → unique generated names, scoping enforced)
 //
-// True local CSS is impossible in the light DOM, so scoping is emulated by renaming: every $name
-// in the text is replaced with a page-unique identifier, so definitions in different components
-// never collide by name.
+// True local CSS is impossible in the light DOM, so scoping is emulated by renaming — and made
+// mandatory: every rule hangs off a renamed key, so a definition cannot emit a global rule.
 //
-// - applyCss : substitute $names in a plain-CSS text, inject it verbatim as a <style>,
-//              and return { name: generatedName }
+// - applyCss : inject a <style> for a definition map and return { name: generatedName }
+// - CssDef   : object entry form { layer?, at?, body }
 //
-// The text is plain CSS injected as-is, so @layer / @keyframes / @media / selectors need no
-// special casing; class names and @keyframes names are scoped alike by marking them with $.
-// Identical texts share one ref-counted <style>, removed when the last unit using it finalizes.
-// Without a DOM (server side), nothing is injected and $names map to themselves.
+// Each key is a local name (validated; anything else throws). A value is either a declaration
+// block string, wrapped as `.xnewN-key { … }` (native CSS nesting applies inside: &:hover, @media,
+// descendant selectors), or a CssDef object: `at` names an at-rule to hang the generated name on —
+// `turn: { at: '@keyframes', body: '…' }` emits `@keyframes xnewN-turn { … }` (absent: a class
+// rule) — and `layer` wraps that entry in `@layer`. At-rules and layers are validated (injection
+// throws). `$key` inside a body resolves to another entry's generated name (unknown references
+// throw). Identical definition maps share one ref-counted <style>, removed when the last unit
+// using it finalizes. Without a DOM (server side), nothing is injected and keys map to themselves.
+//
+// Layering: entries without `layer` stay unlayered (normal strength). xbasics components set
+// `layer: 'xnew'` on every entry so their defaults lose to any page CSS regardless of specificity
+// or order. Pages should declare `@layer xnew;` up front (before other layered CSS) to pin it as
+// the weakest layer; otherwise the runtime-injected layer lands after static layers and outranks
+// them.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit } from './unit';
+
+export interface CssDef { layer?: string; at?: string; body: string; }
 
 interface CssEntry { names: Record<string, string>; refs: number; style: HTMLStyleElement; }
 
 const registry = new Map<string, CssEntry>();
 let counter = 0;
 
+const localName = /^[A-Za-z][A-Za-z0-9_-]*$/;
+const layerName = /^[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*)*$/;
+const atName = /^@[a-z-]+$/;
 // a letter must follow '$', so attribute selectors like [href$="…"] are never rewritten
-const namePattern = /\$([A-Za-z][A-Za-z0-9_-]*)/g;
+const reference = /\$([A-Za-z][A-Za-z0-9_-]*)/g;
 
-export function applyCss(unit: Unit, source: string): Record<string, string> {
+export function applyCss(unit: Unit, defs: Record<string, string | CssDef>): Record<string, string> {
     if (globalThis.document?.head === undefined) {
-        const names: Record<string, string> = {};
-        for (const match of source.matchAll(namePattern)) {
-            names[match[1]] = match[1];
-        }
-        return names;
+        return Object.fromEntries(Object.keys(defs).map((name) => [name, name]));
     }
 
-    let entry = registry.get(source);
+    const key = JSON.stringify(defs);
+    let entry = registry.get(key);
     if (entry === undefined) {
         const id = counter++;
         const names: Record<string, string> = {};
-        const text = source.replace(namePattern, (_, name) => (names[name] = `xnew${id}-${name}`));
+        for (const name of Object.keys(defs)) {
+            if (localName.test(name) === true) {
+                names[name] = `xnew${id}-${name}`;
+            } else {
+                throw new Error(`xnew.css: invalid local name "${name}".`);
+            }
+        }
+        const resolve = (block: string) => block.replace(reference, (_, ref: string) => {
+            if (names[ref] === undefined) {
+                throw new Error(`xnew.css: unknown reference "$${ref}".`);
+            } else {
+                return names[ref];
+            }
+        });
+        const text = Object.entries(defs).map(([name, value]) => {
+            const def = typeof value === 'string' ? { body: value } : value;
+
+            let rule: string;
+            if (def.at === undefined) {
+                rule = `.${names[name]} {\n${resolve(def.body)}\n}`;
+            } else if (atName.test(def.at) === true) {
+                rule = `${def.at} ${names[name]} {\n${resolve(def.body)}\n}`;
+            } else {
+                throw new Error(`xnew.css: invalid at-rule "${def.at}".`);
+            }
+
+            if (def.layer === undefined) {
+                return rule;
+            } else if (layerName.test(def.layer) === true) {
+                return `@layer ${def.layer} {\n${rule}\n}`;
+            } else {
+                throw new Error(`xnew.css: invalid layer "${def.layer}".`);
+            }
+        }).join('\n');
 
         const style = document.createElement('style');
         style.textContent = text;
         document.head.appendChild(style);
 
         entry = { names, refs: 0, style };
-        registry.set(source, entry);
+        registry.set(key, entry);
     }
 
     const held = entry;
@@ -53,7 +97,7 @@ export function applyCss(unit: Unit, source: string): Record<string, string> {
         held.refs--;
         if (held.refs === 0) {
             held.style.remove();
-            registry.delete(source);
+            registry.delete(key);
         }
     });
     return held.names;

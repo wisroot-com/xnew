@@ -33,38 +33,38 @@
       xnew.nest('<div class="flex gap-x-2 flex-wrap">');
     }
 
-    // xnew.css: a tagged template of plain CSS; every $name becomes a page-unique
-    // name and the text is injected as-is (&:hover, @media, @keyframes all work).
+    // xnew.css: every key is a local name, always renamed to a page-unique one.
+    // Native CSS nesting works inside each block (&:hover, @media, descendant selectors).
     function Buttons(unit) {
       xnew.extend(Base, { name: 'xnew.css: hover / active states' });
 
-      const css = xnew.css`
-        .$button {
+      const css = xnew.css({
+        button: `
           height: 2rem; padding: 0 1rem; border-radius: 0.5rem;
           background: steelblue; color: white; cursor: pointer;
           transition: background 0.2s;
           &:hover { background: navy; }
           &:active { transform: translateY(2px); }
-        }
-      `;
+        `,
+      });
 
       ['one', 'two', 'three'].forEach((label) => {
         xnew(`<button class="${css.button}">`, label);
       });
     }
 
-    // BlueCard and GreenCard both use the local name "$card",
+    // BlueCard and GreenCard both use the local name "card",
     // but the generated class names are unique, so the styles never collide.
     function BlueCard(unit) {
       xnew.extend(Base, { name: 'xnew.css: local name "card" (blue)' });
 
-      const css = xnew.css`
-        .$card {
+      const css = xnew.css({
+        card: `
           width: 12rem; padding: 0.5rem; border-radius: 0.5rem;
           background: #dbeafe; border: 1px solid #3b82f6;
           span { font-weight: bold; color: #1d4ed8; }
-        }
-      `;
+        `,
+      });
 
       xnew(`<div class="${css.card}">`, () => {
         xnew('<span>', 'blue card');
@@ -75,13 +75,13 @@
     function GreenCard(unit) {
       xnew.extend(Base, { name: 'xnew.css: local name "card" (green)' });
 
-      const css = xnew.css`
-        .$card {
+      const css = xnew.css({
+        card: `
           width: 12rem; padding: 0.5rem; border-radius: 0.5rem;
           background: #dcfce7; border: 1px solid #22c55e;
           span { font-weight: bold; color: #15803d; }
-        }
-      `;
+        `,
+      });
 
       xnew(`<div class="${css.card}">`, () => {
         xnew('<span>', 'green card');
@@ -89,22 +89,25 @@
       });
     }
 
-    // @keyframes works as plain CSS; $turn scopes the animation name like a class name,
-    // so the rule and its animation: reference stay linked with no global name.
+    // An object entry { at: '@keyframes', body } scopes the animation name like a
+    // class key; $turn links the animation: reference to it, so no global name is created.
     function Spinners(unit) {
-      xnew.extend(Base, { name: 'xnew.css: @keyframes ($-scoped animation name)' });
+      xnew.extend(Base, { name: 'xnew.css: @keyframes (scoped animation name)' });
 
-      const css = xnew.css`
-        @keyframes $turn {
-          from { transform: rotate(0turn); }
-          to { transform: rotate(1turn); }
-        }
-        .$spinner {
+      const css = xnew.css({
+        turn: {
+          at: '@keyframes',
+          body: `
+            from { transform: rotate(0turn); }
+            to { transform: rotate(1turn); }
+          `,
+        },
+        spinner: `
           width: 2rem; height: 2rem; border-radius: 50%;
           border: 0.25rem solid #dbeafe; border-top-color: #3b82f6;
           animation: $turn 0.8s linear infinite;
-        }
-      `;
+        `,
+      });
 
       xnew(`<div class="${css.spinner}">`);
     }
@@ -114,16 +117,16 @@
     function Theme(unit) {
       xnew.extend(Base, { name: 'xnew.css: custom properties (theme variables)' });
 
-      const css = xnew.css`
-        .$light {
+      const css = xnew.css({
+        light: `
           --color-primary: #3b82f6;
           --color-surface: #dbeafe;
-        }
-        .$dark {
+        `,
+        dark: `
           --color-primary: #93c5fd;
           --color-surface: #1e3a5f;
-        }
-      `;
+        `,
+      });
 
       const root = xnew.nest(`<div class="${css.light} flex gap-x-2 flex-wrap items-center">`);
 
@@ -139,16 +142,16 @@
     }
 
     function ThemedCard(unit, { label }) {
-      const css = xnew.css`
-        .$card {
+      const css = xnew.css({
+        card: `
           width: 8rem; padding: 0.5rem; border-radius: 0.5rem;
           background: var(--color-surface, white);
           border: 1px solid var(--color-primary, gray);
           color: var(--color-primary, black);
           font-weight: bold;
           transition: background 0.3s, color 0.3s;
-        }
-      `;
+        `,
+      });
       xnew(`<div class="${css.card}">`, label);
     }
   </script>

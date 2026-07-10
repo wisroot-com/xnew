@@ -123,6 +123,12 @@ declare class UnitTimer {
     private start;
 }
 
+interface CssDef {
+    layer?: string;
+    at?: string;
+    body: string;
+}
+
 interface XnewBase {
     <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
     <C extends ComponentFn<any, any>>(target: DomElement | string, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
@@ -134,7 +140,7 @@ interface XnewBase {
 declare const xnew: XnewBase & {
     nest(tag: string, textContent?: string): HTMLElement | SVGElement;
     extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
-    css(strings: TemplateStringsArray, ...values: (string | number)[]): Record<string, string>;
+    css<T extends Record<string, string | CssDef>>(defs: T): Record<keyof T, string>;
     context(key: any): any;
     promise: {
         (promise: Function | Promise<any> | Unit): UnitPromise;

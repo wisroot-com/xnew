@@ -28,12 +28,10 @@ interface PanelOptions { name?: string; open?: boolean; params?: Record<string, 
 // one form row of the panel
 const rowStyle = 'position: relative; height: 2em; margin: 0.125em 0; display: flex; align-items: center;';
 
-// clickable rows share one definition across this file's private components (identical text → one shared <style>)
-function clickableCss() {
-    return xnew.css`@layer xnew {
-        .$clickable { cursor: pointer; user-select: none; }
-    }`;
-}
+// clickable rows share one definition across this file's private components
+const clickableCss = {
+    clickable: { layer: 'xnew', body: 'cursor: pointer; user-select: none;' },
+};
 
 export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
@@ -41,10 +39,10 @@ export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
     if (!nested) {
         // own scroll container inheriting the mount element's max-height, so the panel scrolls once the host constrains it;
         // the vertical padding sits outside the scrollport so the scrollbar stays clear of the host's rounded corners
-        const cls = xnew.css`@layer xnew {
-            /* transparent track lets the surface behind show through, so the scrollbar blends into any background */
-            .$scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent; }
-        }`;
+        const cls = xnew.css({
+            // transparent track lets the surface behind show through, so the scrollbar blends into any background
+            scroll: { layer: 'xnew', body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
+        });
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
         xnew.nest(`<div class="${cls.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
@@ -87,7 +85,7 @@ export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
 function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
     const openAndClose = xnew.extend(OpenAndClose, { open });
     if (name) {
-        const cls = clickableCss();
+        const cls = xnew.css(clickableCss);
         xnew(`<div class="${cls.clickable}" style="${rowStyle}">`, (unit: xnew.Unit) => {
             unit.on('click', () => openAndClose.toggle());
             xnew((unit: xnew.Unit) => {
@@ -102,14 +100,17 @@ function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?:
 }
 
 function Button(unit: xnew.Unit, { name = '' }: { name?: string }) {
-    const cls = xnew.css`@layer xnew {
-        .$button {
-            cursor: pointer; user-select: none;
-            border: 1px solid currentColor; border-radius: 0.25em;
-            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-            &:active { filter: brightness(0.5); }
-        }
-    }`;
+    const cls = xnew.css({
+        button: {
+            layer: 'xnew',
+            body: `
+                cursor: pointer; user-select: none;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+                &:active { filter: brightness(0.5); }
+            `,
+        },
+    });
     xnew.nest(`<button class="${cls.button}" style="${rowStyle} justify-content: center;">`, name);
 }
 
@@ -122,7 +123,7 @@ function Range(unit: xnew.Unit,
     { name?: string, value?: number, min?: number, max?: number, step?: number }
 ) {
     value = value ?? min;
-    const cls = clickableCss();
+    const cls = xnew.css(clickableCss);
 
     xnew.nest(`<div class="${cls.clickable}" style="${rowStyle}">`);
 
@@ -139,7 +140,7 @@ function Range(unit: xnew.Unit,
 }
 
 function Checkbox(unit: xnew.Unit, { name = '', value }: { name?: string, value?: boolean } = {}) {
-    const cls = clickableCss();
+    const cls = xnew.css(clickableCss);
     // label row so a click anywhere in the row reaches the boxed native input
     xnew.nest(`<label class="${cls.clickable}" style="${rowStyle} padding: 0 0.5em;">`);
 

@@ -841,26 +841,63 @@ class UnitTimer {
 
 const registry = new Map();
 let counter = 0;
-const namePattern = /\$([A-Za-z][A-Za-z0-9_-]*)/g;
-function applyCss(unit, source) {
+const localName = /^[A-Za-z][A-Za-z0-9_-]*$/;
+const layerName = /^[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*)*$/;
+const atName = /^@[a-z-]+$/;
+const reference = /\$([A-Za-z][A-Za-z0-9_-]*)/g;
+function applyCss(unit, defs) {
     var _a;
     if (((_a = globalThis.document) === null || _a === void 0 ? void 0 : _a.head) === undefined) {
-        const names = {};
-        for (const match of source.matchAll(namePattern)) {
-            names[match[1]] = match[1];
-        }
-        return names;
+        return Object.fromEntries(Object.keys(defs).map((name) => [name, name]));
     }
-    let entry = registry.get(source);
+    const key = JSON.stringify(defs);
+    let entry = registry.get(key);
     if (entry === undefined) {
         const id = counter++;
         const names = {};
-        const text = source.replace(namePattern, (_, name) => (names[name] = `xnew${id}-${name}`));
+        for (const name of Object.keys(defs)) {
+            if (localName.test(name) === true) {
+                names[name] = `xnew${id}-${name}`;
+            }
+            else {
+                throw new Error(`xnew.css: invalid local name "${name}".`);
+            }
+        }
+        const resolve = (block) => block.replace(reference, (_, ref) => {
+            if (names[ref] === undefined) {
+                throw new Error(`xnew.css: unknown reference "$${ref}".`);
+            }
+            else {
+                return names[ref];
+            }
+        });
+        const text = Object.entries(defs).map(([name, value]) => {
+            const def = typeof value === 'string' ? { body: value } : value;
+            let rule;
+            if (def.at === undefined) {
+                rule = `.${names[name]} {\n${resolve(def.body)}\n}`;
+            }
+            else if (atName.test(def.at) === true) {
+                rule = `${def.at} ${names[name]} {\n${resolve(def.body)}\n}`;
+            }
+            else {
+                throw new Error(`xnew.css: invalid at-rule "${def.at}".`);
+            }
+            if (def.layer === undefined) {
+                return rule;
+            }
+            else if (layerName.test(def.layer) === true) {
+                return `@layer ${def.layer} {\n${rule}\n}`;
+            }
+            else {
+                throw new Error(`xnew.css: invalid layer "${def.layer}".`);
+            }
+        }).join('\n');
         const style = document.createElement('style');
         style.textContent = text;
         document.head.appendChild(style);
         entry = { names, refs: 0, style };
-        registry.set(source, entry);
+        registry.set(key, entry);
     }
     const held = entry;
     held.refs++;
@@ -868,7 +905,7 @@ function applyCss(unit, source) {
         held.refs--;
         if (held.refs === 0) {
             held.style.remove();
-            registry.delete(source);
+            registry.delete(key);
         }
     });
     return held.names;
@@ -900,9 +937,8 @@ const xnew = Object.assign((function (...args) {
         }
         return Unit.extend(Unit.current, Component, props);
     },
-    css(strings, ...values) {
-        const source = strings.reduce((text, chunk, index) => text + String(values[index - 1]) + chunk);
-        return applyCss(Unit.current, source);
+    css(defs) {
+        return applyCss(Unit.current, defs);
     },
     context(key) {
         return Unit.getContext(Unit.current, key);
@@ -1268,18 +1304,21 @@ function Split(unit, { direction = 'column' } = {}) {
 }
 
 function Button$1(unit, { name = '', className = '', style = '' } = {}) {
-    const cls = xnew.css `@layer xnew {
-        .$button {
-            box-sizing: border-box; width: 100%; height: 100%;
-            display: flex; justify-content: center; align-items: center;
-            padding: 0 0.5em; margin: 0;
-            background: transparent; color: inherit; font: inherit;
-            border: 1px solid currentColor; border-radius: 0.25em;
-            cursor: pointer; user-select: none;
-            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-            &:active { filter: brightness(0.5); }
-        }
-    }`;
+    const cls = xnew.css({
+        button: {
+            layer: 'xnew',
+            body: `
+                box-sizing: border-box; width: 100%; height: 100%;
+                display: flex; justify-content: center; align-items: center;
+                padding: 0 0.5em; margin: 0;
+                background: transparent; color: inherit; font: inherit;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                cursor: pointer; user-select: none;
+                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+                &:active { filter: brightness(0.5); }
+            `,
+        },
+    });
     xnew.nest(`<button type="button" class="${cls.button} ${className}" style="${style}">`, name);
 }
 
@@ -1375,30 +1414,37 @@ function SVGText(unit, _a = {}) {
 }
 
 function Spinner(unit, { className = '', style = '' } = {}) {
-    const cls = xnew.css `@layer xnew {
-        @keyframes $turn {
-            from { transform: rotate(0turn); }
-            to { transform: rotate(1turn); }
-        }
-        .$spinner {
-            box-sizing: border-box; width: 100%; height: 100%;
-            border: 0.15em solid color-mix(in srgb, currentColor 25%, transparent);
-            border-top-color: currentColor;
-            border-radius: 50%;
-            animation: $turn 0.8s linear infinite;
-        }
-    }`;
+    const cls = xnew.css({
+        turn: {
+            layer: 'xnew',
+            at: '@keyframes',
+            body: `
+                from { transform: rotate(0turn); }
+                to { transform: rotate(1turn); }
+            `,
+        },
+        spinner: {
+            layer: 'xnew',
+            body: `
+                box-sizing: border-box; width: 100%; height: 100%;
+                border: 0.15em solid color-mix(in srgb, currentColor 25%, transparent);
+                border-top-color: currentColor;
+                border-radius: 50%;
+                animation: $turn 0.8s linear infinite;
+            `,
+        },
+    });
     xnew.nest(`<div class="${cls.spinner} ${className}" style="${style}">`);
 }
 
 function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = 'horizontal', name = '', className = '', style = '' } = {}) {
     value = value !== null && value !== void 0 ? value : min;
-    const cls = xnew.css `@layer xnew {
-        .$fill { box-sizing: border-box; width: 100%; height: 100%; }
-        .$clickable { cursor: pointer; user-select: none; }
-        .$frame { border: 1px solid currentColor; border-radius: 0.25em; }
-        .$tint { background: color-mix(in srgb, currentColor 20%, transparent); }
-    }`;
+    const cls = xnew.css({
+        fill: { layer: 'xnew', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
+        clickable: { layer: 'xnew', body: 'cursor: pointer; user-select: none;' },
+        frame: { layer: 'xnew', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
+        tint: { layer: 'xnew', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
+    });
     const horizontal = orientation !== 'vertical';
     xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${className}" style="position: relative; ${style}">`);
     xnew('<div style="position: absolute; inset: 0; border: 1px solid color-mix(in srgb, currentColor 40%, transparent); border-radius: 0.25em;">');
@@ -1424,12 +1470,12 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = '
 }
 
 function InputCheckbox(unit, { value = false, name = '', className = '', style = '' } = {}) {
-    const cls = xnew.css `@layer xnew {
-        .$fill { box-sizing: border-box; width: 100%; height: 100%; }
-        .$clickable { cursor: pointer; user-select: none; }
-        .$frame { border: 1px solid currentColor; border-radius: 0.25em; }
-        .$tint { background: color-mix(in srgb, currentColor 20%, transparent); }
-    }`;
+    const cls = xnew.css({
+        fill: { layer: 'xnew', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
+        clickable: { layer: 'xnew', body: 'cursor: pointer; user-select: none;' },
+        frame: { layer: 'xnew', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
+        tint: { layer: 'xnew', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
+    });
     xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${cls.frame} ${className}" style="position: relative; display: flex; align-items: center; justify-content: center; ${style}">`);
     const box = unit.element;
     const check = xnew((unit) => {
@@ -1448,11 +1494,11 @@ function InputCheckbox(unit, { value = false, name = '', className = '', style =
 }
 
 function InputText(unit, { value = '', name = '', placeholder = '', className = '', style = '' } = {}) {
-    const cls = xnew.css `@layer xnew {
-        .$fill { box-sizing: border-box; width: 100%; height: 100%; }
-        .$frame { border: 1px solid currentColor; border-radius: 0.25em; }
-        .$focusTint:focus { background: color-mix(in srgb, currentColor 20%, transparent); }
-    }`;
+    const cls = xnew.css({
+        fill: { layer: 'xnew', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
+        frame: { layer: 'xnew', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
+        focusTint: { layer: 'xnew', body: '&:focus { background: color-mix(in srgb, currentColor 20%, transparent); }' },
+    });
     xnew.nest(`<input type="text"${name ? ` name="${name}"` : ''} class="${cls.fill} ${cls.frame} ${cls.focusTint} ${className}" style="padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; ${style}">`);
     const element = unit.element;
     element.value = value;
@@ -1460,19 +1506,15 @@ function InputText(unit, { value = '', name = '', placeholder = '', className = 
 }
 
 function InputNumber(unit, { value, min, max, step, name = '', placeholder = '', className = '', style = '' } = {}) {
-    const cls = xnew.css `@layer xnew {
-        .$fill { box-sizing: border-box; width: 100%; height: 100%; }
-        .$frame { border: 1px solid currentColor; border-radius: 0.25em; }
-        .$clickable { cursor: pointer; user-select: none; }
-        .$hoverTint:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-        .$focusTint:focus { background: color-mix(in srgb, currentColor 20%, transparent); }
-        .$press:active { filter: brightness(0.5); }
-        /* the native spinner is hidden because the custom buttons replace it */
-        .$noSpinner {
-            -moz-appearance: textfield; appearance: textfield;
-            &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
-        }
-    }`;
+    const cls = xnew.css({
+        fill: { layer: 'xnew', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
+        frame: { layer: 'xnew', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
+        clickable: { layer: 'xnew', body: 'cursor: pointer; user-select: none;' },
+        hoverTint: { layer: 'xnew', body: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }' },
+        focusTint: { layer: 'xnew', body: '&:focus { background: color-mix(in srgb, currentColor 20%, transparent); }' },
+        press: { layer: 'xnew', body: '&:active { filter: brightness(0.5); }' },
+        noSpinner: { layer: 'xnew', body: '-moz-appearance: textfield; appearance: textfield; &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }' },
+    });
     const container = xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="display: flex; align-items: stretch; overflow: hidden; ${style}">`);
     let element;
     const spinButton = (direction, path) => {
@@ -1510,11 +1552,11 @@ function InputNumber(unit, { value, min, max, step, name = '', placeholder = '',
 }
 
 function InputSwitch(unit, { value = false, name = '', className = '', style = '' } = {}) {
-    const cls = xnew.css `@layer xnew {
-        .$fill { box-sizing: border-box; width: 100%; height: 100%; }
-        .$frame { border: 1px solid currentColor; border-radius: 0.25em; }
-        .$tint { background: color-mix(in srgb, currentColor 20%, transparent); }
-    }`;
+    const cls = xnew.css({
+        fill: { layer: 'xnew', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
+        frame: { layer: 'xnew', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
+        tint: { layer: 'xnew', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
+    });
     xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="position: relative; border-radius: 1em; ${style}">`);
     const track = unit.element;
     const knob = xnew('<div style="position: absolute; top: 0.15em; bottom: 0.15em; aspect-ratio: 1 / 1; border-radius: 50%; background: currentColor; transition: left 0.15s, transform 0.15s;">');
@@ -1534,13 +1576,13 @@ let radioGroupId = 0;
 function InputRadio(unit, { value, items = [], name = '', className = '', style = '' } = {}) {
     var _a;
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
-    const cls = xnew.css `@layer xnew {
-        .$fill { box-sizing: border-box; width: 100%; height: 100%; }
-        .$frame { border: 1px solid currentColor; border-radius: 0.25em; }
-        .$clickable { cursor: pointer; user-select: none; }
-        .$hoverTint:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-        .$tint { background: color-mix(in srgb, currentColor 20%, transparent); }
-    }`;
+    const cls = xnew.css({
+        fill: { layer: 'xnew', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
+        frame: { layer: 'xnew', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
+        clickable: { layer: 'xnew', body: 'cursor: pointer; user-select: none;' },
+        hoverTint: { layer: 'xnew', body: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }' },
+        tint: { layer: 'xnew', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
+    });
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
     xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="display: flex; align-items: stretch; overflow: hidden; ${style}">`);
     const segments = [];
@@ -1565,14 +1607,14 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
 function InputSelect(unit, { value, items = [], name = '', className = '', style = '' } = {}) {
     var _a;
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
-    const cls = xnew.css `@layer xnew {
-        .$fill { box-sizing: border-box; width: 100%; height: 100%; }
-        .$frame { border: 1px solid currentColor; border-radius: 0.25em; }
-        .$clickable { cursor: pointer; user-select: none; }
-        .$hoverTint:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-        .$tint { background: color-mix(in srgb, currentColor 20%, transparent); }
-        .$scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent; }
-    }`;
+    const cls = xnew.css({
+        fill: { layer: 'xnew', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
+        frame: { layer: 'xnew', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
+        clickable: { layer: 'xnew', body: 'cursor: pointer; user-select: none;' },
+        hoverTint: { layer: 'xnew', body: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }' },
+        tint: { layer: 'xnew', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
+        scroll: { layer: 'xnew', body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
+    });
     xnew.nest(`<div class="${cls.fill} ${cls.frame} ${cls.clickable} ${cls.hoverTint} ${className}" style="position: relative; display: flex; align-items: center; ${style}">`);
     const frame = unit.element;
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
@@ -2105,18 +2147,15 @@ function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 
 }
 
 const rowStyle = 'position: relative; height: 2em; margin: 0.125em 0; display: flex; align-items: center;';
-function clickableCss() {
-    return xnew.css `@layer xnew {
-        .$clickable { cursor: pointer; user-select: none; }
-    }`;
-}
+const clickableCss = {
+    clickable: { layer: 'xnew', body: 'cursor: pointer; user-select: none;' },
+};
 function Panel(unit, { params, nested }) {
     const object = params !== null && params !== void 0 ? params : {};
     if (!nested) {
-        const cls = xnew.css `@layer xnew {
-            /* transparent track lets the surface behind show through, so the scrollbar blends into any background */
-            .$scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent; }
-        }`;
+        const cls = xnew.css({
+            scroll: { layer: 'xnew', body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
+        });
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
         xnew.nest(`<div class="${cls.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
@@ -2160,7 +2199,7 @@ function Panel(unit, { params, nested }) {
 function Group(group, { name, open = false }) {
     const openAndClose = xnew.extend(OpenAndClose, { open });
     if (name) {
-        const cls = clickableCss();
+        const cls = xnew.css(clickableCss);
         xnew(`<div class="${cls.clickable}" style="${rowStyle}">`, (unit) => {
             unit.on('click', () => openAndClose.toggle());
             xnew((unit) => {
@@ -2174,14 +2213,17 @@ function Group(group, { name, open = false }) {
     xnew.extend(Accordion);
 }
 function Button(unit, { name = '' }) {
-    const cls = xnew.css `@layer xnew {
-        .$button {
-            cursor: pointer; user-select: none;
-            border: 1px solid currentColor; border-radius: 0.25em;
-            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-            &:active { filter: brightness(0.5); }
-        }
-    }`;
+    const cls = xnew.css({
+        button: {
+            layer: 'xnew',
+            body: `
+                cursor: pointer; user-select: none;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+                &:active { filter: brightness(0.5); }
+            `,
+        },
+    });
     xnew.nest(`<button class="${cls.button}" style="${rowStyle} justify-content: center;">`, name);
 }
 function Separator(unit) {
@@ -2189,7 +2231,7 @@ function Separator(unit) {
 }
 function Range(unit, { name = '', value, min = 0, max = 100, step = 1 }) {
     value = value !== null && value !== void 0 ? value : min;
-    const cls = clickableCss();
+    const cls = xnew.css(clickableCss);
     xnew.nest(`<div class="${cls.clickable}" style="${rowStyle}">`);
     xnew(InputRange, { name, value, min, max, step });
     const overlay = xnew('<div style="position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 0 0.5em; display: flex; justify-content: space-between; align-items: center; pointer-events: none;">');
@@ -2200,7 +2242,7 @@ function Range(unit, { name = '', value, min = 0, max = 100, step = 1 }) {
     });
 }
 function Checkbox(unit, { name = '', value } = {}) {
-    const cls = clickableCss();
+    const cls = xnew.css(clickableCss);
     xnew.nest(`<label class="${cls.clickable}" style="${rowStyle} padding: 0 0.5em;">`);
     xnew('<div style="flex: 1;">', name);
     xnew('<div style="width: 1.25em; height: 1.25em;">', InputCheckbox, { name, value });

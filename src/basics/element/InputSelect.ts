@@ -19,14 +19,14 @@ export function InputSelect(unit: xnew.Unit,
     { value?: string, items?: string[], name?: string, className?: string, style?: string } = {}
 ) {
     const initial = value ?? items[0] ?? '';
-    const cls = xnew.css`@layer xnew {
-        .$fill { box-sizing: border-box; width: 100%; height: 100%; }
-        .$frame { border: 1px solid currentColor; border-radius: 0.25em; }
-        .$clickable { cursor: pointer; user-select: none; }
-        .$hoverTint:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-        .$tint { background: color-mix(in srgb, currentColor 20%, transparent); }
-        .$scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent; }
-    }`;
+    const cls = xnew.css({
+        fill: { layer: 'xnew', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
+        frame: { layer: 'xnew', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
+        clickable: { layer: 'xnew', body: 'cursor: pointer; user-select: none;' },
+        hoverTint: { layer: 'xnew', body: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }' },
+        tint: { layer: 'xnew', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
+        scroll: { layer: 'xnew', body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
+    });
 
     xnew.nest(`<div class="${cls.fill} ${cls.frame} ${cls.clickable} ${cls.hoverTint} ${className}" style="position: relative; display: flex; align-items: center; ${style}">`);
     const frame = unit.element as HTMLElement;
