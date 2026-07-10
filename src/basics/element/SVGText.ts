@@ -13,10 +13,10 @@ import { xnew } from '../../core/xnew';
 import { SVG, SVGStyleInterface } from './SVG';
 
 export function SVGText(unit: xnew.Unit,
-    { text = '', fontSize = 20, ...svgProps }: { text?: string; fontSize?: number; } & SVGStyleInterface = {}
+    { text = '', fontSize = 20, ...othres }: { text?: string; fontSize?: number; } & SVGStyleInterface = {}
 ) {
     // text defaults to visible fill; every other prop passes through to SVG untouched
-    xnew.extend(SVG, { fill: 'currentColor', ...svgProps });
+    xnew.extend(SVG, { fill: 'currentColor', ...othres });
     const svg = unit.element as SVGSVGElement;
 
     xnew.nest(`<text x="0" y="0" font-size="${fontSize}" paint-order="stroke fill">`);
