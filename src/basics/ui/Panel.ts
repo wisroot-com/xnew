@@ -99,7 +99,7 @@ function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?:
 function Button(unit: xnew.Unit, { name = '' }: { name?: string }) {
     const cls = xnew.css(sharedCss);
     const btn = xnew.css(panelCss);
-    xnew.nest(`<button class="${cls.clickable} ${cls.hover} ${btn.press}" style="${rowStyle} justify-content: center; border: 1px solid currentColor; border-radius: 0.25em;">`, name);
+    xnew.nest(`<button class="${cls.clickable} ${cls.frame} ${cls.hover} ${btn.press}" style="${rowStyle} justify-content: center;">`, name);
 }
 
 function Separator(unit: xnew.Unit) {

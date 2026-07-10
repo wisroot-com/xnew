@@ -32,7 +32,7 @@ export function InputNumber(unit: xnew.Unit,
     const cls = xnew.css(sharedCss);
     const num = xnew.css(numberCss);
 
-    const container = xnew.nest(`<div class="${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; border: 1px solid currentColor; border-radius: 0.25em; ${style}">`);
+    const container = xnew.nest(`<div class="${cls.frame} ${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; ${style}">`);
 
     // custom spin buttons flanking the field (stepUp / stepDown keep the native min / max / step semantics);
     // element is captured after nest — a listener owned by the left button sees the pre-input nest state via unit.element

@@ -11,6 +11,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { sharedCss } from '../styles';
 
 // visible native text control; transparent + inherit so it sits on any surface
 const textCss = {
@@ -21,9 +22,10 @@ export function InputText(unit: xnew.Unit,
     { value = '', name = '', placeholder = '', className = '', style = '' }:
     { value?: string, name?: string, placeholder?: string, className?: string, style?: string } = {}
 ) {
-    const cls = xnew.css(textCss);
+    const cls = xnew.css(sharedCss);
+    const txt = xnew.css(textCss);
 
-    xnew.nest(`<input type="text"${name ? ` name="${name}"` : ''} class="${cls.textInput} ${className}" style="border: 1px solid currentColor; border-radius: 0.25em; ${style}">`);
+    xnew.nest(`<input type="text"${name ? ` name="${name}"` : ''} class="${cls.frame} ${txt.textInput} ${className}" style="${style}">`);
 
     // value / placeholder are set as properties so arbitrary text cannot break the tag string
     const element = unit.element as HTMLInputElement;

@@ -20,7 +20,7 @@ export function InputSwitch(unit: xnew.Unit,
 ) {
     const cls = xnew.css(sharedCss);
 
-    xnew.nest(`<div class="${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; border: 1px solid currentColor; border-radius: 1em; ${style}">`);
+    xnew.nest(`<div class="${cls.frame} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; border-radius: 1em; ${style}">`);
     const track = unit.element as HTMLElement;
 
     // aspect-ratio keeps the knob square at any track size, so the slide needs no size math

@@ -24,7 +24,7 @@ export function InputRadio(unit: xnew.Unit,
     const cls = xnew.css(sharedCss);
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
 
-    xnew.nest(`<div class="${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; border: 1px solid currentColor; border-radius: 0.25em; ${style}">`);
+    xnew.nest(`<div class="${cls.frame} ${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; ${style}">`);
 
     const segments: [xnew.Unit, string][] = [];
     items.forEach((item, index) => {

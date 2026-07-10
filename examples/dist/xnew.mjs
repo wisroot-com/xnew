@@ -1360,6 +1360,7 @@ const paleColor = 'color-mix(in srgb, currentColor 20%, transparent)';
 const sharedCss = {
     fill: 'width: 100%; height: 100%;',
     clickable: 'cursor: pointer; user-select: none;',
+    frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
     pale: `background: ${paleColor};`,
     hover: `&:hover { background: ${paleColor}; }`,
     scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
@@ -1373,7 +1374,7 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = '
     const fillAnchor = horizontal
         ? 'top: 0; left: 0; bottom: 0; transition: width 0.05s;'
         : 'left: 0; right: 0; bottom: 0; transition: height 0.05s;';
-    const fill = xnew(`<div class="${cls.pale}" style="position: absolute; border: 1px solid currentColor; border-radius: 0.25em; ${fillAnchor}">`);
+    const fill = xnew(`<div class="${cls.frame} ${cls.pale}" style="position: absolute; ${fillAnchor}">`);
     const update = (v) => {
         const percent = `${(v - min) / (max - min) * 100}%`;
         if (horizontal) {
@@ -1393,7 +1394,7 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = '
 
 function InputCheckbox(unit, { value = false, name = '', className = '', style = '' } = {}) {
     const cls = xnew.css(sharedCss);
-    xnew.nest(`<div class="${cls.clickable} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border: 1px solid currentColor; border-radius: 0.25em; ${style}">`);
+    xnew.nest(`<div class="${cls.clickable} ${cls.frame} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; ${style}">`);
     const box = unit.element;
     const check = xnew((unit) => {
         xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 100%; height: 100%;', stroke: 'currentColor', strokeWidth: 2 });
@@ -1414,8 +1415,9 @@ const textCss = {
     textInput: 'box-sizing: border-box; width: 100%; height: 100%; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; &:focus { background: color-mix(in srgb, currentColor 20%, transparent); }',
 };
 function InputText(unit, { value = '', name = '', placeholder = '', className = '', style = '' } = {}) {
-    const cls = xnew.css(textCss);
-    xnew.nest(`<input type="text"${name ? ` name="${name}"` : ''} class="${cls.textInput} ${className}" style="border: 1px solid currentColor; border-radius: 0.25em; ${style}">`);
+    const cls = xnew.css(sharedCss);
+    const txt = xnew.css(textCss);
+    xnew.nest(`<input type="text"${name ? ` name="${name}"` : ''} class="${cls.frame} ${txt.textInput} ${className}" style="${style}">`);
     const element = unit.element;
     element.value = value;
     element.placeholder = placeholder;
@@ -1429,7 +1431,7 @@ const numberCss = {
 function InputNumber(unit, { value, min, max, step, name = '', placeholder = '', className = '', style = '' } = {}) {
     const cls = xnew.css(sharedCss);
     const num = xnew.css(numberCss);
-    const container = xnew.nest(`<div class="${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; border: 1px solid currentColor; border-radius: 0.25em; ${style}">`);
+    const container = xnew.nest(`<div class="${cls.frame} ${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; ${style}">`);
     let element;
     const spinButton = (direction, path) => {
         const button = xnew(container, () => {
@@ -1467,7 +1469,7 @@ function InputNumber(unit, { value, min, max, step, name = '', placeholder = '',
 
 function InputSwitch(unit, { value = false, name = '', className = '', style = '' } = {}) {
     const cls = xnew.css(sharedCss);
-    xnew.nest(`<div class="${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; border: 1px solid currentColor; border-radius: 1em; ${style}">`);
+    xnew.nest(`<div class="${cls.frame} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; border-radius: 1em; ${style}">`);
     const track = unit.element;
     const knob = xnew('<div style="position: absolute; top: 0.15em; bottom: 0.15em; aspect-ratio: 1 / 1; border-radius: 50%; background: currentColor; transition: left 0.15s, transform 0.15s;">');
     const update = (checked) => {
@@ -1488,7 +1490,7 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
     const cls = xnew.css(sharedCss);
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
-    xnew.nest(`<div class="${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; border: 1px solid currentColor; border-radius: 0.25em; ${style}">`);
+    xnew.nest(`<div class="${cls.frame} ${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; ${style}">`);
     const segments = [];
     items.forEach((item, index) => {
         const segment = xnew(`<div class="${cls.clickable} ${cls.hover}" style="flex: 1 1 0; position: relative; display: flex; align-items: center; justify-content: center; white-space: nowrap;${index > 0 ? ' border-left: 1px solid currentColor;' : ''}">`, () => {
@@ -1512,7 +1514,7 @@ function InputSelect(unit, { value, items = [], name = '', className = '', style
     var _a;
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
     const cls = xnew.css(sharedCss);
-    xnew.nest(`<div class="${cls.clickable} ${cls.hover} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; border: 1px solid currentColor; border-radius: 0.25em; ${style}">`);
+    xnew.nest(`<div class="${cls.frame} ${cls.clickable} ${cls.hover} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; ${style}">`);
     const frame = unit.element;
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
     const label = xnew(labelBox, '<div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">', initial);
@@ -1543,7 +1545,7 @@ function InputSelect(unit, { value, items = [], name = '', className = '', style
             frame.classList.remove(cls.hover);
             list.on('finalize', () => frame.classList.add(cls.hover));
             list.on('pointerdown.outside', () => closeDropdown());
-            const menu = xnew.nest(`<div class="${cls.scroll}" style="position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000; max-height: 12em; border: 1px solid currentColor; background: ${surfaceColor()};">`);
+            const menu = xnew.nest(`<div class="${cls.frame} ${cls.scroll}" style="position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000; max-height: 12em; border-radius: 0; background: ${surfaceColor()};">`);
             const anchor = () => {
                 const rect = frame.getBoundingClientRect();
                 menu.style.left = `${rect.left}px`;
@@ -2110,7 +2112,7 @@ function Group(group, { name, open = false }) {
 function Button(unit, { name = '' }) {
     const cls = xnew.css(sharedCss);
     const btn = xnew.css(panelCss);
-    xnew.nest(`<button class="${cls.clickable} ${cls.hover} ${btn.press}" style="${rowStyle} justify-content: center; border: 1px solid currentColor; border-radius: 0.25em;">`, name);
+    xnew.nest(`<button class="${cls.clickable} ${cls.frame} ${cls.hover} ${btn.press}" style="${rowStyle} justify-content: center;">`, name);
 }
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
