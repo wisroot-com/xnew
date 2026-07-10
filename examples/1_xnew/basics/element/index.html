@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- pin the xbasics layer among Tailwind's layers so component defaults stay the weakest -->
+  <style>@layer theme, base, xbasics, components, utilities;</style>
   <script type="importmap">
     {
       "imports": {
@@ -11,6 +13,16 @@
     }
   </script>
   <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+  <style>
+    /* an unlayered page class: every property it declares replaces the @layer xbasics default,
+       no matter its specificity or where it appears in the page */
+    .custom {
+      border: none;
+      border-radius: 9999px;
+      background: #4f46e5;
+      color: #ffffff;
+    }
+  </style>
 </head>
 
 <body class="m-0 p-0 w-full h-screen overflow-hidden">
@@ -24,8 +36,33 @@
       const textunit = xnew('<div class="m-0.5 p-1 rounded bg-gray-200">', 'Console');
       textunit.on('+console', ({ text }) => textunit.element.textContent = text);
 
+      xnew(MyButtons);
       xnew(MyInputs);
     });
+
+    function MyButtons(unit) {
+      xnew.nest('<div class="m-0.5 mt-2 p-4 w-[40rem] text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg grid grid-cols-3 gap-4">');
+
+      xnew('<div>', (unit) => {
+        xnew('<div class="mb-1">', 'Button');
+        xnew('<div class="h-8">', xbasics.Button, { name: 'start' })
+          .on('click', () => xnew.emit('+console', { text: '"start" clicked' }));
+      });
+
+      // className adds an unlayered page class that overrides the @layer xbasics defaults
+      xnew('<div>', (unit) => {
+        xnew('<div class="mb-1">', 'Button (className)');
+        xnew('<div class="h-8">', xbasics.Button, { name: 'pill', className: 'custom' })
+          .on('click', () => xnew.emit('+console', { text: '"pill" clicked' }));
+      });
+
+      // the style prop lands on the style attribute, above every stylesheet
+      xnew('<div>', (unit) => {
+        xnew('<div class="mb-1">', 'Button (style)');
+        xnew('<div class="h-8">', xbasics.Button, { name: 'inline', style: 'border-radius: 9999px; background: #fef3c7;' })
+          .on('click', () => xnew.emit('+console', { text: '"inline" clicked' }));
+      });
+    }
 
     function MyInputs(unit) {
       xnew.nest('<div class="m-0.5 mt-2 p-4 w-[40rem] text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg grid grid-cols-2 gap-4">');

@@ -89,14 +89,14 @@
       });
     }
 
-    // An object entry { at: '@keyframes', body } scopes the animation name like a
+    // An object entry { type: 'keyframes', body } scopes the animation name like a
     // class key; $turn links the animation: reference to it, so no global name is created.
     function Spinners(unit) {
       xnew.extend(Base, { name: 'xnew.css: @keyframes (scoped animation name)' });
 
       const css = xnew.css({
         turn: {
-          at: '@keyframes',
+          type: 'keyframes',
           body: `
             from { transform: rotate(0turn); }
             to { transform: rotate(1turn); }

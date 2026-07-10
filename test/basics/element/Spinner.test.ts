@@ -18,11 +18,11 @@ describe('basics Spinner', () => {
         expect(div.className).toMatch(/xnew\d+-spinner/);
     });
 
-    it('injects the @keyframes rule inside the xnew layer with a scoped name', () => {
+    it('injects the @keyframes rule inside the xbasics layer with a scoped name', () => {
         const unit = xnew(Spinner);
         const text = styleText();
 
-        expect(text).toMatch(/^@layer xnew \{/);
+        expect(text).toMatch(/^@layer xbasics \{/);
         expect(text).toMatch(/@keyframes xnew\d+-turn \{/);
         expect(text).toMatch(/animation: xnew\d+-turn/);
 

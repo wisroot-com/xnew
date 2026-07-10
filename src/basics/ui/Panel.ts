@@ -30,7 +30,7 @@ const rowStyle = 'position: relative; height: 2em; margin: 0.125em 0; display: f
 
 // clickable rows share one definition across this file's private components
 const clickableCss = {
-    clickable: { layer: 'xnew', body: 'cursor: pointer; user-select: none;' },
+    clickable: { layer: 'xbasics', body: 'cursor: pointer; user-select: none;' },
 };
 
 export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
@@ -41,7 +41,7 @@ export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
         // the vertical padding sits outside the scrollport so the scrollbar stays clear of the host's rounded corners
         const cls = xnew.css({
             // transparent track lets the surface behind show through, so the scrollbar blends into any background
-            scroll: { layer: 'xnew', body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
+            scroll: { layer: 'xbasics', body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
         });
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
         xnew.nest(`<div class="${cls.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
@@ -102,7 +102,7 @@ function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?:
 function Button(unit: xnew.Unit, { name = '' }: { name?: string }) {
     const cls = xnew.css({
         button: {
-            layer: 'xnew',
+            layer: 'xbasics',
             body: `
                 cursor: pointer; user-select: none;
                 border: 1px solid currentColor; border-radius: 0.25em;

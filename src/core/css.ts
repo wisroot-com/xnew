@@ -5,27 +5,28 @@
 // mandatory: every rule hangs off a renamed key, so a definition cannot emit a global rule.
 //
 // - applyCss : inject a <style> for a definition map and return { name: generatedName }
-// - CssDef   : object entry form { layer?, at?, body }
+// - CssDef   : object entry form { layer?, type?, body }
 //
 // Each key is a local name (validated; anything else throws). A value is either a declaration
 // block string, wrapped as `.xnewN-key { … }` (native CSS nesting applies inside: &:hover, @media,
-// descendant selectors), or a CssDef object: `at` names an at-rule to hang the generated name on —
-// `turn: { at: '@keyframes', body: '…' }` emits `@keyframes xnewN-turn { … }` (absent: a class
-// rule) — and `layer` wraps that entry in `@layer`. At-rules and layers are validated (injection
-// throws). `$key` inside a body resolves to another entry's generated name (unknown references
-// throw). Identical definition maps share one ref-counted <style>, removed when the last unit
-// using it finalizes. Without a DOM (server side), nothing is injected and keys map to themselves.
+// descendant selectors), or a CssDef object: `type` names an at-rule (without '@') to hang the
+// generated name on — `turn: { type: 'keyframes', body: '…' }` emits `@keyframes xnewN-turn { … }`
+// (absent: a class rule) — and `layer` wraps that entry in `@layer`. Types and layers are
+// validated (injection throws). `$key` inside a body resolves to another entry's generated name
+// (unknown references throw). Identical definition maps share one ref-counted <style>, removed
+// when the last unit using it finalizes. Without a DOM (server side), nothing is injected and
+// keys map to themselves.
 //
 // Layering: entries without `layer` stay unlayered (normal strength). xbasics components set
-// `layer: 'xnew'` on every entry so their defaults lose to any page CSS regardless of specificity
-// or order. Pages should declare `@layer xnew;` up front (before other layered CSS) to pin it as
-// the weakest layer; otherwise the runtime-injected layer lands after static layers and outranks
-// them.
+// `layer: 'xbasics'` on every entry so their defaults lose to any page CSS regardless of
+// specificity or order. Pages should declare `@layer xbasics;` up front (before other layered CSS)
+// to pin it as the weakest layer; otherwise the runtime-injected layer lands after static layers
+// and outranks them.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit } from './unit';
 
-export interface CssDef { layer?: string; at?: string; body: string; }
+export interface CssDef { layer?: string; type?: string; body: string; }
 
 interface CssEntry { names: Record<string, string>; refs: number; style: HTMLStyleElement; }
 
@@ -34,7 +35,7 @@ let counter = 0;
 
 const localName = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const layerName = /^[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*)*$/;
-const atName = /^@[a-z-]+$/;
+const typeName = /^[a-z-]+$/;
 // a letter must follow '$', so attribute selectors like [href$="…"] are never rewritten
 const reference = /\$([A-Za-z][A-Za-z0-9_-]*)/g;
 
@@ -66,12 +67,12 @@ export function applyCss(unit: Unit, defs: Record<string, string | CssDef>): Rec
             const def = typeof value === 'string' ? { body: value } : value;
 
             let rule: string;
-            if (def.at === undefined) {
+            if (def.type === undefined) {
                 rule = `.${names[name]} {\n${resolve(def.body)}\n}`;
-            } else if (atName.test(def.at) === true) {
-                rule = `${def.at} ${names[name]} {\n${resolve(def.body)}\n}`;
+            } else if (typeName.test(def.type) === true) {
+                rule = `@${def.type} ${names[name]} {\n${resolve(def.body)}\n}`;
             } else {
-                throw new Error(`xnew.css: invalid at-rule "${def.at}".`);
+                throw new Error(`xnew.css: invalid type "${def.type}".`);
             }
 
             if (def.layer === undefined) {

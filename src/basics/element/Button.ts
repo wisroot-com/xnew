@@ -19,7 +19,7 @@ export function Button(unit: xnew.Unit,
     // transparent + inherit so the native control sits on any surface
     const cls = xnew.css({
         button: {
-            layer: 'xnew',
+            layer: 'xbasics',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 display: flex; justify-content: center; align-items: center;

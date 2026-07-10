@@ -55,11 +55,11 @@ describe('xnew.css', () => {
         expect(text).toMatch(new RegExp(`\\}\\s*\\.${css.plain} \\{`));
     });
 
-    it('emits an entry with at "@keyframes" as a scoped keyframes rule', () => {
+    it('emits an entry with type "keyframes" as a scoped keyframes rule', () => {
         let css!: Record<string, string>;
         xnew(() => {
             css = xnew.css({
-                turn: { at: '@keyframes', body: 'to { transform: rotate(1turn); }' },
+                turn: { type: 'keyframes', body: 'to { transform: rotate(1turn); }' },
             });
         });
         const text = styleElements()[0].textContent!;
@@ -72,7 +72,7 @@ describe('xnew.css', () => {
         let css!: Record<string, string>;
         xnew(() => {
             css = xnew.css({
-                turn: { at: '@keyframes', body: 'to { transform: rotate(1turn); }' },
+                turn: { type: 'keyframes', body: 'to { transform: rotate(1turn); }' },
                 box: 'animation: $turn 1s linear infinite;',
             });
         });
@@ -98,12 +98,12 @@ describe('xnew.css', () => {
         }
     });
 
-    it('throws on an invalid at-rule or layer (injection is rejected)', () => {
+    it('throws on an invalid type or layer (injection is rejected)', () => {
         expect(() => {
             xnew(() => {
-                xnew.css({ bad: { at: 'body, .x', body: 'color: red;' } });
+                xnew.css({ bad: { type: 'body, .x', body: 'color: red;' } });
             });
-        }).toThrow('invalid at-rule');
+        }).toThrow('invalid type');
         expect(() => {
             xnew(() => {
                 xnew.css({ bad: { layer: 'x } body { color: red; }', body: 'color: red;' } });

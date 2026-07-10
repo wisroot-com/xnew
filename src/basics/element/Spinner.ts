@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Spinner — rotating ring indicator for loading states
 //
-// Sample of @keyframes via xnew.css: the { at: '@keyframes', body } entry form scopes the
+// Sample of @keyframes via xnew.css: the { type: 'keyframes', body } entry form scopes the
 // animation name exactly like a class key, and `$turn` links the `animation:` reference to it.
 //
 // - Spinner : component({ className, style })
@@ -17,15 +17,15 @@ export function Spinner(unit: xnew.Unit,
 ) {
     const cls = xnew.css({
         turn: {
-            layer: 'xnew',
-            at: '@keyframes',
+            layer: 'xbasics',
+            type: 'keyframes',
             body: `
                 from { transform: rotate(0turn); }
                 to { transform: rotate(1turn); }
             `,
         },
         spinner: {
-            layer: 'xnew',
+            layer: 'xbasics',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 border: 0.15em solid color-mix(in srgb, currentColor 25%, transparent);

@@ -17,9 +17,9 @@ export function InputText(unit: xnew.Unit,
     { value?: string, name?: string, placeholder?: string, className?: string, style?: string } = {}
 ) {
     const cls = xnew.css({
-        fill: { layer: 'xnew', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
-        frame: { layer: 'xnew', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
-        focusTint: { layer: 'xnew', body: '&:focus { background: color-mix(in srgb, currentColor 20%, transparent); }' },
+        fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
+        frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
+        focusTint: { layer: 'xbasics', body: '&:focus { background: color-mix(in srgb, currentColor 20%, transparent); }' },
     });
 
     // transparent + inherit so the native control sits on any surface

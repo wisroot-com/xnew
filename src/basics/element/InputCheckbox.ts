@@ -19,10 +19,10 @@ export function InputCheckbox(unit: xnew.Unit,
     { value?: boolean, name?: string, className?: string, style?: string } = {}
 ) {
     const cls = xnew.css({
-        fill: { layer: 'xnew', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
-        clickable: { layer: 'xnew', body: 'cursor: pointer; user-select: none;' },
-        frame: { layer: 'xnew', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
-        tint: { layer: 'xnew', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
+        fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
+        clickable: { layer: 'xbasics', body: 'cursor: pointer; user-select: none;' },
+        frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
+        tint: { layer: 'xbasics', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
     });
 
     xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${cls.frame} ${className}" style="position: relative; display: flex; align-items: center; justify-content: center; ${style}">`);

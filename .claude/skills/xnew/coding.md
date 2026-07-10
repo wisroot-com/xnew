@@ -57,10 +57,10 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   must match `[A-Za-z][A-Za-z0-9_-]*` (anything else throws) — there is no way to emit a
   global rule. A value is either a **declaration block string**, wrapped as
   `.xnewN-key { … }` (native CSS nesting works inside: `&:hover`, `@media`, descendant
-  selectors), or an **object** `{ layer?, at?, body }`: `at` names an at-rule to hang the
-  generated name on — `turn: { at: '@keyframes', body: 'from {…} to {…}' }` emits a
-  **scoped animation** `@keyframes xnewN-turn { … }` (absent: a class rule) — and `layer`
-  wraps that entry in `@layer` (invalid at-rules / layers throw). `$key` inside a body
+  selectors), or an **object** `{ layer?, type?, body }`: `type` names an at-rule without
+  `@` to hang the generated name on — `turn: { type: 'keyframes', body: 'from {…} to {…}' }`
+  emits a **scoped animation** `@keyframes xnewN-turn { … }` (absent: a class rule) — and
+  `layer` wraps that entry in `@layer` (invalid types / layers throw). `$key` inside a body
   references another entry's generated name — `animation: $turn 0.8s linear infinite;` —
   and an unknown `$key` throws (a letter must follow `$`, so `[href$=".png"]` is untouched).
   The return value maps each key to its generated name (typed via `keyof`) to embed in tag
@@ -68,13 +68,13 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   ref-counted `<style>`, removed when the last user unit finalizes; on the server (no DOM)
   keys map to themselves and nothing is injected.
   Entries without `layer` stay unlayered (normal strength). **Every xnew.css entry inside
-  `src/basics/` must set `layer: 'xnew'`** — component defaults are weakest-by-design:
+  `src/basics/` must set `layer: 'xbasics'`** — component defaults are weakest-by-design:
   any unlayered page CSS (or a later layer) overrides them regardless of specificity or order.
-  Pages declare `@layer xnew;` up front to pin the layer first; without it, the runtime-injected
-  layer lands after static layers and outranks them. Caveat: with the layer pinned first,
-  Tailwind v4's preflight (`base` layer) also outranks it and wipes component defaults
-  (`border: 0 solid` etc.) — on Tailwind pages pin with
-  `@layer theme, base, xnew, components, utilities;` instead.
+  Pages declare `@layer xbasics;` up front to pin the layer first; without it, the
+  runtime-injected layer lands after static layers and outranks them. Caveat: with the layer
+  pinned first, Tailwind v4's preflight (`base` layer) also outranks it and wipes component
+  defaults (`border: 0 solid` etc.) — on Tailwind pages pin with
+  `@layer theme, base, xbasics, components, utilities;` instead.
   Sharing across components: share the **definition object** (same defs → same names);
   for theming, custom properties (`--vars`) pass through unrenamed and inherit down the
   DOM — set them on a subtree root class, read via `var(--x, fallback)` in descendants.

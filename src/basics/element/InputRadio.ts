@@ -21,11 +21,11 @@ export function InputRadio(unit: xnew.Unit,
 ) {
     const initial = value ?? items[0] ?? '';
     const cls = xnew.css({
-        fill: { layer: 'xnew', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
-        frame: { layer: 'xnew', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
-        clickable: { layer: 'xnew', body: 'cursor: pointer; user-select: none;' },
-        hoverTint: { layer: 'xnew', body: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }' },
-        tint: { layer: 'xnew', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
+        fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
+        frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
+        clickable: { layer: 'xbasics', body: 'cursor: pointer; user-select: none;' },
+        hoverTint: { layer: 'xbasics', body: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }' },
+        tint: { layer: 'xbasics', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
     });
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
 

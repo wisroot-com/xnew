@@ -125,7 +125,7 @@ declare class UnitTimer {
 
 interface CssDef {
     layer?: string;
-    at?: string;
+    type?: string;
     body: string;
 }
 
