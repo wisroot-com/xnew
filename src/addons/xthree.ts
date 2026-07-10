@@ -1,27 +1,21 @@
 //----------------------------------------------------------------------------------------------------
 // xthree — Three.js integration
 //
-// `initialize({ canvas, camera })` mounts a Root Unit that owns a WebGLRenderer + Scene + Camera.
-// Two ways to attach a THREE object to the current Three parent (root scene or nearest enclosing nest):
-//   - `nest(object3D)` : attach AND make this object the current parent — subsequent nests in
-//                        descendant units (and later nests in the same unit) go *inside* it.
-//   - `add(object3D)`  : attach only; does NOT change the current parent (use to place siblings).
-// Both only *detach* the object from its parent on Unit finalize — they do NOT dispose geometry /
-// material / texture, because those resources may be shared across models or cached by the app.
-// `remove(object3D)` likewise detaches only. To release GPU resources, call `dispose(object3D)`
-// explicitly: it detaches AND disposes the object's geometry / material / texture.
+// Ties the Three scene graph to the xnew unit tree: objects attached via nest / add are detached
+// automatically when the owning unit finalizes. Detach never disposes GPU resources (geometry /
+// material / texture may be shared) — release them explicitly with dispose.
 //
-// Caveat: `nest` is stateful — two `nest` calls in the same unit produce two nesting levels.
-// Reach for `add` when you just want several objects under the same parent.
+// - initialize({ canvas, camera }) : mount the Root unit owning WebGLRenderer + Scene + Camera
+// - nest(object3D)                 : attach AND make this object the current parent
+// - add(object3D)                  : attach only; the current parent stays unchanged (siblings)
+// - remove(object3D)               : detach from its parent (no dispose)
+// - dispose(object3D)              : detach and dispose its geometry / material / texture
+// - coord2dTo3d / coord3dTo2d      : convert between canvas pixels and world space via the camera
+// - finalize()                     : tear down the Root unit (renderer dispose + context loss)
+// - renderer / camera / scene / canvas : Root unit accessors
 //
-// `finalize()` tears down the Root Unit, releasing the renderer (dispose + forceContextLoss). The same
-// release also runs on normal tree teardown, so the WebGL context is never leaked.
-// `coord2dTo3d(x, y, z)` / `coord3dTo2d(x, y, z)` convert between canvas pixels and world space
-// through the camera (2d→3d intersects the view ray with the world z plane), so 2D overlays and
-// 3D placement stay consistent without hand-tuned scale factors.
-//
-// - xthree : { initialize, nest, add, remove, dispose, finalize, coord2dTo3d, coord3dTo2d,
-//              renderer, camera, scene, canvas }
+// Caveat: nest is stateful — two nest calls in the same unit create two nesting levels;
+// use add to place several objects under the same parent.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '@mulsense/xnew';
@@ -47,30 +41,26 @@ export const xthree = {
         xnew(Add, { object });
         return object;
     },
-    // 親から外すだけ。GPU リソース（geometry / material / texture）は解放しない。
-    // 共有・キャッシュされている可能性があるため、解放は明示的な dispose に委ねる。
+    // detach only; GPU resources may be shared, so releasing them is left to dispose()
     remove(object: any) {
         object.parent?.remove(object);
     },
-    // 親から外したうえで、配下の geometry / material / texture を辿って dispose し、
-    // GPU リソースを明示的に全解放する。テクスチャ等を他で共有していないことが前提。
+    // detach and release all GPU resources; assumes they are not shared elsewhere
     dispose(object: any) {
         object.parent?.remove(object);
         disposeObject(object);
     },
-    // canvas ピクセル座標 (x, y) を、カメラから見てワールド z 平面上に載る 3D 座標へ変換する。
     coord2dTo3d(x: number, y: number, z: number = 0): THREE.Vector3 {
         const root = xnew.context(Root);
         const camera = root.camera as THREE.Camera;
         camera.updateMatrixWorld();
         const nx = (x / root.canvas.width) * 2 - 1;
         const ny = -(y / root.canvas.height) * 2 + 1;
-        // near / far 面の逆投影で視線レイを作り、z 平面との交点を取る（perspective / orthographic 共通）。
+        // unproject near / far to build the view ray, then intersect the world z plane (works for perspective / orthographic)
         const near = new THREE.Vector3(nx, ny, -1).unproject(camera);
         const direction = new THREE.Vector3(nx, ny, +1).unproject(camera).sub(near);
         return near.add(direction.multiplyScalar((z - near.z) / direction.z));
     },
-    // ワールド座標 (x, y, z) を canvas ピクセル座標へ変換する。
     coord3dTo2d(x: number, y: number, z: number): THREE.Vector2 {
         const root = xnew.context(Root);
         const camera = root.camera as THREE.Camera;
@@ -78,7 +68,6 @@ export const xthree = {
         const projected = new THREE.Vector3(x, y, z).project(camera);
         return new THREE.Vector2((projected.x + 1) / 2 * root.canvas.width, (1 - projected.y) / 2 * root.canvas.height);
     },
-    // Root unit を畳んで保持リソース（renderer + WebGL コンテキスト）を解放する。
     finalize() {
         xnew.context(Root)?.release();
     },
@@ -103,7 +92,7 @@ function Root(unit: xnew.Unit, { canvas, camera }: any) {
     camera = camera ?? new THREE.PerspectiveCamera(45, renderer.domElement.width / renderer.domElement.height);
     const scene = new THREE.Scene();
 
-    // unit 破棄（明示的な xthree.finalize / 通常のツリー破棄の両方）で GPU リソースを解放する。
+    // release the renderer on both explicit finalize() and normal tree teardown
     unit.on('finalize', () => {
         renderer.dispose();
         renderer.forceContextLoss?.();
@@ -118,7 +107,7 @@ function Root(unit: xnew.Unit, { canvas, camera }: any) {
     }
 }
 
-// object 配下の geometry / material / texture を辿って dispose し、GPU リソースを解放する。
+// traverse the object and dispose geometry / material / texture
 function disposeObject(object: any): void {
     object.traverse((obj: any) => {
         if (!obj.isMesh) return;
@@ -126,7 +115,7 @@ function disposeObject(object: any): void {
         const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
         for (const material of materials) {
             if (!material) continue;
-            // material が参照する texture も解放する
+            // dispose textures referenced by the material
             for (const key in material) {
                 const value = material[key];
                 if (value && value.isTexture) value.dispose();
@@ -136,8 +125,8 @@ function disposeObject(object: any): void {
     });
 }
 
-// 現在の THREE 親（root scene か最も近い enclosing nest）へ object を追加し、finalize 時に
-// 親から外す（detach のみ）。GPU リソースは共有の可能性があるため dispose しない。nest / add の共有処理。
+// shared by nest / add: attach to the current Three parent (root scene or nearest enclosing nest),
+// detach (never dispose) on finalize
 function attach(unit: xnew.Unit, object: any): void {
     const root = xnew.context(Root);
     const parent = xnew.context(Nest)?.threeObject ?? root.scene;
@@ -148,8 +137,7 @@ function attach(unit: xnew.Unit, object: any): void {
     });
 }
 
-// nest: attach に加えて自身を threeObject として公開する。これにより子孫ユニット（および同一
-// ユニットの後続 nest）の `xnew.context(Nest)?.threeObject` がこの object を解決し、親になる。
+// exposes threeObject so descendant units (and later nests) resolve this object as their parent
 function Nest(unit: xnew.Unit, { object }: { object: any }) {
     attach(unit, object);
     return {
@@ -157,8 +145,7 @@ function Nest(unit: xnew.Unit, { object }: { object: any }) {
     };
 }
 
-// add: attach のみ。threeObject を公開せず、context(Nest) のキーにも乗らない（Add で登録される）
-// ため、現在の親を変えない。複数オブジェクトを同じ親へ兄弟として並べたいときに使う。
+// no threeObject exposure — the current parent stays unchanged
 function Add(unit: xnew.Unit, { object }: { object: any }) {
     attach(unit, object);
 }
