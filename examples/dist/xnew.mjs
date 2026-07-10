@@ -856,7 +856,7 @@ function applyCss(unit, defs) {
             return `.${names[name]} {\n${block}\n}`;
         }).join('\n');
         const style = document.createElement('style');
-        style.textContent = text;
+        style.textContent = `@layer xnew {\n${text}\n}`;
         document.head.appendChild(style);
         entry = { names, refs: 0, style };
         registry.set(key, entry);

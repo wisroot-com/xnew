@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- declare the xnew layer first: every xbasics default lands in it and stays the weakest -->
+  <style>@layer xnew;</style>
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <style>
+    body { margin: 0; padding: 1rem; font-family: sans-serif; color: #334155; }
+    p { margin: 0; }
+    .title { font-weight: bold; }
+    .row { display: flex; gap: 0.5rem; }
+    .cell { width: 8em; height: 2.5em; }
+
+    /* a single unlayered class (specificity 0,1,0) — beats every @layer xnew default,
+       including the :hover tint, no matter where it appears in the page */
+    .custom {
+      border: none;
+      border-radius: 9999px;
+      background: #4f46e5;
+      color: #ffffff;
+    }
+
+    /* :where() keeps this at specificity (0,0,1) — LOWER than the generated class (0,1,0),
+       yet it still wins: unlayered CSS outranks @layer xnew before specificity is compared */
+    :where(.dashed) button {
+      border-style: dashed;
+      border-color: #b45309;
+      color: #b45309;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="main"></div>
+  <script type="module">
+    import { xnew, xbasics } from '@mulsense/xnew';
+
+    xnew(document.querySelector('#main'), Main);
+
+    function Main(unit) {
+      xnew.nest('<div style="display: flex; flex-direction: column; gap: 1.5rem;">');
+
+      const log = xnew('<p style="padding: 0.25rem 0.5rem; border-radius: 0.25rem; background: #e2e8f0;">', 'click a button...');
+      log.on('+log', ({ text }) => log.element.textContent = `"${text}" clicked`);
+
+      xnew(Defaults);
+      xnew(ClassOverride);
+      xnew(WeakSelectorOverride);
+      xnew(StyleOverride);
+    }
+
+    function button(name, props) {
+      xnew('<div class="cell">', xbasics.Button, { name, ...props })
+        .on('click', () => xnew.emit('+log', { text: name }));
+    }
+
+    // xbasics.Button as-is: frame / hover tint / press all come from @layer xnew,
+    // the weakest layer on this page — they apply only while nothing else competes.
+    function Defaults(unit) {
+      xnew('<p class="title">', 'default (@layer xnew)');
+      xnew.nest('<div class="row">');
+      button('start');
+      button('stop');
+      button('reset');
+    }
+
+    // className adds an unlayered page class; every property it declares replaces the
+    // xnew default (the hover tint too: layered &:hover loses to an unlayered background).
+    function ClassOverride(unit) {
+      xnew('<p class="title">', 'className: "custom" — unlayered class wins');
+      xnew.nest('<div class="row">');
+      button('pill', { className: 'custom' });
+    }
+
+    // the override does not even need to out-rank the generated class: the layer
+    // comparison settles it first, so a weaker-specificity selector still wins.
+    function WeakSelectorOverride(unit) {
+      xnew('<p class="title">', ':where(.dashed) button — weaker selector still wins');
+      xnew.nest('<div class="row dashed">');
+      button('dashed');
+    }
+
+    // the style prop lands on the style attribute, above every stylesheet.
+    function StyleOverride(unit) {
+      xnew('<p class="title">', 'style prop — inline style wins over everything');
+      xnew.nest('<div class="row">');
+      button('inline', { style: 'border-radius: 9999px; background: #fef3c7;' });
+    }
+  </script>
+</body>
+
+</html>

@@ -10,6 +10,11 @@
 // (&:hover, @media, descendant selectors). Identical definition maps share one ref-counted <style>,
 // removed when the last unit using it finalizes. @keyframes names stay global. Without a DOM
 // (server side), nothing is injected and keys map to themselves.
+//
+// All rules are emitted inside `@layer xnew`, so page CSS — unlayered or in a later layer — always
+// overrides these defaults regardless of specificity or order. Pages should declare `@layer xnew;`
+// up front (before other layered CSS) to pin it as the weakest layer; otherwise the runtime-injected
+// layer lands after static layers and outranks them.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit } from './unit';
@@ -35,7 +40,7 @@ export function applyCss(unit: Unit, defs: Record<string, string>): Record<strin
         }).join('\n');
 
         const style = document.createElement('style');
-        style.textContent = text;
+        style.textContent = `@layer xnew {\n${text}\n}`;
         document.head.appendChild(style);
 
         entry = { names, refs: 0, style };

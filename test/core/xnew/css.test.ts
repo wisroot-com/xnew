@@ -20,13 +20,14 @@ describe('xnew.css', () => {
         expect(css.frame).not.toBe(css.icon);
     });
 
-    it('injects one <style> wrapping each block in its generated class', () => {
+    it('injects one <style> wrapping each block in its generated class, inside @layer xnew', () => {
         let css!: Record<string, string>;
         xnew(() => {
             css = xnew.css({ frame: 'color: red;' });
         });
         const styles = styleElements();
         expect(styles).toHaveLength(1);
+        expect(styles[0].textContent).toMatch(/^@layer xnew \{/);
         expect(styles[0].textContent).toContain(`.${css.frame} {`);
         expect(styles[0].textContent).toContain('color: red;');
     });
