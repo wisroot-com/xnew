@@ -8,7 +8,7 @@
 // - InputRange : component({ value, min, max, step, name, className, style })
 //                — emits 'input' with { value }; fills left→right
 //
-// Usage: const gauge = xnew('<div style="width: 8em; height: 2em;">', xbasics.InputRange, { value: 50 });
+// Usage: const gauge = xnew(xbasics.InputRange, { value: 50 });
 //        gauge.on('input', ({ value }) => ...);
 //----------------------------------------------------------------------------------------------------
 
@@ -20,11 +20,11 @@ export function InputRange(unit: xnew.Unit,
 ) {
     value = value ?? min;
     const cls = xnew.css({
-        // wraps the whole gauge
+        // wraps the whole gauge; the default size is an overridable @layer xbasics rule
         container: {
             layer: 'xbasics',
             body: `
-                box-sizing: border-box; width: 100%; height: 100%;
+                box-sizing: border-box; width: 10rem; height: 1.5rem;
                 position: relative;
                 cursor: pointer; user-select: none;
             `,

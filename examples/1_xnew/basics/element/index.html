@@ -105,7 +105,7 @@
 
       xnew('<div>', (unit) => {
         xnew('<div class="mb-1">', 'InputRange');
-        xnew('<div class="h-6">', xbasics.InputRange, { value: 30 })
+        xnew(xbasics.InputRange, { value: 30 })
           .on('input', ({ value }) => xnew.emit('+console', { text: `range changed to ${value}` }));
       });
     }
