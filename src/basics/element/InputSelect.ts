@@ -22,7 +22,7 @@ export function InputSelect(unit: xnew.Unit,
     const initial = value ?? items[0] ?? '';
     const cls = xnew.css(sharedCss);
 
-    xnew.nest(`<div class="${cls.frame} ${cls.clickable} ${cls.hover} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; ${style}">`);
+    xnew.nest(`<div class="${cls.fill} ${cls.frame} ${cls.clickable} ${cls.hover} ${className}" style="position: relative; display: flex; align-items: center; ${style}">`);
     const frame = unit.element as HTMLElement;
 
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');

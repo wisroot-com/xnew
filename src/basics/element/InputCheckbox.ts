@@ -21,7 +21,7 @@ export function InputCheckbox(unit: xnew.Unit,
 ) {
     const cls = xnew.css(sharedCss);
 
-    xnew.nest(`<div class="${cls.clickable} ${cls.frame} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; ${style}">`);
+    xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${cls.frame} ${className}" style="position: relative; display: flex; align-items: center; justify-content: center; ${style}">`);
     const box = unit.element;
 
     // check mark (transparent while unchecked)

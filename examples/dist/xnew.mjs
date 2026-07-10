@@ -1358,11 +1358,12 @@ function SVGText(unit, _a = {}) {
 
 const paleColor = 'color-mix(in srgb, currentColor 20%, transparent)';
 const sharedCss = {
-    fill: 'width: 100%; height: 100%;',
+    fill: 'box-sizing: border-box; width: 100%; height: 100%;',
     clickable: 'cursor: pointer; user-select: none;',
     frame: 'border: 1px solid currentColor; border-radius: 0.25em;',
     pale: `background: ${paleColor};`,
     hover: `&:hover { background: ${paleColor}; }`,
+    focus: `&:focus { background: ${paleColor}; }`,
     scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
 };
 
@@ -1370,7 +1371,7 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = '
     value = value !== null && value !== void 0 ? value : min;
     const cls = xnew.css(sharedCss);
     const horizontal = orientation !== 'vertical';
-    xnew.nest(`<div class="${cls.clickable} ${className}" style="position: relative; width: 100%; height: 100%; ${style}">`);
+    xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${className}" style="position: relative; ${style}">`);
     const fillAnchor = horizontal
         ? 'top: 0; left: 0; bottom: 0; transition: width 0.05s;'
         : 'left: 0; right: 0; bottom: 0; transition: height 0.05s;';
@@ -1394,7 +1395,7 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, orientation = '
 
 function InputCheckbox(unit, { value = false, name = '', className = '', style = '' } = {}) {
     const cls = xnew.css(sharedCss);
-    xnew.nest(`<div class="${cls.clickable} ${cls.frame} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; ${style}">`);
+    xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${cls.frame} ${className}" style="position: relative; display: flex; align-items: center; justify-content: center; ${style}">`);
     const box = unit.element;
     const check = xnew((unit) => {
         xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 100%; height: 100%;', stroke: 'currentColor', strokeWidth: 2 });
@@ -1411,13 +1412,9 @@ function InputCheckbox(unit, { value = false, name = '', className = '', style =
     });
 }
 
-const textCss = {
-    textInput: 'box-sizing: border-box; width: 100%; height: 100%; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; &:focus { background: color-mix(in srgb, currentColor 20%, transparent); }',
-};
 function InputText(unit, { value = '', name = '', placeholder = '', className = '', style = '' } = {}) {
     const cls = xnew.css(sharedCss);
-    const txt = xnew.css(textCss);
-    xnew.nest(`<input type="text"${name ? ` name="${name}"` : ''} class="${cls.frame} ${txt.textInput} ${className}" style="${style}">`);
+    xnew.nest(`<input type="text"${name ? ` name="${name}"` : ''} class="${cls.fill} ${cls.frame} ${cls.focus} ${className}" style="padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; ${style}">`);
     const element = unit.element;
     element.value = value;
     element.placeholder = placeholder;
@@ -1425,13 +1422,12 @@ function InputText(unit, { value = '', name = '', placeholder = '', className = 
 
 const numberCss = {
     noSpinner: '-moz-appearance: textfield; appearance: textfield; &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }',
-    textInput: 'box-sizing: border-box; width: 100%; height: 100%; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; &:focus { background: color-mix(in srgb, currentColor 20%, transparent); }',
     press: '&:active { filter: brightness(0.5); }',
 };
 function InputNumber(unit, { value, min, max, step, name = '', placeholder = '', className = '', style = '' } = {}) {
     const cls = xnew.css(sharedCss);
     const num = xnew.css(numberCss);
-    const container = xnew.nest(`<div class="${cls.frame} ${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; ${style}">`);
+    const container = xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="display: flex; align-items: stretch; overflow: hidden; ${style}">`);
     let element;
     const spinButton = (direction, path) => {
         const button = xnew(container, () => {
@@ -1458,7 +1454,7 @@ function InputNumber(unit, { value, min, max, step, name = '', placeholder = '',
         max !== undefined ? ` max="${max}"` : '',
         step !== undefined ? ` step="${step}"` : '',
     ].join('');
-    xnew.nest(`<input type="number"${attrs} class="${num.textInput} ${num.noSpinner}" style="flex: 1 1 0; width: auto; min-width: 0; text-align: center;">`);
+    xnew.nest(`<input type="number"${attrs} class="${cls.fill} ${cls.focus} ${num.noSpinner}" style="flex: 1 1 0; width: auto; min-width: 0; text-align: center; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none;">`);
     element = unit.element;
     if (value !== undefined) {
         element.value = String(value);
@@ -1469,7 +1465,7 @@ function InputNumber(unit, { value, min, max, step, name = '', placeholder = '',
 
 function InputSwitch(unit, { value = false, name = '', className = '', style = '' } = {}) {
     const cls = xnew.css(sharedCss);
-    xnew.nest(`<div class="${cls.frame} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; border-radius: 1em; ${style}">`);
+    xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="position: relative; border-radius: 1em; ${style}">`);
     const track = unit.element;
     const knob = xnew('<div style="position: absolute; top: 0.15em; bottom: 0.15em; aspect-ratio: 1 / 1; border-radius: 50%; background: currentColor; transition: left 0.15s, transform 0.15s;">');
     const update = (checked) => {
@@ -1490,7 +1486,7 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
     const cls = xnew.css(sharedCss);
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
-    xnew.nest(`<div class="${cls.frame} ${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; ${style}">`);
+    xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="display: flex; align-items: stretch; overflow: hidden; ${style}">`);
     const segments = [];
     items.forEach((item, index) => {
         const segment = xnew(`<div class="${cls.clickable} ${cls.hover}" style="flex: 1 1 0; position: relative; display: flex; align-items: center; justify-content: center; white-space: nowrap;${index > 0 ? ' border-left: 1px solid currentColor;' : ''}">`, () => {
@@ -1514,7 +1510,7 @@ function InputSelect(unit, { value, items = [], name = '', className = '', style
     var _a;
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
     const cls = xnew.css(sharedCss);
-    xnew.nest(`<div class="${cls.frame} ${cls.clickable} ${cls.hover} ${className}" style="position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; ${style}">`);
+    xnew.nest(`<div class="${cls.fill} ${cls.frame} ${cls.clickable} ${cls.hover} ${className}" style="position: relative; display: flex; align-items: center; ${style}">`);
     const frame = unit.element;
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
     const label = xnew(labelBox, '<div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">', initial);

@@ -23,7 +23,7 @@ export function InputRange(unit: xnew.Unit,
     const cls = xnew.css(sharedCss);
     const horizontal = orientation !== 'vertical';
 
-    xnew.nest(`<div class="${cls.clickable} ${className}" style="position: relative; width: 100%; height: 100%; ${style}">`);
+    xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${className}" style="position: relative; ${style}">`);
 
     // fill bar
     const fillAnchor = horizontal

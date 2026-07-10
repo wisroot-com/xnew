@@ -20,8 +20,6 @@ import { SVG } from './SVG';
 const numberCss = {
     // the native spinner is hidden because the custom buttons replace it
     noSpinner: '-moz-appearance: textfield; appearance: textfield; &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }',
-    // visible native text control; transparent + inherit so it sits on any surface
-    textInput: 'box-sizing: border-box; width: 100%; height: 100%; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none; &:focus { background: color-mix(in srgb, currentColor 20%, transparent); }',
     press: '&:active { filter: brightness(0.5); }',
 };
 
@@ -32,7 +30,7 @@ export function InputNumber(unit: xnew.Unit,
     const cls = xnew.css(sharedCss);
     const num = xnew.css(numberCss);
 
-    const container = xnew.nest(`<div class="${cls.frame} ${className}" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: stretch; overflow: hidden; ${style}">`);
+    const container = xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="display: flex; align-items: stretch; overflow: hidden; ${style}">`);
 
     // custom spin buttons flanking the field (stepUp / stepDown keep the native min / max / step semantics);
     // element is captured after nest — a listener owned by the left button sees the pre-input nest state via unit.element
@@ -63,7 +61,8 @@ export function InputNumber(unit: xnew.Unit,
         max !== undefined ? ` max="${max}"` : '',
         step !== undefined ? ` step="${step}"` : '',
     ].join('');
-    xnew.nest(`<input type="number"${attrs} class="${num.textInput} ${num.noSpinner}" style="flex: 1 1 0; width: auto; min-width: 0; text-align: center;">`);
+    // transparent + inherit so the native control sits on any surface
+    xnew.nest(`<input type="number"${attrs} class="${cls.fill} ${cls.focus} ${num.noSpinner}" style="flex: 1 1 0; width: auto; min-width: 0; text-align: center; padding: 0 0.5em; margin: 0; background: transparent; color: inherit; font: inherit; outline: none;">`);
 
     element = unit.element as HTMLInputElement;
     if (value !== undefined) {
