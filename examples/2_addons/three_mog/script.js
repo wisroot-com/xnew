@@ -40,15 +40,17 @@ function Main(unit, { mogPath = '../../assets/rei.mog', vrmaPath = '../../assets
   composer.addPass(ssaoPass);
   composer.addPass(new OutputPass());
 
-  unit.on('update', () => {
-    composer.render();
+  xnew.promise(unit).then(() => {
+    unit.on('update', () => {
+      composer.render();
+    });
+
+    xnew(DirectionaLight, { x: 1, y: -1, z: 2 });
+    xnew(AmbientLight);
+    xnew(Ground);
+
+    xnew(Model, { mogPath, vrmaPath, position: { x: 0, y: 0, z: 0 } }); // placeholder
   });
-
-  xnew(DirectionaLight, { x: 1, y: -1, z: 2 });
-  xnew(AmbientLight);
-  xnew(Ground);
-
-  xnew(Model, { mogPath, vrmaPath, position: { x: 0, y: 0, z: 0 } }); // placeholder
 
   unit.on('touchstart contextmenu wheel', ({ event }) => event.preventDefault());
   unit.on('dragmove', ({ event, delta }) => {

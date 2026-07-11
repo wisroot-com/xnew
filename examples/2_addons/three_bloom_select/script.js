@@ -29,13 +29,15 @@ function Main(unit) {
   const pmrem = new THREE.PMREMGenerator(xthree.renderer);
   xthree.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-  const renderer = xnew(Renderer);
-  xnew(Controller);
-  xnew(document.body, Panel);
-  xnew(Contents);
+  xnew.promise(unit).then(() => {
+    const renderer = xnew(Renderer);
+    xnew(Controller);
+    xnew(document.body, Panel);
+    xnew(Contents);
 
-  unit.on('update', () => {
-    renderer.render();
+    unit.on('update', () => {
+      renderer.render();
+    });
   });
 }
 

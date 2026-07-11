@@ -75,21 +75,24 @@ function ThreeMain(unit) {
   xnew.extend(xbasics.Screen, { width, height, fit: 'cover' });
 
   xthree.initialize({ canvas: unit.canvas });
-  unit.on('update', () => {
-    xthree.renderer.render(xthree.scene, xthree.camera);
-  });
 
   unit.on('resize', () => {
     xthree.camera.fov = Math.atan2(unit.element.getBoundingClientRect().height / 2, perspective) * 2 * 180 / Math.PI;
     xthree.camera.updateProjectionMatrix();
   });
 
-  xnew(ThreeContents);
-  unit.on('update', () => {
-    xthree.scene.rotation.x = -(transform.rx + offset.rx) * Math.PI / 180;
-    xthree.scene.rotation.y = +(transform.ry + offset.ry) * Math.PI / 180;
-    xthree.camera.position.x = -(transform.tx + offset.tx);
-    xthree.camera.position.y = +(transform.ty + offset.ty);
+  xnew.promise(unit).then(() => {
+    unit.on('update', () => {
+      xthree.renderer.render(xthree.scene, xthree.camera);
+    });
+
+    xnew(ThreeContents);
+    unit.on('update', () => {
+      xthree.scene.rotation.x = -(transform.rx + offset.rx) * Math.PI / 180;
+      xthree.scene.rotation.y = +(transform.ry + offset.ry) * Math.PI / 180;
+      xthree.camera.position.x = -(transform.tx + offset.tx);
+      xthree.camera.position.y = +(transform.ty + offset.ty);
+    });
   });
 }
 

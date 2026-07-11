@@ -12,11 +12,14 @@ function Main(unit) {
   xthree.initialize({ canvas: unit.canvas });
   xthree.camera.position.set(0, 0, +100);
   xthree.scene.fog = new THREE.Fog(0xa0a0a0, 10, 300);
-  unit.on('update', () => {
-    xthree.renderer.render(xthree.scene, xthree.camera);
-  });
 
-  xnew(Contents);
+  xnew.promise(unit).then(() => {
+    unit.on('update', () => {
+      xthree.renderer.render(xthree.scene, xthree.camera);
+    });
+
+    xnew(Contents);
+  });
 }
 
 function Contents(unit) {

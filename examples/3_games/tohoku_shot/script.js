@@ -123,8 +123,11 @@ function Main(unit) {
   xnew.extend(xbasics.Screen, { width, height });
 
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('update', () => xpixi.renderer.render(xpixi.scene));
-  xnew(Contents);
+
+  xnew.promise(unit).then(() => {
+    unit.on('update', () => xpixi.renderer.render(xpixi.scene));
+    xnew(Contents);
+  });
 }
 
 function Contents(unit) {

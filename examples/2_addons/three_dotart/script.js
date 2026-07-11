@@ -25,12 +25,14 @@ function Main(unit) {
   xthree.scene.background = new THREE.Color(0x151729);
   xthree.renderer.shadowMap.enabled = true;
 
-  const renderer = xnew(Renderer);
-  unit.on('update', () => {
-    renderer.render();
-  });
+  xnew.promise(unit).then(() => {
+    const renderer = xnew(Renderer);
+    unit.on('update', () => {
+      renderer.render();
+    });
 
-  xnew(Contents);
+    xnew(Contents);
+  });
 }
 
 function Contents(unit) {

@@ -14,11 +14,14 @@ function Main(unit) {
   xthree.initialize({ canvas: unit.canvas });
   xthree.renderer.shadowMap.enabled = true;
   xthree.camera.position.set(1, 2, 3);
-  unit.on('update', () => {
-    xthree.renderer.render(xthree.scene, xthree.camera);
-  });
 
-  xnew(Contents);
+  xnew.promise(unit).then(() => {
+    unit.on('update', () => {
+      xthree.renderer.render(xthree.scene, xthree.camera);
+    });
+
+    xnew(Contents);
+  });
 }
 
 function Contents(unit) {

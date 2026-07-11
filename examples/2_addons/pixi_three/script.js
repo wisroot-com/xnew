@@ -16,14 +16,17 @@ function Main(unit) {
 
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
-  const texture = PIXI.Texture.from(xthree.canvas);
-  unit.on('update', () => {
-    xthree.renderer.render(xthree.scene, xthree.camera);
-    texture.source.update();
-    xpixi.renderer.render(xpixi.scene);
-  });
 
-  xnew(Contents);
+  xnew.promise(unit).then(() => {
+    const texture = PIXI.Texture.from(xthree.canvas);
+    unit.on('update', () => {
+      xthree.renderer.render(xthree.scene, xthree.camera);
+      texture.source.update();
+      xpixi.renderer.render(xpixi.scene);
+    });
+
+    xnew(Contents);
+  });
 }
 
 function Contents(unit) {
