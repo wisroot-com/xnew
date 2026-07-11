@@ -5,43 +5,40 @@
 // [-1, 1]) and emits it as '-down' / '-move' / '-up' so parent components can react without
 // touching DOM events directly. The visual stick follows the pointer within a radius.
 //
-// - AnalogStick : component({ className, style, stroke, fill, ... }) emitting '-down' / '-move' /
-//                 '-up' with { vector }; className / style decorate the pointer-operated surface
+// - AnalogStick : component({ className, style, designs }) emitting '-down' / '-move' / '-up'
+//                 with { vector }; className / style decorate the pointer-operated container;
+//                 designs: { svg? } — a Design ({ className?, style? }) applied to the SVG layers;
+//                 returns { get container }
 //
 // Usage: xnew(xbasics.AnalogStick).on('-move', ({ vector }) => move(vector));
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { Container } from '../element/Container';
 import { SVG } from '../element/SVG';
 import { Aspect } from '../view/Aspect';
+import { Design } from '../design';
 
 // full-size stacked SVG layers
 const overlay = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
 
 export function AnalogStick(unit: xnew.Unit,
-    { className = '', style = '', stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 }:
-    { className?: string; style?: string; stroke?: string; strokeOpacity?: number; strokeWidth?: number; strokeLinejoin?: string; strokeLinecap?: string; fill?: string; fillOpacity?: number } = {}
+    { className = '', style = '', designs = {} }:
+    { className?: string, style?: string, designs?: { svg?: Design } } = {}
 ) {
-    const cls = xnew.css({
-        // pointer-operated surface; an overridable @layer base rule
-        container: {
-            layer: 'base',
-            body: `
-                width: 100%; height: 100%;
-                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
-                touch-action: none; pointer-events: auto;
-            `,
-        },
+    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
+
+    // pointer-operated surface
+    xnew.extend(Container, {
+        base: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
+        className, style,
     });
 
-    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
-
-    // inline on the svg part, so it wins over the SVG defaults (@layer base css beats attributes)
-    const presentation = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin}; stroke-linecap: ${strokeLinecap}; fill: ${fill}; fill-opacity: ${fillOpacity};`;
+    // default look inline on the svg parts; the caller's designs.svg declarations come later, so they win
+    const svg: Design = { className: designs.svg?.className, style: `stroke: currentColor; stroke-opacity: 0.8; fill: #FFF; fill-opacity: 0.8; ${designs.svg?.style ?? ''}` };
 
     xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { style: overlay, designs: { svg: { style: presentation } } });
+        xnew.extend(SVG, { style: overlay, designs: { svg } });
         xnew('<polygon points="32  7 27 13 37 13">');
         xnew('<polygon points="32 57 27 51 37 51">');
         xnew('<polygon points=" 7 32 13 27 13 37">');
@@ -49,7 +46,7 @@ export function AnalogStick(unit: xnew.Unit,
     });
 
     const target = xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { style: overlay, designs: { svg: { style: presentation } } });
+        xnew.extend(SVG, { style: overlay, designs: { svg } });
         xnew('<circle cx="32" cy="32" r="14">');
     });
 

@@ -91,7 +91,9 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   `<div>`. `base` is the shell's `@layer base` declaration block (Button/Text/Number/Select
   `10rem × 1.8rem`; Checkbox `1.5rem × 1.5rem`; Switch `3rem × 1.5rem`; Range
   `10rem × 1.5rem`; Chevron `1em × 1em`; Radio / Image fill the host until their default is
-  decided; SVG / SVGText none). Container returns `{ get container }`, merged onto the unit
+  decided; SVG / SVGText none). `ui/AnalogStick` and `ui/DPad` also derive from Container
+  (their pointer-operated surface; their SVG layers are decorated via `designs: { svg? }` —
+  they expose no stroke / fill props). Container returns `{ get container }`, merged onto the unit
   — the component must NOT return its own `container` getter (define collision), and one
   unit must not extend two Container-derived components (same collision — e.g. Chevron
   nests its `<svg>` manually instead of extending SVG). Note `unit.element` ends on the

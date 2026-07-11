@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------
-// Container — the outer shell of the element/ components (internal use only, not in xbasics)
+// Container — the outer shell of the basics components (internal use only, not in xbasics)
 //
 // className / style always decorate this shell; every other prop of an element stays with its
 // inner parts.

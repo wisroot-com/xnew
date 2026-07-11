@@ -2287,29 +2287,23 @@ function Popup(unit) {
 }
 
 const overlay$1 = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
-function AnalogStick(unit, { className = '', style = '', stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 } = {}) {
-    const cls = xnew.css({
-        container: {
-            layer: 'base',
-            body: `
-                width: 100%; height: 100%;
-                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
-                touch-action: none; pointer-events: auto;
-            `,
-        },
-    });
+function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
+    var _a, _b, _c;
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
-    const presentation = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin}; stroke-linecap: ${strokeLinecap}; fill: ${fill}; fill-opacity: ${fillOpacity};`;
+    xnew.extend(Container, {
+        base: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
+        className, style,
+    });
+    const svg = { className: (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className, style: `stroke: currentColor; stroke-opacity: 0.8; fill: #FFF; fill-opacity: 0.8; ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.style) !== null && _c !== void 0 ? _c : ''}` };
     xnew((unit) => {
-        xnew.extend(SVG, { style: overlay$1, designs: { svg: { style: presentation } } });
+        xnew.extend(SVG, { style: overlay$1, designs: { svg } });
         xnew('<polygon points="32  7 27 13 37 13">');
         xnew('<polygon points="32 57 27 51 37 51">');
         xnew('<polygon points=" 7 32 13 27 13 37">');
         xnew('<polygon points="57 32 51 27 51 37">');
     });
     const target = xnew((unit) => {
-        xnew.extend(SVG, { style: overlay$1, designs: { svg: { style: presentation } } });
+        xnew.extend(SVG, { style: overlay$1, designs: { svg } });
         xnew('<circle cx="32" cy="32" r="14">');
     });
     unit.on('dragstart dragmove', ({ type, position }) => {
@@ -2329,33 +2323,29 @@ function AnalogStick(unit, { className = '', style = '', stroke = 'currentColor'
 }
 
 const overlay = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
-function DPad(unit, { diagonal = true, className = '', style = '', stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 } = {}) {
-    const cls = xnew.css({
-        container: {
-            layer: 'base',
-            body: `
-                width: 100%; height: 100%;
-                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
-                touch-action: none; pointer-events: auto;
-            `,
-        },
-    });
+function DPad(unit, { diagonal = true, className = '', style = '', designs = {} } = {}) {
+    var _a, _b, _c, _d, _e, _f;
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
+    xnew.extend(Container, {
+        base: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
+        className, style,
+    });
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
         '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
         '<polygon points="32 32 23 23  4 23  3 24  3 40  4 41 23 41">',
         '<polygon points="32 32 41 23 60 23 61 24 61 40 60 41 41 41">'
     ];
+    const fillSvg = { className: (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className, style: `fill: #FFF; fill-opacity: 0.8; ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.style) !== null && _c !== void 0 ? _c : ''}` };
+    const strokeSvg = { className: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.className, style: `stroke: currentColor; stroke-opacity: 0.8; ${(_f = (_e = designs.svg) === null || _e === void 0 ? void 0 : _e.style) !== null && _f !== void 0 ? _f : ''}` };
     const targets = polygons.map((polygon) => {
         return xnew((unit) => {
-            xnew.extend(SVG, { style: overlay, designs: { svg: { style: `fill: ${fill}; fill-opacity: ${fillOpacity};` } } });
+            xnew.extend(SVG, { style: overlay, designs: { svg: fillSvg } });
             xnew(polygon);
         });
     });
     xnew((unit) => {
-        xnew.extend(SVG, { style: overlay, designs: { svg: { style: `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin}; stroke-linecap: ${strokeLinecap};` } } });
+        xnew.extend(SVG, { style: overlay, designs: { svg: strokeSvg } });
         xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
         xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
         xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');
