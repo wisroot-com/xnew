@@ -254,6 +254,11 @@ declare function Button(unit: xnew.Unit, { text, className, style, designs, ...o
     readonly container: HTMLElement | SVGElement;
 };
 
+declare function Chevron(unit: xnew.Unit, { direction, ...others }?: {
+    direction?: 'up' | 'down' | 'left' | 'right';
+    [key: string]: any;
+}): void;
+
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
 declare function Image(unit: xnew.Unit, { src, className, style, ...others }: {
     src: ImageSource | Promise<ImageSource>;
@@ -502,6 +507,7 @@ declare const xbasics: {
     SceneList: typeof SceneList;
     Split: typeof Split;
     Button: typeof Button;
+    Chevron: typeof Chevron;
     Image: typeof Image;
     SVG: typeof SVG;
     SVGText: typeof SVGText;

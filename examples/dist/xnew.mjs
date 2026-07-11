@@ -1429,6 +1429,28 @@ function Button(unit, _a = {}) {
     return { get container() { return container; } };
 }
 
+function SVG(unit, _a = {}) {
+    var { viewBox = '0 0 64 64', className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'none', fillOpacity = 1 } = _a, others = __rest(_a, ["viewBox", "className", "style", "stroke", "strokeOpacity", "strokeWidth", "strokeLinejoin", "strokeLinecap", "fill", "fillOpacity"]);
+    xnew.nest(Object.assign({ tag: 'svg', viewBox,
+        className,
+        style,
+        stroke,
+        strokeOpacity,
+        strokeWidth,
+        strokeLinejoin,
+        strokeLinecap,
+        fill,
+        fillOpacity }, others));
+}
+
+const angles = { right: 0, down: 90, left: 180, up: 270 };
+function Chevron(unit, _a = {}) {
+    var { direction = 'right' } = _a, others = __rest(_a, ["direction"]);
+    xnew.extend(SVG, Object.assign({ viewBox: '0 0 12 12', stroke: 'currentColor' }, others));
+    xnew('<path d="M4 2 8 6 4 10"/>');
+    unit.element.style.transform = `rotate(${angles[direction]}deg)`;
+}
+
 function Image(unit, _a) {
     var { src, className = '', style = '' } = _a, others = __rest(_a, ["src", "className", "style"]);
     xnew.nest(Object.assign({ tag: 'img', className, style }, others));
@@ -1454,20 +1476,6 @@ function Image(unit, _a) {
             URL.revokeObjectURL(objectURL);
         }
     });
-}
-
-function SVG(unit, _a = {}) {
-    var { viewBox = '0 0 64 64', className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'none', fillOpacity = 1 } = _a, others = __rest(_a, ["viewBox", "className", "style", "stroke", "strokeOpacity", "strokeWidth", "strokeLinejoin", "strokeLinecap", "fill", "fillOpacity"]);
-    xnew.nest(Object.assign({ tag: 'svg', viewBox,
-        className,
-        style,
-        stroke,
-        strokeOpacity,
-        strokeWidth,
-        strokeLinejoin,
-        strokeLinecap,
-        fill,
-        fillOpacity }, others));
 }
 
 function SVGText(unit, _a = {}) {
@@ -1835,10 +1843,7 @@ function InputSelect(unit, _a = {}) {
     for (const item of items) {
         xnew(labelBox, '<div style="visibility: hidden; height: 0; white-space: nowrap;">', item);
     }
-    xnew(() => {
-        xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
-        xnew('<path d="M3.5 4.5 6 7.5 8.5 4.5"/>');
-    });
+    xnew(Chevron, { direction: 'down', style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
     let select;
     let dropdown = null;
     const surfaceColor = () => {
@@ -2432,8 +2437,7 @@ function Group(group, { name, open = false }) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (unit) => {
             unit.on('click', () => openAndClose.toggle());
             xnew((unit) => {
-                xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
-                xnew('<path d="M6 2 10 6 6 10"/>');
+                xnew.extend(Chevron, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
                 group.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${value * 90}deg)`);
             });
             xnew('<div>', name);
@@ -2470,6 +2474,7 @@ const xbasics = {
     SceneList,
     Split,
     Button,
+    Chevron,
     Image,
     SVG,
     SVGText,

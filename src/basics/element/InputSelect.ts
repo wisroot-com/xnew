@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { SVG } from './SVG';
+import { Chevron } from './Chevron';
 import { Design } from '../design';
 
 export function InputSelect(unit: xnew.Unit,
@@ -91,10 +91,7 @@ export function InputSelect(unit: xnew.Unit,
         xnew(labelBox, '<div style="visibility: hidden; height: 0; white-space: nowrap;">', item);
     }
 
-    xnew(() => {
-        xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
-        xnew('<path d="M3.5 4.5 6 7.5 8.5 4.5"/>');
-    });
+    xnew(Chevron, { direction: 'down', style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
 
     let select: HTMLSelectElement;
     let dropdown: xnew.Unit | null = null;

@@ -15,7 +15,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { SVG } from '../element/SVG';
+import { Chevron } from '../element/Chevron';
 import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
 import { InputCheckbox } from '../element/InputCheckbox';
@@ -81,8 +81,7 @@ function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?:
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (unit: xnew.Unit) => {
             unit.on('click', () => openAndClose.toggle());
             xnew((unit: xnew.Unit) => {
-                xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
-                xnew('<path d="M6 2 10 6 6 10"/>');
+                xnew.extend(Chevron, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
                 group.on('-transition', ({ value }: { value: number }) => unit.element.style.transform = `rotate(${value * 90}deg)`);
             });
             xnew('<div>', name);
@@ -95,9 +94,7 @@ function Separator(unit: xnew.Unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
 }
 
-function Range(unit: xnew.Unit, { name = '', ...others }:
-    { name?: string, [key: string]: any }
-) {
+function Range(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key: string]: any }) {
     xnew.nest(`<div style="display: flex; align-items: center; position: relative; cursor: pointer; user-select: none;">`);
 
     xnew(InputRange, { ...others, style: 'width: 100%;' });
@@ -105,18 +102,14 @@ function Range(unit: xnew.Unit, { name = '', ...others }:
     xnew('<div style="position: absolute; left: 0.25em; pointer-events: none;">', name);
 }
 
-function Checkbox(unit: xnew.Unit, { name = '', ...others }:
-    { name?: string, [key: string]: any }
-) {
+function Checkbox(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key: string]: any }) {
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
     xnew('<div style="flex: 1;">', name);
 
     xnew(InputCheckbox, { ...others, style: 'width: 1.25em; height: 1.25em;' });
 }
 
-function Select(unit: xnew.Unit, { name = '', ...others }:
-    { name?: string, [key: string]: any }
-) {
+function Select(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key: string]: any }) {
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1;">', name);
 
