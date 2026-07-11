@@ -26,15 +26,15 @@ import { Accordion } from './Accordion';
 // nested is internal: group() marks its inner Panel so only the root creates the scroll container
 interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; nested?: boolean; }
 
-export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
+export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
 
-    if (!nested) {
+    if (nested === false) {
         // own scroll container inheriting the mount element's max-height, so the panel scrolls once the host constrains it;
         // the vertical padding sits outside the scrollport so the scrollbar stays clear of the host's rounded corners
         const cls = xnew.css({
             // transparent track lets the surface behind show through, so the scrollbar blends into any background
-            scroll: { layer: 'base', body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
+            scroll: { body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
         });
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
         xnew.nest(`<div class="${cls.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
@@ -97,7 +97,7 @@ function Separator(unit: xnew.Unit) {
 function Range(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key: string]: any }) {
     xnew.nest(`<div style="display: flex; align-items: center; position: relative; cursor: pointer; user-select: none;">`);
 
-    xnew(InputRange, { ...others, style: 'width: 100%;' });
+    xnew(InputRange, { name, ...others, style: 'width: 100%;' });
 
     xnew('<div style="position: absolute; left: 0.25em; pointer-events: none;">', name);
 }
@@ -106,12 +106,12 @@ function Checkbox(unit: xnew.Unit, { name = '', ...others }: { name?: string, [k
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
     xnew('<div style="flex: 1;">', name);
 
-    xnew(InputCheckbox, { ...others, style: 'width: 1.25em; height: 1.25em;' });
+    xnew(InputCheckbox, { name, ...others, style: 'width: 1.25em; height: 1.25em;' });
 }
 
 function Select(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key: string]: any }) {
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1;">', name);
 
-    xnew(InputSelect, { ...others, style: 'width: auto; min-width: 3em; height: 2em;' });
+    xnew(InputSelect, { name, ...others, style: 'width: auto; min-width: 3em; height: 2em;' });
 }
