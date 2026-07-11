@@ -1409,7 +1409,7 @@ function Button(unit, _a = {}) {
     var _b, _c, _d;
     var { text = '', className = '', style = '', designs = {} } = _a, others = __rest(_a, ["text", "className", "style", "designs"]);
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 10em; height: 1.8em; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em;',
         className, style,
     });
     const css = xnew.css({
@@ -1547,7 +1547,7 @@ function InputRange(unit, _a = {}) {
     var { value, min = 0, max = 100, step = 1, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "className", "style", "designs"]);
     const initial = value !== null && value !== void 0 ? value : min;
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 10em; height: 1.8em; position: relative; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; position: relative; margin: 0.125em 0;',
         className, style,
     });
     const css = xnew.css({
@@ -1607,7 +1607,7 @@ function InputCheckbox(unit, _a = {}) {
     var _b, _c, _d;
     var { value = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 1.5em; height: 1.5em; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; width: 1.5em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;',
         className, style,
     });
     const css = xnew.css({
@@ -1659,7 +1659,7 @@ function InputText(unit, _a = {}) {
     var _b, _c, _d;
     var { className = '', style = '', designs = {} } = _a, others = __rest(_a, ["className", "style", "designs"]);
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 10em; height: 1.8em; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;',
         className, style,
     });
     const css = xnew.css({
@@ -1682,7 +1682,7 @@ function InputNumber(unit, _a = {}) {
     var _b, _c, _d;
     var { className = '', style = '', designs = {} } = _a, others = __rest(_a, ["className", "style", "designs"]);
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 10em; height: 1.8em; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;',
         className, style,
     });
     const css = xnew.css({
@@ -1707,7 +1707,7 @@ function InputSwitch(unit, _a = {}) {
     var _b, _c, _d, _e, _f, _g;
     var { value = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 3em; height: 1.5em; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;',
         className, style,
     });
     const css = xnew.css({
@@ -1756,7 +1756,7 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
     var _a, _b, _c, _d;
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 100%; height: 100%;',
+        base: 'box-sizing: border-box; width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 100%;',
         className, style,
     });
     const css = xnew.css({
@@ -1816,7 +1816,7 @@ function InputSelect(unit, _a = {}) {
     var { value, items = [], className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "items", "className", "style", "designs"]);
     const initial = (_b = value !== null && value !== void 0 ? value : items[0]) !== null && _b !== void 0 ? _b : '';
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 10em; height: 1.8em; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;',
         className, style,
     });
     const css = xnew.css({

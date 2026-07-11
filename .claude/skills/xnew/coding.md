@@ -294,6 +294,13 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **Every Container-derived base caps its width with the margin-box stack
+  `max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;` right after
+  `width`.** `width: 100%` (or a fixed width) plus a caller horizontal margin overflows the parent
+  on the right — `max-width: stretch` caps the *margin box* at the parent for any margin (bit
+  Button; the prefixed fallbacks cover Safari / Firefox). Keep the stack when adding a new
+  element component.
+
 - **In a Container-derived component, extend Container FIRST — internal wrappers (e.g. Aspect)
   nest inside it, never outside.** Container's div is the caller-side surface: with Aspect
   outside, its full-size flex-centering wrapper swallowed the caller's `className`, so

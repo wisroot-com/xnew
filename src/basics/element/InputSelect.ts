@@ -16,7 +16,8 @@ export function InputSelect(unit: xnew.Unit,
     const initial = value ?? items[0] ?? '';
 
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 10em; height: 1.8em; margin: 0.125em 0;',
+        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        base: 'box-sizing: border-box; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;',
         className, style,
     });
 

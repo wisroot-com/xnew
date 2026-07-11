@@ -13,7 +13,8 @@ export function InputCheckbox(unit: xnew.Unit,
     { value?: boolean, className?: string, style?: string, designs?: { check?: Design }, [key: string]: any } = {}
 ) {
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 1.5em; height: 1.5em; margin: 0.125em 0;',
+        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        base: 'box-sizing: border-box; width: 1.5em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;',
         className, style,
     });
 
