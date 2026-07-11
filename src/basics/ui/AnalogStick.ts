@@ -15,30 +15,31 @@
 
 import { xnew } from '../../core/xnew';
 import { Container } from '../element/Container';
-import { SVG } from '../element/SVG';
-import { Aspect } from '../view/Aspect';
 import { Design } from '../design';
-
-// full-size stacked SVG layers
-const overlay = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
 
 export function AnalogStick(unit: xnew.Unit,
     { className = '', style = '', designs = {} }:
     { className?: string, style?: string, designs?: { svg?: Design } } = {}
 ) {
-    // pointer-operated surface (outermost, so the caller's className / style place the whole widget)
     xnew.extend(Container, {
-        base: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
+        base: 'position: relative; width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
         className, style,
     });
 
-    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-
-    // default look inline on the svg parts; the caller's designs.svg declarations come later, so they win
-    const svg: Design = { className: designs.svg?.className, style: `stroke: currentColor; stroke-opacity: 0.8; fill: #FFF; fill-opacity: 0.8; ${designs.svg?.style ?? ''}` };
+    const cls = xnew.css({
+        svg: {
+            layer: 'base',
+            body: `
+                position: absolute; inset: 0; box-sizing: border-box; display: block; width: 100%; height: 100%;
+                stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: #FFF; fill-opacity: 0.8;
+            `,
+        },
+    });
+    const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style };
 
     xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { style: overlay, designs: { svg } });
+        xnew.nest(svg);
         xnew('<polygon points="32  7 27 13 37 13">');
         xnew('<polygon points="32 57 27 51 37 51">');
         xnew('<polygon points=" 7 32 13 27 13 37">');
@@ -46,7 +47,7 @@ export function AnalogStick(unit: xnew.Unit,
     });
 
     const target = xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { style: overlay, designs: { svg } });
+        xnew.nest(svg);
         xnew('<circle cx="32" cy="32" r="14">');
     });
 
@@ -58,13 +59,13 @@ export function AnalogStick(unit: xnew.Unit,
         const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
         const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
 
-        // the overlay (position: absolute) sits on the SVG's container, so the move targets it
-        Object.assign(target.container.style, { filter: 'brightness(80%)', left: `${vector.x * size / 4}px`, top: `${vector.y * size / 4}px` });
+        // the <svg> itself is position: absolute, so the knob moves via its left / top
+        Object.assign(target.element.style, { filter: 'brightness(80%)', left: `${vector.x * size / 4}px`, top: `${vector.y * size / 4}px` });
         xnew.emit({ dragstart: '-down', dragmove: '-move' }[type] as string, { vector });
     });
 
     unit.on('dragend', () => {
-        Object.assign(target.container.style, { filter: '', left: '0px', top: '0px' });
+        Object.assign(target.element.style, { filter: '', left: '0px', top: '0px' });
         xnew.emit('-up', { vector: { x: 0, y: 0 } });
     });
 }

@@ -15,24 +15,31 @@
 
 import { xnew } from '../../core/xnew';
 import { Container } from '../element/Container';
-import { SVG } from '../element/SVG';
-import { Aspect } from '../view/Aspect';
 import { Design } from '../design';
-
-// full-size stacked SVG layers
-const overlay = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
 
 export function DPad(unit: xnew.Unit,
     { diagonal = true, className = '', style = '', designs = {} }:
     { diagonal?: boolean, className?: string, style?: string, designs?: { svg?: Design } } = {}
 ) {
-    // pointer-operated surface (outermost, so the caller's className / style place the whole widget)
     xnew.extend(Container, {
-        base: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
+        base: 'position: relative; width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
         className, style,
     });
 
-    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
+    const cls = xnew.css({
+        svg: {
+            layer: 'base',
+            body: `
+                position: absolute; inset: 0; box-sizing: border-box; display: block; width: 100%; height: 100%;
+                stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: #FFF; fill-opacity: 0.8;
+            `,
+        },
+    });
+
+    // each layer disables the irrelevant paint inline; the caller's designs.svg comes later, so it wins
+    const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${designs.svg?.className ?? ''}`, style: `stroke: none; ${designs.svg?.style ?? ''}` };
+    const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${designs.svg?.className ?? ''}`, style: `fill: none; ${designs.svg?.style ?? ''}` };
 
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
@@ -41,19 +48,15 @@ export function DPad(unit: xnew.Unit,
         '<polygon points="32 32 41 23 60 23 61 24 61 40 60 41 41 41">'
     ];
 
-    // default looks inline on the svg parts; the caller's designs.svg declarations come later, so they win
-    const fillSvg: Design = { className: designs.svg?.className, style: `fill: #FFF; fill-opacity: 0.8; ${designs.svg?.style ?? ''}` };
-    const strokeSvg: Design = { className: designs.svg?.className, style: `stroke: currentColor; stroke-opacity: 0.8; ${designs.svg?.style ?? ''}` };
-
     const targets = polygons.map((polygon) => {
         return xnew((unit: xnew.Unit) => {
-            xnew.extend(SVG, { style: overlay, designs: { svg: fillSvg } });
+            xnew.nest(fillSvg);
             xnew(polygon);
         });
     });
 
     xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { style: overlay, designs: { svg: strokeSvg } });
+        xnew.nest(strokeSvg);
         xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
         xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
         xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');

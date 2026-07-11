@@ -2286,24 +2286,32 @@ function Popup(unit) {
     });
 }
 
-const overlay$1 = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
 function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
     var _a, _b, _c;
     xnew.extend(Container, {
-        base: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
+        base: 'position: relative; width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
         className, style,
     });
-    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    const svg = { className: (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className, style: `stroke: currentColor; stroke-opacity: 0.8; fill: #FFF; fill-opacity: 0.8; ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.style) !== null && _c !== void 0 ? _c : ''}` };
+    const cls = xnew.css({
+        svg: {
+            layer: 'base',
+            body: `
+                position: absolute; inset: 0; box-sizing: border-box; display: block; width: 100%; height: 100%;
+                stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: #FFF; fill-opacity: 0.8;
+            `,
+        },
+    });
+    const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${(_b = (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = designs.svg) === null || _c === void 0 ? void 0 : _c.style };
     xnew((unit) => {
-        xnew.extend(SVG, { style: overlay$1, designs: { svg } });
+        xnew.nest(svg);
         xnew('<polygon points="32  7 27 13 37 13">');
         xnew('<polygon points="32 57 27 51 37 51">');
         xnew('<polygon points=" 7 32 13 27 13 37">');
         xnew('<polygon points="57 32 51 27 51 37">');
     });
     const target = xnew((unit) => {
-        xnew.extend(SVG, { style: overlay$1, designs: { svg } });
+        xnew.nest(svg);
         xnew('<circle cx="32" cy="32" r="14">');
     });
     unit.on('dragstart dragmove', ({ type, position }) => {
@@ -2313,39 +2321,47 @@ function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
         const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
         const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
         const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-        Object.assign(target.container.style, { filter: 'brightness(80%)', left: `${vector.x * size / 4}px`, top: `${vector.y * size / 4}px` });
+        Object.assign(target.element.style, { filter: 'brightness(80%)', left: `${vector.x * size / 4}px`, top: `${vector.y * size / 4}px` });
         xnew.emit({ dragstart: '-down', dragmove: '-move' }[type], { vector });
     });
     unit.on('dragend', () => {
-        Object.assign(target.container.style, { filter: '', left: '0px', top: '0px' });
+        Object.assign(target.element.style, { filter: '', left: '0px', top: '0px' });
         xnew.emit('-up', { vector: { x: 0, y: 0 } });
     });
 }
 
-const overlay = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
 function DPad(unit, { diagonal = true, className = '', style = '', designs = {} } = {}) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     xnew.extend(Container, {
-        base: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
+        base: 'position: relative; width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
         className, style,
     });
-    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
+    const cls = xnew.css({
+        svg: {
+            layer: 'base',
+            body: `
+                position: absolute; inset: 0; box-sizing: border-box; display: block; width: 100%; height: 100%;
+                stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: #FFF; fill-opacity: 0.8;
+            `,
+        },
+    });
+    const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${(_b = (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: `stroke: none; ${(_d = (_c = designs.svg) === null || _c === void 0 ? void 0 : _c.style) !== null && _d !== void 0 ? _d : ''}` };
+    const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${(_f = (_e = designs.svg) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: `fill: none; ${(_h = (_g = designs.svg) === null || _g === void 0 ? void 0 : _g.style) !== null && _h !== void 0 ? _h : ''}` };
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
         '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
         '<polygon points="32 32 23 23  4 23  3 24  3 40  4 41 23 41">',
         '<polygon points="32 32 41 23 60 23 61 24 61 40 60 41 41 41">'
     ];
-    const fillSvg = { className: (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className, style: `fill: #FFF; fill-opacity: 0.8; ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.style) !== null && _c !== void 0 ? _c : ''}` };
-    const strokeSvg = { className: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.className, style: `stroke: currentColor; stroke-opacity: 0.8; ${(_f = (_e = designs.svg) === null || _e === void 0 ? void 0 : _e.style) !== null && _f !== void 0 ? _f : ''}` };
     const targets = polygons.map((polygon) => {
         return xnew((unit) => {
-            xnew.extend(SVG, { style: overlay, designs: { svg: fillSvg } });
+            xnew.nest(fillSvg);
             xnew(polygon);
         });
     });
     xnew((unit) => {
-        xnew.extend(SVG, { style: overlay, designs: { svg: strokeSvg } });
+        xnew.nest(strokeSvg);
         xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
         xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
         xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');
