@@ -89,19 +89,19 @@ function Range(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key:
 
     xnew(InputRange, { name, ...others, style: 'width: 100%;' });
 
-    xnew('<div style="position: absolute; left: 0.25em; pointer-events: none;">', name);
+    xnew('<div style="position: absolute; left: 0.5em; pointer-events: none;">', name);
 }
 
 function Checkbox(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key: string]: any }) {
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
-    xnew('<div style="flex: 1;">', name);
+    xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
 
     xnew(InputCheckbox, { name, ...others, style: 'width: 1.25em; height: 1.25em;' });
 }
 
 function Select(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key: string]: any }) {
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
-    xnew('<div style="flex: 1;">', name);
+    xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
 
     xnew(InputSelect, { name, ...others, style: 'width: auto; min-width: 3em; height: 2em;' });
 }

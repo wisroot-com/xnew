@@ -2481,18 +2481,18 @@ function Range(unit, _a) {
     var { name = '' } = _a, others = __rest(_a, ["name"]);
     xnew.nest(`<div style="display: flex; align-items: center; position: relative; cursor: pointer; user-select: none;">`);
     xnew(InputRange, Object.assign(Object.assign({ name }, others), { style: 'width: 100%;' }));
-    xnew('<div style="position: absolute; left: 0.25em; pointer-events: none;">', name);
+    xnew('<div style="position: absolute; left: 0.5em; pointer-events: none;">', name);
 }
 function Checkbox(unit, _a) {
     var { name = '' } = _a, others = __rest(_a, ["name"]);
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
-    xnew('<div style="flex: 1;">', name);
+    xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
     xnew(InputCheckbox, Object.assign(Object.assign({ name }, others), { style: 'width: 1.25em; height: 1.25em;' }));
 }
 function Select(unit, _a) {
     var { name = '' } = _a, others = __rest(_a, ["name"]);
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
-    xnew('<div style="flex: 1;">', name);
+    xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
     xnew(InputSelect, Object.assign(Object.assign({ name }, others), { style: 'width: auto; min-width: 3em; height: 2em;' }));
 }
 
