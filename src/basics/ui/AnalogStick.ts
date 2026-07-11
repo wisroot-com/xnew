@@ -23,9 +23,9 @@ export function AnalogStick(unit: xnew.Unit,
     { className?: string; style?: string } & SVGStyleInterface = {}
 ) {
     const cls = xnew.css({
-        // pointer-operated surface; an overridable @layer xbasics rule
+        // pointer-operated surface; an overridable @layer base rule
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 width: 100%; height: 100%;
                 cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;

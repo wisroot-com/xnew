@@ -28,14 +28,14 @@ export function InputRadio(unit: xnew.Unit,
     const cls = xnew.css({
         // sizing shell only; the default size is pending (fills the host for now)
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
             `,
         },
         // framed row holding the item cells
         frame: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 display: flex; align-items: stretch; overflow: hidden;
@@ -45,7 +45,7 @@ export function InputRadio(unit: xnew.Unit,
         // one cell per choice (position: relative anchors the input overlay);
         // the selected state is expressed via data-checked
         item: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 flex: 1 1 0;
                 position: relative;
@@ -59,7 +59,7 @@ export function InputRadio(unit: xnew.Unit,
         },
         // invisible native control stretched over the cell
         input: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;

@@ -3,8 +3,6 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- pin the xbasics layer among Tailwind's layers so component defaults stay the weakest -->
-  <style>@layer xbasics;</style>
   <script type="importmap">
     {
       "imports": {
@@ -14,7 +12,7 @@
   </script>
   <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
   <style>
-    /* an unlayered page class: every property it declares replaces the @layer xbasics default,
+    /* an unlayered page class: every property it declares replaces the @layer base default,
        no matter its specificity or where it appears in the page */
     .custom {
       border: none;

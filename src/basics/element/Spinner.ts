@@ -17,7 +17,7 @@ export function Spinner(unit: xnew.Unit,
 ) {
     const cls = xnew.css({
         turn: {
-            layer: 'xbasics',
+            layer: 'base',
             type: 'keyframes',
             body: `
                 from { transform: rotate(0turn); }
@@ -25,7 +25,7 @@ export function Spinner(unit: xnew.Unit,
             `,
         },
         spinner: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 border: 0.15em solid color-mix(in srgb, currentColor 25%, transparent);

@@ -26,9 +26,9 @@ export function InputSelect(unit: xnew.Unit,
 ) {
     const initial = value ?? items[0] ?? '';
     const cls = xnew.css({
-        // sizing shell only; the default size is an overridable @layer xbasics rule
+        // sizing shell only; the default size is an overridable @layer base rule
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
             `,
@@ -36,7 +36,7 @@ export function InputSelect(unit: xnew.Unit,
         // framed button face (position: relative anchors nothing itself but keeps the click surface);
         // the hover tint is suppressed via data-open while the option list is open
         frame: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 position: relative;
@@ -48,7 +48,7 @@ export function InputSelect(unit: xnew.Unit,
         },
         // current value text clipped inside the button
         label: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             `,
@@ -56,7 +56,7 @@ export function InputSelect(unit: xnew.Unit,
         // floating option list; fixed + viewport coords escape overflow-clipping ancestors
         // (e.g. a panel's scroll container), max-content lets it outgrow the button
         menu: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000;
                 max-height: 12em;
@@ -66,7 +66,7 @@ export function InputSelect(unit: xnew.Unit,
         },
         // one option row; the current selection is expressed via data-checked
         item: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 height: 2em; padding: 0 0.5em;
                 display: flex; align-items: center;

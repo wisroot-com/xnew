@@ -21,16 +21,16 @@ export function Button(unit: xnew.Unit,
     { text?: string, className?: string, style?: string, designs?: { button?: Design }, [key: string]: any } = {}
 ) {
     const cls = xnew.css({
-        // sizing shell only; the default size is an overridable @layer xbasics rule
+        // sizing shell only; the default size is an overridable @layer base rule
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
             `,
         },
         // transparent + inherit so the native control sits on any surface
         button: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 display: flex; justify-content: center; align-items: center;

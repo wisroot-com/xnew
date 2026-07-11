@@ -18,10 +18,11 @@
 // keys map to themselves.
 //
 // Layering: entries without `layer` stay unlayered (normal strength). xbasics components set
-// `layer: 'xbasics'` on every entry so their defaults lose to any page CSS regardless of
-// specificity or order. Pages should declare `@layer xbasics;` up front (before other layered CSS)
-// to pin it as the weakest layer; otherwise the runtime-injected layer lands after static layers
-// and outranks them.
+// `layer: 'base'` on every entry so their defaults lose to any unlayered page CSS regardless of
+// specificity or order, and join Tailwind v4's `base` layer as-is: above its preflight resets
+// (class beats element selector within one layer), below `components` / `utilities` — no
+// up-front `@layer` pin needed. Only pages that declare their own custom layers must pin
+// `base` first to keep it the weakest.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit } from './unit';

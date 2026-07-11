@@ -22,9 +22,9 @@ export function InputNumber(unit: xnew.Unit,
     { className?: string, style?: string, designs?: { field?: Design }, [key: string]: any } = {}
 ) {
     const cls = xnew.css({
-        // sizing shell only; the default size is an overridable @layer xbasics rule
+        // sizing shell only; the default size is an overridable @layer base rule
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
             `,
@@ -32,7 +32,7 @@ export function InputNumber(unit: xnew.Unit,
         // framed field; transparent + inherit so the native control sits on any surface,
         // with the unstylable native spinner hidden
         field: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 text-align: center; padding: 0 0.5em; margin: 0;

@@ -23,9 +23,9 @@ export function InputSwitch(unit: xnew.Unit,
     { value?: boolean, className?: string, style?: string, designs?: { frame?: Design, knob?: Design }, [key: string]: any } = {}
 ) {
     const cls = xnew.css({
-        // sizing shell only; the default size is an overridable @layer xbasics rule
+        // sizing shell only; the default size is an overridable @layer base rule
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 3rem; height: 1.5rem;
             `,
@@ -33,7 +33,7 @@ export function InputSwitch(unit: xnew.Unit,
         // rounded track carrying the knob (position: relative anchors the knob and input overlay);
         // the on state is expressed via data-checked
         frame: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 position: relative;
@@ -44,7 +44,7 @@ export function InputSwitch(unit: xnew.Unit,
         },
         // aspect-ratio keeps the knob square at any frame size, so the slide needs no size math
         knob: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
                 aspect-ratio: 1 / 1; border-radius: 50%;
@@ -55,7 +55,7 @@ export function InputSwitch(unit: xnew.Unit,
         },
         // invisible native control stretched over the frame
         input: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;

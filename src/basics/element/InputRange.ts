@@ -24,9 +24,9 @@ export function InputRange(unit: xnew.Unit,
     value = value ?? min;
     const cls = xnew.css({
         // sizing shell (position: relative only anchors the absolute parts);
-        // the default size is an overridable @layer xbasics rule
+        // the default size is an overridable @layer base rule
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.5rem;
                 position: relative;
@@ -34,7 +34,7 @@ export function InputRange(unit: xnew.Unit,
         },
         // static full-extent layer (default: a faint outline of the max extent)
         frame: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; inset: 0;
                 border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
@@ -43,7 +43,7 @@ export function InputRange(unit: xnew.Unit,
         },
         // value-driven layer (default: a bordered fill bar; border-box so it lands on the frame at max)
         meter: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; top: 0; left: 0; bottom: 0;
                 box-sizing: border-box;
@@ -54,7 +54,7 @@ export function InputRange(unit: xnew.Unit,
         },
         // value readout painted above the meter (pointer-events: none keeps the drag on the input)
         status: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; inset: 0;
                 box-sizing: border-box; padding: 0 0.5em;
@@ -66,7 +66,7 @@ export function InputRange(unit: xnew.Unit,
         // width so the pointer→value mapping spans the full width and the bar tip tracks the cursor
         // (natively the thumb center only travels between the half-thumb insets)
         input: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; user-select: none; margin: 0;

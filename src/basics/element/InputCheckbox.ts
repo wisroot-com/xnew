@@ -23,9 +23,9 @@ export function InputCheckbox(unit: xnew.Unit,
     { value?: boolean, className?: string, style?: string, designs?: { check?: Design }, [key: string]: any } = {}
 ) {
     const cls = xnew.css({
-        // sizing shell only; the default size is an overridable @layer xbasics rule
+        // sizing shell only; the default size is an overridable @layer base rule
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 1.5rem; height: 1.5rem;
             `,
@@ -33,7 +33,7 @@ export function InputCheckbox(unit: xnew.Unit,
         // framed box carrying the SVG check mark (position: relative anchors the input overlay);
         // the checked state is expressed via data-checked
         check: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 position: relative;
@@ -47,7 +47,7 @@ export function InputCheckbox(unit: xnew.Unit,
         },
         // invisible native control stretched over the box
         input: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;

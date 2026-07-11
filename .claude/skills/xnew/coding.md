@@ -68,13 +68,16 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   ref-counted `<style>`, removed when the last user unit finalizes; on the server (no DOM)
   keys map to themselves and nothing is injected.
   Entries without `layer` stay unlayered (normal strength). **Every xnew.css entry inside
-  `src/basics/` must set `layer: 'xbasics'`** — component defaults are weakest-by-design:
+  `src/basics/` must set `layer: 'base'`** — component defaults are overridable-by-design:
   any unlayered page CSS (or a later layer) overrides them regardless of specificity or order.
-  Pages declare `@layer xbasics;` up front to pin the layer first; without it, the
-  runtime-injected layer lands after static layers and outranks them. Caveat: with the layer
-  pinned first, Tailwind v4's preflight (`base` layer) also outranks it and wipes component
-  defaults (`border: 0 solid` etc.) — on Tailwind pages pin with
-  `@layer theme, base, xbasics, components, utilities;` instead.
+  The target position is **above reset/preflight styles, below page component / utility
+  layers** — not simply weakest, or resets (`border: 0 solid` etc.) wipe the defaults. Using
+  the `base` name achieves this with no page setup: on Tailwind v4 pages the entries join
+  Tailwind's own `base` layer (its order statement comes first) where the generated classes
+  beat preflight's element/universal selectors by specificity, while `components` / `utilities`
+  outrank by layer order. Only pages that declare their own custom layers need an up-front
+  `@layer base;` pin to keep it the weakest layer; unlayered resets still beat the defaults —
+  wrap them with `@import url(...) layer(...)`.
   Sharing across components: share the **definition object** (same defs → same names);
   for theming, custom properties (`--vars`) pass through unrenamed and inherit down the
   DOM — set them on a subtree root class, read via `var(--x, fallback)` in descendants.

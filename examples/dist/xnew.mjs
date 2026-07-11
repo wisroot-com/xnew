@@ -1404,13 +1404,13 @@ function Button$1(unit, _a = {}) {
     var { text = '', className = '', style = '', designs = {} } = _a, others = __rest(_a, ["text", "className", "style", "designs"]);
     const cls = xnew.css({
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
             `,
         },
         button: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 display: flex; justify-content: center; align-items: center;
@@ -1488,7 +1488,7 @@ function SVGText(unit, _a = {}) {
 function Spinner(unit, { className = '', style = '' } = {}) {
     const cls = xnew.css({
         turn: {
-            layer: 'xbasics',
+            layer: 'base',
             type: 'keyframes',
             body: `
                 from { transform: rotate(0turn); }
@@ -1496,7 +1496,7 @@ function Spinner(unit, { className = '', style = '' } = {}) {
             `,
         },
         spinner: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 border: 0.15em solid color-mix(in srgb, currentColor 25%, transparent);
@@ -1514,14 +1514,14 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className
     value = value !== null && value !== void 0 ? value : min;
     const cls = xnew.css({
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.5rem;
                 position: relative;
             `,
         },
         frame: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; inset: 0;
                 border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
@@ -1529,7 +1529,7 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className
             `,
         },
         meter: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; top: 0; left: 0; bottom: 0;
                 box-sizing: border-box;
@@ -1539,7 +1539,7 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className
             `,
         },
         status: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; inset: 0;
                 box-sizing: border-box; padding: 0 0.5em;
@@ -1548,7 +1548,7 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className
             `,
         },
         input: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; user-select: none; margin: 0;
@@ -1579,13 +1579,13 @@ function InputCheckbox(unit, _a = {}) {
     var { value = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
     const cls = xnew.css({
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 1.5rem; height: 1.5rem;
             `,
         },
         check: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 position: relative;
@@ -1598,7 +1598,7 @@ function InputCheckbox(unit, _a = {}) {
             `,
         },
         input: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;
@@ -1627,13 +1627,13 @@ function InputText(unit, _a = {}) {
     var { className = '', style = '', designs = {} } = _a, others = __rest(_a, ["className", "style", "designs"]);
     const cls = xnew.css({
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
             `,
         },
         field: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 padding: 0 0.5em; margin: 0;
@@ -1654,13 +1654,13 @@ function InputNumber(unit, _a = {}) {
     var { className = '', style = '', designs = {} } = _a, others = __rest(_a, ["className", "style", "designs"]);
     const cls = xnew.css({
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
             `,
         },
         field: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 text-align: center; padding: 0 0.5em; margin: 0;
@@ -1683,13 +1683,13 @@ function InputSwitch(unit, _a = {}) {
     var { value = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
     const cls = xnew.css({
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 3rem; height: 1.5rem;
             `,
         },
         frame: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 position: relative;
@@ -1699,7 +1699,7 @@ function InputSwitch(unit, _a = {}) {
             `,
         },
         knob: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
                 aspect-ratio: 1 / 1; border-radius: 50%;
@@ -1709,7 +1709,7 @@ function InputSwitch(unit, _a = {}) {
             `,
         },
         input: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;
@@ -1736,13 +1736,13 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
     const cls = xnew.css({
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
             `,
         },
         frame: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 display: flex; align-items: stretch; overflow: hidden;
@@ -1750,7 +1750,7 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
             `,
         },
         item: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 flex: 1 1 0;
                 position: relative;
@@ -1763,7 +1763,7 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
             `,
         },
         input: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;
@@ -1800,13 +1800,13 @@ function InputSelect(unit, _a = {}) {
     const initial = (_b = value !== null && value !== void 0 ? value : items[0]) !== null && _b !== void 0 ? _b : '';
     const cls = xnew.css({
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
             `,
         },
         frame: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 position: relative;
@@ -1817,13 +1817,13 @@ function InputSelect(unit, _a = {}) {
             `,
         },
         label: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             `,
         },
         menu: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000;
                 max-height: 12em;
@@ -1832,7 +1832,7 @@ function InputSelect(unit, _a = {}) {
             `,
         },
         item: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 height: 2em; padding: 0 0.5em;
                 display: flex; align-items: center;
@@ -2288,7 +2288,7 @@ const overlay$1 = 'position: absolute; inset: 0; width: 100%; height: 100%; box-
 function AnalogStick(unit, { className = '', style = '', stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 } = {}) {
     const cls = xnew.css({
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 width: 100%; height: 100%;
                 cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
@@ -2329,7 +2329,7 @@ const overlay = 'position: absolute; inset: 0; width: 100%; height: 100%; box-si
 function DPad(unit, { diagonal = true, className = '', style = '', stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 } = {}) {
     const cls = xnew.css({
         container: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 width: 100%; height: 100%;
                 cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
@@ -2398,13 +2398,13 @@ function DPad(unit, { diagonal = true, className = '', style = '', stroke = 'cur
 
 const rowStyle = 'position: relative; height: 2em; margin: 0.125em 0; display: flex; align-items: center;';
 const clickableCss = {
-    clickable: { layer: 'xbasics', body: 'cursor: pointer; user-select: none;' },
+    clickable: { layer: 'base', body: 'cursor: pointer; user-select: none;' },
 };
 function Panel(unit, { params, nested }) {
     const object = params !== null && params !== void 0 ? params : {};
     if (!nested) {
         const cls = xnew.css({
-            scroll: { layer: 'xbasics', body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
+            scroll: { layer: 'base', body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
         });
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
         xnew.nest(`<div class="${cls.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
@@ -2465,7 +2465,7 @@ function Group(group, { name, open = false }) {
 function Button(unit, { name = '' }) {
     const cls = xnew.css({
         button: {
-            layer: 'xbasics',
+            layer: 'base',
             body: `
                 cursor: pointer; user-select: none;
                 border: 1px solid currentColor; border-radius: 0.25em;
