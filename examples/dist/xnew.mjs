@@ -1405,8 +1405,9 @@ function Button$1(unit, _a = {}) {
     return { get container() { return container; } };
 }
 
-function Image(unit, { src, className = '', style = '' }) {
-    xnew.nest(`<img class="${className}" style="${style}">`);
+function Image(unit, _a) {
+    var { src, className = '', style = '' } = _a, others = __rest(_a, ["src", "className", "style"]);
+    xnew.nest(Object.assign({ tag: 'img', className, style }, others));
     const element = unit.element;
     let objectURL = null;
     function apply(value) {
@@ -1644,24 +1645,52 @@ function InputNumber(unit, _a = {}) {
     return { get container() { return container; } };
 }
 
-function InputSwitch(unit, { value = false, name = '', className = '', style = '' } = {}) {
+function InputSwitch(unit, _a = {}) {
+    var _b, _c, _d, _e, _f, _g;
+    var { value = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
     const cls = xnew.css({
-        container: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
-        fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
-        frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
-        tint: { layer: 'xbasics', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
+        container: {
+            layer: 'xbasics',
+            body: `
+                box-sizing: border-box; width: 3rem; height: 1.5rem;
+            `,
+        },
+        background: {
+            layer: 'xbasics',
+            body: `
+                box-sizing: border-box; width: 100%; height: 100%;
+                position: relative;
+                border: 1px solid currentColor; border-radius: 1em;
+                cursor: pointer; user-select: none;
+                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            `,
+        },
+        knob: {
+            layer: 'xbasics',
+            body: `
+                position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
+                aspect-ratio: 1 / 1; border-radius: 50%;
+                background: currentColor;
+                transition: left 0.15s, transform 0.15s;
+                [data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }
+            `,
+        },
+        input: {
+            layer: 'xbasics',
+            body: `
+                position: absolute; inset: 0; width: 100%; height: 100%;
+                opacity: 0; cursor: pointer; margin: 0;
+            `,
+        },
     });
     const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
-    xnew.nest(`<div class="${cls.fill} ${cls.frame}" style="position: relative; border-radius: 1em;">`);
-    const track = unit.element;
-    const knob = xnew('<div style="position: absolute; top: 0.15em; bottom: 0.15em; aspect-ratio: 1 / 1; border-radius: 50%; background: currentColor; transition: left 0.15s, transform 0.15s;">');
+    const background = xnew.nest({ tag: 'div', className: `${cls.background} ${(_c = (_b = designs.background) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.background) === null || _d === void 0 ? void 0 : _d.style });
+    xnew({ tag: 'div', className: `${cls.knob} ${(_f = (_e = designs.knob) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.knob) === null || _g === void 0 ? void 0 : _g.style });
     const update = (checked) => {
-        track.classList.toggle(cls.tint, checked);
-        knob.element.style.left = checked ? 'calc(100% - 0.15em)' : '0.15em';
-        knob.element.style.transform = checked ? 'translateX(-100%)' : 'translateX(0)';
+        background.toggleAttribute('data-checked', checked);
     };
     update(value);
-    xnew.nest(`<input type="checkbox"${name ? ` name="${name}"` : ''}${value ? ' checked' : ''} style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;">`);
+    xnew.nest(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: cls.input }, others));
     unit.on('input', ({ value }) => {
         update(value);
     });

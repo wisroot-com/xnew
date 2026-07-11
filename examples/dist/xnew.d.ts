@@ -255,10 +255,11 @@ declare function Button(unit: xnew.Unit, { text, className, style, designs, ...o
 };
 
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
-declare function Image(unit: xnew.Unit, { src, className, style }: {
+declare function Image(unit: xnew.Unit, { src, className, style, ...others }: {
     src: ImageSource | Promise<ImageSource>;
     className?: string;
     style?: string;
+    [key: string]: any;
 }): void;
 
 interface SVGStyleInterface {
@@ -336,11 +337,15 @@ declare function InputNumber(unit: xnew.Unit, { className, style, designs, ...ot
     readonly container: HTMLElement | SVGElement;
 };
 
-declare function InputSwitch(unit: xnew.Unit, { value, name, className, style }?: {
+declare function InputSwitch(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
     value?: boolean;
-    name?: string;
     className?: string;
     style?: string;
+    designs?: {
+        background?: Design;
+        knob?: Design;
+    };
+    [key: string]: any;
 }): {
     readonly container: HTMLElement | SVGElement;
 };
