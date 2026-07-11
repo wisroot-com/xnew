@@ -49,11 +49,19 @@ describe('basics InputText', () => {
         expect(received).toEqual(['abc']);
     });
 
-    it('applies className and style to the input', () => {
-        const unit = xnew(InputText, { className: 'field', style: 'width: 8em;' });
+    it('applies className and style to the container', () => {
+        const unit = xnew(InputText, { className: 'boxed', style: 'width: 8em;' });
+        const container = unit.element.parentElement as HTMLElement;
+
+        expect(container.className).toContain('boxed');
+        expect(container.getAttribute('style')).toContain('width: 8em;');
+    });
+
+    it('applies designs to the field part', () => {
+        const unit = xnew(InputText, { designs: { field: { className: 'mono', style: 'text-align: left;' } } });
         const input = unit.element as HTMLInputElement;
 
-        expect(input.className).toContain('field');
-        expect(input.getAttribute('style')).toContain('width: 8em;');
+        expect(input.className).toContain('mono');
+        expect(input.getAttribute('style')).toContain('text-align: left;');
     });
 });

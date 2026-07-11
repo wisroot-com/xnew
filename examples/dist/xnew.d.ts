@@ -301,20 +301,19 @@ declare function InputCheckbox(unit: xnew.Unit, { value, name, className, style 
     style?: string;
 }): void;
 
-declare function InputText(unit: xnew.Unit, { className, ...others }?: {
+declare function InputText(unit: xnew.Unit, { className, style, designs, ...others }?: {
     className?: string;
+    style?: string;
+    designs?: {
+        field?: Design;
+    };
     [key: string]: any;
 }): void;
 
-declare function InputNumber(unit: xnew.Unit, { value, min, max, step, name, placeholder, className, style }?: {
-    value?: number;
-    min?: number;
-    max?: number;
-    step?: number;
-    name?: string;
-    placeholder?: string;
+declare function InputNumber(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
     style?: string;
+    [key: string]: any;
 }): void;
 
 declare function InputSwitch(unit: xnew.Unit, { value, name, className, style }?: {
