@@ -1547,7 +1547,7 @@ function InputRange(unit, _a = {}) {
     var { value, min = 0, max = 100, step = 1, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "className", "style", "designs"]);
     const initial = value !== null && value !== void 0 ? value : min;
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; display: inline-block; vertical-align: middle; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; position: relative; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; display: inline-block; vertical-align: middle; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; position: relative; margin: 0.125em;',
         className, style,
     });
     const css = xnew.css({
@@ -2297,10 +2297,11 @@ function Popup(unit) {
 function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
     var _a, _b, _c;
     xnew.extend(Container, {
-        base: 'position: relative; width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
+        base: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
         className, style,
     });
-    const css = xnew.css({
+    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
+    const cls = xnew.css({
         svg: {
             layer: 'base',
             body: `
@@ -2310,7 +2311,7 @@ function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
             `,
         },
     });
-    const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_b = (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = designs.svg) === null || _c === void 0 ? void 0 : _c.style };
+    const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${(_b = (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = designs.svg) === null || _c === void 0 ? void 0 : _c.style };
     xnew((unit) => {
         xnew.nest(svg);
         xnew('<polygon points="32  7 27 13 37 13">');
