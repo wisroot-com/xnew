@@ -16,7 +16,7 @@ export function InputRange(unit: xnew.Unit,
 
     // position: relative anchors the absolute parts
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 10rem; height: 1.5rem; position: relative; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; width: 10em; height: 1.5em; position: relative; margin: 0.125em 0;',
         className, style,
     });
 

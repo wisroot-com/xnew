@@ -13,7 +13,7 @@ export function InputCheckbox(unit: xnew.Unit,
     { value?: boolean, className?: string, style?: string, designs?: { check?: Design }, [key: string]: any } = {}
 ) {
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 1.5rem; height: 1.5rem; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; width: 1.5em; height: 1.5em; margin: 0.125em 0;',
         className, style,
     });
 

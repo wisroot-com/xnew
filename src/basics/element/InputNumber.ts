@@ -13,7 +13,7 @@ export function InputNumber(unit: xnew.Unit,
     { className?: string, style?: string, designs?: { field?: Design }, [key: string]: any } = {}
 ) {
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 10rem; height: 1.8rem; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; width: 10em; height: 1.8em; margin: 0.125em 0;',
         className, style,
     });
 

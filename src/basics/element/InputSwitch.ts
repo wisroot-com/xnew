@@ -13,7 +13,7 @@ export function InputSwitch(unit: xnew.Unit,
     { value?: boolean, className?: string, style?: string, designs?: { frame?: Design, knob?: Design }, [key: string]: any } = {}
 ) {
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 3rem; height: 1.5rem; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; width: 3em; height: 1.5em; margin: 0.125em 0;',
         className, style,
     });
 
