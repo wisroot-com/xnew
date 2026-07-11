@@ -5,9 +5,10 @@
 // other Input* elements — the native popup cannot be styled — while the hidden select keeps
 // native form semantics.
 //
-// - InputSelect : component({ value, items, name, className, style }) — emits 'input' with { value } (string)
+// - InputSelect : component({ value, items, name, className, style }) — className / style decorate
+//                 the container; emits 'input' with { value } (string); returns { get container }
 //
-// Usage: const sel = xnew('<div style="width: 8em; height: 2em;">', xbasics.InputSelect, { items: ['low', 'mid', 'high'] });
+// Usage: const sel = xnew(xbasics.InputSelect, { items: ['low', 'mid', 'high'] });
 //        sel.on('input', ({ value }) => ...);
 //----------------------------------------------------------------------------------------------------
 
@@ -20,6 +21,8 @@ export function InputSelect(unit: xnew.Unit,
 ) {
     const initial = value ?? items[0] ?? '';
     const cls = xnew.css({
+        // sizing shell only; the default size is an overridable @layer xbasics rule
+        container: { layer: 'xbasics', body: 'box-sizing: border-box; width: 10rem; height: 1.8rem;' },
         fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
         frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
         clickable: { layer: 'xbasics', body: 'cursor: pointer; user-select: none;' },
@@ -28,7 +31,9 @@ export function InputSelect(unit: xnew.Unit,
         scroll: { layer: 'xbasics', body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
     });
 
-    xnew.nest(`<div class="${cls.fill} ${cls.frame} ${cls.clickable} ${cls.hoverTint} ${className}" style="position: relative; display: flex; align-items: center; ${style}">`);
+    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
+
+    xnew.nest(`<div class="${cls.fill} ${cls.frame} ${cls.clickable} ${cls.hoverTint}" style="position: relative; display: flex; align-items: center;">`);
     const frame = unit.element as HTMLElement;
 
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
@@ -117,4 +122,6 @@ export function InputSelect(unit: xnew.Unit,
     unit.on('input', ({ value }: { value: string }) => {
         label.element.textContent = value;
     });
+
+    return { get container() { return container; } };
 }

@@ -22,13 +22,13 @@ export function InputRange(unit: xnew.Unit,
 ) {
     value = value ?? min;
     const cls = xnew.css({
-        // wraps the whole gauge; the default size is an overridable @layer xbasics rule
+        // sizing shell (position: relative only anchors the absolute parts);
+        // the default size is an overridable @layer xbasics rule
         container: {
             layer: 'xbasics',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
                 position: relative;
-                cursor: pointer; user-select: none;
             `,
         },
         // static full-extent layer (default: a faint outline of the max extent)
@@ -58,7 +58,7 @@ export function InputRange(unit: xnew.Unit,
             layer: 'xbasics',
             body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
-                opacity: 0; cursor: pointer; margin: 0;
+                opacity: 0; cursor: pointer; user-select: none; margin: 0;
                 appearance: none;
                 &::-webkit-slider-thumb { appearance: none; width: 0; }
                 &::-moz-range-thumb { width: 0; border: none; }
@@ -66,7 +66,7 @@ export function InputRange(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
+    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
 
     xnew({ tag: 'div', className: `${cls.background} ${designs.background?.className ?? ''}`, style: designs.background?.style });
 
@@ -82,4 +82,6 @@ export function InputRange(unit: xnew.Unit,
     unit.on('input', ({ value }: { value: number }) => {
         update(value);
     });
+
+    return { get container() { return container; } };
 }

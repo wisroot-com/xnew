@@ -46,7 +46,9 @@ export function InputNumber(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
+    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
 
     xnew.nest({ tag: 'input', type: 'number', className: `${cls.field} ${designs.field?.className ?? ''}`, style: designs.field?.style, ...others });
+
+    return { get container() { return container; } };
 }

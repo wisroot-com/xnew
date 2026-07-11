@@ -4,21 +4,31 @@
 // The same framed look as Panel's rows (frame + hover tint + press feedback) as a standalone
 // element, so a single button matches the panel design without pulling in the whole panel.
 //
-// - Button : component({ text, className, ...rest }) — rest members (style, name, …) pass
-//            through to the <button>; emits 'click' with { event, position }
+// - Button : component({ text, className, style, designs, ...rest }) — className / style decorate
+//            the container; designs: { button? } — a Design ({ className?, style? }) for the
+//            native button; rest members (name, …) pass through to the <button>;
+//            emits 'click' with { event, position }; returns { get container }
 //
-// Usage: const button = xnew('<div style="width: 8em; height: 2em;">', xbasics.Button, { text: 'start' });
+// Usage: const button = xnew(xbasics.Button, { text: 'start' });
 //        button.on('click', () => ...);
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { Design } from '../design';
 
 export function Button(unit: xnew.Unit,
-    { text = '', className = '', ...others }:
-    { text?: string, className?: string, [key: string]: any } = {}
+    { text = '', className = '', style = '', designs = {}, ...others }:
+    { text?: string, className?: string, style?: string, designs?: { button?: Design }, [key: string]: any } = {}
 ) {
-    // transparent + inherit so the native control sits on any surface
     const cls = xnew.css({
+        // sizing shell only; the default size is an overridable @layer xbasics rule
+        container: {
+            layer: 'xbasics',
+            body: `
+                box-sizing: border-box; width: 10rem; height: 1.8rem;
+            `,
+        },
+        // transparent + inherit so the native control sits on any surface
         button: {
             layer: 'xbasics',
             body: `
@@ -34,5 +44,9 @@ export function Button(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'button', type: 'button', className: `${cls.button} ${className}`, ...others }, text);
+    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
+
+    xnew.nest({ tag: 'button', type: 'button', className: `${cls.button} ${designs.button?.className ?? ''}`, style: designs.button?.style, ...others }, text);
+
+    return { get container() { return container; } };
 }

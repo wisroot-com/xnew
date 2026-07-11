@@ -4,8 +4,9 @@
 // The invisible native control captures interaction (click / keyboard) while the visible surface
 // is a framed box with an SVG check mark, so callers get a styled checkbox with native semantics.
 //
-// - InputCheckbox : component({ value, name, className, style })
-//                   — emits 'input' with { value } (boolean checked state)
+// - InputCheckbox : component({ value, name, className, style }) — className / style decorate the
+//                   container; emits 'input' with { value } (boolean checked state);
+//                   returns { get container }
 //
 // Usage: const check = xnew('<div style="width: 1.25em; height: 1.25em;">', xbasics.InputCheckbox, { value: true });
 //        check.on('input', ({ value }) => ...);
@@ -19,13 +20,17 @@ export function InputCheckbox(unit: xnew.Unit,
     { value?: boolean, name?: string, className?: string, style?: string } = {}
 ) {
     const cls = xnew.css({
+        // sizing shell only; the default size is pending (fills the host for now)
+        container: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
         fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
         clickable: { layer: 'xbasics', body: 'cursor: pointer; user-select: none;' },
         frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
         tint: { layer: 'xbasics', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
     });
 
-    xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${cls.frame} ${className}" style="position: relative; display: flex; align-items: center; justify-content: center; ${style}">`);
+    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
+
+    xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${cls.frame}" style="position: relative; display: flex; align-items: center; justify-content: center;">`);
     const box = unit.element;
 
     // check mark (transparent while unchecked)
@@ -45,4 +50,6 @@ export function InputCheckbox(unit: xnew.Unit,
     unit.on('input', ({ value }: { value: boolean }) => {
         update(value);
     });
+
+    return { get container() { return container; } };
 }

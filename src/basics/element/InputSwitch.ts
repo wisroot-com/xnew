@@ -5,7 +5,8 @@
 // is a rounded track with a knob sliding between the edges, so callers get the familiar switch
 // look with native checkbox semantics.
 //
-// - InputSwitch : component({ value, name, className, style }) — emits 'input' with { value } (boolean)
+// - InputSwitch : component({ value, name, className, style }) — className / style decorate the
+//                 container; emits 'input' with { value } (boolean); returns { get container }
 //
 // Usage: const sw = xnew('<div style="width: 3em; height: 1.5em;">', xbasics.InputSwitch, { value: true });
 //        sw.on('input', ({ value }) => ...);
@@ -18,12 +19,16 @@ export function InputSwitch(unit: xnew.Unit,
     { value?: boolean, name?: string, className?: string, style?: string } = {}
 ) {
     const cls = xnew.css({
+        // sizing shell only; the default size is pending (fills the host for now)
+        container: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
         fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
         frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
         tint: { layer: 'xbasics', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
     });
 
-    xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="position: relative; border-radius: 1em; ${style}">`);
+    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
+
+    xnew.nest(`<div class="${cls.fill} ${cls.frame}" style="position: relative; border-radius: 1em;">`);
     const track = unit.element as HTMLElement;
 
     // aspect-ratio keeps the knob square at any track size, so the slide needs no size math
@@ -40,4 +45,6 @@ export function InputSwitch(unit: xnew.Unit,
     unit.on('input', ({ value }: { value: boolean }) => {
         update(value);
     });
+
+    return { get container() { return container; } };
 }

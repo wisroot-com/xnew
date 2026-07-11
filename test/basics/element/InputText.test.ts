@@ -49,12 +49,12 @@ describe('basics InputText', () => {
         expect(received).toEqual(['abc']);
     });
 
-    it('applies className and style to the container', () => {
+    it('applies className and style to the container (exposed via the getter)', () => {
         const unit = xnew(InputText, { className: 'boxed', style: 'width: 8em;' });
-        const container = unit.element.parentElement as HTMLElement;
 
-        expect(container.className).toContain('boxed');
-        expect(container.getAttribute('style')).toContain('width: 8em;');
+        expect(unit.container).toBe(unit.element.parentElement);
+        expect(unit.container.className).toContain('boxed');
+        expect(unit.container.getAttribute('style')).toContain('width: 8em;');
     });
 
     it('applies designs to the field part', () => {

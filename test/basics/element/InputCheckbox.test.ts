@@ -84,10 +84,11 @@ describe('basics InputCheckbox', () => {
         expect((anonymous.element as HTMLInputElement).hasAttribute('name')).toBe(false);
     });
 
-    it('applies className and style to the container', () => {
+    it('applies className and style to the container (exposed via the getter)', () => {
         const unit = xnew(InputCheckbox, { className: 'check', style: 'width: 2em;' });
 
-        expect(boxOf(unit).className).toContain('check');
-        expect(boxOf(unit).getAttribute('style')).toContain('width: 2em;');
+        expect(unit.container).toBe(boxOf(unit).parentElement);
+        expect(unit.container.className).toContain('check');
+        expect(unit.container.getAttribute('style')).toContain('width: 2em;');
     });
 });

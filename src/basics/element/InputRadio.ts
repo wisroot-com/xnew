@@ -4,7 +4,8 @@
 // One framed row of exclusive segments (one per item) keeps every choice visible, unlike a
 // pulldown; the hidden radios give native exclusivity and form semantics.
 //
-// - InputRadio : component({ value, items, name, className, style }) — emits 'input' with { value } (string)
+// - InputRadio : component({ value, items, name, className, style }) — className / style decorate
+//                the container; emits 'input' with { value } (string); returns { get container }
 //
 // Usage: const radio = xnew('<div style="height: 2em;">', xbasics.InputRadio, { items: ['low', 'mid', 'high'] });
 //        radio.on('input', ({ value }) => ...);
@@ -21,6 +22,8 @@ export function InputRadio(unit: xnew.Unit,
 ) {
     const initial = value ?? items[0] ?? '';
     const cls = xnew.css({
+        // sizing shell only; the default size is pending (fills the host for now)
+        container: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
         fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
         frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
         clickable: { layer: 'xbasics', body: 'cursor: pointer; user-select: none;' },
@@ -29,7 +32,9 @@ export function InputRadio(unit: xnew.Unit,
     });
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
 
-    xnew.nest(`<div class="${cls.fill} ${cls.frame} ${className}" style="display: flex; align-items: stretch; overflow: hidden; ${style}">`);
+    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
+
+    xnew.nest(`<div class="${cls.fill} ${cls.frame}" style="display: flex; align-items: stretch; overflow: hidden;">`);
 
     const segments: [xnew.Unit, string][] = [];
     items.forEach((item, index) => {
@@ -50,4 +55,6 @@ export function InputRadio(unit: xnew.Unit,
     unit.on('input', ({ value }: { value: string }) => {
         update(value);
     });
+
+    return { get container() { return container; } };
 }

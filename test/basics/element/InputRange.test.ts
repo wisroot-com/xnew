@@ -92,12 +92,12 @@ describe('basics InputRange', () => {
         expect(styleText).toContain('inset: 0;');
     });
 
-    it('applies className and style to the container', () => {
+    it('applies className and style to the container (exposed via the getter)', () => {
         const unit = xnew(InputRange, { className: 'gauge', style: 'height: 2em;' });
-        const container = unit.element.parentElement as HTMLElement;
 
-        expect(container.className).toContain('gauge');
-        expect(container.getAttribute('style')).toContain('height: 2em;');
+        expect(unit.container).toBe(unit.element.parentElement);
+        expect(unit.container.className).toContain('gauge');
+        expect(unit.container.getAttribute('style')).toContain('height: 2em;');
     });
 
     it('applies designs to the background and meter parts', () => {

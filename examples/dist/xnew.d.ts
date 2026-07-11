@@ -237,11 +237,22 @@ declare function Split(unit: xnew.Unit, { direction }?: {
     }, component?: xnew.Component): Unit;
 };
 
-declare function Button(unit: xnew.Unit, { text, className, ...others }?: {
+interface Design {
+    className?: string;
+    style?: string;
+}
+
+declare function Button(unit: xnew.Unit, { text, className, style, designs, ...others }?: {
     text?: string;
     className?: string;
+    style?: string;
+    designs?: {
+        button?: Design;
+    };
     [key: string]: any;
-}): void;
+}): {
+    readonly container: HTMLElement | SVGElement;
+};
 
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
 declare function Image(unit: xnew.Unit, { src, className, style }: {
@@ -275,11 +286,6 @@ declare function Spinner(unit: xnew.Unit, { className, style }?: {
     style?: string;
 }): void;
 
-interface Design {
-    className?: string;
-    style?: string;
-}
-
 declare function InputRange(unit: xnew.Unit, { value, min, max, step, name, className, style, designs }?: {
     value?: number;
     min?: number;
@@ -292,14 +298,18 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, name, clas
         background?: Design;
         meter?: Design;
     };
-}): void;
+}): {
+    readonly container: HTMLElement | SVGElement;
+};
 
 declare function InputCheckbox(unit: xnew.Unit, { value, name, className, style }?: {
     value?: boolean;
     name?: string;
     className?: string;
     style?: string;
-}): void;
+}): {
+    readonly container: HTMLElement | SVGElement;
+};
 
 declare function InputText(unit: xnew.Unit, { className, style, designs, ...others }?: {
     className?: string;
@@ -308,7 +318,9 @@ declare function InputText(unit: xnew.Unit, { className, style, designs, ...othe
         field?: Design;
     };
     [key: string]: any;
-}): void;
+}): {
+    readonly container: HTMLElement | SVGElement;
+};
 
 declare function InputNumber(unit: xnew.Unit, { className, style, designs, ...others }?: {
     className?: string;
@@ -317,14 +329,18 @@ declare function InputNumber(unit: xnew.Unit, { className, style, designs, ...ot
         field?: Design;
     };
     [key: string]: any;
-}): void;
+}): {
+    readonly container: HTMLElement | SVGElement;
+};
 
 declare function InputSwitch(unit: xnew.Unit, { value, name, className, style }?: {
     value?: boolean;
     name?: string;
     className?: string;
     style?: string;
-}): void;
+}): {
+    readonly container: HTMLElement | SVGElement;
+};
 
 declare function InputRadio(unit: xnew.Unit, { value, items, name, className, style }?: {
     value?: string;
@@ -332,7 +348,9 @@ declare function InputRadio(unit: xnew.Unit, { value, items, name, className, st
     name?: string;
     className?: string;
     style?: string;
-}): void;
+}): {
+    readonly container: HTMLElement | SVGElement;
+};
 
 declare function InputSelect(unit: xnew.Unit, { value, items, name, className, style }?: {
     value?: string;
@@ -340,7 +358,9 @@ declare function InputSelect(unit: xnew.Unit, { value, items, name, className, s
     name?: string;
     className?: string;
     style?: string;
-}): void;
+}): {
+    readonly container: HTMLElement | SVGElement;
+};
 
 declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
     url: string;

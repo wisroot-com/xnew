@@ -39,11 +39,19 @@ describe('basics Button', () => {
         expect(clicked).toBe(1);
     });
 
-    it('applies className and style to the button', () => {
+    it('applies className and style to the container (exposed via the getter)', () => {
         const unit = xnew(Button, { className: 'action', style: 'width: 8em;' });
+
+        expect(unit.container).toBe(unit.element.parentElement);
+        expect(unit.container.className).toContain('action');
+        expect(unit.container.getAttribute('style')).toContain('width: 8em;');
+    });
+
+    it('applies designs to the button part', () => {
+        const unit = xnew(Button, { designs: { button: { className: 'custom', style: 'border-radius: 9999px;' } } });
         const button = unit.element as HTMLButtonElement;
 
-        expect(button.className).toContain('action');
-        expect(button.getAttribute('style')).toContain('width: 8em;');
+        expect(button.className).toContain('custom');
+        expect(button.getAttribute('style')).toContain('border-radius: 9999px;');
     });
 });

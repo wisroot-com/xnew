@@ -63,12 +63,12 @@ describe('basics InputNumber', () => {
         expect(Number.isNaN(received[0])).toBe(true);
     });
 
-    it('applies className and style to the container', () => {
+    it('applies className and style to the container (exposed via the getter)', () => {
         const unit = xnew(InputNumber, { className: 'boxed', style: 'width: 4em;' });
-        const container = unit.element.parentElement as HTMLElement;
 
-        expect(container.className).toContain('boxed');
-        expect(container.getAttribute('style')).toContain('width: 4em;');
+        expect(unit.container).toBe(unit.element.parentElement);
+        expect(unit.container.className).toContain('boxed');
+        expect(unit.container.getAttribute('style')).toContain('width: 4em;');
     });
 
     it('applies designs to the field part', () => {
