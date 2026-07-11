@@ -2380,10 +2380,6 @@ function DPad(unit, { diagonal = true, className = '', style = '', stroke = 'cur
     });
 }
 
-const rowStyle = 'position: relative; height: 2em; margin: 0.125em 0; display: flex; align-items: center;';
-const clickableCss = {
-    clickable: { layer: 'base', body: 'cursor: pointer; user-select: none;' },
-};
 function Panel(unit, { params, nested }) {
     const object = params !== null && params !== void 0 ? params : {};
     if (!nested) {
@@ -2433,8 +2429,7 @@ function Panel(unit, { params, nested }) {
 function Group(group, { name, open = false }) {
     const openAndClose = xnew.extend(OpenAndClose, { open });
     if (name) {
-        const cls = xnew.css(clickableCss);
-        xnew(`<div class="${cls.clickable}" style="${rowStyle}">`, (unit) => {
+        xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (unit) => {
             unit.on('click', () => openAndClose.toggle());
             xnew((unit) => {
                 xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
@@ -2450,19 +2445,17 @@ function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
 }
 function Range(unit, { name = '', value, min = 0, max = 100, step = 1 }) {
-    const cls = xnew.css(clickableCss);
-    xnew.nest(`<div class="${cls.clickable}" style="${rowStyle}">`);
-    xnew(InputRange, { name, value, min, max, step, style: 'width: 100%; height: 100%;' });
+    xnew.nest(`<div style="display: flex; align-items: center; position: relative; cursor: pointer; user-select: none;">`);
+    xnew(InputRange, { name, value, min, max, step, style: 'width: 100%;' });
     xnew('<div style="position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 0 0.5em; display: flex; align-items: center; pointer-events: none;">', name);
 }
 function Checkbox(unit, { name = '', value } = {}) {
-    const cls = xnew.css(clickableCss);
-    xnew.nest(`<label class="${cls.clickable}" style="${rowStyle} padding: 0 0.5em;">`);
+    xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none;">`);
     xnew('<div style="flex: 1;">', name);
     xnew(InputCheckbox, { name, value, style: 'width: 1.25em; height: 1.25em;' });
 }
 function Select(unit, { name = '', value, items = [] } = {}) {
-    xnew.nest(`<div style="${rowStyle} padding: 0 0.5em;">`);
+    xnew.nest(`<div style="display: flex; align-items: center; padding: 0 0.5em;">`);
     xnew('<div style="flex: 1;">', name);
     xnew(InputSelect, { name, value, items, style: 'width: auto; min-width: 3em; height: 2em;' });
 }

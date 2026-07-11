@@ -26,14 +26,6 @@ import { Accordion } from './Accordion';
 // nested is internal: group() marks its inner Panel so only the root creates the scroll container
 interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; nested?: boolean; }
 
-// one form row of the panel
-const rowStyle = 'position: relative; height: 2em; margin: 0.125em 0; display: flex; align-items: center;';
-
-// clickable rows share one definition across this file's private components
-const clickableCss = {
-    clickable: { layer: 'base', body: 'cursor: pointer; user-select: none;' },
-};
-
 export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
 
@@ -86,8 +78,7 @@ export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
 function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
     const openAndClose = xnew.extend(OpenAndClose, { open });
     if (name) {
-        const cls = xnew.css(clickableCss);
-        xnew(`<div class="${cls.clickable}" style="${rowStyle}">`, (unit: xnew.Unit) => {
+        xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (unit: xnew.Unit) => {
             unit.on('click', () => openAndClose.toggle());
             xnew((unit: xnew.Unit) => {
                 xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
@@ -108,21 +99,19 @@ function Range(unit: xnew.Unit,
     { name = '', value, min = 0, max = 100, step = 1 }:
     { name?: string, value?: number, min?: number, max?: number, step?: number }
 ) {
-    const cls = xnew.css(clickableCss);
+    // position: relative anchors the name label overlay
+    xnew.nest(`<div style="display: flex; align-items: center; position: relative; cursor: pointer; user-select: none;">`);
 
-    xnew.nest(`<div class="${cls.clickable}" style="${rowStyle}">`);
-
-    // inline size overrides the container's fixed @layer default so the gauge fills the row
-    xnew(InputRange, { name, value, min, max, step, style: 'width: 100%; height: 100%;' });
+    // inline width overrides the container's fixed @layer default so the gauge fills the row
+    xnew(InputRange, { name, value, min, max, step, style: 'width: 100%;' });
 
     // name label (after the gauge so the text paints above the fill bar; the value readout is InputRange's own)
     xnew('<div style="position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 0 0.5em; display: flex; align-items: center; pointer-events: none;">', name);
 }
 
 function Checkbox(unit: xnew.Unit, { name = '', value }: { name?: string, value?: boolean } = {}) {
-    const cls = xnew.css(clickableCss);
     // label row so a click anywhere in the row reaches the boxed native input
-    xnew.nest(`<label class="${cls.clickable}" style="${rowStyle} padding: 0 0.5em;">`);
+    xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none;">`);
 
     xnew('<div style="flex: 1;">', name);
 
@@ -132,7 +121,7 @@ function Checkbox(unit: xnew.Unit, { name = '', value }: { name?: string, value?
 
 function Select(unit: xnew.Unit, { name = '', value, items = [] }: { name?: string, value?: string, items?: string[] } = {}) {
     // label row; the pulldown itself is InputSelect, whose input event bubbles up to this row
-    xnew.nest(`<div style="${rowStyle} padding: 0 0.5em;">`);
+    xnew.nest(`<div style="display: flex; align-items: center; padding: 0 0.5em;">`);
 
     xnew('<div style="flex: 1;">', name);
 
