@@ -252,10 +252,13 @@ declare function Button(unit: xnew.Unit, { text, className, style, designs, ...o
     [key: string]: any;
 }): void;
 
-declare function Chevron(unit: xnew.Unit, { direction, className, style, ...others }?: {
+declare function Chevron(unit: xnew.Unit, { direction, className, style, designs, ...others }?: {
     direction?: 'up' | 'down' | 'left' | 'right';
     className?: string;
     style?: string;
+    designs?: {
+        svg?: Design;
+    };
     [key: string]: any;
 }): void;
 
@@ -279,18 +282,24 @@ interface SVGStyleInterface {
     fill?: string;
     fillOpacity?: number;
 }
-declare function SVG(unit: xnew.Unit, { viewBox, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity, ...others }?: {
-    viewBox?: string;
+declare function SVG(unit: xnew.Unit, { className, style, designs, ...others }?: {
     className?: string;
     style?: string;
+    designs?: {
+        svg?: Design;
+    };
     [key: string]: any;
 } & SVGStyleInterface): void;
 
-declare function SVGText(unit: xnew.Unit, { text, fontSize, ...others }?: {
+declare function SVGText(unit: xnew.Unit, { text, fontSize, className, style, designs, ...others }?: {
     text?: string;
     fontSize?: number;
     className?: string;
     style?: string;
+    designs?: {
+        svg?: Design;
+    };
+    [key: string]: any;
 } & SVGStyleInterface): void;
 
 declare function InputRange(unit: xnew.Unit, { value, min, max, step, className, style, designs, ...others }?: {

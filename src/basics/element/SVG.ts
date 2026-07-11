@@ -5,9 +5,10 @@
 // so callers can drop in <path> / <polygon> / <circle> children without re-specifying the same
 // presentation attributes on every shape.
 //
-// - SVG               : component({ viewBox, className, style, stroke, fill, ..., ...rest })
-//                       — className / style decorate the container (the <svg> fills it);
-//                       rest members pass through to the <svg> as attributes;
+// - SVG               : component({ className, style, designs, ...rest }) — className / style
+//                       decorate the container (the <svg> fills it); designs: { svg? } — a Design
+//                       ({ className?, style? }) for the <svg>; rest members (viewBox, stroke, …)
+//                       pass through to the <svg> as attributes, overriding the defaults;
 //                       returns { get container }
 // - SVGStyleInterface : the basic stroke / fill presentation props, shared with the
 //                       SVG-drawn components (SVGText / AnalogStick / DPad)
@@ -17,6 +18,7 @@
 
 import { xnew } from '../../core/xnew';
 import { Container } from './Container';
+import { Design } from '../design';
 
 export interface SVGStyleInterface {
     stroke?: string;
@@ -29,33 +31,23 @@ export interface SVGStyleInterface {
 }
 
 export function SVG(unit: xnew.Unit,
-    {
-        viewBox = '0 0 64 64',
-        className = '',
-        style = '',
-        stroke = 'none',
-        strokeOpacity = 1,
-        strokeWidth = 1,
-        strokeLinejoin = 'round',
-        strokeLinecap = 'round',
-        fill = 'none',
-        fillOpacity = 1,
-        ...others
-    }:
-    { viewBox?: string; className?: string; style?: string; [key: string]: any } & SVGStyleInterface = {}
+    { className = '', style = '', designs = {}, ...others }:
+    { className?: string, style?: string, designs?: { svg?: Design }, [key: string]: any } & SVGStyleInterface = {}
 ) {
     xnew.extend(Container, { className, style });
 
+    const cls = xnew.css({
+        // fills the container
+        svg: {
+            layer: 'base',
+            body: `
+                box-sizing: border-box; display: block; width: 100%; height: 100%;
+            `,
+        },
+    });
     xnew.nest({
-        tag: 'svg', style: 'display: block; width: 100%; height: 100%;',
-        viewBox,
-        stroke,
-        strokeOpacity,
-        strokeWidth,
-        strokeLinejoin,
-        strokeLinecap,
-        fill,
-        fillOpacity,
+        tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style,
+        stroke: 'none', strokeOpacity: 1, strokeWidth: 1, strokeLinejoin: 'round', strokeLinecap: 'round', fill: 'none', fillOpacity: 1,
         ...others,
     });
 }

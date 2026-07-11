@@ -25,14 +25,9 @@ export function InputRange(unit: xnew.Unit,
 ) {
     const initial = value ?? min;
 
-    // sizing shell (position: relative only anchors the absolute parts);
-    // the default size is an overridable @layer base rule
+    // position: relative anchors the absolute parts
     xnew.extend(Container, {
-        base: `
-            box-sizing: border-box; width: 10rem; height: 1.5rem;
-            position: relative;
-            margin: 0.125em 0;
-        `,
+        base: 'box-sizing: border-box; width: 10rem; height: 1.5rem; position: relative; margin: 0.125em 0;',
         className, style,
     });
 

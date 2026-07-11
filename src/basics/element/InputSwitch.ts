@@ -23,12 +23,8 @@ export function InputSwitch(unit: xnew.Unit,
     { value = false, className = '', style = '', designs = {}, ...others }:
     { value?: boolean, className?: string, style?: string, designs?: { frame?: Design, knob?: Design }, [key: string]: any } = {}
 ) {
-    // sizing shell only; the default size is an overridable @layer base rule
     xnew.extend(Container, {
-        base: `
-            box-sizing: border-box; width: 3rem; height: 1.5rem;
-            margin: 0.125em 0;
-        `,
+        base: 'box-sizing: border-box; width: 3rem; height: 1.5rem; margin: 0.125em 0;',
         className, style,
     });
 

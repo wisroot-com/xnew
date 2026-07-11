@@ -1430,17 +1430,24 @@ function Button(unit, _a = {}) {
     xnew.nest(Object.assign({ tag: 'button', type: 'button', className: `${cls.button} ${(_c = (_b = designs.button) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.button) === null || _d === void 0 ? void 0 : _d.style }, others), text);
 }
 
-const angles = { right: 0, down: 90, left: 180, up: 270 };
 function Chevron(unit, _a = {}) {
-    var { direction = 'right', className = '', style = '' } = _a, others = __rest(_a, ["direction", "className", "style"]);
+    var _b, _c, _d;
+    var { direction = 'right', className = '', style = '', designs = {} } = _a, others = __rest(_a, ["direction", "className", "style", "designs"]);
     xnew.extend(Container, {
-        base: `
-            box-sizing: border-box; width: 1em; height: 1em;
-        `,
+        base: 'box-sizing: border-box; width: 1em; height: 1em;',
         className, style,
     });
-    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 12 12', style: 'display: block; width: 100%; height: 100%;', stroke: 'currentColor', strokeWidth: 1, strokeLinejoin: 'round', strokeLinecap: 'round', fill: 'none' }, others));
+    const cls = xnew.css({
+        svg: {
+            layer: 'base',
+            body: `
+                box-sizing: border-box; display: block; width: 100%; height: 100%;
+            `,
+        },
+    });
+    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 12 12', className: `${cls.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style, stroke: 'currentColor', strokeWidth: 1, strokeLinejoin: 'round', strokeLinecap: 'round', fill: 'none' }, others));
     xnew('<path d="M4 2 8 6 4 10"/>');
+    const angles = { right: 0, down: 90, left: 180, up: 270 };
     unit.element.style.transform = `rotate(${angles[direction]}deg)`;
 }
 
@@ -1448,9 +1455,7 @@ function Image(unit, _a) {
     var _b, _c, _d;
     var { src, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["src", "className", "style", "designs"]);
     xnew.extend(Container, {
-        base: `
-            box-sizing: border-box; width: 100%; height: 100%;
-        `,
+        base: 'box-sizing: border-box; width: 100%; height: 100%;',
         className, style,
     });
     const cls = xnew.css({
@@ -1487,21 +1492,37 @@ function Image(unit, _a) {
 }
 
 function SVG(unit, _a = {}) {
-    var { viewBox = '0 0 64 64', className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'none', fillOpacity = 1 } = _a, others = __rest(_a, ["viewBox", "className", "style", "stroke", "strokeOpacity", "strokeWidth", "strokeLinejoin", "strokeLinecap", "fill", "fillOpacity"]);
+    var _b, _c, _d;
+    var { className = '', style = '', designs = {} } = _a, others = __rest(_a, ["className", "style", "designs"]);
     xnew.extend(Container, { className, style });
-    xnew.nest(Object.assign({ tag: 'svg', style: 'display: block; width: 100%; height: 100%;', viewBox,
-        stroke,
-        strokeOpacity,
-        strokeWidth,
-        strokeLinejoin,
-        strokeLinecap,
-        fill,
-        fillOpacity }, others));
+    const cls = xnew.css({
+        svg: {
+            layer: 'base',
+            body: `
+                box-sizing: border-box; display: block; width: 100%; height: 100%;
+            `,
+        },
+    });
+    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style, stroke: 'none', strokeOpacity: 1, strokeWidth: 1, strokeLinejoin: 'round', strokeLinecap: 'round', fill: 'none', fillOpacity: 1 }, others));
 }
 
 function SVGText(unit, _a = {}) {
-    var { text = '', fontSize = 20 } = _a, others = __rest(_a, ["text", "fontSize"]);
-    xnew.extend(SVG, Object.assign({ fill: 'currentColor' }, others));
+    var _b, _c, _d;
+    var { text = '', fontSize = 20, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["text", "fontSize", "className", "style", "designs"]);
+    xnew.extend(Container, {
+        base: 'box-sizing: border-box; width: fit-content; height: fit-content;',
+        className, style,
+    });
+    const cls = xnew.css({
+        svg: {
+            layer: 'base',
+            body: `
+                box-sizing: border-box; display: block;
+                overflow: visible;
+            `,
+        },
+    });
+    xnew.nest(Object.assign({ tag: 'svg', className: `${cls.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style, stroke: 'none', strokeOpacity: 1, strokeWidth: 1, strokeLinejoin: 'round', strokeLinecap: 'round', fill: 'currentColor', fillOpacity: 1 }, others));
     const svg = unit.element;
     xnew.nest({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' });
     unit.element.textContent = text;
@@ -1509,10 +1530,10 @@ function SVGText(unit, _a = {}) {
         const bbox = unit.element.getBBox();
         svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
         svg.style.width = bbox.width + 'px';
+        svg.style.height = bbox.height + 'px';
     }
     resize();
     unit.on('resize', resize);
-    svg.style.overflow = 'visible';
 }
 
 function InputRange(unit, _a = {}) {
@@ -1520,11 +1541,7 @@ function InputRange(unit, _a = {}) {
     var { value, min = 0, max = 100, step = 1, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "className", "style", "designs"]);
     const initial = value !== null && value !== void 0 ? value : min;
     xnew.extend(Container, {
-        base: `
-            box-sizing: border-box; width: 10rem; height: 1.5rem;
-            position: relative;
-            margin: 0.125em 0;
-        `,
+        base: 'box-sizing: border-box; width: 10rem; height: 1.5rem; position: relative; margin: 0.125em 0;',
         className, style,
     });
     const cls = xnew.css({
@@ -1584,10 +1601,7 @@ function InputCheckbox(unit, _a = {}) {
     var _b, _c, _d;
     var { value = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
     xnew.extend(Container, {
-        base: `
-            box-sizing: border-box; width: 1.5rem; height: 1.5rem;
-            margin: 0.125em 0;
-        `,
+        base: 'box-sizing: border-box; width: 1.5rem; height: 1.5rem; margin: 0.125em 0;',
         className, style,
     });
     const cls = xnew.css({
@@ -1631,10 +1645,7 @@ function InputText(unit, _a = {}) {
     var _b, _c, _d;
     var { className = '', style = '', designs = {} } = _a, others = __rest(_a, ["className", "style", "designs"]);
     xnew.extend(Container, {
-        base: `
-            box-sizing: border-box; width: 10rem; height: 1.8rem;
-            margin: 0.125em 0;
-        `,
+        base: 'box-sizing: border-box; width: 10rem; height: 1.8rem; margin: 0.125em 0;',
         className, style,
     });
     const cls = xnew.css({
@@ -1657,10 +1668,7 @@ function InputNumber(unit, _a = {}) {
     var _b, _c, _d;
     var { className = '', style = '', designs = {} } = _a, others = __rest(_a, ["className", "style", "designs"]);
     xnew.extend(Container, {
-        base: `
-            box-sizing: border-box; width: 10rem; height: 1.8rem;
-            margin: 0.125em 0;
-        `,
+        base: 'box-sizing: border-box; width: 10rem; height: 1.8rem; margin: 0.125em 0;',
         className, style,
     });
     const cls = xnew.css({
@@ -1685,10 +1693,7 @@ function InputSwitch(unit, _a = {}) {
     var _b, _c, _d, _e, _f, _g;
     var { value = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
     xnew.extend(Container, {
-        base: `
-            box-sizing: border-box; width: 3rem; height: 1.5rem;
-            margin: 0.125em 0;
-        `,
+        base: 'box-sizing: border-box; width: 3rem; height: 1.5rem; margin: 0.125em 0;',
         className, style,
     });
     const cls = xnew.css({
@@ -1737,9 +1742,7 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
     var _a, _b, _c, _d;
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
     xnew.extend(Container, {
-        base: `
-            box-sizing: border-box; width: 100%; height: 100%;
-        `,
+        base: 'box-sizing: border-box; width: 100%; height: 100%;',
         className, style,
     });
     const cls = xnew.css({
@@ -1799,10 +1802,7 @@ function InputSelect(unit, _a = {}) {
     var { value, items = [], className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "items", "className", "style", "designs"]);
     const initial = (_b = value !== null && value !== void 0 ? value : items[0]) !== null && _b !== void 0 ? _b : '';
     xnew.extend(Container, {
-        base: `
-            box-sizing: border-box; width: 10rem; height: 1.8rem;
-            margin: 0.125em 0;
-        `,
+        base: 'box-sizing: border-box; width: 10rem; height: 1.8rem; margin: 0.125em 0;',
         className, style,
     });
     const cls = xnew.css({

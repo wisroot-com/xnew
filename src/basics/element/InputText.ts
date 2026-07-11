@@ -21,12 +21,8 @@ export function InputText(unit: xnew.Unit,
     { className = '', style = '', designs = {}, ...others }:
     { className?: string, style?: string, designs?: { field?: Design }, [key: string]: any } = {}
 ) {
-    // sizing shell only; the default size is an overridable @layer base rule
     xnew.extend(Container, {
-        base: `
-            box-sizing: border-box; width: 10rem; height: 1.8rem;
-            margin: 0.125em 0;
-        `,
+        base: 'box-sizing: border-box; width: 10rem; height: 1.8rem; margin: 0.125em 0;',
         className, style,
     });
 

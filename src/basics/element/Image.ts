@@ -23,11 +23,9 @@ export function Image(unit: xnew.Unit,
     { src, className = '', style = '', designs = {}, ...others }:
     { src: ImageSource | Promise<ImageSource>, className?: string, style?: string, designs?: { image?: Design }, [key: string]: any }
 ) {
-    // sizing shell only; the default size is pending (fills the host for now)
+    // the default size is pending (fills the host for now)
     xnew.extend(Container, {
-        base: `
-            box-sizing: border-box; width: 100%; height: 100%;
-        `,
+        base: 'box-sizing: border-box; width: 100%; height: 100%;',
         className, style,
     });
 
