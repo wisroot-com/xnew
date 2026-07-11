@@ -26,13 +26,13 @@ export function DPad(unit: xnew.Unit,
     { diagonal = true, className = '', style = '', designs = {} }:
     { diagonal?: boolean, className?: string, style?: string, designs?: { svg?: Design } } = {}
 ) {
-    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-
-    // pointer-operated surface
+    // pointer-operated surface (outermost, so the caller's className / style place the whole widget)
     xnew.extend(Container, {
         base: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
         className, style,
     });
+
+    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
 
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',

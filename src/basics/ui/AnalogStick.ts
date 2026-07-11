@@ -26,13 +26,13 @@ export function AnalogStick(unit: xnew.Unit,
     { className = '', style = '', designs = {} }:
     { className?: string, style?: string, designs?: { svg?: Design } } = {}
 ) {
-    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-
-    // pointer-operated surface
+    // pointer-operated surface (outermost, so the caller's className / style place the whole widget)
     xnew.extend(Container, {
         base: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
         className, style,
     });
+
+    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
 
     // default look inline on the svg parts; the caller's designs.svg declarations come later, so they win
     const svg: Design = { className: designs.svg?.className, style: `stroke: currentColor; stroke-opacity: 0.8; fill: #FFF; fill-opacity: 0.8; ${designs.svg?.style ?? ''}` };

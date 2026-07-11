@@ -294,6 +294,11 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **In a Container-derived component, extend Container FIRST — internal wrappers (e.g. Aspect)
+  nest inside it, never outside.** Container's div is the caller-side surface: with Aspect
+  outside, its full-size flex-centering wrapper swallowed the caller's `className`, so
+  `absolute left/right` placement always rendered centered (bit AnalogStick / DPad).
+
 - **Round `xbasics.Volume`'s `volume` before showing it in UI (e.g. `Math.round(v * 100)` for a
   0–100 InputRange).** The backing `AudioParam` stores float32, so a set of `0.1` reads back as
   `0.10000000149…` — feeding the raw read into InputRange's `value` displays a decimal-laden

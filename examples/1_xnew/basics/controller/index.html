@@ -29,19 +29,13 @@
 
       xnew.nest('<div class="absolute left-0 right-0 bottom-0 w-full h-[30%]" style="container-type: size;">');
 
-      // left bottom
-      xnew('<div class="absolute left-0 top-0 bottom-0 w-[100cqh] h-full">', () => {
-        // directional pad (w-auto / h-auto release the container's 100% defaults so the insets size it)
-        const dpad = xnew(xbasics.DPad, { className: 'absolute inset-[5cqh] w-auto h-auto' });
-        dpad.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));        
-      });
+      // directional pad (left bottom)
+      const dpad = xnew(xbasics.DPad, { className: 'absolute left-[5cqh] bottom-[5cqh] w-[90cqh] h-[90cqh]' });
+      dpad.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));
 
-      // right bottom
-      xnew('<div class="absolute right-0 top-0 bottom-0 w-[100cqh] h-full">', () => {
-        // analog stick (w-auto / h-auto release the container's 100% defaults so the insets size it)
-        const stick = xnew(xbasics.AnalogStick, { className: 'absolute inset-[5cqh] w-auto h-auto' });
-        stick.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));
-      });
+      // analog stick (right bottom)
+      const stick = xnew(xbasics.AnalogStick, { className: 'absolute right-[5cqh] bottom-[5cqh] w-[90cqh] h-[90cqh]' });
+      stick.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));
     }
 
     function Box(unit) {

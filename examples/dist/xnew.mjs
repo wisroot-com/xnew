@@ -2289,11 +2289,11 @@ function Popup(unit) {
 const overlay$1 = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
 function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
     var _a, _b, _c;
-    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     xnew.extend(Container, {
         base: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
         className, style,
     });
+    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     const svg = { className: (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className, style: `stroke: currentColor; stroke-opacity: 0.8; fill: #FFF; fill-opacity: 0.8; ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.style) !== null && _c !== void 0 ? _c : ''}` };
     xnew((unit) => {
         xnew.extend(SVG, { style: overlay$1, designs: { svg } });
@@ -2325,11 +2325,11 @@ function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
 const overlay = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
 function DPad(unit, { diagonal = true, className = '', style = '', designs = {} } = {}) {
     var _a, _b, _c, _d, _e, _f;
-    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     xnew.extend(Container, {
         base: 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
         className, style,
     });
+    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
         '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
