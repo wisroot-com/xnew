@@ -1442,10 +1442,12 @@ function Chevron(unit, _a = {}) {
             layer: 'base',
             body: `
                 box-sizing: border-box; display: block; width: 100%; height: 100%;
+                stroke: currentColor; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: none;
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 12 12', className: `${cls.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style, stroke: 'currentColor', strokeWidth: 1, strokeLinejoin: 'round', strokeLinecap: 'round', fill: 'none' }, others));
+    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 12 12', className: `${cls.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style }, others));
     xnew('<path d="M4 2 8 6 4 10"/>');
     const angles = { right: 0, down: 90, left: 180, up: 270 };
     unit.element.style.transform = `rotate(${angles[direction]}deg)`;
@@ -1500,10 +1502,12 @@ function SVG(unit, _a = {}) {
             layer: 'base',
             body: `
                 box-sizing: border-box; display: block; width: 100%; height: 100%;
+                stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: none; fill-opacity: 1;
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style, stroke: 'none', strokeOpacity: 1, strokeWidth: 1, strokeLinejoin: 'round', strokeLinecap: 'round', fill: 'none', fillOpacity: 1 }, others));
+    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style }, others));
 }
 
 function SVGText(unit, _a = {}) {
@@ -1519,10 +1523,12 @@ function SVGText(unit, _a = {}) {
             body: `
                 box-sizing: border-box; display: block;
                 overflow: visible;
+                stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: currentColor; fill-opacity: 1;
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'svg', className: `${cls.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style, stroke: 'none', strokeOpacity: 1, strokeWidth: 1, strokeLinejoin: 'round', strokeLinecap: 'round', fill: 'currentColor', fillOpacity: 1 }, others));
+    xnew.nest(Object.assign({ tag: 'svg', className: `${cls.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style }, others));
     const svg = unit.element;
     xnew.nest({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' });
     unit.element.textContent = text;
@@ -1628,7 +1634,7 @@ function InputCheckbox(unit, _a = {}) {
     });
     const check = xnew.nest({ tag: 'div', className: `${cls.check} ${(_c = (_b = designs.check) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.check) === null || _d === void 0 ? void 0 : _d.style });
     xnew((unit) => {
-        xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 100%; height: 100%;', stroke: 'currentColor', strokeWidth: 2 });
+        xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 100%; height: 100%;', designs: { svg: { style: 'stroke: currentColor; stroke-width: 2;' } } });
         xnew('<path d="M2 6 5 9 10 3"/>');
     });
     const update = (checked) => {
@@ -2294,15 +2300,16 @@ function AnalogStick(unit, { className = '', style = '', stroke = 'currentColor'
     });
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
+    const presentation = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin}; stroke-linecap: ${strokeLinecap}; fill: ${fill}; fill-opacity: ${fillOpacity};`;
     xnew((unit) => {
-        xnew.extend(SVG, { style: overlay$1, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
+        xnew.extend(SVG, { style: overlay$1, designs: { svg: { style: presentation } } });
         xnew('<polygon points="32  7 27 13 37 13">');
         xnew('<polygon points="32 57 27 51 37 51">');
         xnew('<polygon points=" 7 32 13 27 13 37">');
         xnew('<polygon points="57 32 51 27 51 37">');
     });
     const target = xnew((unit) => {
-        xnew.extend(SVG, { style: overlay$1, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
+        xnew.extend(SVG, { style: overlay$1, designs: { svg: { style: presentation } } });
         xnew('<circle cx="32" cy="32" r="14">');
     });
     unit.on('dragstart dragmove', ({ type, position }) => {
@@ -2343,12 +2350,12 @@ function DPad(unit, { diagonal = true, className = '', style = '', stroke = 'cur
     ];
     const targets = polygons.map((polygon) => {
         return xnew((unit) => {
-            xnew.extend(SVG, { style: overlay, fill, fillOpacity });
+            xnew.extend(SVG, { style: overlay, designs: { svg: { style: `fill: ${fill}; fill-opacity: ${fillOpacity};` } } });
             xnew(polygon);
         });
     });
     xnew((unit) => {
-        xnew.extend(SVG, { style: overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap });
+        xnew.extend(SVG, { style: overlay, designs: { svg: { style: `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin}; stroke-linecap: ${strokeLinecap};` } } });
         xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
         xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
         xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');

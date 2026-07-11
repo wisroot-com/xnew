@@ -27,7 +27,6 @@ export function Button(unit: xnew.Unit,
     });
 
     const cls = xnew.css({
-        // transparent + inherit so the native control sits on any surface
         button: {
             layer: 'base',
             body: `

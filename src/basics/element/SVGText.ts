@@ -6,20 +6,20 @@
 //
 // - SVGText : component({ text, fontSize, className, style, designs, ...rest }) — className /
 //             style decorate the container (sized by the text); designs: { svg? } — a Design
-//             ({ className?, style? }) for the <svg>; rest members (stroke, …) pass through to
-//             the <svg> as attributes, overriding the defaults; returns { get container }
+//             ({ className?, style? }) for the <svg> (the presentation defaults are an @layer
+//             base css rule — override them here, not via attributes); rest members pass
+//             through to the <svg>; returns { get container }
 //
-// Usage: xnew(xbasics.SVGText, { text: 'GAME OVER', fontSize: 24, fill: 'currentColor' });
+// Usage: xnew(xbasics.SVGText, { text: 'GAME OVER', fontSize: 24, designs: { svg: { style: 'stroke: #EEE; stroke-width: 1;' } } });
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 import { Container } from './Container';
 import { Design } from '../design';
-import { SVGStyleInterface } from './SVG';
 
 export function SVGText(unit: xnew.Unit,
     { text = '', fontSize = 20, className = '', style = '', designs = {}, ...others }:
-    { text?: string, fontSize?: number, className?: string, style?: string, designs?: { svg?: Design }, [key: string]: any } & SVGStyleInterface = {}
+    { text?: string, fontSize?: number, className?: string, style?: string, designs?: { svg?: Design }, [key: string]: any } = {}
 ) {
     // the shell shrink-wraps the bbox-fitted <svg>
     xnew.extend(Container, {
@@ -28,19 +28,20 @@ export function SVGText(unit: xnew.Unit,
     });
 
     const cls = xnew.css({
-        // sized by resize(); overflow keeps the stroke halo outside the bbox visible
+        // sized by resize(); overflow keeps the stroke halo outside the bbox visible;
+        // the presentation defaults (text = visible fill) inherit down to the <text>
         svg: {
             layer: 'base',
             body: `
                 box-sizing: border-box; display: block;
                 overflow: visible;
+                stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: currentColor; fill-opacity: 1;
             `,
         },
     });
-    // text defaults to visible fill
     xnew.nest({
         tag: 'svg', className: `${cls.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style,
-        stroke: 'none', strokeOpacity: 1, strokeWidth: 1, strokeLinejoin: 'round', strokeLinecap: 'round', fill: 'currentColor', fillOpacity: 1,
         ...others,
     });
     const svg = unit.element as SVGSVGElement;

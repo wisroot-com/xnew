@@ -57,7 +57,7 @@ export function InputCheckbox(unit: xnew.Unit,
     const check = xnew.nest({ tag: 'div', className: `${cls.check} ${designs.check?.className ?? ''}`, style: designs.check?.style });
 
     xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 100%; height: 100%;', stroke: 'currentColor', strokeWidth: 2 });
+        xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 100%; height: 100%;', designs: { svg: { style: 'stroke: currentColor; stroke-width: 2;' } } });
         xnew('<path d="M2 6 5 9 10 3"/>');
     });
 

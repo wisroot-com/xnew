@@ -87,7 +87,7 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   strictly the **outer size and caller-side design** — those three props are its whole
   signature; every other prop of the component (`value`, `name`, rest members, …) stays with
   the inner parts (e.g. the native `<input>`, or SVG's nested `<svg>` which fills the
-  container and carries the presentation attributes). The container element is always a
+  container and carries the presentation defaults as an @layer base css rule). The container element is always a
   `<div>`. `base` is the shell's `@layer base` declaration block (Button/Text/Number/Select
   `10rem × 1.8rem`; Checkbox `1.5rem × 1.5rem`; Switch `3rem × 1.5rem`; Range
   `10rem × 1.5rem`; Chevron `1em × 1em`; Radio / Image fill the host until their default is
@@ -291,6 +291,13 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
+
+- **Override the SVG-drawn basics' presentation defaults (stroke / fill / …) via `designs.svg`
+  (or page css), never via svg attributes.** SVG / Chevron / SVGText keep those defaults in an
+  `@layer base` css rule on the `<svg>`, and ANY css beats presentation attributes — an
+  attribute like `stroke: '#EEE'` passed as a rest member is silently ignored
+  (`designs: { svg: { style: 'stroke: #EEE; stroke-width: 2;' } }` wins because inline style
+  beats layered css). Attribute-only members (`viewBox`, …) still go through rest.
 
 - **A component may forward its rest props into an ElementDef as-is (`xnew.nest({ …, ...others })`)
   without stripping the reserved `key` prop.** If a caller passes `key`, it lands as a harmless

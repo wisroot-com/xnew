@@ -273,15 +273,6 @@ declare function Image(unit: xnew.Unit, { src, className, style, designs, ...oth
     [key: string]: any;
 }): void;
 
-interface SVGStyleInterface {
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    strokeLinejoin?: string;
-    strokeLinecap?: string;
-    fill?: string;
-    fillOpacity?: number;
-}
 declare function SVG(unit: xnew.Unit, { className, style, designs, ...others }?: {
     className?: string;
     style?: string;
@@ -289,7 +280,7 @@ declare function SVG(unit: xnew.Unit, { className, style, designs, ...others }?:
         svg?: Design;
     };
     [key: string]: any;
-} & SVGStyleInterface): void;
+}): void;
 
 declare function SVGText(unit: xnew.Unit, { text, fontSize, className, style, designs, ...others }?: {
     text?: string;
@@ -300,7 +291,7 @@ declare function SVGText(unit: xnew.Unit, { text, fontSize, className, style, de
         svg?: Design;
     };
     [key: string]: any;
-} & SVGStyleInterface): void;
+}): void;
 
 declare function InputRange(unit: xnew.Unit, { value, min, max, step, className, style, designs, ...others }?: {
     value?: number;
@@ -458,13 +449,27 @@ declare function Popup(unit: xnew.Unit): void;
 declare function AnalogStick(unit: xnew.Unit, { className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: {
     className?: string;
     style?: string;
-} & SVGStyleInterface): void;
+    stroke?: string;
+    strokeOpacity?: number;
+    strokeWidth?: number;
+    strokeLinejoin?: string;
+    strokeLinecap?: string;
+    fill?: string;
+    fillOpacity?: number;
+}): void;
 
 declare function DPad(unit: xnew.Unit, { diagonal, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: {
     diagonal?: boolean;
     className?: string;
     style?: string;
-} & SVGStyleInterface): void;
+    stroke?: string;
+    strokeOpacity?: number;
+    strokeWidth?: number;
+    strokeLinejoin?: string;
+    strokeLinecap?: string;
+    fill?: string;
+    fillOpacity?: number;
+}): void;
 
 interface PanelOptions {
     name?: string;

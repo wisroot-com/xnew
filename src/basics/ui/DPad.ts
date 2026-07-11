@@ -12,7 +12,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { SVG, SVGStyleInterface } from '../element/SVG';
+import { SVG } from '../element/SVG';
 import { Aspect } from '../view/Aspect';
 
 // full-size stacked SVG layers
@@ -20,7 +20,7 @@ const overlay = 'position: absolute; inset: 0; width: 100%; height: 100%; box-si
 
 export function DPad(unit: xnew.Unit,
     { diagonal = true, className = '', style = '', stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 }:
-    { diagonal?: boolean; className?: string; style?: string } & SVGStyleInterface = {}
+    { diagonal?: boolean; className?: string; style?: string; stroke?: string; strokeOpacity?: number; strokeWidth?: number; strokeLinejoin?: string; strokeLinecap?: string; fill?: string; fillOpacity?: number } = {}
 ) {
     const cls = xnew.css({
         // pointer-operated surface; an overridable @layer base rule
@@ -44,15 +44,16 @@ export function DPad(unit: xnew.Unit,
         '<polygon points="32 32 41 23 60 23 61 24 61 40 60 41 41 41">'
     ];
 
+    // inline on the svg parts, so they win over the SVG defaults (@layer base css beats attributes)
     const targets = polygons.map((polygon) => {
         return xnew((unit: xnew.Unit) => {
-            xnew.extend(SVG, { style: overlay, fill, fillOpacity });
+            xnew.extend(SVG, { style: overlay, designs: { svg: { style: `fill: ${fill}; fill-opacity: ${fillOpacity};` } } });
             xnew(polygon);
         });
     });
 
     xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { style: overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap });
+        xnew.extend(SVG, { style: overlay, designs: { svg: { style: `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin}; stroke-linecap: ${strokeLinecap};` } } });
         xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
         xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
         xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');

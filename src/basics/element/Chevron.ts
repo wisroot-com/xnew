@@ -8,8 +8,9 @@
 // - Chevron : component({ direction, className, style, designs, ...rest }) — direction: 'up' |
 //             'down' | 'left' | 'right' (default 'right'); className / style decorate the
 //             container (default 1em × 1em); designs: { svg? } — a Design ({ className?, style? })
-//             for the <svg>; rest members (stroke, …) pass through to the <svg>;
-//             returns { get container }
+//             for the <svg> (the presentation defaults are an @layer base css rule — override
+//             them here, not via attributes); rest members (viewBox, …) pass through to the
+//             <svg>; returns { get container }
 //
 // Usage: xnew(xbasics.Chevron, { direction: 'down', style: 'width: 1em; height: 1em;' });
 //----------------------------------------------------------------------------------------------------
@@ -27,16 +28,18 @@ export function Chevron(unit: xnew.Unit,
         className, style,
     });
     const cls = xnew.css({
+        // fills the container; the presentation defaults inherit down to the path
         svg: {
             layer: 'base',
             body: `
                 box-sizing: border-box; display: block; width: 100%; height: 100%;
+                stroke: currentColor; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: none;
             `,
         },
     });
     xnew.nest({
         tag: 'svg', viewBox: '0 0 12 12', className: `${cls.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style,
-        stroke: 'currentColor', strokeWidth: 1, strokeLinejoin: 'round', strokeLinecap: 'round', fill: 'none',
         ...others,
     });
     xnew('<path d="M4 2 8 6 4 10"/>');

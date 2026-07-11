@@ -12,7 +12,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { SVG, SVGStyleInterface } from '../element/SVG';
+import { SVG } from '../element/SVG';
 import { Aspect } from '../view/Aspect';
 
 // full-size stacked SVG layers
@@ -20,7 +20,7 @@ const overlay = 'position: absolute; inset: 0; width: 100%; height: 100%; box-si
 
 export function AnalogStick(unit: xnew.Unit,
     { className = '', style = '', stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 }:
-    { className?: string; style?: string } & SVGStyleInterface = {}
+    { className?: string; style?: string; stroke?: string; strokeOpacity?: number; strokeWidth?: number; strokeLinejoin?: string; strokeLinecap?: string; fill?: string; fillOpacity?: number } = {}
 ) {
     const cls = xnew.css({
         // pointer-operated surface; an overridable @layer base rule
@@ -37,8 +37,11 @@ export function AnalogStick(unit: xnew.Unit,
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
 
+    // inline on the svg part, so it wins over the SVG defaults (@layer base css beats attributes)
+    const presentation = `stroke: ${stroke}; stroke-opacity: ${strokeOpacity}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin}; stroke-linecap: ${strokeLinecap}; fill: ${fill}; fill-opacity: ${fillOpacity};`;
+
     xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { style: overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
+        xnew.extend(SVG, { style: overlay, designs: { svg: { style: presentation } } });
         xnew('<polygon points="32  7 27 13 37 13">');
         xnew('<polygon points="32 57 27 51 37 51">');
         xnew('<polygon points=" 7 32 13 27 13 37">');
@@ -46,7 +49,7 @@ export function AnalogStick(unit: xnew.Unit,
     });
 
     const target = xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { style: overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
+        xnew.extend(SVG, { style: overlay, designs: { svg: { style: presentation } } });
         xnew('<circle cx="32" cy="32" r="14">');
     });
 
