@@ -36,5 +36,5 @@ export function Spinner(unit: xnew.Unit,
         },
     });
 
-    xnew.nest(`<div class="${cls.spinner} ${className}" style="${style}">`);
+    xnew.nest({ tag: 'div', className: `${cls.spinner} ${className}`, style });
 }

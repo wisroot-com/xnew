@@ -6,9 +6,10 @@
 // a fill bar inside a faint outline) with a status readout of the current value, so callers get
 // a gauge look with native range semantics.
 //
-// - InputRange : component({ value, min, max, step, name, className, style, designs })
+// - InputRange : component({ value, min, max, step, className, style, designs, ...rest })
 //                — emits 'input' with { value }; fills left→right; shows the value at the right;
-//                  designs: { frame?, meter?, status? } — a Design ({ className?, style? }) per part
+//                  designs: { frame?, meter?, status? } — a Design ({ className?, style? }) per
+//                  part; rest members (name, …) pass through to the <input>
 //
 // Usage: const gauge = xnew(xbasics.InputRange, { value: 50, designs: { meter: { style: 'background: gold;' } } });
 //        gauge.on('input', ({ value }) => ...);
@@ -18,10 +19,10 @@ import { xnew } from '../../core/xnew';
 import { Design } from '../design';
 
 export function InputRange(unit: xnew.Unit,
-    { value, min = 0, max = 100, step = 1, name, className = '', style = '', designs = {} }:
-    { value?: number, min?: number, max?: number, step?: number, name?: string, className?: string, style?: string, designs?: { frame?: Design, meter?: Design, status?: Design } } = {}
+    { value, min = 0, max = 100, step = 1, className = '', style = '', designs = {}, ...others }:
+    { value?: number, min?: number, max?: number, step?: number, className?: string, style?: string, designs?: { frame?: Design, meter?: Design, status?: Design }, [key: string]: any } = {}
 ) {
-    value = value ?? min;
+    const initial = value ?? min;
     const cls = xnew.css({
         // sizing shell (position: relative only anchors the absolute parts);
         // the default size is an overridable @layer base rule
@@ -89,10 +90,10 @@ export function InputRange(unit: xnew.Unit,
         meter.element.style.width = `${(v - min) / (max - min) * 100}%`;
         status.element.textContent = String(v);
     };
-    update(value);
+    update(initial);
 
     // hidden native input for interaction (min / max / step before value, so value never clamps against defaults)
-    xnew.nest({ tag: 'input', type: 'range', name, min, max, step, value, className: cls.input });
+    xnew.nest({ tag: 'input', type: 'range', min, max, step, value: initial, className: cls.input, ...others });
     unit.on('input', ({ value }: { value: number }) => {
         update(value);
     });

@@ -278,9 +278,11 @@ declare function SVG(unit: xnew.Unit, { viewBox, className, style, stroke, strok
     [key: string]: any;
 } & SVGStyleInterface): void;
 
-declare function SVGText(unit: xnew.Unit, { text, fontSize, ...othres }?: {
+declare function SVGText(unit: xnew.Unit, { text, fontSize, ...others }?: {
     text?: string;
     fontSize?: number;
+    className?: string;
+    style?: string;
 } & SVGStyleInterface): void;
 
 declare function Spinner(unit: xnew.Unit, { className, style }?: {
@@ -288,12 +290,11 @@ declare function Spinner(unit: xnew.Unit, { className, style }?: {
     style?: string;
 }): void;
 
-declare function InputRange(unit: xnew.Unit, { value, min, max, step, name, className, style, designs }?: {
+declare function InputRange(unit: xnew.Unit, { value, min, max, step, className, style, designs, ...others }?: {
     value?: number;
     min?: number;
     max?: number;
     step?: number;
-    name?: string;
     className?: string;
     style?: string;
     designs?: {
@@ -301,6 +302,7 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, name, clas
         meter?: Design;
         status?: Design;
     };
+    [key: string]: any;
 }): {
     readonly container: HTMLElement | SVGElement;
 };

@@ -1470,10 +1470,10 @@ function SVG(unit, _a = {}) {
 }
 
 function SVGText(unit, _a = {}) {
-    var { text = '', fontSize = 20 } = _a, othres = __rest(_a, ["text", "fontSize"]);
-    xnew.extend(SVG, Object.assign({ fill: 'currentColor' }, othres));
+    var { text = '', fontSize = 20 } = _a, others = __rest(_a, ["text", "fontSize"]);
+    xnew.extend(SVG, Object.assign({ fill: 'currentColor' }, others));
     const svg = unit.element;
-    xnew.nest(`<text x="0" y="0" font-size="${fontSize}" paint-order="stroke fill">`);
+    xnew.nest({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' });
     unit.element.textContent = text;
     function resize() {
         const bbox = unit.element.getBBox();
@@ -1506,12 +1506,13 @@ function Spinner(unit, { className = '', style = '' } = {}) {
             `,
         },
     });
-    xnew.nest(`<div class="${cls.spinner} ${className}" style="${style}">`);
+    xnew.nest({ tag: 'div', className: `${cls.spinner} ${className}`, style });
 }
 
-function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className = '', style = '', designs = {} } = {}) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
-    value = value !== null && value !== void 0 ? value : min;
+function InputRange(unit, _a = {}) {
+    var _b, _c, _d, _e, _f, _g, _h, _j, _k;
+    var { value, min = 0, max = 100, step = 1, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "className", "style", "designs"]);
+    const initial = value !== null && value !== void 0 ? value : min;
     const cls = xnew.css({
         container: {
             layer: 'base',
@@ -1559,15 +1560,15 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className
         },
     });
     const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
-    xnew({ tag: 'div', className: `${cls.frame} ${(_b = (_a = designs.frame) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = designs.frame) === null || _c === void 0 ? void 0 : _c.style });
-    const meter = xnew({ tag: 'div', className: `${cls.meter} ${(_e = (_d = designs.meter) === null || _d === void 0 ? void 0 : _d.className) !== null && _e !== void 0 ? _e : ''}`, style: (_f = designs.meter) === null || _f === void 0 ? void 0 : _f.style });
-    const status = xnew({ tag: 'div', className: `${cls.status} ${(_h = (_g = designs.status) === null || _g === void 0 ? void 0 : _g.className) !== null && _h !== void 0 ? _h : ''}`, style: (_j = designs.status) === null || _j === void 0 ? void 0 : _j.style });
+    xnew({ tag: 'div', className: `${cls.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
+    const meter = xnew({ tag: 'div', className: `${cls.meter} ${(_f = (_e = designs.meter) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.meter) === null || _g === void 0 ? void 0 : _g.style });
+    const status = xnew({ tag: 'div', className: `${cls.status} ${(_j = (_h = designs.status) === null || _h === void 0 ? void 0 : _h.className) !== null && _j !== void 0 ? _j : ''}`, style: (_k = designs.status) === null || _k === void 0 ? void 0 : _k.style });
     const update = (v) => {
         meter.element.style.width = `${(v - min) / (max - min) * 100}%`;
         status.element.textContent = String(v);
     };
-    update(value);
-    xnew.nest({ tag: 'input', type: 'range', name, min, max, step, value, className: cls.input });
+    update(initial);
+    xnew.nest(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: cls.input }, others));
     unit.on('input', ({ value }) => {
         update(value);
     });
