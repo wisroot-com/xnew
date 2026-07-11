@@ -28,6 +28,7 @@ export function InputSwitch(unit: xnew.Unit,
             layer: 'base',
             body: `
                 box-sizing: border-box; width: 3rem; height: 1.5rem;
+                margin: 0.125em 0;
             `,
         },
         // rounded track carrying the knob (position: relative anchors the knob and input overlay);

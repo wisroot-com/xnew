@@ -28,6 +28,7 @@ export function InputCheckbox(unit: xnew.Unit,
             layer: 'base',
             body: `
                 box-sizing: border-box; width: 1.5rem; height: 1.5rem;
+                margin: 0.125em 0;
             `,
         },
         // framed box carrying the SVG check mark (position: relative anchors the input overlay);

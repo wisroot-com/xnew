@@ -31,6 +31,7 @@ export function InputSelect(unit: xnew.Unit,
             layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
+                margin: 0.125em 0;
             `,
         },
         // framed button face (position: relative anchors nothing itself but keeps the click surface);

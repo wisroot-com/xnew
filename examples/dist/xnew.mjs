@@ -1407,6 +1407,7 @@ function Button(unit, _a = {}) {
             layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
+                margin: 0.125em 0;
             `,
         },
         button: {
@@ -1495,6 +1496,7 @@ function InputRange(unit, _a = {}) {
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.5rem;
                 position: relative;
+                margin: 0.125em 0;
             `,
         },
         frame: {
@@ -1559,6 +1561,7 @@ function InputCheckbox(unit, _a = {}) {
             layer: 'base',
             body: `
                 box-sizing: border-box; width: 1.5rem; height: 1.5rem;
+                margin: 0.125em 0;
             `,
         },
         check: {
@@ -1607,6 +1610,7 @@ function InputText(unit, _a = {}) {
             layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
+                margin: 0.125em 0;
             `,
         },
         field: {
@@ -1634,6 +1638,7 @@ function InputNumber(unit, _a = {}) {
             layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
+                margin: 0.125em 0;
             `,
         },
         field: {
@@ -1663,6 +1668,7 @@ function InputSwitch(unit, _a = {}) {
             layer: 'base',
             body: `
                 box-sizing: border-box; width: 3rem; height: 1.5rem;
+                margin: 0.125em 0;
             `,
         },
         frame: {
@@ -1780,6 +1786,7 @@ function InputSelect(unit, _a = {}) {
             layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
+                margin: 0.125em 0;
             `,
         },
         frame: {

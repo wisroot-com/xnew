@@ -26,6 +26,7 @@ export function Button(unit: xnew.Unit,
             layer: 'base',
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.8rem;
+                margin: 0.125em 0;
             `,
         },
         // transparent + inherit so the native control sits on any surface

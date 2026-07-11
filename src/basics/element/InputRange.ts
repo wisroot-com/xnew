@@ -31,6 +31,7 @@ export function InputRange(unit: xnew.Unit,
             body: `
                 box-sizing: border-box; width: 10rem; height: 1.5rem;
                 position: relative;
+                margin: 0.125em 0;
             `,
         },
         // static full-extent layer (default: a faint outline of the max extent)
