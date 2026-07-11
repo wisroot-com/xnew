@@ -332,7 +332,7 @@ function TitleCharacters(unit) {
   for (const spot of spots) xnew(DriftingFactor, spot);
 
   // 中央の中国うさぎ（下1/3が画面下に隠れるよう中心を下げる）
-  xpixi.load(asset('usagi03.png')).then((texture) => {
+  xnew.promise(PIXI.Assets.load(asset('usagi03.png'))).then((texture) => {
     const usagi = xpixi.add(new PIXI.Sprite(texture));
     usagi.anchor.set(0.5);
     const H = 456;                               // 表示する高さ(px)（元の 380 の約1.2倍）
@@ -448,7 +448,7 @@ function StoryPageHit(unit) {
   flashG.alpha = 0;
 
   let usagi = null;
-  xpixi.load(asset('usagi03.png')).then((loaded) => {
+  xnew.promise(PIXI.Assets.load(asset('usagi03.png'))).then((loaded) => {
     usagi = xpixi.add(new PIXI.Sprite(loaded));
     usagi.anchor.set(0.5);
     usagi.scale.set(340 / usagi.texture.height); // やや大きめに
@@ -456,7 +456,7 @@ function StoryPageHit(unit) {
   });
 
   let arrow = null;
-  xpixi.load(asset('zunda_arrow.png')).then((loaded) => {
+  xnew.promise(PIXI.Assets.load(asset('zunda_arrow.png'))).then((loaded) => {
     arrow = xpixi.add(new PIXI.Sprite(loaded));
     arrow.anchor.set(0.86, 0.5); // 先端（ずんだ玉）側を基準に
     arrow.scale.set(200 / arrow.texture.width);
@@ -1065,7 +1065,7 @@ function UsagiFace(unit) {
 
   let back = null, front = null, current = 0;
 
-  xpixi.load(urls).then((loaded) => {
+  xnew.promise(PIXI.Assets.load(urls)).then((loaded) => {
     const textures = urls.map((u) => loaded[u]);
     const fit = (s, t) => {
       s.texture = t;
@@ -1102,7 +1102,7 @@ function BackgroundBase(unit) {
   // 下地（カメラシェイクで端が露出しても黒く抜けないよう少し広めに）
   xpixi.add(new PIXI.Graphics().rect(-40, -40, 880, 680).fill(0x0A0306));
 
-  xpixi.load(asset('zunda_background.png')).then((texture) => {
+  xnew.promise(PIXI.Assets.load(asset('zunda_background.png'))).then((texture) => {
     const sprite = xpixi.add(new PIXI.Sprite(texture));
     sprite.scale.set(800 / texture.width, 600 / texture.height); // canvas にフィット
 

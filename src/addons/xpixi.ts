@@ -8,9 +8,6 @@
 // - initialize({ canvas })    : mount the Root unit owning an auto-detected renderer + root Container
 // - nest(displayObject)       : attach AND make this object the current parent
 // - add(displayObject)        : attach only; the current parent stays unchanged (siblings)
-// - remove(displayObject)     : detach and destroy on demand
-// - load(source)              : load textures via PIXI.Assets, awaited by the unit's promise
-// - finalize()                : tear down the Root unit (renderer destroy)
 // - renderer / scene / canvas : Root unit accessors
 //
 // Caveat: nest is stateful — two nest calls in the same unit create two nesting levels;
@@ -40,15 +37,6 @@ export const xpixi = {
         xnew(Add, { object });
         return object;
     },
-    remove(object: any) {
-        removeObject(object);
-    },
-    load(source: string | string[]): any {
-        return xnew.promise(PIXI.Assets.load(source));
-    },
-    finalize() {
-        xnew.context(Root)?.release();
-    },
     get renderer() {
         return xnew.context(Root)?.renderer;
     },
@@ -71,7 +59,7 @@ function Root(unit: xnew.Unit, { canvas }: { canvas: HTMLCanvasElement }) {
 
     const scene = new PIXI.Container();
 
-    // release the renderer on both explicit finalize() and normal tree teardown (null until async creation completes)
+    // null until async creation completes
     unit.on('finalize', () => {
         renderer?.destroy();
     });
@@ -80,7 +68,6 @@ function Root(unit: xnew.Unit, { canvas }: { canvas: HTMLCanvasElement }) {
         get renderer() { return renderer; },
         get scene() { return scene; },
         get canvas() { return canvas; },
-        release: () => unit.finalize(),
     }
 }
 

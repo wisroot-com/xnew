@@ -90,11 +90,3 @@ function Hud(unit) {
   label.position.set(16, 8);
 }
 ```
-
-### `xpixi.remove(pixiObject)`
-
-`pixiObject` をその時点の親から外して `destroy({ children: true })` で破棄します（`nest` / `add` した unit が破棄されるときの処理を、任意のタイミングで手動で行うもの）。texture は既定どおり温存されるので、共有テクスチャは壊れません。
-
-```js
-xpixi.remove(sprite); // 親から外して破棄
-```

@@ -1,6 +1,6 @@
 // @ts-nocheck
 // pixi.js は ESM 依存(earcut 等)を引き込み jest で transform できないため、nest/add の検証に必要な
-// 最小限（Container の親子・破棄、autoDetectRenderer、Assets）だけをモックする。
+// 最小限（Container の親子・破棄、autoDetectRenderer）だけをモックする。
 jest.mock('pixi.js', () => {
     class Container {
         constructor() { this.parent = null; this.children = []; this.destroyed = false; }
@@ -11,7 +11,6 @@ jest.mock('pixi.js', () => {
     const renderer = { render() {}, destroy() {} };
     return {
         Container,
-        Assets: { load: () => Promise.resolve({}) },
         autoDetectRenderer: () => Promise.resolve(renderer),
         __renderer: renderer, // finalize テストで destroy を spy するため共有 renderer を公開
     };
@@ -117,20 +116,6 @@ test('finalize: ユニット破棄で親から外れる', () => {
     expect(obj.parent).toBe(null);
 });
 
-test('finalize: xpixi.finalize で renderer が destroy される', async () => {
-    const canvas = setup();
-    const destroySpy = jest.spyOn(PIXI.__renderer, 'destroy');
-
-    xnew((u) => {
-        xpixi.initialize({ canvas });
-        xnew.promise(u).then(() => { xpixi.finalize(); }); // renderer 解決後に scope 内で finalize
-    });
-    await flush();
-
-    expect(destroySpy).toHaveBeenCalled();
-    destroySpy.mockRestore();
-});
-
 test('finalize: ユニット破棄でも renderer が destroy される（自動解放）', async () => {
     const canvas = setup();
     const destroySpy = jest.spyOn(PIXI.__renderer, 'destroy');
@@ -141,21 +126,4 @@ test('finalize: ユニット破棄でも renderer が destroy される（自動
 
     expect(destroySpy).toHaveBeenCalled();
     destroySpy.mockRestore();
-});
-
-test('remove: その時点の親から外して destroy する', () => {
-    const canvas = setup();
-    const obj = new PIXI.Container();
-    let scene;
-
-    xnew(() => {
-        xpixi.initialize({ canvas });
-        scene = xpixi.scene;
-        xpixi.add(obj);
-        xpixi.remove(obj);
-    });
-
-    expect(scene.children).not.toContain(obj);
-    expect(obj.parent).toBe(null);
-    expect(obj.destroyed).toBe(true);
 });
