@@ -310,9 +310,12 @@ declare function InputText(unit: xnew.Unit, { className, style, designs, ...othe
     [key: string]: any;
 }): void;
 
-declare function InputNumber(unit: xnew.Unit, { className, style, ...others }?: {
+declare function InputNumber(unit: xnew.Unit, { className, style, designs, ...others }?: {
     className?: string;
     style?: string;
+    designs?: {
+        field?: Design;
+    };
     [key: string]: any;
 }): void;
 

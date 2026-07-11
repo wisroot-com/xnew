@@ -12,12 +12,6 @@ describe('basics InputNumber', () => {
         jest.useRealTimers();
     });
 
-    // container > [down button, input, up button]
-    function spinButtonsOf(unit: xnew.Unit): HTMLElement[] {
-        const container = unit.element.parentElement as HTMLElement;
-        return [container.firstElementChild, container.lastElementChild] as HTMLElement[];
-    }
-
     it('nests a native number input with the given attributes', () => {
         const unit = xnew(InputNumber, { value: 30, min: 10, max: 50, step: 5, name: 'count' });
         const input = unit.element as HTMLInputElement;
@@ -69,48 +63,19 @@ describe('basics InputNumber', () => {
         expect(Number.isNaN(received[0])).toBe(true);
     });
 
-    it('renders custom spin buttons flanking the field', () => {
-        const unit = xnew(InputNumber);
-        const [down, up] = spinButtonsOf(unit);
-
-        expect(down.nextElementSibling).toBe(unit.element);
-        expect(up.previousElementSibling).toBe(unit.element);
-        expect(down.querySelector('svg')).not.toBeNull();
-        expect(up.querySelector('svg')).not.toBeNull();
-    });
-
-    it('steps the value with the spin buttons and emits input', () => {
-        const unit = xnew(InputNumber, { value: 10, min: 0, max: 100, step: 5 });
-        const input = unit.element as HTMLInputElement;
-
-        const received: number[] = [];
-        unit.on('input', ({ value }: { value: number }) => received.push(value));
-        jest.advanceTimersByTime(0);
-
-        const [down, up] = spinButtonsOf(unit);
-        up.dispatchEvent(new MouseEvent('click', { bubbles: false }));
-        expect(input.value).toBe('15');
-        down.dispatchEvent(new MouseEvent('click', { bubbles: false }));
-        expect(input.value).toBe('10');
-        expect(received).toEqual([15, 10]);
-    });
-
-    it('clamps spin button stepping at min', () => {
-        const unit = xnew(InputNumber, { value: 2, min: 0, step: 5 });
-        jest.advanceTimersByTime(0);
-
-        const [down] = spinButtonsOf(unit);
-        down.dispatchEvent(new MouseEvent('click', { bubbles: false }));
-        down.dispatchEvent(new MouseEvent('click', { bubbles: false }));
-
-        expect((unit.element as HTMLInputElement).value).toBe('0');
-    });
-
     it('applies className and style to the container', () => {
-        const unit = xnew(InputNumber, { className: 'field', style: 'width: 4em;' });
+        const unit = xnew(InputNumber, { className: 'boxed', style: 'width: 4em;' });
         const container = unit.element.parentElement as HTMLElement;
 
-        expect(container.className).toContain('field');
+        expect(container.className).toContain('boxed');
         expect(container.getAttribute('style')).toContain('width: 4em;');
+    });
+
+    it('applies designs to the field part', () => {
+        const unit = xnew(InputNumber, { designs: { field: { className: 'mono', style: 'text-align: left;' } } });
+        const input = unit.element as HTMLInputElement;
+
+        expect(input.className).toContain('mono');
+        expect(input.getAttribute('style')).toContain('text-align: left;');
     });
 });

@@ -1484,7 +1484,7 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className
         container: {
             layer: 'xbasics',
             body: `
-                box-sizing: border-box; width: 10rem; height: 1.5rem;
+                box-sizing: border-box; width: 10rem; height: 1.8rem;
                 position: relative;
                 cursor: pointer; user-select: none;
             `,
@@ -1582,33 +1582,22 @@ function InputText(unit, _a = {}) {
 }
 
 function InputNumber(unit, _a = {}) {
-    var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
+    var _b, _c, _d;
+    var { className = '', style = '', designs = {} } = _a, others = __rest(_a, ["className", "style", "designs"]);
     const cls = xnew.css({
         container: {
             layer: 'xbasics',
             body: `
+                box-sizing: border-box; width: 10rem; height: 1.8rem;
+            `,
+        },
+        field: {
+            layer: 'xbasics',
+            body: `
                 box-sizing: border-box; width: 100%; height: 100%;
-                display: flex; align-items: stretch; overflow: hidden;
-                border: 1px solid currentColor; border-radius: 0.25em;
-            `,
-        },
-        spin: {
-            layer: 'xbasics',
-            body: `
-                width: 2em;
-                display: flex; align-items: center; justify-content: center;
-                cursor: pointer; user-select: none;
-                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-                &:active { filter: brightness(0.5); }
-            `,
-        },
-        input: {
-            layer: 'xbasics',
-            body: `
-                box-sizing: border-box; height: 100%;
-                flex: 1 1 0; width: auto; min-width: 0;
                 text-align: center; padding: 0 0.5em; margin: 0;
                 background: transparent; color: inherit; font: inherit;
+                border: 1px solid currentColor; border-radius: 0.25em;
                 outline: none;
                 -moz-appearance: textfield; appearance: textfield;
                 &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
@@ -1616,30 +1605,8 @@ function InputNumber(unit, _a = {}) {
             `,
         },
     });
-    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
-    let element;
-    const spinButton = (direction, path) => {
-        const button = xnew(container, () => {
-            xnew.nest(`<div class="${cls.spin}">`);
-            xnew((unit) => {
-                xnew.extend(SVG, { viewBox: '0 0 12 12', stroke: 'currentColor', style: 'width: 0.9em; height: 0.9em;' });
-                xnew(`<path d="${path}"/>`);
-            });
-        });
-        button.on('click', () => {
-            if (direction > 0) {
-                element.stepUp();
-            }
-            else {
-                element.stepDown();
-            }
-            element.dispatchEvent(new Event('input', { bubbles: true }));
-        });
-    };
-    spinButton(-1, 'M7.5 3 4.5 6 7.5 9');
-    xnew.nest(Object.assign({ tag: 'input', type: 'number', className: cls.input }, others));
-    element = unit.element;
-    spinButton(+1, 'M4.5 3 7.5 6 4.5 9');
+    xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
+    xnew.nest(Object.assign({ tag: 'input', type: 'number', className: `${cls.field} ${(_c = (_b = designs.field) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.field) === null || _d === void 0 ? void 0 : _d.style }, others));
 }
 
 function InputSwitch(unit, { value = false, name = '', className = '', style = '' } = {}) {
