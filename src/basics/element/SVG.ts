@@ -5,7 +5,8 @@
 // so callers can drop in <path> / <polygon> / <circle> children without re-specifying the same
 // presentation attributes on every shape.
 //
-// - SVG               : component({ viewBox, stroke, fill, ... }) — generic SVG root
+// - SVG               : component({ viewBox, stroke, fill, ..., ...rest }) — generic SVG root;
+//                       rest members pass through to the <svg> as attributes
 // - SVGStyleInterface : the basic stroke / fill presentation props, shared with the
 //                       SVG-drawn components (SVGText / AnalogStick / DPad)
 //
@@ -35,20 +36,23 @@ export function SVG(unit: xnew.Unit,
         strokeLinejoin = 'round',
         strokeLinecap = 'round',
         fill = 'none',
-        fillOpacity = 1
+        fillOpacity = 1,
+        ...others
     }:
-    { viewBox?: string; className?: string; style?: string; } & SVGStyleInterface = {}
+    { viewBox?: string; className?: string; style?: string; [key: string]: any } & SVGStyleInterface = {}
 ) {
-    xnew.nest(`<svg
-        viewBox="${viewBox}"
-        class="${className}"
-        style="${style}"
-        stroke="${stroke}"
-        stroke-opacity="${strokeOpacity}"
-        stroke-width="${strokeWidth}"
-        stroke-linejoin="${strokeLinejoin}"
-        stroke-linecap="${strokeLinecap}"
-        fill="${fill}"
-        fill-opacity="${fillOpacity}"
-    >`);
+    xnew.nest({
+        tag: 'svg',
+        viewBox,
+        className,
+        style,
+        stroke,
+        strokeOpacity,
+        strokeWidth,
+        strokeLinejoin,
+        strokeLinecap,
+        fill,
+        fillOpacity,
+        ...others,
+    });
 }

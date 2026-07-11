@@ -238,6 +238,26 @@ function isElementDef(value) {
     return typeof value === 'object' && value !== null && isDomElement(value) === false && typeof value.tag === 'string';
 }
 const tagName = /^[A-Za-z][A-Za-z0-9]*$/;
+const svgCamelAttributes = new Set([
+    'attributeName', 'attributeType', 'baseFrequency', 'baseProfile', 'calcMode', 'clipPathUnits',
+    'diffuseConstant', 'edgeMode', 'filterUnits', 'glyphRef', 'gradientTransform', 'gradientUnits',
+    'kernelMatrix', 'kernelUnitLength', 'keyPoints', 'keySplines', 'keyTimes', 'lengthAdjust',
+    'limitingConeAngle', 'markerHeight', 'markerUnits', 'markerWidth', 'maskContentUnits', 'maskUnits',
+    'numOctaves', 'pathLength', 'patternContentUnits', 'patternTransform', 'patternUnits',
+    'pointsAtX', 'pointsAtY', 'pointsAtZ', 'preserveAlpha', 'preserveAspectRatio', 'primitiveUnits',
+    'refX', 'refY', 'repeatCount', 'repeatDur', 'requiredExtensions', 'specularConstant',
+    'specularExponent', 'spreadMethod', 'startOffset', 'stdDeviation', 'stitchTiles', 'surfaceScale',
+    'systemLanguage', 'tableValues', 'targetX', 'targetY', 'textLength', 'viewBox',
+    'xChannelSelector', 'yChannelSelector', 'zoomAndPan',
+]);
+function svgAttributeName(key) {
+    if (svgCamelAttributes.has(key)) {
+        return key;
+    }
+    else {
+        return key.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
+    }
+}
 function buildTag(tag) {
     if (isElementDef(tag) === true) {
         if (tagName.test(tag.tag) === false) {
@@ -563,7 +583,10 @@ class Unit {
         }
         unit._.nestElements.push(element);
         for (const [key, value] of members) {
-            if (key in element) {
+            if (element instanceof SVGElement) {
+                element.setAttribute(svgAttributeName(key), String(value));
+            }
+            else if (key in element) {
                 element[key] = value;
             }
             else {
@@ -1432,19 +1455,18 @@ function Image(unit, _a) {
     });
 }
 
-function SVG(unit, { viewBox = '0 0 64 64', className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'none', fillOpacity = 1 } = {}) {
-    xnew.nest(`<svg
-        viewBox="${viewBox}"
-        class="${className}"
-        style="${style}"
-        stroke="${stroke}"
-        stroke-opacity="${strokeOpacity}"
-        stroke-width="${strokeWidth}"
-        stroke-linejoin="${strokeLinejoin}"
-        stroke-linecap="${strokeLinecap}"
-        fill="${fill}"
-        fill-opacity="${fillOpacity}"
-    >`);
+function SVG(unit, _a = {}) {
+    var { viewBox = '0 0 64 64', className = '', style = '', stroke = 'none', strokeOpacity = 1, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = 'none', fillOpacity = 1 } = _a, others = __rest(_a, ["viewBox", "className", "style", "stroke", "strokeOpacity", "strokeWidth", "strokeLinejoin", "strokeLinecap", "fill", "fillOpacity"]);
+    xnew.nest(Object.assign({ tag: 'svg', viewBox,
+        className,
+        style,
+        stroke,
+        strokeOpacity,
+        strokeWidth,
+        strokeLinejoin,
+        strokeLinecap,
+        fill,
+        fillOpacity }, others));
 }
 
 function SVGText(unit, _a = {}) {

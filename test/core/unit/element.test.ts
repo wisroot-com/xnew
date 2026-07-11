@@ -126,6 +126,28 @@ describe('Unit element hosting', () => {
             expect(nested.textContent).toBe('hello');
         });
 
+        it('sets members as attributes on SVG elements (their DOM properties are read-only)', () => {
+            let nested!: SVGElement;
+            xnew(() => {
+                nested = xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', 'stroke-width': 2 }) as SVGElement;
+            });
+            expect(nested instanceof SVGElement).toBe(true);
+            expect(nested.getAttribute('viewBox')).toBe('0 0 12 12');
+            expect(nested.getAttribute('stroke-width')).toBe('2');
+        });
+
+        it('converts camelCase SVG members to kebab-case, keeping natively camelCase attributes', () => {
+            let nested!: SVGElement;
+            xnew(() => {
+                nested = xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', preserveAspectRatio: 'none', strokeWidth: 2, fillOpacity: 0.5 }) as SVGElement;
+            });
+            expect(nested.getAttribute('viewBox')).toBe('0 0 12 12');
+            expect(nested.getAttribute('preserveAspectRatio')).toBe('none');
+            expect(nested.getAttribute('stroke-width')).toBe('2');
+            expect(nested.getAttribute('fill-opacity')).toBe('0.5');
+            expect(nested.hasAttribute('strokeWidth')).toBe(false);
+        });
+
         it('throws on an invalid tag name', () => {
             expect(() => xnew(() => { xnew.nest({ tag: 'in put' }); })).toThrow('invalid tag name');
         });

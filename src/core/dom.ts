@@ -36,6 +36,31 @@ export function isElementDef(value: unknown): value is DomElementDef {
 
 const tagName = /^[A-Za-z][A-Za-z0-9]*$/;
 
+// SVG attribute names that are natively camelCase (kept as-is by svgAttributeName)
+const svgCamelAttributes = new Set([
+    'attributeName', 'attributeType', 'baseFrequency', 'baseProfile', 'calcMode', 'clipPathUnits',
+    'diffuseConstant', 'edgeMode', 'filterUnits', 'glyphRef', 'gradientTransform', 'gradientUnits',
+    'kernelMatrix', 'kernelUnitLength', 'keyPoints', 'keySplines', 'keyTimes', 'lengthAdjust',
+    'limitingConeAngle', 'markerHeight', 'markerUnits', 'markerWidth', 'maskContentUnits', 'maskUnits',
+    'numOctaves', 'pathLength', 'patternContentUnits', 'patternTransform', 'patternUnits',
+    'pointsAtX', 'pointsAtY', 'pointsAtZ', 'preserveAlpha', 'preserveAspectRatio', 'primitiveUnits',
+    'refX', 'refY', 'repeatCount', 'repeatDur', 'requiredExtensions', 'specularConstant',
+    'specularExponent', 'spreadMethod', 'startOffset', 'stdDeviation', 'stitchTiles', 'surfaceScale',
+    'systemLanguage', 'tableValues', 'targetX', 'targetY', 'textLength', 'viewBox',
+    'xChannelSelector', 'yChannelSelector', 'zoomAndPan',
+]);
+
+// maps an element definition member name to the SVG attribute to set: natively camelCase SVG
+// attributes (viewBox, …) pass through, every other camelCase name becomes kebab-case
+// (strokeWidth -> stroke-width)
+export function svgAttributeName(key: string): string {
+    if (svgCamelAttributes.has(key)) {
+        return key;
+    } else {
+        return key.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
+    }
+}
+
 // resolves a tag string or a definition object into insertable HTML text plus the members to
 // assign after creation (invalid inputs throw here). In the object form, className / style are
 // embedded in the text (escaped); every other member is returned for post-assignment, so

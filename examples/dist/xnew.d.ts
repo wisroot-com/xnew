@@ -271,10 +271,11 @@ interface SVGStyleInterface {
     fill?: string;
     fillOpacity?: number;
 }
-declare function SVG(unit: xnew.Unit, { viewBox, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: {
+declare function SVG(unit: xnew.Unit, { viewBox, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity, ...others }?: {
     viewBox?: string;
     className?: string;
     style?: string;
+    [key: string]: any;
 } & SVGStyleInterface): void;
 
 declare function SVGText(unit: xnew.Unit, { text, fontSize, ...othres }?: {

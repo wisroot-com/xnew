@@ -15,7 +15,7 @@
 
 import { MapSet, MapMap } from './map';
 import { Ticker, Timer } from './time';
-import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, buildTag } from './dom';
+import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, buildTag, svgAttributeName } from './dom';
 
 //----------------------------------------------------------------------------------------------------
 // definitions
@@ -204,7 +204,10 @@ export class Unit {
         unit._.nestElements.push(element);
 
         for (const [key, value] of members) {
-            if (key in element) {
+            // SVG DOM properties (viewBox, …) are read-only animated values; attributes are the setter
+            if (element instanceof SVGElement) {
+                element.setAttribute(svgAttributeName(key), String(value));
+            } else if (key in element) {
                 (element as any)[key] = value;
             } else {
                 element.setAttribute(key, String(value));
