@@ -250,20 +250,23 @@ declare function Button(unit: xnew.Unit, { text, className, style, designs, ...o
         button?: Design;
     };
     [key: string]: any;
-}): {
-    readonly container: HTMLElement | SVGElement;
-};
+}): void;
 
-declare function Chevron(unit: xnew.Unit, { direction, ...others }?: {
+declare function Chevron(unit: xnew.Unit, { direction, className, style, ...others }?: {
     direction?: 'up' | 'down' | 'left' | 'right';
+    className?: string;
+    style?: string;
     [key: string]: any;
 }): void;
 
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
-declare function Image(unit: xnew.Unit, { src, className, style, ...others }: {
+declare function Image(unit: xnew.Unit, { src, className, style, designs, ...others }: {
     src: ImageSource | Promise<ImageSource>;
     className?: string;
     style?: string;
+    designs?: {
+        image?: Design;
+    };
     [key: string]: any;
 }): void;
 
@@ -303,9 +306,7 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, className,
         status?: Design;
     };
     [key: string]: any;
-}): {
-    readonly container: HTMLElement | SVGElement;
-};
+}): void;
 
 declare function InputCheckbox(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
     value?: boolean;
@@ -315,9 +316,7 @@ declare function InputCheckbox(unit: xnew.Unit, { value, className, style, desig
         check?: Design;
     };
     [key: string]: any;
-}): {
-    readonly container: HTMLElement | SVGElement;
-};
+}): void;
 
 declare function InputText(unit: xnew.Unit, { className, style, designs, ...others }?: {
     className?: string;
@@ -326,9 +325,7 @@ declare function InputText(unit: xnew.Unit, { className, style, designs, ...othe
         field?: Design;
     };
     [key: string]: any;
-}): {
-    readonly container: HTMLElement | SVGElement;
-};
+}): void;
 
 declare function InputNumber(unit: xnew.Unit, { className, style, designs, ...others }?: {
     className?: string;
@@ -337,9 +334,7 @@ declare function InputNumber(unit: xnew.Unit, { className, style, designs, ...ot
         field?: Design;
     };
     [key: string]: any;
-}): {
-    readonly container: HTMLElement | SVGElement;
-};
+}): void;
 
 declare function InputSwitch(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
     value?: boolean;
@@ -350,9 +345,7 @@ declare function InputSwitch(unit: xnew.Unit, { value, className, style, designs
         knob?: Design;
     };
     [key: string]: any;
-}): {
-    readonly container: HTMLElement | SVGElement;
-};
+}): void;
 
 declare function InputRadio(unit: xnew.Unit, { value, items, name, className, style, designs }?: {
     value?: string;
@@ -364,9 +357,7 @@ declare function InputRadio(unit: xnew.Unit, { value, items, name, className, st
         frame?: Design;
         item?: Design;
     };
-}): {
-    readonly container: HTMLElement | SVGElement;
-};
+}): void;
 
 declare function InputSelect(unit: xnew.Unit, { value, items, className, style, designs, ...others }?: {
     value?: string;
@@ -380,9 +371,7 @@ declare function InputSelect(unit: xnew.Unit, { value, items, className, style, 
         item?: Design;
     };
     [key: string]: any;
-}): {
-    readonly container: HTMLElement | SVGElement;
-};
+}): void;
 
 declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
     url: string;
@@ -478,9 +467,7 @@ declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
     group({ name, open, params }: PanelOptions, inner: Function): Unit;
     button({ name }?: {
         name?: string;
-    }): Unit & {
-        readonly container: HTMLElement | SVGElement;
-    };
+    }): Unit;
     select({ name, value, items }?: {
         name?: string;
         value?: string;

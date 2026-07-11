@@ -15,6 +15,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { Container } from './Container';
 import { Design } from '../design';
 
 // radios are exclusive only within a shared name; unnamed groups get a generated one
@@ -25,14 +26,16 @@ export function InputRadio(unit: xnew.Unit,
     { value?: string, items?: string[], name?: string, className?: string, style?: string, designs?: { frame?: Design, item?: Design } } = {}
 ) {
     const initial = value ?? items[0] ?? '';
+
+    // sizing shell only; the default size is pending (fills the host for now)
+    xnew.extend(Container, {
+        base: `
+            box-sizing: border-box; width: 100%; height: 100%;
+        `,
+        className, style,
+    });
+
     const cls = xnew.css({
-        // sizing shell only; the default size is pending (fills the host for now)
-        container: {
-            layer: 'base',
-            body: `
-                box-sizing: border-box; width: 100%; height: 100%;
-            `,
-        },
         // framed row holding the item cells
         frame: {
             layer: 'base',
@@ -68,8 +71,6 @@ export function InputRadio(unit: xnew.Unit,
     });
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
 
-    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
-
     xnew.nest({ tag: 'div', className: `${cls.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
 
     const segments: [xnew.Unit, string][] = [];
@@ -91,6 +92,4 @@ export function InputRadio(unit: xnew.Unit,
     unit.on('input', ({ value }: { value: string }) => {
         update(value);
     });
-
-    return { get container() { return container; } };
 }

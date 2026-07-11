@@ -81,10 +81,23 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   Sharing across components: share the **definition object** (same defs → same names);
   for theming, custom properties (`--vars`) pass through unrenamed and inherit down the
   DOM — set them on a subtree root class, read via `var(--x, fallback)` in descendants.
-- **Every `basics/element` component wraps its parts in a mandatory size-only container**
-  (default `10rem × 1.8rem`; Checkbox `1.5rem × 1.5rem`; Switch `3rem × 1.5rem`; Radio fills
-  the host until its default is decided): `className` / `style` props decorate the container, and the
-  component returns `{ get container() { return container; } }`.
+- **Every `basics/element` component is Container-derived**: it starts with
+  `xnew.extend(Container, { base, className, style })` (`src/basics/element/Container.ts`,
+  internal-only — NOT an xbasics member) and nests its parts inside. Container's role is
+  strictly the **outer size and caller-side design** — those three props are its whole
+  signature; every other prop of the component (`value`, `name`, rest members, …) stays with
+  the inner parts (e.g. the native `<input>`, or SVG's nested `<svg>` which fills the
+  container and carries the presentation attributes). The container element is always a
+  `<div>`. `base` is the shell's `@layer base` declaration block (Button/Text/Number/Select
+  `10rem × 1.8rem`; Checkbox `1.5rem × 1.5rem`; Switch `3rem × 1.5rem`; Range
+  `10rem × 1.5rem`; Chevron `1em × 1em`; Radio / Image fill the host until their default is
+  decided; SVG / SVGText none). Container returns `{ get container }`, merged onto the unit
+  — the component must NOT return its own `container` getter (define collision), and one
+  unit must not extend two Container-derived components (same collision — e.g. Chevron
+  nests its `<svg>` manually instead of extending SVG). Note `unit.element` ends on the
+  innermost nested part, not the container — position/layout writes from outside must
+  target `unit.container` (bit AnalogStick's knob: left/top on the `<svg>` did nothing
+  once the absolute overlay style moved to the container div).
 - **Internal parts of a basics component are decorated via its `designs` prop** — one
   `Design` (`{ className?, style? }`, from `src/basics/design.ts`) per named part, e.g.
   InputRange's `designs: { frame?, meter? }`. Generated class names are page-unique, so

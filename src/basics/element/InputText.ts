@@ -14,21 +14,23 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { Container } from './Container';
 import { Design } from '../design';
 
 export function InputText(unit: xnew.Unit,
     { className = '', style = '', designs = {}, ...others }:
     { className?: string, style?: string, designs?: { field?: Design }, [key: string]: any } = {}
 ) {
+    // sizing shell only; the default size is an overridable @layer base rule
+    xnew.extend(Container, {
+        base: `
+            box-sizing: border-box; width: 10rem; height: 1.8rem;
+            margin: 0.125em 0;
+        `,
+        className, style,
+    });
+
     const cls = xnew.css({
-        // sizing shell only; the default size is an overridable @layer base rule
-        container: {
-            layer: 'base',
-            body: `
-                box-sizing: border-box; width: 10rem; height: 1.8rem;
-                margin: 0.125em 0;
-            `,
-        },
         // framed field; transparent + inherit so the native control sits on any surface
         field: {
             layer: 'base',
@@ -43,9 +45,5 @@ export function InputText(unit: xnew.Unit,
         },
     });
 
-    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
-
     xnew.nest({ tag: 'input', type: 'text', className: `${cls.field} ${designs.field?.className ?? ''}`, style: designs.field?.style, ...others });
-
-    return { get container() { return container; } };
 }

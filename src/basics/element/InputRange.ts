@@ -16,6 +16,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { Container } from './Container';
 import { Design } from '../design';
 
 export function InputRange(unit: xnew.Unit,
@@ -23,17 +24,19 @@ export function InputRange(unit: xnew.Unit,
     { value?: number, min?: number, max?: number, step?: number, className?: string, style?: string, designs?: { frame?: Design, meter?: Design, status?: Design }, [key: string]: any } = {}
 ) {
     const initial = value ?? min;
+
+    // sizing shell (position: relative only anchors the absolute parts);
+    // the default size is an overridable @layer base rule
+    xnew.extend(Container, {
+        base: `
+            box-sizing: border-box; width: 10rem; height: 1.5rem;
+            position: relative;
+            margin: 0.125em 0;
+        `,
+        className, style,
+    });
+
     const cls = xnew.css({
-        // sizing shell (position: relative only anchors the absolute parts);
-        // the default size is an overridable @layer base rule
-        container: {
-            layer: 'base',
-            body: `
-                box-sizing: border-box; width: 10rem; height: 1.5rem;
-                position: relative;
-                margin: 0.125em 0;
-            `,
-        },
         // static full-extent layer (default: a faint outline of the max extent)
         frame: {
             layer: 'base',
@@ -79,8 +82,6 @@ export function InputRange(unit: xnew.Unit,
         },
     });
 
-    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
-
     xnew({ tag: 'div', className: `${cls.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
 
     const meter = xnew({ tag: 'div', className: `${cls.meter} ${designs.meter?.className ?? ''}`, style: designs.meter?.style });
@@ -98,6 +99,4 @@ export function InputRange(unit: xnew.Unit,
     unit.on('input', ({ value }: { value: number }) => {
         update(value);
     });
-
-    return { get container() { return container; } };
 }

@@ -14,21 +14,19 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { Container } from './Container';
 import { Design } from '../design';
 
 export function Button(unit: xnew.Unit,
     { text = '', className = '', style = '', designs = {}, ...others }:
     { text?: string, className?: string, style?: string, designs?: { button?: Design }, [key: string]: any } = {}
 ) {
+    xnew.extend(Container, {
+        base: 'box-sizing: border-box; width: 10rem; height: 1.8rem; margin: 0.125em 0;',
+        className, style,
+    });
+
     const cls = xnew.css({
-        // sizing shell only; the default size is an overridable @layer base rule
-        container: {
-            layer: 'base',
-            body: `
-                box-sizing: border-box; width: 10rem; height: 1.8rem;
-                margin: 0.125em 0;
-            `,
-        },
         // transparent + inherit so the native control sits on any surface
         button: {
             layer: 'base',
@@ -45,9 +43,5 @@ export function Button(unit: xnew.Unit,
         },
     });
 
-    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
-
     xnew.nest({ tag: 'button', type: 'button', className: `${cls.button} ${designs.button?.className ?? ''}`, style: designs.button?.style, ...others }, text);
-
-    return { get container() { return container; } };
 }

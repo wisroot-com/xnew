@@ -15,6 +15,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { Container } from './Container';
 import { SVG } from './SVG';
 import { Design } from '../design';
 
@@ -22,15 +23,16 @@ export function InputCheckbox(unit: xnew.Unit,
     { value = false, className = '', style = '', designs = {}, ...others }:
     { value?: boolean, className?: string, style?: string, designs?: { check?: Design }, [key: string]: any } = {}
 ) {
+    // sizing shell only; the default size is an overridable @layer base rule
+    xnew.extend(Container, {
+        base: `
+            box-sizing: border-box; width: 1.5rem; height: 1.5rem;
+            margin: 0.125em 0;
+        `,
+        className, style,
+    });
+
     const cls = xnew.css({
-        // sizing shell only; the default size is an overridable @layer base rule
-        container: {
-            layer: 'base',
-            body: `
-                box-sizing: border-box; width: 1.5rem; height: 1.5rem;
-                margin: 0.125em 0;
-            `,
-        },
         // framed box carrying the SVG check mark (position: relative anchors the input overlay);
         // the checked state is expressed via data-checked
         check: {
@@ -56,8 +58,6 @@ export function InputCheckbox(unit: xnew.Unit,
         },
     });
 
-    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
-
     const check = xnew.nest({ tag: 'div', className: `${cls.check} ${designs.check?.className ?? ''}`, style: designs.check?.style });
 
     xnew((unit: xnew.Unit) => {
@@ -75,6 +75,4 @@ export function InputCheckbox(unit: xnew.Unit,
     unit.on('input', ({ value }: { value: boolean }) => {
         update(value);
     });
-
-    return { get container() { return container; } };
 }

@@ -58,12 +58,13 @@ export function AnalogStick(unit: xnew.Unit,
         const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
         const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
 
-        Object.assign(target.element.style, { filter: 'brightness(80%)', left: `${vector.x * size / 4}px`, top: `${vector.y * size / 4}px` });
+        // the overlay (position: absolute) sits on the SVG's container, so the move targets it
+        Object.assign(target.container.style, { filter: 'brightness(80%)', left: `${vector.x * size / 4}px`, top: `${vector.y * size / 4}px` });
         xnew.emit({ dragstart: '-down', dragmove: '-move' }[type] as string, { vector });
     });
 
     unit.on('dragend', () => {
-        Object.assign(target.element.style, { filter: '', left: '0px', top: '0px' });
+        Object.assign(target.container.style, { filter: '', left: '0px', top: '0px' });
         xnew.emit('-up', { vector: { x: 0, y: 0 } });
     });
 }

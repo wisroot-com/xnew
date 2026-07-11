@@ -16,21 +16,23 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { Container } from './Container';
 import { Design } from '../design';
 
 export function InputSwitch(unit: xnew.Unit,
     { value = false, className = '', style = '', designs = {}, ...others }:
     { value?: boolean, className?: string, style?: string, designs?: { frame?: Design, knob?: Design }, [key: string]: any } = {}
 ) {
+    // sizing shell only; the default size is an overridable @layer base rule
+    xnew.extend(Container, {
+        base: `
+            box-sizing: border-box; width: 3rem; height: 1.5rem;
+            margin: 0.125em 0;
+        `,
+        className, style,
+    });
+
     const cls = xnew.css({
-        // sizing shell only; the default size is an overridable @layer base rule
-        container: {
-            layer: 'base',
-            body: `
-                box-sizing: border-box; width: 3rem; height: 1.5rem;
-                margin: 0.125em 0;
-            `,
-        },
         // rounded track carrying the knob (position: relative anchors the knob and input overlay);
         // the on state is expressed via data-checked
         frame: {
@@ -64,8 +66,6 @@ export function InputSwitch(unit: xnew.Unit,
         },
     });
 
-    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
-
     const frame = xnew.nest({ tag: 'div', className: `${cls.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
 
     xnew({ tag: 'div', className: `${cls.knob} ${designs.knob?.className ?? ''}`, style: designs.knob?.style });
@@ -80,6 +80,4 @@ export function InputSwitch(unit: xnew.Unit,
     unit.on('input', ({ value }: { value: boolean }) => {
         update(value);
     });
-
-    return { get container() { return container; } };
 }

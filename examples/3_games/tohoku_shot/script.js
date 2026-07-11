@@ -583,7 +583,7 @@ function ResultScene(unit, { image, score, wave, kills, cleared }) {
     xnew.extend(xbasics.Split, { direction: 'column' });
     unit.pane({ size: 1 - RESULT_FOOTER_RATIO, direction: 'row' }, (upper) => {
       upper.pane({ size: 50 }, () => {
-        xnew(xbasics.Image, { src: image, className: 'absolute inset-x-0 bottom-[2cqw] mx-auto w-[46cqw] aspect-4/3 rounded-[1cqw] object-cover', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);' });
+        xnew(xbasics.Image, { src: image, className: 'absolute inset-x-0 bottom-[2cqw] mx-auto w-[46cqw] aspect-4/3', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);', designs: { image: { className: 'rounded-[1cqw] object-cover' } } });
       });
       upper.pane({ size: 50 }, () => {
         xnew(ResultDetail, { score, wave, kills, cleared });

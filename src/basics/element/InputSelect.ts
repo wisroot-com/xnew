@@ -17,6 +17,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { Container } from './Container';
 import { Chevron } from './Chevron';
 import { Design } from '../design';
 
@@ -25,15 +26,17 @@ export function InputSelect(unit: xnew.Unit,
     { value?: string, items?: string[], className?: string, style?: string, designs?: { frame?: Design, label?: Design, menu?: Design, item?: Design }, [key: string]: any } = {}
 ) {
     const initial = value ?? items[0] ?? '';
+
+    // sizing shell only; the default size is an overridable @layer base rule
+    xnew.extend(Container, {
+        base: `
+            box-sizing: border-box; width: 10rem; height: 1.8rem;
+            margin: 0.125em 0;
+        `,
+        className, style,
+    });
+
     const cls = xnew.css({
-        // sizing shell only; the default size is an overridable @layer base rule
-        container: {
-            layer: 'base',
-            body: `
-                box-sizing: border-box; width: 10rem; height: 1.8rem;
-                margin: 0.125em 0;
-            `,
-        },
         // framed button face (position: relative anchors nothing itself but keeps the click surface);
         // the hover tint is suppressed via data-open while the option list is open
         frame: {
@@ -78,8 +81,6 @@ export function InputSelect(unit: xnew.Unit,
             `,
         },
     });
-
-    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
 
     xnew.nest({ tag: 'div', className: `${cls.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
     const frame = unit.element as HTMLElement;
@@ -166,6 +167,4 @@ export function InputSelect(unit: xnew.Unit,
     unit.on('input', ({ value }: { value: string }) => {
         label.element.textContent = value;
     });
-
-    return { get container() { return container; } };
 }
