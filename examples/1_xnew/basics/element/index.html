@@ -31,92 +31,82 @@
     import { xnew, xbasics } from '@mulsense/xnew';
 
     xnew(document.querySelector('#main'), (unit) => {
-      xnew.nest('<div class="p-2">');
+      xnew.nest('<div class="m-2 p-4 w-[36rem] text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg flex flex-col gap-4">');
 
-      const textunit = xnew('<div class="m-0.5 p-1 rounded bg-gray-200">', 'Console');
-      textunit.on('+console', ({ text }) => textunit.element.textContent = text);
-
-      xnew(MyButtons);
-      xnew(MyInputs);
+      xnew(MyButton);
+      xnew(MyInputText);
+      xnew(MyInputNumber);
+      xnew(MyInputCheckbox);
+      xnew(MyInputSwitch);
+      xnew(MyInputRadio);
+      xnew(MyInputSelect);
+      xnew(MyInputRange);
     });
 
-    function MyButtons(unit) {
-      xnew.nest('<div class="m-0.5 mt-2 p-4 w-[40rem] text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg grid grid-cols-3 gap-4">');
+    // each block: the default look next to a designed variant
 
-      xnew('<div>', (unit) => {
-        xnew('<div class="mb-1">', 'Button');
-        xnew(xbasics.Button, { text: 'start', className: 'h-8' })
-          .on('click', () => xnew.emit('+console', { text: '"start" clicked' }));
-      });
-
-      // designs.button adds an unlayered page class that overrides the @layer xbasics defaults
-      xnew('<div>', (unit) => {
-        xnew('<div class="mb-1">', 'Button (designs)');
-        xnew(xbasics.Button, { text: 'pill', className: 'h-8', designs: { button: { className: 'custom' } } })
-          .on('click', () => xnew.emit('+console', { text: '"pill" clicked' }));
-      });
-
-      // Tailwind utilities work the same way through designs.button
-      xnew('<div>', (unit) => {
-        xnew('<div class="mb-1">', 'Button (designs: Tailwind)');
-        xnew(xbasics.Button, { text: 'inline', className: 'h-8', designs: { button: { className: 'rounded-full bg-yellow-100' } } })
-          .on('click', () => xnew.emit('+console', { text: '"inline" clicked' }));
-      });
+    function MyButton(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'Button');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(xbasics.Button, { text: 'default' });
+      xnew(xbasics.Button, { text: 'custom', designs: { button: { className: 'custom' } } });
     }
 
-    function MyInputs(unit) {
-      xnew.nest('<div class="m-0.5 mt-2 p-4 w-[40rem] text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg grid grid-cols-2 gap-4">');
+    function MyInputText(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputText');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(xbasics.InputText, { placeholder: 'default' });
+      xnew(xbasics.InputText, { placeholder: 'rounded', designs: { field: { style: 'border-radius: 9999px; padding: 0 0.8em;' } } });
+    }
 
-      xnew('<div>', (unit) => {
-        xnew('<div class="mb-1">', 'InputText');
-        xnew('<div class="h-8">', xbasics.InputText, { placeholder: 'type here' })
-          .on('input', ({ value }) => xnew.emit('+console', { text: `text changed to "${value}"` }));
-      });
+    function MyInputNumber(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputNumber');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(xbasics.InputNumber, { value: 10, min: 0, max: 100, step: 5 });
+      xnew(xbasics.InputNumber, { value: 50, min: 0, max: 100, className: 'text-rose-500' });
+    }
 
-      xnew('<div>', (unit) => {
-        xnew('<div class="mb-1">', 'InputNumber');
-        xnew('<div class="h-8 w-32">', xbasics.InputNumber, { value: 10, min: 0, max: 100, step: 5 })
-          .on('input', ({ value }) => xnew.emit('+console', { text: `number changed to ${value}` }));
-      });
+    function MyInputCheckbox(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputCheckbox');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(xbasics.InputCheckbox, { value: true });
+      xnew(xbasics.InputCheckbox, { value: true, designs: { check: { style: 'border-radius: 50%;' } } });
+    }
 
-      xnew('<div>', (unit) => {
-        xnew('<div class="mb-1">', 'InputSwitch');
-        xnew('<div class="w-12 h-6">', xbasics.InputSwitch, { value: true })
-          .on('input', ({ value }) => xnew.emit('+console', { text: `switch changed to ${value}` }));
-      });
+    function MyInputSwitch(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputSwitch');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew('<div class="w-12 h-6">', xbasics.InputSwitch, { value: true });
+      xnew('<div class="w-12 h-6">', xbasics.InputSwitch, { value: true, className: 'text-emerald-600' });
+    }
 
-      xnew('<div>', (unit) => {
-        xnew('<div class="mb-1">', 'InputRadio');
-        xnew('<div class="h-8">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'mid' })
-          .on('input', ({ value }) => xnew.emit('+console', { text: `radio changed to ${value}` }));
-      });
+    function MyInputRadio(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputRadio');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'mid' });
+      xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'high', className: 'text-indigo-500' });
+    }
 
-      xnew('<div>', (unit) => {
-        xnew('<div class="mb-1">', 'InputSelect');
-        xnew('<div class="h-8 w-40">', xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'] })
-          .on('input', ({ value }) => xnew.emit('+console', { text: `select changed to ${value}` }));
-      });
+    function MyInputSelect(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputSelect');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'] });
+      xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'], value: 'banana', className: 'text-indigo-500' });
+    }
 
-      xnew('<div>', (unit) => {
-        xnew('<div class="mb-1">', 'InputCheckbox');
-        xnew('<div class="w-6 h-6">', xbasics.InputCheckbox, { value: true })
-          .on('input', ({ value }) => xnew.emit('+console', { text: `checkbox changed to ${value}` }));
-      });
-
-      xnew('<div>', (unit) => {
-        xnew('<div class="mb-1">', 'InputRange');
-        xnew(xbasics.InputRange, { value: 30 })
-          .on('input', ({ value }) => xnew.emit('+console', { text: `range changed to ${value}` }));
-      });
-
-      // designs decorates the internal parts (background / meter) per instance
-      xnew('<div>', (unit) => {
-        xnew('<div class="mb-1">', 'InputRange (designs)');
-        xnew(xbasics.InputRange, {
-          value: 60,
-          designs: { meter: { style: 'background: #fbbf24; border-color: #b45309;' } },
-        }).on('input', ({ value }) => xnew.emit('+console', { text: `designed range changed to ${value}` }));
-      });
+    function MyInputRange(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputRange');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(xbasics.InputRange, { value: 30 });
+      xnew(xbasics.InputRange, { value: 60, designs: { meter: { style: 'background: #fbbf24; border-color: #b45309;' } } });
     }
   </script>
 </body>

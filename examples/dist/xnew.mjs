@@ -1493,7 +1493,7 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className
         container: {
             layer: 'xbasics',
             body: `
-                box-sizing: border-box; width: 10rem; height: 1.8rem;
+                box-sizing: border-box; width: 10rem; height: 1.5rem;
                 position: relative;
             `,
         },
