@@ -292,6 +292,11 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **Round `xbasics.Volume`'s `volume` before showing it in UI (e.g. `Math.round(v * 100)` for a
+  0–100 InputRange).** The backing `AudioParam` stores float32, so a set of `0.1` reads back as
+  `0.10000000149…` — feeding the raw read into InputRange's `value` displays a decimal-laden
+  status until the first drag (bit the 3_games VolumeController).
+
 - **Override the SVG-drawn basics' presentation defaults (stroke / fill / …) via `designs.svg`
   (or page css), never via svg attributes.** SVG / Chevron / SVGText keep those defaults in an
   `@layer base` css rule on the `<svg>`, and ANY css beats presentation attributes — an
