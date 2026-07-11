@@ -273,7 +273,7 @@ function BakedCharacters(unit) {
       if (f === BAKE_FRAMES - 1) {
         // endJob 相当: アトラスを GPU へ確定アップロードし、wrapper から外して GPU を解放。
         source.update();
-        xthree.remove(vrm.scene);
+        xthree.dispose(vrm.scene);
       }
     };
     // 時間予算（8ms）で毎フレーム分散し GPU スパイクを抑える。完了時 resolve するネイティブ

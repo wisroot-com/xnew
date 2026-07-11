@@ -18,10 +18,6 @@ const xthree = {
         xnew(Add, { object });
         return object;
     },
-    remove(object) {
-        var _a;
-        (_a = object.parent) === null || _a === void 0 ? void 0 : _a.remove(object);
-    },
     dispose(object) {
         var _a;
         (_a = object.parent) === null || _a === void 0 ? void 0 : _a.remove(object);

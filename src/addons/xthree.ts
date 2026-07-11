@@ -9,7 +9,6 @@
 // - initialize({ canvas, camera }) : mount the Root unit owning WebGLRenderer + Scene + Camera
 // - nest(object3D)                 : attach AND make this object the current parent
 // - add(object3D)                  : attach only; the current parent stays unchanged (siblings)
-// - remove(object3D)               : detach from its parent (no dispose)
 // - dispose(object3D)              : detach and dispose its geometry / material / texture
 // - coord2dTo3d / coord3dTo2d      : convert between canvas pixels and world space via the camera
 // - renderer / camera / scene / canvas : Root unit accessors
@@ -40,10 +39,6 @@ export const xthree = {
     add(object: any) {
         xnew(Add, { object });
         return object;
-    },
-    // detach only; GPU resources may be shared, so releasing them is left to dispose()
-    remove(object: any) {
-        object.parent?.remove(object);
     },
     // detach and release all GPU resources; assumes they are not shared elsewhere
     dispose(object: any) {

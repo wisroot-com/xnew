@@ -18,7 +18,6 @@ declare const xthree: {
     }): UnitPromise;
     nest(object: any): any;
     add(object: any): any;
-    remove(object: any): void;
     dispose(object: any): void;
     coord2dTo3d(x: number, y: number, z?: number): THREE.Vector3;
     coord3dTo2d(x: number, y: number, z: number): THREE.Vector2;
