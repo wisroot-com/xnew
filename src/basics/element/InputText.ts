@@ -13,8 +13,8 @@ export function InputText(unit: xnew.Unit,
     { className?: string, style?: string, designs?: { field?: Design }, [key: string]: any } = {}
 ) {
     xnew.extend(Container, {
-        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        base: 'box-sizing: border-box; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;',
+        // inline-block flows like a native control; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        base: 'box-sizing: border-box; display: inline-block; vertical-align: middle; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;',
         className, style,
     });
 

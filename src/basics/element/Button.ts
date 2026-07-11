@@ -13,8 +13,8 @@ export function Button(unit: xnew.Unit,
     { text?: string, className?: string, style?: string, designs?: { button?: Design }, [key: string]: any } = {}
 ) {
     xnew.extend(Container, {
-        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        base: 'box-sizing: border-box; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em;',
+        // inline-block flows like a native button; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        base: 'box-sizing: border-box; display: inline-block; vertical-align: middle; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em;',
         className, style,
     });
 

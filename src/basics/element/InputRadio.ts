@@ -18,8 +18,8 @@ export function InputRadio(unit: xnew.Unit,
     const initial = value ?? items[0] ?? '';
 
     xnew.extend(Container, {
-        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        base: 'box-sizing: border-box; width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 100%;',
+        // inline-block flows like a native control; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        base: 'box-sizing: border-box; display: inline-block; vertical-align: middle; width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 100%;',
         className, style,
     });
 

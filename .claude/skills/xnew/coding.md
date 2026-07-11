@@ -294,12 +294,14 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
-- **Every Container-derived base caps its width with the margin-box stack
-  `max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;` right after
-  `width`.** `width: 100%` (or a fixed width) plus a caller horizontal margin overflows the parent
-  on the right — `max-width: stretch` caps the *margin box* at the parent for any margin (bit
-  Button; the prefixed fallbacks cover Safari / Firefox). Keep the stack when adding a new
-  element component.
+- **Every `basics/element` shell base starts with the same prelude:
+  `box-sizing: border-box; display: inline-block; vertical-align: middle;` then `width: …;` then the
+  margin-box cap `max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;`.**
+  `inline-block` makes `xnew(Button)` flow like a native control (side by side in text flow; blockified
+  automatically inside flex/grid, so those layouts are unaffected); `middle` because label-less shells
+  (Checkbox/Switch) baseline on their bottom edge and ride high next to text; `max-width: stretch` caps
+  the *margin box* at the parent so a caller horizontal margin never overflows on the right (bit Button;
+  prefixed fallbacks cover Safari / Firefox). Keep the prelude when adding a new element component.
 
 - **In a Container-derived component, extend Container FIRST — internal wrappers (e.g. Aspect)
   nest inside it, never outside.** Container's div is the caller-side surface: with Aspect
