@@ -98,7 +98,7 @@
       xnew('<div class="mb-1">', 'InputSelect');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'] });
-      xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'], value: 'banana', className: 'text-indigo-500' });
+      xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'], value: 'banana', designs: { frame: { style: 'border-radius: 9999px;' }, item: { style: 'font-style: italic;' } } });
     }
 
     function MyInputRange(unit) {

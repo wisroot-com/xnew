@@ -365,12 +365,18 @@ declare function InputRadio(unit: xnew.Unit, { value, items, name, className, st
     readonly container: HTMLElement | SVGElement;
 };
 
-declare function InputSelect(unit: xnew.Unit, { value, items, name, className, style }?: {
+declare function InputSelect(unit: xnew.Unit, { value, items, className, style, designs, ...others }?: {
     value?: string;
     items?: string[];
-    name?: string;
     className?: string;
     style?: string;
+    designs?: {
+        frame?: Design;
+        label?: Design;
+        menu?: Design;
+        item?: Design;
+    };
+    [key: string]: any;
 }): {
     readonly container: HTMLElement | SVGElement;
 };

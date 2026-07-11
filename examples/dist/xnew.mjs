@@ -1772,23 +1772,60 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
     return { get container() { return container; } };
 }
 
-function InputSelect(unit, { value, items = [], name = '', className = '', style = '' } = {}) {
-    var _a;
-    const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
+function InputSelect(unit, _a = {}) {
+    var _b, _c, _d, _e, _f, _g, _h;
+    var { value, items = [], className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "items", "className", "style", "designs"]);
+    const initial = (_b = value !== null && value !== void 0 ? value : items[0]) !== null && _b !== void 0 ? _b : '';
     const cls = xnew.css({
-        container: { layer: 'xbasics', body: 'box-sizing: border-box; width: 10rem; height: 1.8rem;' },
-        fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
-        frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
-        clickable: { layer: 'xbasics', body: 'cursor: pointer; user-select: none;' },
-        hoverTint: { layer: 'xbasics', body: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }' },
-        tint: { layer: 'xbasics', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
-        scroll: { layer: 'xbasics', body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
+        container: {
+            layer: 'xbasics',
+            body: `
+                box-sizing: border-box; width: 10rem; height: 1.8rem;
+            `,
+        },
+        frame: {
+            layer: 'xbasics',
+            body: `
+                box-sizing: border-box; width: 100%; height: 100%;
+                position: relative;
+                display: flex; align-items: center;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                cursor: pointer; user-select: none;
+                &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            `,
+        },
+        label: {
+            layer: 'xbasics',
+            body: `
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            `,
+        },
+        menu: {
+            layer: 'xbasics',
+            body: `
+                position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000;
+                max-height: 12em;
+                border: 1px solid currentColor;
+                overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
+            `,
+        },
+        item: {
+            layer: 'xbasics',
+            body: `
+                height: 2em; padding: 0 0.5em;
+                display: flex; align-items: center;
+                white-space: nowrap;
+                cursor: pointer; user-select: none;
+                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            `,
+        },
     });
     const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
-    xnew.nest(`<div class="${cls.fill} ${cls.frame} ${cls.clickable} ${cls.hoverTint}" style="position: relative; display: flex; align-items: center;">`);
+    xnew.nest({ tag: 'div', className: `${cls.frame} ${(_d = (_c = designs.frame) === null || _c === void 0 ? void 0 : _c.className) !== null && _d !== void 0 ? _d : ''}`, style: (_e = designs.frame) === null || _e === void 0 ? void 0 : _e.style });
     const frame = unit.element;
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
-    const label = xnew(labelBox, '<div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">', initial);
+    const label = xnew(labelBox, { tag: 'div', className: `${cls.label} ${(_g = (_f = designs.label) === null || _f === void 0 ? void 0 : _f.className) !== null && _g !== void 0 ? _g : ''}`, style: (_h = designs.label) === null || _h === void 0 ? void 0 : _h.style }, initial);
     for (const item of items) {
         xnew(labelBox, '<div style="visibility: hidden; height: 0; white-space: nowrap;">', item);
     }
@@ -1813,10 +1850,11 @@ function InputSelect(unit, { value, items = [], name = '', className = '', style
     };
     const openDropdown = () => {
         dropdown = xnew(frame, (list) => {
-            frame.classList.remove(cls.hoverTint);
-            list.on('finalize', () => frame.classList.add(cls.hoverTint));
+            var _a, _b, _c, _d, _e, _f, _g;
+            frame.toggleAttribute('data-open', true);
+            list.on('finalize', () => frame.toggleAttribute('data-open', false));
             list.on('pointerdown.outside', () => closeDropdown());
-            const menu = xnew.nest(`<div class="${cls.frame} ${cls.scroll}" style="position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000; max-height: 12em; border-radius: 0; background: ${surfaceColor()};">`);
+            const menu = xnew.nest({ tag: 'div', className: `${cls.menu} ${(_b = (_a = designs.menu) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: `background: ${surfaceColor()}; ${(_d = (_c = designs.menu) === null || _c === void 0 ? void 0 : _c.style) !== null && _d !== void 0 ? _d : ''}` });
             const anchor = () => {
                 const rect = frame.getBoundingClientRect();
                 menu.style.left = `${rect.left}px`;
@@ -1826,7 +1864,8 @@ function InputSelect(unit, { value, items = [], name = '', className = '', style
             anchor();
             list.on('update', anchor);
             for (const item of items) {
-                const option = xnew(`<div class="${cls.clickable} ${cls.hoverTint}${item === select.value ? ` ${cls.tint}` : ''}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; white-space: nowrap;">`, item);
+                const option = xnew({ tag: 'div', className: `${cls.item} ${(_f = (_e = designs.item) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.item) === null || _g === void 0 ? void 0 : _g.style }, item);
+                option.element.toggleAttribute('data-checked', item === select.value);
                 option.on('click', ({ event }) => {
                     event.stopPropagation();
                     select.value = item;
@@ -1844,9 +1883,9 @@ function InputSelect(unit, { value, items = [], name = '', className = '', style
             closeDropdown();
         }
     });
-    xnew.nest(`<select${name ? ` name="${name}"` : ''} style="display: none;">`);
+    xnew.nest(Object.assign({ tag: 'select', style: 'display: none;' }, others));
     for (const item of items) {
-        xnew(`<option value="${item}"${item === initial ? ' selected' : ''}>`, item);
+        xnew({ tag: 'option', value: item, selected: item === initial }, item);
     }
     select = unit.element;
     unit.on('input', ({ value }) => {

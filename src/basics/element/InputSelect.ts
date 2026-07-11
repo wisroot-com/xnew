@@ -4,9 +4,13 @@
 // A framed button (current value + down chevron) opens a floating option list styled like the
 // other Input* elements — the native popup cannot be styled — while the hidden select keeps
 // native form semantics.
+// The open / selected looks live in css rules keyed on data-open / data-checked attributes,
+// so designs stay intact.
 //
-// - InputSelect : component({ value, items, name, className, style }) — className / style decorate
-//                 the container; emits 'input' with { value } (string); returns { get container }
+// - InputSelect : component({ value, items, className, style, designs, ...rest }) — className /
+//                 style decorate the container; designs: { frame?, label?, menu?, item? } — a
+//                 Design ({ className?, style? }) per part; rest members (name, …) pass through
+//                 to the <select>; emits 'input' with { value } (string); returns { get container }
 //
 // Usage: const sel = xnew(xbasics.InputSelect, { items: ['low', 'mid', 'high'] });
 //        sel.on('input', ({ value }) => ...);
@@ -14,30 +18,73 @@
 
 import { xnew } from '../../core/xnew';
 import { SVG } from './SVG';
+import { Design } from '../design';
 
 export function InputSelect(unit: xnew.Unit,
-    { value, items = [], name = '', className = '', style = '' }:
-    { value?: string, items?: string[], name?: string, className?: string, style?: string } = {}
+    { value, items = [], className = '', style = '', designs = {}, ...others }:
+    { value?: string, items?: string[], className?: string, style?: string, designs?: { frame?: Design, label?: Design, menu?: Design, item?: Design }, [key: string]: any } = {}
 ) {
     const initial = value ?? items[0] ?? '';
     const cls = xnew.css({
         // sizing shell only; the default size is an overridable @layer xbasics rule
-        container: { layer: 'xbasics', body: 'box-sizing: border-box; width: 10rem; height: 1.8rem;' },
-        fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
-        frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
-        clickable: { layer: 'xbasics', body: 'cursor: pointer; user-select: none;' },
-        hoverTint: { layer: 'xbasics', body: '&:hover { background: color-mix(in srgb, currentColor 20%, transparent); }' },
-        tint: { layer: 'xbasics', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
-        scroll: { layer: 'xbasics', body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
+        container: {
+            layer: 'xbasics',
+            body: `
+                box-sizing: border-box; width: 10rem; height: 1.8rem;
+            `,
+        },
+        // framed button face (position: relative anchors nothing itself but keeps the click surface);
+        // the hover tint is suppressed via data-open while the option list is open
+        frame: {
+            layer: 'xbasics',
+            body: `
+                box-sizing: border-box; width: 100%; height: 100%;
+                position: relative;
+                display: flex; align-items: center;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                cursor: pointer; user-select: none;
+                &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            `,
+        },
+        // current value text clipped inside the button
+        label: {
+            layer: 'xbasics',
+            body: `
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            `,
+        },
+        // floating option list; fixed + viewport coords escape overflow-clipping ancestors
+        // (e.g. a panel's scroll container), max-content lets it outgrow the button
+        menu: {
+            layer: 'xbasics',
+            body: `
+                position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000;
+                max-height: 12em;
+                border: 1px solid currentColor;
+                overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
+            `,
+        },
+        // one option row; the current selection is expressed via data-checked
+        item: {
+            layer: 'xbasics',
+            body: `
+                height: 2em; padding: 0 0.5em;
+                display: flex; align-items: center;
+                white-space: nowrap;
+                cursor: pointer; user-select: none;
+                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            `,
+        },
     });
 
     const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
 
-    xnew.nest(`<div class="${cls.fill} ${cls.frame} ${cls.clickable} ${cls.hoverTint}" style="position: relative; display: flex; align-items: center;">`);
+    xnew.nest({ tag: 'div', className: `${cls.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
     const frame = unit.element as HTMLElement;
 
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
-    const label = xnew(labelBox, '<div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">', initial);
+    const label = xnew(labelBox, { tag: 'div', className: `${cls.label} ${designs.label?.className ?? ''}`, style: designs.label?.style }, initial);
     // invisible sizers: every item reserves its own width, so the button fits the longest one
     for (const item of items) {
         xnew(labelBox, '<div style="visibility: hidden; height: 0; white-space: nowrap;">', item);
@@ -70,16 +117,14 @@ export function InputSelect(unit: xnew.Unit,
     const openDropdown = () => {
         // bound to the frame element (not the current hidden select) so the list lands beside the button
         dropdown = xnew(frame, (list: xnew.Unit) => {
-            // the button hover tint is suppressed while the list is open, restored on any close path
-            frame.classList.remove(cls.hoverTint);
-            list.on('finalize', () => frame.classList.add(cls.hoverTint));
+            // data-open suppresses the button hover tint while the list is open, restored on any close path
+            frame.toggleAttribute('data-open', true);
+            list.on('finalize', () => frame.toggleAttribute('data-open', false));
 
             // registered while the list's element is still the frame, so 'outside' means outside the whole control
             list.on('pointerdown.outside', () => closeDropdown());
 
-            // fixed + viewport coords escape overflow-clipping ancestors (e.g. a panel's scroll container);
-            // max-content lets the list outgrow the button so long items stay readable
-            const menu = xnew.nest(`<div class="${cls.frame} ${cls.scroll}" style="position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000; max-height: 12em; border-radius: 0; background: ${surfaceColor()};">`) as HTMLElement;
+            const menu = xnew.nest({ tag: 'div', className: `${cls.menu} ${designs.menu?.className ?? ''}`, style: `background: ${surfaceColor()}; ${designs.menu?.style ?? ''}` });
 
             // re-anchored every frame, so scrolling never shifts the list off the button
             const anchor = () => {
@@ -91,7 +136,8 @@ export function InputSelect(unit: xnew.Unit,
             anchor();
             list.on('update', anchor);
             for (const item of items) {
-                const option = xnew(`<div class="${cls.clickable} ${cls.hoverTint}${item === select.value ? ` ${cls.tint}` : ''}" style="height: 2em; padding: 0 0.5em; display: flex; align-items: center; white-space: nowrap;">`, item);
+                const option = xnew({ tag: 'div', className: `${cls.item} ${designs.item?.className ?? ''}`, style: designs.item?.style }, item);
+                option.element.toggleAttribute('data-checked', item === select.value);
                 option.on('click', ({ event }: { event: PointerEvent }) => {
                     // keep the bubble from reaching the frame's toggle below
                     event.stopPropagation();
@@ -113,9 +159,9 @@ export function InputSelect(unit: xnew.Unit,
         }
     });
 
-    xnew.nest(`<select${name ? ` name="${name}"` : ''} style="display: none;">`);
+    xnew.nest({ tag: 'select', style: 'display: none;', ...others });
     for (const item of items) {
-        xnew(`<option value="${item}"${item === initial ? ' selected' : ''}>`, item);
+        xnew({ tag: 'option', value: item, selected: item === initial }, item);
     }
     select = unit.element as HTMLSelectElement;
 

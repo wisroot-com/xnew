@@ -66,9 +66,11 @@ describe('basics InputSelect', () => {
         const dropdown = open(unit);
         expect(dropdown).not.toBeNull();
         expect(dropdown.textContent).toBe('lowmidhigh');
-        // fixed + max-content: the list escapes overflow-clipping ancestors and outgrows the button
-        // fixed + anchored to the button's viewport rect (all zero under jsdom), so ancestors cannot clip it
-        expect(dropdown.style.position).toBe('fixed');
+        // fixed + max-content (in the menu css rule): the list escapes overflow-clipping ancestors
+        // and outgrows the button; anchored to the button's viewport rect (all zero under jsdom)
+        const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+        expect(dropdown.className).toMatch(/xnew\d+-menu/);
+        expect(styleText).toContain('position: fixed; margin-top: 0.25em; width: max-content;');
         expect(dropdown.style.left).toBe('0px');
         expect(dropdown.style.top).toBe('0px');
         expect(dropdown.style.minWidth).toBe('0px');
@@ -93,25 +95,50 @@ describe('basics InputSelect', () => {
         expect(dropdownOf(unit)).toBeNull();
     });
 
-    it('highlights the current value in the option list', () => {
+    it('marks the current value with data-checked in the option list', () => {
         const unit = xnew(InputSelect, { items: ['low', 'mid', 'high'], value: 'mid' });
 
         const options = Array.from(open(unit).children) as HTMLElement[];
-        // the highlight is the one extra class on the selected option
-        const highlight = Array.from(options[1].classList).find((c) => !options[0].classList.contains(c)) as string;
-        expect(highlight).toBeTruthy();
-        expect(options.map((o) => o.classList.contains(highlight))).toEqual([false, true, false]);
+        expect(options.map((o) => o.hasAttribute('data-checked'))).toEqual([false, true, false]);
     });
 
-    it('suppresses the button hover tint while the option list is open', () => {
+    it('suppresses the button hover tint via data-open while the option list is open', () => {
         const unit = xnew(InputSelect, { items: ['low', 'mid'] });
-        const classes = Array.from(frameOf(unit).classList);
+        const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+        expect(styleText).toContain('&:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }');
 
+        expect(frameOf(unit).hasAttribute('data-open')).toBe(false);
         open(unit);
-        expect(Array.from(frameOf(unit).classList)).toHaveLength(classes.length - 1);
+        expect(frameOf(unit).hasAttribute('data-open')).toBe(true);
 
         frameOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
-        expect(Array.from(frameOf(unit).classList).sort()).toEqual([...classes].sort());
+        expect(frameOf(unit).hasAttribute('data-open')).toBe(false);
+    });
+
+    it('applies designs to the frame, label, menu, and item parts', () => {
+        const unit = xnew(InputSelect, {
+            items: ['low', 'mid'],
+            designs: {
+                frame: { className: 'pill' },
+                label: { style: 'font-weight: bold;' },
+                menu: { style: 'border-radius: 0.5em;' },
+                item: { className: 'row' },
+            },
+        });
+
+        expect(frameOf(unit).className).toContain('pill');
+        expect(labelOf(unit).getAttribute('style')).toContain('font-weight: bold;');
+        const dropdown = open(unit);
+        expect(dropdown.getAttribute('style')).toContain('border-radius: 0.5em;');
+        expect(Array.from(dropdown.children).every((o) => (o as HTMLElement).className.includes('row'))).toBe(true);
+    });
+
+    it('applies className and style to the container (exposed via the getter)', () => {
+        const unit = xnew(InputSelect, { items: ['low'], className: 'boxed', style: 'width: 12em;' });
+
+        expect(unit.container).toBe(frameOf(unit).parentElement);
+        expect(unit.container.className).toContain('boxed');
+        expect(unit.container.getAttribute('style')).toContain('width: 12em;');
     });
 
     it('wears the surface color behind the control on the option list', () => {
