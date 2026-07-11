@@ -1,13 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Synthesizer — oscillator + amp / filter / reverb + ADSR + LFO synth, driven by press
-//
 // Each press builds a fresh node graph on the shared bus and schedules its envelopes up front, so
 // notes overlap freely; nodes are stopped and disconnected after release.
-//
-// - Synthesizer        : component(SynthesizerOptions) returning { press }
-// - SynthesizerOptions : { oscillator, amp, filter?, reverb?, bpm? }
-//
-// Usage: xnew(xbasics.Synthesizer, { oscillator: { type: 'sine' }, amp: { envelope: ... } }).press('A4', '4n');
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

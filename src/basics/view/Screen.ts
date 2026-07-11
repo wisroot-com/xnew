@@ -1,12 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // Screen — fixed-resolution <canvas> fitted to the surrounding box
-//
-// Builds on Aspect, wrapping a <canvas> so the drawing buffer keeps width × height while CSS
-// scales it to the surrounding box.
-//
-// - Screen : component({ width, height, fit }) returning { canvas }
-//
-// Usage: const screen = xnew(xbasics.Screen, { width: 800, height: 600 });
+// Builds on Aspect: the drawing buffer keeps width × height while CSS scales it to the box.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

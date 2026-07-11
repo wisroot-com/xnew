@@ -1,18 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // dom — the boundary with the DOM (element detection + event binding)
-//
-// Special events normalize their payload via the defineEvent dictionary; everything else passes
-// { event } through addEventListener ('window.' / 'document.' prefixes switch the bind target).
-// mouse / touch stay undefined on purpose (unified on pointer); binding is deferred by 1 tick.
-//
-// - DomElement / isDomElement : element types xnew can host (HTML | SVG) and its type guard
-// - ElementDef : object form of a tag string ({ tag, className?, style?, …members }) accepted by
-//   xnew / xnew.nest — for computed / conditional attributes that are awkward in a tag string
-// - EventBinder : manages (type, listener) → finalize, resolving dictionary → passthrough
-//
-// Payloads: change|input {event,value} / click|pointer* {event,position} (+ .outside) / wheel {event,delta} /
-// drag* {event,position,delta} / resize {} / window|document.keydown|keyup[.arrow|.wasd|.<key>] {event[,vector]}
-// (keyboard: repeat stripped, prefix required)
+// Special events normalize payloads via the defineEvent dictionary; everything else passes { event }
+// through addEventListener. mouse / touch stay undefined on purpose (unified on pointer).
 //----------------------------------------------------------------------------------------------------
 
 import { MapMap } from './map';

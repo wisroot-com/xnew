@@ -1,8 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // time — runtime-agnostic tickers and timers (rAF in the browser / setTimeout in Node)
-//
-// - Ticker : calls back at the target FPS (passes delta = measured ms since the previous call)
-// - Timer  : setTimeout timer with easing; auto-pauses on visibilitychange (browser only)
+// Timer auto-pauses on visibilitychange (browser only).
 //----------------------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------

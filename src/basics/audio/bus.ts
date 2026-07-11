@@ -1,11 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // audio bus — the package's single AudioContext + master GainNode (internal to basics/audio)
-//
 // Created at import so every audio component mixes through one bus. In a context-less environment
 // (Node/SSR/jsdom) `context`/`master` fall back to null so import never throws.
-//
-// - context : shared AudioContext
-// - master  : master GainNode connected to context.destination
 //----------------------------------------------------------------------------------------------------
 
 const DEFAULT_MASTER_GAIN = 0.1;

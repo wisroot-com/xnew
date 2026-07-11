@@ -1,16 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // basics/xbasics — assembles the networking-free convenience components as the `xbasics` export
-//
-// A flat registry of the built-in components (one component per file, grouped by category folders)
-// so callers write `xnew(xbasics.Panel)` etc. Networking components deliberately live under
-// `xsync`, not here, so xbasics stays transport-free.
-//
-// - xbasics : { Aspect, Screen, Scene, SceneList, Split,             // view/
-//               Button, Chevron, Image, SVG, SVGText,                // element/
-//               InputRange, InputCheckbox, InputText, InputNumber,  // element/ (form inputs)
-//               InputSwitch, InputRadio, InputSelect,                // element/ (form inputs)
-//               AudioTrack, Synthesizer, Volume,                     // audio/
-//               OpenAndClose, Accordion, Popup, AnalogStick, DPad, Panel }  // ui/
+// A flat registry of the built-in components so callers write `xnew(xbasics.Panel)` etc.
+// Networking components deliberately live under `xsync`, not here, so xbasics stays transport-free.
 //----------------------------------------------------------------------------------------------------
 
 import { Aspect } from './view/Aspect';

@@ -1,13 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // AudioTrack — fetch + decode an audio file and drive it as a unit
-//
-// `startedAt` is the (virtual) context time of offset 0, so `currentTime - startedAt` is the position
-// in the buffer. On pause that position is frozen into `pausedOffsetMs`, which `play()` resumes from
-// unless given an explicit offset. Web Audio nodes are released on finalize.
-//
-// - AudioTrack : component({ url, volume, loop }) returning { play, pause, status, volume }
-//
-// Usage: xnew(xbasics.AudioTrack, { url: 'bgm.mp3', loop: true }).play();
+// `startedAt` is the (virtual) context time of offset 0; pause freezes `currentTime - startedAt`
+// into `pausedOffsetMs`, which `play()` resumes from unless given an explicit offset.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

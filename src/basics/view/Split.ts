@@ -1,20 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Split — divides the surrounding box into panes added one call at a time (one flexbox split per unit)
-//
-// Screen layouts are composed by nesting Splits instead of absolute-positioning each child against
-// the whole screen. Each pane is a child unit, so callers mount into and listen on panes directly.
-//
-// - Split : component({ direction }) returning { pane }
-// - pane({ size, direction? }, component?) : append a pane and return its unit;
-//   number size → flexible ratio, string → fixed size (e.g. '3rem'); giving direction makes the
-//   pane itself a Split, so sub-panes can be added right away (without it, the pane has no pane())
-//
-// Usage:
-//   xnew.extend(xbasics.Split, { direction: 'column' });
-//   unit.pane({ size: '3rem' }, Header);
-//   unit.pane({ size: 1, direction: 'row' }, (main) => {
-//       main.pane({ size: 1 }, () => { xnew(Content, { color: 'gray' }); });
-//   });
+// Layouts are composed by nesting Splits instead of absolute-positioning against the whole screen;
+// each pane is a child unit, so callers mount into and listen on panes directly.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

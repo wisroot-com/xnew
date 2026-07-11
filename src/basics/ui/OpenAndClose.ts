@@ -1,13 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // OpenAndClose — open / close animation driver
-//
-// Owns a 0..1 progress value driven by xnew.transition and exposes open / close / toggle,
-// broadcasting the value via '-transition' / '-opened' / '-closed' emits. Presentation layers
-// (Accordion, Popup) pick up that progress value via xnew.context(OpenAndClose).
-//
-// - OpenAndClose : component({ open, duration, easing }) returning { toggle, open, close }
-//
-// Usage: const oc = xnew.extend(xbasics.OpenAndClose, { open: false }); oc.toggle();
+// Owns a 0..1 progress value driven by xnew.transition; presentation layers (Accordion, Popup)
+// pick it up via xnew.context(OpenAndClose).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

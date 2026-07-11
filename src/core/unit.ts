@@ -1,16 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Unit — the lifecycle, ownership, and scoping primitive of xnew
-//
-// A Unit bundles DOM elements, components, children, listeners, and promises into one disposable
-// node (invoked → initialized → finalizing → finalized). Deferred callbacks re-enter the original
-// unit scope via a Snapshot.
-//
-// - Unit        : core class — lifecycle, listeners, contexts, emit
-// - UnitPromise : promise wrapper resuming in the captured unit scope
-// - UnitTimer   : queued timer backing xnew.timeout / interval / transition
-//
-// Listeners record their owner unit: off removes only the entries the caller registered, and a
-// finalized owner's listeners on other units are detached automatically.
+// A Unit bundles DOM, components, children, listeners, and promises into one disposable node;
+// listeners record their owner, so a finalized owner's listeners elsewhere detach automatically.
 //----------------------------------------------------------------------------------------------------
 
 import { MapSet, MapMap } from './map';

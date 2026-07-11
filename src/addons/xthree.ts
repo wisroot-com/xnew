@@ -1,20 +1,7 @@
 //----------------------------------------------------------------------------------------------------
-// xthree — Three.js integration
-//
-// Ties the Three scene graph to the xnew unit tree: objects attached via nest / add are detached
-// automatically when the owning unit finalizes, and the renderer + WebGL context are released when
-// the unit that called initialize finalizes. Detach never disposes GPU resources (geometry /
-// material / texture may be shared) — release them explicitly with dispose.
-//
-// - initialize({ canvas, camera }) : mount the Root unit owning WebGLRenderer + Scene + Camera
-// - nest(object3D)                 : attach AND make this object the current parent
-// - add(object3D)                  : attach only; the current parent stays unchanged (siblings)
-// - dispose(object3D)              : detach and dispose its geometry / material / texture
-// - coord2dTo3d / coord3dTo2d      : convert between canvas pixels and world space via the camera
-// - renderer / camera / scene / canvas : Root unit accessors
-//
-// Caveat: nest is stateful — two nest calls in the same unit create two nesting levels;
-// use add to place several objects under the same parent.
+// xthree — Three.js integration: ties the Three scene graph to the xnew unit tree
+// Objects attached via nest / add are detached when the owning unit finalizes, but detach never
+// disposes GPU resources (they may be shared) — release them explicitly with dispose.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '@mulsense/xnew';

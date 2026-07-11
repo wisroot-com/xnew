@@ -1,17 +1,7 @@
 //----------------------------------------------------------------------------------------------------
-// xpixi — PixiJS 8 integration
-//
-// Ties the Pixi scene graph to the xnew unit tree: display objects attached via nest / add are
-// removed and destroyed automatically when the owning unit finalizes (textures are kept — they
-// may be shared).
-//
-// - initialize({ canvas })    : mount the Root unit owning an auto-detected renderer + root Container
-// - nest(displayObject)       : attach AND make this object the current parent
-// - add(displayObject)        : attach only; the current parent stays unchanged (siblings)
-// - renderer / scene / canvas : Root unit accessors
-//
-// Caveat: nest is stateful — two nest calls in the same unit create two nesting levels;
-// use add to place several objects under the same parent.
+// xpixi — PixiJS 8 integration: ties the Pixi scene graph to the xnew unit tree
+// Display objects attached via nest / add are removed and destroyed when the owning unit
+// finalizes (textures are kept — they may be shared). nest is stateful; add places siblings.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '@mulsense/xnew';

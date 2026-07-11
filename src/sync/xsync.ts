@@ -1,10 +1,7 @@
 //----------------------------------------------------------------------------------------------------
-// xsync — the networking layer: sync engine + facade (exported as `xsync`)
-//
-// The server root is the source of truth: each update it captures its registered units as a flat
-// pre-order node list and emits 'sync'; each client root diff-applies it into replica units.
-//
-// - xsync : facade — server / client / state / register / emitTo* / session / boot.
+// xsync — networking layer: shared state + boot + facade (exported as `xsync`)
+// The server root is the source of truth: each update it emits its registered units as a flat
+// pre-order node list ('sync'); client roots only diff-apply it into replica units.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';

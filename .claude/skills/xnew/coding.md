@@ -283,9 +283,9 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 - `examples/dist/` (`xnew.mjs`, `xnew.d.ts`) is a **tracked build artifact**.
   After changing `src/` in a way that affects it, regenerate with `npm run build`
   — never hand-edit it. Commit the regenerated dist alongside the source.
-- Every file under `src/` starts with the `//----` header comment (Role / Why /
-  public API). See `.claude/CLAUDE.md` for the exact convention and keep it current
-  when behavior changes.
+- Every file under `src/` starts with the `//----` header comment — at most three
+  compact lines (role, plus optional non-obvious intent / caveat). See `.claude/CLAUDE.md`
+  for the exact convention and keep it current when behavior changes.
 
 ---
 

@@ -1,28 +1,7 @@
 //----------------------------------------------------------------------------------------------------
-// css — pseudo-scoped CSS backing xnew.css (local names → unique generated names, scoping enforced)
-//
+// css — pseudo-scoped CSS backing xnew.css (local names → unique generated names)
 // True local CSS is impossible in the light DOM, so scoping is emulated by renaming — and made
 // mandatory: every rule hangs off a renamed key, so a definition cannot emit a global rule.
-//
-// - applyCss : inject a <style> for a definition map and return { name: generatedName }
-// - CssDef   : object entry form { layer?, type?, body }
-//
-// Each key is a local name (validated; anything else throws). A value is either a declaration
-// block string, wrapped as `.xnewN-key { … }` (native CSS nesting applies inside: &:hover, @media,
-// descendant selectors), or a CssDef object: `type` names an at-rule (without '@') to hang the
-// generated name on — `turn: { type: 'keyframes', body: '…' }` emits `@keyframes xnewN-turn { … }`
-// (absent: a class rule) — and `layer` wraps that entry in `@layer`. Types and layers are
-// validated (injection throws). `$key` inside a body resolves to another entry's generated name
-// (unknown references throw). Identical definition maps share one ref-counted <style>, removed
-// when the last unit using it finalizes. Without a DOM (server side), nothing is injected and
-// keys map to themselves.
-//
-// Layering: entries without `layer` stay unlayered (normal strength). xbasics components set
-// `layer: 'base'` on every entry so their defaults lose to any unlayered page CSS regardless of
-// specificity or order, and join Tailwind v4's `base` layer as-is: above its preflight resets
-// (class beats element selector within one layer), below `components` / `utilities` — no
-// up-front `@layer` pin needed. Only pages that declare their own custom layers must pin
-// `base` first to keep it the weakest.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit } from './unit';

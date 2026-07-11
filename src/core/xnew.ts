@@ -1,17 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // xnew — public entry point of the library
-//
-// xnew(...) creates a new Unit as a child of the currently active Unit (the first call auto-initializes
-// root and ticker). Each helper acts on the implicit Unit.current, so it is called from inside a
-// component function; the implementation is a thin forward to Unit static methods.
-//
-// - xnew.nest / extend                   : extend the unit under initialization
-// - xnew.css                             : pseudo-scoped css (local names → unique generated names, scoping enforced)
-// - xnew.find / context                  : search by component / resolve ancestor context
-// - xnew.promise                         : register a promise to the unit (xnew.promise(unit) aggregates its results)
-// - xnew.scope / emit / protect          : scope capture / '+global' '-local' events / visibility boundary
-// - xnew.timeout / interval / transition : scheduling via UnitTimer
-// - xnew.{Unit,Component}                : public types (type namespace merged onto the callable value)
+// xnew(...) creates a Unit under the currently active Unit (the first call auto-initializes root and
+// ticker); each helper acts on the implicit Unit.current, thinly forwarding to Unit static methods.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, UnitPromise, UnitTimer, ComponentFn, DefinesOf, PropsOf } from './unit';
