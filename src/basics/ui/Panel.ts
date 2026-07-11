@@ -106,12 +106,12 @@ function Range(unit: xnew.Unit,
     xnew(InputRange, { name, value, min, max, step, style: 'width: 100%;' });
 
     // name label (after the gauge so the text paints above the fill bar; the value readout is InputRange's own)
-    xnew('<div style="position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 0 0.5em; display: flex; align-items: center; pointer-events: none;">', name);
+    xnew('<div style="position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 0.25em; display: flex; align-items: center; pointer-events: none;">', name);
 }
 
 function Checkbox(unit: xnew.Unit, { name = '', value }: { name?: string, value?: boolean } = {}) {
     // label row so a click anywhere in the row reaches the boxed native input
-    xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none;">`);
+    xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
 
     xnew('<div style="flex: 1;">', name);
 
@@ -121,7 +121,7 @@ function Checkbox(unit: xnew.Unit, { name = '', value }: { name?: string, value?
 
 function Select(unit: xnew.Unit, { name = '', value, items = [] }: { name?: string, value?: string, items?: string[] } = {}) {
     // label row; the pulldown itself is InputSelect, whose input event bubbles up to this row
-    xnew.nest(`<div style="display: flex; align-items: center; padding: 0 0.5em;">`);
+    xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
 
     xnew('<div style="flex: 1;">', name);
 
