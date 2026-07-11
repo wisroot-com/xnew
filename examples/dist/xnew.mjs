@@ -2464,19 +2464,19 @@ function Separator(unit) {
 function Range(unit, { name = '', value, min = 0, max = 100, step = 1 }) {
     const cls = xnew.css(clickableCss);
     xnew.nest(`<div class="${cls.clickable}" style="${rowStyle}">`);
-    xnew(InputRange, { name, value, min, max, step });
+    xnew(InputRange, { name, value, min, max, step, style: 'width: 100%; height: 100%;' });
     xnew('<div style="position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 0 0.5em; display: flex; align-items: center; pointer-events: none;">', name);
 }
 function Checkbox(unit, { name = '', value } = {}) {
     const cls = xnew.css(clickableCss);
     xnew.nest(`<label class="${cls.clickable}" style="${rowStyle} padding: 0 0.5em;">`);
     xnew('<div style="flex: 1;">', name);
-    xnew('<div style="width: 1.25em; height: 1.25em;">', InputCheckbox, { name, value });
+    xnew(InputCheckbox, { name, value, style: 'width: 1.25em; height: 1.25em;' });
 }
 function Select(unit, { name = '', value, items = [] } = {}) {
     xnew.nest(`<div style="${rowStyle} padding: 0 0.5em;">`);
     xnew('<div style="flex: 1;">', name);
-    xnew('<div style="height: 2em; min-width: 3em;">', InputSelect, { name, value, items });
+    xnew(InputSelect, { name, value, items, style: 'width: auto; min-width: 3em; height: 2em;' });
 }
 
 const xbasics = {
