@@ -1399,7 +1399,7 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
     return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
 };
 
-function Button$1(unit, _a = {}) {
+function Button(unit, _a = {}) {
     var _b, _c, _d;
     var { text = '', className = '', style = '', designs = {} } = _a, others = __rest(_a, ["text", "className", "style", "designs"]);
     const cls = xnew.css({
@@ -2395,7 +2395,7 @@ function Panel(unit, { params, nested }) {
             });
         },
         button({ name = '' } = {}) {
-            return xnew(Button, { name });
+            return xnew(Button, { text: name, style: 'width: 100%;' });
         },
         select({ name = '', value, items = [] } = {}) {
             var _a, _b;
@@ -2439,20 +2439,6 @@ function Group(group, { name, open = false }) {
     }
     xnew.extend(Accordion);
 }
-function Button(unit, { name = '' }) {
-    const cls = xnew.css({
-        button: {
-            layer: 'base',
-            body: `
-                cursor: pointer; user-select: none;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-                &:active { filter: brightness(0.5); }
-            `,
-        },
-    });
-    xnew.nest(`<button class="${cls.button}" style="${rowStyle} justify-content: center;">`, name);
-}
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
 }
@@ -2480,7 +2466,7 @@ const xbasics = {
     Scene,
     SceneList,
     Split,
-    Button: Button$1,
+    Button,
     Image,
     SVG,
     SVGText,

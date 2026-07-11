@@ -473,7 +473,9 @@ declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
     group({ name, open, params }: PanelOptions, inner: Function): Unit;
     button({ name }?: {
         name?: string;
-    }): Unit;
+    }): Unit & {
+        readonly container: HTMLElement | SVGElement;
+    };
     select({ name, value, items }?: {
         name?: string;
         value?: string;

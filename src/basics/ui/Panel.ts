@@ -4,8 +4,8 @@
 // Returns a builder API for laying out parameter rows backed by the Input* elements (range /
 // checkbox / select) and buttons. Values are written through to a shared `params` object so the
 // panel can drive an external state bag without extra wiring. Groups can be nested and toggled
-// open/closed via the Accordion transition. The row controls (Group / Button / Range / Checkbox /
-// Select / Separator) are private components of this file.
+// open/closed via the Accordion transition. The row controls (Group / Range / Checkbox / Select /
+// Separator) are private components of this file; button rows reuse the element Button.
 //
 // - Panel : component({ params }) returning { group, button, select, range, checkbox, separator }
 //
@@ -16,6 +16,7 @@
 
 import { xnew } from '../../core/xnew';
 import { SVG } from '../element/SVG';
+import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
 import { InputCheckbox } from '../element/InputCheckbox';
 import { InputSelect } from '../element/InputSelect';
@@ -56,7 +57,7 @@ export function Panel(unit: xnew.Unit, { params, nested }: PanelOptions) {
             });
         },
         button({ name = '' }: { name?: string } = {}) {
-            return xnew(Button, { name });
+            return xnew(Button, { text: name, style: 'width: 100%;' });
         },
         select({ name = '', value, items = [] }: { name?: string, value?: string, items?: string[] } = {}) {
             object[name] = value ?? object[name] ?? items[0] ?? '';
@@ -97,21 +98,6 @@ function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?:
         });
     }
     xnew.extend(Accordion);
-}
-
-function Button(unit: xnew.Unit, { name = '' }: { name?: string }) {
-    const cls = xnew.css({
-        button: {
-            layer: 'base',
-            body: `
-                cursor: pointer; user-select: none;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-                &:active { filter: brightness(0.5); }
-            `,
-        },
-    });
-    xnew.nest(`<button class="${cls.button}" style="${rowStyle} justify-content: center;">`, name);
 }
 
 function Separator(unit: xnew.Unit) {
