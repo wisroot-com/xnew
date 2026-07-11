@@ -5,7 +5,8 @@
 // [-1, 1]) and emits it as '-down' / '-move' / '-up' so parent components can react without
 // touching DOM events directly. The visual stick follows the pointer within a radius.
 //
-// - AnalogStick : component({ stroke, fill, ... }) emitting '-down' / '-move' / '-up' with { vector }
+// - AnalogStick : component({ className, style, stroke, fill, ... }) emitting '-down' / '-move' /
+//                 '-up' with { vector }; className / style decorate the pointer-operated surface
 //
 // Usage: xnew(xbasics.AnalogStick).on('-move', ({ vector }) => move(vector));
 //----------------------------------------------------------------------------------------------------
@@ -14,16 +15,27 @@ import { xnew } from '../../core/xnew';
 import { SVG, SVGStyleInterface } from '../element/SVG';
 import { Aspect } from '../view/Aspect';
 
-// pointer-operated surface + full-size stacked SVG layers
-const touchArea = 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;';
+// full-size stacked SVG layers
 const overlay = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
 
 export function AnalogStick(unit: xnew.Unit,
-    { stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 }:
-    SVGStyleInterface = {}
+    { className = '', style = '', stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 }:
+    { className?: string; style?: string } & SVGStyleInterface = {}
 ) {
+    const cls = xnew.css({
+        // pointer-operated surface; an overridable @layer xbasics rule
+        container: {
+            layer: 'xbasics',
+            body: `
+                width: 100%; height: 100%;
+                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+                touch-action: none; pointer-events: auto;
+            `,
+        },
+    });
+
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew.nest(`<div style="${touchArea}">`);
+    xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
 
     xnew((unit: xnew.Unit) => {
         xnew.extend(SVG, { style: overlay, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });

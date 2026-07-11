@@ -2284,11 +2284,20 @@ function Popup(unit) {
     });
 }
 
-const touchArea$1 = 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;';
 const overlay$1 = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
-function AnalogStick(unit, { stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 } = {}) {
+function AnalogStick(unit, { className = '', style = '', stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 } = {}) {
+    const cls = xnew.css({
+        container: {
+            layer: 'xbasics',
+            body: `
+                width: 100%; height: 100%;
+                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+                touch-action: none; pointer-events: auto;
+            `,
+        },
+    });
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew.nest(`<div style="${touchArea$1}">`);
+    xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
     xnew((unit) => {
         xnew.extend(SVG, { style: overlay$1, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
         xnew('<polygon points="32  7 27 13 37 13">');
@@ -2316,11 +2325,20 @@ function AnalogStick(unit, { stroke = 'currentColor', strokeOpacity = 0.8, strok
     });
 }
 
-const touchArea = 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;';
 const overlay = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
-function DPad(unit, { diagonal = true, stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 } = {}) {
+function DPad(unit, { diagonal = true, className = '', style = '', stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 } = {}) {
+    const cls = xnew.css({
+        container: {
+            layer: 'xbasics',
+            body: `
+                width: 100%; height: 100%;
+                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+                touch-action: none; pointer-events: auto;
+            `,
+        },
+    });
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew.nest(`<div style="${touchArea}">`);
+    xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
         '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',

@@ -455,10 +455,15 @@ declare function Accordion(unit: xnew.Unit): void;
 
 declare function Popup(unit: xnew.Unit): void;
 
-declare function AnalogStick(unit: xnew.Unit, { stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGStyleInterface): void;
+declare function AnalogStick(unit: xnew.Unit, { className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: {
+    className?: string;
+    style?: string;
+} & SVGStyleInterface): void;
 
-declare function DPad(unit: xnew.Unit, { diagonal, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: {
+declare function DPad(unit: xnew.Unit, { diagonal, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: {
     diagonal?: boolean;
+    className?: string;
+    style?: string;
 } & SVGStyleInterface): void;
 
 interface PanelOptions {

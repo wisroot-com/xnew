@@ -5,7 +5,8 @@
 // {-1, 0, 1}) and emits it as '-down' / '-move' / '-up'; the active arrow segment is highlighted.
 // `diagonal: false` restricts to 4 directions.
 //
-// - DPad : component({ diagonal, stroke, fill, ... }) emitting '-down' / '-move' / '-up' with { vector }
+// - DPad : component({ diagonal, className, style, stroke, fill, ... }) emitting '-down' / '-move' /
+//          '-up' with { vector }; className / style decorate the pointer-operated surface
 //
 // Usage: xnew(xbasics.DPad, { diagonal: false }).on('-move', ({ vector }) => move(vector));
 //----------------------------------------------------------------------------------------------------
@@ -14,16 +15,27 @@ import { xnew } from '../../core/xnew';
 import { SVG, SVGStyleInterface } from '../element/SVG';
 import { Aspect } from '../view/Aspect';
 
-// pointer-operated surface + full-size stacked SVG layers
-const touchArea = 'width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;';
+// full-size stacked SVG layers
 const overlay = 'position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box;';
 
 export function DPad(unit: xnew.Unit,
-    { diagonal = true, stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 }:
-    { diagonal?: boolean } & SVGStyleInterface = {}
+    { diagonal = true, className = '', style = '', stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, strokeLinejoin = 'round', strokeLinecap = 'round', fill = '#FFF', fillOpacity = 0.8 }:
+    { diagonal?: boolean; className?: string; style?: string } & SVGStyleInterface = {}
 ) {
+    const cls = xnew.css({
+        // pointer-operated surface; an overridable @layer xbasics rule
+        container: {
+            layer: 'xbasics',
+            body: `
+                width: 100%; height: 100%;
+                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+                touch-action: none; pointer-events: auto;
+            `,
+        },
+    });
+
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew.nest(`<div style="${touchArea}">`);
+    xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
 
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
