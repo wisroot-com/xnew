@@ -51,7 +51,7 @@ export function InputRadio(unit: xnew.Unit,
                 position: relative;
                 display: flex; align-items: center; justify-content: center;
                 white-space: nowrap;
-                cursor: pointer; user-select: none;
+                user-select: none;
                 & + & { border-left: 1px solid currentColor; }
                 &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
                 &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }

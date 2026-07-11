@@ -38,7 +38,7 @@ export function InputSwitch(unit: xnew.Unit,
                 box-sizing: border-box; width: 100%; height: 100%;
                 position: relative;
                 border: 1px solid currentColor; border-radius: 1em;
-                cursor: pointer; user-select: none;
+                user-select: none;
                 &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },

@@ -1485,30 +1485,6 @@ function SVGText(unit, _a = {}) {
     svg.style.overflow = 'visible';
 }
 
-function Spinner(unit, { className = '', style = '' } = {}) {
-    const cls = xnew.css({
-        turn: {
-            layer: 'base',
-            type: 'keyframes',
-            body: `
-                from { transform: rotate(0turn); }
-                to { transform: rotate(1turn); }
-            `,
-        },
-        spinner: {
-            layer: 'base',
-            body: `
-                box-sizing: border-box; width: 100%; height: 100%;
-                border: 0.15em solid color-mix(in srgb, currentColor 25%, transparent);
-                border-top-color: currentColor;
-                border-radius: 50%;
-                animation: $turn 0.8s linear infinite;
-            `,
-        },
-    });
-    xnew.nest({ tag: 'div', className: `${cls.spinner} ${className}`, style });
-}
-
 function InputRange(unit, _a = {}) {
     var _b, _c, _d, _e, _f, _g, _h, _j, _k;
     var { value, min = 0, max = 100, step = 1, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "className", "style", "designs"]);
@@ -1592,7 +1568,7 @@ function InputCheckbox(unit, _a = {}) {
                 position: relative;
                 display: flex; align-items: center; justify-content: center;
                 border: 1px solid currentColor; border-radius: 0.25em;
-                cursor: pointer; user-select: none;
+                user-select: none;
                 svg { opacity: 0; }
                 &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
                 &[data-checked] svg { opacity: 1; }
@@ -1695,7 +1671,7 @@ function InputSwitch(unit, _a = {}) {
                 box-sizing: border-box; width: 100%; height: 100%;
                 position: relative;
                 border: 1px solid currentColor; border-radius: 1em;
-                cursor: pointer; user-select: none;
+                user-select: none;
                 &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
@@ -1757,7 +1733,7 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
                 position: relative;
                 display: flex; align-items: center; justify-content: center;
                 white-space: nowrap;
-                cursor: pointer; user-select: none;
+                user-select: none;
                 & + & { border-left: 1px solid currentColor; }
                 &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
                 &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
@@ -2508,7 +2484,6 @@ const xbasics = {
     Image,
     SVG,
     SVGText,
-    Spinner,
     InputRange,
     InputCheckbox,
     InputText,

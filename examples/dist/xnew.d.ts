@@ -285,11 +285,6 @@ declare function SVGText(unit: xnew.Unit, { text, fontSize, ...others }?: {
     style?: string;
 } & SVGStyleInterface): void;
 
-declare function Spinner(unit: xnew.Unit, { className, style }?: {
-    className?: string;
-    style?: string;
-}): void;
-
 declare function InputRange(unit: xnew.Unit, { value, min, max, step, className, style, designs, ...others }?: {
     value?: number;
     min?: number;
@@ -508,7 +503,6 @@ declare const xbasics: {
     Image: typeof Image;
     SVG: typeof SVG;
     SVGText: typeof SVGText;
-    Spinner: typeof Spinner;
     InputRange: typeof InputRange;
     InputCheckbox: typeof InputCheckbox;
     InputText: typeof InputText;

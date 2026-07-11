@@ -39,7 +39,7 @@ export function InputCheckbox(unit: xnew.Unit,
                 position: relative;
                 display: flex; align-items: center; justify-content: center;
                 border: 1px solid currentColor; border-radius: 0.25em;
-                cursor: pointer; user-select: none;
+                user-select: none;
                 svg { opacity: 0; }
                 &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
                 &[data-checked] svg { opacity: 1; }
