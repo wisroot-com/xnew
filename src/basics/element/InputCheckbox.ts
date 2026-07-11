@@ -1,22 +1,11 @@
 //----------------------------------------------------------------------------------------------------
 // InputCheckbox — framed check box backed by a hidden native <input type="checkbox">
-//
-// The invisible native control captures interaction (click / keyboard) while the visible surface
-// is a framed box with an SVG check mark, so callers get a styled checkbox with native semantics.
-// The checked look lives in css rules keyed on a data-checked attribute, so designs stay intact.
-//
-// - InputCheckbox : component({ value, className, style, designs, ...rest }) — className / style
-//                   decorate the container; designs: { check? } — a Design ({ className?, style? })
-//                   for the check box; rest members (name, …) pass through to the <input>;
-//                   emits 'input' with { value } (boolean checked state); returns { get container }
-//
-// Usage: const check = xnew(xbasics.InputCheckbox, { value: true });
-//        check.on('input', ({ value }) => ...);
+// The invisible native control captures interaction; the checked look lives in css rules keyed
+// on a data-checked attribute, so designs stay intact.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 import { Container } from './Container';
-import { SVG } from './SVG';
 import { Design } from '../design';
 
 export function InputCheckbox(unit: xnew.Unit,
@@ -28,8 +17,8 @@ export function InputCheckbox(unit: xnew.Unit,
         className, style,
     });
 
-    const cls = xnew.css({
-        // framed box carrying the SVG check mark (position: relative anchors the input overlay);
+    const css = xnew.css({
+        // framed box carrying the check mark (position: relative anchors the input overlay);
         // the checked state is expressed via data-checked
         check: {
             layer: 'base',
@@ -44,6 +33,15 @@ export function InputCheckbox(unit: xnew.Unit,
                 &[data-checked] svg { opacity: 1; }
             `,
         },
+        // check mark stroke
+        svg: {
+            layer: 'base',
+            body: `
+                box-sizing: border-box; display: block; width: 100%; height: 100%;
+                stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
+                fill: none;
+            `,
+        },
         // invisible native control stretched over the box
         input: {
             layer: 'base',
@@ -54,10 +52,10 @@ export function InputCheckbox(unit: xnew.Unit,
         },
     });
 
-    const check = xnew.nest({ tag: 'div', className: `${cls.check} ${designs.check?.className ?? ''}`, style: designs.check?.style });
+    const check = xnew.nest({ tag: 'div', className: `${css.check} ${designs.check?.className ?? ''}`, style: designs.check?.style });
 
     xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 100%; height: 100%;', designs: { svg: { style: 'stroke: currentColor; stroke-width: 2;' } } });
+        xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg });
         xnew('<path d="M2 6 5 9 10 3"/>');
     });
 
@@ -67,7 +65,7 @@ export function InputCheckbox(unit: xnew.Unit,
     update(value);
 
     // hidden native input for interaction
-    xnew.nest({ tag: 'input', type: 'checkbox', checked: value, className: cls.input, ...others });
+    xnew.nest({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
     unit.on('input', ({ value }: { value: boolean }) => {
         update(value);
     });

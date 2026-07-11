@@ -1,17 +1,7 @@
 //----------------------------------------------------------------------------------------------------
-// Panel — stackable form-style settings panel
-//
-// Returns a builder API for laying out parameter rows backed by the Input* elements (range /
-// checkbox / select) and buttons. Values are written through to a shared `params` object so the
-// panel can drive an external state bag without extra wiring. Groups can be nested and toggled
-// open/closed via the Accordion transition. The row controls (Group / Range / Checkbox / Select /
-// Separator) are private components of this file; button rows reuse the element Button.
-//
-// - Panel : component({ params }) returning { group, button, select, range, checkbox, separator }
-//
-// Caveat: Panel nests its own scroll container (thin translucent scrollbar that lets the surface
-// behind show through) inheriting the mount element's max-height — set a max-height on the mount
-// element (without vertical padding) and the panel scrolls inside it.
+// Panel — stackable form-style settings panel with a builder API; row values write through to a
+// shared `params` object so the panel drives an external state bag without extra wiring.
+// Caveat: give the mount element a max-height (no vertical padding); the panel scrolls inside it.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -32,12 +22,12 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
     if (nested === false) {
         // own scroll container inheriting the mount element's max-height, so the panel scrolls once the host constrains it;
         // the vertical padding sits outside the scrollport so the scrollbar stays clear of the host's rounded corners
-        const cls = xnew.css({
+        const css = xnew.css({
             // transparent track lets the surface behind show through, so the scrollbar blends into any background
             scroll: { body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
         });
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
-        xnew.nest(`<div class="${cls.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
+        xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
 
     return {

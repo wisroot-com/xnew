@@ -1,18 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputSwitch — sliding on / off switch backed by a hidden native <input type="checkbox">
-//
-// The invisible native control captures interaction (click / keyboard) while the visible surface
-// is a rounded frame with a knob sliding between the edges, so callers get the familiar
-// switch look with native checkbox semantics.
-// The on state lives in css rules keyed on a data-checked attribute, so designs stay intact.
-//
-// - InputSwitch : component({ value, className, style, designs, ...rest }) — className / style
-//                 decorate the container; designs: { frame?, knob? } — a Design
-//                 ({ className?, style? }) per part; rest members (name, …) pass through to the
-//                 <input>; emits 'input' with { value } (boolean); returns { get container }
-//
-// Usage: const sw = xnew(xbasics.InputSwitch, { value: true });
-//        sw.on('input', ({ value }) => ...);
+// The invisible native checkbox captures interaction; the on state lives in css rules keyed on
+// a data-checked attribute, so designs stay intact.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -28,7 +17,7 @@ export function InputSwitch(unit: xnew.Unit,
         className, style,
     });
 
-    const cls = xnew.css({
+    const css = xnew.css({
         // rounded track carrying the knob (position: relative anchors the knob and input overlay);
         // the on state is expressed via data-checked
         frame: {
@@ -62,9 +51,9 @@ export function InputSwitch(unit: xnew.Unit,
         },
     });
 
-    const frame = xnew.nest({ tag: 'div', className: `${cls.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
+    const frame = xnew.nest({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
 
-    xnew({ tag: 'div', className: `${cls.knob} ${designs.knob?.className ?? ''}`, style: designs.knob?.style });
+    xnew({ tag: 'div', className: `${css.knob} ${designs.knob?.className ?? ''}`, style: designs.knob?.style });
 
     const update = (checked: boolean) => {
         frame.toggleAttribute('data-checked', checked);
@@ -72,7 +61,7 @@ export function InputSwitch(unit: xnew.Unit,
     update(value);
 
     // hidden native input for interaction
-    xnew.nest({ tag: 'input', type: 'checkbox', checked: value, className: cls.input, ...others });
+    xnew.nest({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
     unit.on('input', ({ value }: { value: boolean }) => {
         update(value);
     });

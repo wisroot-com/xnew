@@ -1400,8 +1400,8 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
 };
 
 function Container(unit, { base = '', className = '', style = '' } = {}) {
-    const cls = xnew.css({ container: { layer: 'base', body: base } });
-    const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
+    const css = xnew.css({ container: { layer: 'base', body: base } });
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     return { get container() { return container; } };
 }
 
@@ -1412,7 +1412,7 @@ function Button(unit, _a = {}) {
         base: 'box-sizing: border-box; width: 10rem; height: 1.8rem; margin: 0.125em 0;',
         className, style,
     });
-    const cls = xnew.css({
+    const css = xnew.css({
         button: {
             layer: 'base',
             body: `
@@ -1427,7 +1427,7 @@ function Button(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'button', type: 'button', className: `${cls.button} ${(_c = (_b = designs.button) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.button) === null || _d === void 0 ? void 0 : _d.style }, others), text);
+    xnew.nest(Object.assign({ tag: 'button', type: 'button', className: `${css.button} ${(_c = (_b = designs.button) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.button) === null || _d === void 0 ? void 0 : _d.style }, others), text);
 }
 
 function Chevron(unit, _a = {}) {
@@ -1437,7 +1437,7 @@ function Chevron(unit, _a = {}) {
         base: 'box-sizing: border-box; width: 1em; height: 1em;',
         className, style,
     });
-    const cls = xnew.css({
+    const css = xnew.css({
         svg: {
             layer: 'base',
             body: `
@@ -1447,7 +1447,7 @@ function Chevron(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 12 12', className: `${cls.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style }, others));
+    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 12 12', className: `${css.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style }, others));
     xnew('<path d="M4 2 8 6 4 10"/>');
     const angles = { right: 0, down: 90, left: 180, up: 270 };
     unit.element.style.transform = `rotate(${angles[direction]}deg)`;
@@ -1460,7 +1460,7 @@ function Image(unit, _a) {
         base: 'box-sizing: border-box; width: 100%; height: 100%;',
         className, style,
     });
-    const cls = xnew.css({
+    const css = xnew.css({
         image: {
             layer: 'base',
             body: `
@@ -1468,7 +1468,7 @@ function Image(unit, _a) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'img', className: `${cls.image} ${(_c = (_b = designs.image) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.image) === null || _d === void 0 ? void 0 : _d.style }, others));
+    xnew.nest(Object.assign({ tag: 'img', className: `${css.image} ${(_c = (_b = designs.image) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.image) === null || _d === void 0 ? void 0 : _d.style }, others));
     const element = unit.element;
     let objectURL = null;
     function apply(value) {
@@ -1497,7 +1497,7 @@ function SVG(unit, _a = {}) {
     var _b, _c, _d;
     var { className = '', style = '', designs = {} } = _a, others = __rest(_a, ["className", "style", "designs"]);
     xnew.extend(Container, { className, style });
-    const cls = xnew.css({
+    const css = xnew.css({
         svg: {
             layer: 'base',
             body: `
@@ -1507,7 +1507,7 @@ function SVG(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style }, others));
+    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style }, others));
 }
 
 function SVGText(unit, _a = {}) {
@@ -1517,7 +1517,7 @@ function SVGText(unit, _a = {}) {
         base: 'box-sizing: border-box; width: fit-content; height: fit-content;',
         className, style,
     });
-    const cls = xnew.css({
+    const css = xnew.css({
         svg: {
             layer: 'base',
             body: `
@@ -1528,7 +1528,7 @@ function SVGText(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'svg', className: `${cls.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style }, others));
+    xnew.nest(Object.assign({ tag: 'svg', className: `${css.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style }, others));
     const svg = unit.element;
     xnew.nest({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' });
     unit.element.textContent = text;
@@ -1550,7 +1550,7 @@ function InputRange(unit, _a = {}) {
         base: 'box-sizing: border-box; width: 10rem; height: 1.5rem; position: relative; margin: 0.125em 0;',
         className, style,
     });
-    const cls = xnew.css({
+    const css = xnew.css({
         frame: {
             layer: 'base',
             body: `
@@ -1589,15 +1589,15 @@ function InputRange(unit, _a = {}) {
             `,
         },
     });
-    xnew({ tag: 'div', className: `${cls.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
-    const meter = xnew({ tag: 'div', className: `${cls.meter} ${(_f = (_e = designs.meter) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.meter) === null || _g === void 0 ? void 0 : _g.style });
-    const status = xnew({ tag: 'div', className: `${cls.status} ${(_j = (_h = designs.status) === null || _h === void 0 ? void 0 : _h.className) !== null && _j !== void 0 ? _j : ''}`, style: (_k = designs.status) === null || _k === void 0 ? void 0 : _k.style });
+    xnew({ tag: 'div', className: `${css.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
+    const meter = xnew({ tag: 'div', className: `${css.meter} ${(_f = (_e = designs.meter) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.meter) === null || _g === void 0 ? void 0 : _g.style });
+    const status = xnew({ tag: 'div', className: `${css.status} ${(_j = (_h = designs.status) === null || _h === void 0 ? void 0 : _h.className) !== null && _j !== void 0 ? _j : ''}`, style: (_k = designs.status) === null || _k === void 0 ? void 0 : _k.style });
     const update = (v) => {
         meter.element.style.width = `${(v - min) / (max - min) * 100}%`;
         status.element.textContent = String(v);
     };
     update(initial);
-    xnew.nest(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: cls.input }, others));
+    xnew.nest(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: css.input }, others));
     unit.on('input', ({ value }) => {
         update(value);
     });
@@ -1610,7 +1610,7 @@ function InputCheckbox(unit, _a = {}) {
         base: 'box-sizing: border-box; width: 1.5rem; height: 1.5rem; margin: 0.125em 0;',
         className, style,
     });
-    const cls = xnew.css({
+    const css = xnew.css({
         check: {
             layer: 'base',
             body: `
@@ -1624,6 +1624,14 @@ function InputCheckbox(unit, _a = {}) {
                 &[data-checked] svg { opacity: 1; }
             `,
         },
+        svg: {
+            layer: 'base',
+            body: `
+                box-sizing: border-box; display: block; width: 100%; height: 100%;
+                stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
+                fill: none;
+            `,
+        },
         input: {
             layer: 'base',
             body: `
@@ -1632,16 +1640,16 @@ function InputCheckbox(unit, _a = {}) {
             `,
         },
     });
-    const check = xnew.nest({ tag: 'div', className: `${cls.check} ${(_c = (_b = designs.check) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.check) === null || _d === void 0 ? void 0 : _d.style });
+    const check = xnew.nest({ tag: 'div', className: `${css.check} ${(_c = (_b = designs.check) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.check) === null || _d === void 0 ? void 0 : _d.style });
     xnew((unit) => {
-        xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 100%; height: 100%;', designs: { svg: { style: 'stroke: currentColor; stroke-width: 2;' } } });
+        xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg });
         xnew('<path d="M2 6 5 9 10 3"/>');
     });
     const update = (checked) => {
         check.toggleAttribute('data-checked', checked);
     };
     update(value);
-    xnew.nest(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: cls.input }, others));
+    xnew.nest(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
     unit.on('input', ({ value }) => {
         update(value);
     });
@@ -1654,7 +1662,7 @@ function InputText(unit, _a = {}) {
         base: 'box-sizing: border-box; width: 10rem; height: 1.8rem; margin: 0.125em 0;',
         className, style,
     });
-    const cls = xnew.css({
+    const css = xnew.css({
         field: {
             layer: 'base',
             body: `
@@ -1667,7 +1675,7 @@ function InputText(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'input', type: 'text', className: `${cls.field} ${(_c = (_b = designs.field) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.field) === null || _d === void 0 ? void 0 : _d.style }, others));
+    xnew.nest(Object.assign({ tag: 'input', type: 'text', className: `${css.field} ${(_c = (_b = designs.field) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.field) === null || _d === void 0 ? void 0 : _d.style }, others));
 }
 
 function InputNumber(unit, _a = {}) {
@@ -1677,7 +1685,7 @@ function InputNumber(unit, _a = {}) {
         base: 'box-sizing: border-box; width: 10rem; height: 1.8rem; margin: 0.125em 0;',
         className, style,
     });
-    const cls = xnew.css({
+    const css = xnew.css({
         field: {
             layer: 'base',
             body: `
@@ -1692,7 +1700,7 @@ function InputNumber(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'input', type: 'number', className: `${cls.field} ${(_c = (_b = designs.field) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.field) === null || _d === void 0 ? void 0 : _d.style }, others));
+    xnew.nest(Object.assign({ tag: 'input', type: 'number', className: `${css.field} ${(_c = (_b = designs.field) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.field) === null || _d === void 0 ? void 0 : _d.style }, others));
 }
 
 function InputSwitch(unit, _a = {}) {
@@ -1702,7 +1710,7 @@ function InputSwitch(unit, _a = {}) {
         base: 'box-sizing: border-box; width: 3rem; height: 1.5rem; margin: 0.125em 0;',
         className, style,
     });
-    const cls = xnew.css({
+    const css = xnew.css({
         frame: {
             layer: 'base',
             body: `
@@ -1731,13 +1739,13 @@ function InputSwitch(unit, _a = {}) {
             `,
         },
     });
-    const frame = xnew.nest({ tag: 'div', className: `${cls.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
-    xnew({ tag: 'div', className: `${cls.knob} ${(_f = (_e = designs.knob) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.knob) === null || _g === void 0 ? void 0 : _g.style });
+    const frame = xnew.nest({ tag: 'div', className: `${css.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
+    xnew({ tag: 'div', className: `${css.knob} ${(_f = (_e = designs.knob) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.knob) === null || _g === void 0 ? void 0 : _g.style });
     const update = (checked) => {
         frame.toggleAttribute('data-checked', checked);
     };
     update(value);
-    xnew.nest(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: cls.input }, others));
+    xnew.nest(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
     unit.on('input', ({ value }) => {
         update(value);
     });
@@ -1751,7 +1759,7 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
         base: 'box-sizing: border-box; width: 100%; height: 100%;',
         className, style,
     });
-    const cls = xnew.css({
+    const css = xnew.css({
         frame: {
             layer: 'base',
             body: `
@@ -1782,13 +1790,13 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
         },
     });
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
-    xnew.nest({ tag: 'div', className: `${cls.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
+    xnew.nest({ tag: 'div', className: `${css.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
     const segments = [];
     items.forEach((item) => {
         var _a, _b, _c;
-        const segment = xnew({ tag: 'div', className: `${cls.item} ${(_b = (_a = designs.item) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = designs.item) === null || _c === void 0 ? void 0 : _c.style }, () => {
+        const segment = xnew({ tag: 'div', className: `${css.item} ${(_b = (_a = designs.item) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = designs.item) === null || _c === void 0 ? void 0 : _c.style }, () => {
             xnew('<div>', item);
-            xnew({ tag: 'input', type: 'radio', name: group, value: item, checked: item === initial, className: cls.input });
+            xnew({ tag: 'input', type: 'radio', name: group, value: item, checked: item === initial, className: css.input });
         });
         segments.push([segment, item]);
     });
@@ -1811,7 +1819,7 @@ function InputSelect(unit, _a = {}) {
         base: 'box-sizing: border-box; width: 10rem; height: 1.8rem; margin: 0.125em 0;',
         className, style,
     });
-    const cls = xnew.css({
+    const css = xnew.css({
         frame: {
             layer: 'base',
             body: `
@@ -1850,10 +1858,10 @@ function InputSelect(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest({ tag: 'div', className: `${cls.frame} ${(_d = (_c = designs.frame) === null || _c === void 0 ? void 0 : _c.className) !== null && _d !== void 0 ? _d : ''}`, style: (_e = designs.frame) === null || _e === void 0 ? void 0 : _e.style });
+    xnew.nest({ tag: 'div', className: `${css.frame} ${(_d = (_c = designs.frame) === null || _c === void 0 ? void 0 : _c.className) !== null && _d !== void 0 ? _d : ''}`, style: (_e = designs.frame) === null || _e === void 0 ? void 0 : _e.style });
     const frame = unit.element;
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
-    const label = xnew(labelBox, { tag: 'div', className: `${cls.label} ${(_g = (_f = designs.label) === null || _f === void 0 ? void 0 : _f.className) !== null && _g !== void 0 ? _g : ''}`, style: (_h = designs.label) === null || _h === void 0 ? void 0 : _h.style }, initial);
+    const label = xnew(labelBox, { tag: 'div', className: `${css.label} ${(_g = (_f = designs.label) === null || _f === void 0 ? void 0 : _f.className) !== null && _g !== void 0 ? _g : ''}`, style: (_h = designs.label) === null || _h === void 0 ? void 0 : _h.style }, initial);
     for (const item of items) {
         xnew(labelBox, '<div style="visibility: hidden; height: 0; white-space: nowrap;">', item);
     }
@@ -1879,7 +1887,7 @@ function InputSelect(unit, _a = {}) {
             frame.toggleAttribute('data-open', true);
             list.on('finalize', () => frame.toggleAttribute('data-open', false));
             list.on('pointerdown.outside', () => closeDropdown());
-            const menu = xnew.nest({ tag: 'div', className: `${cls.menu} ${(_b = (_a = designs.menu) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: `background: ${surfaceColor()}; ${(_d = (_c = designs.menu) === null || _c === void 0 ? void 0 : _c.style) !== null && _d !== void 0 ? _d : ''}` });
+            const menu = xnew.nest({ tag: 'div', className: `${css.menu} ${(_b = (_a = designs.menu) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: `background: ${surfaceColor()}; ${(_d = (_c = designs.menu) === null || _c === void 0 ? void 0 : _c.style) !== null && _d !== void 0 ? _d : ''}` });
             const anchor = () => {
                 const rect = frame.getBoundingClientRect();
                 menu.style.left = `${rect.left}px`;
@@ -1889,7 +1897,7 @@ function InputSelect(unit, _a = {}) {
             anchor();
             list.on('update', anchor);
             for (const item of items) {
-                const option = xnew({ tag: 'div', className: `${cls.item} ${(_f = (_e = designs.item) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.item) === null || _g === void 0 ? void 0 : _g.style }, item);
+                const option = xnew({ tag: 'div', className: `${css.item} ${(_f = (_e = designs.item) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.item) === null || _g === void 0 ? void 0 : _g.style }, item);
                 option.element.toggleAttribute('data-checked', item === select.value);
                 option.on('click', ({ event }) => {
                     event.stopPropagation();
@@ -2292,7 +2300,7 @@ function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
         base: 'position: relative; width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
         className, style,
     });
-    const cls = xnew.css({
+    const css = xnew.css({
         svg: {
             layer: 'base',
             body: `
@@ -2302,7 +2310,7 @@ function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
             `,
         },
     });
-    const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${(_b = (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = designs.svg) === null || _c === void 0 ? void 0 : _c.style };
+    const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_b = (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = designs.svg) === null || _c === void 0 ? void 0 : _c.style };
     xnew((unit) => {
         xnew.nest(svg);
         xnew('<polygon points="32  7 27 13 37 13">');
@@ -2336,7 +2344,7 @@ function DPad(unit, { diagonal = true, className = '', style = '', designs = {} 
         base: 'position: relative; width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
         className, style,
     });
-    const cls = xnew.css({
+    const css = xnew.css({
         svg: {
             layer: 'base',
             body: `
@@ -2346,8 +2354,8 @@ function DPad(unit, { diagonal = true, className = '', style = '', designs = {} 
             `,
         },
     });
-    const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${(_b = (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: `stroke: none; ${(_d = (_c = designs.svg) === null || _c === void 0 ? void 0 : _c.style) !== null && _d !== void 0 ? _d : ''}` };
-    const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${(_f = (_e = designs.svg) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: `fill: none; ${(_h = (_g = designs.svg) === null || _g === void 0 ? void 0 : _g.style) !== null && _h !== void 0 ? _h : ''}` };
+    const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_b = (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: `stroke: none; ${(_d = (_c = designs.svg) === null || _c === void 0 ? void 0 : _c.style) !== null && _d !== void 0 ? _d : ''}` };
+    const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_f = (_e = designs.svg) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: `fill: none; ${(_h = (_g = designs.svg) === null || _g === void 0 ? void 0 : _g.style) !== null && _h !== void 0 ? _h : ''}` };
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
         '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
@@ -2408,11 +2416,11 @@ function DPad(unit, { diagonal = true, className = '', style = '', designs = {} 
 function Panel(unit, { params, nested = false }) {
     const object = params !== null && params !== void 0 ? params : {};
     if (nested === false) {
-        const cls = xnew.css({
+        const css = xnew.css({
             scroll: { body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
         });
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
-        xnew.nest(`<div class="${cls.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
+        xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
     return {
         group({ name, open, params }, inner) {

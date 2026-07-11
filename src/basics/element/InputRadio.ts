@@ -1,17 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputRadio — segmented button group backed by hidden native <input type="radio"> controls
-//
-// One framed row of exclusive segments (one per item) keeps every choice visible, unlike a
-// pulldown; the hidden radios give native exclusivity and form semantics.
-// The selected look lives in css rules keyed on a data-checked attribute, so designs stay intact.
-//
-// - InputRadio : component({ value, items, name, className, style, designs }) — className / style
-//                decorate the container; designs: { frame?, item? } — a Design
-//                ({ className?, style? }) per part; emits 'input' with { value } (string);
-//                returns { get container }
-//
-// Usage: const radio = xnew(xbasics.InputRadio, { items: ['low', 'mid', 'high'] });
-//        radio.on('input', ({ value }) => ...);
+// One framed row of exclusive segments keeps every choice visible, unlike a pulldown; the
+// selected look lives in css rules keyed on a data-checked attribute, so designs stay intact.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -33,7 +23,7 @@ export function InputRadio(unit: xnew.Unit,
         className, style,
     });
 
-    const cls = xnew.css({
+    const css = xnew.css({
         // framed row holding the item cells
         frame: {
             layer: 'base',
@@ -69,13 +59,13 @@ export function InputRadio(unit: xnew.Unit,
     });
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
 
-    xnew.nest({ tag: 'div', className: `${cls.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
+    xnew.nest({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
 
     const segments: [xnew.Unit, string][] = [];
     items.forEach((item) => {
-        const segment = xnew({ tag: 'div', className: `${cls.item} ${designs.item?.className ?? ''}`, style: designs.item?.style }, () => {
+        const segment = xnew({ tag: 'div', className: `${css.item} ${designs.item?.className ?? ''}`, style: designs.item?.style }, () => {
             xnew('<div>', item);
-            xnew({ tag: 'input', type: 'radio', name: group, value: item, checked: item === initial, className: cls.input });
+            xnew({ tag: 'input', type: 'radio', name: group, value: item, checked: item === initial, className: css.input });
         });
         segments.push([segment, item]);
     });

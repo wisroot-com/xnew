@@ -1,19 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputSelect — listbox-style pulldown backed by a hidden native <select>
-//
-// A framed button (current value + down chevron) opens a floating option list styled like the
-// other Input* elements — the native popup cannot be styled — while the hidden select keeps
-// native form semantics.
-// The open / selected looks live in css rules keyed on data-open / data-checked attributes,
-// so designs stay intact.
-//
-// - InputSelect : component({ value, items, className, style, designs, ...rest }) — className /
-//                 style decorate the container; designs: { frame?, label?, menu?, item? } — a
-//                 Design ({ className?, style? }) per part; rest members (name, …) pass through
-//                 to the <select>; emits 'input' with { value } (string); returns { get container }
-//
-// Usage: const sel = xnew(xbasics.InputSelect, { items: ['low', 'mid', 'high'] });
-//        sel.on('input', ({ value }) => ...);
+// The native popup cannot be styled, so a framed button opens a floating option list; the open /
+// selected looks live in css rules keyed on data-open / data-checked, so designs stay intact.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -32,7 +20,7 @@ export function InputSelect(unit: xnew.Unit,
         className, style,
     });
 
-    const cls = xnew.css({
+    const css = xnew.css({
         // framed button face (position: relative anchors nothing itself but keeps the click surface);
         // the hover tint is suppressed via data-open while the option list is open
         frame: {
@@ -78,11 +66,11 @@ export function InputSelect(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'div', className: `${cls.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
+    xnew.nest({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
     const frame = unit.element as HTMLElement;
 
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
-    const label = xnew(labelBox, { tag: 'div', className: `${cls.label} ${designs.label?.className ?? ''}`, style: designs.label?.style }, initial);
+    const label = xnew(labelBox, { tag: 'div', className: `${css.label} ${designs.label?.className ?? ''}`, style: designs.label?.style }, initial);
     // invisible sizers: every item reserves its own width, so the button fits the longest one
     for (const item of items) {
         xnew(labelBox, '<div style="visibility: hidden; height: 0; white-space: nowrap;">', item);
@@ -119,7 +107,7 @@ export function InputSelect(unit: xnew.Unit,
             // registered while the list's element is still the frame, so 'outside' means outside the whole control
             list.on('pointerdown.outside', () => closeDropdown());
 
-            const menu = xnew.nest({ tag: 'div', className: `${cls.menu} ${designs.menu?.className ?? ''}`, style: `background: ${surfaceColor()}; ${designs.menu?.style ?? ''}` });
+            const menu = xnew.nest({ tag: 'div', className: `${css.menu} ${designs.menu?.className ?? ''}`, style: `background: ${surfaceColor()}; ${designs.menu?.style ?? ''}` });
 
             // re-anchored every frame, so scrolling never shifts the list off the button
             const anchor = () => {
@@ -131,7 +119,7 @@ export function InputSelect(unit: xnew.Unit,
             anchor();
             list.on('update', anchor);
             for (const item of items) {
-                const option = xnew({ tag: 'div', className: `${cls.item} ${designs.item?.className ?? ''}`, style: designs.item?.style }, item);
+                const option = xnew({ tag: 'div', className: `${css.item} ${designs.item?.className ?? ''}`, style: designs.item?.style }, item);
                 option.element.toggleAttribute('data-checked', item === select.value);
                 option.on('click', ({ event }: { event: PointerEvent }) => {
                     // keep the bubble from reaching the frame's toggle below

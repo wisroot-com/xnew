@@ -1,19 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // SVG — inline <svg> with shared presentation defaults, wrapped in a Container shell
-//
-// Thin wrapper that nests an <svg> element with sensible defaults for stroke / fill / line caps
-// so callers can drop in <path> / <polygon> / <circle> children without re-specifying the same
-// presentation attributes on every shape.
-//
-// - SVG : component({ className, style, designs, ...rest }) — className / style decorate the
-//         container (the <svg> fills it); designs: { svg? } — a Design ({ className?, style? })
-//         for the <svg>; rest members (viewBox, …) pass through to the <svg> as attributes;
-//         returns { get container }
-//
-// Caveat: the presentation defaults are an @layer base css rule (inherited by the shapes), and
-// css beats svg attributes — override them via designs.svg (or page css), not rest members.
-//
-// Usage: xnew(xbasics.SVG, { viewBox: '0 0 64 64', designs: { svg: { style: 'stroke: currentColor;' } } });
+// The presentation defaults are an @layer base css rule, and css beats svg presentation
+// attributes — override them via designs.svg (or page css), not rest members.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -26,7 +14,7 @@ export function SVG(unit: xnew.Unit,
 ) {
     xnew.extend(Container, { className, style });
 
-    const cls = xnew.css({
+    const css = xnew.css({
         // fills the container; the presentation defaults inherit down to the shapes
         svg: {
             layer: 'base',
@@ -38,7 +26,7 @@ export function SVG(unit: xnew.Unit,
         },
     });
     xnew.nest({
-        tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style,
+        tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style,
         ...others,
     });
 }

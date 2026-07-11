@@ -1,16 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // SVGText — SVG-rendered text auto-fitted to its bounding box
-//
-// Nests a <text> inside an <svg> and resizes the svg (and thus the shrink-wrapping container)
-// to the text's bbox, so the element's footprint matches the rendered glyphs.
-//
-// - SVGText : component({ text, fontSize, className, style, designs, ...rest }) — className /
-//             style decorate the container (sized by the text); designs: { svg? } — a Design
-//             ({ className?, style? }) for the <svg> (the presentation defaults are an @layer
-//             base css rule — override them here, not via attributes); rest members pass
-//             through to the <svg>; returns { get container }
-//
-// Usage: xnew(xbasics.SVGText, { text: 'GAME OVER', fontSize: 24, designs: { svg: { style: 'stroke: #EEE; stroke-width: 1;' } } });
+// The svg (and thus the shrink-wrapping container) is resized to the text's bbox, so the
+// element's footprint matches the rendered glyphs; style the text via designs.svg, not attributes.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -27,7 +18,7 @@ export function SVGText(unit: xnew.Unit,
         className, style,
     });
 
-    const cls = xnew.css({
+    const css = xnew.css({
         // sized by resize(); overflow keeps the stroke halo outside the bbox visible;
         // the presentation defaults (text = visible fill) inherit down to the <text>
         svg: {
@@ -41,7 +32,7 @@ export function SVGText(unit: xnew.Unit,
         },
     });
     xnew.nest({
-        tag: 'svg', className: `${cls.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style,
+        tag: 'svg', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style,
         ...others,
     });
     const svg = unit.element as SVGSVGElement;

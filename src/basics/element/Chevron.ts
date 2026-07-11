@@ -1,18 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Chevron — single-stroke chevron arrow icon pointing in a given direction
-//
-// The path always points right; direction is applied as a rotate on the inner <svg>'s
-// style.transform, so callers animating the rotation themselves (e.g. an open/close toggle)
-// use the default and drive the element's transform directly.
-//
-// - Chevron : component({ direction, className, style, designs, ...rest }) — direction: 'up' |
-//             'down' | 'left' | 'right' (default 'right'); className / style decorate the
-//             container (default 1em × 1em); designs: { svg? } — a Design ({ className?, style? })
-//             for the <svg> (the presentation defaults are an @layer base css rule — override
-//             them here, not via attributes); rest members (viewBox, …) pass through to the
-//             <svg>; returns { get container }
-//
-// Usage: xnew(xbasics.Chevron, { direction: 'down', style: 'width: 1em; height: 1em;' });
+// The path always points right; direction rotates the inner <svg> via style.transform, so callers
+// animating the rotation themselves use the default and drive the transform directly.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -27,8 +16,7 @@ export function Chevron(unit: xnew.Unit,
         base: 'box-sizing: border-box; width: 1em; height: 1em;',
         className, style,
     });
-    const cls = xnew.css({
-        // fills the container; the presentation defaults inherit down to the path
+    const css = xnew.css({
         svg: {
             layer: 'base',
             body: `
@@ -39,7 +27,7 @@ export function Chevron(unit: xnew.Unit,
         },
     });
     xnew.nest({
-        tag: 'svg', viewBox: '0 0 12 12', className: `${cls.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style,
+        tag: 'svg', viewBox: '0 0 12 12', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style,
         ...others,
     });
     xnew('<path d="M4 2 8 6 4 10"/>');

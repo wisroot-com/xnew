@@ -1,16 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // AnalogStick — virtual game-pad stick with a continuous radial vector
-//
-// Drag-based on-screen input that translates pointer movement into a normalized vector (x / y in
-// [-1, 1]) and emits it as '-down' / '-move' / '-up' so parent components can react without
-// touching DOM events directly. The visual stick follows the pointer within a radius.
-//
-// - AnalogStick : component({ className, style, designs }) emitting '-down' / '-move' / '-up'
-//                 with { vector }; className / style decorate the pointer-operated container;
-//                 designs: { svg? } — a Design ({ className?, style? }) applied to the SVG layers;
-//                 returns { get container }
-//
-// Usage: xnew(xbasics.AnalogStick).on('-move', ({ vector }) => move(vector));
+// Translates pointer drags into a normalized vector (x / y in [-1, 1]) emitted as events,
+// so parent components react without touching DOM events directly.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -26,7 +17,7 @@ export function AnalogStick(unit: xnew.Unit,
         className, style,
     });
 
-    const cls = xnew.css({
+    const css = xnew.css({
         svg: {
             layer: 'base',
             body: `
@@ -36,7 +27,7 @@ export function AnalogStick(unit: xnew.Unit,
             `,
         },
     });
-    const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style };
+    const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style };
 
     xnew((unit: xnew.Unit) => {
         xnew.nest(svg);

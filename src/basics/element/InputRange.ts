@@ -1,18 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputRange — text-free gauge backed by a hidden native <input type="range">
-//
-// The invisible native control captures interaction (drag / touch / keyboard) while the visible
-// surface is a value-driven meter layer growing over a full-extent frame layer (default look:
-// a fill bar inside a faint outline) with a status readout of the current value, so callers get
-// a gauge look with native range semantics.
-//
-// - InputRange : component({ value, min, max, step, className, style, designs, ...rest })
-//                — emits 'input' with { value }; fills left→right; shows the value at the right;
-//                  designs: { frame?, meter?, status? } — a Design ({ className?, style? }) per
-//                  part; rest members (name, …) pass through to the <input>
-//
-// Usage: const gauge = xnew(xbasics.InputRange, { value: 50, designs: { meter: { style: 'background: gold;' } } });
-//        gauge.on('input', ({ value }) => ...);
+// The invisible native control captures interaction while the visible surface is a value-driven
+// meter layer growing over a full-extent frame layer, plus a status readout of the value.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -31,7 +20,7 @@ export function InputRange(unit: xnew.Unit,
         className, style,
     });
 
-    const cls = xnew.css({
+    const css = xnew.css({
         // static full-extent layer (default: a faint outline of the max extent)
         frame: {
             layer: 'base',
@@ -77,11 +66,11 @@ export function InputRange(unit: xnew.Unit,
         },
     });
 
-    xnew({ tag: 'div', className: `${cls.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
+    xnew({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
 
-    const meter = xnew({ tag: 'div', className: `${cls.meter} ${designs.meter?.className ?? ''}`, style: designs.meter?.style });
+    const meter = xnew({ tag: 'div', className: `${css.meter} ${designs.meter?.className ?? ''}`, style: designs.meter?.style });
 
-    const status = xnew({ tag: 'div', className: `${cls.status} ${designs.status?.className ?? ''}`, style: designs.status?.style });
+    const status = xnew({ tag: 'div', className: `${css.status} ${designs.status?.className ?? ''}`, style: designs.status?.style });
 
     const update = (v: number) => {
         meter.element.style.width = `${(v - min) / (max - min) * 100}%`;
@@ -90,7 +79,7 @@ export function InputRange(unit: xnew.Unit,
     update(initial);
 
     // hidden native input for interaction (min / max / step before value, so value never clamps against defaults)
-    xnew.nest({ tag: 'input', type: 'range', min, max, step, value: initial, className: cls.input, ...others });
+    xnew.nest({ tag: 'input', type: 'range', min, max, step, value: initial, className: css.input, ...others });
     unit.on('input', ({ value }: { value: number }) => {
         update(value);
     });

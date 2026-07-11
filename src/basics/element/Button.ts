@@ -1,16 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Button — framed native button with centered label
-//
-// The same framed look as Panel's rows (frame + hover tint + press feedback) as a standalone
-// element, so a single button matches the panel design without pulling in the whole panel.
-//
-// - Button : component({ text, className, style, designs, ...rest }) — className / style decorate
-//            the container; designs: { button? } — a Design ({ className?, style? }) for the
-//            native button; rest members (name, …) pass through to the <button>;
-//            emits 'click' with { event, position }; returns { get container }
-//
-// Usage: const button = xnew(xbasics.Button, { text: 'start' });
-//        button.on('click', () => ...);
+// Gives a single button the same framed look as Panel's rows (frame + hover tint + press
+// feedback) without pulling in the whole panel.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -26,7 +17,7 @@ export function Button(unit: xnew.Unit,
         className, style,
     });
 
-    const cls = xnew.css({
+    const css = xnew.css({
         button: {
             layer: 'base',
             body: `
@@ -42,5 +33,5 @@ export function Button(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'button', type: 'button', className: `${cls.button} ${designs.button?.className ?? ''}`, style: designs.button?.style, ...others }, text);
+    xnew.nest({ tag: 'button', type: 'button', className: `${css.button} ${designs.button?.className ?? ''}`, style: designs.button?.style, ...others }, text);
 }

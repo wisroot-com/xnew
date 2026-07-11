@@ -1,16 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputText — framed native text field that inherits the surrounding look
-//
-// Text entry needs the real control visible, so the native <input type="text"> sits transparent
-// inside a framed container, matching the structure of the other Input* elements.
-//
-// - InputText : component({ className, style, designs, ...rest }) — className / style decorate the
-//               container; designs: { field? } — a Design ({ className?, style? }) for the field;
-//               rest members (value, name, placeholder, …) pass through to the <input>;
-//               emits 'input' with { value } (string)
-//
-// Usage: const text = xnew(xbasics.InputText, { placeholder: 'name' });
-//        text.on('input', ({ value }) => ...);
+// Text entry needs the real control visible, so the native <input> sits transparent inside a
+// framed container, matching the structure of the other Input* elements.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -26,7 +17,7 @@ export function InputText(unit: xnew.Unit,
         className, style,
     });
 
-    const cls = xnew.css({
+    const css = xnew.css({
         // framed field; transparent + inherit so the native control sits on any surface
         field: {
             layer: 'base',
@@ -41,5 +32,5 @@ export function InputText(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'input', type: 'text', className: `${cls.field} ${designs.field?.className ?? ''}`, style: designs.field?.style, ...others });
+    xnew.nest({ tag: 'input', type: 'text', className: `${css.field} ${designs.field?.className ?? ''}`, style: designs.field?.style, ...others });
 }

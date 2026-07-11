@@ -1,17 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputNumber — framed native number field
-//
-// Number entry needs the real control visible, so the native <input type="number"> sits framed
-// inside a sizing container; the unstylable native spinner is hidden so the field matches the
-// other Input* elements (keyboard arrows still step the value).
-//
-// - InputNumber : component({ className, style, designs, ...rest }) — className / style decorate
-//                 the container; designs: { field? } — a Design ({ className?, style? }) for the
-//                 field; rest members (value, min, max, step, name, placeholder, …) pass through
-//                 to the <input>; emits 'input' with { value } (number; NaN while the field is empty)
-//
-// Usage: const num = xnew(xbasics.InputNumber, { value: 10, min: 0, max: 100 });
-//        num.on('input', ({ value }) => ...);
+// The unstylable native spinner is hidden so the field matches the other Input* elements
+// (keyboard arrows still step the value).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -27,7 +17,7 @@ export function InputNumber(unit: xnew.Unit,
         className, style,
     });
 
-    const cls = xnew.css({
+    const css = xnew.css({
         // framed field; transparent + inherit so the native control sits on any surface,
         // with the unstylable native spinner hidden
         field: {
@@ -45,5 +35,5 @@ export function InputNumber(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'input', type: 'number', className: `${cls.field} ${designs.field?.className ?? ''}`, style: designs.field?.style, ...others });
+    xnew.nest({ tag: 'input', type: 'number', className: `${css.field} ${designs.field?.className ?? ''}`, style: designs.field?.style, ...others });
 }

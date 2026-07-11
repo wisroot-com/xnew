@@ -1,16 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // DPad — virtual game-pad directional pad with a quantized 4 or 8 way vector
-//
-// Drag-based on-screen input that translates pointer movement into a quantized vector (x / y in
-// {-1, 0, 1}) and emits it as '-down' / '-move' / '-up'; the active arrow segment is highlighted.
+// Translates pointer drags into a quantized vector (x / y in {-1, 0, 1}) emitted as events;
 // `diagonal: false` restricts to 4 directions.
-//
-// - DPad : component({ diagonal, className, style, designs }) emitting '-down' / '-move' / '-up'
-//          with { vector }; className / style decorate the pointer-operated container;
-//          designs: { svg? } — a Design ({ className?, style? }) applied to the SVG layers;
-//          returns { get container }
-//
-// Usage: xnew(xbasics.DPad, { diagonal: false }).on('-move', ({ vector }) => move(vector));
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -26,7 +17,7 @@ export function DPad(unit: xnew.Unit,
         className, style,
     });
 
-    const cls = xnew.css({
+    const css = xnew.css({
         svg: {
             layer: 'base',
             body: `
@@ -38,8 +29,8 @@ export function DPad(unit: xnew.Unit,
     });
 
     // each layer disables the irrelevant paint inline; the caller's designs.svg comes later, so it wins
-    const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${designs.svg?.className ?? ''}`, style: `stroke: none; ${designs.svg?.style ?? ''}` };
-    const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${cls.svg} ${designs.svg?.className ?? ''}`, style: `fill: none; ${designs.svg?.style ?? ''}` };
+    const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: `stroke: none; ${designs.svg?.style ?? ''}` };
+    const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: `fill: none; ${designs.svg?.style ?? ''}` };
 
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
