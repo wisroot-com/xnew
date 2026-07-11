@@ -27,7 +27,7 @@ export function InputRange(unit: xnew.Unit,
         container: {
             layer: 'xbasics',
             body: `
-                box-sizing: border-box; width: 10rem; height: 1.8rem;
+                box-sizing: border-box; width: 10rem; height: 1.5rem;
                 position: relative;
             `,
         },

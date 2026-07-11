@@ -1540,27 +1540,48 @@ function InputRange(unit, { value, min = 0, max = 100, step = 1, name, className
     return { get container() { return container; } };
 }
 
-function InputCheckbox(unit, { value = false, name = '', className = '', style = '' } = {}) {
+function InputCheckbox(unit, _a = {}) {
+    var _b, _c, _d;
+    var { value = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
     const cls = xnew.css({
-        container: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
-        fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
-        clickable: { layer: 'xbasics', body: 'cursor: pointer; user-select: none;' },
-        frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
-        tint: { layer: 'xbasics', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
+        container: {
+            layer: 'xbasics',
+            body: `
+                box-sizing: border-box; width: 1.5rem; height: 1.5rem;
+            `,
+        },
+        check: {
+            layer: 'xbasics',
+            body: `
+                box-sizing: border-box; width: 100%; height: 100%;
+                position: relative;
+                display: flex; align-items: center; justify-content: center;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                cursor: pointer; user-select: none;
+                svg { opacity: 0; }
+                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+                &[data-checked] svg { opacity: 1; }
+            `,
+        },
+        input: {
+            layer: 'xbasics',
+            body: `
+                position: absolute; inset: 0; width: 100%; height: 100%;
+                opacity: 0; cursor: pointer; margin: 0;
+            `,
+        },
     });
     const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
-    xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${cls.frame}" style="position: relative; display: flex; align-items: center; justify-content: center;">`);
-    const box = unit.element;
-    const check = xnew((unit) => {
+    const check = xnew.nest({ tag: 'div', className: `${cls.check} ${(_c = (_b = designs.check) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.check) === null || _d === void 0 ? void 0 : _d.style });
+    xnew((unit) => {
         xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 100%; height: 100%;', stroke: 'currentColor', strokeWidth: 2 });
         xnew('<path d="M2 6 5 9 10 3"/>');
     });
     const update = (checked) => {
-        box.classList.toggle(cls.tint, checked);
-        check.element.style.opacity = checked ? '1' : '0';
+        check.toggleAttribute('data-checked', checked);
     };
     update(value);
-    xnew.nest(`<input type="checkbox"${name ? ` name="${name}"` : ''}${value ? ' checked' : ''} style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;">`);
+    xnew.nest(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: cls.input }, others));
     unit.on('input', ({ value }) => {
         update(value);
     });

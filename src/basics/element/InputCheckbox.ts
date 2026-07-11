@@ -3,50 +3,74 @@
 //
 // The invisible native control captures interaction (click / keyboard) while the visible surface
 // is a framed box with an SVG check mark, so callers get a styled checkbox with native semantics.
+// The checked look lives in css rules keyed on a data-checked attribute, so designs stay intact.
 //
-// - InputCheckbox : component({ value, name, className, style }) — className / style decorate the
-//                   container; emits 'input' with { value } (boolean checked state);
-//                   returns { get container }
+// - InputCheckbox : component({ value, className, style, designs, ...rest }) — className / style
+//                   decorate the container; designs: { check? } — a Design ({ className?, style? })
+//                   for the check box; rest members (name, …) pass through to the <input>;
+//                   emits 'input' with { value } (boolean checked state); returns { get container }
 //
-// Usage: const check = xnew('<div style="width: 1.25em; height: 1.25em;">', xbasics.InputCheckbox, { value: true });
+// Usage: const check = xnew(xbasics.InputCheckbox, { value: true });
 //        check.on('input', ({ value }) => ...);
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 import { SVG } from './SVG';
+import { Design } from '../design';
 
 export function InputCheckbox(unit: xnew.Unit,
-    { value = false, name = '', className = '', style = '' }:
-    { value?: boolean, name?: string, className?: string, style?: string } = {}
+    { value = false, className = '', style = '', designs = {}, ...others }:
+    { value?: boolean, className?: string, style?: string, designs?: { check?: Design }, [key: string]: any } = {}
 ) {
     const cls = xnew.css({
-        // sizing shell only; the default size is pending (fills the host for now)
-        container: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
-        fill: { layer: 'xbasics', body: 'box-sizing: border-box; width: 100%; height: 100%;' },
-        clickable: { layer: 'xbasics', body: 'cursor: pointer; user-select: none;' },
-        frame: { layer: 'xbasics', body: 'border: 1px solid currentColor; border-radius: 0.25em;' },
-        tint: { layer: 'xbasics', body: 'background: color-mix(in srgb, currentColor 20%, transparent);' },
+        // sizing shell only; the default size is an overridable @layer xbasics rule
+        container: {
+            layer: 'xbasics',
+            body: `
+                box-sizing: border-box; width: 1.5rem; height: 1.5rem;
+            `,
+        },
+        // framed box carrying the SVG check mark (position: relative anchors the input overlay);
+        // the checked state is expressed via data-checked
+        check: {
+            layer: 'xbasics',
+            body: `
+                box-sizing: border-box; width: 100%; height: 100%;
+                position: relative;
+                display: flex; align-items: center; justify-content: center;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                cursor: pointer; user-select: none;
+                svg { opacity: 0; }
+                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+                &[data-checked] svg { opacity: 1; }
+            `,
+        },
+        // invisible native control stretched over the box
+        input: {
+            layer: 'xbasics',
+            body: `
+                position: absolute; inset: 0; width: 100%; height: 100%;
+                opacity: 0; cursor: pointer; margin: 0;
+            `,
+        },
     });
 
     const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
 
-    xnew.nest(`<div class="${cls.fill} ${cls.clickable} ${cls.frame}" style="position: relative; display: flex; align-items: center; justify-content: center;">`);
-    const box = unit.element;
+    const check = xnew.nest({ tag: 'div', className: `${cls.check} ${designs.check?.className ?? ''}`, style: designs.check?.style });
 
-    // check mark (transparent while unchecked)
-    const check = xnew((unit: xnew.Unit) => {
+    xnew((unit: xnew.Unit) => {
         xnew.extend(SVG, { viewBox: '0 0 12 12', style: 'width: 100%; height: 100%;', stroke: 'currentColor', strokeWidth: 2 });
         xnew('<path d="M2 6 5 9 10 3"/>');
     });
 
     const update = (checked: boolean) => {
-        box.classList.toggle(cls.tint, checked);
-        check.element.style.opacity = checked ? '1' : '0';
+        check.toggleAttribute('data-checked', checked);
     };
     update(value);
 
     // hidden native input for interaction
-    xnew.nest(`<input type="checkbox"${name ? ` name="${name}"` : ''}${value ? ' checked' : ''} style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0;">`);
+    xnew.nest({ tag: 'input', type: 'checkbox', checked: value, className: cls.input, ...others });
     unit.on('input', ({ value }: { value: boolean }) => {
         update(value);
     });

@@ -302,11 +302,14 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, name, clas
     readonly container: HTMLElement | SVGElement;
 };
 
-declare function InputCheckbox(unit: xnew.Unit, { value, name, className, style }?: {
+declare function InputCheckbox(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
     value?: boolean;
-    name?: string;
     className?: string;
     style?: string;
+    designs?: {
+        check?: Design;
+    };
+    [key: string]: any;
 }): {
     readonly container: HTMLElement | SVGElement;
 };
