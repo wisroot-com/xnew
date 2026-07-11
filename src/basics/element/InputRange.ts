@@ -2,12 +2,13 @@
 // InputRange — text-free gauge backed by a hidden native <input type="range">
 //
 // The invisible native control captures interaction (drag / touch / keyboard) while the visible
-// surface is a value-driven meter layer growing over a full-extent background layer (default look:
-// a fill bar inside a faint outline), so callers get a gauge look with native range semantics.
+// surface is a value-driven meter layer growing over a full-extent frame layer (default look:
+// a fill bar inside a faint outline) with a status readout of the current value, so callers get
+// a gauge look with native range semantics.
 //
 // - InputRange : component({ value, min, max, step, name, className, style, designs })
-//                — emits 'input' with { value }; fills left→right;
-//                  designs: { background?, meter? } — a Design ({ className?, style? }) per part
+//                — emits 'input' with { value }; fills left→right; shows the value at the right;
+//                  designs: { frame?, meter?, status? } — a Design ({ className?, style? }) per part
 //
 // Usage: const gauge = xnew(xbasics.InputRange, { value: 50, designs: { meter: { style: 'background: gold;' } } });
 //        gauge.on('input', ({ value }) => ...);
@@ -18,7 +19,7 @@ import { Design } from '../design';
 
 export function InputRange(unit: xnew.Unit,
     { value, min = 0, max = 100, step = 1, name, className = '', style = '', designs = {} }:
-    { value?: number, min?: number, max?: number, step?: number, name?: string, className?: string, style?: string, designs?: { background?: Design, meter?: Design } } = {}
+    { value?: number, min?: number, max?: number, step?: number, name?: string, className?: string, style?: string, designs?: { frame?: Design, meter?: Design, status?: Design } } = {}
 ) {
     value = value ?? min;
     const cls = xnew.css({
@@ -32,7 +33,7 @@ export function InputRange(unit: xnew.Unit,
             `,
         },
         // static full-extent layer (default: a faint outline of the max extent)
-        background: {
+        frame: {
             layer: 'xbasics',
             body: `
                 position: absolute; inset: 0;
@@ -40,7 +41,7 @@ export function InputRange(unit: xnew.Unit,
                 border-radius: 0.25em;
             `,
         },
-        // value-driven layer (default: a bordered fill bar; border-box so it lands on the background at max)
+        // value-driven layer (default: a bordered fill bar; border-box so it lands on the frame at max)
         meter: {
             layer: 'xbasics',
             body: `
@@ -49,6 +50,16 @@ export function InputRange(unit: xnew.Unit,
                 border: 1px solid currentColor; border-radius: 0.25em;
                 background: color-mix(in srgb, currentColor 20%, transparent);
                 transition: width 0.05s;
+            `,
+        },
+        // value readout painted above the meter (pointer-events: none keeps the drag on the input)
+        status: {
+            layer: 'xbasics',
+            body: `
+                position: absolute; inset: 0;
+                box-sizing: border-box; padding: 0 0.5em;
+                display: flex; justify-content: flex-end; align-items: center;
+                pointer-events: none;
             `,
         },
         // invisible native control stretched over the whole surface; the thumb is shrunk to zero
@@ -68,12 +79,15 @@ export function InputRange(unit: xnew.Unit,
 
     const container = xnew.nest({ tag: 'div', className: `${cls.container} ${className}`, style });
 
-    xnew({ tag: 'div', className: `${cls.background} ${designs.background?.className ?? ''}`, style: designs.background?.style });
+    xnew({ tag: 'div', className: `${cls.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
 
     const meter = xnew({ tag: 'div', className: `${cls.meter} ${designs.meter?.className ?? ''}`, style: designs.meter?.style });
 
+    const status = xnew({ tag: 'div', className: `${cls.status} ${designs.status?.className ?? ''}`, style: designs.status?.style });
+
     const update = (v: number) => {
         meter.element.style.width = `${(v - min) / (max - min) * 100}%`;
+        status.element.textContent = String(v);
     };
     update(value);
 

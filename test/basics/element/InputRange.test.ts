@@ -12,9 +12,13 @@ describe('basics InputRange', () => {
         jest.useRealTimers();
     });
 
-    // container children: the background first, then the meter
+    // container children: the frame first, then the meter, then the status readout
     function meterOf(unit: xnew.Unit): HTMLElement {
         return unit.element.parentElement?.querySelectorAll('div')[1] as HTMLElement;
+    }
+
+    function statusOf(unit: xnew.Unit): HTMLElement {
+        return unit.element.parentElement?.querySelectorAll('div')[2] as HTMLElement;
     }
 
     it('nests a hidden native range input with the given attributes', () => {
@@ -53,6 +57,18 @@ describe('basics InputRange', () => {
         expect(meterOf(unit).style.width).toBe('75%');
     });
 
+    it('shows the current value in the status readout', () => {
+        const unit = xnew(InputRange, { value: 30 });
+        const input = unit.element as HTMLInputElement;
+        jest.advanceTimersByTime(0);
+
+        expect(statusOf(unit).textContent).toBe('30');
+
+        input.value = '75';
+        input.dispatchEvent(new Event('input', { bubbles: false }));
+        expect(statusOf(unit).textContent).toBe('75');
+    });
+
     it('delivers a numeric value to input listeners', () => {
         const unit = xnew(InputRange, { value: 0 });
         const input = unit.element as HTMLInputElement;
@@ -82,12 +98,12 @@ describe('basics InputRange', () => {
         expect((anonymous.element as HTMLInputElement).hasAttribute('name')).toBe(false);
     });
 
-    it('marks the max extent with a background fainter than the meter border', () => {
+    it('marks the max extent with a frame fainter than the meter border', () => {
         const unit = xnew(InputRange, { value: 30 });
-        const background = unit.element.parentElement?.querySelector('div') as HTMLElement;
+        const frame = unit.element.parentElement?.querySelector('div') as HTMLElement;
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
-        expect(background.className).toMatch(/xnew\d+-background/);
+        expect(frame.className).toMatch(/xnew\d+-frame/);
         expect(styleText).toContain('border: 1px solid color-mix(in srgb, currentColor 40%, transparent);');
         expect(styleText).toContain('inset: 0;');
     });
@@ -100,18 +116,18 @@ describe('basics InputRange', () => {
         expect(unit.container.getAttribute('style')).toContain('height: 2em;');
     });
 
-    it('applies designs to the background and meter parts', () => {
+    it('applies designs to the frame and meter parts', () => {
         const unit = xnew(InputRange, {
             designs: {
-                background: { className: 'rail', style: 'border-radius: 0;' },
+                frame: { className: 'rail', style: 'border-radius: 0;' },
                 meter: { className: 'gold', style: 'background: gold;' },
             },
         });
-        const background = unit.element.parentElement?.querySelectorAll('div')[0] as HTMLElement;
+        const frame = unit.element.parentElement?.querySelectorAll('div')[0] as HTMLElement;
         const meter = meterOf(unit);
 
-        expect(background.className).toContain('rail');
-        expect(background.getAttribute('style')).toContain('border-radius: 0;');
+        expect(frame.className).toContain('rail');
+        expect(frame.getAttribute('style')).toContain('border-radius: 0;');
         expect(meter.className).toContain('gold');
         expect(meter.getAttribute('style')).toContain('background: gold;');
     });

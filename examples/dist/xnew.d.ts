@@ -296,8 +296,9 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, name, clas
     className?: string;
     style?: string;
     designs?: {
-        background?: Design;
+        frame?: Design;
         meter?: Design;
+        status?: Design;
     };
 }): {
     readonly container: HTMLElement | SVGElement;
@@ -342,7 +343,7 @@ declare function InputSwitch(unit: xnew.Unit, { value, className, style, designs
     className?: string;
     style?: string;
     designs?: {
-        background?: Design;
+        frame?: Design;
         knob?: Design;
     };
     [key: string]: any;
@@ -350,12 +351,16 @@ declare function InputSwitch(unit: xnew.Unit, { value, className, style, designs
     readonly container: HTMLElement | SVGElement;
 };
 
-declare function InputRadio(unit: xnew.Unit, { value, items, name, className, style }?: {
+declare function InputRadio(unit: xnew.Unit, { value, items, name, className, style, designs }?: {
     value?: string;
     items?: string[];
     name?: string;
     className?: string;
     style?: string;
+    designs?: {
+        frame?: Design;
+        item?: Design;
+    };
 }): {
     readonly container: HTMLElement | SVGElement;
 };
