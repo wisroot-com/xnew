@@ -17,14 +17,12 @@ export function InputRadio(unit: xnew.Unit,
 ) {
     const initial = value ?? items[0] ?? '';
 
-    // the default size is pending (fills the host for now)
     xnew.extend(Container, {
         base: 'box-sizing: border-box; width: 100%; height: 100%;',
         className, style,
     });
 
     const css = xnew.css({
-        // framed row holding the item cells
         frame: {
             layer: 'base',
             body: `
@@ -33,8 +31,6 @@ export function InputRadio(unit: xnew.Unit,
                 border: 1px solid currentColor; border-radius: 0.25em;
             `,
         },
-        // one cell per choice (position: relative anchors the input overlay);
-        // the selected state is expressed via data-checked
         item: {
             layer: 'base',
             body: `
@@ -48,7 +44,6 @@ export function InputRadio(unit: xnew.Unit,
                 &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
-        // invisible native control stretched over the cell
         input: {
             layer: 'base',
             body: `

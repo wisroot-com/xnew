@@ -18,7 +18,6 @@ export function InputText(unit: xnew.Unit,
     });
 
     const css = xnew.css({
-        // framed field; transparent + inherit so the native control sits on any surface
         field: {
             layer: 'base',
             body: `

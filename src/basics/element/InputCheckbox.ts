@@ -18,8 +18,6 @@ export function InputCheckbox(unit: xnew.Unit,
     });
 
     const css = xnew.css({
-        // framed box carrying the check mark (position: relative anchors the input overlay);
-        // the checked state is expressed via data-checked
         check: {
             layer: 'base',
             body: `
@@ -33,7 +31,6 @@ export function InputCheckbox(unit: xnew.Unit,
                 &[data-checked] svg { opacity: 1; }
             `,
         },
-        // check mark stroke
         svg: {
             layer: 'base',
             body: `
@@ -42,7 +39,6 @@ export function InputCheckbox(unit: xnew.Unit,
                 fill: none;
             `,
         },
-        // invisible native control stretched over the box
         input: {
             layer: 'base',
             body: `
@@ -59,9 +55,6 @@ export function InputCheckbox(unit: xnew.Unit,
         xnew('<path d="M2 6 5 9 10 3"/>');
     });
 
-    const update = (checked: boolean) => {
-        check.toggleAttribute('data-checked', checked);
-    };
     update(value);
 
     // hidden native input for interaction
@@ -69,4 +62,8 @@ export function InputCheckbox(unit: xnew.Unit,
     unit.on('input', ({ value }: { value: boolean }) => {
         update(value);
     });
+    
+    function update(checked: boolean) {
+        check.toggleAttribute('data-checked', checked);
+    }
 }

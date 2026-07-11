@@ -18,8 +18,6 @@ export function InputSwitch(unit: xnew.Unit,
     });
 
     const css = xnew.css({
-        // rounded track carrying the knob (position: relative anchors the knob and input overlay);
-        // the on state is expressed via data-checked
         frame: {
             layer: 'base',
             body: `
@@ -30,7 +28,6 @@ export function InputSwitch(unit: xnew.Unit,
                 &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
-        // aspect-ratio keeps the knob square at any frame size, so the slide needs no size math
         knob: {
             layer: 'base',
             body: `
@@ -41,7 +38,6 @@ export function InputSwitch(unit: xnew.Unit,
                 [data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }
             `,
         },
-        // invisible native control stretched over the frame
         input: {
             layer: 'base',
             body: `

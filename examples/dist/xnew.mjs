@@ -1547,7 +1547,7 @@ function InputRange(unit, _a = {}) {
     var { value, min = 0, max = 100, step = 1, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "className", "style", "designs"]);
     const initial = value !== null && value !== void 0 ? value : min;
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 10em; height: 1.5em; position: relative; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; width: 10em; height: 1.8em; position: relative; margin: 0.125em 0;',
         className, style,
     });
     const css = xnew.css({
@@ -1645,14 +1645,14 @@ function InputCheckbox(unit, _a = {}) {
         xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg });
         xnew('<path d="M2 6 5 9 10 3"/>');
     });
-    const update = (checked) => {
-        check.toggleAttribute('data-checked', checked);
-    };
     update(value);
     xnew.nest(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
     unit.on('input', ({ value }) => {
         update(value);
     });
+    function update(checked) {
+        check.toggleAttribute('data-checked', checked);
+    }
 }
 
 function InputText(unit, _a = {}) {

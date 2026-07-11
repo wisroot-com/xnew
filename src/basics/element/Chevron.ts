@@ -26,10 +26,7 @@ export function Chevron(unit: xnew.Unit,
             `,
         },
     });
-    xnew.nest({
-        tag: 'svg', viewBox: '0 0 12 12', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style,
-        ...others,
-    });
+    xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style, ...others });
     xnew('<path d="M4 2 8 6 4 10"/>');
 
     const angles = { right: 0, down: 90, left: 180, up: 270 };

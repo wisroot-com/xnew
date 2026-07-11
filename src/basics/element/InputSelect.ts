@@ -21,8 +21,6 @@ export function InputSelect(unit: xnew.Unit,
     });
 
     const css = xnew.css({
-        // framed button face (position: relative anchors nothing itself but keeps the click surface);
-        // the hover tint is suppressed via data-open while the option list is open
         frame: {
             layer: 'base',
             body: `
@@ -34,15 +32,12 @@ export function InputSelect(unit: xnew.Unit,
                 &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
-        // current value text clipped inside the button
         label: {
             layer: 'base',
             body: `
                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             `,
         },
-        // floating option list; fixed + viewport coords escape overflow-clipping ancestors
-        // (e.g. a panel's scroll container), max-content lets it outgrow the button
         menu: {
             layer: 'base',
             body: `
@@ -52,7 +47,6 @@ export function InputSelect(unit: xnew.Unit,
                 overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
             `,
         },
-        // one option row; the current selection is expressed via data-checked
         item: {
             layer: 'base',
             body: `

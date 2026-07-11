@@ -14,14 +14,12 @@ export function InputRange(unit: xnew.Unit,
 ) {
     const initial = value ?? min;
 
-    // position: relative anchors the absolute parts
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 10em; height: 1.5em; position: relative; margin: 0.125em 0;',
+        base: 'box-sizing: border-box; width: 10em; height: 1.8em; position: relative; margin: 0.125em 0;',
         className, style,
     });
 
     const css = xnew.css({
-        // static full-extent layer (default: a faint outline of the max extent)
         frame: {
             layer: 'base',
             body: `
@@ -30,7 +28,6 @@ export function InputRange(unit: xnew.Unit,
                 border-radius: 0.25em;
             `,
         },
-        // value-driven layer (default: a bordered fill bar; border-box so it lands on the frame at max)
         meter: {
             layer: 'base',
             body: `

@@ -18,8 +18,6 @@ export function InputNumber(unit: xnew.Unit,
     });
 
     const css = xnew.css({
-        // framed field; transparent + inherit so the native control sits on any surface,
-        // with the unstylable native spinner hidden
         field: {
             layer: 'base',
             body: `
