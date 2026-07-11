@@ -79,8 +79,8 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   for theming, custom properties (`--vars`) pass through unrenamed and inherit down the
   DOM — set them on a subtree root class, read via `var(--x, fallback)` in descendants.
 - **Every `basics/element` component wraps its parts in a mandatory size-only container**
-  (default `10rem × 1.8rem`; Checkbox `1.5rem × 1.5rem`; Radio / Switch fill the host until
-  their default is decided): `className` / `style` props decorate the container, and the
+  (default `10rem × 1.8rem`; Checkbox `1.5rem × 1.5rem`; Switch `3rem × 1.5rem`; Radio fills
+  the host until its default is decided): `className` / `style` props decorate the container, and the
   component returns `{ get container() { return container; } }`.
 - **Internal parts of a basics component are decorated via its `designs` prop** — one
   `Design` (`{ className?, style? }`, from `src/basics/design.ts`) per named part, e.g.

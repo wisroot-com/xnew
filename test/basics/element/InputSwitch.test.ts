@@ -12,12 +12,13 @@ describe('basics InputSwitch', () => {
         jest.useRealTimers();
     });
 
-    function trackOf(unit: xnew.Unit): HTMLElement {
+    // container > background > [knob, input]
+    function backgroundOf(unit: xnew.Unit): HTMLElement {
         return unit.element.parentElement as HTMLElement;
     }
 
     function knobOf(unit: xnew.Unit): HTMLElement {
-        return trackOf(unit).querySelector('div') as HTMLElement;
+        return backgroundOf(unit).querySelector('div') as HTMLElement;
     }
 
     it('nests a hidden native checkbox with the given state', () => {
@@ -26,25 +27,32 @@ describe('basics InputSwitch', () => {
 
         expect(input.tagName).toBe('INPUT');
         expect(input.getAttribute('type')).toBe('checkbox');
-        expect(input.hasAttribute('checked')).toBe(true);
+        expect(input.checked).toBe(true);
         expect(input.getAttribute('name')).toBe('sound');
     });
 
-    it('parks the knob on the left while off', () => {
+    it('defaults to off', () => {
         const unit = xnew(InputSwitch);
 
-        expect(knobOf(unit).style.left).toBe('0.15em');
-        expect(knobOf(unit).style.transform).toBe('translateX(0)');
+        expect((unit.element as HTMLInputElement).checked).toBe(false);
+        expect(backgroundOf(unit).hasAttribute('data-checked')).toBe(false);
     });
 
-    it('parks the knob on the right while on', () => {
+    it('marks the background as checked while on', () => {
         const unit = xnew(InputSwitch, { value: true });
 
-        expect(knobOf(unit).style.left).toBe('calc(100% - 0.15em)');
-        expect(knobOf(unit).style.transform).toBe('translateX(-100%)');
+        expect(backgroundOf(unit).hasAttribute('data-checked')).toBe(true);
     });
 
-    it('slides the knob and delivers a boolean value on input', () => {
+    it('carries the on look in data-checked css rules (tint + knob slide)', () => {
+        xnew(InputSwitch);
+        const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+
+        expect(styleText).toContain('&[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }');
+        expect(styleText).toContain('[data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }');
+    });
+
+    it('toggles data-checked and delivers a boolean value on input', () => {
         const unit = xnew(InputSwitch);
         const input = unit.element as HTMLInputElement;
 
@@ -55,6 +63,21 @@ describe('basics InputSwitch', () => {
         input.dispatchEvent(new Event('input', { bubbles: false }));
 
         expect(received).toEqual([true]);
-        expect(knobOf(unit).style.left).toBe('calc(100% - 0.15em)');
+        expect(backgroundOf(unit).hasAttribute('data-checked')).toBe(true);
+    });
+
+    it('applies designs to the background and knob parts', () => {
+        const unit = xnew(InputSwitch, { designs: { background: { className: 'pill' }, knob: { style: 'background: gold;' } } });
+
+        expect(backgroundOf(unit).className).toContain('pill');
+        expect(knobOf(unit).getAttribute('style')).toContain('background: gold;');
+    });
+
+    it('applies className and style to the container (exposed via the getter)', () => {
+        const unit = xnew(InputSwitch, { className: 'boxed', style: 'width: 3em;' });
+
+        expect(unit.container).toBe(backgroundOf(unit).parentElement);
+        expect(unit.container.className).toContain('boxed');
+        expect(unit.container.getAttribute('style')).toContain('width: 3em;');
     });
 });

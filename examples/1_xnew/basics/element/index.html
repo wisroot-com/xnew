@@ -81,8 +81,8 @@
       xnew.nest('<div>');
       xnew('<div class="mb-1">', 'InputSwitch');
       xnew.nest('<div class="flex gap-4 items-center">');
-      xnew('<div class="w-12 h-6">', xbasics.InputSwitch, { value: true });
-      xnew('<div class="w-12 h-6">', xbasics.InputSwitch, { value: true, className: 'text-emerald-600' });
+      xnew(xbasics.InputSwitch, { value: true });
+      xnew(xbasics.InputSwitch, { value: true, designs: { background: { style: 'border-radius: 0.25em;' }, knob: { style: 'border-radius: 0.25em; background: #4f46e5;' } } });
     }
 
     function MyInputRadio(unit) {
