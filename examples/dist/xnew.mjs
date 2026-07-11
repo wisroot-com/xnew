@@ -2444,20 +2444,23 @@ function Group(group, { name, open = false }) {
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
 }
-function Range(unit, { name = '', value, min = 0, max = 100, step = 1 }) {
+function Range(unit, _a) {
+    var { name = '' } = _a, others = __rest(_a, ["name"]);
     xnew.nest(`<div style="display: flex; align-items: center; position: relative; cursor: pointer; user-select: none;">`);
-    xnew(InputRange, { name, value, min, max, step, style: 'width: 100%;' });
-    xnew('<div style="position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 0.25em; display: flex; align-items: center; pointer-events: none;">', name);
+    xnew(InputRange, Object.assign(Object.assign({}, others), { style: 'width: 100%;' }));
+    xnew('<div style="position: absolute; left: 0.25em; pointer-events: none;">', name);
 }
-function Checkbox(unit, { name = '', value } = {}) {
+function Checkbox(unit, _a) {
+    var { name = '' } = _a, others = __rest(_a, ["name"]);
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
     xnew('<div style="flex: 1;">', name);
-    xnew(InputCheckbox, { name, value, style: 'width: 1.25em; height: 1.25em;' });
+    xnew(InputCheckbox, Object.assign(Object.assign({}, others), { style: 'width: 1.25em; height: 1.25em;' }));
 }
-function Select(unit, { name = '', value, items = [] } = {}) {
+function Select(unit, _a) {
+    var { name = '' } = _a, others = __rest(_a, ["name"]);
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1;">', name);
-    xnew(InputSelect, { name, value, items, style: 'width: auto; min-width: 3em; height: 2em;' });
+    xnew(InputSelect, Object.assign(Object.assign({}, others), { style: 'width: auto; min-width: 3em; height: 2em;' }));
 }
 
 const xbasics = {

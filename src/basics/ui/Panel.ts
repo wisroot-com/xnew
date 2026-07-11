@@ -95,36 +95,39 @@ function Separator(unit: xnew.Unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
 }
 
-function Range(unit: xnew.Unit,
-    { name = '', value, min = 0, max = 100, step = 1 }:
-    { name?: string, value?: number, min?: number, max?: number, step?: number }
+function Range(unit: xnew.Unit, { name = '', ...others }:
+    { name?: string, [key: string]: any }
 ) {
     // position: relative anchors the name label overlay
     xnew.nest(`<div style="display: flex; align-items: center; position: relative; cursor: pointer; user-select: none;">`);
 
     // inline width overrides the container's fixed @layer default so the gauge fills the row
-    xnew(InputRange, { name, value, min, max, step, style: 'width: 100%;' });
+    xnew(InputRange, { ...others, style: 'width: 100%;' });
 
-    // name label (after the gauge so the text paints above the fill bar; the value readout is InputRange's own)
-    xnew('<div style="position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 0.25em; display: flex; align-items: center; pointer-events: none;">', name);
+    // name overlaid on the gauge (the flex row centers its static position; clicks fall through)
+    xnew('<div style="position: absolute; left: 0.25em; pointer-events: none;">', name);
 }
 
-function Checkbox(unit: xnew.Unit, { name = '', value }: { name?: string, value?: boolean } = {}) {
+function Checkbox(unit: xnew.Unit, { name = '', ...others }:
+    { name?: string, [key: string]: any }
+) {
     // label row so a click anywhere in the row reaches the boxed native input
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
 
     xnew('<div style="flex: 1;">', name);
 
     // inline size overrides the container's fixed @layer default
-    xnew(InputCheckbox, { name, value, style: 'width: 1.25em; height: 1.25em;' });
+    xnew(InputCheckbox, { ...others, style: 'width: 1.25em; height: 1.25em;' });
 }
 
-function Select(unit: xnew.Unit, { name = '', value, items = [] }: { name?: string, value?: string, items?: string[] } = {}) {
+function Select(unit: xnew.Unit, { name = '', ...others }:
+    { name?: string, [key: string]: any }
+) {
     // label row; the pulldown itself is InputSelect, whose input event bubbles up to this row
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
 
     xnew('<div style="flex: 1;">', name);
 
     // width: auto overrides the container's fixed @layer default so the button fits its items
-    xnew(InputSelect, { name, value, items, style: 'width: auto; min-width: 3em; height: 2em;' });
+    xnew(InputSelect, { ...others, style: 'width: auto; min-width: 3em; height: 2em;' });
 }
