@@ -84,7 +84,7 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   component returns `{ get container() { return container; } }`.
 - **Internal parts of a basics component are decorated via its `designs` prop** — one
   `Design` (`{ className?, style? }`, from `src/basics/design.ts`) per named part, e.g.
-  InputRange's `designs: { background?, meter? }`. Generated class names are page-unique, so
+  InputRange's `designs: { frame?, meter? }`. Generated class names are page-unique, so
   page CSS cannot target parts directly; `designs` is the supported hook (never expose
   stable global part classes).
 - `xnew.nest(tagOrDef, textContent?)` creates a child element from a **tag string**

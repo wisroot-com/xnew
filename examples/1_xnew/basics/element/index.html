@@ -82,7 +82,7 @@
       xnew('<div class="mb-1">', 'InputSwitch');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputSwitch, { value: true });
-      xnew(xbasics.InputSwitch, { value: true, designs: { background: { style: 'border-radius: 0.25em;' }, knob: { style: 'border-radius: 0.25em; background: #4f46e5;' } } });
+      xnew(xbasics.InputSwitch, { value: true, designs: { frame: { style: 'border-radius: 0.25em;' }, knob: { style: 'border-radius: 0.25em; background: #4f46e5;' } } });
     }
 
     function MyInputRadio(unit) {
@@ -90,7 +90,7 @@
       xnew('<div class="mb-1">', 'InputRadio');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'mid' });
-      xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'high', className: 'text-indigo-500' });
+      xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'high', designs: { frame: { style: 'border-radius: 9999px;' }, item: { style: 'font-weight: bold;' } } });
     }
 
     function MyInputSelect(unit) {
