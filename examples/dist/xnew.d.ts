@@ -252,13 +252,10 @@ declare function Button(unit: xnew.Unit, { text, className, style, designs, ...o
     [key: string]: any;
 }): void;
 
-declare function Chevron(unit: xnew.Unit, { direction, className, style, designs, ...others }?: {
+declare function Chevron(unit: xnew.Unit, { direction, className, style, ...others }?: {
     direction?: 'up' | 'down' | 'left' | 'right';
     className?: string;
     style?: string;
-    designs?: {
-        svg?: Design;
-    };
     [key: string]: any;
 }): void;
 

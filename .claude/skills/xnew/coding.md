@@ -87,8 +87,8 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   strictly the **outer shell and caller-side design**: `tag` (default `'div'`) picks the shell
   element, `base` / `className` / `style` decorate it, and rest members are forwarded onto the
   shell element (ElementDef semantics). Every other prop of the component (`value`, `name`,
-  rest members, …) stays with the inner parts (e.g. the native `<input>`) — except SVG and
-  SVGText, whose shell IS the `<svg>` itself (`tag: 'svg'`, no inner nest, no `designs` prop):
+  rest members, …) stays with the inner parts (e.g. the native `<input>`) — except SVG /
+  SVGText / Chevron, whose shell IS the `<svg>` itself (`tag: 'svg'`, no inner nest, no `designs` prop):
   their presentation defaults ride in `base`, `viewBox` / rest members land on the shell, and
   callers style them via `className` / `style` directly. `base` is the shell's `@layer base`
   declaration block (Button/Text/Number/Select `10rem × 1.8rem`; Checkbox `1.5rem × 1.5rem`;
@@ -98,7 +98,7 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   they expose no stroke / fill props). Container returns `{ get container }`, merged onto the unit
   — the component must NOT return its own `container` getter (define collision), and one
   unit must not extend two Container-derived components (same collision — e.g. Chevron
-  nests its `<svg>` manually instead of extending SVG). Note `unit.element` ends on the
+  builds its own `<svg>` shell instead of extending SVG). Note `unit.element` ends on the
   innermost nested part, not the container — position/layout writes from outside must
   target `unit.container` (bit AnalogStick's knob: left/top on the `<svg>` did nothing
   once the absolute overlay style moved to the container div).
@@ -317,12 +317,12 @@ the rule, then one line of why.
   status until the first drag (bit the 3_games VolumeController).
 
 - **Override the SVG-drawn basics' presentation defaults (stroke / fill / …) via css, never via
-  svg attributes.** SVG / SVGText take caller `style` / `className` directly (their shell IS the
-  `<svg>`; they have no `designs` prop — passing one lands as a junk attribute and does nothing);
-  Chevron takes `designs.svg` for its nested `<svg>`. The defaults live in an `@layer base` css
-  rule, and ANY css beats presentation attributes — an attribute like `stroke: '#EEE'` passed as
-  a rest member is silently ignored; `style: 'stroke: #EEE; stroke-width: 2;'` wins because
-  inline style beats layered css. Attribute-only members (`viewBox`, …) still go through rest.
+  svg attributes.** SVG / SVGText / Chevron take caller `style` / `className` directly (their shell
+  IS the `<svg>`; they have no `designs` prop — passing one lands as a junk attribute and does
+  nothing). The defaults live in an `@layer base` css rule, and ANY css beats presentation
+  attributes — an attribute like `stroke: '#EEE'` passed as a rest member is silently ignored;
+  `style: 'stroke: #EEE; stroke-width: 2;'` wins because inline style beats layered css.
+  Attribute-only members (`viewBox`, …) still go through rest.
 
 - **A component may forward its rest props into an ElementDef as-is (`xnew.nest({ …, ...others })`)
   without stripping the reserved `key` prop.** If a caller passes `key`, it lands as a harmless

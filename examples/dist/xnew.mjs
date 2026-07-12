@@ -1432,23 +1432,12 @@ function Button(unit, _a = {}) {
 }
 
 function Chevron(unit, _a = {}) {
-    var _b, _c, _d;
-    var { direction = 'right', className = '', style = '', designs = {} } = _a, others = __rest(_a, ["direction", "className", "style", "designs"]);
-    xnew.extend(Container, {
-        base: 'width: 1em; height: 1em;',
-        className, style,
-    });
-    const css = xnew.css({
-        svg: {
-            layer: 'base',
-            body: `
-                box-sizing: border-box; display: block; width: 100%; height: 100%;
-                stroke: currentColor; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
-                fill: none;
-            `,
-        },
-    });
-    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 12 12', className: `${css.svg} ${(_c = (_b = designs.svg) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.svg) === null || _d === void 0 ? void 0 : _d.style }, others));
+    var { direction = 'right', className = '', style = '' } = _a, others = __rest(_a, ["direction", "className", "style"]);
+    xnew.extend(Container, Object.assign({ tag: 'svg', viewBox: '0 0 12 12', base: `
+            width: 1em; height: 1em;
+            stroke: currentColor; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+            fill: none;
+        `, className, style }, others));
     xnew('<path d="M4 2 8 6 4 10"/>');
     const angles = { right: 0, down: 90, left: 180, up: 270 };
     unit.element.style.transform = `rotate(${angles[direction]}deg)`;
