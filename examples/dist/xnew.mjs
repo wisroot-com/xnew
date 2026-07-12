@@ -2680,11 +2680,21 @@ function Accordion(unit) {
     });
 }
 
-function Popup(unit) {
+function Popup(unit, _a = {}) {
+    var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
     const gate = xnew.context(Gate);
+    const css = xnew.css({
+        container: {
+            layer: 'base',
+            body: `
+                position: fixed; inset: 0; z-index: 1000;
+                opacity: 0;
+            `,
+        },
+    });
     gate.on('-closed', () => unit.finalize());
     gate.open();
-    xnew.nest('<div style="position: fixed; inset: 0; z-index: 1000; opacity: 0;">');
+    xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     unit.on('click', ({ event }) => event.target === unit.element && gate.close());
     gate.on('-transition', ({ value }) => {
         unit.element.style.opacity = value.toString();

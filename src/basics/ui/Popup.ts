@@ -7,13 +7,27 @@
 import { xnew } from '../../core/xnew';
 import { Gate } from './Gate';
 
-export function Popup(unit: xnew.Unit) {
+export function Popup(unit: xnew.Unit,
+    { className = '', style = '', ...others }:
+    { className?: string, style?: string, [key: string]: any } = {}
+) {
     const gate = xnew.context(Gate);
+
+    const css = xnew.css({
+        // full-viewport overlay above page chrome; opacity is progress-driven, so it stays inline
+        container: {
+            layer: 'base',
+            body: `
+                position: fixed; inset: 0; z-index: 1000;
+                opacity: 0;
+            `,
+        },
+    });
 
     gate.on('-closed', () => unit.finalize());
     gate.open();
 
-    xnew.nest('<div style="position: fixed; inset: 0; z-index: 1000; opacity: 0;">');
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
     unit.on('click', ({ event }: { event: PointerEvent }) => event.target === unit.element && gate.close());
 
     gate.on('-transition', ({ value }: { value: number }) => {

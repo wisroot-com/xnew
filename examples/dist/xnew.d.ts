@@ -399,7 +399,11 @@ declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
 
 declare function Accordion(unit: xnew.Unit): void;
 
-declare function Popup(unit: xnew.Unit): void;
+declare function Popup(unit: xnew.Unit, { className, style, ...others }?: {
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): void;
 
 declare function AnalogStick(unit: xnew.Unit, { className, style, designs }?: {
     className?: string;
