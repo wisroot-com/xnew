@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs",
+        "@mulsense/xnew/addons/xpixi": "../../../dist/addons/xpixi.mjs",
+        "pixi.js": "../../../thirdparty/pixi/pixi.min.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden"
+      style="background: radial-gradient(circle at 50% 32%, #1b1526, #05040a 72%);">
+  <div id="main" class="relative w-full h-full"></div>
+  <div class="absolute top-3 left-0 right-0 text-center pointer-events-none select-none">
+    <h1 class="text-2xl font-bold tracking-widest text-orange-200/90 drop-shadow">FIRE EFFECTS</h1>
+    <p class="text-xs tracking-wide text-orange-100/40">six flame designs — click anywhere to ignite a burst</p>
+  </div>
+
+  <script type="module">
+    import { xnew, xbasics } from '@mulsense/xnew';
+    import { xpixi } from '@mulsense/xnew/addons/xpixi';
+    import * as PIXI from 'pixi.js';
+
+    const CANVAS_W = 960;
+    const CANVAS_H = 640;
+    const TEX = 128; // soft-blob texture size; particle scale = diameter / TEX
+
+    // one soft radial-gradient sprite reused (tinted, additive) for every particle
+    let softTexture = null;
+
+    xnew(document.querySelector('#main'), Main);
+
+    //----------------------------------------------------------------------------------------------------
+    // pixi bootstrap + gallery + click-to-ignite
+    //----------------------------------------------------------------------------------------------------
+
+    function Main(unit) {
+      xnew.extend(xbasics.Screen, { width: CANVAS_W, height: CANVAS_H });
+      const canvasEl = unit.canvas;
+      xpixi.initialize({ canvas: canvasEl });
+
+      xnew.promise(unit).then(() => {
+        softTexture = makeSoftTexture();
+        unit.on('update', () => xpixi.renderer.render(xpixi.scene));
+        xnew(Gallery);
+
+        unit.on('pointerdown', ({ event }) => {
+          const rect = canvasEl.getBoundingClientRect();
+          const x = (event.clientX - rect.left) / rect.width * CANVAS_W;
+          const y = (event.clientY - rect.top) / rect.height * CANVAS_H;
+          xnew(OneShotBurst, { x, y });
+        });
+      });
+    }
+
+    // 3 x 2 grid, one flame design per cell
+    function Gallery(unit) {
+      const grid = xpixi.nest(new PIXI.Container());
+
+      const lines = new PIXI.Graphics();
+      for (let c = 1; c < 3; c++) {
+        lines.moveTo(c * 320, 24).lineTo(c * 320, 616);
+      }
+      lines.moveTo(24, 320).lineTo(936, 320);
+      lines.stroke({ width: 1, color: 0xffffff, alpha: 0.05 });
+      grid.addChild(lines);
+
+      const cells = [
+        { type: 'bonfire', label: 'Bonfire' },
+        { type: 'torch', label: 'Torch' },
+        { type: 'blue', label: 'Blue Flame' },
+        { type: 'fireball', label: 'Fireball' },
+        { type: 'wisp', label: "Will-o'-Wisp" },
+        { type: 'vortex', label: 'Fire Vortex' },
+      ];
+      cells.forEach((cell, i) => {
+        const col = i % 3;
+        const row = (i / 3) | 0;
+        xnew(Cell, {
+          ...cell,
+          cx: col * 320 + 160,
+          baseY: row * 320 + 288,
+          midY: row * 320 + 150,
+          labelY: row * 320 + 300,
+        });
+      });
+    }
+
+    function Cell(unit, { type, label, cx, baseY, midY, labelY }) {
+      if (type === 'bonfire') {
+        xnew(Logs, { x: cx, y: baseY });
+        xnew(Flame, bonfire(cx, baseY));
+      } else if (type === 'torch') {
+        xnew(TorchStick, { x: cx, y: baseY });
+        xnew(Flame, torch(cx, baseY));
+      } else if (type === 'blue') {
+        xnew(Flame, blueFlame(cx, baseY));
+      } else if (type === 'fireball') {
+        xnew(Fireball, { x: cx, y: midY });
+      } else if (type === 'wisp') {
+        xnew(Wisp, { x: cx, y: midY });
+      } else if (type === 'vortex') {
+        xnew(Flame, fireVortex(cx, baseY));
+      }
+
+      const text = new PIXI.Text({
+        text: label,
+        style: { fontFamily: 'sans-serif', fontSize: 17, fontWeight: '600', fill: 0xd8d2e0, letterSpacing: 1 },
+      });
+      text.anchor.set(0.5);
+      text.position.set(cx, labelY);
+      xpixi.add(text);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    // Flame — generic additive particle emitter driven by a config preset
+    // cfg supplies spawn(p, origin) / colors ramp / motion params; cfg.step overrides the integrator.
+    //----------------------------------------------------------------------------------------------------
+
+    function Flame(unit, cfg) {
+      const container = xpixi.nest(new PIXI.Container());
+      container.position.set(cfg.x, cfg.y);
+
+      if (cfg.baseGlow) {
+        const glow = new PIXI.Sprite(softTexture);
+        glow.anchor.set(0.5);
+        glow.blendMode = 'add';
+        glow.tint = rgbInt(cfg.baseGlow.color);
+        glow.alpha = cfg.baseGlow.alpha;
+        glow.scale.set(cfg.baseGlow.size / TEX);
+        glow.position.set(0, cfg.baseGlow.y ?? 0);
+        container.addChild(glow);
+      }
+
+      const step = cfg.step ?? standardStep;
+      const pool = [];
+      let elapsed = 0;
+      let acc = 0;
+
+      function alloc() {
+        let p = pool.find((q) => !q.alive);
+        if (!p) {
+          const sprite = new PIXI.Sprite(softTexture);
+          sprite.anchor.set(0.5);
+          sprite.blendMode = 'add';
+          container.addChild(sprite);
+          p = { sprite, alive: false };
+          pool.push(p);
+        }
+        p.alive = true;
+        p.sprite.visible = true;
+        return p;
+      }
+
+      function spawnOne() {
+        const p = alloc();
+        p.age = 0;
+        cfg.spawn(p, cfg.origin ? cfg.origin(elapsed) : { x: 0, y: 0 });
+      }
+
+      unit.on('update', ({ delta }) => {
+        const dt = Math.min(delta, 40);
+        elapsed += dt;
+        if (cfg.rate) {
+          acc += cfg.rate * dt / 1000;
+          while (acc >= 1) {
+            acc -= 1;
+            spawnOne();
+          }
+        }
+        for (const p of pool) {
+          if (p.alive) {
+            step(p, dt, cfg);
+            if (p.age >= p.life) {
+              p.alive = false;
+              p.sprite.visible = false;
+            }
+          }
+        }
+      });
+
+      return {
+        burst(n) {
+          for (let i = 0; i < n; i++) {
+            spawnOne();
+          }
+        },
+      };
+    }
+
+    // rising / drifting particle: buoyant accel + a sine wobble + drag
+    function standardStep(p, dt, cfg) {
+      p.age += dt;
+      p.vy += cfg.accelY * dt;
+      p.vx += Math.sin(p.age * p.freq + p.phase) * cfg.turb * dt;
+      const damp = 1 - cfg.drag * dt;
+      p.vx *= damp;
+      p.vy *= damp;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      paint(p, p.age / p.life, cfg);
+    }
+
+    // swirling column: position derived from an angle that winds while the radius narrows on the way up
+    function vortexStep(p, dt, cfg) {
+      p.age += dt;
+      const t = p.age / p.life;
+      p.angle += p.spin * dt;
+      p.x = Math.cos(p.angle) * p.radius * (1 - 0.72 * t);
+      p.y = -t * 200;
+      paint(p, t, cfg);
+    }
+
+    // apply the life-t tint / alpha / scale to a particle sprite
+    function paint(p, t, cfg) {
+      const s = p.sprite;
+      s.tint = rgbInt(sampleRamp(cfg.colors, t));
+      s.alpha = alphaFade(t, cfg.rise) * p.baseAlpha;
+      s.scale.set(p.size * cfg.sizeCurve(t) / TEX);
+      s.position.set(p.x, p.y);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    // flame presets — each returns a Flame config for an origin (x, y)
+    //----------------------------------------------------------------------------------------------------
+
+    // wide warm campfire tapering to smoke
+    function bonfire(x, y) {
+      return {
+        x, y, rate: 95, accelY: -0.00018, drag: 0.0035, turb: 0.00010, rise: 0.10,
+        colors: [[0, [255, 248, 214]], [0.2, [255, 206, 92]], [0.46, [255, 120, 32]], [0.72, [206, 46, 16]], [1, [38, 10, 6]]],
+        sizeCurve: (t) => 0.85 + 0.7 * t,
+        baseGlow: { color: [255, 120, 40], alpha: 0.5, size: 150, y: 6 },
+        spawn(p) {
+          p.x = (Math.random() - 0.5) * 46;
+          p.y = 6 - Math.random() * 6;
+          p.vx = (Math.random() - 0.5) * 0.02;
+          p.vy = -0.05 - Math.random() * 0.04;
+          p.life = 900 + Math.random() * 520;
+          p.size = 40 * (0.6 + Math.random() * 0.7);
+          p.freq = 0.006 + Math.random() * 0.004;
+          p.phase = Math.random() * 6.28;
+          p.baseAlpha = 0.9;
+        },
+      };
+    }
+
+    // narrow, tall, bright — a handheld torch
+    function torch(x, y) {
+      return {
+        x, y, rate: 85, accelY: -0.00026, drag: 0.003, turb: 0.00012, rise: 0.10,
+        colors: [[0, [255, 255, 235]], [0.24, [255, 226, 124]], [0.54, [255, 152, 44]], [0.8, [214, 70, 20]], [1, [54, 14, 6]]],
+        sizeCurve: (t) => 0.75 + 0.55 * t,
+        baseGlow: { color: [255, 150, 50], alpha: 0.45, size: 92, y: 0 },
+        spawn(p) {
+          p.x = (Math.random() - 0.5) * 14;
+          p.y = 0;
+          p.vx = (Math.random() - 0.5) * 0.015;
+          p.vy = -0.08 - Math.random() * 0.03;
+          p.life = 620 + Math.random() * 340;
+          p.size = 30 * (0.55 + Math.random() * 0.7);
+          p.freq = 0.009 + Math.random() * 0.005;
+          p.phase = Math.random() * 6.28;
+          p.baseAlpha = 0.92;
+        },
+      };
+    }
+
+    // cold plasma flame — faster flicker, blue ramp
+    function blueFlame(x, y) {
+      return {
+        x, y, rate: 90, accelY: -0.00022, drag: 0.003, turb: 0.00014, rise: 0.10,
+        colors: [[0, [236, 248, 255]], [0.24, [152, 206, 255]], [0.52, [74, 142, 255]], [0.8, [36, 74, 220]], [1, [10, 20, 92]]],
+        sizeCurve: (t) => 0.8 + 0.6 * t,
+        baseGlow: { color: [70, 140, 255], alpha: 0.5, size: 132, y: 4 },
+        spawn(p) {
+          p.x = (Math.random() - 0.5) * 34;
+          p.y = 4 - Math.random() * 4;
+          p.vx = (Math.random() - 0.5) * 0.02;
+          p.vy = -0.06 - Math.random() * 0.04;
+          p.life = 780 + Math.random() * 440;
+          p.size = 36 * (0.6 + Math.random() * 0.7);
+          p.freq = 0.010 + Math.random() * 0.006;
+          p.phase = Math.random() * 6.28;
+          p.baseAlpha = 0.85;
+        },
+      };
+    }
+
+    // violet fire tornado — custom spiral integrator
+    function fireVortex(x, y) {
+      return {
+        x, y, rate: 80, step: vortexStep, rise: 0.12,
+        colors: [[0, [255, 236, 255]], [0.3, [255, 132, 226]], [0.6, [206, 52, 166]], [1, [72, 12, 58]]],
+        sizeCurve: (t) => 0.7 + 0.4 * t,
+        baseGlow: { color: [220, 70, 180], alpha: 0.45, size: 120, y: 0 },
+        spawn(p) {
+          p.angle = Math.random() * 6.28;
+          p.radius = 52 + Math.random() * 30;
+          p.spin = 0.004 + Math.random() * 0.0025;
+          p.life = 1200 + Math.random() * 420;
+          p.size = 26 * (0.55 + Math.random() * 0.6);
+          p.baseAlpha = 0.85;
+        },
+      };
+    }
+
+    // radial explosion particles fading to smoky gray — reused by Fireball and click bursts
+    function fireballCfg(x, y) {
+      return {
+        x, y, accelY: 0.00006, drag: 0.006, turb: 0.00004, rise: 0.06,
+        colors: [[0, [255, 250, 214]], [0.18, [255, 192, 74]], [0.46, [255, 92, 26]], [0.72, [176, 44, 22]], [1, [60, 58, 62]]],
+        sizeCurve: (t) => 1.1 - 0.5 * t,
+        spawn(p) {
+          const a = Math.random() * 6.28;
+          const sp = 0.10 + Math.random() * 0.24;
+          p.x = 0;
+          p.y = 0;
+          p.vx = Math.cos(a) * sp;
+          p.vy = Math.sin(a) * sp - 0.02;
+          p.life = 560 + Math.random() * 420;
+          p.size = 34 * (0.5 + Math.random() * 0.8);
+          p.freq = 0.008 + Math.random() * 0.004;
+          p.phase = Math.random() * 6.28;
+          p.baseAlpha = 0.9;
+        },
+      };
+    }
+
+    // green ghost-light: several small orbs drifting on a lissajous, each trailing embers
+    function wispCfg(x, y, phase) {
+      return {
+        x, y, rate: 42, accelY: -0.00004, drag: 0.004, turb: 0.00006, rise: 0.18,
+        colors: [[0, [226, 255, 228]], [0.3, [132, 255, 172]], [0.62, [52, 214, 132]], [1, [10, 72, 46]]],
+        sizeCurve: (t) => 0.7 + 0.5 * Math.sin(t * Math.PI),
+        origin(el) {
+          const a = el * 0.0013 + phase;
+          return { x: Math.cos(a) * 70, y: Math.sin(a * 1.7) * 55 };
+        },
+        spawn(p, o) {
+          p.x = o.x + (Math.random() - 0.5) * 8;
+          p.y = o.y + (Math.random() - 0.5) * 8;
+          p.vx = (Math.random() - 0.5) * 0.01;
+          p.vy = -0.008 - Math.random() * 0.01;
+          p.life = 700 + Math.random() * 500;
+          p.size = 22 * (0.6 + Math.random() * 0.6);
+          p.freq = 0.004 + Math.random() * 0.003;
+          p.phase = Math.random() * 6.28;
+          p.baseAlpha = 0.8;
+        },
+      };
+    }
+
+    function Wisp(unit, { x, y }) {
+      xnew(Flame, wispCfg(x, y, 0));
+      xnew(Flame, wispCfg(x, y, 2.4));
+      xnew(Flame, wispCfg(x, y, 4.7));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    // composite effects — bursting fireball (particles + expanding shockwave rings)
+    //----------------------------------------------------------------------------------------------------
+
+    function Fireball(unit, { x, y }) {
+      const flame = xnew(Flame, fireballCfg(x, y));
+      const ringLayer = xpixi.nest(new PIXI.Container());
+      ringLayer.position.set(x, y);
+      const rings = [];
+
+      function boom() {
+        flame.burst(72);
+        const g = new PIXI.Graphics();
+        g.blendMode = 'add';
+        ringLayer.addChild(g);
+        rings.push({ g, age: 0 });
+      }
+
+      unit.on('update', ({ delta }) => {
+        const dt = Math.min(delta, 40);
+        for (let i = rings.length - 1; i >= 0; i--) {
+          const r = rings[i];
+          r.age += dt;
+          const t = r.age / 620;
+          if (t >= 1) {
+            r.g.destroy();
+            rings.splice(i, 1);
+          } else {
+            r.g.clear();
+            r.g.circle(0, 0, 20 + t * 150).stroke({ width: 8 * (1 - t), color: 0xff7a2a, alpha: 0.6 * (1 - t) });
+          }
+        }
+      });
+
+      xnew.interval(boom, 1700);
+      boom();
+    }
+
+    // click-spawned one-shot burst that cleans itself up once its embers die
+    function OneShotBurst(unit, { x, y }) {
+      const flame = xnew(Flame, fireballCfg(x, y));
+      flame.burst(56);
+
+      const ringLayer = xpixi.nest(new PIXI.Container());
+      ringLayer.position.set(x, y);
+      const ring = new PIXI.Graphics();
+      ring.blendMode = 'add';
+      ringLayer.addChild(ring);
+
+      let age = 0;
+      unit.on('update', ({ delta }) => {
+        age += Math.min(delta, 40);
+        const t = age / 560;
+        if (t < 1) {
+          ring.clear();
+          ring.circle(0, 0, 14 + t * 130).stroke({ width: 7 * (1 - t), color: 0xffb648, alpha: 0.6 * (1 - t) });
+        }
+      });
+
+      xnew.timeout(() => unit.finalize(), 1500);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    // static props — crossed logs under the bonfire, a stick for the torch
+    //----------------------------------------------------------------------------------------------------
+
+    function Logs(unit, { x, y }) {
+      const c = xpixi.nest(new PIXI.Container());
+      c.position.set(x, y + 8);
+      [[-1, 0x5b3a21], [1, 0x6b4526]].forEach(([dir, color]) => {
+        const g = new PIXI.Graphics();
+        g.roundRect(-42, -9, 84, 18, 9).fill(color);
+        g.rotation = dir * 0.32;
+        g.position.set(dir * 6, 0);
+        c.addChild(g);
+
+        const lit = new PIXI.Graphics();
+        lit.roundRect(-42, -9, 84, 6, 3).fill({ color: 0xffb060, alpha: 0.5 });
+        lit.rotation = dir * 0.32;
+        lit.position.set(dir * 6, 0);
+        c.addChild(lit);
+      });
+    }
+
+    function TorchStick(unit, { x, y }) {
+      const c = xpixi.nest(new PIXI.Container());
+      c.position.set(x, y);
+      c.addChild(new PIXI.Graphics().roundRect(-6, 8, 12, 78, 5).fill(0x4a3220));
+      c.addChild(new PIXI.Graphics().roundRect(-13, -4, 26, 20, 6).fill(0x2a2a2e));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    // helpers — soft particle texture, color-ramp sampling, alpha envelope
+    //----------------------------------------------------------------------------------------------------
+
+    function makeSoftTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = TEX;
+      canvas.height = TEX;
+      const ctx = canvas.getContext('2d');
+      const g = ctx.createRadialGradient(TEX / 2, TEX / 2, 0, TEX / 2, TEX / 2, TEX / 2);
+      g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.35, 'rgba(255,255,255,0.65)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, TEX, TEX);
+      return PIXI.Texture.from(canvas);
+    }
+
+    // stops: [[pos, [r,g,b]], ...] ascending; returns the interpolated [r,g,b] at t
+    function sampleRamp(stops, t) {
+      const u = t < 0 ? 0 : t > 1 ? 1 : t;
+      for (let i = 0; i < stops.length - 1; i++) {
+        const [p0, c0] = stops[i];
+        const [p1, c1] = stops[i + 1];
+        if (u <= p1) {
+          const f = (u - p0) / (p1 - p0 || 1);
+          return [c0[0] + (c1[0] - c0[0]) * f, c0[1] + (c1[1] - c0[1]) * f, c0[2] + (c1[2] - c0[2]) * f];
+        }
+      }
+      return stops[stops.length - 1][1];
+    }
+
+    function rgbInt([r, g, b]) {
+      return (Math.round(r) << 16) | (Math.round(g) << 8) | Math.round(b);
+    }
+
+    // ramp alpha up over the first `rise` of life, then linearly down to 0
+    function alphaFade(t, rise) {
+      const a = t < rise ? t / rise : 1 - (t - rise) / (1 - rise);
+      return a < 0 ? 0 : a;
+    }
+  </script>
+</body>
+
+</html>

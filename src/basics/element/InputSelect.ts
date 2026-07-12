@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Chevron } from './Chevron';
+import { xicons } from '../../icons/xicons';
 import { Design } from '../design';
 
 export function InputSelect(unit: xnew.Unit,
@@ -75,7 +75,7 @@ export function InputSelect(unit: xnew.Unit,
         xnew(labelBox, '<div style="visibility: hidden; height: 0; white-space: nowrap;">', item);
     }
 
-    xnew(Chevron, { direction: 'down', style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
+    xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
 
     let select: HTMLSelectElement;
     let dropdown: xnew.Unit | null = null;

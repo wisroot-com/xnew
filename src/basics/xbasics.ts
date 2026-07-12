@@ -9,7 +9,6 @@ import { Screen } from './view/Screen';
 import { Scene } from './view/Scene';
 import { SceneList } from './view/SceneList';
 import { Button } from './element/Button';
-import { Chevron } from './element/Chevron';
 import { Image } from './element/Image';
 import { SVG } from './element/SVG';
 import { SVGText } from './element/SVGText';
@@ -36,7 +35,6 @@ export const xbasics = {
     Scene,
     SceneList,
     Button,
-    Chevron,
     Image,
     SVG,
     SVGText,
