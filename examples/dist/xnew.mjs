@@ -2876,17 +2876,17 @@ function Select(unit, _a) {
 }
 
 const placements = {
-    left: { vertical: false, grow: 'width', outer: 'top: 0; bottom: 0; right: calc(100% + 4cqw); width: 0;' },
-    right: { vertical: false, grow: 'width', outer: 'top: 0; bottom: 0; left: calc(100% + 4cqw); width: 0;' },
-    top: { vertical: true, grow: 'height', outer: 'left: 0; right: 0; bottom: calc(100% + 4cqh); height: 0;' },
-    bottom: { vertical: true, grow: 'height', outer: 'left: 0; right: 0; top: calc(100% + 4cqh); height: 0;' },
+    left: 'top: 0; bottom: 0; right: calc(100% + 4cqw); width: 0;',
+    right: 'top: 0; bottom: 0; left: calc(100% + 4cqw); width: 0;',
+    top: 'left: 0; bottom: calc(100% + 4cqh); width: 0;',
+    bottom: 'left: 0; top: calc(100% + 4cqh); width: 0;',
 };
 function SpeakerIcon(unit, { muted = false } = {}) {
     xnew.extend(muted ? xicons.SpeakerXMark : xicons.SpeakerWave, { style: 'display: block; width: 100%; height: 100%;' });
 }
 function VolumeController(unit, { placement = 'left', className = '', style = '' } = {}) {
     var _a;
-    const config = (_a = placements[placement]) !== null && _a !== void 0 ? _a : placements.left;
+    const outerStyle = (_a = placements[placement]) !== null && _a !== void 0 ? _a : placements.left;
     const css = xnew.css({
         container: {
             layer: 'base',
@@ -2922,16 +2922,14 @@ function VolumeController(unit, { placement = 'left', className = '', style = ''
         };
     });
     xnew(() => {
-        const outer = xnew.nest({ tag: 'div', className: css.outer, style: config.outer });
-        xnew(InputRange, config.vertical
-            ? { value: Math.round(volume.volume * 100), vertical: true, style: 'height: 100%;' }
-            : { value: Math.round(volume.volume * 100), style: 'width: 100%;' }).on('input', ({ value }) => {
+        const outer = xnew.nest({ tag: 'div', className: css.outer, style: outerStyle });
+        xnew(InputRange, { value: Math.round(volume.volume * 100), style: 'width: 100%;' })
+            .on('input', ({ value }) => {
             volume.volume = value / 100;
             button.update();
         });
         system.on('-transition', ({ value }) => {
-            const length = value * 400;
-            outer.style[config.grow] = config.vertical ? `${length}cqh` : `${length}cqw`;
+            outer.style.width = `${value * 400}cqw`;
             outer.style.opacity = value.toString();
             outer.style.pointerEvents = value < 0.9 ? 'none' : 'auto';
         });

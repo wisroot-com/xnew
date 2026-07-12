@@ -69,7 +69,7 @@ The overall master volume is controlled with `xbasics.Volume` (see [AudioTrack](
 
 A demo where you can tweak the synth parameters.
 
-<iframe style={{width:'100%',height:'900px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/basics/synthesizer/index.html" ></iframe>
+<iframe style={{width:'100%',height:'640px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/basics/synthesizer/index.html" ></iframe>
 
 Combining `press` calls lets you build game-style sound effects.
 
