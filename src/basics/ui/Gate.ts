@@ -1,12 +1,12 @@
 //----------------------------------------------------------------------------------------------------
-// OpenAndClose — open / close animation driver
+// Gate — open / close animation driver
 // Owns a 0..1 progress value driven by xnew.transition; presentation layers (Accordion, Popup)
-// pick it up via xnew.context(OpenAndClose).
+// pick it up via xnew.context(Gate).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 
-export function OpenAndClose(unit: xnew.Unit,
+export function Gate(unit: xnew.Unit,
     { open = true, duration = 200, easing = 'ease' }:
     { open?: boolean, duration?: number, easing?: string }
 ) {

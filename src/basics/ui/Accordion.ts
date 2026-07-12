@@ -1,20 +1,38 @@
 //----------------------------------------------------------------------------------------------------
-// Accordion — collapses height + opacity to follow an OpenAndClose progress value
-// Presentation layer over OpenAndClose: requires an ancestor (or same-unit extend) OpenAndClose,
+// Accordion — collapses height + opacity to follow a Gate progress value
+// Presentation layer over Gate: requires an ancestor (or same-unit extend) Gate,
 // found via xnew.context.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { OpenAndClose } from './OpenAndClose';
+import { Gate } from './Gate';
 
 export function Accordion(unit: xnew.Unit) {
-    const system = xnew.context(OpenAndClose);
+    const system = xnew.context(Gate);
 
-    const outer = xnew.nest('<div style="overflow: hidden;">') as HTMLElement;
-    const inner = xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box;">') as HTMLElement;
+    const css = xnew.css({
+        // clips the inner content while height animates; height and opacity are progress-driven, so they stay inline
+        container: {
+            layer: 'base',
+            body: `
+                overflow: hidden;
+            `,
+        },
+        // measured column whose natural offsetHeight sets the open target
+        inner: {
+            layer: 'base',
+            body: `
+                display: flex; flex-direction: column;
+                box-sizing: border-box;
+            `,
+        },
+    });
+
+    const container = xnew.nest({ tag: 'div', className: css.container }) as HTMLElement;
+    const inner = xnew.nest({ tag: 'div', className: css.inner }) as HTMLElement;
 
     system.on('-transition', ({ value }: { value: number }) => {
-        outer.style.height = value < 1.0 ? inner.offsetHeight * value + 'px' : 'auto';
-        outer.style.opacity = value.toString();
+        container.style.height = value < 1.0 ? inner.offsetHeight * value + 'px' : 'auto';
+        container.style.opacity = value.toString();
     });
 }

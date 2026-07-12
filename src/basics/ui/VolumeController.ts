@@ -8,7 +8,7 @@ import { xnew } from '../../core/xnew';
 import { Volume } from '../audio/Volume';
 import { Aspect } from '../view/Aspect';
 import { InputRange } from '../element/InputRange';
-import { OpenAndClose } from './OpenAndClose';
+import { Gate } from './Gate';
 import { xicons } from '../../icons/xicons';
 
 type Placement = 'left' | 'right' | 'top' | 'bottom';
@@ -58,7 +58,7 @@ export function VolumeController(unit: xnew.Unit,
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     unit.on('pointerdown', ({ event }: { event: PointerEvent }) => event.stopPropagation());
 
-    const system = xnew(OpenAndClose, { open: false, duration: 250, easing: 'ease' });
+    const system = xnew(Gate, { open: false, duration: 250, easing: 'ease' });
 
     const button = xnew((unit: xnew.Unit) => {
         xnew.nest({ tag: 'div', className: css.button });

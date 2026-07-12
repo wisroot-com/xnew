@@ -1,14 +1,14 @@
 //----------------------------------------------------------------------------------------------------
 // Popup — full-viewport overlay that opens on mount and finalizes when closed
-// Presentation layer over OpenAndClose (found via xnew.context): fades with the progress value
+// Presentation layer over Gate (found via xnew.context): fades with the progress value
 // and closes on a click outside the content (directly on the overlay).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { OpenAndClose } from './OpenAndClose';
+import { Gate } from './Gate';
 
 export function Popup(unit: xnew.Unit) {
-    const system = xnew.context(OpenAndClose);
+    const system = xnew.context(Gate);
 
     system.on('-closed', () => unit.finalize());
     system.open();

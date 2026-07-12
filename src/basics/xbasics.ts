@@ -21,7 +21,7 @@ import { InputSelect } from './element/InputSelect';
 import { AudioTrack } from './audio/AudioTrack';
 import { Synthesizer } from './audio/Synthesizer';
 import { Volume } from './audio/Volume';
-import { OpenAndClose } from './ui/OpenAndClose';
+import { Gate } from './ui/Gate';
 import { Accordion } from './ui/Accordion';
 import { Popup } from './ui/Popup';
 import { AnalogStick } from './ui/AnalogStick';
@@ -47,7 +47,7 @@ export const xbasics = {
     AudioTrack,
     Synthesizer,
     Volume,
-    OpenAndClose,
+    Gate,
     Accordion,
     Popup,
     AnalogStick,
