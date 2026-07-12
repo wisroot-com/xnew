@@ -1399,27 +1399,16 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
     return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
 };
 
-function Container(unit, _a = {}) {
-    var { tag = 'div', base = '', className = '', style = '' } = _a, others = __rest(_a, ["tag", "base", "className", "style"]);
-    const css = xnew.css({ container: { layer: 'base', body: base } });
-    const container = xnew.nest(Object.assign({ tag, className: `${css.container} ${className}`, style }, others));
-    return { get container() { return container; } };
-}
-
 function Button(unit, _a = {}) {
-    var _b, _c, _d;
-    var { text = '', className = '', style = '', designs = {} } = _a, others = __rest(_a, ["text", "className", "style", "designs"]);
-    xnew.extend(Container, {
-        base: 'display: inline-block; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em;',
-        className, style,
-    });
+    var { text = '', className = '', style = '' } = _a, others = __rest(_a, ["text", "className", "style"]);
     const css = xnew.css({
         button: {
             layer: 'base',
             body: `
-                box-sizing: border-box; width: 100%; height: 100%;
-                display: flex; justify-content: center; align-items: center;
-                padding: 0 0.5em; margin: 0;
+                box-sizing: border-box;
+                display: inline-flex; justify-content: center; align-items: center;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em;
+                padding: 0 0.5em;
                 background: transparent; color: inherit; font: inherit;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 cursor: pointer; user-select: none;
@@ -1428,27 +1417,29 @@ function Button(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'button', type: 'button', className: `${css.button} ${(_c = (_b = designs.button) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.button) === null || _d === void 0 ? void 0 : _d.style }, others), text);
+    xnew.nest(Object.assign({ tag: 'button', type: 'button', className: `${css.button} ${className}`, style }, others), text);
 }
 
 function Chevron(unit, _a = {}) {
     var { direction = 'right', className = '', style = '' } = _a, others = __rest(_a, ["direction", "className", "style"]);
-    xnew.extend(Container, Object.assign({ tag: 'svg', viewBox: '0 0 12 12', base: `
-            width: 1em; height: 1em;
-            stroke: currentColor; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
-            fill: none;
-        `, className, style }, others));
+    const css = xnew.css({
+        svg: {
+            layer: 'base',
+            body: `
+                width: 1em; height: 1em;
+                stroke: currentColor; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: none;
+            `,
+        },
+    });
+    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 12 12', className: `${css.svg} ${className}`, style }, others));
     xnew('<path d="M4 2 8 6 4 10"/>');
     const angles = { right: 0, down: 90, left: 180, up: 270 };
     unit.element.style.transform = `rotate(${angles[direction]}deg)`;
 }
 
 function Image(unit, _a) {
-    var _b, _c, _d;
-    var { src, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["src", "className", "style", "designs"]);
-    xnew.extend(Container, {
-        className, style,
-    });
+    var { src, className = '', style = '' } = _a, others = __rest(_a, ["src", "className", "style"]);
     const css = xnew.css({
         image: {
             layer: 'base',
@@ -1457,7 +1448,7 @@ function Image(unit, _a) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'img', className: `${css.image} ${(_c = (_b = designs.image) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.image) === null || _d === void 0 ? void 0 : _d.style }, others));
+    xnew.nest(Object.assign({ tag: 'img', className: `${css.image} ${className}`, style }, others));
     const element = unit.element;
     let objectURL = null;
     function apply(value) {
@@ -1484,19 +1475,31 @@ function Image(unit, _a) {
 
 function SVG(unit, _a = {}) {
     var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
-    xnew.extend(Container, Object.assign({ tag: 'svg', viewBox: '0 0 64 64', base: `
-            stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
-            fill: none; fill-opacity: 1;
-        `, className, style }, others));
+    const css = xnew.css({
+        svg: {
+            layer: 'base',
+            body: `
+                stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: none; fill-opacity: 1;
+            `,
+        },
+    });
+    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${className}`, style }, others));
 }
 
 function SVGText(unit, _a = {}) {
     var { text = '', fontSize = 20, className = '', style = '' } = _a, others = __rest(_a, ["text", "fontSize", "className", "style"]);
-    xnew.extend(Container, Object.assign({ tag: 'svg', base: `
-            stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
-            fill: currentColor; fill-opacity: 1;
-            overflow: visible;
-        `, className, style }, others));
+    const css = xnew.css({
+        svg: {
+            layer: 'base',
+            body: `
+                stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: currentColor; fill-opacity: 1;
+                overflow: visible;
+            `,
+        },
+    });
+    xnew.nest(Object.assign({ tag: 'svg', className: `${css.svg} ${className}`, style }, others));
     const svg = unit.element;
     xnew.nest({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' });
     unit.element.textContent = text;
@@ -1508,6 +1511,13 @@ function SVGText(unit, _a = {}) {
     }
     resize();
     unit.on('resize', resize);
+}
+
+function Container(unit, _a = {}) {
+    var { tag = 'div', base = '', className = '', style = '' } = _a, others = __rest(_a, ["tag", "base", "className", "style"]);
+    const css = xnew.css({ container: { layer: 'base', body: base } });
+    const container = xnew.nest(Object.assign({ tag, className: `${css.container} ${className}`, style }, others));
+    return { get container() { return container; } };
 }
 
 function InputRange(unit, _a = {}) {
@@ -1624,18 +1634,15 @@ function InputCheckbox(unit, _a = {}) {
 }
 
 function InputText(unit, _a = {}) {
-    var _b, _c, _d;
-    var { className = '', style = '', designs = {} } = _a, others = __rest(_a, ["className", "style", "designs"]);
-    xnew.extend(Container, {
-        base: 'display: inline-block; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;',
-        className, style,
-    });
+    var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
     const css = xnew.css({
         field: {
             layer: 'base',
             body: `
-                box-sizing: border-box; width: 100%; height: 100%;
-                padding: 0 0.5em; margin: 0;
+                box-sizing: border-box;
+                display: inline-block;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
+                padding: 0 0.5em;
                 background: transparent; color: inherit; font: inherit;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 outline: none;
@@ -1643,22 +1650,19 @@ function InputText(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'input', type: 'text', className: `${css.field} ${(_c = (_b = designs.field) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.field) === null || _d === void 0 ? void 0 : _d.style }, others));
+    xnew.nest(Object.assign({ tag: 'input', type: 'text', className: `${css.field} ${className}`, style }, others));
 }
 
 function InputNumber(unit, _a = {}) {
-    var _b, _c, _d;
-    var { className = '', style = '', designs = {} } = _a, others = __rest(_a, ["className", "style", "designs"]);
-    xnew.extend(Container, {
-        base: 'display: inline-block; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;',
-        className, style,
-    });
+    var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
     const css = xnew.css({
         field: {
             layer: 'base',
             body: `
-                box-sizing: border-box; width: 100%; height: 100%;
-                text-align: center; padding: 0 0.5em; margin: 0;
+                box-sizing: border-box;
+                display: inline-block;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
+                text-align: center; padding: 0 0.5em;
                 background: transparent; color: inherit; font: inherit;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 outline: none;
@@ -1668,7 +1672,7 @@ function InputNumber(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'input', type: 'number', className: `${css.field} ${(_c = (_b = designs.field) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.field) === null || _d === void 0 ? void 0 : _d.style }, others));
+    xnew.nest(Object.assign({ tag: 'input', type: 'number', className: `${css.field} ${className}`, style }, others));
 }
 
 function InputSwitch(unit, _a = {}) {

@@ -24,20 +24,16 @@ describe('basics Image', () => {
         URL.revokeObjectURL = originalRevoke;
     });
 
-    it('nests an <img> inside the container and sets a string src directly', () => {
-        const unit = xnew(Image, { src: './a.png', className: 'bg', style: 'opacity: 0.5;', designs: { image: { className: 'cover', style: 'object-fit: cover;' } } });
+    it('nests an <img> with className / style and sets a string src directly', () => {
+        const unit = xnew(Image, { src: './a.png', className: 'bg', style: 'opacity: 0.5;' });
         const img = unit.element as HTMLImageElement;
 
         expect(img.tagName).toBe('IMG');
         expect(img.getAttribute('src')).toBe('./a.png');
         expect(createObjectURL).not.toHaveBeenCalled();
 
-        // className / style decorate the container; designs.image decorates the <img>
-        expect(unit.container).toBe(img.parentElement);
-        expect(unit.container.className).toContain('bg');
-        expect(unit.container.getAttribute('style')).toContain('opacity: 0.5;');
-        expect(img.className).toContain('cover');
-        expect(img.getAttribute('style')).toContain('object-fit: cover;');
+        expect(img.className).toContain('bg');
+        expect(img.getAttribute('style')).toContain('opacity: 0.5;');
     });
 
     it('converts a Blob src to an object URL', () => {

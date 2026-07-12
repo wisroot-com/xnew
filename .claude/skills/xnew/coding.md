@@ -81,19 +81,19 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   Sharing across components: share the **definition object** (same defs → same names);
   for theming, custom properties (`--vars`) pass through unrenamed and inherit down the
   DOM — set them on a subtree root class, read via `var(--x, fallback)` in descendants.
-- **Every `basics/element` component is Container-derived**: it starts with
-  `xnew.extend(Container, { base, className, style })` (`src/basics/element/Container.ts`,
-  internal-only — NOT an xbasics member) and nests its parts inside. Container's role is
-  strictly the **outer shell and caller-side design**: `tag` (default `'div'`) picks the shell
-  element, `base` / `className` / `style` decorate it, and rest members are forwarded onto the
-  shell element (ElementDef semantics). Every other prop of the component (`value`, `name`,
-  rest members, …) stays with the inner parts (e.g. the native `<input>`) — except SVG /
-  SVGText / Chevron, whose shell IS the `<svg>` itself (`tag: 'svg'`, no inner nest, no `designs` prop):
-  their presentation defaults ride in `base`, `viewBox` / rest members land on the shell, and
-  callers style them via `className` / `style` directly. `base` is the shell's `@layer base`
-  declaration block (Button/Text/Number/Select `10rem × 1.8rem`; Checkbox `1.5rem × 1.5rem`;
-  Switch `3rem × 1.5rem`; Range `10rem × 1.5rem`; Chevron `1em × 1em`; Radio / Image fill the
-  host until their default is decided; SVG / SVGText = their svg presentation defaults). `ui/AnalogStick` and `ui/DPad` also derive from Container
+- **A `basics/element` component is Container-derived only when it has multiple parts**
+  (InputCheckbox / InputRadio / InputRange / InputSelect / InputSwitch; also `ui/AnalogStick` /
+  `ui/DPad`): it starts with `xnew.extend(Container, { base, className, style })`
+  (`src/basics/element/Container.ts`, internal-only — NOT an xbasics member) and nests its
+  parts inside. Container's role is strictly the **outer shell and caller-side design**: `tag`
+  (default `'div'`) picks the shell element, `base` (the shell's `@layer base` declaration
+  block) / `className` / `style` decorate it, and rest members are forwarded onto the shell
+  (ElementDef semantics); every other prop of the component (`value`, `name`, rest members, …)
+  stays with the inner parts, decorated via `designs`.
+  **Single-element components skip Container** (Button, Chevron, Image, InputNumber, InputText,
+  SVG, SVGText): they nest their one element directly with an `@layer base` css entry, caller
+  `className` / `style` / rest members land on that element, and there is no `designs` prop and
+  no `container` getter — `unit.element` is the whole component. `ui/AnalogStick` and `ui/DPad` also derive from Container
   (their pointer-operated surface; their SVG layers are decorated via `designs: { svg? }` —
   they expose no stroke / fill props). Container returns `{ get container }`, merged onto the unit
   — the component must NOT return its own `container` getter (define collision), and one
@@ -296,14 +296,15 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
-- **Every `basics/element` shell base starts with the same prelude:
-  `display: inline-block;` then `width: …;` then the margin-box cap
+- **Every control-like `basics/element` css (Container `base` or the single element's own entry)
+  starts with the same prelude: `display: inline-block;` (`inline-flex` when the element centers
+  its own content, e.g. Button) then `width: …;` then the margin-box cap
   `max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;`.**
-  `inline-block` makes `xnew(Button)` flow like a native control (side by side in text flow; blockified
+  Inline flow makes `xnew(Button)` behave like a native control (side by side in text flow; blockified
   automatically inside flex/grid, so those layouts are unaffected); `max-width: stretch` caps
   the *margin box* at the parent so a caller horizontal margin never overflows on the right (bit Button;
-  prefixed fallbacks cover Safari / Firefox). `box-sizing: border-box` and `vertical-align: middle`
-  were deliberately dropped from the shells (2026-07, user decision) — don't re-add them.
+  prefixed fallbacks cover Safari / Firefox). `vertical-align: middle` (and shell-level
+  `box-sizing`) were deliberately dropped (2026-07, user decision) — don't re-add them.
   Keep the prelude when adding a new element component.
 
 - **In a Container-derived component, extend Container FIRST — internal wrappers (e.g. Aspect)

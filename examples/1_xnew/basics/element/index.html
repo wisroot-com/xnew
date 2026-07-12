@@ -48,7 +48,7 @@
       xnew('<div class="mb-1">', 'Button');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.Button, { text: 'default' });
-      xnew(xbasics.Button, { text: 'custom', designs: { button: { className: 'custom' } } });
+      xnew(xbasics.Button, { text: 'custom', className: 'custom' });
     }
 
     function MyInputText(unit) {
@@ -56,7 +56,7 @@
       xnew('<div class="mb-1">', 'InputText');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputText, { placeholder: 'default' });
-      xnew(xbasics.InputText, { placeholder: 'rounded', designs: { field: { style: 'border-radius: 9999px; padding: 0 0.8em;' } } });
+      xnew(xbasics.InputText, { placeholder: 'rounded', style: 'border-radius: 9999px; padding: 0 0.8em;' });
     }
 
     function MyInputNumber(unit) {

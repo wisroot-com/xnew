@@ -57,7 +57,7 @@ function GameData(unit) {
 function TitleScene(unit) {
   xnew.extend(xbasics.Scene);
 
-  xnew(xbasics.Image, { src: './background.jpg', className: 'absolute inset-0 size-full -z-10', designs: { image: { className: 'object-fill' } } });
+  xnew(xbasics.Image, { src: './background.jpg', className: 'absolute inset-0 size-full -z-10 object-fill' });
   xnew(ShadowPlane);
   xnew(DirectionalLight, { x: 2, y: 12, z: 20 });
   xnew(AmbientLight);
@@ -84,7 +84,7 @@ function GameScene(unit) {
   });
   xnew.context(GameData).reset();
   
-  xnew(xbasics.Image, { src: './background.jpg', className: 'absolute inset-0 size-full -z-10', designs: { image: { className: 'object-fill' } } });
+  xnew(xbasics.Image, { src: './background.jpg', className: 'absolute inset-0 size-full -z-10 object-fill' });
   xnew(ShadowPlane);
   xnew(DirectionalLight, { x: 2, y: 5, z: 10 });
   xnew(AmbientLight);
@@ -131,7 +131,7 @@ function ResultScene(unit, { image }) {
   }, 500, 'ease');
 
   xnew(ResultBackground, { gradient: 'from-stone-300 to-stone-400', textColor: 'text-stone-400' });
-  xnew(xbasics.Image, { src: image, className: 'absolute bottom-[12cqw] left-[2cqw] size-[45cqw]', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);', designs: { image: { className: 'rounded-[1cqw] object-cover' } } });
+  xnew(xbasics.Image, { src: image, className: 'absolute bottom-[12cqw] left-[2cqw] size-[45cqw] rounded-[1cqw] object-cover', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);' });
   xnew(ResultDetail);
   xnew(ResultFooter, { onBack: () => unit.change(TitleScene) });
 }

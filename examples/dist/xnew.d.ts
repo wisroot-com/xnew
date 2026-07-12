@@ -237,18 +237,10 @@ declare function Split(unit: xnew.Unit, { direction }?: {
     }, component?: xnew.Component): Unit;
 };
 
-interface Design {
-    className?: string;
-    style?: string;
-}
-
-declare function Button(unit: xnew.Unit, { text, className, style, designs, ...others }?: {
+declare function Button(unit: xnew.Unit, { text, className, style, ...others }?: {
     text?: string;
     className?: string;
     style?: string;
-    designs?: {
-        button?: Design;
-    };
     [key: string]: any;
 }): void;
 
@@ -260,13 +252,10 @@ declare function Chevron(unit: xnew.Unit, { direction, className, style, ...othe
 }): void;
 
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
-declare function Image(unit: xnew.Unit, { src, className, style, designs, ...others }: {
+declare function Image(unit: xnew.Unit, { src, className, style, ...others }: {
     src: ImageSource | Promise<ImageSource>;
     className?: string;
     style?: string;
-    designs?: {
-        image?: Design;
-    };
     [key: string]: any;
 }): void;
 
@@ -283,6 +272,11 @@ declare function SVGText(unit: xnew.Unit, { text, fontSize, className, style, ..
     style?: string;
     [key: string]: any;
 }): void;
+
+interface Design {
+    className?: string;
+    style?: string;
+}
 
 declare function InputRange(unit: xnew.Unit, { value, min, max, step, className, style, designs, ...others }?: {
     value?: number;
@@ -309,21 +303,15 @@ declare function InputCheckbox(unit: xnew.Unit, { value, className, style, desig
     [key: string]: any;
 }): void;
 
-declare function InputText(unit: xnew.Unit, { className, style, designs, ...others }?: {
+declare function InputText(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
     style?: string;
-    designs?: {
-        field?: Design;
-    };
     [key: string]: any;
 }): void;
 
-declare function InputNumber(unit: xnew.Unit, { className, style, designs, ...others }?: {
+declare function InputNumber(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
     style?: string;
-    designs?: {
-        field?: Design;
-    };
     [key: string]: any;
 }): void;
 

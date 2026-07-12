@@ -5,19 +5,13 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Container } from './Container';
-import { Design } from '../design';
 
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
 
 export function Image(unit: xnew.Unit,
-    { src, className = '', style = '', designs = {}, ...others }:
-    { src: ImageSource | Promise<ImageSource>, className?: string, style?: string, designs?: { image?: Design }, [key: string]: any }
+    { src, className = '', style = '', ...others }:
+    { src: ImageSource | Promise<ImageSource>, className?: string, style?: string, [key: string]: any }
 ) {
-    xnew.extend(Container, {
-        className, style,
-    });
-
     const css = xnew.css({
         image: {
             layer: 'base',
@@ -27,7 +21,7 @@ export function Image(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'img', className: `${css.image} ${designs.image?.className ?? ''}`, style: designs.image?.style, ...others });
+    xnew.nest({ tag: 'img', className: `${css.image} ${className}`, style, ...others });
     const element = unit.element as HTMLImageElement;
 
     let objectURL: string | null = null;

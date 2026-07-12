@@ -63,19 +63,11 @@ describe('basics InputNumber', () => {
         expect(Number.isNaN(received[0])).toBe(true);
     });
 
-    it('applies className and style to the container (exposed via the getter)', () => {
+    it('applies className and style to the input element', () => {
         const unit = xnew(InputNumber, { className: 'boxed', style: 'width: 4em;' });
-
-        expect(unit.container).toBe(unit.element.parentElement);
-        expect(unit.container.className).toContain('boxed');
-        expect(unit.container.getAttribute('style')).toContain('width: 4em;');
-    });
-
-    it('applies designs to the field part', () => {
-        const unit = xnew(InputNumber, { designs: { field: { className: 'mono', style: 'text-align: left;' } } });
         const input = unit.element as HTMLInputElement;
 
-        expect(input.className).toContain('mono');
-        expect(input.getAttribute('style')).toContain('text-align: left;');
+        expect(input.className).toContain('boxed');
+        expect(input.getAttribute('style')).toContain('width: 4em;');
     });
 });
