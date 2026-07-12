@@ -26,7 +26,6 @@ Recommended reading order.
 | sample | shows |
 | --- | --- |
 | [screen](basics/screen/) | `Screen` (fixed-resolution canvas, `fit`), `Aspect` |
-| [split](basics/split/) | `Split` — `pane()` builder (ratio / fixed size), nested splits for screen layout |
 | [scene](basics/scene/) | `Scene` navigation — `change` (swap sibling scenes) / `add` (overlay) |
 | [element](basics/element/) | `Button` / `Input*` form elements — `@layer base` defaults, overridable via className / style |
 | [panel](basics/panel/) | `Panel` — groups, buttons, range / checkbox / select |

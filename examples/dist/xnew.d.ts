@@ -228,15 +228,6 @@ declare function SceneList(unit: xnew.Unit, { list }?: {
     resolve(label: string): SceneEntry | undefined;
 };
 
-declare function Split(unit: xnew.Unit, { direction }?: {
-    direction?: 'column' | 'row';
-}): {
-    pane({ size, direction }: {
-        size: number | string;
-        direction?: "column" | "row";
-    }, component?: xnew.Component): Unit;
-};
-
 declare function Button(unit: xnew.Unit, { text, className, style, ...others }?: {
     text?: string;
     className?: string;
@@ -477,7 +468,6 @@ declare const xbasics: {
     Screen: typeof Screen;
     Scene: typeof Scene;
     SceneList: typeof SceneList;
-    Split: typeof Split;
     Button: typeof Button;
     Chevron: typeof Chevron;
     Image: typeof Image;

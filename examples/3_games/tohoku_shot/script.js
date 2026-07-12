@@ -40,7 +40,7 @@ const BAKE_FRAME_SIZE = 96; // ベイク1フレームの解像度(px)
 const PANEL_W = 200;
 const PLAY_RIGHT = 800 - PANEL_W;
 
-// リザルト画面のフッター高さ（画面高さに対する割合）。画面割り(Split)と ScreenShot のクロップで共有。
+// リザルト画面のフッター高さ（画面高さに対する割合）。画面割り(flex)と ScreenShot のクロップで共有。
 const RESULT_FOOTER_RATIO = 0.2;
 
 // 自機⇄敵の当たり判定半径。中心間距離 < PLAYER_HIT_R + ENEMY_HIT_R で被弾。
@@ -579,17 +579,16 @@ function ResultScene(unit, { image, score, wave, kills, cleared }) {
   xnew(ResultBackground, { gradient: 'from-slate-900 to-blue-950', textColor: 'text-blue-800' });
 
   // 画面割り: 上下 80:20、上部分をさらに左右 50:50
-  xnew((unit) => {
-    xnew.extend(xbasics.Split, { direction: 'column' });
-    unit.pane({ size: 1 - RESULT_FOOTER_RATIO, direction: 'row' }, (upper) => {
-      upper.pane({ size: 50 }, () => {
+  xnew(`<div class="relative size-full flex flex-col">`, () => {
+    xnew({ tag: 'div', className: 'relative flex flex-row min-h-0 overflow-hidden', style: `flex: ${1 - RESULT_FOOTER_RATIO} 1 0;` }, () => {
+      xnew(`<div class="relative flex-1 min-w-0 overflow-hidden">`, () => {
         xnew(xbasics.Image, { src: image, className: 'absolute inset-x-0 bottom-[2cqw] mx-auto w-[46cqw] aspect-4/3 rounded-[1cqw] object-cover', style: 'box-shadow: 0 10px 30px rgba(0,0,0,0.3);' });
       });
-      upper.pane({ size: 50 }, () => {
+      xnew(`<div class="relative flex-1 min-w-0 overflow-hidden">`, () => {
         xnew(ResultDetail, { score, wave, kills, cleared });
       });
     });
-    unit.pane({ size: RESULT_FOOTER_RATIO }, ResultFooter);
+    xnew({ tag: 'div', className: 'relative min-h-0 overflow-hidden', style: `flex: ${RESULT_FOOTER_RATIO} 1 0;` }, ResultFooter);
   });
 
   unit.on('window.keydown.space', ({ event }) => { event.preventDefault(); unit.change(TitleScene, { skipStory: true }); });
