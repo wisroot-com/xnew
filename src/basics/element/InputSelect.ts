@@ -10,22 +10,29 @@ import { Design } from '../design';
 
 export function InputSelect(unit: xnew.Unit,
     { value, items = [], className = '', style = '', designs = {}, ...others }:
-    { value?: string, items?: string[], className?: string, style?: string, designs?: { label?: Design, menu?: Design, item?: Design }, [key: string]: any } = {}
+    { value?: string, items?: string[], className?: string, style?: string, designs?: { frame?: Design, label?: Design, menu?: Design, item?: Design }, [key: string]: any } = {}
 ) {
     const initial = value ?? items[0] ?? '';
 
     const css = xnew.css({
-        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
         container: {
             layer: 'base',
             body: `
-                box-sizing: border-box;
                 display: inline-flex; align-items: center;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
                 position: relative;
-                border: 1px solid currentColor; border-radius: 0.25em;
                 cursor: pointer; user-select: none;
-                &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            `,
+        },
+        // full-extent overlay carrying the framed look; hover / open state is on the container
+        frame: {
+            layer: 'base',
+            body: `
+                position: absolute; inset: 0;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                pointer-events: none;
+                :not([data-open]):hover > & { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
         label: {
@@ -58,6 +65,8 @@ export function InputSelect(unit: xnew.Unit,
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     const container = unit.element as HTMLElement;
+
+    xnew({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
 
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
     const label = xnew(labelBox, { tag: 'div', className: `${css.label} ${designs.label?.className ?? ''}`, style: designs.label?.style }, initial);
@@ -99,7 +108,7 @@ export function InputSelect(unit: xnew.Unit,
 
             const menu = xnew.nest({ tag: 'div', className: `${css.menu} ${designs.menu?.className ?? ''}`, style: `background: ${surfaceColor()}; ${designs.menu?.style ?? ''}` });
 
-            // re-anchored every container, so scrolling never shifts the list off the button
+            // re-anchored every update tick, so scrolling never shifts the list off the button
             const anchor = () => {
                 const rect = container.getBoundingClientRect();
                 menu.style.left = `${rect.left}px`;

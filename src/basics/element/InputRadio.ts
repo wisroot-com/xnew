@@ -12,19 +12,26 @@ let radioGroupId = 0;
 
 export function InputRadio(unit: xnew.Unit,
     { value, items = [], name = '', className = '', style = '', designs = {} }:
-    { value?: string, items?: string[], name?: string, className?: string, style?: string, designs?: { item?: Design } } = {}
+    { value?: string, items?: string[], name?: string, className?: string, style?: string, designs?: { frame?: Design, item?: Design } } = {}
 ) {
     const initial = value ?? items[0] ?? '';
 
     const css = xnew.css({
-        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
         container: {
             layer: 'base',
             body: `
-                box-sizing: border-box;
-                display: inline-flex; align-items: stretch;
+                display: inline-block;
                 width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 100%;
-                overflow: hidden;
+            `,
+        },
+        // the framed look wraps the items (not an overlay): the rounded clip must contain the
+        // item tints, or their corners would poke out of the ring
+        frame: {
+            layer: 'base',
+            body: `
+                box-sizing: border-box; width: 100%; height: 100%;
+                display: flex; align-items: stretch; overflow: hidden;
                 border: 1px solid currentColor; border-radius: 0.25em;
             `,
         },
@@ -52,6 +59,8 @@ export function InputRadio(unit: xnew.Unit,
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+
+    xnew.nest({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
 
     const segments: [xnew.Unit, string][] = [];
     items.forEach((item) => {

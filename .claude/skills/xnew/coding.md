@@ -87,15 +87,19 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   `xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style })`.
   Single-element components (Button, Chevron, Image, InputNumber, InputText, SVG, SVGText)
   ALSO spread `...others` onto that element; multi-part components (InputCheckbox / InputRadio /
-  InputRange / InputSelect / InputSwitch, and `ui/AnalogStick` / `ui/DPad`) keep the container for
-  layout only — `value`, `name`, rest members stay with the inner parts (usually the hidden
-  native input), which are decorated via `designs`. There is no `container` getter anywhere;
+  InputRange / InputSelect / InputSwitch, and `ui/AnalogStick` / `ui/DPad`) keep the container
+  STRICTLY layout-only (prelude + position: relative + interaction props, NO visual look) — the
+  framed look (border / radius / state tints) lives on an inner `frame` part (`designs.frame`),
+  and `value`, `name`, rest members stay with the inner parts (usually the hidden native input),
+  decorated via `designs`. State attributes (`data-checked` / `data-open`) toggle on the
+  container; frame / knob / svg react via parent-keyed rules (`[data-checked] > & { … }`).
+  There is no `container` getter anywhere;
   `unit.element` ends on the innermost nested part (the hidden input / select), and the
   caller-facing container is its ancestor — capture the container element right after nesting it when
   the component needs it later.
 - **Internal parts of a basics component are decorated via its `designs` prop** — one
   `Design` (`{ className?, style? }`, from `src/basics/design.ts`) per named part, e.g.
-  InputRange's `designs: { meter?, status? }`. The container is NOT a designs part (caller
+  InputRange's `designs: { frame?, meter?, status? }`. The container is NOT a designs part (caller
   `className` / `style` hit it directly). Generated class names are page-unique, so
   page CSS cannot target parts directly; `designs` is the supported hook (never expose
   stable global part classes).

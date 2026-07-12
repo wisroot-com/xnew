@@ -12,12 +12,12 @@ describe('basics InputRange', () => {
         jest.useRealTimers();
     });
 
-    // container children: the rail ring first, then the meter, then the status readout, then the hidden input
+    // container children: the frame ring first, then the meter, then the status readout, then the hidden input
     function containerOf(unit: xnew.Unit): HTMLElement {
         return unit.element.parentElement as HTMLElement;
     }
 
-    function railOf(unit: xnew.Unit): HTMLElement {
+    function frameOf(unit: xnew.Unit): HTMLElement {
         return containerOf(unit).querySelectorAll('div')[0] as HTMLElement;
     }
 
@@ -106,11 +106,11 @@ describe('basics InputRange', () => {
         expect((anonymous.element as HTMLInputElement).hasAttribute('name')).toBe(false);
     });
 
-    it('marks the max extent with a rail ring fainter than the meter border', () => {
+    it('marks the max extent with a frame ring fainter than the meter border', () => {
         const unit = xnew(InputRange, { value: 30 });
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
-        expect(railOf(unit).className).toMatch(/xnew\d+-rail/);
+        expect(frameOf(unit).className).toMatch(/xnew\d+-frame/);
         expect(styleText).toContain('border: 1px solid color-mix(in srgb, currentColor 40%, transparent);');
     });
 
@@ -121,14 +121,17 @@ describe('basics InputRange', () => {
         expect(containerOf(unit).getAttribute('style')).toContain('height: 2em;');
     });
 
-    it('applies designs to the meter part', () => {
+    it('applies designs to the frame and meter parts', () => {
         const unit = xnew(InputRange, {
             designs: {
+                frame: { className: 'rail', style: 'border-radius: 0;' },
                 meter: { className: 'gold', style: 'background: gold;' },
             },
         });
         const meter = meterOf(unit);
 
+        expect(frameOf(unit).className).toContain('rail');
+        expect(frameOf(unit).getAttribute('style')).toContain('border-radius: 0;');
         expect(meter.className).toContain('gold');
         expect(meter.getAttribute('style')).toContain('background: gold;');
     });

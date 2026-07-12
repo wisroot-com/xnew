@@ -12,13 +12,17 @@ describe('basics InputSwitch', () => {
         jest.useRealTimers();
     });
 
-    // container > [knob, input]
+    // container > [frame, knob, input]
     function containerOf(unit: xnew.Unit): HTMLElement {
         return unit.element.parentElement as HTMLElement;
     }
 
+    function frameOf(unit: xnew.Unit): HTMLElement {
+        return containerOf(unit).querySelectorAll('div')[0] as HTMLElement;
+    }
+
     function knobOf(unit: xnew.Unit): HTMLElement {
-        return containerOf(unit).querySelector('div') as HTMLElement;
+        return containerOf(unit).querySelectorAll('div')[1] as HTMLElement;
     }
 
     it('nests a hidden native checkbox with the given state', () => {
@@ -48,7 +52,7 @@ describe('basics InputSwitch', () => {
         xnew(InputSwitch);
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
-        expect(styleText).toContain('&[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }');
+        expect(styleText).toContain('[data-checked] > & { background: color-mix(in srgb, currentColor 20%, transparent); }');
         expect(styleText).toContain('[data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }');
     });
 
@@ -66,9 +70,10 @@ describe('basics InputSwitch', () => {
         expect(containerOf(unit).hasAttribute('data-checked')).toBe(true);
     });
 
-    it('applies designs to the knob part', () => {
-        const unit = xnew(InputSwitch, { designs: { knob: { style: 'background: gold;' } } });
+    it('applies designs to the frame and knob parts', () => {
+        const unit = xnew(InputSwitch, { designs: { frame: { className: 'pill' }, knob: { style: 'background: gold;' } } });
 
+        expect(frameOf(unit).className).toContain('pill');
         expect(knobOf(unit).getAttribute('style')).toContain('background: gold;');
     });
 

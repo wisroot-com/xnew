@@ -9,20 +9,26 @@ import { Design } from '../design';
 
 export function InputSwitch(unit: xnew.Unit,
     { value = false, className = '', style = '', designs = {}, ...others }:
-    { value?: boolean, className?: string, style?: string, designs?: { knob?: Design }, [key: string]: any } = {}
+    { value?: boolean, className?: string, style?: string, designs?: { frame?: Design, knob?: Design }, [key: string]: any } = {}
 ) {
     const css = xnew.css({
-        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
         container: {
             layer: 'base',
             body: `
-                box-sizing: border-box;
                 display: inline-block;
                 width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
                 position: relative;
-                border: 1px solid currentColor; border-radius: 1em;
                 user-select: none;
-                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            `,
+        },
+        // full-extent overlay carrying the framed look; the on state is on the container
+        frame: {
+            layer: 'base',
+            body: `
+                position: absolute; inset: 0;
+                border: 1px solid currentColor; border-radius: 1em;
+                [data-checked] > & { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
         knob: {
@@ -45,6 +51,8 @@ export function InputSwitch(unit: xnew.Unit,
     });
 
     const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+
+    xnew({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
 
     xnew({ tag: 'div', className: `${css.knob} ${designs.knob?.className ?? ''}`, style: designs.knob?.style });
 

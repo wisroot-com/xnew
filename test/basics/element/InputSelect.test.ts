@@ -16,9 +16,14 @@ describe('basics InputSelect', () => {
         return unit.element.parentElement as HTMLElement;
     }
 
-    // the first container child is the label box: visible label first, then the hidden per-item sizers
+    // container children: the frame overlay first, then the label box (visible label first,
+    // then the hidden per-item sizers)
+    function frameOf(unit: xnew.Unit): HTMLElement {
+        return containerOf(unit).firstElementChild as HTMLElement;
+    }
+
     function labelOf(unit: xnew.Unit): HTMLElement {
-        return containerOf(unit).firstElementChild?.firstElementChild as HTMLElement;
+        return containerOf(unit).children[1]?.firstElementChild as HTMLElement;
     }
 
     function dropdownOf(unit: xnew.Unit): HTMLElement | null {
@@ -105,7 +110,7 @@ describe('basics InputSelect', () => {
     it('suppresses the button hover tint via data-open while the option list is open', () => {
         const unit = xnew(InputSelect, { items: ['low', 'mid'] });
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
-        expect(styleText).toContain('&:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }');
+        expect(styleText).toContain(':not([data-open]):hover > & { background: color-mix(in srgb, currentColor 20%, transparent); }');
 
         expect(containerOf(unit).hasAttribute('data-open')).toBe(false);
         open(unit);
@@ -115,16 +120,18 @@ describe('basics InputSelect', () => {
         expect(containerOf(unit).hasAttribute('data-open')).toBe(false);
     });
 
-    it('applies designs to the label, menu, and item parts', () => {
+    it('applies designs to the frame, label, menu, and item parts', () => {
         const unit = xnew(InputSelect, {
             items: ['low', 'mid'],
             designs: {
+                frame: { className: 'pill' },
                 label: { style: 'font-weight: bold;' },
                 menu: { style: 'border-radius: 0.5em;' },
                 item: { className: 'row' },
             },
         });
 
+        expect(frameOf(unit).className).toContain('pill');
         expect(labelOf(unit).getAttribute('style')).toContain('font-weight: bold;');
         const dropdown = open(unit);
         expect(dropdown.getAttribute('style')).toContain('border-radius: 0.5em;');
