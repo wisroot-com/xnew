@@ -10,9 +10,30 @@ export function Aspect(unit: xnew.Unit,
     { aspect = 1.0, fit = 'contain' }:
     { aspect?: number, fit?: 'contain' | 'cover' } = {}
 ) {
-    xnew.nest('<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; container-type: size;">');
-    xnew.nest(`<div style="position: relative; aspect-ratio: ${aspect}; container-type: size;">`);
+    const css = xnew.css({
+        // outer flex box that centers the ratio box; container-type: size exposes the parent extent to cqw / cqh
+        container: {
+            layer: 'base',
+            body: `
+                width: 100%; height: 100%;
+                display: flex; align-items: center; justify-content: center;
+                container-type: size;
+            `,
+        },
+        // ratio box; aspect-ratio and the fitting width are aspect-dependent, so they stay inline
+        inner: {
+            layer: 'base',
+            body: `
+                position: relative;
+                container-type: size;
+            `,
+        },
+    });
 
+    xnew.nest({ tag: 'div', className: css.container });
+    xnew.nest({ tag: 'div', className: css.inner });
+
+    unit.element.style.aspectRatio = String(aspect);
     if (fit === 'contain') {
         unit.element.style.width = `min(100cqw, calc(100cqh * ${aspect}))`;
     } else {
