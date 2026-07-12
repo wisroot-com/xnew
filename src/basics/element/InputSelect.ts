@@ -19,9 +19,9 @@ export function InputSelect(unit: xnew.Unit,
         container: {
             layer: 'base',
             body: `
+                position: relative;
                 display: inline-flex; align-items: center;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
-                position: relative;
                 cursor: pointer; user-select: none;
             `,
         },

@@ -22,7 +22,7 @@ export function InputRadio(unit: xnew.Unit,
             layer: 'base',
             body: `
                 display: inline-block;
-                width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 100%;
+                width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;
             `,
         },
         // the framed look wraps the items (not an overlay): the rounded clip must contain the
@@ -38,8 +38,8 @@ export function InputRadio(unit: xnew.Unit,
         item: {
             layer: 'base',
             body: `
+                position: relative; padding: 0.25em 0.5em;
                 flex: 1 1 0;
-                position: relative;
                 display: flex; align-items: center; justify-content: center;
                 white-space: nowrap;
                 user-select: none;

@@ -16,10 +16,9 @@ export function InputCheckbox(unit: xnew.Unit,
         container: {
             layer: 'base',
             body: `
-                display: inline-flex; align-items: center; justify-content: center;
+                display: inline-block;
                 width: 1.5em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
                 position: relative;
-                user-select: none;
             `,
         },
         // full-extent overlay carrying the framed look; the checked state is on the container

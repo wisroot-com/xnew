@@ -1585,10 +1585,9 @@ function InputCheckbox(unit, _a = {}) {
         container: {
             layer: 'base',
             body: `
-                display: inline-flex; align-items: center; justify-content: center;
+                display: inline-block;
                 width: 1.5em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
                 position: relative;
-                user-select: none;
             `,
         },
         frame: {
@@ -1681,7 +1680,6 @@ function InputSwitch(unit, _a = {}) {
                 display: inline-block;
                 width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
                 position: relative;
-                user-select: none;
             `,
         },
         frame: {
@@ -1732,7 +1730,7 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
             layer: 'base',
             body: `
                 display: inline-block;
-                width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 100%;
+                width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;
             `,
         },
         frame: {
@@ -1746,8 +1744,8 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
         item: {
             layer: 'base',
             body: `
+                position: relative; padding: 0.25em 0.5em;
                 flex: 1 1 0;
-                position: relative;
                 display: flex; align-items: center; justify-content: center;
                 white-space: nowrap;
                 user-select: none;
@@ -1795,9 +1793,9 @@ function InputSelect(unit, _a = {}) {
         container: {
             layer: 'base',
             body: `
+                position: relative;
                 display: inline-flex; align-items: center;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
-                position: relative;
                 cursor: pointer; user-select: none;
             `,
         },
