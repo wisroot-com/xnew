@@ -313,7 +313,7 @@ function TitleScene(unit, { skipStory = false } = {}) {
 
   xnew(TitleText, { text: 'とーほくショット', color: 'text-blue-600' });
   xnew(TouchMessage, { color: 'text-blue-600' });
-  xnew(VolumeControl, { className: 'text-stone-300 z-10' });
+  xnew(VolumeController, { className: 'text-stone-300 z-10' });
 
   unit.on('pointerdown window.keydown.space', ({ event }) => {
     event.preventDefault();
@@ -374,7 +374,7 @@ function StoryScene(unit) {
 
   xnew(Background);   // 体内背景を流用（タイトル/ゲームと連続感）
   xnew(CameraShake);  // 被弾時のシェイク演出用
-  xnew(VolumeControl, { className: 'text-stone-300 z-10' });
+  xnew(VolumeController, { className: 'text-stone-300 z-10' });
   xnew(StoryTheater); // 下部の黒帯（セリフはこの上に表示）。pages より先に作り、テキストの背面に置く
 
   const pages = [StoryPageHit, StoryPageSwarm];
@@ -540,7 +540,7 @@ function GameScene(unit) {
   xnew(ScoreGauge);
   xnew(ShotEnergy);
   xnew(Player);
-  xnew(VolumeControl, { className: 'text-stone-300 z-10' });
+  xnew(VolumeController, { className: 'text-stone-300 z-10' });
 
   const bgm = xnew(() => {
     xnew(xbasics.AudioTrack, { url: asset('maou_bgm_cyber31.mp3') }).play({ fade: 1000, loop: true });
@@ -1762,8 +1762,9 @@ function SpeakerIcon(unit, { muted = false } = {}) {
   xnew.extend(muted ? xicons.SpeakerXMark : xicons.SpeakerWave, { style: 'display: block; width: 100%; height: 100%;' });
 }
 
-// スピーカーアイコン + アイコンの左隣に開くスライダー。xbasics.Volume をマスター音量への橋渡しに使う。
-function VolumeController(unit) {
+// スピーカーアイコン + アイコンの左隣に開くスライダー。右下に配置。className で文字色等を調整。
+function VolumeController(unit, { className = 'text-stone-300 z-10' } = {}) {
+  xnew.nest(`<div class="absolute right-[2cqw] bottom-[2cqw] size-[6cqw] ${className}">`);
   const volume = xnew.extend(xbasics.Volume);
   xnew.extend(xbasics.Aspect, { aspect: 1.0, fit: 'contain' });
   unit.on('pointerdown', ({ event }) => event.stopPropagation());
@@ -1804,10 +1805,5 @@ function VolumeController(unit) {
   });
 
   unit.on('click.outside', () => system.close());
-}
-
-// 右下の音量コントローラ。className で文字色等を調整。
-function VolumeControl(unit, { className = 'text-stone-300 z-10' } = {}) {
-  xnew(`<div class="absolute right-[2cqw] bottom-[2cqw] size-[6cqw] ${className}">`, VolumeController);
 }
 

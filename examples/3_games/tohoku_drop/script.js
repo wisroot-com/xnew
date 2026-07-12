@@ -72,7 +72,7 @@ function TitleScene(unit) {
 
   xnew(TitleText, { text: 'とーほくドロップ', color: 'text-green-600' });
   xnew(TouchMessage, { color: 'text-green-600' });
-  xnew(VolumeControl, { className: 'text-stone-500' });
+  xnew(VolumeController, { className: 'text-stone-500' });
 }
 
 function GameScene(unit) {
@@ -93,7 +93,7 @@ function GameScene(unit) {
   xnew(Queue);
   xnew(ThreeTexture); // render three.js canvas as pixi texture
   xnew(ScoreText);
-  xnew(VolumeControl, { className: 'text-stone-500' });
+  xnew(VolumeController, { className: 'text-stone-500' });
 
   const playing = xnew((unit) => {
     xnew(Controller);
@@ -497,8 +497,9 @@ function SpeakerIcon(unit, { muted = false } = {}) {
   xnew.extend(muted ? xicons.SpeakerXMark : xicons.SpeakerWave, { style: 'display: block; width: 100%; height: 100%;' });
 }
 
-// スピーカーアイコン + アイコンの左隣に開くスライダー。xbasics.Volume をマスター音量への橋渡しに使う。
-function VolumeController(unit) {
+// スピーカーアイコン + アイコンの左隣に開くスライダー。右下に配置。className で文字色等を調整。
+function VolumeController(unit, { className = 'text-stone-300 z-10' } = {}) {
+  xnew.nest(`<div class="absolute right-[2cqw] bottom-[2cqw] size-[6cqw] ${className}">`);
   const volume = xnew.extend(xbasics.Volume);
   xnew.extend(xbasics.Aspect, { aspect: 1.0, fit: 'contain' });
   unit.on('pointerdown', ({ event }) => event.stopPropagation());
@@ -539,10 +540,5 @@ function VolumeController(unit) {
   });
 
   unit.on('click.outside', () => system.close());
-}
-
-// 右下の音量コントローラ。className で文字色等を調整。
-function VolumeControl(unit, { className = 'text-stone-300 z-10' } = {}) {
-  xnew(`<div class="absolute right-[2cqw] bottom-[2cqw] size-[6cqw] ${className}">`, VolumeController);
 }
 
