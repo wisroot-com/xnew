@@ -13,7 +13,7 @@ export function DPad(unit: xnew.Unit,
     { diagonal?: boolean, className?: string, style?: string, designs?: { svg?: Design } } = {}
 ) {
     xnew.extend(Container, {
-        base: 'position: relative; width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
+        base: 'cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
         className, style,
     });
 

@@ -15,7 +15,6 @@ export function Image(unit: xnew.Unit,
     { src: ImageSource | Promise<ImageSource>, className?: string, style?: string, designs?: { image?: Design }, [key: string]: any }
 ) {
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 100%; height: 100%;',
         className, style,
     });
 

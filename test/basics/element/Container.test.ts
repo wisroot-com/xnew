@@ -24,6 +24,14 @@ describe('basics Container', () => {
         expect(styleText()).toContain('width: 1.5rem; height: 1.5rem;');
     });
 
+    it('nests the given tag as the shell and forwards rest members onto it', () => {
+        const unit = xnew(Container, { tag: 'svg', viewBox: '0 0 64 64' });
+
+        expect(unit.element instanceof SVGElement).toBe(true);
+        expect(unit.element.getAttribute('viewBox')).toBe('0 0 64 64');
+        expect(unit.container).toBe(unit.element);
+    });
+
     it('applies className and style to the container', () => {
         const unit = xnew(Container, { className: 'action', style: 'width: 8em;' });
 

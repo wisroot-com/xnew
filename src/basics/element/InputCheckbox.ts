@@ -14,7 +14,7 @@ export function InputCheckbox(unit: xnew.Unit,
 ) {
     xnew.extend(Container, {
         // inline-block flows like a native control; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        base: 'box-sizing: border-box; display: inline-block; vertical-align: middle; width: 1.5em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;',
+        base: 'display: inline-block; width: 1.5em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;',
         className, style,
     });
 

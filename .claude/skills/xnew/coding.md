@@ -84,14 +84,16 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
 - **Every `basics/element` component is Container-derived**: it starts with
   `xnew.extend(Container, { base, className, style })` (`src/basics/element/Container.ts`,
   internal-only — NOT an xbasics member) and nests its parts inside. Container's role is
-  strictly the **outer size and caller-side design** — those three props are its whole
-  signature; every other prop of the component (`value`, `name`, rest members, …) stays with
-  the inner parts (e.g. the native `<input>`, or SVG's nested `<svg>` which fills the
-  container and carries the presentation defaults as an @layer base css rule). The container element is always a
-  `<div>`. `base` is the shell's `@layer base` declaration block (Button/Text/Number/Select
-  `10rem × 1.8rem`; Checkbox `1.5rem × 1.5rem`; Switch `3rem × 1.5rem`; Range
-  `10rem × 1.5rem`; Chevron `1em × 1em`; Radio / Image fill the host until their default is
-  decided; SVG / SVGText none). `ui/AnalogStick` and `ui/DPad` also derive from Container
+  strictly the **outer shell and caller-side design**: `tag` (default `'div'`) picks the shell
+  element, `base` / `className` / `style` decorate it, and rest members are forwarded onto the
+  shell element (ElementDef semantics). Every other prop of the component (`value`, `name`,
+  rest members, …) stays with the inner parts (e.g. the native `<input>`) — except SVG and
+  SVGText, whose shell IS the `<svg>` itself (`tag: 'svg'`, no inner nest, no `designs` prop):
+  their presentation defaults ride in `base`, `viewBox` / rest members land on the shell, and
+  callers style them via `className` / `style` directly. `base` is the shell's `@layer base`
+  declaration block (Button/Text/Number/Select `10rem × 1.8rem`; Checkbox `1.5rem × 1.5rem`;
+  Switch `3rem × 1.5rem`; Range `10rem × 1.5rem`; Chevron `1em × 1em`; Radio / Image fill the
+  host until their default is decided; SVG / SVGText = their svg presentation defaults). `ui/AnalogStick` and `ui/DPad` also derive from Container
   (their pointer-operated surface; their SVG layers are decorated via `designs: { svg? }` —
   they expose no stroke / fill props). Container returns `{ get container }`, merged onto the unit
   — the component must NOT return its own `container` getter (define collision), and one
@@ -295,13 +297,14 @@ Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
 - **Every `basics/element` shell base starts with the same prelude:
-  `box-sizing: border-box; display: inline-block; vertical-align: middle;` then `width: …;` then the
-  margin-box cap `max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;`.**
+  `display: inline-block;` then `width: …;` then the margin-box cap
+  `max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;`.**
   `inline-block` makes `xnew(Button)` flow like a native control (side by side in text flow; blockified
-  automatically inside flex/grid, so those layouts are unaffected); `middle` because label-less shells
-  (Checkbox/Switch) baseline on their bottom edge and ride high next to text; `max-width: stretch` caps
+  automatically inside flex/grid, so those layouts are unaffected); `max-width: stretch` caps
   the *margin box* at the parent so a caller horizontal margin never overflows on the right (bit Button;
-  prefixed fallbacks cover Safari / Firefox). Keep the prelude when adding a new element component.
+  prefixed fallbacks cover Safari / Firefox). `box-sizing: border-box` and `vertical-align: middle`
+  were deliberately dropped from the shells (2026-07, user decision) — don't re-add them.
+  Keep the prelude when adding a new element component.
 
 - **In a Container-derived component, extend Container FIRST — internal wrappers (e.g. Aspect)
   nest inside it, never outside.** Container's div is the caller-side surface: with Aspect
@@ -313,12 +316,13 @@ the rule, then one line of why.
   `0.10000000149…` — feeding the raw read into InputRange's `value` displays a decimal-laden
   status until the first drag (bit the 3_games VolumeController).
 
-- **Override the SVG-drawn basics' presentation defaults (stroke / fill / …) via `designs.svg`
-  (or page css), never via svg attributes.** SVG / Chevron / SVGText keep those defaults in an
-  `@layer base` css rule on the `<svg>`, and ANY css beats presentation attributes — an
-  attribute like `stroke: '#EEE'` passed as a rest member is silently ignored
-  (`designs: { svg: { style: 'stroke: #EEE; stroke-width: 2;' } }` wins because inline style
-  beats layered css). Attribute-only members (`viewBox`, …) still go through rest.
+- **Override the SVG-drawn basics' presentation defaults (stroke / fill / …) via css, never via
+  svg attributes.** SVG / SVGText take caller `style` / `className` directly (their shell IS the
+  `<svg>`; they have no `designs` prop — passing one lands as a junk attribute and does nothing);
+  Chevron takes `designs.svg` for its nested `<svg>`. The defaults live in an `@layer base` css
+  rule, and ANY css beats presentation attributes — an attribute like `stroke: '#EEE'` passed as
+  a rest member is silently ignored; `style: 'stroke: #EEE; stroke-width: 2;'` wins because
+  inline style beats layered css. Attribute-only members (`viewBox`, …) still go through rest.
 
 - **A component may forward its rest props into an ElementDef as-is (`xnew.nest({ …, ...others })`)
   without stripping the reserved `key` prop.** If a caller passes `key`, it lands as a harmless

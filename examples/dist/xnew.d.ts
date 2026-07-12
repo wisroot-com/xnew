@@ -273,23 +273,17 @@ declare function Image(unit: xnew.Unit, { src, className, style, designs, ...oth
     [key: string]: any;
 }): void;
 
-declare function SVG(unit: xnew.Unit, { className, style, designs, ...others }?: {
+declare function SVG(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
     style?: string;
-    designs?: {
-        svg?: Design;
-    };
     [key: string]: any;
 }): void;
 
-declare function SVGText(unit: xnew.Unit, { text, fontSize, className, style, designs, ...others }?: {
+declare function SVGText(unit: xnew.Unit, { text, fontSize, className, style, ...others }?: {
     text?: string;
     fontSize?: number;
     className?: string;
     style?: string;
-    designs?: {
-        svg?: Design;
-    };
     [key: string]: any;
 }): void;
 

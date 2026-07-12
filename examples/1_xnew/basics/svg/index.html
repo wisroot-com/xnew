@@ -26,36 +26,31 @@
       xnew(Texts);
     }
 
-    // xbasics.SVG nests an <svg> root with shared presentation attributes
-    // (stroke / fill / line caps), so each shape child stays minimal.
-    // stroke: 'currentColor' inherits the CSS text color of the wrapper.
+    // xbasics.SVG is an <svg> root with shared presentation defaults (@layer base
+    // css: stroke / fill / line caps), so each shape child stays minimal.
+    // Override the defaults via className / style — css beats svg attributes.
+    // stroke: currentColor picks up the CSS text color set by className.
     function Icons(unit) {
       xnew('<p class="font-bold">', 'xbasics.SVG');
       xnew.nest('<div class="flex gap-2">');
 
-      xnew('<div class="size-16 text-red-500">', Heart);
-      xnew('<div class="size-16 text-amber-500">', Star);
-      xnew('<div class="size-16 text-green-600">', Check);
-      xnew('<div class="size-16 text-blue-600">', Gear);
-    }
-
-    function Heart(unit) {
-      xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.5 });
-      xnew('<path d="M12 20 4.5 12.5a4.6 4.6 0 1 1 7-6 4.6 4.6 0 1 1 7 6z">');
+      xnew(Star);
+      xnew(Check);
+      xnew(Gear);
     }
 
     function Star(unit) {
-      xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.5 });
+      xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', className: 'size-16 text-amber-500', style: 'stroke: currentColor; stroke-width: 1.5;' });
       xnew('<path d="M12 3 14.8 8.6 21 9.5 16.5 13.9 17.6 20 12 17.1 6.4 20 7.5 13.9 3 9.5 9.2 8.6z">');
     }
 
     function Check(unit) {
-      xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 });
+      xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', className: 'size-16 text-green-600', style: 'stroke: currentColor; stroke-width: 2;' });
       xnew('<path d="M4 12.5 9.5 18 20 6">');
     }
 
     function Gear(unit) {
-      xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.5 });
+      xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', className: 'size-16 text-blue-600', style: 'stroke: currentColor; stroke-width: 1.5;' });
       xnew('<circle cx="12" cy="12" r="3.5">');
       xnew('<path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1">');
     }
@@ -71,7 +66,7 @@
       });
 
       xnew('<div class="p-3 rounded-lg bg-slate-800 text-emerald-300">', () => {
-        xnew(xbasics.SVGText, { text: 'GAME START', fontSize: 40, stroke: '#ffffff', strokeWidth: 2, className: 'inline-block' });
+        xnew(xbasics.SVGText, { text: 'GAME START', fontSize: 40, className: 'inline-block', style: 'stroke: #ffffff; stroke-width: 2;' });
       });
     }
   </script>

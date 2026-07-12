@@ -471,9 +471,9 @@ function StoryPageHit(unit) {
   xnew(() => {
     xnew.extend(StoryDialog, { accent: '#FF8FA3', tag: 'ALERT', bottomCqw: 4.5 });
 
-    xnew('<div style="color:#FF8FA3;">', () => { xnew(xbasics.SVGText, { text: 'ずんだアローに当たってしまった！', fontSize: '5.2cqw', designs: { svg: { style: 'stroke: #0a1830; stroke-width: 0.25cqw;' } }, className: 'inline-block' }); });
+    xnew('<div style="color:#FF8FA3;">', () => { xnew(xbasics.SVGText, { text: 'ずんだアローに当たってしまった！', fontSize: '5.2cqw', style: 'stroke: #0a1830; stroke-width: 0.25cqw;', className: 'inline-block' }); });
     sub = xnew('<div class="mt-[0.6cqw]" style="color:#FCEFA0; opacity:0;">', () => {
-      xnew(xbasics.SVGText, { text: '（ずんだアローに当たると、ずんだ餅にされてしまう…）', fontSize: '2.5cqw', designs: { svg: { style: 'stroke: #0a1830; stroke-width: 0.2cqw;' } }, className: 'inline-block' });
+      xnew(xbasics.SVGText, { text: '（ずんだアローに当たると、ずんだ餅にされてしまう…）', fontSize: '2.5cqw', style: 'stroke: #0a1830; stroke-width: 0.2cqw;', className: 'inline-block' });
     });
   });
 
@@ -522,8 +522,8 @@ function StoryPageSwarm(unit) {
   xnew(() => {
     xnew.extend(StoryDialog, { accent: '#9BE53C', tag: 'MISSION', bottomCqw: 5 });
 
-    xnew('<div class="mb-[0.6cqw]">', () => { xnew(xbasics.SVGText, { text: '体内の免疫キャラを操作し、', fontSize: '4cqw', designs: { svg: { style: 'stroke: #0a1830; stroke-width: 0.22cqw;' } }, className: 'inline-block' }); });
-    xnew('<div style="color:#9BE53C;">', () => { xnew(xbasics.SVGText, { text: 'ずんだ因子の増殖を食い止めろ！', fontSize: '4.4cqw', designs: { svg: { style: 'stroke: #0a1830; stroke-width: 0.25cqw;' } }, className: 'inline-block' }); });
+    xnew('<div class="mb-[0.6cqw]">', () => { xnew(xbasics.SVGText, { text: '体内の免疫キャラを操作し、', fontSize: '4cqw', style: 'stroke: #0a1830; stroke-width: 0.22cqw;', className: 'inline-block' }); });
+    xnew('<div style="color:#9BE53C;">', () => { xnew(xbasics.SVGText, { text: 'ずんだ因子の増殖を食い止めろ！', fontSize: '4.4cqw', style: 'stroke: #0a1830; stroke-width: 0.25cqw;', className: 'inline-block' }); });
   });
 }
 
@@ -745,7 +745,7 @@ function WaveTransition(unit, { wave }) {
 // 右パネル上部の "Wave N" 表示（wave のメインカラーに追従）
 function WaveLabel(unit, { wave = 1 } = {}) {
   xnew.nest('<div class="absolute top-[1.5cqw] right-0 w-[25cqw] text-center font-bold text-lime-400">');
-  const text = xnew(xbasics.SVGText, { text: 'Wave 1', fontSize: '6cqw', designs: { svg: { style: 'stroke: #102008; stroke-width: 0.2cqw;' } }, className: 'inline-block' });
+  const text = xnew(xbasics.SVGText, { text: 'Wave 1', fontSize: '6cqw', style: 'stroke: #102008; stroke-width: 0.2cqw;', className: 'inline-block' });
   function update({ wave }) {
     text.element.textContent = `Wave ${wave}`;
     unit.element.style.color = waveCss(wave); // SVGText の fill=currentColor が追従
@@ -1677,11 +1677,11 @@ function ResultDetail(unit, { score, wave, kills = [0, 0, 0, 0], cleared = false
 // 丸枠アイコン: 外周の円 + 中央70%に path 群。Camera / ArrowUturnLeft で共有。
 function RingIcon(unit, { paths }) {
   xnew('<div style="position: absolute; inset: 0; margin: auto; width: 100%; height: 100%;">', () => {
-    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', designs: { svg: { style: 'stroke: currentColor;' } } });
+    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', style: 'display: block; width: 100%; height: 100%; stroke: currentColor;' });
     xnew('<circle cx="12" cy="12" r="11">');
   });
   xnew('<div style="position: absolute; inset: 0; margin: auto; width: 70%; height: 70%;">', () => {
-    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', designs: { svg: { style: 'stroke: currentColor; stroke-width: 1.5;' } } });
+    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', style: 'display: block; width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.5;' });
     for (const d of paths) {
       xnew(`<path d="${d}">`);
     }
@@ -1762,20 +1762,20 @@ function ResultBackground(unit, { gradient, textColor }) {
 // タイトルの見出し（縁取り SVGText）。text=文言 / color="text-..."。
 function TitleText(unit, { text, color }) {
   xnew.nest(`<div class="absolute w-full top-[16cqw] text-center ${color} font-bold">`);
-  xnew(xbasics.SVGText, { text, fontSize: '10cqw', designs: { svg: { style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' } }, className: 'inline-block' });
+  xnew(xbasics.SVGText, { text, fontSize: '10cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;', className: 'inline-block' });
 }
 
 // 点滅する "touch start"。color="text-..."。
 function TouchMessage(unit, { color }) {
   xnew.nest(`<div class="absolute w-full top-[30cqw] text-center ${color} font-bold">`);
-  xnew(xbasics.SVGText, { text: 'touch start', fontSize: '6cqw', designs: { svg: { style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' } }, className: 'inline-block' });
+  xnew(xbasics.SVGText, { text: 'touch start', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;', className: 'inline-block' });
   unit.on('update', ({ count }) => unit.element.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
 }
 
 // 中央に降りてくる "Game Over"。className で横位置を調整（既定は全幅中央）。
 function GameOverText(unit, { className = 'w-full' }) {
   xnew.nest(`<div class="absolute ${className} text-center text-red-400 font-bold">`);
-  xnew(xbasics.SVGText, { text: 'Game Over', fontSize: '12cqw', designs: { svg: { style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' } }, className: 'inline-block' });
+  xnew(xbasics.SVGText, { text: 'Game Over', fontSize: '12cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;', className: 'inline-block' });
   xnew.transition(({ value }) => {
     Object.assign(unit.element.style, { opacity: value, top: `${10 + value * 15}cqw` });
   }, 1000, 'ease');
@@ -1783,7 +1783,7 @@ function GameOverText(unit, { className = 'w-full' }) {
 
 // スピーカーアイコン（muted で消音グリフに切り替わる）。
 function SpeakerIcon(unit, { muted = false } = {}) {
-  xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', designs: { svg: { style: 'stroke: currentColor; stroke-width: 1.5;' } } });
+  xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', style: 'display: block; width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.5;' });
   const path = muted
     ? 'M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z'
     : 'M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z';

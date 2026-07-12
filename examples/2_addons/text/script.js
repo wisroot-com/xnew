@@ -65,8 +65,7 @@ function SVGText(unit) {
   xnew(xbasics.SVGText, {
     className: 'absolute left-0 top-[10cqw]',
     text: 'This text is rendered by SVG',
-    stroke: '#00FF00',
-    strokeWidth: '0.5cqw',
+    style: 'stroke: #00FF00; stroke-width: 0.5cqw;',
     fontSize: '4cqw',
   });
 }

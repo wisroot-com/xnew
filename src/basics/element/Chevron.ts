@@ -13,7 +13,7 @@ export function Chevron(unit: xnew.Unit,
     { direction?: 'up' | 'down' | 'left' | 'right', className?: string, style?: string, designs?: { svg?: Design }, [key: string]: any } = {}
 ) {
     xnew.extend(Container, {
-        base: 'box-sizing: border-box; width: 1em; height: 1em;',
+        base: 'width: 1em; height: 1em;',
         className, style,
     });
     const css = xnew.css({
