@@ -497,8 +497,8 @@ function SpeakerIcon(unit, { muted = false } = {}) {
   xnew.extend(muted ? xicons.SpeakerXMark : xicons.SpeakerWave, { style: 'display: block; width: 100%; height: 100%;' });
 }
 
-// スピーカーアイコン + アンカー方向に開くスライダー。xbasics.Volume をマスター音量への橋渡しに使う。
-function VolumeController(unit, { anchor = 'left' } = {}) {
+// スピーカーアイコン + アイコンの左隣に開くスライダー。xbasics.Volume をマスター音量への橋渡しに使う。
+function VolumeController(unit) {
   const volume = xnew.extend(xbasics.Volume);
   xnew.extend(xbasics.Aspect, { aspect: 1.0, fit: 'contain' });
   unit.on('pointerdown', ({ event }) => event.stopPropagation());
@@ -518,24 +518,21 @@ function VolumeController(unit, { anchor = 'left' } = {}) {
   });
 
   xnew(() => {
-    const isHoriz = anchor === 'left' || anchor === 'right';
-    const cqUnit = isHoriz ? 'cqw' : 'cqh';
-    const sizeProp = isHoriz ? 'width' : 'height';
+    // 単位はアイコン枠の cqw。右端をアイコン左端のすぐ手前に固定し、左へ幅 0 → 400% と伸ばす
+    const outer = xnew.nest('<div style="position: absolute; top: 20%; bottom: 20%; width: 0cqw; display: flex; align-items: center;">');
 
-    const outerSize = isHoriz ? `top: 20%; bottom: 20%; width: 0${cqUnit}` : `left: 20%; right: 20%; height: 0${cqUnit}`;
-    const outer = xnew.nest(`<div style="position: absolute; ${outerSize};">`);
-
-    // スライダー本体は xbasics.InputRange(トラック枠線 + フィルバー + 隠しネイティブ input)
+    // スライダー本体は xbasics.InputRange(トラック枠線 + フィルバー + 隠しネイティブ input)。outer 幅いっぱいに広げる
     // AudioParam は float32 なので読み返しに誤差が乗る。丸めて整数にする
-    xnew(xbasics.InputRange, { value: Math.round(volume.volume * 100) })
+    xnew(xbasics.InputRange, { value: Math.round(volume.volume * 100), style: 'width: 100%;' })
       .on('input', ({ value }) => {
         volume.volume = value / 100;
         button.update();
       });
 
     system.on('-transition', ({ value }) => {
-      outer.style[anchor] = `-${value * 400 + 20}${cqUnit}`;
-      outer.style[sizeProp] = `${value * 400}${cqUnit}`;
+      const width = value * 400;
+      outer.style.width = `${width}cqw`;
+      outer.style.left = `-${width + 4}cqw`;
       outer.style.opacity = value.toString();
       outer.style.pointerEvents = value < 0.9 ? 'none' : 'auto';
     });
@@ -546,7 +543,6 @@ function VolumeController(unit, { anchor = 'left' } = {}) {
 
 // 右下の音量コントローラ。className で文字色等を調整。
 function VolumeControl(unit, { className = 'text-stone-300 z-10' } = {}) {
-  xnew(`<div class="absolute right-[2cqw] bottom-[2cqw] size-[6cqw] ${className}">`,
-    VolumeController, { anchor: 'left' });
+  xnew(`<div class="absolute right-[2cqw] bottom-[2cqw] size-[6cqw] ${className}">`, VolumeController);
 }
 
