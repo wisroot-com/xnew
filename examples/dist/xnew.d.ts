@@ -491,4 +491,17 @@ declare const xbasics: {
     Panel: typeof Panel;
 };
 
-export { xbasics, xnew, xsync };
+type IconProps = {
+    mode?: 'outline' | 'solid';
+    className?: string;
+    style?: string;
+    [key: string]: any;
+};
+
+declare function AcademicCap(unit: xnew.Unit, props?: IconProps): void;
+
+declare const xicons: {
+    AcademicCap: typeof AcademicCap;
+};
+
+export { xbasics, xicons, xnew, xsync };

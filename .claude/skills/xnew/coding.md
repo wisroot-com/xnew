@@ -374,8 +374,9 @@ the rule, then one line of why.
   `isContentEditable`), and send a stop on `window.focusin` into an editable element so a
   held key doesn't keep the player moving.
 
-- **The public barrel exposes three tiers: `xnew` (core) / `xsync` (networking) / `xbasics`
-  (networking-free components), all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
+- **The public barrel exposes four tiers: `xnew` (core) / `xsync` (networking) / `xbasics`
+  (networking-free components) / `xicons` (heroicons-based icons, MIT — `src/icons/license.txt`),
+  all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
   The networking layer is a single file `src/sync/xsync.ts` (shared state + boot + facade). `xsync`
   **is** the facade object literal (`export const xsync = { … }`) — there is no Lobby / Room component
   built in; lobby / room lifecycle is assembled by callers from the facade (see `examples/*/server.js` +

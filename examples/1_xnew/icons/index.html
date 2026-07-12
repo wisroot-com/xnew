@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen">
+  <div id="main" class="relative w-full h-full"></div>
+  <script type="module">
+    import { xnew, xicons } from '@mulsense/xnew';
+
+    xnew(document.querySelector('#main'), (unit) => {
+      xnew.nest('<div class="m-2 p-4 w-[36rem] text-sm text-slate-900 bg-gray-100 border rounded-lg shadow-lg flex flex-col gap-4">');
+
+      for (const [name, Icon] of Object.entries(xicons)) {
+        xnew(IconRow, { name, Icon });
+      }
+    });
+
+    // each row: outline / solid, plus currentColor picked up from the text color
+    function IconRow(unit, { name, Icon }) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', name);
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(Icon, { mode: 'outline', className: 'size-8' });
+      xnew(Icon, { mode: 'solid', className: 'size-8' });
+      xnew(Icon, { mode: 'outline', className: 'size-8 text-indigo-600' });
+      xnew(Icon, { mode: 'solid', className: 'size-8 text-indigo-600' });
+    }
+  </script>
+</body>
+
+</html>

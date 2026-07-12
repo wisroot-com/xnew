@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------
-// Public barrel — the first-tier exports of @mulsense/xnew: xnew, xsync, xbasics
+// Public barrel — the first-tier exports of @mulsense/xnew: xnew, xsync, xbasics, xicons
 // Each layer is assembled in its own module and only re-exported here; addons stay on subpath exports.
 //----------------------------------------------------------------------------------------------------
 
@@ -8,3 +8,4 @@
 export { xnew } from './core/xnew';
 export { xsync } from './sync/xsync';
 export { xbasics } from './basics/xbasics';
+export { xicons } from './icons/xicons';
