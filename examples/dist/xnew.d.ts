@@ -262,11 +262,12 @@ interface Design {
     style?: string;
 }
 
-declare function InputRange(unit: xnew.Unit, { value, min, max, step, className, style, designs, ...others }?: {
+declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, className, style, designs, ...others }?: {
     value?: number;
     min?: number;
     max?: number;
     step?: number;
+    vertical?: boolean;
     className?: string;
     style?: string;
     designs?: {

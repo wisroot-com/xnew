@@ -1478,15 +1478,26 @@ function SVGText(unit, _a = {}) {
 
 function InputRange(unit, _a = {}) {
     var _b, _c, _d, _e, _f, _g, _h, _j, _k;
-    var { value, min = 0, max = 100, step = 1, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "className", "style", "designs"]);
+    var { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "vertical", "className", "style", "designs"]);
     const initial = value !== null && value !== void 0 ? value : min;
     const css = xnew.css({
         container: {
             layer: 'base',
             body: `
                 display: inline-block;
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em;
-                position: relative;
+                position: relative; margin: 0.125em;
+            `,
+        },
+        horizontal: {
+            layer: 'base',
+            body: `
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+            `,
+        },
+        vertical: {
+            layer: 'base',
+            body: `
+                width: 1.8em; height: 10em; max-height: -webkit-fill-available; max-height: -moz-available; max-height: stretch;
             `,
         },
         frame: {
@@ -1500,20 +1511,47 @@ function InputRange(unit, _a = {}) {
         meter: {
             layer: 'base',
             body: `
-                position: absolute; top: 0; left: 0; bottom: 0;
+                position: absolute;
                 box-sizing: border-box;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 background: color-mix(in srgb, currentColor 20%, transparent);
+            `,
+        },
+        meterHorizontal: {
+            layer: 'base',
+            body: `
+                top: 0; left: 0; bottom: 0;
                 transition: width 0.05s;
+            `,
+        },
+        meterVertical: {
+            layer: 'base',
+            body: `
+                left: 0; right: 0; bottom: 0;
+                transition: height 0.05s;
             `,
         },
         status: {
             layer: 'base',
             body: `
                 position: absolute; inset: 0;
-                box-sizing: border-box; padding: 0 0.5em;
-                display: flex; justify-content: flex-end; align-items: center;
+                box-sizing: border-box;
+                display: flex;
                 pointer-events: none;
+            `,
+        },
+        statusHorizontal: {
+            layer: 'base',
+            body: `
+                padding: 0 0.5em;
+                justify-content: flex-end; align-items: center;
+            `,
+        },
+        statusVertical: {
+            layer: 'base',
+            body: `
+                padding: 0.5em 0;
+                justify-content: center; align-items: flex-end;
             `,
         },
         input: {
@@ -1522,21 +1560,44 @@ function InputRange(unit, _a = {}) {
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; user-select: none; margin: 0;
                 appearance: none;
+            `,
+        },
+        inputHorizontal: {
+            layer: 'base',
+            body: `
                 &::-webkit-slider-thumb { appearance: none; width: 0; }
                 &::-moz-range-thumb { width: 0; border: none; }
             `,
         },
+        inputVertical: {
+            layer: 'base',
+            body: `
+                writing-mode: vertical-lr; direction: rtl;
+                &::-webkit-slider-thumb { appearance: none; height: 0; }
+                &::-moz-range-thumb { height: 0; border: none; }
+            `,
+        },
     });
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    const sizeClass = vertical ? css.vertical : css.horizontal;
+    xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
     xnew({ tag: 'div', className: `${css.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
-    const meter = xnew({ tag: 'div', className: `${css.meter} ${(_f = (_e = designs.meter) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.meter) === null || _g === void 0 ? void 0 : _g.style });
-    const status = xnew({ tag: 'div', className: `${css.status} ${(_j = (_h = designs.status) === null || _h === void 0 ? void 0 : _h.className) !== null && _j !== void 0 ? _j : ''}`, style: (_k = designs.status) === null || _k === void 0 ? void 0 : _k.style });
+    const meterClass = vertical ? css.meterVertical : css.meterHorizontal;
+    const meter = xnew({ tag: 'div', className: `${css.meter} ${meterClass} ${(_f = (_e = designs.meter) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.meter) === null || _g === void 0 ? void 0 : _g.style });
+    const statusClass = vertical ? css.statusVertical : css.statusHorizontal;
+    const status = xnew({ tag: 'div', className: `${css.status} ${statusClass} ${(_j = (_h = designs.status) === null || _h === void 0 ? void 0 : _h.className) !== null && _j !== void 0 ? _j : ''}`, style: (_k = designs.status) === null || _k === void 0 ? void 0 : _k.style });
     const update = (v) => {
-        meter.element.style.width = `${(v - min) / (max - min) * 100}%`;
+        const percent = `${(v - min) / (max - min) * 100}%`;
+        if (vertical) {
+            meter.element.style.height = percent;
+        }
+        else {
+            meter.element.style.width = percent;
+        }
         status.element.textContent = String(v);
     };
     update(initial);
-    xnew.nest(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: css.input }, others));
+    const inputClass = vertical ? css.inputVertical : css.inputHorizontal;
+    xnew.nest(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: `${css.input} ${inputClass}` }, others));
     unit.on('input', ({ value }) => {
         update(value);
     });

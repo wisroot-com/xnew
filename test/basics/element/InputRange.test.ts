@@ -98,6 +98,26 @@ describe('basics InputRange', () => {
         expect(meter.style.height).toBe('');
     });
 
+    it('grows the meter height only when vertical (width stays free)', () => {
+        const unit = xnew(InputRange, { value: 50, vertical: true });
+        const meter = meterOf(unit);
+
+        expect(meter.style.height).toBe('50%');
+        expect(meter.style.width).toBe('');
+    });
+
+    it('updates the meter height on input when vertical', () => {
+        const unit = xnew(InputRange, { value: 0, vertical: true });
+        const input = unit.element as HTMLInputElement;
+        jest.advanceTimersByTime(0);
+
+        input.value = '75';
+        input.dispatchEvent(new Event('input', { bubbles: false }));
+
+        expect(meterOf(unit).style.height).toBe('75%');
+        expect(statusOf(unit).textContent).toBe('75');
+    });
+
     it('sets the name attribute only when given', () => {
         const named = xnew(InputRange, { name: 'volume' });
         const anonymous = xnew(InputRange);
