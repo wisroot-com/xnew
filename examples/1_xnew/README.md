@@ -40,7 +40,7 @@ Recommended reading order.
 
 | sample | shows |
 | --- | --- |
-| [icons](icons/) | heroicons-based icon components — `mode: 'outline' / 'solid'`, colored via `currentColor` |
+| [icons](icons/) | the full heroicons set (324 icons) — `mode: 'outline' / 'solid'`, colored via `currentColor` |
 
 ## sync/ — export `xsync`
 
