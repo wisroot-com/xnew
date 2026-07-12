@@ -66,7 +66,9 @@ export function createElement(parent: DomElement, tag: string | DomElementDef): 
 
     for (const [key, value] of members) {
         if (element instanceof SVGElement) {
-            element.setAttribute(svgAttributeName(key), String(value));
+            // natively camelCase SVG attributes (viewBox, …) pass through; every other camelCase name becomes kebab-case (strokeWidth -> stroke-width)
+            const name = svgCamelAttributes.has(key) ? key : key.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
+            element.setAttribute(name, String(value));
         } else if (key in element) {
             (element as any)[key] = value;
         } else {
@@ -76,7 +78,7 @@ export function createElement(parent: DomElement, tag: string | DomElementDef): 
     return element;
 }
 
-// SVG attribute names that are natively camelCase (kept as-is by svgAttributeName)
+// SVG attribute names that are natively camelCase (kept as-is instead of being kebab-cased)
 const svgCamelAttributes = new Set([
     'attributeName', 'attributeType', 'baseFrequency', 'baseProfile', 'calcMode', 'clipPathUnits',
     'diffuseConstant', 'edgeMode', 'filterUnits', 'glyphRef', 'gradientTransform', 'gradientUnits',
@@ -89,17 +91,6 @@ const svgCamelAttributes = new Set([
     'systemLanguage', 'tableValues', 'targetX', 'targetY', 'textLength', 'viewBox',
     'xChannelSelector', 'yChannelSelector', 'zoomAndPan',
 ]);
-
-// maps an element definition member name to the SVG attribute to set: natively camelCase SVG
-// attributes (viewBox, …) pass through, every other camelCase name becomes kebab-case
-// (strokeWidth -> stroke-width)
-function svgAttributeName(key: string): string {
-    if (svgCamelAttributes.has(key)) {
-        return key;
-    } else {
-        return key.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
-    }
-}
 
 interface EventProps { element: DomElement; type: string; listener: Function; options?: boolean | AddEventListenerOptions }
 
