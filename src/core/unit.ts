@@ -1,21 +1,12 @@
 //----------------------------------------------------------------------------------------------------
 // Unit — the lifecycle, ownership, and scoping primitive of xnew
-//
-// A Unit bundles DOM elements, components, children, listeners, and promises into one disposable
-// node (invoked → initialized → finalizing → finalized). Deferred callbacks re-enter the original
-// unit scope via a Snapshot.
-//
-// - Unit        : core class — lifecycle, listeners, contexts, emit
-// - UnitPromise : promise wrapper resuming in the captured unit scope
-// - UnitTimer   : queued timer backing xnew.timeout / interval / transition
-//
-// Listeners record their owner unit: off removes only the entries the caller registered, and a
-// finalized owner's listeners on other units are detached automatically.
+// A Unit bundles DOM, components, children, listeners, and promises into one disposable node;
+// listeners record their owner, so a finalized owner's listeners elsewhere detach automatically.
 //----------------------------------------------------------------------------------------------------
 
 import { MapSet, MapMap } from './map';
 import { Ticker, Timer } from './time';
-import { EventBinder, isDomElement, DomElement } from './dom';
+import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, buildTag, svgAttributeName } from './dom';
 
 //----------------------------------------------------------------------------------------------------
 // definitions
@@ -57,7 +48,7 @@ export class Unit {
 
         lastSnapshot: Snapshot | null;
 
-        nestElements: { element: DomElement, owned: boolean }[];
+        nestElements: DomElement[];
         Components: Function[];
         listeners: MapMap<string, Function, { execute: Function, owner: Unit }>;
         events: EventBinder;
@@ -108,8 +99,8 @@ export class Unit {
     static initialize(unit: Unit, ...args: any[]): void {
         if (isDomElement(args[0])) {
             unit._.currentElement = args.shift() as DomElement;
-        } else if (typeof args[0] === 'string') {
-            Unit.nest(unit, args.shift() as string);
+        } else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
+            Unit.nest(unit, args.shift() as string | DomElementDef);
         }
 
         const Component = args[0] as Function | string | number | undefined;
@@ -162,7 +153,7 @@ export class Unit {
             // clear all listeners on this unit regardless of owner
             [...this._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(this, null, type));
 
-            [...this._.nestElements].reverse().filter(item => item.owned).forEach(item => item.element.remove());
+            [...this._.nestElements].reverse().forEach((element) => element.remove());
             this._.Components.forEach((Component) => Unit.component2units.delete(Component, this));
 
             // remove contexts
@@ -192,26 +183,28 @@ export class Unit {
         }
     }
 
-    static nest(unit: Unit, target: DomElement | string, textContent?: string | number): DomElement {
-        if (isDomElement(target)) {
-            unit._.nestElements.push({ element: target, owned: false });
-            unit._.currentElement = target;
-            return target;
-        } else {
-            const match = target.match(/<((\w+)[^>]*?)\/?>/);
-            if (match !== null) {
-                unit._.currentElement.insertAdjacentHTML('beforeend', `<${match[1]}></${match[2]}>`);
-                const element = unit._.currentElement.children[unit._.currentElement.children.length - 1] as DomElement;
-                unit._.currentElement = element;
-                if (textContent !== undefined) {
-                    element.textContent = textContent.toString();
-                }
-                unit._.nestElements.push({ element, owned: true });
-                return element;
+    static nest(unit: Unit, tag: string | DomElementDef, textContent?: string): DomElement {
+        const { text, members } = buildTag(tag);
+
+        unit._.currentElement.insertAdjacentHTML('beforeend', text);
+        const element = unit._.currentElement.children[unit._.currentElement.children.length - 1] as DomElement;
+        unit._.currentElement = element;
+        if (textContent !== undefined) {
+            element.textContent = textContent;
+        }
+        unit._.nestElements.push(element);
+
+        for (const [key, value] of members) {
+            // SVG DOM properties (viewBox, …) are read-only animated values; attributes are the setter
+            if (element instanceof SVGElement) {
+                element.setAttribute(svgAttributeName(key), String(value));
+            } else if (key in element) {
+                (element as any)[key] = value;
             } else {
-                throw new Error(`xnew.nest: invalid tag string [${target}]`);
+                element.setAttribute(key, String(value));
             }
         }
+        return element;
     }
 
     static extend(unit: Unit, Component: Function, props?: Object): { [key: string]: any } {

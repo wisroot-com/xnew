@@ -21,6 +21,12 @@ declare class MapMap<Key1, Key2, Value> extends Map<Key1, Map<Key2, Value>> {
 }
 
 type DomElement = HTMLElement | SVGElement;
+interface DomElementDef {
+    tag: string;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}
 declare class EventBinder {
     private map;
     add(element: DomElement, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
@@ -60,10 +66,7 @@ declare class Unit {
         currentContext: Context;
         currentComponent: Function | null;
         lastSnapshot: Snapshot | null;
-        nestElements: {
-            element: DomElement;
-            owned: boolean;
-        }[];
+        nestElements: DomElement[];
         Components: Function[];
         listeners: MapMap<string, Function, {
             execute: Function;
@@ -78,7 +81,7 @@ declare class Unit {
     get parent(): Unit | null;
     get element(): DomElement;
     finalize(): void;
-    static nest(unit: Unit, target: DomElement | string, textContent?: string | number): DomElement;
+    static nest(unit: Unit, tag: string | DomElementDef, textContent?: string): DomElement;
     static extend(unit: Unit, Component: Function, props?: Object): {
         [key: string]: any;
     };
@@ -126,18 +129,24 @@ declare class UnitTimer {
     private start;
 }
 
+interface CssDef {
+    layer?: string;
+    type?: string;
+    body: string;
+}
+
 interface XnewBase {
     <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
-    <C extends ComponentFn<any, any>>(target: DomElement | string, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
-    (target: DomElement | string, content?: string | number): Unit;
+    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
+    (target: DomElement | string | DomElementDef, content?: string | number): Unit;
     (content: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
 }
 declare const xnew: XnewBase & {
-    nest(target: DomElement | string): HTMLElement | SVGElement;
+    nest(tag: string | DomElementDef, textContent?: string): HTMLElement | SVGElement;
     extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
-    css<T extends Record<string, string>>(defs: T): Record<keyof T, string>;
+    css<T extends Record<string, string | CssDef>>(defs: T): Record<keyof T, string>;
     context(key: any): any;
     promise: {
         (promise: Function | Promise<any> | Unit): UnitPromise;
@@ -156,6 +165,7 @@ declare const xnew: XnewBase & {
 declare namespace xnew {
     type Unit = InstanceType<typeof Unit>;
     type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
+    type ElementDef = DomElementDef;
 }
 
 interface ClientStatus {
@@ -205,57 +215,133 @@ declare function Screen(unit: xnew.Unit, { width, height, fit }?: {
 };
 
 declare function Scene(unit: xnew.Unit): {
-    change(Component: Function, props?: any): void;
-    add(Component: Function, props?: any): void;
+    change(target: string | Function, props?: any): void;
+    add(Component: Function, props?: any): xnew.Unit;
 };
 
-declare function Split(unit: xnew.Unit, { direction, ratio, className }?: {
-    direction?: 'column' | 'row';
-    ratio?: (number | string)[];
-    className?: string;
+type SceneEntry = [Function, any?];
+declare function SceneList(unit: xnew.Unit, { list }?: {
+    list?: {
+        [label: string]: SceneEntry;
+    };
 }): {
-    readonly panes: Unit[];
+    resolve(label: string): SceneEntry | undefined;
 };
+
+declare function Button(unit: xnew.Unit, { text, className, style, ...others }?: {
+    text?: string;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): void;
+
+declare function Chevron(unit: xnew.Unit, { direction, className, style, ...others }?: {
+    direction?: 'up' | 'down' | 'left' | 'right';
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): void;
 
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
-declare function Image(unit: xnew.Unit, { src, className, style }: {
+declare function Image(unit: xnew.Unit, { src, className, style, ...others }: {
     src: ImageSource | Promise<ImageSource>;
     className?: string;
     style?: string;
+    [key: string]: any;
 }): void;
 
-interface SVGInterface {
-    viewBox?: string;
+declare function SVG(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
     style?: string;
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    strokeLinejoin?: string;
-    strokeLinecap?: string;
-    fill?: string;
-    fillOpacity?: number;
-}
-declare function SVG(unit: xnew.Unit, { viewBox, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGInterface): void;
+    [key: string]: any;
+}): void;
 
-interface SVGTextInterface {
+declare function SVGText(unit: xnew.Unit, { text, fontSize, className, style, ...others }?: {
     text?: string;
     fontSize?: number;
-    anchor?: {
-        x: number;
-        y: number;
-    };
     className?: string;
     style?: string;
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    strokeLinejoin?: string;
-    strokeLinecap?: string;
-    fill?: string;
-    fillOpacity?: number;
+    [key: string]: any;
+}): void;
+
+interface Design {
+    className?: string;
+    style?: string;
 }
-declare function SVGText(unit: xnew.Unit, { text, fontSize, anchor, className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity }?: SVGTextInterface): void;
+
+declare function InputRange(unit: xnew.Unit, { value, min, max, step, className, style, designs, ...others }?: {
+    value?: number;
+    min?: number;
+    max?: number;
+    step?: number;
+    className?: string;
+    style?: string;
+    designs?: {
+        frame?: Design;
+        meter?: Design;
+        status?: Design;
+    };
+    [key: string]: any;
+}): void;
+
+declare function InputCheckbox(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
+    value?: boolean;
+    className?: string;
+    style?: string;
+    designs?: {
+        frame?: Design;
+    };
+    [key: string]: any;
+}): void;
+
+declare function InputText(unit: xnew.Unit, { className, style, ...others }?: {
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): void;
+
+declare function InputNumber(unit: xnew.Unit, { className, style, ...others }?: {
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): void;
+
+declare function InputSwitch(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
+    value?: boolean;
+    className?: string;
+    style?: string;
+    designs?: {
+        frame?: Design;
+        knob?: Design;
+    };
+    [key: string]: any;
+}): void;
+
+declare function InputRadio(unit: xnew.Unit, { value, items, name, className, style, designs }?: {
+    value?: string;
+    items?: string[];
+    name?: string;
+    className?: string;
+    style?: string;
+    designs?: {
+        frame?: Design;
+        item?: Design;
+    };
+}): void;
+
+declare function InputSelect(unit: xnew.Unit, { value, items, className, style, designs, ...others }?: {
+    value?: string;
+    items?: string[];
+    className?: string;
+    style?: string;
+    designs?: {
+        frame?: Design;
+        label?: Design;
+        menu?: Design;
+        item?: Design;
+    };
+    [key: string]: any;
+}): void;
 
 declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
     url: string;
@@ -330,64 +416,89 @@ declare function Accordion(unit: xnew.Unit): void;
 
 declare function Popup(unit: xnew.Unit): void;
 
-declare function AnalogStick(unit: xnew.Unit, { stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    fill?: string;
-    fillOpacity?: number;
+declare function AnalogStick(unit: xnew.Unit, { className, style, designs }?: {
+    className?: string;
+    style?: string;
+    designs?: {
+        svg?: Design;
+    };
 }): void;
 
-declare function DPad(unit: xnew.Unit, { diagonal, stroke, strokeOpacity, strokeWidth, fill, fillOpacity }?: {
+declare function DPad(unit: xnew.Unit, { diagonal, className, style, designs }?: {
     diagonal?: boolean;
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    fill?: string;
-    fillOpacity?: number;
+    className?: string;
+    style?: string;
+    designs?: {
+        svg?: Design;
+    };
 }): void;
 
 interface PanelOptions {
     name?: string;
     open?: boolean;
     params?: Record<string, any>;
+    nested?: boolean;
 }
-declare function Panel(unit: xnew.Unit, { params }: PanelOptions): {
+declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
     group({ name, open, params }: PanelOptions, inner: Function): Unit;
-    button(key: string): Unit;
-    select(key: string, { value, items }?: {
+    button({ name }?: {
+        name?: string;
+    }): Unit;
+    select({ name, value, items }?: {
+        name?: string;
         value?: string;
         items?: string[];
     }): Unit;
-    range(key: string, { value, min, max, step }?: {
+    range({ name, value, min, max, step }?: {
+        name?: string;
         value?: number;
         min?: number;
         max?: number;
         step?: number;
     }): Unit;
-    checkbox(key: string, { value }?: {
+    checkbox({ name, value }?: {
+        name?: string;
         value?: boolean;
     }): Unit;
     separator(): void;
 };
 
 declare const xbasics: {
-    SVG: typeof SVG;
-    SVGText: typeof SVGText;
     Aspect: typeof Aspect;
     Screen: typeof Screen;
-    Image: typeof Image;
-    OpenAndClose: typeof OpenAndClose;
-    AnalogStick: typeof AnalogStick;
-    DPad: typeof DPad;
-    Panel: typeof Panel;
-    Accordion: typeof Accordion;
-    Popup: typeof Popup;
     Scene: typeof Scene;
-    Split: typeof Split;
+    SceneList: typeof SceneList;
+    Button: typeof Button;
+    Chevron: typeof Chevron;
+    Image: typeof Image;
+    SVG: typeof SVG;
+    SVGText: typeof SVGText;
+    InputRange: typeof InputRange;
+    InputCheckbox: typeof InputCheckbox;
+    InputText: typeof InputText;
+    InputNumber: typeof InputNumber;
+    InputSwitch: typeof InputSwitch;
+    InputRadio: typeof InputRadio;
+    InputSelect: typeof InputSelect;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;
+    OpenAndClose: typeof OpenAndClose;
+    Accordion: typeof Accordion;
+    Popup: typeof Popup;
+    AnalogStick: typeof AnalogStick;
+    DPad: typeof DPad;
+    Panel: typeof Panel;
 };
 
-export { xbasics, xnew, xsync };
+type IconProps = {
+    mode?: 'outline' | 'solid';
+    className?: string;
+    style?: string;
+    [key: string]: any;
+};
+
+type IconComponent = (unit: xnew.Unit, props?: IconProps) => void;
+declare const xicons: Record<"AcademicCap" | "AdjustmentsHorizontal" | "AdjustmentsVertical" | "ArchiveBoxArrowDown" | "ArchiveBoxXMark" | "ArchiveBox" | "ArrowDownCircle" | "ArrowDownLeft" | "ArrowDownOnSquareStack" | "ArrowDownOnSquare" | "ArrowDownRight" | "ArrowDownTray" | "ArrowDown" | "ArrowLeftCircle" | "ArrowLeftEndOnRectangle" | "ArrowLeftOnRectangle" | "ArrowLeftStartOnRectangle" | "ArrowLeft" | "ArrowLongDown" | "ArrowLongLeft" | "ArrowLongRight" | "ArrowLongUp" | "ArrowPathRoundedSquare" | "ArrowPath" | "ArrowRightCircle" | "ArrowRightEndOnRectangle" | "ArrowRightOnRectangle" | "ArrowRightStartOnRectangle" | "ArrowRight" | "ArrowSmallDown" | "ArrowSmallLeft" | "ArrowSmallRight" | "ArrowSmallUp" | "ArrowTopRightOnSquare" | "ArrowTrendingDown" | "ArrowTrendingUp" | "ArrowTurnDownLeft" | "ArrowTurnDownRight" | "ArrowTurnLeftDown" | "ArrowTurnLeftUp" | "ArrowTurnRightDown" | "ArrowTurnRightUp" | "ArrowTurnUpLeft" | "ArrowTurnUpRight" | "ArrowUpCircle" | "ArrowUpLeft" | "ArrowUpOnSquareStack" | "ArrowUpOnSquare" | "ArrowUpRight" | "ArrowUpTray" | "ArrowUp" | "ArrowUturnDown" | "ArrowUturnLeft" | "ArrowUturnRight" | "ArrowUturnUp" | "ArrowsPointingIn" | "ArrowsPointingOut" | "ArrowsRightLeft" | "ArrowsUpDown" | "AtSymbol" | "Backspace" | "Backward" | "Banknotes" | "Bars2" | "Bars3BottomLeft" | "Bars3BottomRight" | "Bars3CenterLeft" | "Bars3" | "Bars4" | "BarsArrowDown" | "BarsArrowUp" | "Battery0" | "Battery100" | "Battery50" | "Beaker" | "BellAlert" | "BellSlash" | "BellSnooze" | "Bell" | "Bold" | "BoltSlash" | "Bolt" | "BookOpen" | "BookmarkSlash" | "BookmarkSquare" | "Bookmark" | "Briefcase" | "BugAnt" | "BuildingLibrary" | "BuildingOffice2" | "BuildingOffice" | "BuildingStorefront" | "Cake" | "Calculator" | "CalendarDateRange" | "CalendarDays" | "Calendar" | "Camera" | "ChartBarSquare" | "ChartBar" | "ChartPie" | "ChatBubbleBottomCenterText" | "ChatBubbleBottomCenter" | "ChatBubbleLeftEllipsis" | "ChatBubbleLeftRight" | "ChatBubbleLeft" | "ChatBubbleOvalLeftEllipsis" | "ChatBubbleOvalLeft" | "CheckBadge" | "CheckCircle" | "Check" | "ChevronDoubleDown" | "ChevronDoubleLeft" | "ChevronDoubleRight" | "ChevronDoubleUp" | "ChevronDown" | "ChevronLeft" | "ChevronRight" | "ChevronUpDown" | "ChevronUp" | "CircleStack" | "ClipboardDocumentCheck" | "ClipboardDocumentList" | "ClipboardDocument" | "Clipboard" | "Clock" | "CloudArrowDown" | "CloudArrowUp" | "Cloud" | "CodeBracketSquare" | "CodeBracket" | "Cog6Tooth" | "Cog8Tooth" | "Cog" | "CommandLine" | "ComputerDesktop" | "CpuChip" | "CreditCard" | "CubeTransparent" | "Cube" | "CurrencyBangladeshi" | "CurrencyDollar" | "CurrencyEuro" | "CurrencyPound" | "CurrencyRupee" | "CurrencyYen" | "CursorArrowRays" | "CursorArrowRipple" | "DevicePhoneMobile" | "DeviceTablet" | "Divide" | "DocumentArrowDown" | "DocumentArrowUp" | "DocumentChartBar" | "DocumentCheck" | "DocumentCurrencyBangladeshi" | "DocumentCurrencyDollar" | "DocumentCurrencyEuro" | "DocumentCurrencyPound" | "DocumentCurrencyRupee" | "DocumentCurrencyYen" | "DocumentDuplicate" | "DocumentMagnifyingGlass" | "DocumentMinus" | "DocumentPlus" | "DocumentText" | "Document" | "EllipsisHorizontalCircle" | "EllipsisHorizontal" | "EllipsisVertical" | "EnvelopeOpen" | "Envelope" | "Equals" | "ExclamationCircle" | "ExclamationTriangle" | "EyeDropper" | "EyeSlash" | "Eye" | "FaceFrown" | "FaceSmile" | "Film" | "FingerPrint" | "Fire" | "Flag" | "FolderArrowDown" | "FolderMinus" | "FolderOpen" | "FolderPlus" | "Folder" | "Forward" | "Funnel" | "Gif" | "GiftTop" | "Gift" | "GlobeAlt" | "GlobeAmericas" | "GlobeAsiaAustralia" | "GlobeEuropeAfrica" | "H1" | "H2" | "H3" | "HandRaised" | "HandThumbDown" | "HandThumbUp" | "Hashtag" | "Heart" | "HomeModern" | "Home" | "Identification" | "InboxArrowDown" | "InboxStack" | "Inbox" | "InformationCircle" | "Italic" | "Key" | "Language" | "Lifebuoy" | "LightBulb" | "LinkSlash" | "Link" | "ListBullet" | "LockClosed" | "LockOpen" | "MagnifyingGlassCircle" | "MagnifyingGlassMinus" | "MagnifyingGlassPlus" | "MagnifyingGlass" | "MapPin" | "Map" | "Megaphone" | "Microphone" | "MinusCircle" | "MinusSmall" | "Minus" | "Moon" | "MusicalNote" | "Newspaper" | "NoSymbol" | "NumberedList" | "PaintBrush" | "PaperAirplane" | "PaperClip" | "PauseCircle" | "Pause" | "PencilSquare" | "Pencil" | "PercentBadge" | "PhoneArrowDownLeft" | "PhoneArrowUpRight" | "PhoneXMark" | "Phone" | "Photo" | "PlayCircle" | "PlayPause" | "Play" | "PlusCircle" | "PlusSmall" | "Plus" | "Power" | "PresentationChartBar" | "PresentationChartLine" | "Printer" | "PuzzlePiece" | "QrCode" | "QuestionMarkCircle" | "QueueList" | "Radio" | "ReceiptPercent" | "ReceiptRefund" | "RectangleGroup" | "RectangleStack" | "RocketLaunch" | "Rss" | "Scale" | "Scissors" | "ServerStack" | "Server" | "Share" | "ShieldCheck" | "ShieldExclamation" | "ShoppingBag" | "ShoppingCart" | "SignalSlash" | "Signal" | "Slash" | "Sparkles" | "SpeakerWave" | "SpeakerXMark" | "Square2Stack" | "Square3Stack3d" | "Squares2x2" | "SquaresPlus" | "Star" | "StopCircle" | "Stop" | "Strikethrough" | "Sun" | "Swatch" | "TableCells" | "Tag" | "Ticket" | "Trash" | "Trophy" | "Truck" | "Tv" | "Underline" | "UserCircle" | "UserGroup" | "UserMinus" | "UserPlus" | "User" | "Users" | "Variable" | "VideoCameraSlash" | "VideoCamera" | "ViewColumns" | "ViewfinderCircle" | "Wallet" | "Wifi" | "Window" | "WrenchScrewdriver" | "Wrench" | "XCircle" | "XMark", IconComponent>;
+
+export { xbasics, xicons, xnew, xsync };

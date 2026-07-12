@@ -18,10 +18,6 @@ const xthree = {
         xnew(Add, { object });
         return object;
     },
-    remove(object) {
-        var _a;
-        (_a = object.parent) === null || _a === void 0 ? void 0 : _a.remove(object);
-    },
     dispose(object) {
         var _a;
         (_a = object.parent) === null || _a === void 0 ? void 0 : _a.remove(object);
@@ -43,10 +39,6 @@ const xthree = {
         camera.updateMatrixWorld();
         const projected = new THREE.Vector3(x, y, z).project(camera);
         return new THREE.Vector2((projected.x + 1) / 2 * root.canvas.width, (1 - projected.y) / 2 * root.canvas.height);
-    },
-    finalize() {
-        var _a;
-        (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.release();
     },
     get renderer() {
         var _a;
@@ -80,7 +72,6 @@ function Root(unit, { canvas, camera }) {
         get camera() { return camera; },
         get renderer() { return renderer; },
         get scene() { return scene; },
-        release: () => unit.finalize(),
     };
 }
 function disposeObject(object) {

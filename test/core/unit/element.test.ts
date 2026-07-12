@@ -49,13 +49,122 @@ describe('Unit element hosting', () => {
             expect(nested).toBe(document.getElementById('nested'));
         });
 
-        it('returns the provided DOM element unchanged', () => {
+        it('sets the text content when given as the second argument', () => {
+            let nested!: HTMLElement | SVGElement;
+            xnew(() => { nested = xnew.nest('<p id="with-text">', 'hello'); });
+            expect(nested.textContent).toBe('hello');
+        });
+
+        it('rejects a DOM element target (tag strings only)', () => {
             const ext = document.createElement('span');
             document.body.appendChild(ext);
-            let nested!: HTMLElement | SVGElement;
-            xnew(() => { nested = xnew.nest(ext); });
-            expect(nested).toBe(ext);
+            expect(() => xnew(() => { xnew.nest(ext as any); })).toThrow('xnew.nest: invalid tag string');
             ext.remove();
+        });
+    });
+
+    describe('xnew.nest with an element definition object', () => {
+        it('creates the element, embedding className / style and assigning the other members', () => {
+            let nested!: HTMLInputElement;
+            xnew(() => {
+                nested = xnew.nest({
+                    tag: 'input', type: 'text', name: 'user',
+                    className: 'a b', style: 'width: 2em;',
+                    value: 'he"llo', placeholder: 'type here',
+                }) as HTMLInputElement;
+            });
+            expect(nested.tagName).toBe('INPUT');
+            expect(nested.className).toBe('a b');
+            expect(nested.getAttribute('style')).toBe('width: 2em;');
+            expect(nested.name).toBe('user');
+            expect(nested.type).toBe('text');
+            expect(nested.value).toBe('he"llo');
+            expect(nested.placeholder).toBe('type here');
+            // value went through the property, so arbitrary text never touches the tag string
+            expect(nested.outerHTML).not.toContain('llo');
+        });
+
+        it('escapes className / style in the generated tag string', () => {
+            let nested!: HTMLElement | SVGElement;
+            xnew(() => {
+                nested = xnew.nest({ tag: 'div', className: 'a"b & c' });
+            });
+            expect(nested.tagName).toBe('DIV');
+            expect(nested.className).toBe('a"b & c');
+        });
+
+        it('skips undefined / null / false members (conditional attributes)', () => {
+            let nested!: HTMLInputElement;
+            xnew(() => {
+                nested = xnew.nest({ tag: 'input', name: undefined, checked: false, 'data-x': null }) as HTMLInputElement;
+            });
+            expect(nested.hasAttribute('name')).toBe(false);
+            expect(nested.checked).toBe(false);
+            expect(nested.hasAttribute('data-x')).toBe(false);
+        });
+
+        it('assigns boolean true through the property (checked)', () => {
+            let nested!: HTMLInputElement;
+            xnew(() => {
+                nested = xnew.nest({ tag: 'input', type: 'checkbox', checked: true }) as HTMLInputElement;
+            });
+            expect(nested.checked).toBe(true);
+        });
+
+        it('falls back to setAttribute for non-property members', () => {
+            let nested!: HTMLElement | SVGElement;
+            xnew(() => {
+                nested = xnew.nest({ tag: 'div', 'data-role': 'card', 'aria-hidden': true });
+            });
+            expect(nested.getAttribute('data-role')).toBe('card');
+            expect(nested.getAttribute('aria-hidden')).toBe('true');
+        });
+
+        it('sets the text content when given as the second argument', () => {
+            let nested!: HTMLElement | SVGElement;
+            xnew(() => { nested = xnew.nest({ tag: 'p' }, 'hello'); });
+            expect(nested.textContent).toBe('hello');
+        });
+
+        it('sets members as attributes on SVG elements (their DOM properties are read-only)', () => {
+            let nested!: SVGElement;
+            xnew(() => {
+                nested = xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', 'stroke-width': 2 }) as SVGElement;
+            });
+            expect(nested instanceof SVGElement).toBe(true);
+            expect(nested.getAttribute('viewBox')).toBe('0 0 12 12');
+            expect(nested.getAttribute('stroke-width')).toBe('2');
+        });
+
+        it('converts camelCase SVG members to kebab-case, keeping natively camelCase attributes', () => {
+            let nested!: SVGElement;
+            xnew(() => {
+                nested = xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', preserveAspectRatio: 'none', strokeWidth: 2, fillOpacity: 0.5 }) as SVGElement;
+            });
+            expect(nested.getAttribute('viewBox')).toBe('0 0 12 12');
+            expect(nested.getAttribute('preserveAspectRatio')).toBe('none');
+            expect(nested.getAttribute('stroke-width')).toBe('2');
+            expect(nested.getAttribute('fill-opacity')).toBe('0.5');
+            expect(nested.hasAttribute('strokeWidth')).toBe(false);
+        });
+
+        it('throws on an invalid tag name', () => {
+            expect(() => xnew(() => { xnew.nest({ tag: 'in put' }); })).toThrow('invalid tag name');
+        });
+    });
+
+    describe('element definition object as the xnew target', () => {
+        it('creates the unit element from the definition', () => {
+            let element!: HTMLElement | SVGElement;
+            xnew({ tag: 'div', className: 'card' }, (u: Unit) => { element = u.element; });
+            expect(element.tagName).toBe('DIV');
+            expect(element.className).toBe('card');
+        });
+
+        it('accepts text content after the definition', () => {
+            const unit = xnew({ tag: 'p', className: 'note' }, 'hello');
+            expect(unit.element.textContent).toBe('hello');
+            expect(unit.element.className).toBe('note');
         });
     });
 
@@ -67,13 +176,14 @@ describe('Unit element hosting', () => {
             expect(document.getElementById('owned')).toBeNull();
         });
 
-        it('keeps externally provided elements on finalize', () => {
+        it('keeps an externally provided base element on finalize', () => {
             const ext = document.createElement('div');
             ext.id = 'external';
             document.body.appendChild(ext);
-            const unit = xnew(() => { xnew.nest(ext); });
-            expect(document.getElementById('external')).toBe(ext);
+            const unit = xnew(ext, () => { xnew.nest('<div id="inner">'); });
+            expect(document.getElementById('inner')).not.toBeNull();
             unit.finalize();
+            expect(document.getElementById('inner')).toBeNull();
             expect(document.getElementById('external')).toBe(ext);
             ext.remove();
         });

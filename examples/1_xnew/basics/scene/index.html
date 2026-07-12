@@ -18,10 +18,20 @@
   <script type="module">
     import { xnew, xbasics } from '@mulsense/xnew';
 
-    // Scenes swap as siblings (unit.change mounts the next scene under unit.parent),
-    // so they all live under this shared container component.
+    // Scene is the navigator: each scene extends Scene so unit.change swaps this unit for the next
+    // one, and unit.add mounts runtime children that die with the scene. The SceneList only holds
+    // the label table — create it BEFORE the first scene, then mount the first scene yourself.
+    let score = 0; // runtime state shared across scenes (scene props are static)
+
     xnew(document.querySelector('#main'), (unit) => {
       xnew.nest('<div class="absolute w-96 h-64 inset-0 m-auto border rounded-lg overflow-hidden bg-slate-800 text-white select-none">');
+      xnew(xbasics.SceneList, {
+        list: {
+          title: [Title],
+          play: [Play],
+          result: [Result],
+        },
+      });
       xnew(Title);
     });
 
@@ -30,7 +40,7 @@
       xnew.nest('<div class="size-full flex flex-col items-center justify-center gap-4 cursor-pointer">');
       xnew('<h1 class="text-3xl font-bold">', 'TITLE');
       xnew('<p class="text-slate-400 animate-pulse">', 'click to start');
-      unit.on('click', () => unit.change(Play));
+      unit.on('click', () => unit.change('play'));
     }
 
     function Play(unit) {
@@ -38,7 +48,7 @@
       xnew.nest('<div class="size-full relative">');
 
       const box = xnew('<div class="absolute w-8 h-8 top-1/2 -mt-4 bg-emerald-400 rounded">');
-      let score = 0;
+      score = 0;
       let paused = false;
       unit.on('update', () => {
         if (paused === false) {
@@ -50,6 +60,7 @@
       const scoreText = xnew('<p class="absolute top-2 left-3 text-sm text-slate-300">');
       unit.on('update', () => scoreText.element.textContent = `score: ${score}`);
 
+      // unit.add: mounted under this scene, so it is finalized together with it on the next change
       xnew('<button class="absolute top-2 right-3 text-sm px-2 py-1 rounded bg-slate-600 hover:bg-slate-500 cursor-pointer">', 'pause')
         .on('click', () => {
           paused = true;
@@ -57,7 +68,7 @@
         });
 
       xnew('<button class="absolute bottom-2 right-3 text-sm px-2 py-1 rounded bg-rose-600 hover:bg-rose-500 cursor-pointer">', 'finish')
-        .on('click', () => unit.change(Result, { score }));
+        .on('click', () => unit.change('result'));
     }
 
     // Mounted with unit.add, so it stacks on top of Play and is finalized together with it.
@@ -69,13 +80,13 @@
       unit.on('finalize', () => resume());
     }
 
-    function Result(unit, { score }) {
+    function Result(unit) {
       xnew.extend(xbasics.Scene);
       xnew.nest('<div class="size-full flex flex-col items-center justify-center gap-4 cursor-pointer">');
       xnew('<h1 class="text-3xl font-bold">', 'RESULT');
       xnew('<p class="text-emerald-400 text-xl">', `score: ${score}`);
       xnew('<p class="text-slate-400 animate-pulse">', 'click to return to title');
-      unit.on('click', () => unit.change(Title));
+      unit.on('click', () => unit.change('title'));
     }
   </script>
 </body>

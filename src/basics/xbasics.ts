@@ -1,23 +1,25 @@
 //----------------------------------------------------------------------------------------------------
 // basics/xbasics — assembles the networking-free convenience components as the `xbasics` export
-//
-// A flat registry of the built-in components (one component per file, grouped by category folders)
-// so callers write `xnew(xbasics.Panel)` etc. Networking components deliberately live under
-// `xsync`, not here, so xbasics stays transport-free.
-//
-// - xbasics : { Aspect, Screen, Scene, Split,                        // view/
-//               Image, SVG, SVGText,                                 // element/
-//               AudioTrack, Synthesizer, Volume,                     // audio/
-//               OpenAndClose, Accordion, Popup, AnalogStick, DPad, Panel }  // ui/
+// A flat registry of the built-in components so callers write `xnew(xbasics.Panel)` etc.
+// Networking components deliberately live under `xsync`, not here, so xbasics stays transport-free.
 //----------------------------------------------------------------------------------------------------
 
 import { Aspect } from './view/Aspect';
 import { Screen } from './view/Screen';
 import { Scene } from './view/Scene';
-import { Split } from './view/Split';
+import { SceneList } from './view/SceneList';
+import { Button } from './element/Button';
+import { Chevron } from './element/Chevron';
 import { Image } from './element/Image';
 import { SVG } from './element/SVG';
 import { SVGText } from './element/SVGText';
+import { InputRange } from './element/InputRange';
+import { InputCheckbox } from './element/InputCheckbox';
+import { InputText } from './element/InputText';
+import { InputNumber } from './element/InputNumber';
+import { InputSwitch } from './element/InputSwitch';
+import { InputRadio } from './element/InputRadio';
+import { InputSelect } from './element/InputSelect';
 import { AudioTrack } from './audio/AudioTrack';
 import { Synthesizer } from './audio/Synthesizer';
 import { Volume } from './audio/Volume';
@@ -29,20 +31,29 @@ import { DPad } from './ui/DPad';
 import { Panel } from './ui/Panel';
 
 export const xbasics = {
-    SVG,
-    SVGText,
     Aspect,
     Screen,
-    Image,
-    OpenAndClose,
-    AnalogStick,
-    DPad,
-    Panel,
-    Accordion,
-    Popup,
     Scene,
-    Split,
+    SceneList,
+    Button,
+    Chevron,
+    Image,
+    SVG,
+    SVGText,
+    InputRange,
+    InputCheckbox,
+    InputText,
+    InputNumber,
+    InputSwitch,
+    InputRadio,
+    InputSelect,
     AudioTrack,
     Synthesizer,
     Volume,
+    OpenAndClose,
+    Accordion,
+    Popup,
+    AnalogStick,
+    DPad,
+    Panel,
 };

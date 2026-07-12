@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+  <style>
+    /* an unlayered page class: every property it declares replaces the @layer base default,
+       no matter its specificity or where it appears in the page */
+    .custom {
+      border: none;
+      border-radius: 9999px;
+      background: #4f46e5;
+      color: #ffffff;
+    }
+  </style>
+</head>
+
+<body class="m-0 p-0 w-full h-screen">
+  <div id="main" class="relative w-full h-full"></div>
+  <script type="module">
+    import { xnew, xbasics } from '@mulsense/xnew';
+
+    xnew(document.querySelector('#main'), (unit) => {
+      xnew.nest('<div class="m-2 p-4 w-[36rem] text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg flex flex-col gap-4">');
+
+      xnew(MyButton);
+      xnew(MyInputText);
+      xnew(MyInputNumber);
+      xnew(MyInputCheckbox);
+      xnew(MyInputSwitch);
+      xnew(MyInputRadio);
+      xnew(MyInputSelect);
+      xnew(MyInputRange);
+    });
+
+    // each block: the default look next to a designed variant
+
+    function MyButton(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'Button');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(xbasics.Button, { text: 'default' });
+      xnew(xbasics.Button, { text: 'custom', className: 'custom' });
+    }
+
+    function MyInputText(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputText');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(xbasics.InputText, { placeholder: 'default' });
+      xnew(xbasics.InputText, { placeholder: 'rounded', style: 'border-radius: 9999px; padding: 0 0.8em;' });
+    }
+
+    function MyInputNumber(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputNumber');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(xbasics.InputNumber, { value: 10, min: 0, max: 100, step: 5 });
+      xnew(xbasics.InputNumber, { value: 50, min: 0, max: 100, className: 'text-rose-500' });
+    }
+
+    function MyInputCheckbox(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputCheckbox');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(xbasics.InputCheckbox, { value: true });
+      xnew(xbasics.InputCheckbox, { value: true, designs: { frame: { style: 'border-radius: 50%;' } } });
+    }
+
+    function MyInputSwitch(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputSwitch');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(xbasics.InputSwitch, { value: true });
+      xnew(xbasics.InputSwitch, { value: true, designs: { frame: { style: 'border-radius: 0.25em;' }, knob: { style: 'border-radius: 0.25em; background: #4f46e5;' } } });
+    }
+
+    function MyInputRadio(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputRadio');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'mid' });
+      xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'high', designs: { frame: { style: 'border-radius: 9999px;' }, item: { style: 'font-weight: bold;' } } });
+    }
+
+    function MyInputSelect(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputSelect');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'] });
+      xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'], value: 'banana', designs: { frame: { style: 'border-radius: 9999px;' }, item: { style: 'font-style: italic;' } } });
+    }
+
+    function MyInputRange(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'InputRange');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      xnew(xbasics.InputRange, { value: 30 });
+      xnew(xbasics.InputRange, { value: 60, designs: { meter: { style: 'background: #fbbf24; border-color: #b45309;' } } });
+    }
+  </script>
+</body>
+
+</html>

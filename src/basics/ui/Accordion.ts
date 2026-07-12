@@ -1,12 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Accordion — collapses height + opacity to follow an OpenAndClose progress value
-//
 // Presentation layer over OpenAndClose: requires an ancestor (or same-unit extend) OpenAndClose,
 // found via xnew.context.
-//
-// - Accordion : component (no props)
-//
-// Usage: xnew.extend(xbasics.OpenAndClose, { open: false }); xnew.extend(xbasics.Accordion);
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

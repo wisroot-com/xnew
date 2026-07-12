@@ -1,11 +1,6 @@
 //----------------------------------------------------------------------------------------------------
-// xreact — embed an xnew component inside React (React 18/19; react is external, react-dom not needed).
-//
+// xreact — embed an xnew component inside React 18/19 (react is external; react-dom not needed)
 // The boundary is one host <div>: React renders it, xnew owns its contents.
-//
-// - xreact.Embed : <xreact.Embed Component={Main} props={{ ... }} />
-//
-// Lifetime: mount → xnew(host, Component, props); re-render → unit.setProps?.(props); unmount → finalize().
 //----------------------------------------------------------------------------------------------------
 
 import { createElement, useEffect, useRef, type CSSProperties, type ReactElement } from 'react';

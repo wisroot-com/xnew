@@ -1,11 +1,7 @@
 //----------------------------------------------------------------------------------------------------
-// map utilities — two-level Map subclasses (used for Unit listener tables and reverse indexes)
-//
-// The inner collection is created on insert and the outer entry is removed once it becomes empty.
-// Each method operates on the outer or inner level depending on the number of arguments.
-//
-// - MapSet<Key, Value>        : Map<Key, Set<Value>>
-// - MapMap<Key1, Key2, Value> : Map<Key1, Map<Key2, Value>>
+// map utilities — two-level Map subclasses (MapSet / MapMap) for listener tables and reverse indexes
+// The inner collection is created on insert and the outer entry is removed once it becomes empty;
+// each method operates on the outer or inner level depending on the number of arguments.
 //----------------------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------

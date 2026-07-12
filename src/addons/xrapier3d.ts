@@ -1,11 +1,7 @@
 //----------------------------------------------------------------------------------------------------
-// xrapier3d — Rapier 3D (compat build) integration
-//
-// Same shape as xrapier2d but with a 3D gravity vector. `initialize({ gravity })` mounts a Root
-// Unit that awaits RAPIER.init() (WASM is lazy-loaded) and creates a RAPIER.World; child
-// components read the world through xnew.context(Root).
-//
-// - xrapier3d : { initialize, world }
+// xrapier3d — Rapier 3D (compat build) integration; same shape as xrapier2d with 3D gravity
+// `initialize` awaits RAPIER.init() (WASM is lazy-loaded) then creates a World; children read it
+// via xnew.context(Root), and the getter returns null until init completes.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '@mulsense/xnew';

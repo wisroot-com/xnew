@@ -1,11 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // xrapier2d — Rapier 2D (compat build) integration
-//
-// `initialize({ gravity })` mounts a Root Unit that awaits RAPIER.init() (the compat build loads
-// its WASM lazily) and then creates a RAPIER.World. Child components read the world through
-// xnew.context(Root); until initialization completes the getter returns null.
-//
-// - xrapier2d : { initialize, world }
+// `initialize` awaits RAPIER.init() (the compat build loads its WASM lazily) then creates a World;
+// children read it via xnew.context(Root), and the getter returns null until init completes.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '@mulsense/xnew';

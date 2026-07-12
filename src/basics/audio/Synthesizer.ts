@@ -1,13 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Synthesizer — oscillator + amp / filter / reverb + ADSR + LFO synth, driven by press
-//
 // Each press builds a fresh node graph on the shared bus and schedules its envelopes up front, so
 // notes overlap freely; nodes are stopped and disconnected after release.
-//
-// - Synthesizer        : component(SynthesizerOptions) returning { press }
-// - SynthesizerOptions : { oscillator, amp, filter?, reverb?, bpm? }
-//
-// Usage: xnew(xbasics.Synthesizer, { oscillator: { type: 'sine' }, amp: { envelope: ... } }).press('A4', '4n');
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -114,7 +108,8 @@ function scheduleAttackDecay(param: AudioParam, start: number, base: number, amo
     param.linearRampToValueAtTime(base + amount * s, start + (a + d) / 1000);
 }
 
-function scheduleRelease(param: AudioParam, start: number, dv: number, base: number, amount: number, ADSR: [number, number, number, number]): void {
+// Returns the time the release ramp reaches `base`, so callers can stop the source there.
+function scheduleRelease(param: AudioParam, start: number, dv: number, base: number, amount: number, ADSR: [number, number, number, number]): number {
     const [a, d, s, r] = ADSR;
     const end = dv > 0 ? dv : (context.currentTime - start);
     const rate = a === 0 ? 1.0 : Math.min(end / (a / 1000), 1.0);
@@ -125,7 +120,9 @@ function scheduleRelease(param: AudioParam, start: number, dv: number, base: num
         param.linearRampToValueAtTime(base + amount * rate * s, start + ((a + d) / 1000) * rate);
     }
     param.linearRampToValueAtTime(base + amount * rate * s, start + Math.max(((a + d) / 1000) * rate, dv));
-    param.linearRampToValueAtTime(base, start + Math.max(((a + d) / 1000) * rate, end) + r / 1000);
+    const stop = start + Math.max(((a + d) / 1000) * rate, end) + r / 1000;
+    param.linearRampToValueAtTime(base, stop);
+    return stop;
 }
 
 function createImpulseResponse(timeMs: number, decay = 2.0): AudioBuffer {
@@ -239,25 +236,17 @@ export function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions) {
         }
 
         const release = () => {
-            const end = dv > 0 ? dv : (context.currentTime - start);
-            let stop: number;
-            if (props.amp.envelope) {
-                const [a, d, , r] = props.amp.envelope.ADSR;
-                const aSec = a / 1000;
-                const dSec = d / 1000;
-                const rSec = r / 1000;
-                const rate = aSec === 0.0 ? 1.0 : Math.min(end / (aSec + 0.001), 1.0);
-                stop = start + Math.max((aSec + dSec) * rate, end) + rSec;
-            } else {
-                stop = start + end;
-            }
-
             if (props.oscillator.envelope) {
                 const amount = semitoneOffset(freq, props.oscillator.envelope.amount);
                 scheduleRelease(oscillator.frequency, start, dv, freq, amount, props.oscillator.envelope.ADSR);
             }
+
+            // Stop where the amp release ramp actually ends (no envelope: right at the note end).
+            let stop: number;
             if (props.amp.envelope) {
-                scheduleRelease(amp.gain, start, dv, 0.0, props.amp.envelope.amount, props.amp.envelope.ADSR);
+                stop = scheduleRelease(amp.gain, start, dv, 0.0, props.amp.envelope.amount, props.amp.envelope.ADSR);
+            } else {
+                stop = start + (dv > 0 ? dv : (context.currentTime - start));
             }
 
             for (const o of oscillators) {

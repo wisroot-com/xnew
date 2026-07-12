@@ -74,24 +74,28 @@ export function Game(unit) {
         xthree.initialize({ canvas: new OffscreenCanvas(WIDTH, HEIGHT) });
         xthree.renderer.shadowMap.enabled = true;
         xthree.camera.position.set(0, 0, 10);
-        unit.on('update', () => xthree.renderer.render(xthree.scene, xthree.camera));
 
         xpixi.initialize({ canvas: unit.canvas });
-        const threeTexture = PIXI.Texture.from(xthree.canvas);
-        unit.on('update', () => { threeTexture.source.update(); xpixi.renderer.render(xpixi.scene); });
-    
-        // pixi の描画順 = 重なり順。Status / Ball の replica は sync が同じ Game の下へ生成する。
-        xnew(Background);
-        xnew(ShadowPlane);
-        xnew(DirectionalLight, { x: 2, y: 5, z: 10 });
-        xnew(AmbientLight);
-        xnew(BowlVisual);
-        xnew(Cursor, { player: 1, color: 0xE84A57 });   // P1 = 赤
-        xnew(Cursor, { player: 2, color: 0x3B82F6 });   // P2 = 青
-        xnew(QueuePreview, { player: 1 });
-        xnew(QueuePreview, { player: 2 });
-        xnew(ThreeTexture);   // three の描画（玉/カーソル/予告のモデル）を最前面に合成
-        xnew(HUD);
+
+        xnew.promise(unit).then(() => {
+            unit.on('update', () => xthree.renderer.render(xthree.scene, xthree.camera));
+
+            const threeTexture = PIXI.Texture.from(xthree.canvas);
+            unit.on('update', () => { threeTexture.source.update(); xpixi.renderer.render(xpixi.scene); });
+
+            // pixi の描画順 = 重なり順。Status / Ball の replica は sync が同じ Game の下へ生成する。
+            xnew(Background);
+            xnew(ShadowPlane);
+            xnew(DirectionalLight, { x: 2, y: 5, z: 10 });
+            xnew(AmbientLight);
+            xnew(BowlVisual);
+            xnew(Cursor, { player: 1, color: 0xE84A57 });   // P1 = 赤
+            xnew(Cursor, { player: 2, color: 0x3B82F6 });   // P2 = 青
+            xnew(QueuePreview, { player: 1 });
+            xnew(QueuePreview, { player: 2 });
+            xnew(ThreeTexture);   // three の描画（玉/カーソル/予告のモデル）を最前面に合成
+            xnew(HUD);
+        });
     });
 }
 

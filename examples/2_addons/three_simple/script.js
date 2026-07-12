@@ -12,11 +12,13 @@ function Main(unit) {
   xthree.initialize({ canvas: unit.canvas });
   xthree.camera.position.set(0, 0, +100);
 
-  unit.on('update', () => {
-    xthree.renderer.render(xthree.scene, xthree.camera);
+  xnew.promise(unit).then(() => {
+    unit.on('update', () => {
+      xthree.renderer.render(xthree.scene, xthree.camera);
+    });
+
+    xnew(Contents);
   });
-  
-  xnew(Contents);
 }
 
 function Contents(unit) {

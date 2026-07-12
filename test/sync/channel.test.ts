@@ -71,7 +71,7 @@ describe('event channel (socket.io transport)', () => {
             xsync.client(() => { xnew.nest('<div>'); });
         }
         // World: 接続集合(presence)を on('sync.connect'/'sync.disconnect') で持ち、spawn/despawn は update(tick内)で行う。
-        function World(unit: Unit, props: { view?: HTMLElement } = {}) {
+        function World(unit: Unit) {
             xsync.register({ Player });
             // socket は boot に渡した transport により自動バインドされる。
             xsync.server(() => {
@@ -89,7 +89,6 @@ describe('event channel (socket.io transport)', () => {
                 });
             });
             xsync.client(() => {
-                if (props.view) { xnew.nest(props.view); }
                 unit.on('update', () => { xsync.emitToServer('move', { dx: 1, dy: 0 }); });
             });
         }
@@ -98,9 +97,9 @@ describe('event channel (socket.io transport)', () => {
         const view2 = document.createElement('div');
 
         const server = bootServer({ io: hub.io }, World);                          // on('sync.connect') を登録
-        const client1 = bootClient({ socket: hub.connect() }, World, { view: view1 }); // connect → presence に c1
+        const client1 = bootClient({ socket: hub.connect() }, view1, World); // connect → presence に c1
         const socket2 = hub.connect();
-        const client2 = bootClient({ socket: socket2 }, World, { view: view2 });        // connect → presence に c2
+        const client2 = bootClient({ socket: socket2 }, view2, World);        // connect → presence に c2
 
         // server / client サブツリーを各々の環境で別々に tick する（emit/status は env で分岐するため、
         // 1 回の update で両側をまとめて回さない）。server を先に回して Player を spawn → client が emit。

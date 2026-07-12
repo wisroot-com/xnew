@@ -18,16 +18,6 @@ const xpixi = {
         xnew(Add, { object });
         return object;
     },
-    remove(object) {
-        removeObject(object);
-    },
-    load(source) {
-        return xnew.promise(PIXI.Assets.load(source));
-    },
-    finalize() {
-        var _a;
-        (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.release();
-    },
     get renderer() {
         var _a;
         return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.renderer;
@@ -57,7 +47,6 @@ function Root(unit, { canvas }) {
         get renderer() { return renderer; },
         get scene() { return scene; },
         get canvas() { return canvas; },
-        release: () => unit.finalize(),
     };
 }
 function removeObject(object) {

@@ -1,7 +1,7 @@
 # 1_xnew — features of `@mulsense/xnew`
 
 Samples for everything importable from the `@mulsense/xnew` package itself
-(no addons). Grouped by the package's three exports plus applied showcases.
+(no addons). Grouped by the package's four exports plus applied showcases.
 
 Serve the `examples/` parent directory with any static server and open each
 `index.html` (only `sync/multiplay` needs its own Node server — see below).
@@ -27,6 +27,7 @@ Recommended reading order.
 | --- | --- |
 | [screen](basics/screen/) | `Screen` (fixed-resolution canvas, `fit`), `Aspect` |
 | [scene](basics/scene/) | `Scene` navigation — `change` (swap sibling scenes) / `add` (overlay) |
+| [element](basics/element/) | `Button` / `Input*` form elements — `@layer base` defaults, overridable via className / style |
 | [panel](basics/panel/) | `Panel` — groups, buttons, range / checkbox / select |
 | [openandclose](basics/openandclose/) | `OpenAndClose` + `Accordion` / `Popup` (accordion, modal, menu) |
 | [controller](basics/controller/) | `DPad` / `AnalogStick` virtual game pad |
@@ -34,6 +35,12 @@ Recommended reading order.
 | [audiotrack](basics/audiotrack/) | `AudioTrack` music playback, `Volume` master gain |
 | [synthesizer](basics/synthesizer/) | `Synthesizer` interactive keyboard playground |
 | [soundeffect](basics/soundeffect/) | `Synthesizer` recipes for game sound effects |
+
+## icons/ — export `xicons`
+
+| sample | shows |
+| --- | --- |
+| [icons](icons/) | the full heroicons set (324 icons) — `mode: 'outline' / 'solid'`, colored via `currentColor` |
 
 ## sync/ — export `xsync`
 

@@ -1,66 +1,40 @@
 //----------------------------------------------------------------------------------------------------
 // SVGText — SVG-rendered text auto-fitted to its bounding box
-//
-// Extends SVG with a <text> child and resizes the viewBox to the text's bbox, so the element's
-// footprint matches the rendered glyphs.
-//
-// - SVGText : component({ text, fontSize, ... })
-//
-// Usage: xnew(xbasics.SVGText, { text: 'GAME OVER', fontSize: 24, fill: 'currentColor' });
+// The svg is resized to the text's bbox, so the element's footprint matches the rendered
+// glyphs; style the text via className / style (css beats svg presentation attributes).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { SVG } from './SVG';
 
-interface SVGTextInterface {
-    text?: string;
-    fontSize?: number;
-    anchor?: { x: number, y: number };
-    className?: string;
-    style?: string;
-    stroke?: string;
-    strokeOpacity?: number;
-    strokeWidth?: number;
-    strokeLinejoin?: string;
-    strokeLinecap?: string;
-    fill?: string;
-    fillOpacity?: number;
-}
+export function SVGText(unit: xnew.Unit,
+    { text = '', fontSize = 20, className = '', style = '', ...others }:
+    { text?: string, fontSize?: number, className?: string, style?: string, [key: string]: any } = {}
+) {
+    const css = xnew.css({
+        // sized by resize(); overflow keeps the stroke halo outside the bbox visible;
+        // the presentation defaults (text = visible fill) inherit down to the <text>
+        svg: {
+            layer: 'base',
+            body: `
+                stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: currentColor; fill-opacity: 1;
+                overflow: visible;
+            `,
+        },
+    });
 
-
-export function SVGText(unit: xnew.Unit, {
-    text = '',
-    fontSize = 20,
-    anchor = { x: 0, y: 0 },
-    className = '',
-    style = '',
-    stroke = 'none',
-    strokeOpacity = 1,
-    strokeWidth = 1,
-    strokeLinejoin = 'round',
-    strokeLinecap = 'round',
-    fill = 'currentColor',
-    fillOpacity = 1
-}: SVGTextInterface = {}) {
-    xnew.extend(SVG, { className, style, stroke, strokeOpacity, strokeWidth, strokeLinejoin, strokeLinecap, fill, fillOpacity });
+    xnew.nest({ tag: 'svg', className: `${css.svg} ${className}`, style, ...others });
     const svg = unit.element as SVGSVGElement;
 
-    xnew.nest(`<text x="0" y="0" font-size="${fontSize}" paint-order="stroke fill">`);
+    xnew.nest({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' });
     unit.element.textContent = text;
 
     function resize() {
         const bbox = (unit.element as SVGGraphicsElement).getBBox();
-        const padding = 0;
-        svg.setAttribute('viewBox', `
-            ${bbox.x - padding}
-            ${bbox.y - padding}
-            ${bbox.width + padding * 2}
-            ${bbox.height + padding * 2}
-        `);
-
-        svg.style.width = (bbox.width + padding * 2) + 'px';
+        svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+        svg.style.width = bbox.width + 'px';
+        svg.style.height = bbox.height + 'px';
     }
     resize();
     unit.on('resize', resize);
-    svg.style.overflow = 'visible';
 }

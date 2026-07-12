@@ -1,28 +1,18 @@
 //----------------------------------------------------------------------------------------------------
 // xnew — public entry point of the library
-//
-// xnew(...) creates a new Unit as a child of the currently active Unit (the first call auto-initializes
-// root and ticker). Each helper acts on the implicit Unit.current, so it is called from inside a
-// component function; the implementation is a thin forward to Unit static methods.
-//
-// - xnew.nest / extend                   : extend the unit under initialization
-// - xnew.css                             : pseudo-scoped css (local class names → unique generated classes)
-// - xnew.find / context                  : search by component / resolve ancestor context
-// - xnew.promise                         : register a promise to the unit (xnew.promise(unit) aggregates its results)
-// - xnew.scope / emit / protect          : scope capture / '+global' '-local' events / visibility boundary
-// - xnew.timeout / interval / transition : scheduling via UnitTimer
-// - xnew.{Unit,Component}                : public types (type namespace merged onto the callable value)
+// xnew(...) creates a Unit under the currently active Unit (the first call auto-initializes root and
+// ticker); each helper acts on the implicit Unit.current, thinly forwarding to Unit static methods.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, UnitPromise, UnitTimer, ComponentFn, DefinesOf, PropsOf } from './unit';
-import { DomElement } from './dom';
-import { applyCss } from './css';
+import { DomElement, DomElementDef } from './dom';
+import { applyCss, CssDef } from './css';
 
 // Call signatures of xnew(...); passing a Component merges its defines into the return type.
 export interface XnewBase {
     <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
-    <C extends ComponentFn<any, any>>(target: DomElement | string, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
-    (target: DomElement | string, content?: string | number): Unit;
+    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
+    (target: DomElement | string | DomElementDef, content?: string | number): Unit;
     (content: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
@@ -40,12 +30,12 @@ export const xnew = Object.assign(
         }
     }) as unknown as XnewBase,
     {
-        // Nests a child element (an existing element or a tag string like '<div>'); only during initialization.
-        nest(target: DomElement | string): HTMLElement | SVGElement {
+        // Nests a new child element created from a tag string like '<div>' or an element definition object { tag, className?, style?, …members } (with optional text content); only during initialization. In the object form, className / style are embedded (escaped) in the generated tag string; every other member is assigned onto the created element afterwards (property when it exists — value, placeholder, name, checked, … — else setAttribute), and undefined / null / false members are skipped so attributes can be conditional.
+        nest(tag: string | DomElementDef, textContent?: string): HTMLElement | SVGElement {
             if (Unit.current._.phase !== 'invoked') {
                 throw new Error('xnew.nest can not be called after initialized.');
             }
-            return Unit.nest(Unit.current, target);
+            return Unit.nest(Unit.current, tag, textContent);
         },
 
         // Extends the current unit with another component; only during initialization. Returns the defines.
@@ -59,8 +49,8 @@ export const xnew = Object.assign(
             return Unit.extend(Unit.current, Component, props) as DefinesOf<C>;
         },
 
-        // Registers pseudo-scoped CSS: keys are local class names, values their declaration blocks (native CSS nesting works inside, e.g. &:hover / @media). Returns { localName: uniqueClassName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it finalizes.
-        css<T extends Record<string, string>>(defs: T): Record<keyof T, string> {
+        // Registers pseudo-scoped CSS: each key is a local name, always renamed to a page-unique one (scoping is mandatory — invalid keys throw). A value is either a declaration block string, wrapped as .xnewN-key { … } (native nesting works inside, e.g. &:hover / @media), or an object { layer?, type?, body }: type names an at-rule without '@' to hang the generated name on ({ type: 'keyframes', body } → @keyframes xnewN-key; absent: a class rule), and layer wraps that entry in @layer (xbasics entries set layer: 'base'). $key inside a body references another entry's generated name (unknown references throw). Returns { key: generatedName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it finalizes.
+        css<T extends Record<string, string | CssDef>>(defs: T): Record<keyof T, string> {
             return applyCss(Unit.current, defs) as Record<keyof T, string>;
         },
 
@@ -136,5 +126,6 @@ export const xnew = Object.assign(
 export namespace xnew {
     export type Unit = InstanceType<typeof Unit>;
     export type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
+    export type ElementDef = DomElementDef;
 }
 

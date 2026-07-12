@@ -98,21 +98,6 @@ function Lights(unit) {
 }
 ```
 
-### `xthree.remove(threeObject)`
-
-Detaches `threeObject` from its current parent (**detach only**). It does **not** dispose geometry / material / texture, because those resources may be shared across models or cached by the app. Useful when swapping models through a single rig: call it before mounting the next model.
-
-```js
-// bake several VRMs through one rig
-rig.add(vrm.scene);
-// …render / bake…
-xthree.remove(vrm.scene); // detach from the rig (resources kept)
-```
-
-:::note
-When a unit that called `nest` / `add` is destroyed, the object is likewise only **detached** — GPU resources are not disposed.
-:::
-
 ### `xthree.dispose(threeObject)`
 
 Detaches `threeObject` from its parent and traverses its descendants, calling `dispose()` on geometry / material / texture to **explicitly free all GPU resources**. Assumes the textures and other resources are not shared with other objects — calling it on shared resources can break the rendering of other live models.
@@ -121,3 +106,7 @@ Detaches `threeObject` from its parent and traverses its descendants, calling `d
 // when you know the resources belong to this model alone
 xthree.dispose(model); // detach and free geometry/material/texture
 ```
+
+:::note
+When a unit that called `nest` / `add` is destroyed, the object is only **detached** — GPU resources are not disposed. To just detach an object yourself, use Three.js's own `object.removeFromParent()`.
+:::

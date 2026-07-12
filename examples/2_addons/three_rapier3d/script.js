@@ -16,11 +16,13 @@ function Main(unit) {
   xthree.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   xthree.camera.position.set(0, 50, 100);
   xthree.camera.lookAt(0, 0, 0);
-  unit.on('update', () => {
-    xthree.renderer.render(xthree.scene, xthree.camera);
+  xnew.promise(unit).then(() => {
+    unit.on('update', () => {
+      xthree.renderer.render(xthree.scene, xthree.camera);
+    });
+
+    xnew(Contents);
   });
-  
-  xnew(Contents);
 }
 
 function Contents(unit) {

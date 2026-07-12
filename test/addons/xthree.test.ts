@@ -109,55 +109,20 @@ test('finalize: ユニット破棄で親から外れる', () => {
     expect(obj.parent).toBe(null);
 });
 
-test('finalize: xthree.finalize で renderer が dispose / forceContextLoss される', () => {
+test('finalize: ユニット破棄で renderer が dispose / forceContextLoss される（自動解放）', () => {
     const canvas = setup();
     let disposeSpy;
     let lossSpy;
 
-    xnew(() => {
-        xthree.initialize({ canvas });
-        const renderer = xthree.renderer;
-        disposeSpy = jest.spyOn(renderer, 'dispose');
-        lossSpy = jest.spyOn(renderer, 'forceContextLoss');
-        xthree.finalize();
-    });
-
-    expect(disposeSpy).toHaveBeenCalled();
-    expect(lossSpy).toHaveBeenCalled();
-});
-
-test('finalize: ユニット破棄でも renderer が dispose される（自動解放）', () => {
-    const canvas = setup();
-    let disposeSpy;
-
     const root = xnew(() => {
         xthree.initialize({ canvas });
         disposeSpy = jest.spyOn(xthree.renderer, 'dispose');
+        lossSpy = jest.spyOn(xthree.renderer, 'forceContextLoss');
     });
     root.finalize();
 
     expect(disposeSpy).toHaveBeenCalled();
-});
-
-test('remove: その時点の親から外すだけで dispose はしない（共有リソース保護）', () => {
-    const canvas = setup();
-    const rig = new THREE.Object3D();
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
-    rig.add(mesh); // rig は scene へ、mesh は rig の子（焼成リグ相当）
-
-    const geoSpy = jest.spyOn(mesh.geometry, 'dispose');
-    const matSpy = jest.spyOn(mesh.material, 'dispose');
-
-    xnew(() => {
-        xthree.initialize({ canvas });
-        xthree.add(rig);
-        xthree.remove(mesh); // 親(rig)から外すだけ
-    });
-
-    expect(mesh.parent).toBe(null);
-    expect(rig.children).not.toContain(mesh);
-    expect(geoSpy).not.toHaveBeenCalled();
-    expect(matSpy).not.toHaveBeenCalled();
+    expect(lossSpy).toHaveBeenCalled();
 });
 
 test('finalize: ユニット破棄では dispose しない（共有リソース保護）', () => {

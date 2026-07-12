@@ -13,12 +13,14 @@ function Main(unit) {
   xthree.camera.position.set(0, -20, +20);
   xthree.camera.lookAt(0, 0, 0);
   xthree.renderer.shadowMap.enabled = true;
-  
-  unit.on('update', () => {
-    xthree.renderer.render(xthree.scene, xthree.camera);
-  });
 
-  xnew(Contents);
+  xnew.promise(unit).then(() => {
+    unit.on('update', () => {
+      xthree.renderer.render(xthree.scene, xthree.camera);
+    });
+
+    xnew(Contents);
+  });
 }
 
 function Contents(unit) {

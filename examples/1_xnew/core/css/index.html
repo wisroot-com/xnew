@@ -23,6 +23,7 @@
       xnew(Buttons);
       xnew(BlueCard);
       xnew(GreenCard);
+      xnew(Spinners);
       xnew(Theme);
     });
 
@@ -32,7 +33,7 @@
       xnew.nest('<div class="flex gap-x-2 flex-wrap">');
     }
 
-    // xnew.css: keys are local class names; the returned map holds page-unique class names.
+    // xnew.css: every key is a local name, always renamed to a page-unique one.
     // Native CSS nesting works inside each block (&:hover, @media, descendant selectors).
     function Buttons(unit) {
       xnew.extend(Base, { name: 'xnew.css: hover / active states' });
@@ -86,6 +87,29 @@
         xnew('<span>', 'green card');
         xnew('<div>', `class="${css.card}"`);
       });
+    }
+
+    // An object entry { type: 'keyframes', body } scopes the animation name like a
+    // class key; $turn links the animation: reference to it, so no global name is created.
+    function Spinners(unit) {
+      xnew.extend(Base, { name: 'xnew.css: @keyframes (scoped animation name)' });
+
+      const css = xnew.css({
+        turn: {
+          type: 'keyframes',
+          body: `
+            from { transform: rotate(0turn); }
+            to { transform: rotate(1turn); }
+          `,
+        },
+        spinner: `
+          width: 2rem; height: 2rem; border-radius: 50%;
+          border: 0.25rem solid #dbeafe; border-top-color: #3b82f6;
+          animation: $turn 0.8s linear infinite;
+        `,
+      });
+
+      xnew(`<div class="${css.spinner}">`);
     }
 
     // Custom properties are passed through as-is and inherit down the DOM tree:

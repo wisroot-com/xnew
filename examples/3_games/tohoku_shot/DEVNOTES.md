@@ -101,9 +101,10 @@ TitleScene ──tap/Space──▶ StoryScene ──2ページ目のtap/Space�
   全フレームを1枚の canvas に敷き詰め、`PIXI.Texture.from(atlas).source` を共有する
   sub-texture（`new PIXI.Texture({ source, frame })`）の配列を `AnimatedSprite` に渡す。
   GPU テクスチャは計5枚、ImageBitmap は保持ゼロ。source 共有でバッチ描画も効く。
-- **ベイク後の解放**: 完了時に `composer.dispose()` + `ssaoPass.dispose()` +
-  `xthree.renderer.dispose()` + `forceContextLoss()` を明示的に呼ぶ
-  （xthree の finalize は renderer を dispose しないため。クラッシュ対策の一部）。
+- **ベイク後の解放**: 完了時に `composer.dispose()` + `ssaoPass.dispose()` を呼び、`Assets`（内部で
+  `BakedCharacters` を焼く保持コンポーネント）がテクスチャを取り込んでから `BakedCharacters` ごと
+  finalize する（xthree Root の finalize が renderer の dispose + forceContextLoss を行う。
+  クラッシュ対策の一部）。以後のテクスチャ参照は `xnew.context(Assets)` で引く。
 - **シームレスループ**: `t` を `[0, 3π)` を `BAKE_FRAMES` 等分。回転は `t=3π` で 2π の倍数に戻り、
   ボーンの `sin(t × 偶数)` も開始位相へ戻る。**ここを触るときはループ条件を壊さないこと**
   （回転係数・ボーン係数を変えるなら t=3π で元に戻るか必ず確認）。

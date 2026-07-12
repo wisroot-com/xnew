@@ -54,11 +54,10 @@
     function ScreenshotButton(unit) {
       xnew.nest('<div class="absolute bottom-4 left-0 right-0 flex justify-center">');
       const button = xnew('<button class="px-6 py-2 bg-indigo-500 text-white font-bold rounded-lg shadow hover:bg-indigo-600 cursor-pointer">', 'Save Screenshot');
-      button.on('click', () => xnew(ScreenShot));
+      button.on('click', () => xnew(xnew.context(Main).element, ScreenShot));
     }
 
     function ScreenShot(unit) {
-      xnew.nest(xnew.context(Main).element);
       const cover = xnew('<div class="absolute inset-0 size-full z-10 bg-white">');
       xnew.transition(({ value }) => cover.element.style.opacity = 1 - value, 600)
       .timeout(() => {

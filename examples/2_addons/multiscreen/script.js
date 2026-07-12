@@ -12,11 +12,14 @@ function Main(unit) {
 
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('update', () => {
-    xpixi.renderer.render(xpixi.scene);
-  });
 
-  xnew(Contents);
+  xnew.promise(unit).then(() => {
+    unit.on('update', () => {
+      xpixi.renderer.render(xpixi.scene);
+    });
+
+    xnew(Contents);
+  });
 }
 
 function Contents(unit) {
@@ -30,13 +33,17 @@ function Contents(unit) {
 function SubScreen(unit, { width, height, color }) {
   xpixi.initialize({ canvas: new OffscreenCanvas(width, height) });
   const texture = PIXI.Texture.from(xpixi.canvas);
-  unit.on('update', () => {
-    xpixi.renderer.render(xpixi.scene);
-    texture.source.update();
+
+  xnew.promise(unit).then(() => {
+    unit.on('update', () => {
+      xpixi.renderer.render(xpixi.scene);
+      texture.source.update();
+    });
+
+    xnew(Boxes, { color });
   });
 
-  xnew(Boxes, { color });
-  return { 
+  return {
     get texture() { return texture; }
   };
 }

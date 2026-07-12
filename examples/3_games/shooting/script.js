@@ -10,11 +10,14 @@ function Main(unit) {
 
   // setup pixi
   xpixi.initialize({ canvas: unit.canvas });
-  unit.on('update', () => {
-    xpixi.renderer.render(xpixi.scene);
-  });
 
-  xnew(Contents);
+  xnew.promise(unit).then(() => {
+    unit.on('update', () => {
+      xpixi.renderer.render(xpixi.scene);
+    });
+
+    xnew(Contents);
+  });
 }
 
 function Contents(unit) {

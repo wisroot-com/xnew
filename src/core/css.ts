@@ -1,25 +1,25 @@
 //----------------------------------------------------------------------------------------------------
-// css — pseudo-scoped CSS backing xnew.css (local class names → unique generated class names)
-//
-// True local CSS is impossible in the light DOM, so scoping is emulated by renaming: each local key
-// becomes a page-unique class, so definitions in different components never collide by name.
-//
-// - applyCss : inject a <style> for a definition map and return { localName: generatedClassName }
-//
-// Each value is wrapped as `.generated { ...value... }`, so native CSS nesting applies inside
-// (&:hover, @media, descendant selectors). Identical definition maps share one ref-counted <style>,
-// removed when the last unit using it finalizes. @keyframes names stay global. Without a DOM
-// (server side), nothing is injected and keys map to themselves.
+// css — pseudo-scoped CSS backing xnew.css (local names → unique generated names)
+// True local CSS is impossible in the light DOM, so scoping is emulated by renaming — and made
+// mandatory: every rule hangs off a renamed key, so a definition cannot emit a global rule.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit } from './unit';
+
+export interface CssDef { layer?: string; type?: string; body: string; }
 
 interface CssEntry { names: Record<string, string>; refs: number; style: HTMLStyleElement; }
 
 const registry = new Map<string, CssEntry>();
 let counter = 0;
 
-export function applyCss(unit: Unit, defs: Record<string, string>): Record<string, string> {
+const localName = /^[A-Za-z][A-Za-z0-9_-]*$/;
+const layerName = /^[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*)*$/;
+const typeName = /^[a-z-]+$/;
+// a letter must follow '$', so attribute selectors like [href$="…"] are never rewritten
+const reference = /\$([A-Za-z][A-Za-z0-9_-]*)/g;
+
+export function applyCss(unit: Unit, defs: Record<string, string | CssDef>): Record<string, string> {
     if (globalThis.document?.head === undefined) {
         return Object.fromEntries(Object.keys(defs).map((name) => [name, name]));
     }
@@ -29,9 +29,39 @@ export function applyCss(unit: Unit, defs: Record<string, string>): Record<strin
     if (entry === undefined) {
         const id = counter++;
         const names: Record<string, string> = {};
-        const text = Object.entries(defs).map(([name, block]) => {
-            names[name] = `xnew${id}-${name}`;
-            return `.${names[name]} {\n${block}\n}`;
+        for (const name of Object.keys(defs)) {
+            if (localName.test(name) === true) {
+                names[name] = `xnew${id}-${name}`;
+            } else {
+                throw new Error(`xnew.css: invalid local name "${name}".`);
+            }
+        }
+        const resolve = (block: string) => block.replace(reference, (_, ref: string) => {
+            if (names[ref] === undefined) {
+                throw new Error(`xnew.css: unknown reference "$${ref}".`);
+            } else {
+                return names[ref];
+            }
+        });
+        const text = Object.entries(defs).map(([name, value]) => {
+            const def = typeof value === 'string' ? { body: value } : value;
+
+            let rule: string;
+            if (def.type === undefined) {
+                rule = `.${names[name]} {\n${resolve(def.body)}\n}`;
+            } else if (typeName.test(def.type) === true) {
+                rule = `@${def.type} ${names[name]} {\n${resolve(def.body)}\n}`;
+            } else {
+                throw new Error(`xnew.css: invalid type "${def.type}".`);
+            }
+
+            if (def.layer === undefined) {
+                return rule;
+            } else if (layerName.test(def.layer) === true) {
+                return `@layer ${def.layer} {\n${rule}\n}`;
+            } else {
+                throw new Error(`xnew.css: invalid layer "${def.layer}".`);
+            }
         }).join('\n');
 
         const style = document.createElement('style');

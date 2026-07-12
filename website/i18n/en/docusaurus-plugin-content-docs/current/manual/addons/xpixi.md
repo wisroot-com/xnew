@@ -90,11 +90,3 @@ function Hud(unit) {
   label.position.set(16, 8);
 }
 ```
-
-### `xpixi.remove(pixiObject)`
-
-Detaches `pixiObject` from its current parent and destroys it with `destroy({ children: true })` — the same cleanup `nest` / `add` run on unit destroy, performed on demand. Textures are preserved (the default), so shared textures stay intact.
-
-```js
-xpixi.remove(sprite); // detach from parent and destroy
-```

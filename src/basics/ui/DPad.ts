@@ -1,25 +1,39 @@
 //----------------------------------------------------------------------------------------------------
 // DPad — virtual game-pad directional pad with a quantized 4 or 8 way vector
-//
-// Drag-based on-screen input that translates pointer movement into a quantized vector (x / y in
-// {-1, 0, 1}) and emits it as '-down' / '-move' / '-up'; the active arrow segment is highlighted.
+// Translates pointer drags into a quantized vector (x / y in {-1, 0, 1}) emitted as events;
 // `diagonal: false` restricts to 4 directions.
-//
-// - DPad : component({ diagonal, stroke, fill, ... }) emitting '-down' / '-move' / '-up' with { vector }
-//
-// Usage: xnew(xbasics.DPad, { diagonal: false }).on('-move', ({ vector }) => move(vector));
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { SVG } from '../element/SVG';
-import { Aspect } from '../view/Aspect';
+import { Design } from '../design';
 
 export function DPad(unit: xnew.Unit,
-    { diagonal = true, stroke = 'currentColor', strokeOpacity = 0.8, strokeWidth = 1, fill = '#FFF', fillOpacity = 0.8 }:
-    { diagonal?: boolean, stroke?: string, strokeOpacity?: number, strokeWidth?: number, fill?: string, fillOpacity?: number } = {}
+    { diagonal = true, className = '', style = '', designs = {} }:
+    { diagonal?: boolean, className?: string, style?: string, designs?: { svg?: Design } } = {}
 ) {
-    xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
-    xnew.nest(`<div style="width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;">`);
+    const css = xnew.css({
+        container: {
+            layer: 'base',
+            body: `
+                position: relative;
+                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
+            `,
+        },
+        svg: {
+            layer: 'base',
+            body: `
+                position: absolute; inset: 0; box-sizing: border-box; display: block; width: 100%; height: 100%;
+                stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+                fill: #FFF; fill-opacity: 0.8;
+            `,
+        },
+    });
+
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+
+    // each layer disables the irrelevant paint inline; the caller's designs.svg comes later, so it wins
+    const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: `stroke: none; ${designs.svg?.style ?? ''}` };
+    const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: `fill: none; ${designs.svg?.style ?? ''}` };
 
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
@@ -30,13 +44,13 @@ export function DPad(unit: xnew.Unit,
 
     const targets = polygons.map((polygon) => {
         return xnew((unit: xnew.Unit) => {
-            xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', fill, fillOpacity });
+            xnew.nest(fillSvg);
             xnew(polygon);
         });
     });
 
     xnew((unit: xnew.Unit) => {
-        xnew.extend(SVG, { style: 'position: absolute; width: 100%; height: 100%;', stroke, strokeOpacity, strokeWidth });
+        xnew.nest(strokeSvg);
         xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
         xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
         xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');
@@ -69,8 +83,7 @@ export function DPad(unit: xnew.Unit,
         targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
         targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
         targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
-        const nexttype = { dragstart: '-down', dragmove: '-move' }[type] as string;
-        xnew.emit(nexttype, { vector });
+        xnew.emit({ dragstart: '-down', dragmove: '-move' }[type] as string, { vector });
     });
 
     unit.on('dragend', () => {

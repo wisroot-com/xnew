@@ -39,11 +39,13 @@ function Main(unit) {
   // pixi setup
   xpixi.initialize({ canvas: unit.canvas });
 
-  const texture = PIXI.Texture.from(xthree.canvas);
-  unit.on('update', () => {
-    xthree.renderer.render(xthree.scene, xthree.camera);
-    texture.source.update();
-    xpixi.renderer.render(xpixi.scene);
+  xnew.promise(unit).then(() => {
+    const texture = PIXI.Texture.from(xthree.canvas);
+    unit.on('update', () => {
+      xthree.renderer.render(xthree.scene, xthree.camera);
+      texture.source.update();
+      xpixi.renderer.render(xpixi.scene);
+    });
   });
 
   xnew.promise(fetch('./levels.json')).then(response => response.json()).then((levels) => {
@@ -460,7 +462,7 @@ function LeftBlock(unit, { id }) {
   });
 
   xnew('<div class="absolute bottom-[8cqh] left-0 right-0 m-auto size-[18cqw] text-green-700">', () => {
-    const dpad = xnew(xbasics.DPad, { diagonal: false, fill: '#228B22', fillOpacity: 0.4 });
+    const dpad = xnew(xbasics.DPad, { diagonal: false, designs: { svg: { style: 'fill: #228B22; fill-opacity: 0.4;' } } });
     dpad.on('-down', ({ vector }) => move(vector));
   });
 
@@ -494,13 +496,15 @@ function RightBlock(unit, { id }) {
     xthree.scene.rotation.x = -80 / 180 * Math.PI;
     xthree.scene.rotation.z = -30 / 180 * Math.PI;
     xthree.scene.position.y = -0.9;
-    unit.on('update', () => {
-      xthree.renderer.render(xthree.scene, xthree.camera);
+    xnew.promise(screen).then(() => {
+      unit.on('update', () => {
+        xthree.renderer.render(xthree.scene, xthree.camera);
+      });
+
+      xnew(DirectionalLight, { x: 2, y: -5, z: 3 });
+      xnew(AmbientLight);
+      xnew(Model, { id, scale: 0.9 });
     });
-    
-    xnew(DirectionalLight, { x: 2, y: -5, z: 3 });
-    xnew(AmbientLight);
-    xnew(Model, { id, scale: 0.9 });
   });
 }
 

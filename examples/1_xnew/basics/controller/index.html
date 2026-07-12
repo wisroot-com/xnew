@@ -29,39 +29,25 @@
 
       xnew.nest('<div class="absolute left-0 right-0 bottom-0 w-full h-[30%]" style="container-type: size;">');
 
-      // left bottom
-      xnew('<div class="absolute left-0 top-0 bottom-0 w-[100cqh] h-full">', () => {
-        // directional pad
-        const dpad = xnew('<div class="absolute inset-[5cqh]">', xbasics.DPad, {});
-        dpad.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));        
-      });
+      // directional pad (left bottom)
+      const dpad = xnew(xbasics.DPad, { className: 'absolute left-[5cqh] bottom-[5cqh] w-[90cqh] h-[90cqh]' });
+      dpad.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));
 
-      // center bottom: action button ('+action' flips the box's spin)
-      xnew('<div class="absolute left-0 right-0 bottom-[10cqh] flex justify-center">', () => {
-        const button = xnew('<div class="w-[20cqh] h-[20cqh] rounded-full border-2 border-gray-400 bg-gray-200/80 flex items-center justify-center font-bold text-gray-600 select-none cursor-pointer active:bg-gray-300">', 'A');
-        button.on('pointerdown', () => xnew.emit('+action'));
-      });
-
-      // right bottom
-      xnew('<div class="absolute right-0 top-0 bottom-0 w-[100cqh] h-full">', () => {
-        // analog stick
-        const stick = xnew('<div class="absolute inset-[5cqh]">', xbasics.AnalogStick, {});
-        stick.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));
-      });
+      // analog stick (right bottom)
+      const stick = xnew(xbasics.AnalogStick, { className: 'absolute right-[5cqh] bottom-[5cqh] w-[90cqh] h-[90cqh]' });
+      stick.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));
     }
 
     function Box(unit) {
       const box = xnew.nest('<div class="absolute size-48 inset-0 m-auto bg-blue-500">');
       let current = { x: 0, y: 0, r: 0 };
       let move = { x: 0, y: 0 };
-      let direction = +1;
       unit.on('+move', ({ vector }) => move = vector);
-      unit.on('+action', () => direction *= -1);
 
       unit.on('update', () => {
         current.x += move.x * 10;
         current.y += move.y * 10;
-        current.r += direction;
+        current.r += 1;
         box.style.transform = `translate(${current.x}px, ${current.y}px) rotate(${current.r}deg)`;
       });
     }

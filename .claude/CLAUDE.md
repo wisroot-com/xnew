@@ -31,6 +31,7 @@ Integrations for games and interactive apps.
 - `src/core/` — `xnew` core: `unit`, event, time, map, env, dom
 - `src/sync/` — networking layer (exported as `xsync`): a single `xsync.ts` (shared state + boot + facade). Lobby/room "gathering place" wiring is not built in — callers assemble it from the facade (see `examples/*/server.js` + `index.js`).
 - `src/basics/` — built-in basic components (exported as `xbasics`); one component per file, grouped by category: `view/`, `element/`, `audio/`, `ui/`
+- `src/icons/` — heroicons icon set (exported as `xicons`); path data lives in one generated `data.ts` table, `xicons.ts` builds a component per entry from it, and `Template.ts` is the shared `<svg>` shell; path data verbatim from heroicons (MIT — `license.txt`)
 - `src/addons/` — third-party library integrations
 - `examples/` — runnable samples
 - `website/` — Docusaurus documentation site
@@ -44,60 +45,20 @@ Integrations for games and interactive apps.
 
 ## File header convention (src/)
 
-Every file under `src/` must start with an overview comment so that humans and AI
-can grasp the file in a glance, without reading the implementation. Use the same
-`//----` divider style already used inside the codebase. See [src/core/map.ts](../src/core/map.ts)
-for a reference.
-
-**Required elements**
-
-1. **Role** — one-line title naming the file's responsibility (not just its filename).
-2. **Why** — ideally one line (two at most) on the design intent that the code itself
-   does not reveal. Keep it terse; do not restate the implementation.
-3. **Public API inventory** — bullet list of **only the features consumed from outside**
-   (the public surface callers use), each with a one-line description. Omit internal
-   exports, transport types, and helper accessors. For a facade file, list the facade
-   methods (e.g. `xnew.sync.*`), not every `export`.
-
-**Optional, add when they aid comprehension**
-
-- **Relationships** — which other files depend on this, or what this depends on,
-  when the file plays a central role in the architecture.
-- **Invariants / lifecycle / ownership rules** — implicit contracts the code relies on.
-- **Usage example** — a minimal snippet, especially for user-facing files in
-  `basics/` and `addons/`.
-- **Caveats** — non-obvious behaviors a reader would otherwise miss.
-
-**Do not write**
-
-- Per-line implementation explanations (the code already shows the *what*).
-- Change history or authorship (use `git log`).
-- TODO lists (track them elsewhere).
-- Full API reference — keep per-symbol detail in JSDoc, not the file header.
-
-**Per-directory emphasis**
-
-| Directory     | Focus                                                                |
-| ------------- | -------------------------------------------------------------------- |
-| `src/core/`   | Role, invariants, relationship to other core files                   |
-| `src/sync/`   | Role, invariants of the sync engine + facade (`xsync.ts`)             |
-| `src/basics/` | User-facing component behavior and a small usage example             |
-| `src/addons/` | Integration target (and version), boundary with xnew, lifetime model |
-
-**Template**
+Every file under `src/` starts with a compact overview comment in the `//----` divider
+style, with **at most three comment lines** between the dividers: line 1 is the role
+(`<Name> — <responsibility>`); lines 2–3 are optional and carry only the most
+load-bearing non-obvious point (design intent, invariant, or caveat). No API
+inventories, usage examples, or change history — keep per-symbol detail in JSDoc.
 
 ```ts
 //----------------------------------------------------------------------------------------------------
-// <Role: one line>
-//
-// <Why: one line (two at most) of design intent the code does not reveal.>
-//
-// - <PublicFeatureA> : <one-line description>   // only externally-consumed features
-// - <PublicFeatureB> : <one-line description>
-//
-// (optional) Relationships / Invariants / Caveats / Example
+// <Name> — <role: one line>
+// <optional: up to two lines of non-obvious intent / invariant / caveat>
 //----------------------------------------------------------------------------------------------------
 ```
+
+Code blocks inside a file are separated with the same divider style:
 
 ```ts
 //----------------------------------------------------------------------------------------------------

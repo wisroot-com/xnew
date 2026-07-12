@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden bg-black text-white">
+  <div id="main" class="relative w-full h-full"></div>
+  <script type="module">
+    import { xnew, xbasics } from '@mulsense/xnew';
+
+    // ---- mini sound novel (scenario-file driven) ---------------------------------------------------
+    // the story lives in scenario.xs, a plain-text notation: a text line is one page (auto
+    // click-wait, cleared by the next page), "+ text" appends into the same box, "id: text" sets
+    // the speaker ("id(表示名): text" overrides the name), and <verb args...> lines are stage
+    // directions:
+    //   <chara id face name> <label name> <jump name> <bg name> <show id left|right> <hide id>
+    //   <choice text => label> <wait [ms]> <clear> <end>       // = comment, \< = literal <
+    // <wait ms> can also be embedded inside a text line to pause mid-sentence.
+    // NovelScene fetches + parses the file into tokens and executes them one by one, stopping on
+    // click-waits / choices / end; the persistent layers (background, characters, dialog) live
+    // across pages and only react to commands.
+
+    xnew(document.querySelector('#main'), () => {
+      xnew(xbasics.SceneList, {
+        list: {
+          title: [Title],
+          novel: [NovelScene],
+        },
+      });
+      xnew(Title);
+    });
+
+    // ---- scenario parser -----------------------------------------------------------------------------
+
+    function parseScenario(source) {
+      const tokens = [];
+      const labels = {};
+      const charas = {};
+      for (const raw of source.split('\n')) {
+        const line = raw.trim();
+        if (line === '' || line.startsWith('//')) {
+          // blank line or comment
+        } else if (/^<.+>$/.test(line)) {
+          const body = line.slice(1, -1).trim();
+          const choice = body.match(/^choice\s+(.+?)\s*=>\s*(\S+)$/);
+          if (choice !== null) {
+            tokens.push({ type: 'choice', text: choice[1], to: choice[2] });
+          } else {
+            const [verb, ...args] = body.split(/\s+/);
+            if (verb === 'label') {
+              labels[args[0]] = tokens.length;
+            } else if (verb === 'chara') {
+              charas[args[0]] = { face: args[1], label: args[2] ?? args[0] };
+            } else {
+              tokens.push({ type: 'cmd', verb, args });
+            }
+          }
+        } else {
+          let text = line;
+          let append = false;
+          if (text.startsWith('+')) {
+            append = true;
+            text = text.slice(1).trim();
+          }
+          let speaker = null;
+          let name = null;
+          const head = text.match(/^(\w+)(?:\(([^)]*)\))?:\s*(.*)$/);
+          if (head !== null && charas[head[1]] !== undefined) {
+            speaker = head[1];
+            name = head[2] ?? charas[head[1]].label;
+            text = head[3];
+          }
+          tokens.push({ type: 'text', speaker, name, parts: parseParts(text), append });
+        }
+      }
+      return { tokens, labels, charas };
+    }
+
+    // split a text line into typewriter parts: strings and numbers (an inline <wait ms> pause)
+    function parseParts(text) {
+      const parts = [];
+      const regex = /(?<!\\)<wait\s+(\d+)>/g;
+      let last = 0;
+      let match = null;
+      while ((match = regex.exec(text)) !== null) {
+        if (match.index > last) {
+          parts.push(unescapeText(text.slice(last, match.index)));
+        }
+        parts.push(Number(match[1]));
+        last = match.index + match[0].length;
+      }
+      if (last < text.length) {
+        parts.push(unescapeText(text.slice(last)));
+      }
+      return parts;
+    }
+
+    function unescapeText(text) {
+      return text.replaceAll('\\<', '<');
+    }
+
+    // ---- scenes ------------------------------------------------------------------------------------
+
+    function Title(unit) {
+      xnew.extend(xbasics.Scene);
+      xnew.nest('<div class="absolute inset-0 bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 flex flex-col items-center justify-center gap-6 cursor-pointer select-none" style="opacity:0;">');
+      xnew.transition(({ value }) => unit.element.style.opacity = `${value}`, 400);
+      xnew('<div class="text-6xl">', '🚉');
+      xnew('<h1 class="text-4xl font-bold tracking-[0.3em]">', 'まよなかステーション');
+      xnew('<p class="text-slate-400 animate-pulse">', 'click to start');
+      unit.on('pointerdown', () => unit.change('novel'));
+      return { leave() { return xnew.transition(({ value }) => unit.element.style.opacity = `${1 - value}`, 400); } };
+    }
+
+    // the scenario player: executes tokens until something asks to pause (click-wait, timed wait,
+    // choices, end), then resumes from pointerdown / timers / a choice's select()
+    function NovelScene(unit) {
+      xnew.extend(xbasics.Scene);
+      xnew.nest('<div class="absolute inset-0 select-none cursor-pointer" style="opacity:0;">');
+      xnew.transition(({ value }) => unit.element.style.opacity = `${value}`, 400);
+
+      // persistent layers: they live across pages and only react to commands
+      const bg = xnew(Background);
+      const charaLayer = xnew(CharacterLayer);
+      const dialog = xnew(DialogBox);
+
+      let script = null;
+      let index = 0;
+      let waiting = false; // paused on a click-wait
+      let stopped = false; // choices (or the ending transition) own the input
+
+      fetch('./scenario.xs')
+        .then((res) => res.text())
+        .then(xnew.scope((source) => {
+          script = parseScenario(source);
+          run();
+        }));
+
+      function run() {
+        while (script !== null && index < script.tokens.length) {
+          const token = script.tokens[index];
+          if (token.type === 'text') {
+            dialog.show(token);
+            if (token.append === false) {
+              charaLayer.speak(token.speaker);
+            }
+            index++;
+            if (script.tokens[index]?.type === 'choice') {
+              // no click-wait: fall through so the choices reveal themselves after typing
+            } else {
+              waiting = true;
+              break;
+            }
+          } else if (token.type === 'choice') {
+            const items = [];
+            while (script.tokens[index]?.type === 'choice') {
+              items.push(script.tokens[index]);
+              index++;
+            }
+            stopped = true;
+            // reveal the choices once the current line finishes typing
+            const watcher = xnew(() => {});
+            watcher.on('update', () => {
+              if (dialog.completed) {
+                watcher.finalize();
+                xnew(unit, Choices, { items });
+              }
+            });
+            break;
+          } else if (token.verb === 'bg') {
+            bg.set(token.args[0]);
+            index++;
+          } else if (token.verb === 'show') {
+            charaLayer.show(token.args[0], token.args[1] ?? 'left', script.charas[token.args[0]]);
+            index++;
+          } else if (token.verb === 'hide') {
+            charaLayer.hide(token.args[0]);
+            index++;
+          } else if (token.verb === 'jump') {
+            index = script.labels[token.args[0]] ?? index + 1;
+          } else if (token.verb === 'wait') {
+            index++;
+            if (token.args[0] !== undefined) {
+              xnew.timeout(() => run(), Number(token.args[0]));
+            } else {
+              waiting = true;
+            }
+            break;
+          } else if (token.verb === 'clear') {
+            dialog.clear();
+            index++;
+          } else if (token.verb === 'end') {
+            stopped = true;
+            unit.change('title');
+            break;
+          } else {
+            index++; // unknown command: skip
+          }
+        }
+      }
+
+      unit.on('pointerdown', () => {
+        if (script === null || (stopped === true && dialog.completed === true)) {
+          // not loaded yet, or choices / the ending transition own the input now
+        } else if (dialog.completed === false) {
+          dialog.skip();
+        } else if (waiting === true) {
+          waiting = false;
+          run();
+        }
+      });
+
+      return {
+        select(label) {
+          if (script.labels[label] !== undefined) {
+            index = script.labels[label];
+          }
+          stopped = false;
+          run();
+        },
+        leave() { return xnew.transition(({ value }) => unit.element.style.opacity = `${1 - value}`, 600); },
+      };
+    }
+
+    // ---- persistent layers ---------------------------------------------------------------------------
+
+    // background: crossfade by stacking — a new layer fades in on top only when the label actually
+    // changes, and the covered layer is removed afterwards.
+    const BGS = {
+      platform: { className: 'bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-800', deco: '🌙', label: '3番線ホーム' },
+      waiting:  { className: 'bg-gradient-to-b from-stone-950 via-amber-950 to-stone-900', deco: '💡', label: '待合室' },
+      dawn:     { className: 'bg-gradient-to-b from-indigo-950 via-rose-900 to-amber-700', deco: '🌄', label: '夜明け' },
+    };
+
+    function Background(unit) {
+      xnew.nest('<div class="absolute inset-0">');
+      let label = null;
+      let current = null;
+      return {
+        set(next) {
+          if (next !== label && BGS[next] !== undefined) {
+            label = next;
+            const old = current;
+            current = xnew(unit, BG, BGS[next]);
+            if (old !== null) {
+              xnew.timeout(() => old.finalize(), 600); // remove once the new layer covers it
+            }
+          }
+        },
+      };
+    }
+
+    function BG(unit, { className, deco, label }) {
+      xnew.nest(`<div class="absolute inset-0 ${className}" style="opacity:0;">`);
+      xnew.transition(({ value }) => unit.element.style.opacity = `${value}`, 600);
+      xnew('<div class="absolute top-8 right-12 text-7xl opacity-50">', deco);
+      xnew('<div class="absolute top-4 left-4 text-xs tracking-[0.3em] text-white/40">', `◈ ${label}`);
+    }
+
+    // character sprites: two slots driven by <show>/<hide>; the speaker of each page is highlighted
+    function CharacterLayer(unit) {
+      xnew.nest('<div class="absolute inset-0 pointer-events-none">');
+      const slots = {
+        left:  { id: null, content: null, el: xnew('<div class="absolute bottom-36 left-16 flex flex-col items-center gap-2 transition-all duration-300" style="opacity:0;">') },
+        right: { id: null, content: null, el: xnew('<div class="absolute bottom-36 right-16 flex flex-col items-center gap-2 transition-all duration-300" style="opacity:0;">') },
+      };
+      let speaker = null;
+      function refresh() {
+        for (const slot of Object.values(slots)) {
+          const active = slot.id !== null && slot.id === speaker;
+          slot.el.element.style.filter = active ? 'none' : 'brightness(0.45)';
+          slot.el.element.style.transform = active ? 'scale(1)' : 'scale(0.92)';
+        }
+      }
+      return {
+        show(id, pos, chara) {
+          const slot = slots[pos];
+          if (slot !== undefined && chara !== undefined && slot.id !== id) {
+            slot.id = id;
+            slot.content?.finalize();
+            slot.content = xnew(slot.el, () => {
+              xnew('<div class="text-8xl drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">', chara.face);
+              xnew('<div class="text-xs tracking-widest text-white/60">', chara.label);
+            });
+            slot.el.element.style.opacity = '1';
+            refresh();
+          }
+        },
+        hide(id) {
+          for (const slot of Object.values(slots)) {
+            if (slot.id === id) {
+              slot.id = null;
+              slot.content?.finalize();
+              slot.content = null;
+              slot.el.element.style.opacity = '0';
+            }
+          }
+          refresh();
+        },
+        speak(id) {
+          speaker = id;
+          refresh();
+        },
+      };
+    }
+
+    // ---- dialog ----------------------------------------------------------------------------------------
+
+    function DialogBox(unit) {
+      xnew.nest('<div class="absolute bottom-0 left-0 right-0 px-6 pb-6">');
+      let current = null;
+      return {
+        show({ name, parts, append }) {
+          if (append === true && current !== null) {
+            current.append(parts);
+          } else {
+            current?.finalize();
+            current = xnew(unit, Script, { name, parts });
+          }
+        },
+        clear() {
+          current?.finalize();
+          current = null;
+        },
+        get completed() { return current === null || current.completed; },
+        skip() { current?.skip(); },
+      };
+    }
+
+    function Script(unit, { name = null, parts = [] } = {}) {
+      xnew.nest('<div class="overflow-hidden">');
+
+      if (name !== null) {
+        xnew('<div class="px-4 pt-2 pb-1 inline-block bg-indigo-900/90 rounded-t-xl text-indigo-200 text-sm font-bold tracking-widest">', name);
+      }
+      const rounded = name !== null ? 'rounded-b-xl rounded-tr-xl' : 'rounded-xl';
+      const textArea = xnew(`<div class="bg-slate-900/85 backdrop-blur-sm px-5 py-4 text-white text-base leading-relaxed min-h-[4.5rem] whitespace-pre-line ${rounded}">`);
+
+      let done = ''; // finished lines, fixed when a "+" line starts a new stream
+      let stream = xnew(Typewriter, { parts, speed: 40 });
+
+      unit.on('update', () => {
+        textArea.element.textContent = done + stream.current;
+      });
+
+      return {
+        get completed() { return stream.completed; },
+        skip() {
+          stream.skip();
+          textArea.element.textContent = done + stream.current;
+        },
+        append(parts) {
+          done = done + stream.current + '\n';
+          stream.finalize();
+          stream = xnew(Typewriter, { parts, speed: 40 });
+        },
+      };
+    }
+
+    // types out the string parts; a number part is an extra pause before the next character
+    function Typewriter(unit, { parts = [], speed = 40 } = {}) {
+      const full = parts.filter((part) => typeof part === 'string').join('');
+      const steps = [];
+      let extra = 0;
+      for (const part of parts) {
+        if (typeof part === 'number') {
+          extra += part;
+        } else {
+          for (const ch of part) {
+            steps.push({ ch, delay: speed + extra });
+            extra = 0;
+          }
+        }
+      }
+
+      let current = '';
+      let completed = steps.length === 0;
+      let index = 0;
+      let timer = null;
+      function next() {
+        if (index >= steps.length) {
+          completed = true;
+        } else {
+          timer = xnew.timeout(() => {
+            current += steps[index].ch;
+            index++;
+            next();
+          }, steps[index].delay);
+        }
+      }
+      next();
+
+      return {
+        get current() { return current; },
+        get completed() { return completed; },
+        skip() {
+          timer?.clear();
+          current = full;
+          completed = true;
+        },
+      };
+    }
+
+    // ---- choices ---------------------------------------------------------------------------------------
+
+    function Choices(unit, { items }) {
+      xnew.nest('<div class="absolute inset-x-0 bottom-40 flex flex-col items-center gap-3">');
+      for (const { text, to } of items) {
+        const button = xnew('<button class="w-72 px-4 py-2 rounded-xl bg-indigo-800/90 hover:bg-indigo-600 border border-indigo-400/40 tracking-widest cursor-pointer" style="opacity:0;">', `▶ ${text}`);
+        xnew.transition(({ value }) => button.element.style.opacity = `${value}`, 300);
+        button.on('click', () => {
+          const scene = xnew.context(NovelScene);
+          unit.finalize();
+          scene.select(to);
+        });
+      }
+    }
+  </script>
+</body>
+
+</html>

@@ -1,12 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Popup — full-viewport overlay that opens on mount and finalizes when closed
-//
-// Presentation layer over OpenAndClose (found via xnew.context): fades with the progress value and
-// closes on a click outside the content (directly on the overlay).
-//
-// - Popup : component (no props)
-//
-// Usage: xnew(xbasics.OpenAndClose, { open: false }); xnew.extend(xbasics.Popup);
+// Presentation layer over OpenAndClose (found via xnew.context): fades with the progress value
+// and closes on a click outside the content (directly on the overlay).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

@@ -1,13 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Aspect — aspect-ratio container that fits any parent box
-//
-// Nests two flex / container-query wrappers so the component's element keeps the requested aspect
-// ratio inside any parent box, regardless of which axis is constraining. `fit: 'contain'` shrinks
-// to fit; `fit: 'cover'` grows to fill.
-//
-// - Aspect : component({ aspect, fit })
-//
-// Usage: xnew(xbasics.Aspect, { aspect: 16 / 9, fit: 'contain' });
+// Nests two flex / container-query wrappers so the element keeps the requested aspect ratio
+// regardless of which axis is constraining; 'contain' shrinks to fit, 'cover' grows to fill.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

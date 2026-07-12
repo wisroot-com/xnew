@@ -29,13 +29,15 @@ function Main(unit) {
   const pmrem = new THREE.PMREMGenerator(xthree.renderer);
   xthree.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-  const renderer = xnew(Renderer);
-  xnew(Controller);
-  xnew(Panel);
-  xnew(Contents);
+  xnew.promise(unit).then(() => {
+    const renderer = xnew(Renderer);
+    xnew(Controller);
+    xnew(document.body, Panel);
+    xnew(Contents);
 
-  unit.on('update', () => {
-    renderer.render();
+    unit.on('update', () => {
+      renderer.render();
+    });
   });
 }
 
@@ -163,7 +165,6 @@ function Controller(unit) {
 }
 
 function Panel(panel) {
-  xnew.nest(document.body);
   const render = xnew.context(Renderer);
   const params = {
     threshold: render.bloom.threshold,
@@ -175,17 +176,17 @@ function Panel(panel) {
 
   xnew.extend(xbasics.Panel, { name: 'GUI', open: true, params });
 
-  panel.range('threshold', { min: 0, max: 1, step: 0.01 }).on('input', ({ value }) => {
+  panel.range({ name: 'threshold', min: 0, max: 1, step: 0.01 }).on('input', ({ value }) => {
     render.bloom.threshold = value;
   });
-  panel.range('strength', { min: 0, max: 3, step: 0.01 }).on('input', ({ value }) => {
+  panel.range({ name: 'strength', min: 0, max: 3, step: 0.01 }).on('input', ({ value }) => {
     render.bloom.strength = value;
     render.mix.material.uniforms.bloomStrength.value = render.bloom.strength;
   });
-  panel.range('radius', { min: 0, max: 1, step: 0.01 }).on('input', ({ value }) => {
+  panel.range({ name: 'radius', min: 0, max: 1, step: 0.01 }).on('input', ({ value }) => {
     render.bloom.radius = value;
   });
-  panel.range('exposure', { min: 0.1, max: 2, step: 0.1 }).on('input', ({ value }) => {
+  panel.range({ name: 'exposure', min: 0.1, max: 2, step: 0.1 }).on('input', ({ value }) => {
     xthree.renderer.toneMappingExposure = Math.pow(value, 4.0);
   });
 }
