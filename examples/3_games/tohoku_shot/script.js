@@ -1673,25 +1673,6 @@ function ResultDetail(unit, { score, wave, kills = [0, 0, 0, 0], cleared = false
 
 // ---- UI parts (title / result / volume) ----
 
-// 丸枠アイコン: 外周の円 + 中央70%に xicons のアイコン。Camera / ArrowUturnLeft で共有。
-function RingIcon(unit, { icon }) {
-  xnew('<div style="position: absolute; inset: 0; margin: auto; width: 100%; height: 100%;">', () => {
-    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', style: 'display: block; width: 100%; height: 100%; stroke: currentColor;' });
-    xnew('<circle cx="12" cy="12" r="11">');
-  });
-  xnew('<div style="position: absolute; inset: 0; margin: auto; width: 70%; height: 70%;">', () => {
-    xnew(icon, { style: 'display: block; width: 100%; height: 100%;' });
-  });
-}
-
-function Camera(_unit) {
-  xnew.extend(RingIcon, { icon: xicons.Camera });
-}
-
-function ArrowUturnLeft(_unit) {
-  xnew.extend(RingIcon, { icon: xicons.ArrowUturnLeft });
-}
-
 // 生成時に渡された要素を白で覆ってからフェードアウトしつつ撮影し、PNG をダウンロードする。
 function ScreenShot(unit) {
   const cover = xnew('<div class="absolute inset-0 size-full z-10 bg-white">');
@@ -1713,17 +1694,19 @@ function ScreenShot(unit) {
 }
 
 // リザルトのフッター。「画面を保存」(ScreenShot) と「戻る」(タイトルへシーン遷移) の2ボタン。
+// アイコンは丸枠付きの div でフレーミングする（枠線 border は cqw でアイコンの線幅に合わせる）。
 function ResultFooter(unit) {
+  const circleButton = 'size-[9cqw] cursor-pointer hover:scale-110 flex items-center justify-center border-[0.4cqw] border-current rounded-full';
   xnew.nest('<div class="size-full px-[2cqw] flex justify-between text-stone-500">');
   xnew('<div class="flex items-center gap-x-[2cqw]">', () => {
-    const button = xnew('<div class="relative size-[9cqw] cursor-pointer hover:scale-110">', Camera);
+    const button = xnew(`<div class="${circleButton}">`, xicons.Camera, { className: 'size-[62%]' });
     button.on('click', () => xnew(document.querySelector('#main'), ScreenShot));
     xnew('<div class="text-[3cqw] font-bold">', '画面を保存');
   });
 
   xnew('<div class="flex items-center gap-x-[2cqw]">', () => {
     xnew('<div class="text-[3cqw] font-bold">', '戻る');
-    const button = xnew('<div class="relative size-[9cqw] cursor-pointer hover:scale-110">', ArrowUturnLeft);
+    const button = xnew(`<div class="${circleButton}">`, xicons.ArrowUturnLeft, { className: 'size-[62%]' });
     button.on('click', () => xnew.context(xbasics.Scene).change(TitleScene, { skipStory: true }));
   });
 }
