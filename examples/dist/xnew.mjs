@@ -237,35 +237,15 @@ function isDomElement(value) {
 function isElementDef(value) {
     return typeof value === 'object' && value !== null && isDomElement(value) === false && typeof value.tag === 'string';
 }
-const tagName = /^[A-Za-z][A-Za-z0-9]*$/;
-const svgCamelAttributes = new Set([
-    'attributeName', 'attributeType', 'baseFrequency', 'baseProfile', 'calcMode', 'clipPathUnits',
-    'diffuseConstant', 'edgeMode', 'filterUnits', 'glyphRef', 'gradientTransform', 'gradientUnits',
-    'kernelMatrix', 'kernelUnitLength', 'keyPoints', 'keySplines', 'keyTimes', 'lengthAdjust',
-    'limitingConeAngle', 'markerHeight', 'markerUnits', 'markerWidth', 'maskContentUnits', 'maskUnits',
-    'numOctaves', 'pathLength', 'patternContentUnits', 'patternTransform', 'patternUnits',
-    'pointsAtX', 'pointsAtY', 'pointsAtZ', 'preserveAlpha', 'preserveAspectRatio', 'primitiveUnits',
-    'refX', 'refY', 'repeatCount', 'repeatDur', 'requiredExtensions', 'specularConstant',
-    'specularExponent', 'spreadMethod', 'startOffset', 'stdDeviation', 'stitchTiles', 'surfaceScale',
-    'systemLanguage', 'tableValues', 'targetX', 'targetY', 'textLength', 'viewBox',
-    'xChannelSelector', 'yChannelSelector', 'zoomAndPan',
-]);
-function svgAttributeName(key) {
-    if (svgCamelAttributes.has(key)) {
-        return key;
-    }
-    else {
-        return key.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
-    }
-}
-function buildTag(tag) {
+function createElement(parent, tag) {
+    let text;
+    const members = [];
     if (isElementDef(tag) === true) {
-        if (tagName.test(tag.tag) === false) {
+        if (/^[A-Za-z][A-Za-z0-9]*$/.test(tag.tag) === false) {
             throw new Error(`xnew: invalid tag name "${tag.tag}".`);
         }
         const escape = (value) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
         let attributes = '';
-        const members = [];
         for (const [key, value] of Object.entries(tag)) {
             if (key === 'tag' || value === undefined || value === null || value === false) ;
             else if (key === 'className') {
@@ -278,18 +258,45 @@ function buildTag(tag) {
                 members.push([key, value]);
             }
         }
-        return { text: `<${tag.tag}${attributes}></${tag.tag}>`, members };
+        text = `<${tag.tag}${attributes}></${tag.tag}>`;
     }
     else {
         const match = typeof tag === 'string' ? tag.match(/<((\w+)[^>]*?)\/?>/) : null;
         if (match !== null) {
-            return { text: `<${match[1]}></${match[2]}>`, members: [] };
+            text = `<${match[1]}></${match[2]}>`;
         }
         else {
             throw new Error(`xnew.nest: invalid tag string [${tag}]`);
         }
     }
+    parent.insertAdjacentHTML('beforeend', text);
+    const element = parent.children[parent.children.length - 1];
+    for (const [key, value] of members) {
+        if (element instanceof SVGElement) {
+            const name = svgCamelAttributes.has(key) ? key : key.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
+            element.setAttribute(name, String(value));
+        }
+        else if (key in element) {
+            element[key] = value;
+        }
+        else {
+            element.setAttribute(key, String(value));
+        }
+    }
+    return element;
 }
+const svgCamelAttributes = new Set([
+    'attributeName', 'attributeType', 'baseFrequency', 'baseProfile', 'calcMode', 'clipPathUnits',
+    'diffuseConstant', 'edgeMode', 'filterUnits', 'glyphRef', 'gradientTransform', 'gradientUnits',
+    'kernelMatrix', 'kernelUnitLength', 'keyPoints', 'keySplines', 'keyTimes', 'lengthAdjust',
+    'limitingConeAngle', 'markerHeight', 'markerUnits', 'markerWidth', 'maskContentUnits', 'maskUnits',
+    'numOctaves', 'pathLength', 'patternContentUnits', 'patternTransform', 'patternUnits',
+    'pointsAtX', 'pointsAtY', 'pointsAtZ', 'preserveAlpha', 'preserveAspectRatio', 'primitiveUnits',
+    'refX', 'refY', 'repeatCount', 'repeatDur', 'requiredExtensions', 'specularConstant',
+    'specularExponent', 'spreadMethod', 'startOffset', 'stdDeviation', 'stitchTiles', 'surfaceScale',
+    'systemLanguage', 'tableValues', 'targetX', 'targetY', 'textLength', 'viewBox',
+    'xChannelSelector', 'yChannelSelector', 'zoomAndPan',
+]);
 const factories = new Map();
 function attach(target, type, execute, options) {
     let initialized = false;
@@ -574,25 +581,12 @@ class Unit {
         }
     }
     static nest(unit, tag, textContent) {
-        const { text, members } = buildTag(tag);
-        unit._.currentElement.insertAdjacentHTML('beforeend', text);
-        const element = unit._.currentElement.children[unit._.currentElement.children.length - 1];
+        const element = createElement(unit._.currentElement, tag);
         unit._.currentElement = element;
         if (textContent !== undefined) {
             element.textContent = textContent;
         }
         unit._.nestElements.push(element);
-        for (const [key, value] of members) {
-            if (element instanceof SVGElement) {
-                element.setAttribute(svgAttributeName(key), String(value));
-            }
-            else if (key in element) {
-                element[key] = value;
-            }
-            else {
-                element.setAttribute(key, String(value));
-            }
-        }
         return element;
     }
     static extend(unit, Component, props) {
@@ -1292,8 +1286,26 @@ const xsync = {
 };
 
 function Aspect(unit, { aspect = 1.0, fit = 'contain' } = {}) {
-    xnew.nest('<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; container-type: size;">');
-    xnew.nest(`<div style="position: relative; aspect-ratio: ${aspect}; container-type: size;">`);
+    const css = xnew.css({
+        container: {
+            layer: 'base',
+            body: `
+                width: 100%; height: 100%;
+                display: flex; align-items: center; justify-content: center;
+                container-type: size;
+            `,
+        },
+        inner: {
+            layer: 'base',
+            body: `
+                position: relative;
+                container-type: size;
+            `,
+        },
+    });
+    xnew.nest({ tag: 'div', className: css.container });
+    xnew.nest({ tag: 'div', className: css.inner });
+    unit.element.style.aspectRatio = String(aspect);
     if (fit === 'contain') {
         unit.element.style.width = `min(100cqw, calc(100cqh * ${aspect}))`;
     }
@@ -1305,28 +1317,26 @@ function Aspect(unit, { aspect = 1.0, fit = 'contain' } = {}) {
 
 function Screen(unit, { width = 800, height = 600, fit = 'contain' } = {}) {
     xnew.extend(Aspect, { aspect: width / height, fit });
-    const canvas = xnew(`<canvas width="${width}" height="${height}" style="width: 100%; height: 100%; vertical-align: bottom;">`);
+    const css = xnew.css({
+        canvas: {
+            layer: 'base',
+            body: `
+                width: 100%; height: 100%;
+                vertical-align: bottom;
+            `,
+        },
+    });
+    const canvas = xnew({ tag: 'canvas', width, height, className: css.canvas });
     return {
         get canvas() { return canvas.element; },
-    };
-}
-
-function SceneList(unit, { list = {} } = {}) {
-    return {
-        resolve(label) {
-            const entry = list[label];
-            return (Array.isArray(entry) && typeof entry[0] === 'function') ? entry : undefined;
-        },
     };
 }
 
 function Scene(unit) {
     let leaving = false;
     return {
-        change(target, props) {
-            var _a;
-            const entry = typeof target === 'string' ? (_a = xnew.context(SceneList)) === null || _a === void 0 ? void 0 : _a.resolve(target) : [target, props];
-            if (leaving === false && entry !== undefined) {
+        change(Component, props) {
+            if (leaving === false) {
                 leaving = true;
                 const timer = typeof unit.leave === 'function' ? unit.leave() : undefined;
                 if (timer && typeof timer.timeout === 'function') {
@@ -1336,7 +1346,7 @@ function Scene(unit) {
                     finalize();
                 }
                 function finalize() {
-                    xnew(unit.parent, ...entry);
+                    xnew(unit.parent, Component, props);
                     unit.finalize();
                 }
             }
@@ -2617,7 +2627,7 @@ function Volume(unit) {
     };
 }
 
-function OpenAndClose(unit, { open = true, duration = 200, easing = 'ease' }) {
+function Gate(unit, { open = true, duration = 200, easing = 'ease' }) {
     let value = open ? 1.0 : 0.0;
     let sign = open ? +1 : -1;
     let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
@@ -2646,22 +2656,37 @@ function OpenAndClose(unit, { open = true, duration = 200, easing = 'ease' }) {
 }
 
 function Accordion(unit) {
-    const system = xnew.context(OpenAndClose);
-    const outer = xnew.nest('<div style="overflow: hidden;">');
-    const inner = xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box;">');
-    system.on('-transition', ({ value }) => {
-        outer.style.height = value < 1.0 ? inner.offsetHeight * value + 'px' : 'auto';
-        outer.style.opacity = value.toString();
+    const gate = xnew.context(Gate);
+    const css = xnew.css({
+        container: {
+            layer: 'base',
+            body: `
+                overflow: hidden;
+            `,
+        },
+        inner: {
+            layer: 'base',
+            body: `
+                display: flex; flex-direction: column;
+                box-sizing: border-box;
+            `,
+        },
+    });
+    const container = xnew.nest({ tag: 'div', className: css.container });
+    const inner = xnew.nest({ tag: 'div', className: css.inner });
+    gate.on('-transition', ({ value }) => {
+        container.style.height = value < 1.0 ? inner.offsetHeight * value + 'px' : 'auto';
+        container.style.opacity = value.toString();
     });
 }
 
 function Popup(unit) {
-    const system = xnew.context(OpenAndClose);
-    system.on('-closed', () => unit.finalize());
-    system.open();
+    const gate = xnew.context(Gate);
+    gate.on('-closed', () => unit.finalize());
+    gate.open();
     xnew.nest('<div style="position: fixed; inset: 0; z-index: 1000; opacity: 0;">');
-    unit.on('click', ({ event }) => event.target === unit.element && system.close());
-    system.on('-transition', ({ value }) => {
+    unit.on('click', ({ event }) => event.target === unit.element && gate.close());
+    gate.on('-transition', ({ value }) => {
         unit.element.style.opacity = value.toString();
     });
 }
@@ -2840,10 +2865,10 @@ function Panel(unit, { params, nested = false }) {
     };
 }
 function Group(group, { name, open = false }) {
-    const openAndClose = xnew.extend(OpenAndClose, { open });
+    const gate = xnew.extend(Gate, { open });
     if (name) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (unit) => {
-            unit.on('click', () => openAndClose.toggle());
+            unit.on('click', () => gate.toggle());
             xnew((unit) => {
                 xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
                 group.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${(value - 1) * 90}deg)`);
@@ -2876,17 +2901,17 @@ function Select(unit, _a) {
 }
 
 const placements = {
-    left: 'top: 0; bottom: 0; right: calc(100% + 4cqw); width: 0;',
-    right: 'top: 0; bottom: 0; left: calc(100% + 4cqw); width: 0;',
-    top: 'left: 0; bottom: calc(100% + 4cqh); width: 0;',
-    bottom: 'left: 0; top: calc(100% + 4cqh); width: 0;',
+    left: { vertical: false, grow: 'width', outer: 'top: 0; bottom: 0; right: calc(100% + 4cqw); width: 0;' },
+    right: { vertical: false, grow: 'width', outer: 'top: 0; bottom: 0; left: calc(100% + 4cqw); width: 0;' },
+    top: { vertical: true, grow: 'height', outer: 'left: 0; right: 0; bottom: calc(100% + 4cqh); height: 0;' },
+    bottom: { vertical: true, grow: 'height', outer: 'left: 0; right: 0; top: calc(100% + 4cqh); height: 0;' },
 };
 function SpeakerIcon(unit, { muted = false } = {}) {
     xnew.extend(muted ? xicons.SpeakerXMark : xicons.SpeakerWave, { style: 'display: block; width: 100%; height: 100%;' });
 }
 function VolumeController(unit, { placement = 'left', className = '', style = '' } = {}) {
     var _a;
-    const outerStyle = (_a = placements[placement]) !== null && _a !== void 0 ? _a : placements.left;
+    const config = (_a = placements[placement]) !== null && _a !== void 0 ? _a : placements.left;
     const css = xnew.css({
         container: {
             layer: 'base',
@@ -2909,10 +2934,10 @@ function VolumeController(unit, { placement = 'left', className = '', style = ''
     const volume = xnew.extend(Volume);
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     unit.on('pointerdown', ({ event }) => event.stopPropagation());
-    const system = xnew(OpenAndClose, { open: false, duration: 250, easing: 'ease' });
+    const gate = xnew(Gate, { open: false, duration: 250, easing: 'ease' });
     const button = xnew((unit) => {
         xnew.nest({ tag: 'div', className: css.button });
-        unit.on('click', () => system.toggle());
+        unit.on('click', () => gate.toggle());
         let icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
         return {
             update() {
@@ -2922,26 +2947,27 @@ function VolumeController(unit, { placement = 'left', className = '', style = ''
         };
     });
     xnew(() => {
-        const outer = xnew.nest({ tag: 'div', className: css.outer, style: outerStyle });
-        xnew(InputRange, { value: Math.round(volume.volume * 100), style: 'width: 100%;' })
-            .on('input', ({ value }) => {
+        const outer = xnew.nest({ tag: 'div', className: css.outer, style: config.outer });
+        xnew(InputRange, config.vertical
+            ? { value: Math.round(volume.volume * 100), vertical: true, style: 'height: 100%;' }
+            : { value: Math.round(volume.volume * 100), style: 'width: 100%;' }).on('input', ({ value }) => {
             volume.volume = value / 100;
             button.update();
         });
-        system.on('-transition', ({ value }) => {
-            outer.style.width = `${value * 400}cqw`;
+        gate.on('-transition', ({ value }) => {
+            const length = value * 400;
+            outer.style[config.grow] = config.vertical ? `${length}cqh` : `${length}cqw`;
             outer.style.opacity = value.toString();
             outer.style.pointerEvents = value < 0.9 ? 'none' : 'auto';
         });
     });
-    unit.on('click.outside', () => system.close());
+    unit.on('click.outside', () => gate.close());
 }
 
 const xbasics = {
     Aspect,
     Screen,
     Scene,
-    SceneList,
     Button,
     Image,
     SVG,
@@ -2956,7 +2982,7 @@ const xbasics = {
     AudioTrack,
     Synthesizer,
     Volume,
-    OpenAndClose,
+    Gate,
     Accordion,
     Popup,
     AnalogStick,

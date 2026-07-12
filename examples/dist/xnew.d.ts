@@ -215,17 +215,8 @@ declare function Screen(unit: xnew.Unit, { width, height, fit }?: {
 };
 
 declare function Scene(unit: xnew.Unit): {
-    change(target: string | Function, props?: any): void;
+    change(Component: Function, props?: any): void;
     add(Component: Function, props?: any): xnew.Unit;
-};
-
-type SceneEntry = [Function, any?];
-declare function SceneList(unit: xnew.Unit, { list }?: {
-    list?: {
-        [label: string]: SceneEntry;
-    };
-}): {
-    resolve(label: string): SceneEntry | undefined;
 };
 
 declare function Button(unit: xnew.Unit, { text, className, style, ...others }?: {
@@ -396,7 +387,7 @@ declare function Volume(unit: xnew.Unit): {
     volume: number;
 };
 
-declare function OpenAndClose(unit: xnew.Unit, { open, duration, easing }: {
+declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
     open?: boolean;
     duration?: number;
     easing?: string;
@@ -468,7 +459,6 @@ declare const xbasics: {
     Aspect: typeof Aspect;
     Screen: typeof Screen;
     Scene: typeof Scene;
-    SceneList: typeof SceneList;
     Button: typeof Button;
     Image: typeof Image;
     SVG: typeof SVG;
@@ -483,7 +473,7 @@ declare const xbasics: {
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;
-    OpenAndClose: typeof OpenAndClose;
+    Gate: typeof Gate;
     Accordion: typeof Accordion;
     Popup: typeof Popup;
     AnalogStick: typeof AnalogStick;
