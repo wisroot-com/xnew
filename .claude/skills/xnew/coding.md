@@ -297,14 +297,14 @@ Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
 - **Every control-like `basics/element` css (Container `base` or the single element's own entry)
-  starts with the same prelude: `display: inline-block;` (`inline-flex` when the element centers
-  its own content, e.g. Button) then `width: …;` then the margin-box cap
+  starts with the same prelude: `width: …;` then the margin-box cap
   `max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;`.**
-  Inline flow makes `xnew(Button)` behave like a native control (side by side in text flow; blockified
-  automatically inside flex/grid, so those layouts are unaffected); `max-width: stretch` caps
-  the *margin box* at the parent so a caller horizontal margin never overflows on the right (bit Button;
-  prefixed fallbacks cover Safari / Firefox). `vertical-align: middle` (and shell-level
-  `box-sizing`) were deliberately dropped (2026-07, user decision) — don't re-add them.
+  `max-width: stretch` caps the *margin box* at the parent so a caller horizontal margin never
+  overflows on the right (bit Button; prefixed fallbacks cover Safari / Firefox). Native controls
+  need NO `display` / `box-sizing` declarations — the UA already renders `<input>` / `<button>`
+  inline-flowing and border-box; declare `display` only to change layout (Button: `inline-flex`
+  to center its label; a Container div shell: `inline-block` to flow like a control).
+  `vertical-align: middle` was deliberately dropped (2026-07, user decision) — don't re-add it.
   Keep the prelude when adding a new element component.
 
 - **In a Container-derived component, extend Container FIRST — internal wrappers (e.g. Aspect)

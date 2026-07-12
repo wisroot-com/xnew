@@ -1405,7 +1405,6 @@ function Button(unit, _a = {}) {
         button: {
             layer: 'base',
             body: `
-                box-sizing: border-box;
                 display: inline-flex; justify-content: center; align-items: center;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em;
                 padding: 0 0.5em;
@@ -1636,11 +1635,9 @@ function InputCheckbox(unit, _a = {}) {
 function InputText(unit, _a = {}) {
     var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
     const css = xnew.css({
-        field: {
+        input: {
             layer: 'base',
             body: `
-                box-sizing: border-box;
-                display: inline-block;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
                 padding: 0 0.5em;
                 background: transparent; color: inherit; font: inherit;
@@ -1650,17 +1647,15 @@ function InputText(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'input', type: 'text', className: `${css.field} ${className}`, style }, others));
+    xnew.nest(Object.assign({ tag: 'input', type: 'text', className: `${css.input} ${className}`, style }, others));
 }
 
 function InputNumber(unit, _a = {}) {
     var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
     const css = xnew.css({
-        field: {
+        input: {
             layer: 'base',
             body: `
-                box-sizing: border-box;
-                display: inline-block;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
                 text-align: center; padding: 0 0.5em;
                 background: transparent; color: inherit; font: inherit;
@@ -1672,7 +1667,7 @@ function InputNumber(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'input', type: 'number', className: `${css.field} ${className}`, style }, others));
+    xnew.nest(Object.assign({ tag: 'input', type: 'number', className: `${css.input} ${className}`, style }, others));
 }
 
 function InputSwitch(unit, _a = {}) {

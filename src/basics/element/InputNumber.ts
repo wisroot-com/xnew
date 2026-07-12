@@ -11,12 +11,10 @@ export function InputNumber(unit: xnew.Unit,
     { className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css({
-        // inline-block flows like a native control; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        field: {
+        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        input: {
             layer: 'base',
             body: `
-                box-sizing: border-box;
-                display: inline-block;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
                 text-align: center; padding: 0 0.5em;
                 background: transparent; color: inherit; font: inherit;
@@ -29,5 +27,5 @@ export function InputNumber(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'input', type: 'number', className: `${css.field} ${className}`, style, ...others });
+    xnew.nest({ tag: 'input', type: 'number', className: `${css.input} ${className}`, style, ...others });
 }

@@ -11,11 +11,10 @@ export function Button(unit: xnew.Unit,
     { text?: string, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css({
-        // inline-flex flows like a native control and centers the label; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        // inline-flex centers the label while flowing like a native control; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
         button: {
             layer: 'base',
             body: `
-                box-sizing: border-box;
                 display: inline-flex; justify-content: center; align-items: center;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em;
                 padding: 0 0.5em;
