@@ -30,7 +30,7 @@
     });
 
     function MyAccordion(unit) {
-      const system = xnew(xbasics.OpenAndClose, { open: true });
+      const system = xnew(xbasics.Gate, { open: true });
       xnew.nest('<div class="w-64 border rounded-lg">');
         
       xnew('<div class="flex items-center select-none cursor-pointer">', (unit) => {
@@ -44,7 +44,7 @@
     }
 
     function MyModal(unit) {
-      const system = xnew(xbasics.OpenAndClose, { open: false, duration: 300, easing: 'ease' });
+      const system = xnew(xbasics.Gate, { open: false, duration: 300, easing: 'ease' });
 
       // background
       xnew.extend(xbasics.Popup);
@@ -62,7 +62,7 @@
     }
 
     function MyMenu(unit, { relative }) {
-      const system = xnew(xbasics.OpenAndClose, { open: false });
+      const system = xnew(xbasics.Gate, { open: false });
 
       // background
       xnew.extend(xbasics.Popup);
@@ -88,7 +88,7 @@
     }
 
     function Chevron(unit) {
-      const system = xnew.context(xbasics.OpenAndClose);
+      const system = xnew.context(xbasics.Gate);
       xnew.extend(xicons.ChevronRight, { className: 'size-4' });
       system.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${value * 90}deg)`);
     }
