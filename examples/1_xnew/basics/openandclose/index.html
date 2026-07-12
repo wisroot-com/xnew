@@ -16,7 +16,7 @@
 <body class="m-0 p-0 w-full h-screen overflow-hidden">
   <div id="main" class="relative w-full h-full"></div>
   <script type="module">
-    import { xnew, xbasics } from '@mulsense/xnew';
+    import { xnew, xbasics, xicons } from '@mulsense/xnew';
 
     xnew(document.querySelector('#main'), (unit) => {
       xnew.nest('<div class="p-2 flex items-baseline gap-x-2">')
@@ -89,10 +89,8 @@
 
     function Chevron(unit) {
       const system = xnew.context(xbasics.OpenAndClose);
-      xnew('<svg viewBox="0 0 12 12" class="size-4" fill="none" stroke="currentColor">', (unit) => {
-        xnew('<path d="M6 2 10 6 6 10" />');
-        system.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${value * 90}deg)`);  
-      });
+      xnew.extend(xicons.ChevronRight, { className: 'size-4' });
+      system.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${value * 90}deg)`);
     }
 </script>
 </body>

@@ -1,4 +1,4 @@
-import { xnew, xbasics } from '@mulsense/xnew';
+import { xnew, xbasics, xicons } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as PIXI from 'pixi.js';
@@ -1673,29 +1673,23 @@ function ResultDetail(unit, { score, wave, kills = [0, 0, 0, 0], cleared = false
 
 // ---- UI parts (title / result / volume) ----
 
-// 丸枠アイコン: 外周の円 + 中央70%に path 群。Camera / ArrowUturnLeft で共有。
-function RingIcon(unit, { paths }) {
+// 丸枠アイコン: 外周の円 + 中央70%に xicons のアイコン。Camera / ArrowUturnLeft で共有。
+function RingIcon(unit, { icon }) {
   xnew('<div style="position: absolute; inset: 0; margin: auto; width: 100%; height: 100%;">', () => {
     xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', style: 'display: block; width: 100%; height: 100%; stroke: currentColor;' });
     xnew('<circle cx="12" cy="12" r="11">');
   });
   xnew('<div style="position: absolute; inset: 0; margin: auto; width: 70%; height: 70%;">', () => {
-    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', style: 'display: block; width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.5;' });
-    for (const d of paths) {
-      xnew(`<path d="${d}">`);
-    }
+    xnew(icon, { style: 'display: block; width: 100%; height: 100%;' });
   });
 }
 
 function Camera(_unit) {
-  xnew.extend(RingIcon, { paths: [
-    'M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23q-.57.08-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a48 48 0 0 0-1.134-.175a2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.19 2.19 0 0 0-1.736-1.039a49 49 0 0 0-5.232 0a2.19 2.19 0 0 0-1.736 1.039z',
-    'M16.5 12.75a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m2.25-2.25h.008v.008h-.008z',
-  ] });
+  xnew.extend(RingIcon, { icon: xicons.Camera });
 }
 
 function ArrowUturnLeft(_unit) {
-  xnew.extend(RingIcon, { paths: ['M9 15L3 9m0 0l6-6M3 9h12a6 6 0 0 1 0 12h-3'] });
+  xnew.extend(RingIcon, { icon: xicons.ArrowUturnLeft });
 }
 
 // 生成時に渡された要素を白で覆ってからフェードアウトしつつ撮影し、PNG をダウンロードする。
@@ -1782,11 +1776,7 @@ function GameOverText(unit, { className = 'w-full' }) {
 
 // スピーカーアイコン（muted で消音グリフに切り替わる）。
 function SpeakerIcon(unit, { muted = false } = {}) {
-  xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', style: 'display: block; width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.5;' });
-  const path = muted
-    ? 'M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z'
-    : 'M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z';
-  xnew(`<path d="${path}" />`);
+  xnew.extend(muted ? xicons.SpeakerXMark : xicons.SpeakerWave, { style: 'display: block; width: 100%; height: 100%;' });
 }
 
 // スピーカーアイコン + アンカー方向に開くスライダー。xbasics.Volume をマスター音量への橋渡しに使う。

@@ -17,7 +17,7 @@
   <div id="main" class="relative w-full h-full"></div>
   
   <script type="module">
-    import { xnew } from '@mulsense/xnew';
+    import { xnew, xicons } from '@mulsense/xnew';
 
     xnew(document.querySelector('#main'), (unit) => {
       xnew(Div);
@@ -88,25 +88,11 @@
         xnew('<circle cx="20" cy="20" r="40" class="fill-current text-green-600">');
         xnew('<rect x="40" y="40" width="80" height="80" class="fill-current text-blue-600">');
       });
-      xnew('<div class="flex">', (unit) => {
-        xnew('<div class="size-16 text-red-500">', Bell);
-        xnew('<div class="size-16 text-green-500">', Calendar);
-        xnew('<div class="size-16 text-blue-500">', Bolt);
-      })
-
-      // reference: https://heroicons.com/
-      function Bell(unit){
-        xnew.nest(`<svg viewBox="0 0 24 24" fill="none" style="stroke-width: 1.5; stroke: currentColor;">`);
-        xnew('<path d="M14.857 17.082a24 24 0 0 0 5.454-1.31A8.97 8.97 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.97 8.97 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.3 24.3 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />');
-      }
-      function Calendar(unit){
-        xnew.nest(`<svg viewBox="0 0 24 24" fill="none" style="stroke-width: 1.5; stroke: currentColor;">`);
-        xnew('<path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />');
-      }
-      function Bolt(unit){
-        xnew.nest(`<svg viewBox="0 0 24 24" fill="none" style="stroke-width: 1.5; stroke: currentColor;">`);
-        xnew('<path d="m3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75L12 13.5z" />');
-      }
+      xnew('<div class="flex">', () => {
+        xnew(xicons.Bell, { className: 'size-16 text-red-500' });
+        xnew(xicons.Calendar, { className: 'size-16 text-green-500' });
+        xnew(xicons.Bolt, { className: 'size-16 text-blue-500' });
+      });
     }
 
 
