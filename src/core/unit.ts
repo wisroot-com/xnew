@@ -6,7 +6,7 @@
 
 import { MapSet, MapMap } from './map';
 import { Ticker, Timer } from './time';
-import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, buildTag, svgAttributeName } from './dom';
+import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, createElement } from './dom';
 
 //----------------------------------------------------------------------------------------------------
 // definitions
@@ -184,26 +184,12 @@ export class Unit {
     }
 
     static nest(unit: Unit, tag: string | DomElementDef, textContent?: string): DomElement {
-        const { text, members } = buildTag(tag);
-
-        unit._.currentElement.insertAdjacentHTML('beforeend', text);
-        const element = unit._.currentElement.children[unit._.currentElement.children.length - 1] as DomElement;
+        const element = createElement(unit._.currentElement, tag);
         unit._.currentElement = element;
         if (textContent !== undefined) {
             element.textContent = textContent;
         }
         unit._.nestElements.push(element);
-
-        for (const [key, value] of members) {
-            // SVG DOM properties (viewBox, …) are read-only animated values; attributes are the setter
-            if (element instanceof SVGElement) {
-                element.setAttribute(svgAttributeName(key), String(value));
-            } else if (key in element) {
-                (element as any)[key] = value;
-            } else {
-                element.setAttribute(key, String(value));
-            }
-        }
         return element;
     }
 

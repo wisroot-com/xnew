@@ -25,6 +25,57 @@ export function isElementDef(value: unknown): value is DomElementDef {
 
 const tagName = /^[A-Za-z][A-Za-z0-9]*$/;
 
+// creates a child element under parent from a tag string / definition and assigns its members,
+// then returns it. In the object form, className / style are embedded (escaped) in the tag text and
+// every other member is assigned after creation, so arbitrary text cannot break the tag string. SVG
+// DOM properties (viewBox, …) are read-only animated values, so SVG members always go through
+// setAttribute; HTML members prefer the property when it exists.
+export function createElement(parent: DomElement, tag: string | DomElementDef): DomElement {
+    let text: string;
+    const members: [string, any][] = [];
+    if (isElementDef(tag) === true) {
+        if (tagName.test(tag.tag) === false) {
+            throw new Error(`xnew: invalid tag name "${tag.tag}".`);
+        }
+        const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+
+        let attributes = '';
+        for (const [key, value] of Object.entries(tag)) {
+            if (key === 'tag' || value === undefined || value === null || value === false) {
+                // skipped, so members can be conditional (name: name ? name : undefined)
+            } else if (key === 'className') {
+                attributes += ` class="${escape(String(value))}"`;
+            } else if (key === 'style') {
+                attributes += ` style="${escape(String(value))}"`;
+            } else {
+                members.push([key, value]);
+            }
+        }
+        text = `<${tag.tag}${attributes}></${tag.tag}>`;
+    } else {
+        const match = typeof tag === 'string' ? tag.match(/<((\w+)[^>]*?)\/?>/) : null;
+        if (match !== null) {
+            text = `<${match[1]}></${match[2]}>`;
+        } else {
+            throw new Error(`xnew.nest: invalid tag string [${tag}]`);
+        }
+    }
+
+    parent.insertAdjacentHTML('beforeend', text);
+    const element = parent.children[parent.children.length - 1] as DomElement;
+
+    for (const [key, value] of members) {
+        if (element instanceof SVGElement) {
+            element.setAttribute(svgAttributeName(key), String(value));
+        } else if (key in element) {
+            (element as any)[key] = value;
+        } else {
+            element.setAttribute(key, String(value));
+        }
+    }
+    return element;
+}
+
 // SVG attribute names that are natively camelCase (kept as-is by svgAttributeName)
 const svgCamelAttributes = new Set([
     'attributeName', 'attributeType', 'baseFrequency', 'baseProfile', 'calcMode', 'clipPathUnits',
@@ -42,46 +93,11 @@ const svgCamelAttributes = new Set([
 // maps an element definition member name to the SVG attribute to set: natively camelCase SVG
 // attributes (viewBox, …) pass through, every other camelCase name becomes kebab-case
 // (strokeWidth -> stroke-width)
-export function svgAttributeName(key: string): string {
+function svgAttributeName(key: string): string {
     if (svgCamelAttributes.has(key)) {
         return key;
     } else {
         return key.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
-    }
-}
-
-// resolves a tag string or a definition object into insertable HTML text plus the members to
-// assign after creation (invalid inputs throw here). In the object form, className / style are
-// embedded in the text (escaped); every other member is returned for post-assignment, so
-// arbitrary text (value, placeholder, …) cannot break the tag string.
-export function buildTag(tag: string | DomElementDef): { text: string; members: [string, any][] } {
-    if (isElementDef(tag) === true) {
-        if (tagName.test(tag.tag) === false) {
-            throw new Error(`xnew: invalid tag name "${tag.tag}".`);
-        }
-        const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-
-        let attributes = '';
-        const members: [string, any][] = [];
-        for (const [key, value] of Object.entries(tag)) {
-            if (key === 'tag' || value === undefined || value === null || value === false) {
-                // skipped, so members can be conditional (name: name ? name : undefined)
-            } else if (key === 'className') {
-                attributes += ` class="${escape(String(value))}"`;
-            } else if (key === 'style') {
-                attributes += ` style="${escape(String(value))}"`;
-            } else {
-                members.push([key, value]);
-            }
-        }
-        return { text: `<${tag.tag}${attributes}></${tag.tag}>`, members };
-    } else {
-        const match = typeof tag === 'string' ? tag.match(/<((\w+)[^>]*?)\/?>/) : null;
-        if (match !== null) {
-            return { text: `<${match[1]}></${match[2]}>`, members: [] };
-        } else {
-            throw new Error(`xnew.nest: invalid tag string [${tag}]`);
-        }
     }
 }
 
