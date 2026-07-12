@@ -85,7 +85,7 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   it was removed 2026-07).** Every component nests its top element directly with an
   `@layer base` css entry, and the caller's `className` / `style` decorate that element:
   `xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style })`.
-  Single-element components (Button, Chevron, Image, InputNumber, InputText, SVG, SVGText)
+  Single-element components (Button, Image, InputNumber, InputText, SVG, SVGText)
   ALSO spread `...others` onto that element; multi-part components (InputCheckbox / InputRadio /
   InputRange / InputSelect / InputSwitch, and `ui/AnalogStick` / `ui/DPad`) keep the container
   STRICTLY layout-only (prelude + position: relative + interaction props, NO visual look) — the
@@ -313,7 +313,7 @@ the rule, then one line of why.
   status until the first drag (bit the 3_games VolumeController).
 
 - **Override the SVG-drawn basics' presentation defaults (stroke / fill / …) via css, never via
-  svg attributes.** SVG / SVGText / Chevron take caller `style` / `className` directly (their shell
+  svg attributes.** SVG / SVGText and the `xicons` icons take caller `style` / `className` directly (their shell
   IS the `<svg>`; they have no `designs` prop — passing one lands as a junk attribute and does
   nothing). The defaults live in an `@layer base` css rule, and ANY css beats presentation
   attributes — an attribute like `stroke: '#EEE'` passed as a rest member is silently ignored;

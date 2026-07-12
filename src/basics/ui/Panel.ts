@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Chevron } from '../element/Chevron';
+import { xicons } from '../../icons/xicons';
 import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
 import { InputCheckbox } from '../element/InputCheckbox';
@@ -71,8 +71,8 @@ function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?:
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (unit: xnew.Unit) => {
             unit.on('click', () => openAndClose.toggle());
             xnew((unit: xnew.Unit) => {
-                xnew.extend(Chevron, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
-                group.on('-transition', ({ value }: { value: number }) => unit.element.style.transform = `rotate(${value * 90}deg)`);
+                xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
+                group.on('-transition', ({ value }: { value: number }) => unit.element.style.transform = `rotate(${(value - 1) * 90}deg)`);
             });
             xnew('<div>', name);
         });
