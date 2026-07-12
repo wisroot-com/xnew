@@ -58,11 +58,11 @@ export function VolumeController(unit: xnew.Unit,
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     unit.on('pointerdown', ({ event }: { event: PointerEvent }) => event.stopPropagation());
 
-    const system = xnew(Gate, { open: false, duration: 250, easing: 'ease' });
+    const gate = xnew(Gate, { open: false, duration: 250, easing: 'ease' });
 
     const button = xnew((unit: xnew.Unit) => {
         xnew.nest({ tag: 'div', className: css.button });
-        unit.on('click', () => system.toggle());
+        unit.on('click', () => gate.toggle());
         let icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
         return {
             update() {
@@ -84,7 +84,7 @@ export function VolumeController(unit: xnew.Unit,
             button.update();
         });
 
-        system.on('-transition', ({ value }: { value: number }) => {
+        gate.on('-transition', ({ value }: { value: number }) => {
             const length = value * 400;
             outer.style[config.grow] = config.vertical ? `${length}cqh` : `${length}cqw`;
             outer.style.opacity = value.toString();
@@ -92,5 +92,5 @@ export function VolumeController(unit: xnew.Unit,
         });
     });
 
-    unit.on('click.outside', () => system.close());
+    unit.on('click.outside', () => gate.close());
 }

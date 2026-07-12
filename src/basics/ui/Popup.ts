@@ -8,15 +8,15 @@ import { xnew } from '../../core/xnew';
 import { Gate } from './Gate';
 
 export function Popup(unit: xnew.Unit) {
-    const system = xnew.context(Gate);
+    const gate = xnew.context(Gate);
 
-    system.on('-closed', () => unit.finalize());
-    system.open();
+    gate.on('-closed', () => unit.finalize());
+    gate.open();
 
     xnew.nest('<div style="position: fixed; inset: 0; z-index: 1000; opacity: 0;">');
-    unit.on('click', ({ event }: { event: PointerEvent }) => event.target === unit.element && system.close());
+    unit.on('click', ({ event }: { event: PointerEvent }) => event.target === unit.element && gate.close());
 
-    system.on('-transition', ({ value }: { value: number }) => {
+    gate.on('-transition', ({ value }: { value: number }) => {
         unit.element.style.opacity = value.toString();
     });
 }

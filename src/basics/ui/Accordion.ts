@@ -8,7 +8,7 @@ import { xnew } from '../../core/xnew';
 import { Gate } from './Gate';
 
 export function Accordion(unit: xnew.Unit) {
-    const system = xnew.context(Gate);
+    const gate = xnew.context(Gate);
 
     const css = xnew.css({
         // clips the inner content while height animates; height and opacity are progress-driven, so they stay inline
@@ -31,7 +31,7 @@ export function Accordion(unit: xnew.Unit) {
     const container = xnew.nest({ tag: 'div', className: css.container }) as HTMLElement;
     const inner = xnew.nest({ tag: 'div', className: css.inner }) as HTMLElement;
 
-    system.on('-transition', ({ value }: { value: number }) => {
+    gate.on('-transition', ({ value }: { value: number }) => {
         container.style.height = value < 1.0 ? inner.offsetHeight * value + 'px' : 'auto';
         container.style.opacity = value.toString();
     });

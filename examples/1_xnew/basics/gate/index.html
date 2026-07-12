@@ -30,13 +30,13 @@
     });
 
     function MyAccordion(unit) {
-      const system = xnew(xbasics.Gate, { open: true });
+      const gate = xnew(xbasics.Gate, { open: true });
       xnew.nest('<div class="w-64 border rounded-lg">');
         
       xnew('<div class="flex items-center select-none cursor-pointer">', (unit) => {
         xnew(Chevron);
         xnew('<div class="my-2">', 'accordion (click me!)');
-        unit.on('click', () => system.toggle());
+        unit.on('click', () => gate.toggle());
       });
 
       xnew.extend(xbasics.Accordion);
@@ -44,7 +44,7 @@
     }
 
     function MyModal(unit) {
-      const system = xnew(xbasics.Gate, { open: false, duration: 300, easing: 'ease' });
+      const gate = xnew(xbasics.Gate, { open: false, duration: 300, easing: 'ease' });
 
       // background
       xnew.extend(xbasics.Popup);
@@ -55,14 +55,14 @@
 
       xnew('<div class="p-2 flex justify-between">', () => {
         xnew('<span>', 'Title');
-        xnew('<button class="cursor-pointer hover:opacity-50">', 'Close').on('click', () => system.close());
+        xnew('<button class="cursor-pointer hover:opacity-50">', 'Close').on('click', () => gate.close());
       });
 
       xnew('<div class="p-2 border-t">', Contents);
     }
 
     function MyMenu(unit, { relative }) {
-      const system = xnew(xbasics.Gate, { open: false });
+      const gate = xnew(xbasics.Gate, { open: false });
 
       // background
       xnew.extend(xbasics.Popup);
@@ -88,9 +88,9 @@
     }
 
     function Chevron(unit) {
-      const system = xnew.context(xbasics.Gate);
+      const gate = xnew.context(xbasics.Gate);
       xnew.extend(xicons.ChevronRight, { className: 'size-4' });
-      system.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${value * 90}deg)`);
+      gate.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${value * 90}deg)`);
     }
 </script>
 </body>
