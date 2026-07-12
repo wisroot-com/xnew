@@ -7,7 +7,6 @@
 import { Aspect } from './view/Aspect';
 import { Screen } from './view/Screen';
 import { Scene } from './view/Scene';
-import { SceneList } from './view/SceneList';
 import { Button } from './element/Button';
 import { Image } from './element/Image';
 import { SVG } from './element/SVG';
@@ -34,7 +33,6 @@ export const xbasics = {
     Aspect,
     Screen,
     Scene,
-    SceneList,
     Button,
     Image,
     SVG,

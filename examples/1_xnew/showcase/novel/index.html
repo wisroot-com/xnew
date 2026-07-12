@@ -31,12 +31,6 @@
     // across pages and only react to commands.
 
     xnew(document.querySelector('#main'), () => {
-      xnew(xbasics.SceneList, {
-        list: {
-          title: [Title],
-          novel: [NovelScene],
-        },
-      });
       xnew(Title);
     });
 
@@ -118,7 +112,7 @@
       xnew('<div class="text-6xl">', '🚉');
       xnew('<h1 class="text-4xl font-bold tracking-[0.3em]">', 'まよなかステーション');
       xnew('<p class="text-slate-400 animate-pulse">', 'click to start');
-      unit.on('pointerdown', () => unit.change('novel'));
+      unit.on('pointerdown', () => unit.change(NovelScene));
       return { leave() { return xnew.transition(({ value }) => unit.element.style.opacity = `${1 - value}`, 400); } };
     }
 
@@ -201,7 +195,7 @@
             index++;
           } else if (token.verb === 'end') {
             stopped = true;
-            unit.change('title');
+            unit.change(Title);
             break;
           } else {
             index++; // unknown command: skip

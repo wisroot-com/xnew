@@ -19,19 +19,11 @@
     import { xnew, xbasics } from '@mulsense/xnew';
 
     // Scene is the navigator: each scene extends Scene so unit.change swaps this unit for the next
-    // one, and unit.add mounts runtime children that die with the scene. The SceneList only holds
-    // the label table — create it BEFORE the first scene, then mount the first scene yourself.
+    // one, and unit.add mounts runtime children that die with the scene.
     let score = 0; // runtime state shared across scenes (scene props are static)
 
     xnew(document.querySelector('#main'), (unit) => {
       xnew.nest('<div class="absolute w-96 h-64 inset-0 m-auto border rounded-lg overflow-hidden bg-slate-800 text-white select-none">');
-      xnew(xbasics.SceneList, {
-        list: {
-          title: [Title],
-          play: [Play],
-          result: [Result],
-        },
-      });
       xnew(Title);
     });
 
@@ -40,7 +32,7 @@
       xnew.nest('<div class="size-full flex flex-col items-center justify-center gap-4 cursor-pointer">');
       xnew('<h1 class="text-3xl font-bold">', 'TITLE');
       xnew('<p class="text-slate-400 animate-pulse">', 'click to start');
-      unit.on('click', () => unit.change('play'));
+      unit.on('click', () => unit.change(Play));
     }
 
     function Play(unit) {
@@ -68,7 +60,7 @@
         });
 
       xnew('<button class="absolute bottom-2 right-3 text-sm px-2 py-1 rounded bg-rose-600 hover:bg-rose-500 cursor-pointer">', 'finish')
-        .on('click', () => unit.change('result'));
+        .on('click', () => unit.change(Result));
     }
 
     // Mounted with unit.add, so it stacks on top of Play and is finalized together with it.
@@ -86,7 +78,7 @@
       xnew('<h1 class="text-3xl font-bold">', 'RESULT');
       xnew('<p class="text-emerald-400 text-xl">', `score: ${score}`);
       xnew('<p class="text-slate-400 animate-pulse">', 'click to return to title');
-      unit.on('click', () => unit.change('title'));
+      unit.on('click', () => unit.change(Title));
     }
   </script>
 </body>

@@ -5,15 +5,13 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { SceneList } from './SceneList';
 
 export function Scene(unit: xnew.Unit) {
     let leaving = false;
 
     return {
-        change(target: string | Function, props?: any): void {
-            const entry = typeof target === 'string' ? xnew.context(SceneList)?.resolve(target) : [target, props];
-            if (leaving === false && entry !== undefined) {
+        change(Component: Function, props?: any): void {
+            if (leaving === false) {
                 leaving = true;
 
                 const timer = typeof unit.leave === 'function' ? unit.leave() : undefined;
@@ -22,9 +20,9 @@ export function Scene(unit: xnew.Unit) {
                 } else {
                     finalize();
                 }
-                
+
                 function finalize() {
-                    xnew(unit.parent, ...entry);
+                    xnew(unit.parent, Component, props);
                     unit.finalize();
                 }
             }
