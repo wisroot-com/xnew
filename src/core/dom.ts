@@ -23,8 +23,6 @@ export function isElementDef(value: unknown): value is DomElementDef {
     return typeof value === 'object' && value !== null && isDomElement(value) === false && typeof (value as { tag?: unknown }).tag === 'string';
 }
 
-const tagName = /^[A-Za-z][A-Za-z0-9]*$/;
-
 // creates a child element under parent from a tag string / definition and assigns its members,
 // then returns it. In the object form, className / style are embedded (escaped) in the tag text and
 // every other member is assigned after creation, so arbitrary text cannot break the tag string. SVG
@@ -34,7 +32,7 @@ export function createElement(parent: DomElement, tag: string | DomElementDef): 
     let text: string;
     const members: [string, any][] = [];
     if (isElementDef(tag) === true) {
-        if (tagName.test(tag.tag) === false) {
+        if (/^[A-Za-z][A-Za-z0-9]*$/.test(tag.tag) === false) {
             throw new Error(`xnew: invalid tag name "${tag.tag}".`);
         }
         const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
