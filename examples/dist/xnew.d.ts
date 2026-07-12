@@ -457,6 +457,13 @@ declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
     separator(): void;
 };
 
+type Placement = 'left' | 'right' | 'top' | 'bottom';
+declare function VolumeController(unit: xnew.Unit, { placement, className, style }?: {
+    placement?: Placement;
+    className?: string;
+    style?: string;
+}): void;
+
 declare const xbasics: {
     Aspect: typeof Aspect;
     Screen: typeof Screen;
@@ -482,6 +489,7 @@ declare const xbasics: {
     AnalogStick: typeof AnalogStick;
     DPad: typeof DPad;
     Panel: typeof Panel;
+    VolumeController: typeof VolumeController;
 };
 
 type IconProps = {

@@ -28,6 +28,7 @@ import { Popup } from './ui/Popup';
 import { AnalogStick } from './ui/AnalogStick';
 import { DPad } from './ui/DPad';
 import { Panel } from './ui/Panel';
+import { VolumeController } from './ui/VolumeController';
 
 export const xbasics = {
     Aspect,
@@ -54,4 +55,5 @@ export const xbasics = {
     AnalogStick,
     DPad,
     Panel,
+    VolumeController,
 };

@@ -72,7 +72,7 @@ function TitleScene(unit) {
 
   xnew(TitleText, { text: 'とーほくドロップ', color: 'text-green-600' });
   xnew(TouchMessage, { color: 'text-green-600' });
-  xnew(VolumeController, { className: 'text-stone-500' });
+  xnew(xbasics.VolumeController, { className: 'absolute right-[2cqw] bottom-[2cqw] size-[6cqw] text-stone-500' });
 }
 
 function GameScene(unit) {
@@ -93,7 +93,7 @@ function GameScene(unit) {
   xnew(Queue);
   xnew(ThreeTexture); // render three.js canvas as pixi texture
   xnew(ScoreText);
-  xnew(VolumeController, { className: 'text-stone-500' });
+  xnew(xbasics.VolumeController, { className: 'absolute right-[2cqw] bottom-[2cqw] size-[6cqw] text-stone-500' });
 
   const playing = xnew((unit) => {
     xnew(Controller);
@@ -492,53 +492,4 @@ function GameOverText(unit, { className = 'w-full' }) {
   }, 1000, 'ease');
 }
 
-// スピーカーアイコン（muted で消音グリフに切り替わる）。
-function SpeakerIcon(unit, { muted = false } = {}) {
-  xnew.extend(muted ? xicons.SpeakerXMark : xicons.SpeakerWave, { style: 'display: block; width: 100%; height: 100%;' });
-}
-
-// スピーカーアイコン + アイコンの左隣に開くスライダー。右下に配置。className で文字色等を調整。
-function VolumeController(unit, { className = 'text-stone-300 z-10' } = {}) {
-  xnew.nest(`<div class="absolute right-[2cqw] bottom-[2cqw] size-[6cqw] ${className}">`);
-  const volume = xnew.extend(xbasics.Volume);
-  xnew.extend(xbasics.Aspect, { aspect: 1.0, fit: 'contain' });
-  unit.on('pointerdown', ({ event }) => event.stopPropagation());
-
-  const system = xnew(xbasics.OpenAndClose, { open: false, duration: 250, easing: 'ease' });
-
-  const button = xnew((unit) => {
-    xnew.nest('<div style="width: 100%; height: 100%; cursor: pointer;">');
-    unit.on('click', () => system.toggle());
-    let icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
-    return {
-      update() {
-        icon?.finalize();
-        icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
-      }
-    };
-  });
-
-  xnew(() => {
-    // 単位はアイコン枠の cqw。右端をアイコン左端のすぐ手前に固定し、左へ幅 0 → 400% と伸ばす
-    const outer = xnew.nest('<div style="position: absolute; top: 20%; bottom: 20%; width: 0cqw; display: flex; align-items: center;">');
-
-    // スライダー本体は xbasics.InputRange(トラック枠線 + フィルバー + 隠しネイティブ input)。outer 幅いっぱいに広げる
-    // AudioParam は float32 なので読み返しに誤差が乗る。丸めて整数にする
-    xnew(xbasics.InputRange, { value: Math.round(volume.volume * 100), style: 'width: 100%;' })
-      .on('input', ({ value }) => {
-        volume.volume = value / 100;
-        button.update();
-      });
-
-    system.on('-transition', ({ value }) => {
-      const width = value * 400;
-      outer.style.width = `${width}cqw`;
-      outer.style.left = `-${width + 4}cqw`;
-      outer.style.opacity = value.toString();
-      outer.style.pointerEvents = value < 0.9 ? 'none' : 'auto';
-    });
-  });
-
-  unit.on('click.outside', () => system.close());
-}
 

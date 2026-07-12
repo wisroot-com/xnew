@@ -106,7 +106,7 @@
       xnew('<div class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3">', () => {
         xnew('<div class="text-lg font-semibold text-stone-700 mr-auto">', 'Synthesizer');
         xnew(OctaveIndicator);
-        xnew(VolumeControl);
+        xnew(xbasics.VolumeController, { placement: 'bottom', className: 'size-7 text-stone-500' });
       });
 
       xnew(Piano);
@@ -261,15 +261,6 @@
       const update = (base) => unit.element.textContent = `keyboard octave: C${base} (shift with Z / X)`;
       update(DEFAULT_OCTAVE);
       unit.on('+octave', ({ base }) => update(base));
-    }
-
-    function VolumeControl(unit) {
-      xnew.nest('<div class="flex items-center gap-1.5 text-stone-500">');
-      const volume = xnew.extend(xbasics.Volume);
-      xnew('<span class="text-xs">', 'volume');
-      const input = xnew('<input type="range" min="0" max="100" class="w-24 cursor-pointer">');
-      input.element.value = volume.volume * 100;
-      input.on('input', ({ event }) => volume.volume = event.target.value / 100);
     }
 
     //----------------------------------------------------------------------------------------------------
