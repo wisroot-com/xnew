@@ -12,22 +12,22 @@ describe('basics InputSelect', () => {
         jest.useRealTimers();
     });
 
-    function frameOf(unit: xnew.Unit): HTMLElement {
+    function containerOf(unit: xnew.Unit): HTMLElement {
         return unit.element.parentElement as HTMLElement;
     }
 
-    // the first frame child is the label box: visible label first, then the hidden per-item sizers
+    // the first container child is the label box: visible label first, then the hidden per-item sizers
     function labelOf(unit: xnew.Unit): HTMLElement {
-        return frameOf(unit).firstElementChild?.firstElementChild as HTMLElement;
+        return containerOf(unit).firstElementChild?.firstElementChild as HTMLElement;
     }
 
     function dropdownOf(unit: xnew.Unit): HTMLElement | null {
-        return frameOf(unit).querySelector('select ~ *') as HTMLElement | null;
+        return containerOf(unit).querySelector('select ~ *') as HTMLElement | null;
     }
 
     function open(unit: xnew.Unit): HTMLElement {
         jest.advanceTimersByTime(0);
-        frameOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
+        containerOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
         jest.advanceTimersByTime(0);
         return dropdownOf(unit) as HTMLElement;
     }
@@ -75,7 +75,7 @@ describe('basics InputSelect', () => {
         expect(dropdown.style.top).toBe('0px');
         expect(dropdown.style.minWidth).toBe('0px');
 
-        frameOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
+        containerOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
         expect(dropdownOf(unit)).toBeNull();
     });
 
@@ -107,38 +107,35 @@ describe('basics InputSelect', () => {
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
         expect(styleText).toContain('&:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }');
 
-        expect(frameOf(unit).hasAttribute('data-open')).toBe(false);
+        expect(containerOf(unit).hasAttribute('data-open')).toBe(false);
         open(unit);
-        expect(frameOf(unit).hasAttribute('data-open')).toBe(true);
+        expect(containerOf(unit).hasAttribute('data-open')).toBe(true);
 
-        frameOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
-        expect(frameOf(unit).hasAttribute('data-open')).toBe(false);
+        containerOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
+        expect(containerOf(unit).hasAttribute('data-open')).toBe(false);
     });
 
-    it('applies designs to the frame, label, menu, and item parts', () => {
+    it('applies designs to the label, menu, and item parts', () => {
         const unit = xnew(InputSelect, {
             items: ['low', 'mid'],
             designs: {
-                frame: { className: 'pill' },
                 label: { style: 'font-weight: bold;' },
                 menu: { style: 'border-radius: 0.5em;' },
                 item: { className: 'row' },
             },
         });
 
-        expect(frameOf(unit).className).toContain('pill');
         expect(labelOf(unit).getAttribute('style')).toContain('font-weight: bold;');
         const dropdown = open(unit);
         expect(dropdown.getAttribute('style')).toContain('border-radius: 0.5em;');
         expect(Array.from(dropdown.children).every((o) => (o as HTMLElement).className.includes('row'))).toBe(true);
     });
 
-    it('applies className and style to the container (exposed via the getter)', () => {
+    it('applies className and style to the container element', () => {
         const unit = xnew(InputSelect, { items: ['low'], className: 'boxed', style: 'width: 12em;' });
 
-        expect(unit.container).toBe(frameOf(unit).parentElement);
-        expect(unit.container.className).toContain('boxed');
-        expect(unit.container.getAttribute('style')).toContain('width: 12em;');
+        expect(containerOf(unit).className).toContain('boxed');
+        expect(containerOf(unit).getAttribute('style')).toContain('width: 12em;');
     });
 
     it('wears the surface color behind the control on the option list', () => {

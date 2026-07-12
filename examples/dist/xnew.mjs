@@ -1512,23 +1512,21 @@ function SVGText(unit, _a = {}) {
     unit.on('resize', resize);
 }
 
-function Container(unit, _a = {}) {
-    var { tag = 'div', base = '', className = '', style = '' } = _a, others = __rest(_a, ["tag", "base", "className", "style"]);
-    const css = xnew.css({ container: { layer: 'base', body: base } });
-    const container = xnew.nest(Object.assign({ tag, className: `${css.container} ${className}`, style }, others));
-    return { get container() { return container; } };
-}
-
 function InputRange(unit, _a = {}) {
-    var _b, _c, _d, _e, _f, _g, _h, _j, _k;
+    var _b, _c, _d, _e, _f, _g;
     var { value, min = 0, max = 100, step = 1, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "className", "style", "designs"]);
     const initial = value !== null && value !== void 0 ? value : min;
-    xnew.extend(Container, {
-        base: 'display: inline-block; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; position: relative; margin: 0.125em;',
-        className, style,
-    });
     const css = xnew.css({
-        frame: {
+        container: {
+            layer: 'base',
+            body: `
+                box-sizing: border-box;
+                display: inline-block;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em;
+                position: relative;
+            `,
+        },
+        rail: {
             layer: 'base',
             body: `
                 position: absolute; inset: 0;
@@ -1566,9 +1564,10 @@ function InputRange(unit, _a = {}) {
             `,
         },
     });
-    xnew({ tag: 'div', className: `${css.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
-    const meter = xnew({ tag: 'div', className: `${css.meter} ${(_f = (_e = designs.meter) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.meter) === null || _g === void 0 ? void 0 : _g.style });
-    const status = xnew({ tag: 'div', className: `${css.status} ${(_j = (_h = designs.status) === null || _h === void 0 ? void 0 : _h.className) !== null && _j !== void 0 ? _j : ''}`, style: (_k = designs.status) === null || _k === void 0 ? void 0 : _k.style });
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    xnew({ tag: 'div', className: css.rail });
+    const meter = xnew({ tag: 'div', className: `${css.meter} ${(_c = (_b = designs.meter) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.meter) === null || _d === void 0 ? void 0 : _d.style });
+    const status = xnew({ tag: 'div', className: `${css.status} ${(_f = (_e = designs.status) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.status) === null || _g === void 0 ? void 0 : _g.style });
     const update = (v) => {
         meter.element.style.width = `${(v - min) / (max - min) * 100}%`;
         status.element.textContent = String(v);
@@ -1581,19 +1580,15 @@ function InputRange(unit, _a = {}) {
 }
 
 function InputCheckbox(unit, _a = {}) {
-    var _b, _c, _d;
-    var { value = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
-    xnew.extend(Container, {
-        base: 'display: inline-block; width: 1.5em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;',
-        className, style,
-    });
+    var { value = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css({
-        check: {
+        container: {
             layer: 'base',
             body: `
-                box-sizing: border-box; width: 100%; height: 100%;
+                box-sizing: border-box;
+                display: inline-flex; align-items: center; justify-content: center;
+                width: 1.5em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
                 position: relative;
-                display: flex; align-items: center; justify-content: center;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 user-select: none;
                 svg { opacity: 0; }
@@ -1617,7 +1612,7 @@ function InputCheckbox(unit, _a = {}) {
             `,
         },
     });
-    const check = xnew.nest({ tag: 'div', className: `${css.check} ${(_c = (_b = designs.check) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.check) === null || _d === void 0 ? void 0 : _d.style });
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     xnew((unit) => {
         xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg });
         xnew('<path d="M2 6 5 9 10 3"/>');
@@ -1628,7 +1623,7 @@ function InputCheckbox(unit, _a = {}) {
         update(value);
     });
     function update(checked) {
-        check.toggleAttribute('data-checked', checked);
+        container.toggleAttribute('data-checked', checked);
     }
 }
 
@@ -1671,17 +1666,15 @@ function InputNumber(unit, _a = {}) {
 }
 
 function InputSwitch(unit, _a = {}) {
-    var _b, _c, _d, _e, _f, _g;
+    var _b, _c, _d;
     var { value = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
-    xnew.extend(Container, {
-        base: 'display: inline-block; width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;',
-        className, style,
-    });
     const css = xnew.css({
-        frame: {
+        container: {
             layer: 'base',
             body: `
-                box-sizing: border-box; width: 100%; height: 100%;
+                box-sizing: border-box;
+                display: inline-block;
+                width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
                 position: relative;
                 border: 1px solid currentColor; border-radius: 1em;
                 user-select: none;
@@ -1706,10 +1699,10 @@ function InputSwitch(unit, _a = {}) {
             `,
         },
     });
-    const frame = xnew.nest({ tag: 'div', className: `${css.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
-    xnew({ tag: 'div', className: `${css.knob} ${(_f = (_e = designs.knob) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.knob) === null || _g === void 0 ? void 0 : _g.style });
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    xnew({ tag: 'div', className: `${css.knob} ${(_c = (_b = designs.knob) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.knob) === null || _d === void 0 ? void 0 : _d.style });
     const update = (checked) => {
-        frame.toggleAttribute('data-checked', checked);
+        container.toggleAttribute('data-checked', checked);
     };
     update(value);
     xnew.nest(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
@@ -1720,18 +1713,16 @@ function InputSwitch(unit, _a = {}) {
 
 let radioGroupId = 0;
 function InputRadio(unit, { value, items = [], name = '', className = '', style = '', designs = {} } = {}) {
-    var _a, _b, _c, _d;
+    var _a;
     const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
-    xnew.extend(Container, {
-        base: 'display: inline-block; width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 100%;',
-        className, style,
-    });
     const css = xnew.css({
-        frame: {
+        container: {
             layer: 'base',
             body: `
-                box-sizing: border-box; width: 100%; height: 100%;
-                display: flex; align-items: stretch; overflow: hidden;
+                box-sizing: border-box;
+                display: inline-flex; align-items: stretch;
+                width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 100%;
+                overflow: hidden;
                 border: 1px solid currentColor; border-radius: 0.25em;
             `,
         },
@@ -1757,7 +1748,7 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
         },
     });
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
-    xnew.nest({ tag: 'div', className: `${css.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     const segments = [];
     items.forEach((item) => {
         var _a, _b, _c;
@@ -1779,20 +1770,17 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
 }
 
 function InputSelect(unit, _a = {}) {
-    var _b, _c, _d, _e, _f, _g, _h;
+    var _b, _c, _d, _e;
     var { value, items = [], className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "items", "className", "style", "designs"]);
     const initial = (_b = value !== null && value !== void 0 ? value : items[0]) !== null && _b !== void 0 ? _b : '';
-    xnew.extend(Container, {
-        base: 'display: inline-block; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;',
-        className, style,
-    });
     const css = xnew.css({
-        frame: {
+        container: {
             layer: 'base',
             body: `
-                box-sizing: border-box; width: 100%; height: 100%;
+                box-sizing: border-box;
+                display: inline-flex; align-items: center;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
                 position: relative;
-                display: flex; align-items: center;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 cursor: pointer; user-select: none;
                 &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
@@ -1825,10 +1813,10 @@ function InputSelect(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest({ tag: 'div', className: `${css.frame} ${(_d = (_c = designs.frame) === null || _c === void 0 ? void 0 : _c.className) !== null && _d !== void 0 ? _d : ''}`, style: (_e = designs.frame) === null || _e === void 0 ? void 0 : _e.style });
-    const frame = unit.element;
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    const container = unit.element;
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
-    const label = xnew(labelBox, { tag: 'div', className: `${css.label} ${(_g = (_f = designs.label) === null || _f === void 0 ? void 0 : _f.className) !== null && _g !== void 0 ? _g : ''}`, style: (_h = designs.label) === null || _h === void 0 ? void 0 : _h.style }, initial);
+    const label = xnew(labelBox, { tag: 'div', className: `${css.label} ${(_d = (_c = designs.label) === null || _c === void 0 ? void 0 : _c.className) !== null && _d !== void 0 ? _d : ''}`, style: (_e = designs.label) === null || _e === void 0 ? void 0 : _e.style }, initial);
     for (const item of items) {
         xnew(labelBox, '<div style="visibility: hidden; height: 0; white-space: nowrap;">', item);
     }
@@ -1836,7 +1824,7 @@ function InputSelect(unit, _a = {}) {
     let select;
     let dropdown = null;
     const surfaceColor = () => {
-        for (let element = frame.parentElement; element !== null; element = element.parentElement) {
+        for (let element = container.parentElement; element !== null; element = element.parentElement) {
             const color = getComputedStyle(element).backgroundColor;
             if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
                 return color;
@@ -1849,14 +1837,14 @@ function InputSelect(unit, _a = {}) {
         dropdown = null;
     };
     const openDropdown = () => {
-        dropdown = xnew(frame, (list) => {
+        dropdown = xnew(container, (list) => {
             var _a, _b, _c, _d, _e, _f, _g;
-            frame.toggleAttribute('data-open', true);
-            list.on('finalize', () => frame.toggleAttribute('data-open', false));
+            container.toggleAttribute('data-open', true);
+            list.on('finalize', () => container.toggleAttribute('data-open', false));
             list.on('pointerdown.outside', () => closeDropdown());
             const menu = xnew.nest({ tag: 'div', className: `${css.menu} ${(_b = (_a = designs.menu) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: `background: ${surfaceColor()}; ${(_d = (_c = designs.menu) === null || _c === void 0 ? void 0 : _c.style) !== null && _d !== void 0 ? _d : ''}` });
             const anchor = () => {
-                const rect = frame.getBoundingClientRect();
+                const rect = container.getBoundingClientRect();
                 menu.style.left = `${rect.left}px`;
                 menu.style.top = `${rect.bottom}px`;
                 menu.style.minWidth = `${rect.width}px`;
@@ -2263,11 +2251,14 @@ function Popup(unit) {
 
 function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
     var _a, _b, _c;
-    xnew.extend(Container, {
-        base: 'cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
-        className, style,
-    });
     const css = xnew.css({
+        container: {
+            layer: 'base',
+            body: `
+                position: relative;
+                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
+            `,
+        },
         svg: {
             layer: 'base',
             body: `
@@ -2277,6 +2268,7 @@ function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
             `,
         },
     });
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_b = (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = designs.svg) === null || _c === void 0 ? void 0 : _c.style };
     xnew((unit) => {
         xnew.nest(svg);
@@ -2307,11 +2299,14 @@ function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
 
 function DPad(unit, { diagonal = true, className = '', style = '', designs = {} } = {}) {
     var _a, _b, _c, _d, _e, _f, _g, _h;
-    xnew.extend(Container, {
-        base: 'cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
-        className, style,
-    });
     const css = xnew.css({
+        container: {
+            layer: 'base',
+            body: `
+                position: relative;
+                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
+            `,
+        },
         svg: {
             layer: 'base',
             body: `
@@ -2321,6 +2316,7 @@ function DPad(unit, { diagonal = true, className = '', style = '', designs = {} 
             `,
         },
     });
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_b = (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: `stroke: none; ${(_d = (_c = designs.svg) === null || _c === void 0 ? void 0 : _c.style) !== null && _d !== void 0 ? _d : ''}` };
     const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_f = (_e = designs.svg) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: `fill: none; ${(_h = (_g = designs.svg) === null || _g === void 0 ? void 0 : _g.style) !== null && _h !== void 0 ? _h : ''}` };
     const polygons = [

@@ -5,24 +5,20 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Container } from './Container';
 import { Design } from '../design';
 
 export function InputSwitch(unit: xnew.Unit,
     { value = false, className = '', style = '', designs = {}, ...others }:
-    { value?: boolean, className?: string, style?: string, designs?: { frame?: Design, knob?: Design }, [key: string]: any } = {}
+    { value?: boolean, className?: string, style?: string, designs?: { knob?: Design }, [key: string]: any } = {}
 ) {
-    xnew.extend(Container, {
-        // inline-block flows like a native control; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        base: 'display: inline-block; width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;',
-        className, style,
-    });
-
     const css = xnew.css({
-        frame: {
+        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        container: {
             layer: 'base',
             body: `
-                box-sizing: border-box; width: 100%; height: 100%;
+                box-sizing: border-box;
+                display: inline-block;
+                width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
                 position: relative;
                 border: 1px solid currentColor; border-radius: 1em;
                 user-select: none;
@@ -48,12 +44,12 @@ export function InputSwitch(unit: xnew.Unit,
         },
     });
 
-    const frame = xnew.nest({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
 
     xnew({ tag: 'div', className: `${css.knob} ${designs.knob?.className ?? ''}`, style: designs.knob?.style });
 
     const update = (checked: boolean) => {
-        frame.toggleAttribute('data-checked', checked);
+        container.toggleAttribute('data-checked', checked);
     };
     update(value);
 

@@ -286,20 +286,16 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, className,
     className?: string;
     style?: string;
     designs?: {
-        frame?: Design;
         meter?: Design;
         status?: Design;
     };
     [key: string]: any;
 }): void;
 
-declare function InputCheckbox(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
+declare function InputCheckbox(unit: xnew.Unit, { value, className, style, ...others }?: {
     value?: boolean;
     className?: string;
     style?: string;
-    designs?: {
-        check?: Design;
-    };
     [key: string]: any;
 }): void;
 
@@ -320,7 +316,6 @@ declare function InputSwitch(unit: xnew.Unit, { value, className, style, designs
     className?: string;
     style?: string;
     designs?: {
-        frame?: Design;
         knob?: Design;
     };
     [key: string]: any;
@@ -333,7 +328,6 @@ declare function InputRadio(unit: xnew.Unit, { value, items, name, className, st
     className?: string;
     style?: string;
     designs?: {
-        frame?: Design;
         item?: Design;
     };
 }): void;
@@ -344,7 +338,6 @@ declare function InputSelect(unit: xnew.Unit, { value, items, className, style, 
     className?: string;
     style?: string;
     designs?: {
-        frame?: Design;
         label?: Design;
         menu?: Design;
         item?: Design;

@@ -5,19 +5,20 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Container } from '../element/Container';
 import { Design } from '../design';
 
 export function AnalogStick(unit: xnew.Unit,
     { className = '', style = '', designs = {} }:
     { className?: string, style?: string, designs?: { svg?: Design } } = {}
 ) {
-    xnew.extend(Container, {
-        base: 'cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;',
-        className, style,
-    });
-
     const css = xnew.css({
+        container: {
+            layer: 'base',
+            body: `
+                position: relative;
+                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
+            `,
+        },
         svg: {
             layer: 'base',
             body: `
@@ -27,6 +28,9 @@ export function AnalogStick(unit: xnew.Unit,
             `,
         },
     });
+
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+
     const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style };
 
     xnew((unit: xnew.Unit) => {

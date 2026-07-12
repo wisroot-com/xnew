@@ -5,7 +5,6 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Container } from './Container';
 import { Design } from '../design';
 
 // radios are exclusive only within a shared name; unnamed groups get a generated one
@@ -13,22 +12,19 @@ let radioGroupId = 0;
 
 export function InputRadio(unit: xnew.Unit,
     { value, items = [], name = '', className = '', style = '', designs = {} }:
-    { value?: string, items?: string[], name?: string, className?: string, style?: string, designs?: { frame?: Design, item?: Design } } = {}
+    { value?: string, items?: string[], name?: string, className?: string, style?: string, designs?: { item?: Design } } = {}
 ) {
     const initial = value ?? items[0] ?? '';
 
-    xnew.extend(Container, {
-        // inline-block flows like a native control; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        base: 'display: inline-block; width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 100%;',
-        className, style,
-    });
-
     const css = xnew.css({
-        frame: {
+        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        container: {
             layer: 'base',
             body: `
-                box-sizing: border-box; width: 100%; height: 100%;
-                display: flex; align-items: stretch; overflow: hidden;
+                box-sizing: border-box;
+                display: inline-flex; align-items: stretch;
+                width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 100%;
+                overflow: hidden;
                 border: 1px solid currentColor; border-radius: 0.25em;
             `,
         },
@@ -55,7 +51,7 @@ export function InputRadio(unit: xnew.Unit,
     });
     const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
 
-    xnew.nest({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
 
     const segments: [xnew.Unit, string][] = [];
     items.forEach((item) => {

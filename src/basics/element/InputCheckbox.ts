@@ -1,30 +1,24 @@
 //----------------------------------------------------------------------------------------------------
 // InputCheckbox — framed check box backed by a hidden native <input type="checkbox">
 // The invisible native control captures interaction; the checked look lives in css rules keyed
-// on a data-checked attribute, so designs stay intact.
+// on a data-checked attribute, so caller styling stays intact.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Container } from './Container';
-import { Design } from '../design';
 
 export function InputCheckbox(unit: xnew.Unit,
-    { value = false, className = '', style = '', designs = {}, ...others }:
-    { value?: boolean, className?: string, style?: string, designs?: { check?: Design }, [key: string]: any } = {}
+    { value = false, className = '', style = '', ...others }:
+    { value?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    xnew.extend(Container, {
-        // inline-block flows like a native control; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        base: 'display: inline-block; width: 1.5em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;',
-        className, style,
-    });
-
     const css = xnew.css({
-        check: {
+        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        container: {
             layer: 'base',
             body: `
-                box-sizing: border-box; width: 100%; height: 100%;
+                box-sizing: border-box;
+                display: inline-flex; align-items: center; justify-content: center;
+                width: 1.5em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
                 position: relative;
-                display: flex; align-items: center; justify-content: center;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 user-select: none;
                 svg { opacity: 0; }
@@ -49,7 +43,7 @@ export function InputCheckbox(unit: xnew.Unit,
         },
     });
 
-    const check = xnew.nest({ tag: 'div', className: `${css.check} ${designs.check?.className ?? ''}`, style: designs.check?.style });
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
 
     xnew((unit: xnew.Unit) => {
         xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg });
@@ -63,8 +57,8 @@ export function InputCheckbox(unit: xnew.Unit,
     unit.on('input', ({ value }: { value: boolean }) => {
         update(value);
     });
-    
+
     function update(checked: boolean) {
-        check.toggleAttribute('data-checked', checked);
+        container.toggleAttribute('data-checked', checked);
     }
 }

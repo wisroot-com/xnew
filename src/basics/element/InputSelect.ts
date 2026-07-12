@@ -5,29 +5,24 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Container } from './Container';
 import { Chevron } from './Chevron';
 import { Design } from '../design';
 
 export function InputSelect(unit: xnew.Unit,
     { value, items = [], className = '', style = '', designs = {}, ...others }:
-    { value?: string, items?: string[], className?: string, style?: string, designs?: { frame?: Design, label?: Design, menu?: Design, item?: Design }, [key: string]: any } = {}
+    { value?: string, items?: string[], className?: string, style?: string, designs?: { label?: Design, menu?: Design, item?: Design }, [key: string]: any } = {}
 ) {
     const initial = value ?? items[0] ?? '';
 
-    xnew.extend(Container, {
-        // inline-block flows like a native control; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        base: 'display: inline-block; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;',
-        className, style,
-    });
-
     const css = xnew.css({
-        frame: {
+        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        container: {
             layer: 'base',
             body: `
-                box-sizing: border-box; width: 100%; height: 100%;
+                box-sizing: border-box;
+                display: inline-flex; align-items: center;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
                 position: relative;
-                display: flex; align-items: center;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 cursor: pointer; user-select: none;
                 &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
@@ -61,8 +56,8 @@ export function InputSelect(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
-    const frame = unit.element as HTMLElement;
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    const container = unit.element as HTMLElement;
 
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
     const label = xnew(labelBox, { tag: 'div', className: `${css.label} ${designs.label?.className ?? ''}`, style: designs.label?.style }, initial);
@@ -77,9 +72,9 @@ export function InputSelect(unit: xnew.Unit,
     let dropdown: xnew.Unit | null = null;
 
     // the floating list wears the surface color behind the control (the button face is transparent,
-    // and reading the frame itself would capture its hover tint)
+    // and reading the container itself would capture its hover tint)
     const surfaceColor = () => {
-        for (let element = frame.parentElement; element !== null; element = element.parentElement) {
+        for (let element = container.parentElement; element !== null; element = element.parentElement) {
             const color = getComputedStyle(element).backgroundColor;
             if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
                 return color;
@@ -93,20 +88,20 @@ export function InputSelect(unit: xnew.Unit,
         dropdown = null;
     };
     const openDropdown = () => {
-        // bound to the frame element (not the current hidden select) so the list lands beside the button
-        dropdown = xnew(frame, (list: xnew.Unit) => {
+        // bound to the container element (not the current hidden select) so the list lands beside the button
+        dropdown = xnew(container, (list: xnew.Unit) => {
             // data-open suppresses the button hover tint while the list is open, restored on any close path
-            frame.toggleAttribute('data-open', true);
-            list.on('finalize', () => frame.toggleAttribute('data-open', false));
+            container.toggleAttribute('data-open', true);
+            list.on('finalize', () => container.toggleAttribute('data-open', false));
 
-            // registered while the list's element is still the frame, so 'outside' means outside the whole control
+            // registered while the list's element is still the container, so 'outside' means outside the whole control
             list.on('pointerdown.outside', () => closeDropdown());
 
             const menu = xnew.nest({ tag: 'div', className: `${css.menu} ${designs.menu?.className ?? ''}`, style: `background: ${surfaceColor()}; ${designs.menu?.style ?? ''}` });
 
-            // re-anchored every frame, so scrolling never shifts the list off the button
+            // re-anchored every container, so scrolling never shifts the list off the button
             const anchor = () => {
-                const rect = frame.getBoundingClientRect();
+                const rect = container.getBoundingClientRect();
                 menu.style.left = `${rect.left}px`;
                 menu.style.top = `${rect.bottom}px`;
                 menu.style.minWidth = `${rect.width}px`;
@@ -117,7 +112,7 @@ export function InputSelect(unit: xnew.Unit,
                 const option = xnew({ tag: 'div', className: `${css.item} ${designs.item?.className ?? ''}`, style: designs.item?.style }, item);
                 option.element.toggleAttribute('data-checked', item === select.value);
                 option.on('click', ({ event }: { event: PointerEvent }) => {
-                    // keep the bubble from reaching the frame's toggle below
+                    // keep the bubble from reaching the container's toggle below
                     event.stopPropagation();
                     select.value = item;
                     // bubbles like a native input event so hosts wrapping the control can listen above it
@@ -128,7 +123,7 @@ export function InputSelect(unit: xnew.Unit,
         });
     };
 
-    // registered while the unit's element is still the frame, so the whole button surface toggles
+    // registered while the unit's element is still the container, so the whole button surface toggles
     unit.on('click', () => {
         if (dropdown === null) {
             openDropdown();

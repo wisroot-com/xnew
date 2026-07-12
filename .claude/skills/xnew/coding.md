@@ -81,30 +81,22 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   Sharing across components: share the **definition object** (same defs → same names);
   for theming, custom properties (`--vars`) pass through unrenamed and inherit down the
   DOM — set them on a subtree root class, read via `var(--x, fallback)` in descendants.
-- **A `basics/element` component is Container-derived only when it has multiple parts**
-  (InputCheckbox / InputRadio / InputRange / InputSelect / InputSwitch; also `ui/AnalogStick` /
-  `ui/DPad`): it starts with `xnew.extend(Container, { base, className, style })`
-  (`src/basics/element/Container.ts`, internal-only — NOT an xbasics member) and nests its
-  parts inside. Container's role is strictly the **outer shell and caller-side design**: `tag`
-  (default `'div'`) picks the shell element, `base` (the shell's `@layer base` declaration
-  block) / `className` / `style` decorate it, and rest members are forwarded onto the shell
-  (ElementDef semantics); every other prop of the component (`value`, `name`, rest members, …)
-  stays with the inner parts, decorated via `designs`.
-  **Single-element components skip Container** (Button, Chevron, Image, InputNumber, InputText,
-  SVG, SVGText): they nest their one element directly with an `@layer base` css entry, caller
-  `className` / `style` / rest members land on that element, and there is no `designs` prop and
-  no `container` getter — `unit.element` is the whole component. `ui/AnalogStick` and `ui/DPad` also derive from Container
-  (their pointer-operated surface; their SVG layers are decorated via `designs: { svg? }` —
-  they expose no stroke / fill props). Container returns `{ get container }`, merged onto the unit
-  — the component must NOT return its own `container` getter (define collision), and one
-  unit must not extend two Container-derived components (same collision — e.g. Chevron
-  builds its own `<svg>` shell instead of extending SVG). Note `unit.element` ends on the
-  innermost nested part, not the container — position/layout writes from outside must
-  target `unit.container` (bit AnalogStick's knob: left/top on the `<svg>` did nothing
-  once the absolute overlay style moved to the container div).
+- **A `basics` component's top-level element is its own `container` (there is NO Container helper —
+  it was removed 2026-07).** Every component nests its top element directly with an
+  `@layer base` css entry, and the caller's `className` / `style` decorate that element:
+  `xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style })`.
+  Single-element components (Button, Chevron, Image, InputNumber, InputText, SVG, SVGText)
+  ALSO spread `...others` onto that element; multi-part components (InputCheckbox / InputRadio /
+  InputRange / InputSelect / InputSwitch, and `ui/AnalogStick` / `ui/DPad`) keep the container for
+  layout only — `value`, `name`, rest members stay with the inner parts (usually the hidden
+  native input), which are decorated via `designs`. There is no `container` getter anywhere;
+  `unit.element` ends on the innermost nested part (the hidden input / select), and the
+  caller-facing container is its ancestor — capture the container element right after nesting it when
+  the component needs it later.
 - **Internal parts of a basics component are decorated via its `designs` prop** — one
   `Design` (`{ className?, style? }`, from `src/basics/design.ts`) per named part, e.g.
-  InputRange's `designs: { frame?, meter? }`. Generated class names are page-unique, so
+  InputRange's `designs: { meter?, status? }`. The container is NOT a designs part (caller
+  `className` / `style` hit it directly). Generated class names are page-unique, so
   page CSS cannot target parts directly; `designs` is the supported hook (never expose
   stable global part classes).
 - `xnew.nest(tagOrDef, textContent?)` creates a child element from a **tag string**
@@ -296,21 +288,20 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
-- **Every control-like `basics/element` css (Container `base` or the single element's own entry)
-  starts with the same prelude: `width: …;` then the margin-box cap
-  `max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;`.**
+- **Every control-like `basics/element` container css starts with the same prelude: `width: …;` then
+  the margin-box cap `max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;`.**
   `max-width: stretch` caps the *margin box* at the parent so a caller horizontal margin never
   overflows on the right (bit Button; prefixed fallbacks cover Safari / Firefox). Native controls
   need NO `display` / `box-sizing` declarations — the UA already renders `<input>` / `<button>`
-  inline-flowing and border-box; declare `display` only to change layout (Button: `inline-flex`
-  to center its label; a Container div shell: `inline-block` to flow like a control).
+  inline-flowing and border-box; a div container declares them itself (`inline-block` / `inline-flex`
+  to flow like a control, `box-sizing: border-box` when it carries a border).
   `vertical-align: middle` was deliberately dropped (2026-07, user decision) — don't re-add it.
   Keep the prelude when adding a new element component.
 
-- **In a Container-derived component, extend Container FIRST — internal wrappers (e.g. Aspect)
-  nest inside it, never outside.** Container's div is the caller-side surface: with Aspect
-  outside, its full-size flex-centering wrapper swallowed the caller's `className`, so
-  `absolute left/right` placement always rendered centered (bit AnalogStick / DPad).
+- **Nest the container FIRST — internal wrappers (e.g. Aspect) nest inside it, never outside.**
+  The container is the caller-side surface: with Aspect outside, its full-size flex-centering
+  wrapper swallowed the caller's `className`, so `absolute left/right` placement always
+  rendered centered (bit AnalogStick / DPad).
 
 - **Round `xbasics.Volume`'s `volume` before showing it in UI (e.g. `Math.round(v * 100)` for a
   0–100 InputRange).** The backing `AudioParam` stores float32, so a set of `0.1` reads back as

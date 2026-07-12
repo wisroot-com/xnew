@@ -72,7 +72,7 @@
       xnew('<div class="mb-1">', 'InputCheckbox');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputCheckbox, { value: true });
-      xnew(xbasics.InputCheckbox, { value: true, designs: { check: { style: 'border-radius: 50%;' } } });
+      xnew(xbasics.InputCheckbox, { value: true, style: 'border-radius: 50%;' });
     }
 
     function MyInputSwitch(unit) {
@@ -80,7 +80,7 @@
       xnew('<div class="mb-1">', 'InputSwitch');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputSwitch, { value: true });
-      xnew(xbasics.InputSwitch, { value: true, designs: { frame: { style: 'border-radius: 0.25em;' }, knob: { style: 'border-radius: 0.25em; background: #4f46e5;' } } });
+      xnew(xbasics.InputSwitch, { value: true, style: 'border-radius: 0.25em;', designs: { knob: { style: 'border-radius: 0.25em; background: #4f46e5;' } } });
     }
 
     function MyInputRadio(unit) {
@@ -88,7 +88,7 @@
       xnew('<div class="mb-1">', 'InputRadio');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'mid' });
-      xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'high', designs: { frame: { style: 'border-radius: 9999px;' }, item: { style: 'font-weight: bold;' } } });
+      xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'high', style: 'border-radius: 9999px;', designs: { item: { style: 'font-weight: bold;' } } });
     }
 
     function MyInputSelect(unit) {
@@ -96,7 +96,7 @@
       xnew('<div class="mb-1">', 'InputSelect');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'] });
-      xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'], value: 'banana', designs: { frame: { style: 'border-radius: 9999px;' }, item: { style: 'font-style: italic;' } } });
+      xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'], value: 'banana', style: 'border-radius: 9999px;', designs: { item: { style: 'font-style: italic;' } } });
     }
 
     function MyInputRange(unit) {

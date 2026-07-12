@@ -1,27 +1,33 @@
 //----------------------------------------------------------------------------------------------------
 // InputRange — text-free gauge backed by a hidden native <input type="range">
 // The invisible native control captures interaction while the visible surface is a value-driven
-// meter layer growing over a full-extent frame layer, plus a status readout of the value.
+// meter layer growing over a full-extent rail ring, plus a status readout of the value.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Container } from './Container';
 import { Design } from '../design';
 
 export function InputRange(unit: xnew.Unit,
     { value, min = 0, max = 100, step = 1, className = '', style = '', designs = {}, ...others }:
-    { value?: number, min?: number, max?: number, step?: number, className?: string, style?: string, designs?: { frame?: Design, meter?: Design, status?: Design }, [key: string]: any } = {}
+    { value?: number, min?: number, max?: number, step?: number, className?: string, style?: string, designs?: { meter?: Design, status?: Design }, [key: string]: any } = {}
 ) {
     const initial = value ?? min;
 
-    xnew.extend(Container, {
-        // inline-block flows like a native control; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        base: 'display: inline-block; width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; position: relative; margin: 0.125em;',
-        className, style,
-    });
-
     const css = xnew.css({
-        frame: {
+        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent;
+        // borderless on purpose: a border here would inset the absolute children off the rail ring
+        container: {
+            layer: 'base',
+            body: `
+                box-sizing: border-box;
+                display: inline-block;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em;
+                position: relative;
+            `,
+        },
+        // full-extent faint ring; a sibling of the meter, so both borders share the same inset-0
+        // geometry and overlap exactly whatever the border widths
+        rail: {
             layer: 'base',
             body: `
                 position: absolute; inset: 0;
@@ -64,7 +70,9 @@ export function InputRange(unit: xnew.Unit,
         },
     });
 
-    xnew({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+
+    xnew({ tag: 'div', className: css.rail });
 
     const meter = xnew({ tag: 'div', className: `${css.meter} ${designs.meter?.className ?? ''}`, style: designs.meter?.style });
 

@@ -12,7 +12,7 @@ describe('basics InputRadio', () => {
         jest.useRealTimers();
     });
 
-    // container > frame > item* > [label, input]
+    // container > item* > [label, input]
     function radiosOf(unit: xnew.Unit): HTMLInputElement[] {
         return Array.from(unit.element.querySelectorAll('input')) as HTMLInputElement[];
     }
@@ -69,18 +69,16 @@ describe('basics InputRadio', () => {
         expect(itemsOf(unit).map((s) => s.hasAttribute('data-checked'))).toEqual([false, false, true]);
     });
 
-    it('applies designs to the frame and item parts', () => {
-        const unit = xnew(InputRadio, { items: ['a', 'b'], designs: { frame: { className: 'pill' }, item: { style: 'font-weight: bold;' } } });
+    it('applies designs to the item parts', () => {
+        const unit = xnew(InputRadio, { items: ['a', 'b'], designs: { item: { style: 'font-weight: bold;' } } });
 
-        expect(unit.element.className).toContain('pill');
         expect(itemsOf(unit).every((s) => (s.getAttribute('style') ?? '').includes('font-weight: bold;'))).toBe(true);
     });
 
-    it('applies className and style to the container (exposed via the getter)', () => {
+    it('applies className and style to the container element', () => {
         const unit = xnew(InputRadio, { items: ['a'], className: 'boxed', style: 'width: 12em;' });
 
-        expect(unit.container).toBe(unit.element.parentElement);
-        expect(unit.container.className).toContain('boxed');
-        expect(unit.container.getAttribute('style')).toContain('width: 12em;');
+        expect(unit.element.className).toContain('boxed');
+        expect(unit.element.getAttribute('style')).toContain('width: 12em;');
     });
 });

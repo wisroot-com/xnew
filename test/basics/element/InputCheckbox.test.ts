@@ -12,8 +12,8 @@ describe('basics InputCheckbox', () => {
         jest.useRealTimers();
     });
 
-    // container > check > [svg, input]
-    function checkOf(unit: xnew.Unit): HTMLElement {
+    // container > [svg, input]
+    function containerOf(unit: xnew.Unit): HTMLElement {
         return unit.element.parentElement as HTMLElement;
     }
 
@@ -31,13 +31,13 @@ describe('basics InputCheckbox', () => {
         const unit = xnew(InputCheckbox);
 
         expect((unit.element as HTMLInputElement).checked).toBe(false);
-        expect(checkOf(unit).hasAttribute('data-checked')).toBe(false);
+        expect(containerOf(unit).hasAttribute('data-checked')).toBe(false);
     });
 
     it('marks the box as checked when initially checked', () => {
         const unit = xnew(InputCheckbox, { value: true });
 
-        expect(checkOf(unit).hasAttribute('data-checked')).toBe(true);
+        expect(containerOf(unit).hasAttribute('data-checked')).toBe(true);
     });
 
     it('carries the checked look in a data-checked css rule (check mark + tint)', () => {
@@ -56,11 +56,11 @@ describe('basics InputCheckbox', () => {
 
         input.checked = true;
         input.dispatchEvent(new Event('input', { bubbles: false }));
-        expect(checkOf(unit).hasAttribute('data-checked')).toBe(true);
+        expect(containerOf(unit).hasAttribute('data-checked')).toBe(true);
 
         input.checked = false;
         input.dispatchEvent(new Event('input', { bubbles: false }));
-        expect(checkOf(unit).hasAttribute('data-checked')).toBe(false);
+        expect(containerOf(unit).hasAttribute('data-checked')).toBe(false);
     });
 
     it('delivers a boolean value to input listeners', () => {
@@ -84,19 +84,11 @@ describe('basics InputCheckbox', () => {
         expect((anonymous.element as HTMLInputElement).hasAttribute('name')).toBe(false);
     });
 
-    it('applies designs to the check part', () => {
-        const unit = xnew(InputCheckbox, { designs: { check: { className: 'round', style: 'border-radius: 50%;' } } });
-        const check = checkOf(unit);
+    it('applies className and style to the container element', () => {
+        const unit = xnew(InputCheckbox, { className: 'round', style: 'border-radius: 50%;' });
+        const container = containerOf(unit);
 
-        expect(check.className).toContain('round');
-        expect(check.getAttribute('style')).toContain('border-radius: 50%;');
-    });
-
-    it('applies className and style to the container (exposed via the getter)', () => {
-        const unit = xnew(InputCheckbox, { className: 'boxed', style: 'width: 2em;' });
-
-        expect(unit.container).toBe(checkOf(unit).parentElement);
-        expect(unit.container.className).toContain('boxed');
-        expect(unit.container.getAttribute('style')).toContain('width: 2em;');
+        expect(container.className).toContain('round');
+        expect(container.getAttribute('style')).toContain('border-radius: 50%;');
     });
 });

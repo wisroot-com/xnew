@@ -12,13 +12,21 @@ describe('basics InputRange', () => {
         jest.useRealTimers();
     });
 
-    // container children: the frame first, then the meter, then the status readout
+    // container children: the rail ring first, then the meter, then the status readout, then the hidden input
+    function containerOf(unit: xnew.Unit): HTMLElement {
+        return unit.element.parentElement as HTMLElement;
+    }
+
+    function railOf(unit: xnew.Unit): HTMLElement {
+        return containerOf(unit).querySelectorAll('div')[0] as HTMLElement;
+    }
+
     function meterOf(unit: xnew.Unit): HTMLElement {
-        return unit.element.parentElement?.querySelectorAll('div')[1] as HTMLElement;
+        return containerOf(unit).querySelectorAll('div')[1] as HTMLElement;
     }
 
     function statusOf(unit: xnew.Unit): HTMLElement {
-        return unit.element.parentElement?.querySelectorAll('div')[2] as HTMLElement;
+        return containerOf(unit).querySelectorAll('div')[2] as HTMLElement;
     }
 
     it('nests a hidden native range input with the given attributes', () => {
@@ -98,36 +106,29 @@ describe('basics InputRange', () => {
         expect((anonymous.element as HTMLInputElement).hasAttribute('name')).toBe(false);
     });
 
-    it('marks the max extent with a frame fainter than the meter border', () => {
+    it('marks the max extent with a rail ring fainter than the meter border', () => {
         const unit = xnew(InputRange, { value: 30 });
-        const frame = unit.element.parentElement?.querySelector('div') as HTMLElement;
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
-        expect(frame.className).toMatch(/xnew\d+-frame/);
+        expect(railOf(unit).className).toMatch(/xnew\d+-rail/);
         expect(styleText).toContain('border: 1px solid color-mix(in srgb, currentColor 40%, transparent);');
-        expect(styleText).toContain('inset: 0;');
     });
 
-    it('applies className and style to the container (exposed via the getter)', () => {
+    it('applies className and style to the container element', () => {
         const unit = xnew(InputRange, { className: 'gauge', style: 'height: 2em;' });
 
-        expect(unit.container).toBe(unit.element.parentElement);
-        expect(unit.container.className).toContain('gauge');
-        expect(unit.container.getAttribute('style')).toContain('height: 2em;');
+        expect(containerOf(unit).className).toContain('gauge');
+        expect(containerOf(unit).getAttribute('style')).toContain('height: 2em;');
     });
 
-    it('applies designs to the frame and meter parts', () => {
+    it('applies designs to the meter part', () => {
         const unit = xnew(InputRange, {
             designs: {
-                frame: { className: 'rail', style: 'border-radius: 0;' },
                 meter: { className: 'gold', style: 'background: gold;' },
             },
         });
-        const frame = unit.element.parentElement?.querySelectorAll('div')[0] as HTMLElement;
         const meter = meterOf(unit);
 
-        expect(frame.className).toContain('rail');
-        expect(frame.getAttribute('style')).toContain('border-radius: 0;');
         expect(meter.className).toContain('gold');
         expect(meter.getAttribute('style')).toContain('background: gold;');
     });

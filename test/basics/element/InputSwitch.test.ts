@@ -12,13 +12,13 @@ describe('basics InputSwitch', () => {
         jest.useRealTimers();
     });
 
-    // container > frame > [knob, input]
-    function frameOf(unit: xnew.Unit): HTMLElement {
+    // container > [knob, input]
+    function containerOf(unit: xnew.Unit): HTMLElement {
         return unit.element.parentElement as HTMLElement;
     }
 
     function knobOf(unit: xnew.Unit): HTMLElement {
-        return frameOf(unit).querySelector('div') as HTMLElement;
+        return containerOf(unit).querySelector('div') as HTMLElement;
     }
 
     it('nests a hidden native checkbox with the given state', () => {
@@ -35,13 +35,13 @@ describe('basics InputSwitch', () => {
         const unit = xnew(InputSwitch);
 
         expect((unit.element as HTMLInputElement).checked).toBe(false);
-        expect(frameOf(unit).hasAttribute('data-checked')).toBe(false);
+        expect(containerOf(unit).hasAttribute('data-checked')).toBe(false);
     });
 
-    it('marks the frame as checked while on', () => {
+    it('marks the container as checked while on', () => {
         const unit = xnew(InputSwitch, { value: true });
 
-        expect(frameOf(unit).hasAttribute('data-checked')).toBe(true);
+        expect(containerOf(unit).hasAttribute('data-checked')).toBe(true);
     });
 
     it('carries the on look in data-checked css rules (tint + knob slide)', () => {
@@ -63,21 +63,19 @@ describe('basics InputSwitch', () => {
         input.dispatchEvent(new Event('input', { bubbles: false }));
 
         expect(received).toEqual([true]);
-        expect(frameOf(unit).hasAttribute('data-checked')).toBe(true);
+        expect(containerOf(unit).hasAttribute('data-checked')).toBe(true);
     });
 
-    it('applies designs to the frame and knob parts', () => {
-        const unit = xnew(InputSwitch, { designs: { frame: { className: 'pill' }, knob: { style: 'background: gold;' } } });
+    it('applies designs to the knob part', () => {
+        const unit = xnew(InputSwitch, { designs: { knob: { style: 'background: gold;' } } });
 
-        expect(frameOf(unit).className).toContain('pill');
         expect(knobOf(unit).getAttribute('style')).toContain('background: gold;');
     });
 
-    it('applies className and style to the container (exposed via the getter)', () => {
-        const unit = xnew(InputSwitch, { className: 'boxed', style: 'width: 3em;' });
+    it('applies className and style to the container element', () => {
+        const unit = xnew(InputSwitch, { className: 'pill', style: 'width: 4em;' });
 
-        expect(unit.container).toBe(frameOf(unit).parentElement);
-        expect(unit.container.className).toContain('boxed');
-        expect(unit.container.getAttribute('style')).toContain('width: 3em;');
+        expect(containerOf(unit).className).toContain('pill');
+        expect(containerOf(unit).getAttribute('style')).toContain('width: 4em;');
     });
 });
