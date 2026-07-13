@@ -13,7 +13,7 @@
   <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
 </head>
 
-<body class="m-0 p-0 w-full h-screen overflow-hidden">
+<body class="m-0 p-0 w-full h-screen">
   <div id="main" class="relative w-full h-full"></div>
   <script type="module">
     import { xnew, xbasics } from '@mulsense/xnew';
@@ -55,18 +55,49 @@
       xnew('<path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1">');
     }
 
-    // xbasics.SVGText renders text as SVG and auto-fits the viewBox to the
-    // text bounding box; stroke + fill give a game-style outlined label.
+    // xbasics.SVGText renders text as SVG and auto-fits the viewBox to the text
+    // bounding box; fill / outline / shadow compose CSS-impossible decorated text.
     function Texts(unit) {
       xnew('<p class="font-bold">', 'xbasics.SVGText');
-      xnew.nest('<div class="flex flex-col gap-2 items-start">');
+      xnew.nest('<div class="flex flex-col gap-3 items-start">');
 
+      // plain: inherits currentColor from the CSS text color
       xnew('<div class="text-indigo-600">', () => {
         xnew(xbasics.SVGText, { text: 'Hello xnew!', fontSize: 48, className: 'inline-block' });
       });
 
+      // single outline via style (stroke halo bleeds outside the bbox)
       xnew('<div class="p-3 rounded-lg bg-slate-800 text-emerald-300">', () => {
         xnew(xbasics.SVGText, { text: 'GAME START', fontSize: 40, className: 'inline-block', style: 'stroke: #ffffff; stroke-width: 2;' });
+      });
+
+      // double outline: black inner + red outer (auto-sorted widest to back)
+      xnew('<div class="p-3 rounded-lg bg-slate-100">', () => {
+        xnew(xbasics.SVGText, {
+          text: 'HELLO', fontSize: 64, className: 'inline-block',
+          fill: '#ffffff',
+          outline: [{ color: '#111827', width: 12 }, { color: '#ef4444', width: 24 }],
+        });
+      });
+
+      // gold gradient fill (angle 90 = vertical)
+      xnew('<div class="p-3 rounded-lg bg-slate-800">', () => {
+        xnew(xbasics.SVGText, {
+          text: 'GOLD', fontSize: 64, className: 'inline-block',
+          fill: { gradient: { angle: 90, stops: [
+            { offset: 0, color: '#fceabb' }, { offset: 0.5, color: '#f8b500' }, { offset: 1, color: '#8a5a00' },
+          ] } },
+        });
+      });
+
+      // gradient + outline + drop shadow combined
+      xnew('<div class="p-3 rounded-lg bg-slate-100">', () => {
+        xnew(xbasics.SVGText, {
+          text: 'POP', fontSize: 72, className: 'inline-block',
+          fill: { gradient: { stops: [{ offset: 0, color: '#67e8f9' }, { offset: 1, color: '#0284c7' }] } },
+          outline: { color: '#003049', width: 10 },
+          shadow: { dx: 6, dy: 6, color: 'rgba(0,0,0,.35)' },
+        });
       });
     }
   </script>
