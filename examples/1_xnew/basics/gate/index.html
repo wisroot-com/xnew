@@ -60,13 +60,12 @@
     }
 
     function MyMenu(unit) {
-      const button = unit.element;
       const gate = xnew(xbasics.Gate, { open: false });
       gate.on('-closed', () => unit.finalize());
       gate.open();
 
       // the dropdown is the only "inside"; a press anywhere else (incl. the opener button) closes it
-      xnew(button, (unit) => {
+      xnew((unit) => {
         xnew.nest('<div class="absolute top-full right-0 py-2">');
         // keep dropdown clicks from bubbling to the opener button (which would re-open a menu)
         unit.on('click', ({ event }) => event.stopPropagation());
