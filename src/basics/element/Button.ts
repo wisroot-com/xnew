@@ -15,12 +15,10 @@ export function Button(unit: xnew.Unit,
         button: {
             layer: 'base',
             body: `
-                display: inline-flex; justify-content: center; align-items: center;
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em;
-                padding: 0 0.5em;
-                background: transparent; color: inherit; font: inherit;
-                border: 1px solid currentColor; border-radius: 0.25em;
+                min-width: 6em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em; margin: 0.125em;
+                padding: 0 0.5em; margin: 0.125em;
                 cursor: pointer; user-select: none;
+                border: 1px solid currentColor; border-radius: 0.25em;
                 &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
                 &:active { filter: brightness(0.5); }
             `,

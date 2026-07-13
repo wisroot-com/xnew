@@ -17,7 +17,7 @@ export function InputCheckbox(unit: xnew.Unit,
             layer: 'base',
             body: `
                 display: inline-block;
-                width: 1.5em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
+                width: 1.5em; height: 1.5em; margin: 0.125em;
                 position: relative;
             `,
         },

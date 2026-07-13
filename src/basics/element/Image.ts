@@ -16,7 +16,6 @@ export function Image(unit: xnew.Unit,
         image: {
             layer: 'base',
             body: `
-                box-sizing: border-box; display: block; width: 100%; height: 100%;
             `,
         },
     });
