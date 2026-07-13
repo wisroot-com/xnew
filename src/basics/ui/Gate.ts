@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // Gate — open / close animation driver
-// Owns a 0..1 progress value driven by xnew.transition; presentation layers (Accordion, Popup)
+// Owns a 0..1 progress value driven by xnew.transition; presentation layers (Accordion, Overlay)
 // pick it up via xnew.context(Gate).
 //----------------------------------------------------------------------------------------------------
 

@@ -23,7 +23,7 @@ import { Synthesizer } from './audio/Synthesizer';
 import { Volume } from './audio/Volume';
 import { Gate } from './ui/Gate';
 import { Accordion } from './ui/Accordion';
-import { Popup } from './ui/Popup';
+import { Overlay } from './ui/Overlay';
 import { AnalogStick } from './ui/AnalogStick';
 import { DPad } from './ui/DPad';
 import { Panel } from './ui/Panel';
@@ -49,7 +49,7 @@ export const xbasics = {
     Volume,
     Gate,
     Accordion,
-    Popup,
+    Overlay,
     AnalogStick,
     DPad,
     Panel,

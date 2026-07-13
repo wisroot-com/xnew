@@ -400,7 +400,7 @@ declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
 
 declare function Accordion(unit: xnew.Unit): void;
 
-declare function Popup(unit: xnew.Unit, { className, style, ...others }?: {
+declare function Overlay(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
     style?: string;
     [key: string]: any;
@@ -480,7 +480,7 @@ declare const xbasics: {
     Volume: typeof Volume;
     Gate: typeof Gate;
     Accordion: typeof Accordion;
-    Popup: typeof Popup;
+    Overlay: typeof Overlay;
     AnalogStick: typeof AnalogStick;
     DPad: typeof DPad;
     Panel: typeof Panel;

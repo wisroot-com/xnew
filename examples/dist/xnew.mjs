@@ -2685,7 +2685,7 @@ function Accordion(unit) {
     }
 }
 
-function Popup(unit, _a = {}) {
+function Overlay(unit, _a = {}) {
     var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
     const gate = xnew.context(Gate);
     const css = xnew.css({
@@ -2999,7 +2999,7 @@ const xbasics = {
     Volume,
     Gate,
     Accordion,
-    Popup,
+    Overlay,
     AnalogStick,
     DPad,
     Panel,

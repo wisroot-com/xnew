@@ -46,7 +46,7 @@
     function MyModal(unit) {
       const gate = xnew(xbasics.Gate, { open: false, duration: 300, easing: 'ease' });
 
-      xnew.extend(xbasics.Popup, { style: 'background: rgba(0, 0, 0, 0.1);' });
+      xnew.extend(xbasics.Overlay, { style: 'background: rgba(0, 0, 0, 0.1);' });
 
       xnew.nest('<div class="absolute inset-0 m-auto w-max h-max">');
       xnew.nest('<div class="m-auto w-[300px] max-w-[80%] border rounded-lg bg-white">');

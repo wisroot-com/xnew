@@ -29,7 +29,7 @@ Recommended reading order.
 | [scene](basics/scene/) | `Scene` navigation — `change` (swap sibling scenes) / `add` (overlay) |
 | [element](basics/element/) | `Button` / `Input*` form elements — `@layer base` defaults, overridable via className / style |
 | [panel](basics/panel/) | `Panel` — groups, buttons, range / checkbox / select |
-| [gate](basics/gate/) | `Gate` + `Accordion` / `Popup` (accordion, modal, menu) |
+| [gate](basics/gate/) | `Gate` + `Accordion` / `Overlay` (accordion, modal, menu) |
 | [controller](basics/controller/) | `DPad` / `AnalogStick` virtual game pad |
 | [svg](basics/svg/) | `SVG` icon base, `SVGText` outlined labels |
 | [audiotrack](basics/audiotrack/) | `AudioTrack` music playback, `Volume` master gain |

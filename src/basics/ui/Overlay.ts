@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------
-// Popup — full-viewport overlay that opens on mount and finalizes when closed
+// Overlay — full-viewport layer that covers the page, opens on mount and finalizes when closed
 // Presentation layer over Gate (found via xnew.context): fades with the progress value
 // and closes on a click outside the content (directly on the overlay).
 //----------------------------------------------------------------------------------------------------
@@ -7,7 +7,7 @@
 import { xnew } from '../../core/xnew';
 import { Gate } from './Gate';
 
-export function Popup(unit: xnew.Unit,
+export function Overlay(unit: xnew.Unit,
     { className = '', style = '', ...others }:
     { className?: string, style?: string, [key: string]: any } = {}
 ) {
