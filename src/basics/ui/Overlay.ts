@@ -14,7 +14,6 @@ export function Overlay(unit: xnew.Unit,
     const gate = xnew.context(Gate);
 
     const css = xnew.css({
-        // full-viewport overlay above page chrome; opacity is progress-driven, so it stays inline
         container: {
             layer: 'base',
             body: `

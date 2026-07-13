@@ -2658,30 +2658,24 @@ function Gate(unit, { open = true, duration = 200, easing = 'ease' }) {
     };
 }
 
-function Accordion(unit) {
+function Accordion(unit, _a = {}) {
+    var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
     const gate = xnew.context(Gate);
     const css = xnew.css({
         container: {
             layer: 'base',
             body: `
                 overflow: hidden;
-            `,
-        },
-        inner: {
-            layer: 'base',
-            body: `
-                display: flex; flex-direction: column;
                 box-sizing: border-box;
             `,
         },
     });
-    const container = xnew.nest({ tag: 'div', className: css.container });
-    const inner = xnew.nest({ tag: 'div', className: css.inner });
+    xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     apply(gate.value);
     gate.on('-transition', ({ value }) => apply(value));
     function apply(value) {
-        container.style.height = value < 1.0 ? inner.offsetHeight * value + 'px' : 'auto';
-        container.style.opacity = value.toString();
+        unit.element.style.height = value < 1.0 ? unit.element.scrollHeight * value + 'px' : 'auto';
+        unit.element.style.opacity = value.toString();
     }
 }
 

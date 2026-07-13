@@ -398,7 +398,11 @@ declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
     close(): void;
 };
 
-declare function Accordion(unit: xnew.Unit): void;
+declare function Accordion(unit: xnew.Unit, { className, style, ...others }?: {
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): void;
 
 declare function Overlay(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
