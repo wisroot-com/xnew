@@ -2643,6 +2643,9 @@ function Gate(unit, { open = true, duration = 200, easing = 'ease' }) {
             .timeout(() => xnew.emit(dir > 0 ? '-opened' : '-closed'));
     }
     return {
+        get value() {
+            return value;
+        },
         toggle() {
             animate(sign < 0 ? +1 : -1);
         },
@@ -2674,10 +2677,12 @@ function Accordion(unit) {
     });
     const container = xnew.nest({ tag: 'div', className: css.container });
     const inner = xnew.nest({ tag: 'div', className: css.inner });
-    gate.on('-transition', ({ value }) => {
+    apply(gate.value);
+    gate.on('-transition', ({ value }) => apply(value));
+    function apply(value) {
         container.style.height = value < 1.0 ? inner.offsetHeight * value + 'px' : 'auto';
         container.style.opacity = value.toString();
-    });
+    }
 }
 
 function Popup(unit, _a = {}) {

@@ -31,8 +31,11 @@ export function Accordion(unit: xnew.Unit) {
     const container = xnew.nest({ tag: 'div', className: css.container }) as HTMLElement;
     const inner = xnew.nest({ tag: 'div', className: css.inner }) as HTMLElement;
 
-    gate.on('-transition', ({ value }: { value: number }) => {
+    apply(gate.value);
+    gate.on('-transition', ({ value }: { value: number }) => apply(value));
+
+    function apply(value: number) {
         container.style.height = value < 1.0 ? inner.offsetHeight * value + 'px' : 'auto';
         container.style.opacity = value.toString();
-    });
+    }
 }

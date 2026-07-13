@@ -392,6 +392,7 @@ declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
     duration?: number;
     easing?: string;
 }): {
+    readonly value: number;
     toggle(): void;
     open(): void;
     close(): void;

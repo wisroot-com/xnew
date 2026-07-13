@@ -29,6 +29,10 @@ export function Gate(unit: xnew.Unit,
     }
 
     return {
+        // current 0..1 progress, so a presentation layer can apply the starting state synchronously
+        get value() {
+            return value;
+        },
         toggle() {
             animate(sign < 0 ? +1 : -1);
         },

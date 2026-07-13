@@ -26,7 +26,15 @@
       button1.on('click', () => xnew(MyModal));
 
       const button2 = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open menu!');
-      button2.on('click', () => xnew(MyMenu, { relative: button2.element }));
+      let menu = null;
+      button2.on('click', () => {
+        if (menu) {
+          menu.close();
+        } else {
+          menu = xnew(button2.element, MyMenu);
+          menu.on('finalize', () => menu = null);
+        }
+      });
     });
 
     function MyAccordion(unit) {
@@ -59,21 +67,28 @@
       xnew('<div class="p-2 border-t">', Contents);
     }
 
-    function MyMenu(unit, { relative }) {
+    function MyMenu(unit) {
       const gate = xnew(xbasics.Gate, { open: false });
+      gate.on('-closed', () => unit.finalize());
+      gate.open();
 
-      // background
-      xnew.extend(xbasics.Popup);
-      
-      xnew.nest('<div class="absolute py-2">');
-      const rect = relative.getBoundingClientRect();
-      unit.element.style.right = (window.innerWidth - rect.right) + 'px';
-      unit.element.style.top = rect.bottom + 'px';
-      
-      xnew.extend(xbasics.Accordion);
+      // the button (unit element) anchors the dropdown and bounds click.outside
+      unit.element.style.position = 'relative';
+      unit.on('click.outside', () => gate.close());
 
-      xnew.nest('<div class="relative w-[300px] border rounded-lg bg-white">');
-      xnew('<div class="p-2">', Contents);
+      xnew('<div class="absolute top-full right-0 py-2">', (unit) => {
+        unit.on('click', ({ event }) => event.stopPropagation());
+
+        xnew.extend(xbasics.Accordion);
+        xnew.nest('<div class="w-[300px] border rounded-lg bg-white">');
+        xnew('<div class="p-2">', Contents);
+      });
+
+      return {
+        close() {
+          gate.close();
+        },
+      };
     }
 
     function Contents(unit) {
