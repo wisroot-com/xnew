@@ -292,6 +292,14 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **Anything registered on the shared `io` (server side) must be detached on `finalize` — including
+  inside `sync.boot`.** Rooms are created and destroyed continuously, so a dead room that leaves its
+  `io.on('connection')` behind grows the namespace's listener count without bound (MaxListenersExceededWarning
+  at 10, then unbounded). `bootServer` now keeps the handler in a local and does
+  `root.on('finalize', () => io.off('connection', connection))`; any io mock therefore needs an `off`.
+  Note the count is legitimately `2 × live rooms` (boot + the caller's own counter), so a server hosting
+  many rooms should raise `io.sockets.setMaxListeners(...)` rather than treat the warning as a leak.
+
 - **Every control-like `basics/element` container css starts with the same prelude: `width: …;` then
   the margin-box cap `max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;`.**
   `max-width: stretch` caps the *margin box* at the parent so a caller horizontal margin never

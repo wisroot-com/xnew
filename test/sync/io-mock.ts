@@ -86,6 +86,10 @@ export function ioMock(): IoMock {
 
     const io = {
         on(event: string, cb: (socket: any) => void): void { if (event === 'connection') { connectionCb = cb; } },
+        // boot は finalize で自分の connection を外す。外れた後の connect() はどのハンドラにも届かない。
+        off(event: string, cb: (socket: any) => void): void {
+            if (event === 'connection' && connectionCb === cb) { connectionCb = null; }
+        },
         emit(event: string, payload?: any): void {                 // broadcast（全 client へ）
             if (event === 'sync') { captured.push(payload); }
             for (const conn of conns.values()) { deliverToClient(conn, event, payload); }

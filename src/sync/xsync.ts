@@ -135,7 +135,9 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
     };
 
     root.on('update', () => io.to(room.id).emit('sync', captureStateTree()));
-    io.on('connection', (socket: any) => {
+    // keep the handler so finalize can detach it — a room that dies must not leave a listener on io
+    // (rooms come and go, and io's listener count would otherwise grow without bound).
+    const connection = (socket: any) => {
         const query = socket.handshake?.query;
         if (query?.roomId !== room.id) return; // ignore other rooms
         socket.join(room.id);
@@ -154,7 +156,9 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
             dispatch(info, 'sync.disconnect', socket.id, undefined);
             statusUpdate();
         });
-    });
+    };
+    io.on('connection', connection);
+    root.on('finalize', () => io.off('connection', connection));
     function statusUpdate() {
         io.to(room.id).emit('status', { clients: info.clients });
         dispatch(info, 'sync.statusupdate', undefined, undefined);

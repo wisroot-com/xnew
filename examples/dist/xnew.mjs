@@ -1131,7 +1131,7 @@ function bootServer(opts, parent, args) {
         return nodes;
     };
     root.on('update', () => io.to(room.id).emit('sync', captureStateTree()));
-    io.on('connection', (socket) => {
+    const connection = (socket) => {
         var _a, _b;
         const query = (_a = socket.handshake) === null || _a === void 0 ? void 0 : _a.query;
         if ((query === null || query === void 0 ? void 0 : query.roomId) !== room.id)
@@ -1154,7 +1154,9 @@ function bootServer(opts, parent, args) {
             dispatch(info, 'sync.disconnect', socket.id, undefined);
             statusUpdate();
         });
-    });
+    };
+    io.on('connection', connection);
+    root.on('finalize', () => io.off('connection', connection));
     function statusUpdate() {
         io.to(room.id).emit('status', { clients: info.clients });
         dispatch(info, 'sync.statusupdate', undefined, undefined);
