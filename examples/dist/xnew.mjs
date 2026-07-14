@@ -1471,16 +1471,16 @@ function SVGText(unit, _a = {}) {
     });
     xnew.nest(Object.assign({ tag: 'svg', className: `${css.svg} ${className}`, style }, others));
     const svg = unit.element;
-    xnew.nest({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' });
-    unit.element.textContent = text;
+    const textUnit = xnew({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' });
+    textUnit.element.textContent = text;
     function resize() {
-        const bbox = unit.element.getBBox();
+        const bbox = textUnit.element.getBBox();
         svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
         svg.style.width = bbox.width + 'px';
         svg.style.height = bbox.height + 'px';
     }
     resize();
-    unit.on('resize', resize);
+    textUnit.on('resize', resize);
 }
 
 function InputRange(unit, _a = {}) {
@@ -2314,6 +2314,16 @@ if (context !== null && master !== null) {
     master.gain.value = DEFAULT_MASTER_GAIN;
     master.connect(context.destination);
 }
+function Volume(unit) {
+    return {
+        get volume() {
+            return master.gain.value;
+        },
+        set volume(value) {
+            master.gain.value = value;
+        },
+    };
+}
 
 function AudioTrack(unit, { url, volume, loop = false }) {
     let buffer;
@@ -2611,17 +2621,6 @@ function Synthesizer(unit, props) {
         }
     }
     return { press };
-}
-
-function Volume(unit) {
-    return {
-        get volume() {
-            return master.gain.value;
-        },
-        set volume(value) {
-            master.gain.value = value;
-        },
-    };
 }
 
 function Gate(unit, { open = true, duration = 200, easing = 'ease' }) {

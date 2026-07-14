@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { context, master } from './bus';
+import { context, master } from './master';
 
 export function AudioTrack(unit: xnew.Unit, { url, volume, loop = false }: { url: string, volume?: number, loop?: boolean }) {
     let buffer: AudioBuffer | undefined;

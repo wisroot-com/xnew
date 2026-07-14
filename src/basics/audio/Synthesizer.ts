@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { context, master } from './bus';
+import { context, master } from './master';
 
 const DEFAULT_BPM = 120;
 const RELEASE_CLEANUP_DELAY_MS = 2000;

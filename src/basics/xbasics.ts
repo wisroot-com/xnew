@@ -20,7 +20,7 @@ import { InputRadio } from './element/InputRadio';
 import { InputSelect } from './element/InputSelect';
 import { AudioTrack } from './audio/AudioTrack';
 import { Synthesizer } from './audio/Synthesizer';
-import { Volume } from './audio/Volume';
+import { Volume } from './audio/master';
 import { Gate } from './ui/Gate';
 import { Accordion } from './ui/Accordion';
 import { Overlay } from './ui/Overlay';

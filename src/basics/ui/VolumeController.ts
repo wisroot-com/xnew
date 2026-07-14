@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Volume } from '../audio/Volume';
+import { Volume } from '../audio/master';
 import { Aspect } from '../view/Aspect';
 import { InputRange } from '../element/InputRange';
 import { Gate } from './Gate';

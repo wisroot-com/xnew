@@ -26,15 +26,15 @@ export function SVGText(unit: xnew.Unit,
     xnew.nest({ tag: 'svg', className: `${css.svg} ${className}`, style, ...others });
     const svg = unit.element as SVGSVGElement;
 
-    xnew.nest({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' });
-    unit.element.textContent = text;
+    const textUnit = xnew({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' });
+    textUnit.element.textContent = text;
 
     function resize() {
-        const bbox = (unit.element as SVGGraphicsElement).getBBox();
+        const bbox = (textUnit.element as SVGGraphicsElement).getBBox();
         svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
         svg.style.width = bbox.width + 'px';
         svg.style.height = bbox.height + 'px';
     }
     resize();
-    unit.on('resize', resize);
+    textUnit.on('resize', resize);
 }
