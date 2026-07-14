@@ -1457,11 +1457,8 @@ function SVG(unit, _a = {}) {
     xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${className}`, style }, others));
 }
 
-const namespace = 'http://www.w3.org/2000/svg';
-let instanceCount = 0;
 function SVGText(unit, _a = {}) {
-    var _b;
-    var { text = '', fontSize = 20, fill, outline, shadow, className = '', style = '' } = _a, others = __rest(_a, ["text", "fontSize", "fill", "outline", "shadow", "className", "style"]);
+    var { text = '', fontSize = 20, className = '', style = '' } = _a, others = __rest(_a, ["text", "fontSize", "className", "style"]);
     const css = xnew.css({
         svg: {
             layer: 'base',
@@ -1473,50 +1470,17 @@ function SVGText(unit, _a = {}) {
         },
     });
     xnew.nest(Object.assign({ tag: 'svg', className: `${css.svg} ${className}`, style }, others));
-    let fillPaint = typeof fill === 'string' ? fill : '';
-    if (fill !== undefined && typeof fill !== 'string') {
-        const id = `xnewSVGText${++instanceCount}Fill`;
-        const radian = ((_b = fill.gradient.angle) !== null && _b !== void 0 ? _b : 90) * Math.PI / 180;
-        const gradient = document.createElementNS(namespace, 'linearGradient');
-        gradient.setAttribute('id', id);
-        gradient.setAttribute('x1', String(0.5 - Math.cos(radian) / 2));
-        gradient.setAttribute('y1', String(0.5 - Math.sin(radian) / 2));
-        gradient.setAttribute('x2', String(0.5 + Math.cos(radian) / 2));
-        gradient.setAttribute('y2', String(0.5 + Math.sin(radian) / 2));
-        fill.gradient.stops.forEach((stop) => {
-            const child = document.createElementNS(namespace, 'stop');
-            child.setAttribute('offset', `${stop.offset * 100}%`);
-            child.setAttribute('stop-color', stop.color);
-            gradient.appendChild(child);
-        });
-        const defs = document.createElementNS(namespace, 'defs');
-        defs.appendChild(gradient);
-        unit.element.appendChild(defs);
-        fillPaint = `url(#${id})`;
-    }
-    if (shadow !== undefined) {
-        const element = xnew({ tag: 'text', x: shadow.dx, y: shadow.dy, fontSize, paintOrder: 'stroke fill' }, text).element;
-        element.style.fill = shadow.color;
-    }
-    const outlines = (outline === undefined ? [] : Array.isArray(outline) ? outline : [outline]).slice().sort((a, b) => b.width - a.width);
-    outlines.forEach((entry) => {
-        const element = xnew({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' }, text).element;
-        element.style.fill = entry.color;
-        element.style.stroke = entry.color;
-        element.style.strokeWidth = String(entry.width);
-    });
-    const inner = xnew({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' }, text);
-    if (fillPaint !== '') {
-        inner.element.style.fill = fillPaint;
-    }
+    const svg = unit.element;
+    xnew.nest({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' });
+    unit.element.textContent = text;
     function resize() {
-        const bbox = inner.element.getBBox();
-        unit.element.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
-        unit.element.style.width = bbox.width + 'px';
-        unit.element.style.height = bbox.height + 'px';
+        const bbox = unit.element.getBBox();
+        svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+        svg.style.width = bbox.width + 'px';
+        svg.style.height = bbox.height + 'px';
     }
     resize();
-    inner.on('resize', resize);
+    unit.on('resize', resize);
 }
 
 function InputRange(unit, _a = {}) {

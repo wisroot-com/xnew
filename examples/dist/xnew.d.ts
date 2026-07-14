@@ -240,31 +240,9 @@ declare function SVG(unit: xnew.Unit, { className, style, ...others }?: {
     [key: string]: any;
 }): void;
 
-type SVGTextGradient = {
-    angle?: number;
-    stops: {
-        offset: number;
-        color: string;
-    }[];
-};
-type SVGTextFill = string | {
-    gradient: SVGTextGradient;
-};
-type SVGTextOutline = {
-    color: string;
-    width: number;
-};
-type SVGTextShadow = {
-    dx: number;
-    dy: number;
-    color: string;
-};
-declare function SVGText(unit: xnew.Unit, { text, fontSize, fill, outline, shadow, className, style, ...others }?: {
+declare function SVGText(unit: xnew.Unit, { text, fontSize, className, style, ...others }?: {
     text?: string;
     fontSize?: number;
-    fill?: SVGTextFill;
-    outline?: SVGTextOutline | SVGTextOutline[];
-    shadow?: SVGTextShadow;
     className?: string;
     style?: string;
     [key: string]: any;
