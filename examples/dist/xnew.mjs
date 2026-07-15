@@ -1077,6 +1077,8 @@ function dispatch(info, event, id, payload) {
     const syncId = payload ? payload.syncId : undefined;
     ((_a = Unit.type2units.get(event)) !== null && _a !== void 0 ? _a : []).forEach((unit) => {
         var _a;
+        if (unit._.phase === 'finalized' || unit._.phase === 'finalizing')
+            return;
         if (findRootInfo(unit) !== info)
             return;
         if (event[0] === '-' && syncOf(unit).id !== syncId)
