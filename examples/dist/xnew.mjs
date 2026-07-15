@@ -1667,7 +1667,7 @@ function InputCheckbox(unit, _a = {}) {
 }
 
 function InputText(unit, _a = {}) {
-    var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
+    var { value, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css({
         input: {
             layer: 'base',
@@ -1681,11 +1681,11 @@ function InputText(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'input', type: 'text', className: `${css.input} ${className}`, style }, others));
+    xnew.nest(Object.assign({ tag: 'input', type: 'text', value, className: `${css.input} ${className}`, style }, others));
 }
 
 function InputNumber(unit, _a = {}) {
-    var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
+    var { value, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css({
         input: {
             layer: 'base',
@@ -1701,7 +1701,7 @@ function InputNumber(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'input', type: 'number', className: `${css.input} ${className}`, style }, others));
+    xnew.nest(Object.assign({ tag: 'input', type: 'number', value, className: `${css.input} ${className}`, style }, others));
 }
 
 function InputSwitch(unit, _a = {}) {
@@ -2553,6 +2553,7 @@ function attachReverb(amp, target, reverb) {
     return { convolver, depth };
 }
 function Synthesizer(unit, props) {
+    const active = new Set();
     function press(frequency, duration, wait) {
         var _a;
         resume();
@@ -2601,6 +2602,14 @@ function Synthesizer(unit, props) {
         if (reverb) {
             nodesToDisconnect.push(reverb.convolver, reverb.depth);
         }
+        const note = { oscillators, nodesToDisconnect, stopped: false };
+        active.add(note);
+        const cleanup = () => {
+            active.delete(note);
+            for (const n of nodesToDisconnect) {
+                n.disconnect();
+            }
+        };
         const release = () => {
             if (props.oscillator.envelope) {
                 const amount = semitoneOffset(freq, props.oscillator.envelope.amount);
@@ -2616,11 +2625,8 @@ function Synthesizer(unit, props) {
             for (const o of oscillators) {
                 o.stop(stop);
             }
-            setTimeout(() => {
-                for (const n of nodesToDisconnect) {
-                    n.disconnect();
-                }
-            }, RELEASE_CLEANUP_DELAY_MS);
+            note.stopped = true;
+            xnew.timeout(cleanup, RELEASE_CLEANUP_DELAY_MS);
         };
         if (dv > 0) {
             release();
@@ -2629,6 +2635,19 @@ function Synthesizer(unit, props) {
             return { release };
         }
     }
+    unit.on('finalize', () => {
+        for (const note of active) {
+            if (note.stopped === false) {
+                for (const o of note.oscillators) {
+                    o.stop();
+                }
+            }
+            for (const n of note.nodesToDisconnect) {
+                n.disconnect();
+            }
+        }
+        active.clear();
+    });
     return { press };
 }
 

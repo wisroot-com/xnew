@@ -279,13 +279,15 @@ declare function InputCheckbox(unit: xnew.Unit, { value, className, style, desig
     [key: string]: any;
 }): void;
 
-declare function InputText(unit: xnew.Unit, { className, style, ...others }?: {
+declare function InputText(unit: xnew.Unit, { value, className, style, ...others }?: {
+    value?: string;
     className?: string;
     style?: string;
     [key: string]: any;
 }): void;
 
-declare function InputNumber(unit: xnew.Unit, { className, style, ...others }?: {
+declare function InputNumber(unit: xnew.Unit, { value, className, style, ...others }?: {
+    value?: number;
     className?: string;
     style?: string;
     [key: string]: any;
