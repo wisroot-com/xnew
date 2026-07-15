@@ -122,7 +122,9 @@ export function ioMock(): IoMock {
 
         return {
             id: clientId,
-            emit(event: string, payload?: any): void { conn.serverAny.forEach((h) => h(event, payload)); },   // client→server
+            // client→server: the server processes inbound wire events under the server env (a relay
+            // handler may call emitToClients, which is server-only), mirroring deliverToClient's client wrap.
+            emit(event: string, payload?: any): void { withEnvironment('server', () => conn.serverAny.forEach((h) => h(event, payload))); },
             on(event: string, handler: Handler): void {
                 let set = conn.clientHandlers.get(event);
                 if (set === undefined) { set = new Set(); conn.clientHandlers.set(event, set); }

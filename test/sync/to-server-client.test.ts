@@ -7,8 +7,8 @@ import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 // sync.emitToServer / sync.emitToClients — 方向を明示するイベント送信
 //   - emitToServer(type, props)      : 必ず SERVER 側で type を発火。client→server（送信者 id 付き・'-' は syncId 限定）、
 //                                   server 側からは local emit（xnew.emit 相当）。
-//   - emitToClients(type, props, ids?): 必ず CLIENT 側で（server 経由）type を発火。client→server→全 client（自分含む）、
-//                                   server 側からは全 client へ。ids 指定で宛先を限定。
+//   - emitToClients(type, props, ids?): SERVER 専用。server→全 client（自分含む）。ids 指定で宛先を限定。
+//                                   client からは呼べない（throw）。client→client は server ハンドラの中継で行う。
 //   transport は in-memory な socket.io 風モック（test/sync/io-mock）を使う。
 //----------------------------------------------------------------------------------------------------
 
@@ -70,14 +70,25 @@ describe('sync.emitToServer / sync.emitToClients', () => {
 
     // ---- emitToClients ----
 
-    it('emitToClients (client): reaches every client incl. the sender, with the sender id', () => {
+    it('emitToClients (client): throws — clients cannot fan out to other clients', () => {
+        const client = bootClient({ socket: hub.connect('A') }, function Client() {
+            xsync.client(() => { return { say(text: string) { xsync.emitToClients('chat', { text }); } }; });
+        });
+
+        expect(() => asClient(() => (client as any).say('hi'))).toThrow(/server-only/);
+    });
+
+    it('client→server→clients relay: a server handler re-broadcasts, carrying the sender id in props', () => {
         const a: any[] = [];
         const b: any[] = [];
-        bootServer({ io: hub.io }, function Server() { xsync.server(() => {}); });
+        // server relays 'chat' to every client, naming the original sender via props.id (overrides the undefined envelope id)
+        bootServer({ io: hub.io }, function Server(unit: Unit) {
+            xsync.server(() => { unit.on('chat', ({ id, text }: any) => xsync.emitToClients('chat', { id, text })); });
+        });
         const clientA = bootClient({ socket: hub.connect('A') }, function Client(unit: Unit) {
             xsync.client(() => {
                 unit.on('chat', ({ id, text }: any) => a.push({ id, text }));
-                return { say(text: string) { xsync.emitToClients('chat', { text }); } };
+                return { say(text: string) { xsync.emitToServer('chat', { text }); } };
             });
         });
         bootClient({ socket: hub.connect('B') }, function Client(unit: Unit) {

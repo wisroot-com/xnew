@@ -65,9 +65,10 @@ function rootInfoOf(unit: Unit): ServerInfo | ClientInfo {
 // transport
 //----------------------------------------------------------------------------------------------------
 
-// Reserved wire events for emitToServer / emitToClients (never used as app `type`s).
+// Reserved wire events (never used as app `type`s). Message direction is fixed: clients may only
+// reach the server (emitToServer); fan-out to clients is server-authoritative (emitToClients) — there
+// is no client→client relay, so a client can never route a message to another client.
 const WIRE_TO_SERVER = 'sync:toServer';   // client→server: { type, syncId, data }      → dispatch `type` on the server
-const WIRE_TO_CLIENT = 'sync:toClient';   // client→server: { type, syncId, data, ids } → server fans out to clients
 const WIRE_DELIVER = 'sync:deliver';      // server→client: { type, syncId, id, data }   → dispatch `type` on the client
 
 function dispatch(info: ServerInfo | ClientInfo, event: string, id: string | undefined, payload: any): void {
@@ -80,8 +81,10 @@ function dispatch(info: ServerInfo | ClientInfo, event: string, id: string | und
     });
 }
 
-function relayToClients(info: ServerInfo, type: string, senderId: string | undefined, syncId: number | null, data: any, ids?: string[]): void {
-    const envelope = { type, syncId, id: senderId, data };
+// server→clients only; the envelope id is left undefined (server-originated), so a relaying handler
+// that wants to name the original sender carries the id inside data.
+function relayToClients(info: ServerInfo, type: string, syncId: number | null, data: any, ids?: string[]): void {
+    const envelope = { type, syncId, id: undefined, data };
     if (Array.isArray(ids) && ids.length > 0) {
         ids.forEach((cid) => info.io.to(cid).emit(WIRE_DELIVER, envelope));   // each socket is in a room named by its id
     } else {
@@ -146,9 +149,8 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
         socket.onAny((event: string, payload: any) => {
             if (event === WIRE_TO_SERVER) {
                 dispatch(info, payload?.type, socket.id, payload);
-            } else if (event === WIRE_TO_CLIENT) {
-                relayToClients(info, payload?.type, socket.id, payload?.syncId ?? null, payload?.data, payload?.ids);
             }
+            // no client→client relay: a client can only reach the server (WIRE_TO_SERVER).
         });
         socket.on('disconnect', () => {
             info.clients = info.clients.filter((c) => c.id !== socket.id);
@@ -267,14 +269,15 @@ export const xsync = {
             (info as ClientInfo).socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.current).id, data: props });
         }
     },
+    // server→clients only. Clients cannot fan out to other clients; from a client, emit to the server
+    // (emitToServer) and let a server handler relay via emitToClients.
     emitToClients(type: string, props: Record<string, any> = {}, ids?: string[]): void {
+        if (getEnvironment() !== 'server') {
+            throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
+        }
         const info = rootInfoOf(Unit.current);
         const syncId = syncOf(Unit.current).id;
-        if (getEnvironment() === 'server') {
-            relayToClients(info as ServerInfo, type, undefined, syncId, props, ids);
-        } else {
-            (info as ClientInfo).socket.emit(WIRE_TO_CLIENT, { type, syncId, data: props, ids });
-        }
+        relayToClients(info as ServerInfo, type, syncId, props, ids);
     },
     boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit {
         if (getEnvironment() === 'server') {
