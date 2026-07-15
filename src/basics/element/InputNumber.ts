@@ -7,8 +7,8 @@
 import { xnew } from '../../core/xnew';
 
 export function InputNumber(unit: xnew.Unit,
-    { className = '', style = '', ...others }:
-    { className?: string, style?: string, [key: string]: any } = {}
+    { value, className = '', style = '', ...others }:
+    { value?: number, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css({
         // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
@@ -27,5 +27,5 @@ export function InputNumber(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'input', type: 'number', className: `${css.input} ${className}`, style, ...others });
+    xnew.nest({ tag: 'input', type: 'number', value, className: `${css.input} ${className}`, style, ...others });
 }
