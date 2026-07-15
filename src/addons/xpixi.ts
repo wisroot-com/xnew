@@ -40,18 +40,29 @@ export const xpixi = {
 
 function Root(unit: xnew.Unit, { canvas }: { canvas: HTMLCanvasElement }) {
     let renderer: PIXI.Renderer | null = null;
-    xnew.promise(PIXI.autoDetectRenderer({
+    let finalized = false;
+
+    // autoDetectRenderer resolves to an already-created WebGL renderer; watch the raw promise (not the
+    // scope-guarded xnew.promise chain, which is skipped after finalize) so a renderer that lands post-finalize is destroyed
+    const source = PIXI.autoDetectRenderer({
         width: canvas.width, height: canvas.height, view: canvas,
         antialias: true, backgroundAlpha: 0,
-    })).then((value: any) => {
-        renderer = value;
+    });
+    xnew.promise(source);
+    source.then((value: any) => {
+        if (finalized === true) {
+            value.destroy();
+        } else {
+            renderer = value;
+        }
     });
 
     const scene = new PIXI.Container();
 
-    // null until async creation completes
     unit.on('finalize', () => {
+        finalized = true;
         renderer?.destroy();
+        renderer = null;
     });
 
     return {

@@ -22,6 +22,13 @@ function Root(unit: xnew.Unit, { gravity }: any) {
     xnew.promise(RAPIER.init()).then(() => {
         world = new RAPIER.World(gravity);
     });
+
+    // free the WASM-backed world on tree teardown (the init callback is scope-skipped after finalize, so no world is created if it finalizes first)
+    unit.on('finalize', () => {
+        world?.free();
+        world = null;
+    });
+
     return {
         get world() { return world; },
     };
