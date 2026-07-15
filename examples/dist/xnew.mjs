@@ -1056,9 +1056,8 @@ function syncOf(unit) {
 const rootInfos = new WeakMap();
 function findRootInfo(unit) {
     for (let u = unit; u !== null; u = u._.parent) {
-        const info = rootInfos.get(u);
-        if (info !== undefined) {
-            return info;
+        if (rootInfos.has(u) === true) {
+            return rootInfos.get(u);
         }
     }
     return undefined;

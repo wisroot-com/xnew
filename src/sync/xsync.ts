@@ -46,9 +46,8 @@ const rootInfos: WeakMap<Unit, ServerInfo | ClientInfo> = new WeakMap();
 
 function findRootInfo(unit: Unit): ServerInfo | ClientInfo | undefined {
     for (let u: Unit | null = unit; u !== null; u = u._.parent) {
-        const info = rootInfos.get(u);
-        if (info !== undefined) {
-            return info;
+        if (rootInfos.has(u) === true) {
+            return rootInfos.get(u);
         }
     }
     return undefined;
