@@ -187,7 +187,13 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
         for (const node of tree) {
             const existing = reconcileMap.get(node.id);
             if (existing !== undefined) {
-                Object.assign(syncOf(existing).state, node.state);   // never delete a once-set key (v1 simplification)
+                // reconcile in place (keep the object identity component bodies captured via xsync.state):
+                // drop keys the authoritative state no longer has, then assign the incoming ones.
+                const state = syncOf(existing).state;
+                for (const key of Object.keys(state)) {
+                    if ((key in node.state) === false) { delete state[key]; }
+                }
+                Object.assign(state, node.state);
                 continue;
             }
             const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
