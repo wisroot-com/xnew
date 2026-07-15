@@ -68,6 +68,24 @@ describe('sync.emitToServer / sync.emitToClients', () => {
         expect(hits).toEqual(['A:1']);   // syncId=20 の B には届かない
     });
 
+    it('dispatch: a finalized server unit does not receive a late client message', () => {
+        const hits: string[] = [];
+        let target!: Unit;
+        bootServer({ io: hub.io }, function Server() {
+            xsync.server(() => {
+                target = xnew(function Target(u: Unit) { u.on('hit', () => hits.push('x')); });
+            });
+        });
+        const client = bootClient({ socket: hub.connect('A') }, function Client() {
+            xsync.client(() => { return { fire() { xsync.emitToServer('hit', {}); } }; });
+        });
+
+        asServer(() => target.finalize());
+        asClient(() => (client as any).fire());
+
+        expect(hits).toEqual([]);   // the dying unit's handler must not fire
+    });
+
     // ---- emitToClients ----
 
     it('emitToClients (client): throws — clients cannot fan out to other clients', () => {

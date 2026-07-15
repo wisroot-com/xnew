@@ -75,6 +75,9 @@ function dispatch(info: ServerInfo | ClientInfo, event: string, id: string | und
     const data = payload && payload.data !== null && typeof payload.data === 'object' ? payload.data : {};
     const syncId = payload ? payload.syncId : undefined;
     (Unit.type2units.get(event) ?? []).forEach((unit) => {
+        // socket callbacks run outside the tick/scope machinery: a message landing after finalize()
+        // (or mid-finalize, which Unit.scope does not guard) must not fire a dying unit's handler.
+        if (unit._.phase === 'finalized' || unit._.phase === 'finalizing') return;
         if (findRootInfo(unit) !== info) return; // skip units of another root
         if (event[0] === '-' && syncOf(unit).id !== syncId) return; // skip units of another sync node
         unit._.listeners.get(event)?.forEach((item) => item.execute({ id, ...data }));
