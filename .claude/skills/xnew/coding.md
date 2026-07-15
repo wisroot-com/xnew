@@ -195,26 +195,17 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 - `key` is a **reserved prop** used by `find(..., { key })`; assume it is globally
   unique.
 
-## 10. Scene navigation (`xbasics.Scene` + optional `xbasics.SceneList`)
+## 10. Scene navigation (`xbasics.Scene`)
 
 - **Scene is the navigator; the mounted unit itself is the navigation state.**
   A scene component does `xnew.extend(xbasics.Scene)` to get:
   `unit.change(Component, props?)` — mount the next scene under `unit.parent` and
-  finalize this one (swappable scenes must share a parent container);
-  `unit.change(label)` — resolve `[Component, props]` via
-  `xnew.context(xbasics.SceneList)` and do the same swap (no-op for unknown labels
-  or without a SceneList; no index form); and `unit.add(Component, props)` — child
-  under the scene unit, finalized together with it (returns the unit). From a
+  finalize this one (swappable scenes must share a parent container); and
+  `unit.add(Component, props)` — child under the scene unit, finalized together
+  with it (returns the unit). Navigation is **by component** only — there is no
+  label form and no SceneList lookup table (both removed 2026-07). From a
   descendant, use `xnew.context(xbasics.Scene).change/add(...)`. Scenes are
   recreated from props; they do not preserve state across moves.
-- **SceneList is an optional pure lookup table — it creates nothing.**
-  `xnew(xbasics.SceneList, { list: { title: [Title], play: [Play, props] } })`;
-  every value is exactly one `[Component, props]` scene (no arrays, no bare
-  Components, no initial). Create it BEFORE the first scene in the same scope
-  (or an ancestor) — context entries chain through the scope, so a preceding
-  sibling is visible — then mount the first scene yourself: `xnew(Title)`.
-  With nested SceneLists, `change(label)` resolves only the NEAREST one (no
-  fallthrough to outer lists).
 - **Scene leave protocol (out-in): a scene opts into an exit transition by returning a
   `leave()` define; entrance effects need no protocol (do them in the component body).**
   `change` calls the unit's own `leave()` and waits for its return value — return the
