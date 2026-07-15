@@ -2316,6 +2316,11 @@ if (context !== null && master !== null) {
     master.gain.value = DEFAULT_MASTER_GAIN;
     master.connect(context.destination);
 }
+function resume() {
+    if (context !== null && context.state === 'suspended') {
+        context.resume();
+    }
+}
 function Volume(unit) {
     return {
         get volume() {
@@ -2403,6 +2408,7 @@ function AudioTrack(unit, { url, volume, loop = false }) {
     });
     return {
         play: function play({ offset, fade: fadeMs = 0, loop: loopArg } = {}) {
+            resume();
             if (buffer === undefined) {
                 promise.then(() => play({ offset, fade: fadeMs, loop: loopArg }));
                 return;
@@ -2549,6 +2555,7 @@ function attachReverb(amp, target, reverb) {
 function Synthesizer(unit, props) {
     function press(frequency, duration, wait) {
         var _a;
+        resume();
         const freq = resolveFrequency(frequency);
         const dv = resolveDurationSeconds(duration, (_a = props.bpm) !== null && _a !== void 0 ? _a : DEFAULT_BPM);
         const start = context.currentTime + (wait !== null && wait !== void 0 ? wait : 0) / 1000;
