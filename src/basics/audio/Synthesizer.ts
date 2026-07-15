@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { context, master } from './master';
+import { context, master, resume } from './master';
 
 const DEFAULT_BPM = 120;
 const RELEASE_CLEANUP_DELAY_MS = 2000;
@@ -177,6 +177,7 @@ export function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions) {
     // one the note auto-releases, without one it sustains and returns { release }. `wait` (ms) delays
     // the attack.
     function press(frequency: number | string, duration?: number | string, wait?: number) {
+        resume();   // wake a suspended context (autoplay policy); no-op once running
         const freq = resolveFrequency(frequency);
         const dv = resolveDurationSeconds(duration, props.bpm ?? DEFAULT_BPM);
         const start = context.currentTime + (wait ?? 0) / 1000;

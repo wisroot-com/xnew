@@ -19,6 +19,14 @@ if (context !== null && master !== null) {
     master.connect(context.destination);
 }
 
+// Wake the context if the browser left it suspended (autoplay policy). Call from a sound entry point
+// (press / play), which runs inside a user gesture; a no-op once running or where there is no context.
+export function resume(): void {
+    if (context !== null && context.state === 'suspended') {
+        context.resume();
+    }
+}
+
 //----------------------------------------------------------------------------------------------------
 // Volume — master-gain accessor as a component, so UI code reads / writes global volume without the bus
 //----------------------------------------------------------------------------------------------------
