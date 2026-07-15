@@ -2,6 +2,7 @@ name: test
 
 on:
   push:
+  pull_request:
 
 jobs:
   build:
@@ -12,4 +13,6 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
+      - run: npm run types:check
       - run: npm test
+      - run: npm run build

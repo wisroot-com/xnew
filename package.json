@@ -5,6 +5,11 @@
     "Component-Oriented Programming"
   ],
   "version": "0.9.3",
+  "type": "commonjs",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
   "module": "dist/xnew.mjs",
   "types": "dist/xnew.d.ts",
   "exports": {
@@ -54,6 +59,7 @@
   "homepage": "https://github.com/mulsense/xnew#readme",
   "scripts": {
     "test": "jest",
+    "types:check": "tsc --noEmit -p tsconfig.json",
     "build": "npx rollup --config rollup.config.js --bundleConfigAsCjs",
     "dev": "npx rollup --config rollup.config.js --watch --bundleConfigAsCjs"
   },
