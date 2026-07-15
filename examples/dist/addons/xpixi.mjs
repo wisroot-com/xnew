@@ -33,15 +33,25 @@ const xpixi = {
 };
 function Root(unit, { canvas }) {
     let renderer = null;
-    xnew.promise(PIXI.autoDetectRenderer({
+    let finalized = false;
+    const source = PIXI.autoDetectRenderer({
         width: canvas.width, height: canvas.height, view: canvas,
         antialias: true, backgroundAlpha: 0,
-    })).then((value) => {
-        renderer = value;
+    });
+    xnew.promise(source);
+    source.then((value) => {
+        if (finalized === true) {
+            value.destroy();
+        }
+        else {
+            renderer = value;
+        }
     });
     const scene = new PIXI.Container();
     unit.on('finalize', () => {
+        finalized = true;
         renderer === null || renderer === void 0 ? void 0 : renderer.destroy();
+        renderer = null;
     });
     return {
         get renderer() { return renderer; },

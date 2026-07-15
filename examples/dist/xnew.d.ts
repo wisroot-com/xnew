@@ -383,6 +383,10 @@ declare function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions): {
     } | undefined;
 };
 
+declare function Volume(unit: xnew.Unit): {
+    volume: number;
+};
+
 declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
     open?: boolean;
     duration?: number;
@@ -477,7 +481,7 @@ declare const xbasics: {
     InputSelect: typeof InputSelect;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
-    Volume: any;
+    Volume: typeof Volume;
     Gate: typeof Gate;
     Accordion: typeof Accordion;
     Overlay: typeof Overlay;

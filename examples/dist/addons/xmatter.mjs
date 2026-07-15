@@ -16,6 +16,10 @@ const xmatter = {
 };
 function Root(unit, {}) {
     const engine = Matter.Engine.create();
+    unit.on('finalize', () => {
+        Matter.World.clear(engine.world, false);
+        Matter.Engine.clear(engine);
+    });
     return {
         get engine() { return engine; },
     };
