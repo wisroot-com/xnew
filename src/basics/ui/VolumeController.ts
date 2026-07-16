@@ -36,16 +36,16 @@ export function VolumeController(unit: xnew.Unit,
     const css = xnew.css({
         container: {
             layer: 'base',
-            body: `position: relative;`,
+            block: `position: relative;`,
         },
         button: {
             layer: 'base',
-            body: `width: 100%; height: 100%; cursor: pointer;`,
+            block: `width: 100%; height: 100%; cursor: pointer;`,
         },
         // slider holder anchored to an icon edge; the growth axis animates from 0, cross axis is centered
         outer: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute;
                 display: flex; align-items: center; justify-content: center;
                 opacity: 0; pointer-events: none;

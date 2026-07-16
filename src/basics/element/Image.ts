@@ -15,7 +15,7 @@ export function Image(unit: xnew.Unit,
     const css = xnew.css({
         image: {
             layer: 'base',
-            body: `
+            block: `
             `,
         },
     });

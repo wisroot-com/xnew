@@ -14,7 +14,7 @@ export function Button(unit: xnew.Unit,
         // inline-flex centers the label while flowing like a native control; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
         button: {
             layer: 'base',
-            body: `
+            block: `
                 min-width: 6em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em; margin: 0.125em;
                 padding: 0 0.5em; margin: 0.125em;
                 cursor: pointer; user-select: none;

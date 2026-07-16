@@ -16,7 +16,7 @@ export function Screen(unit: xnew.Unit,
         // vertical-align: bottom drops the inline-canvas baseline gap so the buffer fills the ratio box exactly
         canvas: {
             layer: 'base',
-            body: `
+            block: `
                 width: 100%; height: 100%;
                 vertical-align: bottom;
             `,

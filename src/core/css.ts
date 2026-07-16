@@ -6,7 +6,7 @@
 
 import { Unit } from './unit';
 
-export interface CssDef { layer?: string; type?: string; body: string; }
+export interface CssDef { layer?: string; type?: string; block: string; }
 
 interface CssEntry { names: Record<string, string>; refs: number; style: HTMLStyleElement; }
 
@@ -44,13 +44,13 @@ export function applyCss(unit: Unit, defs: Record<string, string | CssDef>): Rec
             }
         });
         const text = Object.entries(defs).map(([name, value]) => {
-            const def = typeof value === 'string' ? { body: value } : value;
+            const def = typeof value === 'string' ? { block: value } : value;
 
             let rule: string;
             if (def.type === undefined) {
-                rule = `.${names[name]} {\n${resolve(def.body)}\n}`;
+                rule = `.${names[name]} {\n${resolve(def.block)}\n}`;
             } else if (typeName.test(def.type) === true) {
-                rule = `@${def.type} ${names[name]} {\n${resolve(def.body)}\n}`;
+                rule = `@${def.type} ${names[name]} {\n${resolve(def.block)}\n}`;
             } else {
                 throw new Error(`xnew.css: invalid type "${def.type}".`);
             }

@@ -18,7 +18,7 @@ export function Template(unit: xnew.Unit,
     const css = xnew.css({
         outline: {
             layer: 'base',
-            body: `
+            block: `
                 width: 1em; height: 1em;
                 stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round;
                 fill: none;
@@ -26,7 +26,7 @@ export function Template(unit: xnew.Unit,
         },
         solid: {
             layer: 'base',
-            body: `
+            block: `
                 width: 1em; height: 1em;
                 stroke: none;
                 fill: currentColor;

@@ -14,7 +14,7 @@ export function InputNumber(unit: xnew.Unit,
         // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
         input: {
             layer: 'base',
-            body: `
+            block: `
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
                 text-align: center; padding: 0 0.5em;
                 background: transparent; color: inherit; font: inherit;

@@ -24,7 +24,7 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
         // the vertical padding sits outside the scrollport so the scrollbar stays clear of the host's rounded corners
         const css = xnew.css({
             // transparent track lets the surface behind show through, so the scrollbar blends into any background
-            scroll: { body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
+            scroll: { block: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
         });
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
         xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);

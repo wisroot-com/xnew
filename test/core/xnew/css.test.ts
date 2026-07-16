@@ -35,7 +35,7 @@ describe('xnew.css', () => {
     it('wraps an entry with a layer in @layer', () => {
         let css!: Record<string, string>;
         xnew(() => {
-            css = xnew.css({ frame: { layer: 'xnew', body: 'color: red;' } });
+            css = xnew.css({ frame: { layer: 'xnew', block: 'color: red;' } });
         });
         const text = styleElements()[0].textContent!;
         expect(text).toMatch(/^@layer xnew \{/);
@@ -46,7 +46,7 @@ describe('xnew.css', () => {
         let css!: Record<string, string>;
         xnew(() => {
             css = xnew.css({
-                frame: { layer: 'xnew', body: 'color: red;' },
+                frame: { layer: 'xnew', block: 'color: red;' },
                 plain: 'color: blue;',
             });
         });
@@ -59,7 +59,7 @@ describe('xnew.css', () => {
         let css!: Record<string, string>;
         xnew(() => {
             css = xnew.css({
-                turn: { type: 'keyframes', body: 'to { transform: rotate(1turn); }' },
+                turn: { type: 'keyframes', block: 'to { transform: rotate(1turn); }' },
             });
         });
         const text = styleElements()[0].textContent!;
@@ -72,7 +72,7 @@ describe('xnew.css', () => {
         let css!: Record<string, string>;
         xnew(() => {
             css = xnew.css({
-                turn: { type: 'keyframes', body: 'to { transform: rotate(1turn); }' },
+                turn: { type: 'keyframes', block: 'to { transform: rotate(1turn); }' },
                 box: 'animation: $turn 1s linear infinite;',
             });
         });
@@ -101,12 +101,12 @@ describe('xnew.css', () => {
     it('throws on an invalid type or layer (injection is rejected)', () => {
         expect(() => {
             xnew(() => {
-                xnew.css({ bad: { type: 'body, .x', body: 'color: red;' } });
+                xnew.css({ bad: { type: 'body, .x', block: 'color: red;' } });
             });
         }).toThrow('invalid type');
         expect(() => {
             xnew(() => {
-                xnew.css({ bad: { layer: 'x } body { color: red; }', body: 'color: red;' } });
+                xnew.css({ bad: { layer: 'x } body { color: red; }', block: 'color: red;' } });
             });
         }).toThrow('invalid layer');
     });
@@ -120,10 +120,10 @@ describe('xnew.css', () => {
         expect(Object.keys(css)).toEqual(['link']);
     });
 
-    it('keeps layered and unlayered definitions of the same body separate', () => {
+    it('keeps layered and unlayered definitions of the same block separate', () => {
         let plain!: Record<string, string>, layered!: Record<string, string>;
         xnew(() => { plain = xnew.css({ frame: 'color: red;' }); });
-        xnew(() => { layered = xnew.css({ frame: { layer: 'xnew', body: 'color: red;' } }); });
+        xnew(() => { layered = xnew.css({ frame: { layer: 'xnew', block: 'color: red;' } }); });
         expect(styleElements()).toHaveLength(2);
         expect(layered.frame).not.toBe(plain.frame);
     });

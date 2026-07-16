@@ -16,7 +16,7 @@ export function Accordion(unit: xnew.Unit,
     const css = xnew.css({
         container: {
             layer: 'base',
-            body: `
+            block: `
                 overflow: hidden;
                 box-sizing: border-box;
             `,

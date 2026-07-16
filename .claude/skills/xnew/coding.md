@@ -57,10 +57,10 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   must match `[A-Za-z][A-Za-z0-9_-]*` (anything else throws) — there is no way to emit a
   global rule. A value is either a **declaration block string**, wrapped as
   `.xnewN-key { … }` (native CSS nesting works inside: `&:hover`, `@media`, descendant
-  selectors), or an **object** `{ layer?, type?, body }`: `type` names an at-rule without
-  `@` to hang the generated name on — `turn: { type: 'keyframes', body: 'from {…} to {…}' }`
+  selectors), or an **object** `{ layer?, type?, block }`: `type` names an at-rule without
+  `@` to hang the generated name on — `turn: { type: 'keyframes', block: 'from {…} to {…}' }`
   emits a **scoped animation** `@keyframes xnewN-turn { … }` (absent: a class rule) — and
-  `layer` wraps that entry in `@layer` (invalid types / layers throw). `$key` inside a body
+  `layer` wraps that entry in `@layer` (invalid types / layers throw). `$key` inside a block
   references another entry's generated name — `animation: $turn 0.8s linear infinite;` —
   and an unknown `$key` throws (a letter must follow `$`, so `[href$=".png"]` is untouched).
   The return value maps each key to its generated name (typed via `keyof`) to embed in tag

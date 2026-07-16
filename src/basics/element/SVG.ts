@@ -13,7 +13,7 @@ export function SVG(unit: xnew.Unit,
     const css = xnew.css({
         svg: {
             layer: 'base',
-            body: `
+            block: `
                 stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
                 fill: none; fill-opacity: 1;
             `,

@@ -928,13 +928,13 @@ function applyCss(unit, defs) {
             }
         });
         const text = Object.entries(defs).map(([name, value]) => {
-            const def = typeof value === 'string' ? { body: value } : value;
+            const def = typeof value === 'string' ? { block: value } : value;
             let rule;
             if (def.type === undefined) {
-                rule = `.${names[name]} {\n${resolve(def.body)}\n}`;
+                rule = `.${names[name]} {\n${resolve(def.block)}\n}`;
             }
             else if (typeName.test(def.type) === true) {
-                rule = `@${def.type} ${names[name]} {\n${resolve(def.body)}\n}`;
+                rule = `@${def.type} ${names[name]} {\n${resolve(def.block)}\n}`;
             }
             else {
                 throw new Error(`xnew.css: invalid type "${def.type}".`);
@@ -1070,6 +1070,7 @@ function rootInfoOf(unit) {
     return info;
 }
 const WIRE_TO_SERVER = 'sync:toServer';
+const WIRE_TO_CLIENT = 'sync:toClient';
 const WIRE_DELIVER = 'sync:deliver';
 function dispatch(info, event, id, payload) {
     var _a;
@@ -1077,8 +1078,6 @@ function dispatch(info, event, id, payload) {
     const syncId = payload ? payload.syncId : undefined;
     ((_a = Unit.type2units.get(event)) !== null && _a !== void 0 ? _a : []).forEach((unit) => {
         var _a;
-        if (unit._.phase === 'finalized' || unit._.phase === 'finalizing')
-            return;
         if (findRootInfo(unit) !== info)
             return;
         if (event[0] === '-' && syncOf(unit).id !== syncId)
@@ -1086,8 +1085,8 @@ function dispatch(info, event, id, payload) {
         (_a = unit._.listeners.get(event)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
     });
 }
-function relayToClients(info, type, syncId, data, ids) {
-    const envelope = { type, syncId, id: undefined, data };
+function relayToClients(info, type, senderId, syncId, data, ids) {
+    const envelope = { type, syncId, id: senderId, data };
     if (Array.isArray(ids) && ids.length > 0) {
         ids.forEach((cid) => info.io.to(cid).emit(WIRE_DELIVER, envelope));
     }
@@ -1141,8 +1140,12 @@ function bootServer(opts, parent, args) {
         dispatch(info, 'sync.connect', socket.id, undefined);
         statusUpdate();
         socket.onAny((event, payload) => {
+            var _a;
             if (event === WIRE_TO_SERVER) {
                 dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, payload);
+            }
+            else if (event === WIRE_TO_CLIENT) {
+                relayToClients(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, (_a = payload === null || payload === void 0 ? void 0 : payload.syncId) !== null && _a !== void 0 ? _a : null, payload === null || payload === void 0 ? void 0 : payload.data, payload === null || payload === void 0 ? void 0 : payload.ids);
             }
         });
         socket.on('disconnect', () => {
@@ -1173,13 +1176,7 @@ function bootClient(opts, parent, args) {
         for (const node of tree) {
             const existing = reconcileMap.get(node.id);
             if (existing !== undefined) {
-                const state = syncOf(existing).state;
-                for (const key of Object.keys(state)) {
-                    if ((key in node.state) === false) {
-                        delete state[key];
-                    }
-                }
-                Object.assign(state, node.state);
+                Object.assign(syncOf(existing).state, node.state);
                 continue;
             }
             const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
@@ -1270,12 +1267,14 @@ const xsync = {
         }
     },
     emitToClients(type, props = {}, ids) {
-        if (getEnvironment() !== 'server') {
-            throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
-        }
         const info = rootInfoOf(Unit.current);
         const syncId = syncOf(Unit.current).id;
-        relayToClients(info, type, syncId, props, ids);
+        if (getEnvironment() === 'server') {
+            relayToClients(info, type, undefined, syncId, props, ids);
+        }
+        else {
+            info.socket.emit(WIRE_TO_CLIENT, { type, syncId, data: props, ids });
+        }
     },
     boot(opts, ...args) {
         if (getEnvironment() === 'server') {
@@ -1291,7 +1290,7 @@ function Aspect(unit, { aspect = 1.0, fit = 'contain' } = {}) {
     const css = xnew.css({
         container: {
             layer: 'base',
-            body: `
+            block: `
                 width: 100%; height: 100%;
                 display: flex; align-items: center; justify-content: center;
                 container-type: size;
@@ -1299,7 +1298,7 @@ function Aspect(unit, { aspect = 1.0, fit = 'contain' } = {}) {
         },
         inner: {
             layer: 'base',
-            body: `
+            block: `
                 position: relative;
                 container-type: size;
             `,
@@ -1322,7 +1321,7 @@ function Screen(unit, { width = 800, height = 600, fit = 'contain' } = {}) {
     const css = xnew.css({
         canvas: {
             layer: 'base',
-            body: `
+            block: `
                 width: 100%; height: 100%;
                 vertical-align: bottom;
             `,
@@ -1398,7 +1397,7 @@ function Button(unit, _a = {}) {
     const css = xnew.css({
         button: {
             layer: 'base',
-            body: `
+            block: `
                 min-width: 6em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em; margin: 0.125em;
                 padding: 0 0.5em; margin: 0.125em;
                 cursor: pointer; user-select: none;
@@ -1416,7 +1415,7 @@ function Image(unit, _a) {
     const css = xnew.css({
         image: {
             layer: 'base',
-            body: `
+            block: `
             `,
         },
     });
@@ -1450,7 +1449,7 @@ function SVG(unit, _a = {}) {
     const css = xnew.css({
         svg: {
             layer: 'base',
-            body: `
+            block: `
                 stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
                 fill: none; fill-opacity: 1;
             `,
@@ -1464,7 +1463,7 @@ function SVGText(unit, _a = {}) {
     const css = xnew.css({
         svg: {
             layer: 'base',
-            body: `
+            block: `
                 stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
                 fill: currentColor; fill-opacity: 1;
                 overflow: visible;
@@ -1492,26 +1491,26 @@ function InputRange(unit, _a = {}) {
     const css = xnew.css({
         container: {
             layer: 'base',
-            body: `
+            block: `
                 display: inline-block;
                 position: relative; margin: 0.125em;
             `,
         },
         horizontal: {
             layer: 'base',
-            body: `
+            block: `
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
             `,
         },
         vertical: {
             layer: 'base',
-            body: `
+            block: `
                 width: 1.8em; height: 10em; max-height: -webkit-fill-available; max-height: -moz-available; max-height: stretch;
             `,
         },
         frame: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; inset: 0;
                 border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
                 border-radius: 0.25em;
@@ -1519,7 +1518,7 @@ function InputRange(unit, _a = {}) {
         },
         meter: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute;
                 box-sizing: border-box;
                 border: 1px solid currentColor; border-radius: 0.25em;
@@ -1528,21 +1527,21 @@ function InputRange(unit, _a = {}) {
         },
         meterHorizontal: {
             layer: 'base',
-            body: `
+            block: `
                 top: 0; left: 0; bottom: 0;
                 transition: width 0.05s;
             `,
         },
         meterVertical: {
             layer: 'base',
-            body: `
+            block: `
                 left: 0; right: 0; bottom: 0;
                 transition: height 0.05s;
             `,
         },
         status: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; inset: 0;
                 box-sizing: border-box;
                 display: flex;
@@ -1551,21 +1550,21 @@ function InputRange(unit, _a = {}) {
         },
         statusHorizontal: {
             layer: 'base',
-            body: `
+            block: `
                 padding: 0 0.5em;
                 justify-content: flex-end; align-items: center;
             `,
         },
         statusVertical: {
             layer: 'base',
-            body: `
+            block: `
                 padding: 0.5em 0;
                 justify-content: center; align-items: flex-end;
             `,
         },
         input: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; user-select: none; margin: 0;
                 appearance: none;
@@ -1573,14 +1572,14 @@ function InputRange(unit, _a = {}) {
         },
         inputHorizontal: {
             layer: 'base',
-            body: `
+            block: `
                 &::-webkit-slider-thumb { appearance: none; width: 0; }
                 &::-moz-range-thumb { width: 0; border: none; }
             `,
         },
         inputVertical: {
             layer: 'base',
-            body: `
+            block: `
                 writing-mode: vertical-lr; direction: rtl;
                 &::-webkit-slider-thumb { appearance: none; height: 0; }
                 &::-moz-range-thumb { height: 0; border: none; }
@@ -1618,7 +1617,7 @@ function InputCheckbox(unit, _a = {}) {
     const css = xnew.css({
         container: {
             layer: 'base',
-            body: `
+            block: `
                 display: inline-block;
                 width: 1.5em; height: 1.5em; margin: 0.125em;
                 position: relative;
@@ -1626,7 +1625,7 @@ function InputCheckbox(unit, _a = {}) {
         },
         frame: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; inset: 0;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 [data-checked] > & { background: color-mix(in srgb, currentColor 20%, transparent); }
@@ -1634,7 +1633,7 @@ function InputCheckbox(unit, _a = {}) {
         },
         svg: {
             layer: 'base',
-            body: `
+            block: `
                 box-sizing: border-box; display: block; width: 100%; height: 100%;
                 stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
                 fill: none;
@@ -1644,7 +1643,7 @@ function InputCheckbox(unit, _a = {}) {
         },
         input: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;
             `,
@@ -1671,7 +1670,7 @@ function InputText(unit, _a = {}) {
     const css = xnew.css({
         input: {
             layer: 'base',
-            body: `
+            block: `
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
                 padding: 0 0.5em;
                 background: transparent; color: inherit; font: inherit;
@@ -1689,7 +1688,7 @@ function InputNumber(unit, _a = {}) {
     const css = xnew.css({
         input: {
             layer: 'base',
-            body: `
+            block: `
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
                 text-align: center; padding: 0 0.5em;
                 background: transparent; color: inherit; font: inherit;
@@ -1710,7 +1709,7 @@ function InputSwitch(unit, _a = {}) {
     const css = xnew.css({
         container: {
             layer: 'base',
-            body: `
+            block: `
                 display: inline-block;
                 width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
                 position: relative;
@@ -1718,7 +1717,7 @@ function InputSwitch(unit, _a = {}) {
         },
         frame: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; inset: 0;
                 border: 1px solid currentColor; border-radius: 1em;
                 [data-checked] > & { background: color-mix(in srgb, currentColor 20%, transparent); }
@@ -1726,7 +1725,7 @@ function InputSwitch(unit, _a = {}) {
         },
         knob: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
                 aspect-ratio: 1 / 1; border-radius: 50%;
                 background: currentColor;
@@ -1736,7 +1735,7 @@ function InputSwitch(unit, _a = {}) {
         },
         input: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;
             `,
@@ -1762,14 +1761,14 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
     const css = xnew.css({
         container: {
             layer: 'base',
-            body: `
+            block: `
                 display: inline-block;
                 width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;
             `,
         },
         frame: {
             layer: 'base',
-            body: `
+            block: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 display: flex; align-items: stretch; overflow: hidden;
                 border: 1px solid currentColor; border-radius: 0.25em;
@@ -1777,7 +1776,7 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
         },
         item: {
             layer: 'base',
-            body: `
+            block: `
                 position: relative; padding: 0.25em 0.5em;
                 flex: 1 1 0;
                 display: flex; align-items: center; justify-content: center;
@@ -1790,7 +1789,7 @@ function InputRadio(unit, { value, items = [], name = '', className = '', style 
         },
         input: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;
             `,
@@ -1824,7 +1823,7 @@ function Template(unit, _a) {
     const css = xnew.css({
         outline: {
             layer: 'base',
-            body: `
+            block: `
                 width: 1em; height: 1em;
                 stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round;
                 fill: none;
@@ -1832,7 +1831,7 @@ function Template(unit, _a) {
         },
         solid: {
             layer: 'base',
-            body: `
+            block: `
                 width: 1em; height: 1em;
                 stroke: none;
                 fill: currentColor;
@@ -2195,7 +2194,7 @@ function InputSelect(unit, _a = {}) {
     const css = xnew.css({
         container: {
             layer: 'base',
-            body: `
+            block: `
                 position: relative;
                 display: inline-flex; align-items: center;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
@@ -2204,7 +2203,7 @@ function InputSelect(unit, _a = {}) {
         },
         frame: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; inset: 0;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 pointer-events: none;
@@ -2213,13 +2212,13 @@ function InputSelect(unit, _a = {}) {
         },
         label: {
             layer: 'base',
-            body: `
+            block: `
                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             `,
         },
         menu: {
             layer: 'base',
-            body: `
+            block: `
                 position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000;
                 max-height: 12em;
                 border: 1px solid currentColor;
@@ -2228,7 +2227,7 @@ function InputSelect(unit, _a = {}) {
         },
         item: {
             layer: 'base',
-            body: `
+            block: `
                 height: 2em; padding: 0 0.5em;
                 display: flex; align-items: center;
                 white-space: nowrap;
@@ -2688,7 +2687,7 @@ function Accordion(unit, _a = {}) {
     const css = xnew.css({
         container: {
             layer: 'base',
-            body: `
+            block: `
                 overflow: hidden;
                 box-sizing: border-box;
             `,
@@ -2709,7 +2708,7 @@ function Overlay(unit, _a = {}) {
     const css = xnew.css({
         container: {
             layer: 'base',
-            body: `
+            block: `
                 position: fixed; inset: 0; z-index: 1000;
                 opacity: 0;
             `,
@@ -2729,14 +2728,14 @@ function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
     const css = xnew.css({
         container: {
             layer: 'base',
-            body: `
+            block: `
                 position: relative;
                 cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
             `,
         },
         svg: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; inset: 0; box-sizing: border-box; display: block; width: 100%; height: 100%;
                 stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
                 fill: #FFF; fill-opacity: 0.8;
@@ -2777,14 +2776,14 @@ function DPad(unit, { diagonal = true, className = '', style = '', designs = {} 
     const css = xnew.css({
         container: {
             layer: 'base',
-            body: `
+            block: `
                 position: relative;
                 cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
             `,
         },
         svg: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; inset: 0; box-sizing: border-box; display: block; width: 100%; height: 100%;
                 stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
                 fill: #FFF; fill-opacity: 0.8;
@@ -2855,7 +2854,7 @@ function Panel(unit, { params, nested = false }) {
     const object = params !== null && params !== void 0 ? params : {};
     if (nested === false) {
         const css = xnew.css({
-            scroll: { body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
+            scroll: { block: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
         });
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
         xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
@@ -2948,15 +2947,15 @@ function VolumeController(unit, { placement = 'left', className = '', style = ''
     const css = xnew.css({
         container: {
             layer: 'base',
-            body: `position: relative;`,
+            block: `position: relative;`,
         },
         button: {
             layer: 'base',
-            body: `width: 100%; height: 100%; cursor: pointer;`,
+            block: `width: 100%; height: 100%; cursor: pointer;`,
         },
         outer: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute;
                 display: flex; align-items: center; justify-content: center;
                 opacity: 0; pointer-events: none;

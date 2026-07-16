@@ -20,7 +20,7 @@ export function InputRadio(unit: xnew.Unit,
         // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
         container: {
             layer: 'base',
-            body: `
+            block: `
                 display: inline-block;
                 width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;
             `,
@@ -29,7 +29,7 @@ export function InputRadio(unit: xnew.Unit,
         // item tints, or their corners would poke out of the ring
         frame: {
             layer: 'base',
-            body: `
+            block: `
                 box-sizing: border-box; width: 100%; height: 100%;
                 display: flex; align-items: stretch; overflow: hidden;
                 border: 1px solid currentColor; border-radius: 0.25em;
@@ -37,7 +37,7 @@ export function InputRadio(unit: xnew.Unit,
         },
         item: {
             layer: 'base',
-            body: `
+            block: `
                 position: relative; padding: 0.25em 0.5em;
                 flex: 1 1 0;
                 display: flex; align-items: center; justify-content: center;
@@ -50,7 +50,7 @@ export function InputRadio(unit: xnew.Unit,
         },
         input: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;
             `,

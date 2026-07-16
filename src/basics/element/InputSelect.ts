@@ -18,7 +18,7 @@ export function InputSelect(unit: xnew.Unit,
         // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
         container: {
             layer: 'base',
-            body: `
+            block: `
                 position: relative;
                 display: inline-flex; align-items: center;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
@@ -28,7 +28,7 @@ export function InputSelect(unit: xnew.Unit,
         // full-extent overlay carrying the framed look; hover / open state is on the container
         frame: {
             layer: 'base',
-            body: `
+            block: `
                 position: absolute; inset: 0;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 pointer-events: none;
@@ -37,13 +37,13 @@ export function InputSelect(unit: xnew.Unit,
         },
         label: {
             layer: 'base',
-            body: `
+            block: `
                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             `,
         },
         menu: {
             layer: 'base',
-            body: `
+            block: `
                 position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000;
                 max-height: 12em;
                 border: 1px solid currentColor;
@@ -52,7 +52,7 @@ export function InputSelect(unit: xnew.Unit,
         },
         item: {
             layer: 'base',
-            body: `
+            block: `
                 height: 2em; padding: 0 0.5em;
                 display: flex; align-items: center;
                 white-space: nowrap;
