@@ -25,8 +25,11 @@
       const button1 = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open modal!');
       button1.on('click', () => xnew(MyModal));
 
-      const button2 = xnew('<button class="relative h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open menu!');
-      button2.on('click', () => xnew(button2.element, MyMenu));
+      // wrap the button so the menu mounts as its sibling (not inside the <button>, where its text
+      // couldn't be selected and its clicks would re-trigger the button); the wrapper anchors the dropdown
+      const anchor = xnew('<div class="relative flex">');
+      const button2 = xnew(anchor, '<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open menu!');
+      button2.on('click', () => xnew(anchor, MyMenu));
     });
 
     function MyAccordion(unit) {
@@ -60,21 +63,19 @@
     }
 
     function MyMenu(unit) {
-      // the dropdown is the only "inside"; a press anywhere else (incl. the opener button) closes it
-      xnew((menu) => {
-        xnew.nest('<div class="absolute top-full right-0 py-2">');
-        // keep dropdown clicks from bubbling to the opener button (which would re-open a menu)
-        menu.on('click', ({ event }) => event.stopPropagation());
-        menu.on('pointerdown.outside', () => gate.close());
+      // a transparent backdrop covers the page (incl. the opener button) while open, so the button
+      // can't be re-triggered; a press on the backdrop closes the menu
+      const gate = xnew(xbasics.Overlay, { gate: { open: false } }).gate;
+      gate.on('-closed', () => unit.finalize());
 
-        // Accordion creates the Gate; open it once mounted, finalize the menu when it reports fully closed
-        const gate = xnew.extend(xbasics.Accordion, { gate: { open: false } }).gate;
-        gate.on('-closed', () => unit.finalize());
-        gate.open();
+      // the dropdown is anchored to the wrapper and stacked above the backdrop
+      xnew.nest('<div class="absolute top-full right-0 py-2" style="z-index: 1001;">');
+      // Accordion shares the Overlay's Gate, so the dropdown and backdrop animate together
+      xnew.extend(xbasics.Accordion, { gate });
+      xnew.nest('<div class="w-[300px] border rounded-lg bg-white">');
+      xnew('<div class="p-2">', Contents);
 
-        xnew.nest('<div class="w-[300px] border rounded-lg bg-white">');
-        xnew('<div class="p-2">', Contents);
-      });
+      gate.open();
     }
 
     function Contents(unit) {
