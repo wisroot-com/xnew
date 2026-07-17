@@ -9,7 +9,8 @@ import { xicons } from '../../icons/xicons';
 import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
 import { InputCheckbox } from '../element/InputCheckbox';
-import { InputSelect } from '../element/InputSelect';
+import { InputSelect, InputSelectMenu, InputSelectItem } from '../element/InputSelect';
+import { Gate } from './Gate';
 import { Accordion } from './Accordion';
 
 // nested is internal: group() marks its inner Panel so only the root creates the scroll container
@@ -98,9 +99,18 @@ function Checkbox(unit: xnew.Unit, { name = '', ...others }: { name?: string, [k
     xnew(InputCheckbox, { name, ...others, style: 'width: 1.25em; height: 1.25em;' });
 }
 
-function Select(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key: string]: any }) {
+function Select(unit: xnew.Unit, { name = '', value, items = [], ...others }: { name?: string, value?: string, items?: string[], [key: string]: any }) {
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
 
-    xnew(InputSelect, { name, ...others, style: 'width: auto; min-width: 3em; height: 2em;' });
+    // field + floating list: one shared Gate lets the menu open/close while the Accordion slides the rows
+    xnew((field: xnew.Unit) => {
+        xnew.extend(InputSelect, { value, ...others, style: 'max-width: 60%; height: 2em;' });
+        xnew(field.container, () => {
+            const gate = xnew(Gate, { open: false, duration: 0 });
+            // the field sits at the right of the row, so anchor the list to its right edge
+            xnew.extend(InputSelectMenu, { gate });
+            items.forEach((item: string) => xnew(InputSelectItem, { value: item }));
+        });
+    });
 }

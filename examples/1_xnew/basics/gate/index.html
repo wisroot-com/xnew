@@ -39,15 +39,13 @@
         header.on('click', () => unit.gate.toggle());
       });
 
-      // Accordion creates the Gate from these props; follow its '-transition' to rotate the chevron
       xnew.extend(xbasics.Accordion, { gate: { open: true } });
 
       xnew('<div class="p-2 border-t">', Contents);
     }
 
     function MyModal(unit) {
-      // Overlay no longer opens itself: give it the Gate props, then open it from here
-      xnew.extend(xbasics.Overlay, { gate: { open: false, duration: 300, easing: 'ease' }, style: 'background: rgba(0, 0, 0, 0.1);' });
+      xnew.extend(xbasics.Overlay, { gate: { open: false }, style: 'background: rgba(0, 0, 0, 0.1);' });
       unit.gate.open();
 
       xnew.nest('<div class="absolute inset-0 m-auto w-max h-max">');

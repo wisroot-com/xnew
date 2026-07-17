@@ -2953,10 +2953,17 @@ function Checkbox(unit, _a) {
     xnew(InputCheckbox, Object.assign(Object.assign({ name }, others), { style: 'width: 1.25em; height: 1.25em;' }));
 }
 function Select(unit, _a) {
-    var { name = '' } = _a, others = __rest(_a, ["name"]);
+    var { name = '', value, items = [] } = _a, others = __rest(_a, ["name", "value", "items"]);
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
-    xnew(InputSelect, Object.assign(Object.assign({ name }, others), { style: 'width: auto; min-width: 3em; height: 2em;' }));
+    xnew((field) => {
+        xnew.extend(InputSelect, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%; height: 2em;' }));
+        xnew(field.container, () => {
+            const gate = xnew(Gate, { open: false, duration: 0 });
+            xnew.extend(InputSelectMenu, { gate });
+            items.forEach((item) => xnew(InputSelectItem, { value: item }));
+        });
+    });
 }
 
 const placements = {

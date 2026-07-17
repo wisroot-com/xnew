@@ -57,7 +57,7 @@
         const subgroup = panel.group({ open: false }, (subgroup) => {
           xnew('<p class="m-1">', 'hellow');
         });
-        show.on('input', ({ value }) => value ? subgroup.open() : subgroup.close());
+        show.on('input', ({ value }) => value ? subgroup.gate.open() : subgroup.gate.close());
       });
       
     }
