@@ -237,21 +237,20 @@ describe('basics InputSelect', () => {
         expect(isOpen(unit)).toBe(true);
     });
 
-    it('drives the menu open / close with a Gate, animating a composed Accordion', () => {
+    it('drives the menu open / close with a Gate, animating an Accordion extended onto the same unit', () => {
         let menu!: HTMLElement;
         let accordion!: HTMLElement;
         const unit = xnew((u) => {
             xnew.extend(InputSelect);
             xnew(u.container, (m: xnew.Unit) => {
+                // menu first (the fixed box), then Accordion so it collapses the rows inside it
                 xnew.extend(Gate, { open: false, duration: 200 });
                 xnew.extend(InputSelectMenu);
+                xnew.extend(Accordion);
                 menu = m.container as HTMLElement;
-                xnew((acc: xnew.Unit) => {
-                    xnew.extend(Accordion);
-                    accordion = acc.element as HTMLElement;
-                    xnew(InputSelectItem, { value: 'low' });
-                    xnew(InputSelectItem, { value: 'mid' });
-                });
+                accordion = m.element as HTMLElement;
+                xnew(InputSelectItem, { value: 'low' });
+                xnew(InputSelectItem, { value: 'mid' });
             });
         });
 

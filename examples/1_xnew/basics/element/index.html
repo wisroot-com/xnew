@@ -112,20 +112,19 @@
           xnew(xbasics.InputSelectItem, { value: 'cherry' });
         });
       });
-      // the menu's open / close is driven by a Gate; an Accordion inside collapses the rows open
+      // the menu's open / close is driven by a Gate; extend Accordion onto the same unit (after the
+      // menu, so it collapses the rows inside the fixed menu box) to slide the list open
       xnew((unit) => {
         xnew.extend(xbasics.InputSelect, { value: 'banana', style: 'border-radius: 9999px;' });
         xnew(unit.container, (menu) => {
           xnew.extend(xbasics.Gate, { open: false, duration: 200 });
           xnew.extend(xbasics.InputSelectMenu);
-          xnew((accordion) => {
-            xnew.extend(xbasics.Accordion);
-            ['apple', 'banana', 'cherry'].forEach((fruit) => {
-              xnew((item) => {
-                xnew.extend(xbasics.InputSelectItem, { value: fruit });
-                xnew(xicons.Star, { style: 'flex: none; width: 1em; height: 1em; margin-right: 0.5em;' });
-                xnew('<span style="font-style: italic;">', fruit);
-              });
+          xnew.extend(xbasics.Accordion);
+          ['apple', 'banana', 'cherry'].forEach((fruit) => {
+            xnew((item) => {
+              xnew.extend(xbasics.InputSelectItem, { value: fruit });
+              xnew(xicons.Star, { style: 'flex: none; width: 1em; height: 1em; margin-right: 0.5em;' });
+              xnew('<span style="font-style: italic;">', fruit);
             });
           });
         });
