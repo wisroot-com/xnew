@@ -283,15 +283,15 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
-- **A deferred callback (timer / event listener) runs in the SCOPE SNAPSHOT captured when it was
-  scheduled — so `xnew.context(X)` inside it cannot see a component extended onto the unit AFTER the
-  callback was scheduled.** Bit `InputSelectMenu`: it is extended before the `Accordion` that owns the
-  Gate, so neither a body-time nor a `xnew.timeout(() => xnew.context(Gate))` lookup found the Gate
-  (the timeout's snapshot predates the extend). A same-unit component's defines DO merge onto the unit
-  though, so drive it through the unit's merged surface instead — `if (typeof unit.open === 'function')
-  unit.open()` and listen for its local emits on `unit` (`unit.on('-closed', …)`) — which is
-  order-independent. Accordion also exposes its Gate as `.gate` (via `xnew.extend(Gate)`), so a caller
-  holding the Accordion can reach `accordion.gate.toggle()` directly.
+- **When two sibling components must share a driver unit (e.g. a Gate), create the driver with `xnew(Gate,
+  props)` and pass the SAME unit into each — don't rely on `xnew.context` or a merged control surface.**
+  A deferred callback runs in the SCOPE SNAPSHOT from when it was scheduled, so `xnew.context(X)` inside it
+  cannot see a component extended onto the unit AFTER the callback was scheduled (bit `InputSelectMenu`,
+  extended before the `Accordion`). `Accordion` / `Overlay` take `gate: props | unit` — props ⇒ they create
+  a child `xnew(Gate, props)`; a unit ⇒ they reuse it — and expose it as `.gate`. A child Gate emits
+  `-transition` / `-closed` on its OWN unit, so subscribe on `accordion.gate.on(...)`, not the host unit.
+- **`xnew.Unit` is both a type AND a runtime value** (the `Unit` class is on the `xnew` object), so
+  `x instanceof xnew.Unit` works and narrows the type — use it to discriminate a passed unit from a props object.
 
 - **A component's body-ending element is where a host's `unit.on(domEvent)` attaches — so any native
   event you want the host to catch must bubble to THAT element.** `unit.on('input', …)` registered after

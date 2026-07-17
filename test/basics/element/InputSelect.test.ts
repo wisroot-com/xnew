@@ -2,6 +2,7 @@ import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
 import { InputSelect, InputSelectMenu, InputSelectItem } from '../../../src/basics/element/InputSelect';
 import { Accordion } from '../../../src/basics/ui/Accordion';
+import { Gate } from '../../../src/basics/ui/Gate';
 
 describe('basics InputSelect', () => {
     beforeEach(() => {
@@ -236,15 +237,16 @@ describe('basics InputSelect', () => {
         expect(isOpen(unit)).toBe(true);
     });
 
-    it('drives the menu open / close with a Gate, animating an Accordion extended onto the same unit', () => {
+    it('drives the menu open / close with a shared Gate, animating an Accordion over the same unit', () => {
         let menu!: HTMLElement;
         let accordion!: HTMLElement;
         const unit = xnew((u) => {
             xnew.extend(InputSelect);
             xnew(u.container, (m: xnew.Unit) => {
-                // menu first (the fixed box), then Accordion (which owns the Gate) so it collapses the rows inside it
-                xnew.extend(InputSelectMenu);
-                xnew.extend(Accordion, { open: false, duration: 200 });
+                // one shared Gate: the menu opens / closes it, the Accordion (after the menu) animates it
+                const gate = xnew(Gate, { open: false, duration: 200 });
+                xnew.extend(InputSelectMenu, { gate });
+                xnew.extend(Accordion, { gate });
                 menu = m.container as HTMLElement;
                 accordion = m.element as HTMLElement;
                 xnew(InputSelectItem, { value: 'low' });

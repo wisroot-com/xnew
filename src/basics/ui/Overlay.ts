@@ -1,18 +1,17 @@
 //----------------------------------------------------------------------------------------------------
-// Overlay — full-viewport layer that covers the page, opens on mount and finalizes when closed
-// Owns its Gate (extended onto this unit): forwards duration / easing, fades with the progress value,
-// and closes on a click outside the content (directly on the overlay). Exposes the Gate as `gate`.
+// Overlay — full-viewport layer that covers the page, finalizes when its Gate reports fully closed
+// `gate` is either Gate props (a new child Gate is created) or an existing Gate unit to reuse; exposed
+// as `gate`. Opening is left to the caller (call `.gate.open()`); Overlay only fades and closes.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 import { Gate } from './Gate';
 
 export function Overlay(unit: xnew.Unit,
-    { duration, easing, className = '', style = '', ...others }:
-    { duration?: number, easing?: string, className?: string, style?: string, [key: string]: any } = {}
+    { gate = {}, className = '', style = '', ...others }:
+    { gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    // starts closed so mounting fades it in; the Gate emits '-transition' / '-closed' on this unit
-    const gate = xnew.extend(Gate, { open: false, duration, easing });
+    const gateUnit: xnew.Unit = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
 
     const css = xnew.css({
         container: {
@@ -24,19 +23,18 @@ export function Overlay(unit: xnew.Unit,
         },
     });
 
-    unit.on('-closed', () => unit.finalize());
-    gate.open();
+    gateUnit.on('-closed', () => unit.finalize());
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
-    unit.on('click', ({ event }: { event: PointerEvent }) => event.target === unit.element && gate.close());
+    unit.on('click', ({ event }: { event: PointerEvent }) => event.target === unit.element && gateUnit.close());
 
-    unit.on('-transition', ({ value }: { value: number }) => {
+    gateUnit.on('-transition', ({ value }: { value: number }) => {
         unit.element.style.opacity = value.toString();
     });
 
     return {
         get gate() {
-            return gate;
+            return gateUnit;
         },
     };
 }

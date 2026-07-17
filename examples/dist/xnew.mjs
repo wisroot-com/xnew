@@ -1041,6 +1041,7 @@ const xnew = Object.assign((function (...args) {
     protect() {
         Unit.current._.protected = true;
     },
+    Unit,
 });
 
 function getEnvironment() {
@@ -2225,7 +2226,7 @@ function InputSelect(unit, _a = {}) {
     };
 }
 function InputSelectMenu(unit, _a = {}) {
-    var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
+    var { gate, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
     const parent = xnew.context(InputSelect);
     const field = parent.container;
     const css = xnew.css({
@@ -2269,8 +2270,8 @@ function InputSelectMenu(unit, _a = {}) {
                 list.on('pointerdown.outside', () => hide());
                 list.on('update', anchor);
             });
-            if (typeof unit.open === 'function') {
-                unit.open();
+            if (gate) {
+                gate.open();
             }
         }
     }
@@ -2280,8 +2281,8 @@ function InputSelectMenu(unit, _a = {}) {
             field.toggleAttribute('data-open', false);
             session === null || session === void 0 ? void 0 : session.finalize();
             session = null;
-            if (typeof unit.close === 'function') {
-                unit.close();
+            if (gate) {
+                gate.close();
             }
             else {
                 menu.style.display = 'none';
@@ -2290,7 +2291,7 @@ function InputSelectMenu(unit, _a = {}) {
     }
     parent.on('-toggle', () => (opened ? hide() : show()));
     parent.on('-close', () => hide());
-    unit.on('-closed', () => {
+    gate === null || gate === void 0 ? void 0 : gate.on('-closed', () => {
         menu.style.display = 'none';
     });
     return {
@@ -2699,8 +2700,8 @@ function Gate(unit, { open = true, duration = 200, easing = 'ease' }) {
 }
 
 function Accordion(unit, _a = {}) {
-    var { open, duration, easing, className = '', style = '' } = _a, others = __rest(_a, ["open", "duration", "easing", "className", "style"]);
-    const gate = xnew.extend(Gate, { open, duration, easing });
+    var { gate = {}, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
+    const gateUnit = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
     const css = xnew.css({
         container: {
             layer: 'base',
@@ -2711,22 +2712,22 @@ function Accordion(unit, _a = {}) {
         },
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
-    apply(gate.value);
-    unit.on('-transition', ({ value }) => apply(value));
+    apply(gateUnit.value);
+    gateUnit.on('-transition', ({ value }) => apply(value));
     function apply(value) {
         unit.element.style.height = value < 1.0 ? unit.element.scrollHeight * value + 'px' : 'auto';
         unit.element.style.opacity = value.toString();
     }
     return {
         get gate() {
-            return gate;
+            return gateUnit;
         },
     };
 }
 
 function Overlay(unit, _a = {}) {
-    var { duration, easing, className = '', style = '' } = _a, others = __rest(_a, ["duration", "easing", "className", "style"]);
-    const gate = xnew.extend(Gate, { open: false, duration, easing });
+    var { gate = {}, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
+    const gateUnit = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
     const css = xnew.css({
         container: {
             layer: 'base',
@@ -2736,16 +2737,15 @@ function Overlay(unit, _a = {}) {
             `,
         },
     });
-    unit.on('-closed', () => unit.finalize());
-    gate.open();
+    gateUnit.on('-closed', () => unit.finalize());
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
-    unit.on('click', ({ event }) => event.target === unit.element && gate.close());
-    unit.on('-transition', ({ value }) => {
+    unit.on('click', ({ event }) => event.target === unit.element && gateUnit.close());
+    gateUnit.on('-transition', ({ value }) => {
         unit.element.style.opacity = value.toString();
     });
     return {
         get gate() {
-            return gate;
+            return gateUnit;
         },
     };
 }
@@ -2924,17 +2924,20 @@ function Panel(unit, { params, nested = false }) {
     };
 }
 function Group(group, { name, open = false }) {
+    let chevron;
     if (name) {
-        xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (unit) => {
-            unit.on('click', () => group.gate.toggle());
-            xnew((unit) => {
-                xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
-                group.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${(value - 1) * 90}deg)`);
-            });
+        xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header) => {
+            header.on('click', () => group.gate.toggle());
+            chevron = xnew((unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
             xnew('<div>', name);
         });
     }
-    xnew.extend(Accordion, { open });
+    const gate = xnew.extend(Accordion, { gate: { open } }).gate;
+    gate.on('-transition', ({ value }) => {
+        if (chevron) {
+            chevron.element.style.transform = `rotate(${(value - 1) * 90}deg)`;
+        }
+    });
 }
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);

@@ -110,13 +110,13 @@ export function InputSelect(unit: xnew.Unit,
 
 //----------------------------------------------------------------------------------------------------
 // InputSelectMenu — the floating option list; mounts into the field and follows the field's '-toggle' /
-// '-close'. Compose an Accordion (or bare Gate) onto the same unit and it drives that gate — open / close
-// via the unit's merged control surface, hide deferred to '-closed'; without one it shows / hides instantly.
+// '-close'. Pass a shared Gate unit (the same one an Accordion animates) and it opens / closes that gate,
+// deferring the hide to the gate's '-closed'; without a gate it shows / hides instantly.
 //----------------------------------------------------------------------------------------------------
 
 export function InputSelectMenu(unit: xnew.Unit,
-    { className = '', style = '', ...others }:
-    { className?: string, style?: string, [key: string]: any } = {}
+    { gate, className = '', style = '', ...others }:
+    { gate?: xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const parent = xnew.context(InputSelect);
     const field = parent.container as HTMLElement;
@@ -172,9 +172,8 @@ export function InputSelectMenu(unit: xnew.Unit,
                 list.on('pointerdown.outside', () => hide());
                 list.on('update', anchor);
             });
-            // a composed Gate's control surface (open / close) merges onto this unit; drive it if present
-            if (typeof unit.open === 'function') {
-                unit.open();
+            if (gate) {
+                gate.open();
             }
         }
     }
@@ -185,8 +184,8 @@ export function InputSelectMenu(unit: xnew.Unit,
             field.toggleAttribute('data-open', false);
             session?.finalize();
             session = null;
-            if (typeof unit.close === 'function') {
-                unit.close();
+            if (gate) {
+                gate.close();
             } else {
                 menu.style.display = 'none';
             }
@@ -196,10 +195,9 @@ export function InputSelectMenu(unit: xnew.Unit,
     parent.on('-toggle', () => (opened ? hide() : show()));
     parent.on('-close', () => hide());
 
-    // a composed Gate (e.g. Accordion) hands off the visual: keep the element shown through the close
-    // animation, hiding only once the gate reports fully closed. The Gate emits '-closed' on this same
-    // unit, so listen here directly (harmless when no Gate is composed — it never fires).
-    unit.on('-closed', () => {
+    // a shared Gate (e.g. animated by an Accordion) hands off the visual: keep the element shown through
+    // the close animation, hiding only once the gate reports fully closed on its own unit.
+    gate?.on('-closed', () => {
         menu.style.display = 'none';
     });
 

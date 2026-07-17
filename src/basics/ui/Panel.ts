@@ -65,19 +65,22 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
 }
 
 function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
-    // the Accordion (extended last, so its collapse box wraps only the rows) owns the Gate;
-    // the header toggles it via the returned `gate` — captured after extend, read only in callbacks
+    // the Accordion (extended last, so its collapse box wraps only the rows) owns the Gate; the header
+    // toggles it via the merged `group.gate` and the chevron follows the Gate's own '-transition'
+    let chevron: xnew.Unit | undefined;
     if (name) {
-        xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (unit: xnew.Unit) => {
-            unit.on('click', () => group.gate.toggle());
-            xnew((unit: xnew.Unit) => {
-                xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
-                group.on('-transition', ({ value }: { value: number }) => unit.element.style.transform = `rotate(${(value - 1) * 90}deg)`);
-            });
+        xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header: xnew.Unit) => {
+            header.on('click', () => group.gate.toggle());
+            chevron = xnew((unit: xnew.Unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
             xnew('<div>', name);
         });
     }
-    xnew.extend(Accordion, { open });
+    const gate = xnew.extend(Accordion, { gate: { open } }).gate;
+    gate.on('-transition', ({ value }: { value: number }) => {
+        if (chevron) {
+            chevron.element.style.transform = `rotate(${(value - 1) * 90}deg)`;
+        }
+    });
 }
 
 function Separator(unit: xnew.Unit) {

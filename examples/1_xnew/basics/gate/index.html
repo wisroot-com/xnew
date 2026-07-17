@@ -32,20 +32,24 @@
     function MyAccordion(unit) {
       xnew.nest('<div class="w-64 border rounded-lg">');
 
+      let chevron;
       xnew('<div class="flex items-center select-none cursor-pointer">', (header) => {
-        const chevron = xnew((unit) => xnew.extend(xicons.ChevronRight, { className: 'size-4' }));
-        unit.on('-transition', ({ value }) => chevron.element.style.transform = `rotate(${value * 90}deg)`);
+        chevron = xnew((unit) => xnew.extend(xicons.ChevronRight, { className: 'size-4' }));
         xnew('<div class="my-2">', 'accordion (click me!)');
         header.on('click', () => unit.gate.toggle());
       });
 
-      xnew.extend(xbasics.Accordion, { open: true });
+      // Accordion creates the Gate from these props; follow its '-transition' to rotate the chevron
+      const gate = xnew.extend(xbasics.Accordion, { gate: { open: true } }).gate;
+      gate.on('-transition', ({ value }) => chevron.element.style.transform = `rotate(${value * 90}deg)`);
 
       xnew('<div class="p-2 border-t">', Contents);
     }
 
     function MyModal(unit) {
-      xnew.extend(xbasics.Overlay, { style: 'background: rgba(0, 0, 0, 0.1);' });
+      // Overlay no longer opens itself: give it the Gate props, then open it from here
+      xnew.extend(xbasics.Overlay, { gate: { open: false, duration: 300, easing: 'ease' }, style: 'background: rgba(0, 0, 0, 0.1);' });
+      unit.gate.open();
 
       xnew.nest('<div class="absolute inset-0 m-auto w-max h-max">');
       xnew.nest('<div class="m-auto w-[300px] max-w-[80%] border rounded-lg bg-white">');
@@ -65,10 +69,10 @@
         // keep dropdown clicks from bubbling to the opener button (which would re-open a menu)
         menu.on('click', ({ event }) => event.stopPropagation());
         menu.on('pointerdown.outside', () => gate.close());
-        menu.on('-closed', () => unit.finalize());
 
-        // Accordion owns the Gate; open it once mounted, finalize the menu when it reports fully closed
-        const gate = xnew.extend(xbasics.Accordion, { open: false }).gate;
+        // Accordion creates the Gate; open it once mounted, finalize the menu when it reports fully closed
+        const gate = xnew.extend(xbasics.Accordion, { gate: { open: false } }).gate;
+        gate.on('-closed', () => unit.finalize());
         gate.open();
 
         xnew.nest('<div class="w-[300px] border rounded-lg bg-white">');

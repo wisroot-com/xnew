@@ -161,6 +161,7 @@ declare const xnew: XnewBase & {
     interval(callback: Function, duration: number, iterations?: number): UnitTimer;
     transition(transition: Function, duration?: number, easing?: string): UnitTimer;
     protect(): void;
+    Unit: typeof Unit;
 };
 declare namespace xnew {
     type Unit = InstanceType<typeof Unit>;
@@ -328,7 +329,8 @@ declare function InputSelect(unit: xnew.Unit, { value, className, style, designs
     fill(): void;
     choose(itemValue: string): void;
 };
-declare function InputSelectMenu(unit: xnew.Unit, { className, style, ...others }?: {
+declare function InputSelectMenu(unit: xnew.Unit, { gate, className, style, ...others }?: {
+    gate?: xnew.Unit;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -412,35 +414,30 @@ declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
     close(): void;
 };
 
-declare function Accordion(unit: xnew.Unit, { open, duration, easing, className, style, ...others }?: {
-    open?: boolean;
-    duration?: number;
-    easing?: string;
+declare function Accordion(unit: xnew.Unit, { gate, className, style, ...others }?: {
+    gate?: {
+        open?: boolean;
+        duration?: number;
+        easing?: string;
+    } | xnew.Unit;
     className?: string;
     style?: string;
     [key: string]: any;
 }): {
-    readonly gate: {
-        readonly value: number;
-        toggle(): void;
-        open(): void;
-        close(): void;
-    };
+    readonly gate: Unit;
 };
 
-declare function Overlay(unit: xnew.Unit, { duration, easing, className, style, ...others }?: {
-    duration?: number;
-    easing?: string;
+declare function Overlay(unit: xnew.Unit, { gate, className, style, ...others }?: {
+    gate?: {
+        open?: boolean;
+        duration?: number;
+        easing?: string;
+    } | xnew.Unit;
     className?: string;
     style?: string;
     [key: string]: any;
 }): {
-    readonly gate: {
-        readonly value: number;
-        toggle(): void;
-        open(): void;
-        close(): void;
-    };
+    readonly gate: Unit;
 };
 
 declare function AnalogStick(unit: xnew.Unit, { className, style, designs }?: {

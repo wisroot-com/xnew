@@ -112,13 +112,14 @@
           xnew(xbasics.InputSelectItem, { value: 'cherry' });
         });
       });
-      // Accordion owns the Gate that drives the menu's open / close; extend it after the menu (so its
-      // collapse box wraps the rows inside the fixed menu box) and InputSelectMenu picks up the Gate to slide
+      // one shared Gate drives the menu's open / close and the Accordion's slide: InputSelectMenu opens /
+      // closes it, Accordion (after the menu, so its collapse box wraps the rows) animates it
       xnew((unit) => {
         xnew.extend(xbasics.InputSelect, { value: 'banana', style: 'border-radius: 9999px;' });
         xnew(unit.container, (menu) => {
-          xnew.extend(xbasics.InputSelectMenu);
-          xnew.extend(xbasics.Accordion, { open: false, duration: 200 });
+          const gate = xnew(xbasics.Gate, { open: false, duration: 200 });
+          xnew.extend(xbasics.InputSelectMenu, { gate });
+          xnew.extend(xbasics.Accordion, { gate });
           ['apple', 'banana', 'cherry'].forEach((fruit) => {
             xnew((item) => {
               xnew.extend(xbasics.InputSelectItem, { value: fruit });

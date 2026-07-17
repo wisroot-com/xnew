@@ -119,6 +119,9 @@ export const xnew = Object.assign(
             Unit.current._.protected = true;
         },
 
+        // The Unit class itself, exposed as a runtime value so callers can test `x instanceof xnew.Unit`.
+        Unit,
+
     }
 );
 
