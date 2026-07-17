@@ -2153,37 +2153,6 @@ for (const name of Object.keys(iconData)) {
 }
 const xicons = icons;
 
-function Gate(unit, { open = true, duration = 200, easing = 'ease' }) {
-    let value = open ? 1.0 : 0.0;
-    let sign = open ? +1 : -1;
-    let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
-    function animate(dir) {
-        sign = dir;
-        const d = dir > 0 ? 1 - value : value;
-        timer.clear();
-        timer = xnew.transition(({ value: x }) => {
-            const remaining = x < 1.0 ? (1 - x) * d : 0.0;
-            value = dir > 0 ? 1.0 - remaining : remaining;
-            xnew.emit('-transition', { value });
-        }, duration * d, easing)
-            .timeout(() => xnew.emit(dir > 0 ? '-opened' : '-closed'));
-    }
-    return {
-        get value() {
-            return value;
-        },
-        toggle() {
-            animate(sign < 0 ? +1 : -1);
-        },
-        open() {
-            animate(+1);
-        },
-        close() {
-            animate(-1);
-        },
-    };
-}
-
 function InputSelect(unit, _a = {}) {
     var _b, _c, _d;
     var { value, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
@@ -2258,7 +2227,6 @@ function InputSelect(unit, _a = {}) {
 function InputSelectMenu(unit, _a = {}) {
     var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
     const parent = xnew.context(InputSelect);
-    const gate = xnew.context(Gate);
     const field = parent.container;
     const css = xnew.css({
         menu: {
@@ -2301,8 +2269,8 @@ function InputSelectMenu(unit, _a = {}) {
                 list.on('pointerdown.outside', () => hide());
                 list.on('update', anchor);
             });
-            if (gate) {
-                gate.open();
+            if (typeof unit.open === 'function') {
+                unit.open();
             }
         }
     }
@@ -2312,8 +2280,8 @@ function InputSelectMenu(unit, _a = {}) {
             field.toggleAttribute('data-open', false);
             session === null || session === void 0 ? void 0 : session.finalize();
             session = null;
-            if (gate) {
-                gate.close();
+            if (typeof unit.close === 'function') {
+                unit.close();
             }
             else {
                 menu.style.display = 'none';
@@ -2322,11 +2290,9 @@ function InputSelectMenu(unit, _a = {}) {
     }
     parent.on('-toggle', () => (opened ? hide() : show()));
     parent.on('-close', () => hide());
-    if (gate) {
-        gate.on('-closed', () => {
-            menu.style.display = 'none';
-        });
-    }
+    unit.on('-closed', () => {
+        menu.style.display = 'none';
+    });
     return {
         get container() {
             return menu;
@@ -2701,9 +2667,40 @@ function Synthesizer(unit, props) {
     return { press };
 }
 
+function Gate(unit, { open = true, duration = 200, easing = 'ease' }) {
+    let value = open ? 1.0 : 0.0;
+    let sign = open ? +1 : -1;
+    let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
+    function animate(dir) {
+        sign = dir;
+        const d = dir > 0 ? 1 - value : value;
+        timer.clear();
+        timer = xnew.transition(({ value: x }) => {
+            const remaining = x < 1.0 ? (1 - x) * d : 0.0;
+            value = dir > 0 ? 1.0 - remaining : remaining;
+            xnew.emit('-transition', { value });
+        }, duration * d, easing)
+            .timeout(() => xnew.emit(dir > 0 ? '-opened' : '-closed'));
+    }
+    return {
+        get value() {
+            return value;
+        },
+        toggle() {
+            animate(sign < 0 ? +1 : -1);
+        },
+        open() {
+            animate(+1);
+        },
+        close() {
+            animate(-1);
+        },
+    };
+}
+
 function Accordion(unit, _a = {}) {
-    var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
-    const gate = xnew.context(Gate);
+    var { open, duration, easing, className = '', style = '' } = _a, others = __rest(_a, ["open", "duration", "easing", "className", "style"]);
+    const gate = xnew.extend(Gate, { open, duration, easing });
     const css = xnew.css({
         container: {
             layer: 'base',
@@ -2715,16 +2712,21 @@ function Accordion(unit, _a = {}) {
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     apply(gate.value);
-    gate.on('-transition', ({ value }) => apply(value));
+    unit.on('-transition', ({ value }) => apply(value));
     function apply(value) {
         unit.element.style.height = value < 1.0 ? unit.element.scrollHeight * value + 'px' : 'auto';
         unit.element.style.opacity = value.toString();
     }
+    return {
+        get gate() {
+            return gate;
+        },
+    };
 }
 
 function Overlay(unit, _a = {}) {
-    var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
-    const gate = xnew.context(Gate);
+    var { duration, easing, className = '', style = '' } = _a, others = __rest(_a, ["duration", "easing", "className", "style"]);
+    const gate = xnew.extend(Gate, { open: false, duration, easing });
     const css = xnew.css({
         container: {
             layer: 'base',
@@ -2734,13 +2736,18 @@ function Overlay(unit, _a = {}) {
             `,
         },
     });
-    gate.on('-closed', () => unit.finalize());
+    unit.on('-closed', () => unit.finalize());
     gate.open();
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     unit.on('click', ({ event }) => event.target === unit.element && gate.close());
-    gate.on('-transition', ({ value }) => {
+    unit.on('-transition', ({ value }) => {
         unit.element.style.opacity = value.toString();
     });
+    return {
+        get gate() {
+            return gate;
+        },
+    };
 }
 
 function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
@@ -2917,10 +2924,9 @@ function Panel(unit, { params, nested = false }) {
     };
 }
 function Group(group, { name, open = false }) {
-    const gate = xnew.extend(Gate, { open });
     if (name) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (unit) => {
-            unit.on('click', () => gate.toggle());
+            unit.on('click', () => group.gate.toggle());
             xnew((unit) => {
                 xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
                 group.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${(value - 1) * 90}deg)`);
@@ -2928,7 +2934,7 @@ function Group(group, { name, open = false }) {
             xnew('<div>', name);
         });
     }
-    xnew.extend(Accordion);
+    xnew.extend(Accordion, { open });
 }
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);

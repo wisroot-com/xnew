@@ -30,22 +30,21 @@
     });
 
     function MyAccordion(unit) {
-      const gate = xnew(xbasics.Gate, { open: true });
       xnew.nest('<div class="w-64 border rounded-lg">');
-        
-      xnew('<div class="flex items-center select-none cursor-pointer">', (unit) => {
-        xnew(Chevron);
+
+      xnew('<div class="flex items-center select-none cursor-pointer">', (header) => {
+        const chevron = xnew((unit) => xnew.extend(xicons.ChevronRight, { className: 'size-4' }));
+        unit.on('-transition', ({ value }) => chevron.element.style.transform = `rotate(${value * 90}deg)`);
         xnew('<div class="my-2">', 'accordion (click me!)');
-        unit.on('click', () => gate.toggle());
+        header.on('click', () => unit.gate.toggle());
       });
 
-      xnew.extend(xbasics.Accordion);
+      xnew.extend(xbasics.Accordion, { open: true });
+
       xnew('<div class="p-2 border-t">', Contents);
     }
 
     function MyModal(unit) {
-      const gate = xnew(xbasics.Gate, { open: false, duration: 300, easing: 'ease' });
-
       xnew.extend(xbasics.Overlay, { style: 'background: rgba(0, 0, 0, 0.1);' });
 
       xnew.nest('<div class="absolute inset-0 m-auto w-max h-max">');
@@ -53,25 +52,25 @@
 
       xnew('<div class="p-2 flex justify-between">', () => {
         xnew('<span>', 'Title');
-        xnew('<button class="cursor-pointer hover:opacity-50">', 'Close').on('click', () => gate.close());
+        xnew('<button class="cursor-pointer hover:opacity-50">', 'Close').on('click', () => unit.gate.close());
       });
 
       xnew('<div class="p-2 border-t">', Contents);
     }
 
     function MyMenu(unit) {
-      const gate = xnew(xbasics.Gate, { open: false });
-      gate.on('-closed', () => unit.finalize());
-      gate.open();
-
       // the dropdown is the only "inside"; a press anywhere else (incl. the opener button) closes it
-      xnew((unit) => {
+      xnew((menu) => {
         xnew.nest('<div class="absolute top-full right-0 py-2">');
         // keep dropdown clicks from bubbling to the opener button (which would re-open a menu)
-        unit.on('click', ({ event }) => event.stopPropagation());
-        unit.on('pointerdown.outside', () => gate.close());
+        menu.on('click', ({ event }) => event.stopPropagation());
+        menu.on('pointerdown.outside', () => gate.close());
+        menu.on('-closed', () => unit.finalize());
 
-        xnew.extend(xbasics.Accordion);
+        // Accordion owns the Gate; open it once mounted, finalize the menu when it reports fully closed
+        const gate = xnew.extend(xbasics.Accordion, { open: false }).gate;
+        gate.open();
+
         xnew.nest('<div class="w-[300px] border rounded-lg bg-white">');
         xnew('<div class="p-2">', Contents);
       });
@@ -84,12 +83,6 @@
         xnew('<li class="ml-2">', '2nd item');
         xnew('<li class="ml-2">', '3rd item');
       });
-    }
-
-    function Chevron(unit) {
-      const gate = xnew.context(xbasics.Gate);
-      xnew.extend(xicons.ChevronRight, { className: 'size-4' });
-      gate.on('-transition', ({ value }) => unit.element.style.transform = `rotate(${value * 90}deg)`);
     }
 </script>
 </body>

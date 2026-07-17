@@ -1,12 +1,11 @@
 //----------------------------------------------------------------------------------------------------
 // InputSelect — listbox pulldown split into InputSelect (framed field) + InputSelectMenu (list) + InputSelectItem (row)
 // The native popup cannot be styled, so a framed field toggles a floating list. The field emits
-// '-toggle' / '-close'; the menu (optionally driven by a Gate in context) shows / hides in response.
+// '-toggle' / '-close'; the menu (optionally driven by a composed Gate) shows / hides in response.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 import { xicons } from '../../icons/xicons';
-import { Gate } from '../ui/Gate';
 import { Design } from '../design';
 
 //----------------------------------------------------------------------------------------------------
@@ -111,8 +110,8 @@ export function InputSelect(unit: xnew.Unit,
 
 //----------------------------------------------------------------------------------------------------
 // InputSelectMenu — the floating option list; mounts into the field and follows the field's '-toggle' /
-// '-close'. With a Gate in context it opens/closes the gate (compose a presentation layer like Accordion
-// for the visual, hide deferred to '-closed'); without one it shows / hides instantly.
+// '-close'. Compose an Accordion (or bare Gate) onto the same unit and it drives that gate — open / close
+// via the unit's merged control surface, hide deferred to '-closed'; without one it shows / hides instantly.
 //----------------------------------------------------------------------------------------------------
 
 export function InputSelectMenu(unit: xnew.Unit,
@@ -120,7 +119,6 @@ export function InputSelectMenu(unit: xnew.Unit,
     { className?: string, style?: string, [key: string]: any } = {}
 ) {
     const parent = xnew.context(InputSelect);
-    const gate = xnew.context(Gate);
     const field = parent.container as HTMLElement;
 
     const css = xnew.css({
@@ -174,8 +172,9 @@ export function InputSelectMenu(unit: xnew.Unit,
                 list.on('pointerdown.outside', () => hide());
                 list.on('update', anchor);
             });
-            if (gate) {
-                gate.open();
+            // a composed Gate's control surface (open / close) merges onto this unit; drive it if present
+            if (typeof unit.open === 'function') {
+                unit.open();
             }
         }
     }
@@ -186,8 +185,8 @@ export function InputSelectMenu(unit: xnew.Unit,
             field.toggleAttribute('data-open', false);
             session?.finalize();
             session = null;
-            if (gate) {
-                gate.close();
+            if (typeof unit.close === 'function') {
+                unit.close();
             } else {
                 menu.style.display = 'none';
             }
@@ -197,13 +196,12 @@ export function InputSelectMenu(unit: xnew.Unit,
     parent.on('-toggle', () => (opened ? hide() : show()));
     parent.on('-close', () => hide());
 
-    // a Gate in context hands the visual to a composed presentation layer (e.g. Accordion): keep the
-    // element shown through the close animation, hiding only once the gate reports fully closed
-    if (gate) {
-        gate.on('-closed', () => {
-            menu.style.display = 'none';
-        });
-    }
+    // a composed Gate (e.g. Accordion) hands off the visual: keep the element shown through the close
+    // animation, hiding only once the gate reports fully closed. The Gate emits '-closed' on this same
+    // unit, so listen here directly (harmless when no Gate is composed — it never fires).
+    unit.on('-closed', () => {
+        menu.style.display = 'none';
+    });
 
     return {
         // the menu element; InputSelectItem rows mount into it

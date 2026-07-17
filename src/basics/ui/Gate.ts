@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Gate — open / close animation driver
 // Owns a 0..1 progress value driven by xnew.transition; presentation layers (Accordion, Overlay)
-// pick it up via xnew.context(Gate).
+// extend it onto their own unit and expose it as `gate`, following '-transition' emitted on that unit.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

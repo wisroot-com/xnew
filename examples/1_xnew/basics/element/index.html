@@ -112,14 +112,13 @@
           xnew(xbasics.InputSelectItem, { value: 'cherry' });
         });
       });
-      // the menu's open / close is driven by a Gate; extend Accordion onto the same unit (after the
-      // menu, so it collapses the rows inside the fixed menu box) to slide the list open
+      // Accordion owns the Gate that drives the menu's open / close; extend it after the menu (so its
+      // collapse box wraps the rows inside the fixed menu box) and InputSelectMenu picks up the Gate to slide
       xnew((unit) => {
         xnew.extend(xbasics.InputSelect, { value: 'banana', style: 'border-radius: 9999px;' });
         xnew(unit.container, (menu) => {
-          xnew.extend(xbasics.Gate, { open: false, duration: 200 });
           xnew.extend(xbasics.InputSelectMenu);
-          xnew.extend(xbasics.Accordion);
+          xnew.extend(xbasics.Accordion, { open: false, duration: 200 });
           ['apple', 'banana', 'cherry'].forEach((fruit) => {
             xnew((item) => {
               xnew.extend(xbasics.InputSelectItem, { value: fruit });

@@ -412,17 +412,36 @@ declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
     close(): void;
 };
 
-declare function Accordion(unit: xnew.Unit, { className, style, ...others }?: {
+declare function Accordion(unit: xnew.Unit, { open, duration, easing, className, style, ...others }?: {
+    open?: boolean;
+    duration?: number;
+    easing?: string;
     className?: string;
     style?: string;
     [key: string]: any;
-}): void;
+}): {
+    readonly gate: {
+        readonly value: number;
+        toggle(): void;
+        open(): void;
+        close(): void;
+    };
+};
 
-declare function Overlay(unit: xnew.Unit, { className, style, ...others }?: {
+declare function Overlay(unit: xnew.Unit, { duration, easing, className, style, ...others }?: {
+    duration?: number;
+    easing?: string;
     className?: string;
     style?: string;
     [key: string]: any;
-}): void;
+}): {
+    readonly gate: {
+        readonly value: number;
+        toggle(): void;
+        open(): void;
+        close(): void;
+    };
+};
 
 declare function AnalogStick(unit: xnew.Unit, { className, style, designs }?: {
     className?: string;

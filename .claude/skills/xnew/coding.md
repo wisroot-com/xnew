@@ -283,6 +283,16 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **A deferred callback (timer / event listener) runs in the SCOPE SNAPSHOT captured when it was
+  scheduled — so `xnew.context(X)` inside it cannot see a component extended onto the unit AFTER the
+  callback was scheduled.** Bit `InputSelectMenu`: it is extended before the `Accordion` that owns the
+  Gate, so neither a body-time nor a `xnew.timeout(() => xnew.context(Gate))` lookup found the Gate
+  (the timeout's snapshot predates the extend). A same-unit component's defines DO merge onto the unit
+  though, so drive it through the unit's merged surface instead — `if (typeof unit.open === 'function')
+  unit.open()` and listen for its local emits on `unit` (`unit.on('-closed', …)`) — which is
+  order-independent. Accordion also exposes its Gate as `.gate` (via `xnew.extend(Gate)`), so a caller
+  holding the Accordion can reach `accordion.gate.toggle()` directly.
+
 - **A component's body-ending element is where a host's `unit.on(domEvent)` attaches — so any native
   event you want the host to catch must bubble to THAT element.** `unit.on('input', …)` registered after
   a component is extended lands on the unit's *final* element. When InputSelect's body ended on the menu

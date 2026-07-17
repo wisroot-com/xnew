@@ -1,7 +1,6 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
 import { InputSelect, InputSelectMenu, InputSelectItem } from '../../../src/basics/element/InputSelect';
-import { Gate } from '../../../src/basics/ui/Gate';
 import { Accordion } from '../../../src/basics/ui/Accordion';
 
 describe('basics InputSelect', () => {
@@ -243,10 +242,9 @@ describe('basics InputSelect', () => {
         const unit = xnew((u) => {
             xnew.extend(InputSelect);
             xnew(u.container, (m: xnew.Unit) => {
-                // menu first (the fixed box), then Accordion so it collapses the rows inside it
-                xnew.extend(Gate, { open: false, duration: 200 });
+                // menu first (the fixed box), then Accordion (which owns the Gate) so it collapses the rows inside it
                 xnew.extend(InputSelectMenu);
-                xnew.extend(Accordion);
+                xnew.extend(Accordion, { open: false, duration: 200 });
                 menu = m.container as HTMLElement;
                 accordion = m.element as HTMLElement;
                 xnew(InputSelectItem, { value: 'low' });

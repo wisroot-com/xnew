@@ -10,7 +10,6 @@ import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
 import { InputCheckbox } from '../element/InputCheckbox';
 import { InputSelect } from '../element/InputSelect';
-import { Gate } from './Gate';
 import { Accordion } from './Accordion';
 
 // nested is internal: group() marks its inner Panel so only the root creates the scroll container
@@ -66,10 +65,11 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
 }
 
 function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
-    const gate = xnew.extend(Gate, { open });
+    // the Accordion (extended last, so its collapse box wraps only the rows) owns the Gate;
+    // the header toggles it via the returned `gate` — captured after extend, read only in callbacks
     if (name) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (unit: xnew.Unit) => {
-            unit.on('click', () => gate.toggle());
+            unit.on('click', () => group.gate.toggle());
             xnew((unit: xnew.Unit) => {
                 xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' });
                 group.on('-transition', ({ value }: { value: number }) => unit.element.style.transform = `rotate(${(value - 1) * 90}deg)`);
@@ -77,7 +77,7 @@ function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?:
             xnew('<div>', name);
         });
     }
-    xnew.extend(Accordion);
+    xnew.extend(Accordion, { open });
 }
 
 function Separator(unit: xnew.Unit) {
