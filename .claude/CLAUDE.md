@@ -43,6 +43,13 @@ Integrations for games and interactive apps.
 - `npm run build` — build with Rollup
 - `npm run dev` — Rollup in watch mode
 
+## Function style
+
+Prefer function declarations over arrow-function expressions assigned to a
+`const`. Write `function func() { ... }`, not `const func = () => { ... }`.
+Reserve arrow functions for inline callbacks and short expressions where a
+declaration doesn't fit.
+
 ## File header convention (src/)
 
 Every file under `src/` starts with a compact overview comment in the `//----` divider
