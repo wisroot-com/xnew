@@ -11,7 +11,7 @@ export function Accordion(unit: xnew.Unit,
     { gate = {}, className = '', style = '', ...others }:
     { gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const gateUnit: xnew.Unit = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
+    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
 
     const css = xnew.css({
         container: {
@@ -25,18 +25,19 @@ export function Accordion(unit: xnew.Unit,
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
 
-    apply(gateUnit.value);
-    gateUnit.on('-transition', ({ value }: { value: number }) => apply(value));
+    apply(gate.value);
+    gate.on('-transition', ({ value }: { value: number }) => apply(value));
 
     // scrollHeight reports the full content height even while clipped, so no inner element is needed
     function apply(value: number) {
         unit.element.style.height = value < 1.0 ? unit.element.scrollHeight * value + 'px' : 'auto';
         unit.element.style.opacity = value.toString();
+        xnew.emit('-transition', { value });
     }
 
     return {
         get gate() {
-            return gateUnit;
+            return gate;
         },
     };
 }

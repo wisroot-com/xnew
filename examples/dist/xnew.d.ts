@@ -132,7 +132,7 @@ declare class UnitTimer {
 interface CssDef {
     layer?: string;
     type?: string;
-    block: string;
+    body: string;
 }
 
 interface XnewBase {

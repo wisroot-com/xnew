@@ -32,16 +32,15 @@
     function MyAccordion(unit) {
       xnew.nest('<div class="w-64 border rounded-lg">');
 
-      let chevron;
       xnew('<div class="flex items-center select-none cursor-pointer">', (header) => {
-        chevron = xnew((unit) => xnew.extend(xicons.ChevronRight, { className: 'size-4' }));
+        const chevron = xnew((unit) => xnew.extend(xicons.ChevronRight, { className: 'size-4' }));
+        unit.on('-transition', ({ value }) => chevron.element.style.transform = `rotate(${value * 90}deg)`);
         xnew('<div class="my-2">', 'accordion (click me!)');
         header.on('click', () => unit.gate.toggle());
       });
 
       // Accordion creates the Gate from these props; follow its '-transition' to rotate the chevron
-      const gate = xnew.extend(xbasics.Accordion, { gate: { open: true } }).gate;
-      gate.on('-transition', ({ value }) => chevron.element.style.transform = `rotate(${value * 90}deg)`);
+      xnew.extend(xbasics.Accordion, { gate: { open: true } });
 
       xnew('<div class="p-2 border-t">', Contents);
     }
