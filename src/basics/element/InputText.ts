@@ -15,8 +15,8 @@ export function InputText(unit: xnew.Unit,
         input: {
             layer: 'base',
             block: `
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
-                padding: 0 0.5em;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+                margin: 0.125em 0; padding: 0 0.5em;
                 background: transparent; color: inherit; font: inherit;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 outline: none;

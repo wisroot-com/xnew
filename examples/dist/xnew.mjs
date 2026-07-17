@@ -1070,7 +1070,6 @@ function rootInfoOf(unit) {
     return info;
 }
 const WIRE_TO_SERVER = 'sync:toServer';
-const WIRE_TO_CLIENT = 'sync:toClient';
 const WIRE_DELIVER = 'sync:deliver';
 function dispatch(info, event, id, payload) {
     var _a;
@@ -1078,6 +1077,8 @@ function dispatch(info, event, id, payload) {
     const syncId = payload ? payload.syncId : undefined;
     ((_a = Unit.type2units.get(event)) !== null && _a !== void 0 ? _a : []).forEach((unit) => {
         var _a;
+        if (unit._.phase === 'finalized' || unit._.phase === 'finalizing')
+            return;
         if (findRootInfo(unit) !== info)
             return;
         if (event[0] === '-' && syncOf(unit).id !== syncId)
@@ -1085,8 +1086,8 @@ function dispatch(info, event, id, payload) {
         (_a = unit._.listeners.get(event)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
     });
 }
-function relayToClients(info, type, senderId, syncId, data, ids) {
-    const envelope = { type, syncId, id: senderId, data };
+function relayToClients(info, type, syncId, data, ids) {
+    const envelope = { type, syncId, id: undefined, data };
     if (Array.isArray(ids) && ids.length > 0) {
         ids.forEach((cid) => info.io.to(cid).emit(WIRE_DELIVER, envelope));
     }
@@ -1140,12 +1141,8 @@ function bootServer(opts, parent, args) {
         dispatch(info, 'sync.connect', socket.id, undefined);
         statusUpdate();
         socket.onAny((event, payload) => {
-            var _a;
             if (event === WIRE_TO_SERVER) {
                 dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, payload);
-            }
-            else if (event === WIRE_TO_CLIENT) {
-                relayToClients(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, (_a = payload === null || payload === void 0 ? void 0 : payload.syncId) !== null && _a !== void 0 ? _a : null, payload === null || payload === void 0 ? void 0 : payload.data, payload === null || payload === void 0 ? void 0 : payload.ids);
             }
         });
         socket.on('disconnect', () => {
@@ -1176,7 +1173,13 @@ function bootClient(opts, parent, args) {
         for (const node of tree) {
             const existing = reconcileMap.get(node.id);
             if (existing !== undefined) {
-                Object.assign(syncOf(existing).state, node.state);
+                const state = syncOf(existing).state;
+                for (const key of Object.keys(state)) {
+                    if ((key in node.state) === false) {
+                        delete state[key];
+                    }
+                }
+                Object.assign(state, node.state);
                 continue;
             }
             const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
@@ -1267,14 +1270,12 @@ const xsync = {
         }
     },
     emitToClients(type, props = {}, ids) {
+        if (getEnvironment() !== 'server') {
+            throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
+        }
         const info = rootInfoOf(Unit.current);
         const syncId = syncOf(Unit.current).id;
-        if (getEnvironment() === 'server') {
-            relayToClients(info, type, undefined, syncId, props, ids);
-        }
-        else {
-            info.socket.emit(WIRE_TO_CLIENT, { type, syncId, data: props, ids });
-        }
+        relayToClients(info, type, syncId, props, ids);
     },
     boot(opts, ...args) {
         if (getEnvironment() === 'server') {
@@ -1671,8 +1672,8 @@ function InputText(unit, _a = {}) {
         input: {
             layer: 'base',
             block: `
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
-                padding: 0 0.5em;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+                margin: 0.125em 0; padding: 0 0.5em;
                 background: transparent; color: inherit; font: inherit;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 outline: none;
@@ -1689,8 +1690,9 @@ function InputNumber(unit, _a = {}) {
         input: {
             layer: 'base',
             block: `
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
-                text-align: center; padding: 0 0.5em;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+                margin: 0.125em 0; padding: 0 0.5em;
+                text-align: center;
                 background: transparent; color: inherit; font: inherit;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 outline: none;
@@ -1754,68 +1756,32 @@ function InputSwitch(unit, _a = {}) {
     });
 }
 
-let radioGroupId = 0;
-function InputRadio(unit, { value, items = [], name = '', className = '', style = '', designs = {} } = {}) {
-    var _a, _b, _c, _d;
-    const initial = (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '';
+function InputRadio(unit, _a = {}) {
+    var { value = '', name = '', checked = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "name", "checked", "className", "style"]);
     const css = xnew.css({
         container: {
             layer: 'base',
             block: `
-                display: inline-block;
-                width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;
-            `,
-        },
-        frame: {
-            layer: 'base',
-            block: `
-                box-sizing: border-box; width: 100%; height: 100%;
-                display: flex; align-items: stretch; overflow: hidden;
-                border: 1px solid currentColor; border-radius: 0.25em;
-            `,
-        },
-        item: {
-            layer: 'base',
-            block: `
-                position: relative; padding: 0.25em 0.5em;
+                padding: 0.25em 0.5em;
                 flex: 1 1 0;
                 display: flex; align-items: center; justify-content: center;
                 white-space: nowrap;
-                user-select: none;
+                cursor: pointer; user-select: none;
                 & + & { border-left: 1px solid currentColor; }
                 &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+                &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
         input: {
             layer: 'base',
             block: `
-                position: absolute; inset: 0; width: 100%; height: 100%;
-                opacity: 0; cursor: pointer; margin: 0;
+                width: 0; height: 0; margin: 0;
+                opacity: 0;
             `,
         },
     });
-    const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    xnew.nest({ tag: 'div', className: `${css.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
-    const segments = [];
-    items.forEach((item) => {
-        var _a, _b, _c;
-        const segment = xnew({ tag: 'div', className: `${css.item} ${(_b = (_a = designs.item) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = designs.item) === null || _c === void 0 ? void 0 : _c.style }, () => {
-            xnew('<div>', item);
-            xnew({ tag: 'input', type: 'radio', name: group, value: item, checked: item === initial, className: css.input });
-        });
-        segments.push([segment, item]);
-    });
-    const update = (selected) => {
-        for (const [segment, item] of segments) {
-            segment.element.toggleAttribute('data-checked', item === selected);
-        }
-    };
-    update(initial);
-    unit.on('input', ({ value }) => {
-        update(value);
-    });
+    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style }, value);
+    xnew.nest(Object.assign({ tag: 'input', type: 'radio', name, value, checked, className: css.input }, others));
 }
 
 function Template(unit, _a) {
@@ -2187,12 +2153,42 @@ for (const name of Object.keys(iconData)) {
 }
 const xicons = icons;
 
+function Gate(unit, { open = true, duration = 200, easing = 'ease' }) {
+    let value = open ? 1.0 : 0.0;
+    let sign = open ? +1 : -1;
+    let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
+    function animate(dir) {
+        sign = dir;
+        const d = dir > 0 ? 1 - value : value;
+        timer.clear();
+        timer = xnew.transition(({ value: x }) => {
+            const remaining = x < 1.0 ? (1 - x) * d : 0.0;
+            value = dir > 0 ? 1.0 - remaining : remaining;
+            xnew.emit('-transition', { value });
+        }, duration * d, easing)
+            .timeout(() => xnew.emit(dir > 0 ? '-opened' : '-closed'));
+    }
+    return {
+        get value() {
+            return value;
+        },
+        toggle() {
+            animate(sign < 0 ? +1 : -1);
+        },
+        open() {
+            animate(+1);
+        },
+        close() {
+            animate(-1);
+        },
+    };
+}
+
 function InputSelect(unit, _a = {}) {
-    var _b, _c, _d, _e;
-    var { value, items = [], className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "items", "className", "style", "designs"]);
-    const initial = (_b = value !== null && value !== void 0 ? value : items[0]) !== null && _b !== void 0 ? _b : '';
+    var _b, _c, _d;
+    var { value, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
     const css = xnew.css({
-        container: {
+        field: {
             layer: 'base',
             block: `
                 display: inline-flex; align-items: center;
@@ -2205,9 +2201,66 @@ function InputSelect(unit, _a = {}) {
         label: {
             layer: 'base',
             block: `
+                flex: 1 1 0; min-width: 0; padding: 0 0.5em;
                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             `,
         },
+    });
+    const items = [];
+    const hasInitial = value !== undefined;
+    let selected = value !== null && value !== void 0 ? value : '';
+    const field = xnew.nest({ tag: 'div', className: `${css.field} ${className}`, style });
+    const label = xnew({ tag: 'div', className: `${css.label} ${(_c = (_b = designs.label) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.label) === null || _d === void 0 ? void 0 : _d.style }, '');
+    xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
+    unit.on('click', () => xnew.emit('-toggle'));
+    unit.on('input', ({ value }) => {
+        label.element.textContent = value;
+        for (const item of items) {
+            item.row.toggleAttribute('data-checked', item.value === value);
+        }
+    });
+    const select = xnew.nest(Object.assign({ tag: 'select', style: 'display: none;' }, others));
+    return {
+        get value() {
+            return select.value;
+        },
+        get container() {
+            return field;
+        },
+        register(itemValue, row) {
+            const option = document.createElement('option');
+            option.value = itemValue;
+            select.appendChild(option);
+            items.push({ value: itemValue, row });
+            if (!hasInitial && selected === '') {
+                selected = itemValue;
+            }
+            if (itemValue === selected) {
+                option.selected = true;
+                label.element.textContent = itemValue;
+            }
+            row.toggleAttribute('data-checked', itemValue === selected);
+        },
+        fill() {
+            for (const item of items) {
+                if (!item.row.hasChildNodes()) {
+                    item.row.textContent = item.value;
+                }
+            }
+        },
+        choose(itemValue) {
+            select.value = itemValue;
+            select.dispatchEvent(new Event('input', { bubbles: true }));
+            xnew.emit('-close');
+        },
+    };
+}
+function InputSelectMenu(unit, _a = {}) {
+    var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
+    const parent = xnew.context(InputSelect);
+    const gate = xnew.context(Gate);
+    const field = parent.container;
+    const css = xnew.css({
         menu: {
             layer: 'base',
             block: `
@@ -2217,6 +2270,73 @@ function InputSelect(unit, _a = {}) {
                 overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
             `,
         },
+    });
+    const menu = xnew.nest(Object.assign({ tag: 'div', className: `${css.menu} ${className}`, style: `display: none; ${style}` }, others));
+    let opened = false;
+    let session = null;
+    function surfaceColor() {
+        for (let element = field.parentElement; element !== null; element = element.parentElement) {
+            const color = getComputedStyle(element).backgroundColor;
+            if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
+                return color;
+            }
+        }
+        return 'Canvas';
+    }
+    function anchor() {
+        const rect = field.getBoundingClientRect();
+        menu.style.left = `${rect.left}px`;
+        menu.style.top = `${rect.bottom}px`;
+        menu.style.minWidth = `${rect.width}px`;
+    }
+    function show() {
+        if (opened === false) {
+            opened = true;
+            parent.fill();
+            field.toggleAttribute('data-open', true);
+            menu.style.display = 'block';
+            menu.style.background = surfaceColor();
+            anchor();
+            session = xnew(field, (list) => {
+                list.on('pointerdown.outside', () => hide());
+                list.on('update', anchor);
+            });
+            if (gate) {
+                gate.open();
+            }
+        }
+    }
+    function hide() {
+        if (opened === true) {
+            opened = false;
+            field.toggleAttribute('data-open', false);
+            session === null || session === void 0 ? void 0 : session.finalize();
+            session = null;
+            if (gate) {
+                gate.close();
+            }
+            else {
+                menu.style.display = 'none';
+            }
+        }
+    }
+    parent.on('-toggle', () => (opened ? hide() : show()));
+    parent.on('-close', () => hide());
+    if (gate) {
+        gate.on('-closed', () => {
+            menu.style.display = 'none';
+        });
+    }
+    return {
+        get container() {
+            return menu;
+        },
+    };
+}
+function InputSelectItem(unit, _a = {}) {
+    var { value = '', className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
+    const parent = xnew.context(InputSelect);
+    const css = xnew.css({
         item: {
             layer: 'base',
             block: `
@@ -2229,70 +2349,11 @@ function InputSelect(unit, _a = {}) {
             `,
         },
     });
-    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
-    const label = xnew(labelBox, { tag: 'div', className: `${css.label} ${(_d = (_c = designs.label) === null || _c === void 0 ? void 0 : _c.className) !== null && _d !== void 0 ? _d : ''}`, style: (_e = designs.label) === null || _e === void 0 ? void 0 : _e.style }, initial);
-    for (const item of items) {
-        xnew(labelBox, '<div style="visibility: hidden; height: 0; white-space: nowrap;">', item);
-    }
-    xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
-    let select;
-    let dropdown = null;
-    const surfaceColor = () => {
-        for (let element = container.parentElement; element !== null; element = element.parentElement) {
-            const color = getComputedStyle(element).backgroundColor;
-            if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
-                return color;
-            }
-        }
-        return 'Canvas';
-    };
-    const closeDropdown = () => {
-        dropdown === null || dropdown === void 0 ? void 0 : dropdown.finalize();
-        dropdown = null;
-    };
-    const openDropdown = () => {
-        dropdown = xnew(container, (list) => {
-            var _a, _b, _c, _d, _e, _f, _g;
-            container.toggleAttribute('data-open', true);
-            list.on('finalize', () => container.toggleAttribute('data-open', false));
-            list.on('pointerdown.outside', () => closeDropdown());
-            const menu = xnew.nest({ tag: 'div', className: `${css.menu} ${(_b = (_a = designs.menu) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: `background: ${surfaceColor()}; ${(_d = (_c = designs.menu) === null || _c === void 0 ? void 0 : _c.style) !== null && _d !== void 0 ? _d : ''}` });
-            const anchor = () => {
-                const rect = container.getBoundingClientRect();
-                menu.style.left = `${rect.left}px`;
-                menu.style.top = `${rect.bottom}px`;
-                menu.style.minWidth = `${rect.width}px`;
-            };
-            anchor();
-            list.on('update', anchor);
-            for (const item of items) {
-                const option = xnew({ tag: 'div', className: `${css.item} ${(_f = (_e = designs.item) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.item) === null || _g === void 0 ? void 0 : _g.style }, item);
-                option.element.toggleAttribute('data-checked', item === select.value);
-                option.on('click', ({ event }) => {
-                    event.stopPropagation();
-                    select.value = item;
-                    select.dispatchEvent(new Event('input', { bubbles: true }));
-                    closeDropdown();
-                });
-            }
-        });
-    };
-    unit.on('click', () => {
-        if (dropdown === null) {
-            openDropdown();
-        }
-        else {
-            closeDropdown();
-        }
-    });
-    xnew.nest(Object.assign({ tag: 'select', style: 'display: none;' }, others));
-    for (const item of items) {
-        xnew({ tag: 'option', value: item, selected: item === initial }, item);
-    }
-    select = unit.element;
-    unit.on('input', ({ value }) => {
-        label.element.textContent = value;
+    const row = xnew.nest(Object.assign({ tag: 'div', className: `${css.item} ${className}`, style }, others));
+    parent.register(value, row);
+    unit.on('click', ({ event }) => {
+        event.stopPropagation();
+        parent.choose(value);
     });
 }
 
@@ -2640,37 +2701,6 @@ function Synthesizer(unit, props) {
     return { press };
 }
 
-function Gate(unit, { open = true, duration = 200, easing = 'ease' }) {
-    let value = open ? 1.0 : 0.0;
-    let sign = open ? +1 : -1;
-    let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
-    function animate(dir) {
-        sign = dir;
-        const d = dir > 0 ? 1 - value : value;
-        timer.clear();
-        timer = xnew.transition(({ value: x }) => {
-            const remaining = x < 1.0 ? (1 - x) * d : 0.0;
-            value = dir > 0 ? 1.0 - remaining : remaining;
-            xnew.emit('-transition', { value });
-        }, duration * d, easing)
-            .timeout(() => xnew.emit(dir > 0 ? '-opened' : '-closed'));
-    }
-    return {
-        get value() {
-            return value;
-        },
-        toggle() {
-            animate(sign < 0 ? +1 : -1);
-        },
-        open() {
-            animate(+1);
-        },
-        close() {
-            animate(-1);
-        },
-    };
-}
-
 function Accordion(unit, _a = {}) {
     var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
     const gate = xnew.context(Gate);
@@ -3001,6 +3031,8 @@ const xbasics = {
     InputSwitch,
     InputRadio,
     InputSelect,
+    InputSelectMenu,
+    InputSelectItem,
     AudioTrack,
     Synthesizer,
     Volume,

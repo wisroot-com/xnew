@@ -1,84 +1,41 @@
 //----------------------------------------------------------------------------------------------------
-// InputRadio — segmented button group backed by hidden native <input type="radio"> controls
-// One framed row of exclusive segments keeps every choice visible, unlike a pulldown; the
-// selected look lives in css rules keyed on a data-checked attribute, so designs stay intact.
+// InputRadio — one exclusive radio segment: a <label> wrapping a hidden native <input type="radio">
+// Grouping is native: give sibling InputRadios a shared `name`. The checked tint is a pure CSS
+// :has(input:checked) rule, so there is no JS selection state to coordinate.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Design } from '../design';
-
-// radios are exclusive only within a shared name; unnamed groups get a generated one
-let radioGroupId = 0;
 
 export function InputRadio(unit: xnew.Unit,
-    { value, items = [], name = '', className = '', style = '', designs = {} }:
-    { value?: string, items?: string[], name?: string, className?: string, style?: string, designs?: { frame?: Design, item?: Design } } = {}
+    { value = '', name = '', checked = false, className = '', style = '', ...others }:
+    { value?: string, name?: string, checked?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const initial = value ?? items[0] ?? '';
-
     const css = xnew.css({
-        // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        // the label is the whole segment; wrapping the input lets a click toggle it natively, and
+        // :has(input:checked) paints the selected tint with no JS
         container: {
             layer: 'base',
             block: `
-                display: inline-block;
-                width: 100%; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;
-            `,
-        },
-        // the framed look wraps the items (not an overlay): the rounded clip must contain the
-        // item tints, or their corners would poke out of the ring
-        frame: {
-            layer: 'base',
-            block: `
-                box-sizing: border-box; width: 100%; height: 100%;
-                display: flex; align-items: stretch; overflow: hidden;
-                border: 1px solid currentColor; border-radius: 0.25em;
-            `,
-        },
-        item: {
-            layer: 'base',
-            block: `
-                position: relative; padding: 0.25em 0.5em;
+                padding: 0.25em 0.5em;
                 flex: 1 1 0;
                 display: flex; align-items: center; justify-content: center;
                 white-space: nowrap;
-                user-select: none;
+                cursor: pointer; user-select: none;
                 & + & { border-left: 1px solid currentColor; }
                 &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+                &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
+        // 0-sized (not display:none) so it keeps focus and native arrow-key navigation within the group
         input: {
             layer: 'base',
             block: `
-                position: absolute; inset: 0; width: 100%; height: 100%;
-                opacity: 0; cursor: pointer; margin: 0;
+                width: 0; height: 0; margin: 0;
+                opacity: 0;
             `,
         },
     });
-    const group = name !== '' ? name : `xnew-radio-${++radioGroupId}`;
 
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-
-    xnew.nest({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
-
-    const segments: [xnew.Unit, string][] = [];
-    items.forEach((item) => {
-        const segment = xnew({ tag: 'div', className: `${css.item} ${designs.item?.className ?? ''}`, style: designs.item?.style }, () => {
-            xnew('<div>', item);
-            xnew({ tag: 'input', type: 'radio', name: group, value: item, checked: item === initial, className: css.input });
-        });
-        segments.push([segment, item]);
-    });
-
-    const update = (selected: string) => {
-        for (const [segment, item] of segments) {
-            segment.element.toggleAttribute('data-checked', item === selected);
-        }
-    };
-    update(initial);
-
-    unit.on('input', ({ value }: { value: string }) => {
-        update(value);
-    });
+    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style }, value);
+    xnew.nest({ tag: 'input', type: 'radio', name, value, checked, className: css.input, ...others });
 }

@@ -1,23 +1,26 @@
 //----------------------------------------------------------------------------------------------------
-// InputSelect — listbox-style pulldown backed by a hidden native <select>
-// The native popup cannot be styled, so a framed button opens a floating option list; open /
-// selected looks live in css rules keyed on data-open / data-checked, so designs stay intact.
+// InputSelect — listbox pulldown split into InputSelect (framed field) + InputSelectMenu (list) + InputSelectItem (row)
+// The native popup cannot be styled, so a framed field toggles a floating list. The field emits
+// '-toggle' / '-close'; the menu (optionally driven by a Gate in context) shows / hides in response.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 import { xicons } from '../../icons/xicons';
+import { Gate } from '../ui/Gate';
 import { Design } from '../design';
 
-export function InputSelect(unit: xnew.Unit,
-    { value, items = [], className = '', style = '', designs = {}, ...others }:
-    { value?: string, items?: string[], className?: string, style?: string, designs?: { label?: Design, menu?: Design, item?: Design }, [key: string]: any } = {}
-) {
-    const initial = value ?? items[0] ?? '';
+//----------------------------------------------------------------------------------------------------
+// InputSelect — the framed field, the hidden native <select>, and the selection state
+//----------------------------------------------------------------------------------------------------
 
+export function InputSelect(unit: xnew.Unit,
+    { value, className = '', style = '', designs = {}, ...others }:
+    { value?: string, className?: string, style?: string, designs?: { label?: Design }, [key: string]: any } = {}
+) {
     const css = xnew.css({
-        // the framed button surface; hover tint is suppressed by data-open while the list is open.
+        // the framed field surface; hover tint is suppressed by data-open while the list is open.
         // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        container: {
+        field: {
             layer: 'base',
             block: `
                 display: inline-flex; align-items: center;
@@ -27,13 +30,100 @@ export function InputSelect(unit: xnew.Unit,
                 &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
-        // the visible value with ellipsis; the flex slot's hidden per-item sizers reserve the widest item's width
+        // the visible value fills the width and ellipsizes; the control keeps a default width (like
+        // InputText) that callers override via className / style, so no per-item sizing is needed
         label: {
             layer: 'base',
             block: `
+                flex: 1 1 0; min-width: 0; padding: 0 0.5em;
                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             `,
         },
+    });
+
+    // filled by InputSelectItem.register(); rows persist in the menu, the <option>s back the native value
+    const items: { value: string, row: HTMLElement }[] = [];
+    const hasInitial = value !== undefined;
+    let selected = value ?? '';
+
+    const field = xnew.nest({ tag: 'div', className: `${css.field} ${className}`, style });
+
+    const label = xnew({ tag: 'div', className: `${css.label} ${designs.label?.className ?? ''}`, style: designs.label?.style }, '');
+
+    xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
+
+    // registered while the current element is the field, so the whole field toggles the list
+    unit.on('click', () => xnew.emit('-toggle'));
+    // the native input bubbling up from the <select> updates the label and the checked row
+    unit.on('input', ({ value }: { value: string }) => {
+        label.element.textContent = value;
+        for (const item of items) {
+            item.row.toggleAttribute('data-checked', item.value === value);
+        }
+    });
+
+    // nested last, so the unit's element ends on the <select> — a host's unit.on('input') attaches here
+    const select = xnew.nest({ tag: 'select', style: 'display: none;', ...others }) as HTMLSelectElement;
+
+    return {
+        get value() {
+            return select.value;
+        },
+        // the field element; an InputSelectMenu mounts into it and anchors to it
+        get container() {
+            return field;
+        },
+        // called by each InputSelectItem: backs it with a hidden <option> and records the row.
+        // the first item claims the default when no initial value was given
+        register(itemValue: string, row: HTMLElement) {
+            const option = document.createElement('option');
+            option.value = itemValue;
+            select.appendChild(option);
+            items.push({ value: itemValue, row });
+
+            if (!hasInitial && selected === '') {
+                selected = itemValue;
+            }
+            if (itemValue === selected) {
+                option.selected = true;
+                label.element.textContent = itemValue;
+            }
+            row.toggleAttribute('data-checked', itemValue === selected);
+        },
+        // rows the caller left empty fall back to the value as text (the menu calls this before opening,
+        // once every row's custom content has mounted)
+        fill() {
+            for (const item of items) {
+                if (!item.row.hasChildNodes()) {
+                    item.row.textContent = item.value;
+                }
+            }
+        },
+        // an InputSelectItem was clicked: set the native value, notify hosts, and close the list
+        choose(itemValue: string) {
+            select.value = itemValue;
+            // fires on the <select> (the unit's element) so a host's unit.on('input') catches it
+            select.dispatchEvent(new Event('input', { bubbles: true }));
+            xnew.emit('-close');
+        },
+    };
+}
+
+//----------------------------------------------------------------------------------------------------
+// InputSelectMenu — the floating option list; mounts into the field and follows the field's '-toggle' /
+// '-close'. With a Gate in context it opens/closes the gate (compose a presentation layer like Accordion
+// for the visual, hide deferred to '-closed'); without one it shows / hides instantly.
+//----------------------------------------------------------------------------------------------------
+
+export function InputSelectMenu(unit: xnew.Unit,
+    { className = '', style = '', ...others }:
+    { className?: string, style?: string, [key: string]: any } = {}
+) {
+    const parent = xnew.context(InputSelect);
+    const gate = xnew.context(Gate);
+    const field = parent.container as HTMLElement;
+
+    const css = xnew.css({
         menu: {
             layer: 'base',
             block: `
@@ -43,6 +133,98 @@ export function InputSelect(unit: xnew.Unit,
                 overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
             `,
         },
+    });
+
+    // nested last, so the unit's element ends on the menu — InputSelectItem rows nest into it
+    const menu = xnew.nest({ tag: 'div', className: `${css.menu} ${className}`, style: `display: none; ${style}`, ...others });
+
+    let opened = false;
+    let session: xnew.Unit | null = null;
+
+    // the floating list wears the surface color behind the control (the field face is transparent,
+    // and reading the field itself would capture its hover tint)
+    function surfaceColor() {
+        for (let element = field.parentElement; element !== null; element = element.parentElement) {
+            const color = getComputedStyle(element).backgroundColor;
+            if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
+                return color;
+            }
+        }
+        return 'Canvas';
+    }
+
+    // re-anchored every update tick while open, so scrolling never shifts the list off the field
+    function anchor() {
+        const rect = field.getBoundingClientRect();
+        menu.style.left = `${rect.left}px`;
+        menu.style.top = `${rect.bottom}px`;
+        menu.style.minWidth = `${rect.width}px`;
+    }
+
+    function show() {
+        if (opened === false) {
+            opened = true;
+            parent.fill();
+            field.toggleAttribute('data-open', true);
+            menu.style.display = 'block';
+            menu.style.background = surfaceColor();
+            anchor();
+            // bound to the field so 'outside' means outside the whole control
+            session = xnew(field, (list: xnew.Unit) => {
+                list.on('pointerdown.outside', () => hide());
+                list.on('update', anchor);
+            });
+            if (gate) {
+                gate.open();
+            }
+        }
+    }
+
+    function hide() {
+        if (opened === true) {
+            opened = false;
+            field.toggleAttribute('data-open', false);
+            session?.finalize();
+            session = null;
+            if (gate) {
+                gate.close();
+            } else {
+                menu.style.display = 'none';
+            }
+        }
+    }
+
+    parent.on('-toggle', () => (opened ? hide() : show()));
+    parent.on('-close', () => hide());
+
+    // a Gate in context hands the visual to a composed presentation layer (e.g. Accordion): keep the
+    // element shown through the close animation, hiding only once the gate reports fully closed
+    if (gate) {
+        gate.on('-closed', () => {
+            menu.style.display = 'none';
+        });
+    }
+
+    return {
+        // the menu element; InputSelectItem rows mount into it
+        get container() {
+            return menu;
+        },
+    };
+}
+
+//----------------------------------------------------------------------------------------------------
+// InputSelectItem — one option row of an InputSelect; nests into the menu it is created inside.
+// Leave the row empty to show the value as text, or nest custom content into it.
+//----------------------------------------------------------------------------------------------------
+
+export function InputSelectItem(unit: xnew.Unit,
+    { value = '', className = '', style = '', ...others }:
+    { value?: string, className?: string, style?: string, [key: string]: any } = {}
+) {
+    const parent = xnew.context(InputSelect);
+
+    const css = xnew.css({
         item: {
             layer: 'base',
             block: `
@@ -56,88 +238,13 @@ export function InputSelect(unit: xnew.Unit,
         },
     });
 
-    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    const row = xnew.nest({ tag: 'div', className: `${css.item} ${className}`, style, ...others });
+    parent.register(value, row);
 
-    const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
-    const label = xnew(labelBox, { tag: 'div', className: `${css.label} ${designs.label?.className ?? ''}`, style: designs.label?.style }, initial);
-    // invisible sizers: every item reserves its own width, so the button fits the longest one
-    for (const item of items) {
-        xnew(labelBox, '<div style="visibility: hidden; height: 0; white-space: nowrap;">', item);
-    }
-
-    xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
-
-    let select: HTMLSelectElement;
-    let dropdown: xnew.Unit | null = null;
-
-    // the floating list wears the surface color behind the control (the button face is transparent,
-    // and reading the container itself would capture its hover tint)
-    const surfaceColor = () => {
-        for (let element = container.parentElement; element !== null; element = element.parentElement) {
-            const color = getComputedStyle(element).backgroundColor;
-            if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
-                return color;
-            }
-        }
-        return 'Canvas';
-    };
-
-    const closeDropdown = () => {
-        dropdown?.finalize();
-        dropdown = null;
-    };
-    const openDropdown = () => {
-        // bound to the container element (not the current hidden select) so the list lands beside the button
-        dropdown = xnew(container, (list: xnew.Unit) => {
-            // data-open suppresses the button hover tint while the list is open, restored on any close path
-            container.toggleAttribute('data-open', true);
-            list.on('finalize', () => container.toggleAttribute('data-open', false));
-
-            // registered while the list's element is still the container, so 'outside' means outside the whole control
-            list.on('pointerdown.outside', () => closeDropdown());
-
-            const menu = xnew.nest({ tag: 'div', className: `${css.menu} ${designs.menu?.className ?? ''}`, style: `background: ${surfaceColor()}; ${designs.menu?.style ?? ''}` });
-
-            // re-anchored every update tick, so scrolling never shifts the list off the button
-            const anchor = () => {
-                const rect = container.getBoundingClientRect();
-                menu.style.left = `${rect.left}px`;
-                menu.style.top = `${rect.bottom}px`;
-                menu.style.minWidth = `${rect.width}px`;
-            };
-            anchor();
-            list.on('update', anchor);
-            for (const item of items) {
-                const option = xnew({ tag: 'div', className: `${css.item} ${designs.item?.className ?? ''}`, style: designs.item?.style }, item);
-                option.element.toggleAttribute('data-checked', item === select.value);
-                option.on('click', ({ event }: { event: PointerEvent }) => {
-                    // keep the bubble from reaching the container's toggle below
-                    event.stopPropagation();
-                    select.value = item;
-                    // bubbles like a native input event so hosts wrapping the control can listen above it
-                    select.dispatchEvent(new Event('input', { bubbles: true }));
-                    closeDropdown();
-                });
-            }
-        });
-    };
-
-    // registered while the unit's element is still the container, so the whole button surface toggles
-    unit.on('click', () => {
-        if (dropdown === null) {
-            openDropdown();
-        } else {
-            closeDropdown();
-        }
-    });
-
-    xnew.nest({ tag: 'select', style: 'display: none;', ...others });
-    for (const item of items) {
-        xnew({ tag: 'option', value: item, selected: item === initial }, item);
-    }
-    select = unit.element as HTMLSelectElement;
-
-    unit.on('input', ({ value }: { value: string }) => {
-        label.element.textContent = value;
+    // registered while the current element is the row, so a click anywhere on it selects the item;
+    // stopPropagation keeps the bubble from reaching the field's toggle
+    unit.on('click', ({ event }: { event: PointerEvent }) => {
+        event.stopPropagation();
+        parent.choose(value);
     });
 }

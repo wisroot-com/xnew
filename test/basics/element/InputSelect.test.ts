@@ -1,6 +1,8 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
-import { InputSelect } from '../../../src/basics/element/InputSelect';
+import { InputSelect, InputSelectMenu, InputSelectItem } from '../../../src/basics/element/InputSelect';
+import { Gate } from '../../../src/basics/ui/Gate';
+import { Accordion } from '../../../src/basics/ui/Accordion';
 
 describe('basics InputSelect', () => {
     beforeEach(() => {
@@ -12,164 +14,263 @@ describe('basics InputSelect', () => {
         jest.useRealTimers();
     });
 
-    function containerOf(unit: xnew.Unit): HTMLElement {
-        return unit.element.parentElement as HTMLElement;
+    // InputSelect is extended into a unit (its element ends on the <select>); an InputSelectMenu binds
+    // to the field (unit.container) and holds one InputSelectItem row per value.
+    function build(props: any, values: string[]): { unit: xnew.Unit, menu: HTMLElement } {
+        let menu!: HTMLElement;
+        const unit = xnew((u) => {
+            xnew.extend(InputSelect, props);
+            xnew(u.container, (m: xnew.Unit) => {
+                xnew.extend(InputSelectMenu);
+                menu = m.container as HTMLElement;
+                for (const value of values) {
+                    xnew(InputSelectItem, { value });
+                }
+            });
+        });
+        return { unit, menu };
     }
 
-    // container children: the label box (visible label first, then the hidden per-item sizers),
-    // the chevron icon, then the hidden native select
-    function labelBoxOf(unit: xnew.Unit): HTMLElement {
-        return containerOf(unit).firstElementChild as HTMLElement;
+    function selectOf(unit: xnew.Unit): HTMLSelectElement {
+        return unit.element as HTMLSelectElement;
+    }
+
+    function fieldOf(unit: xnew.Unit): HTMLElement {
+        return unit.container as HTMLElement;
     }
 
     function labelOf(unit: xnew.Unit): HTMLElement {
-        return labelBoxOf(unit).firstElementChild as HTMLElement;
+        return fieldOf(unit).firstElementChild as HTMLElement;
     }
 
-    function sizersOf(unit: xnew.Unit): HTMLElement[] {
-        return Array.from(labelBoxOf(unit).children).slice(1) as HTMLElement[];
+    function rowsOf(menu: HTMLElement): HTMLElement[] {
+        return Array.from(menu.querySelectorAll(':scope > div')) as HTMLElement[];
     }
 
-    function dropdownOf(unit: xnew.Unit): HTMLElement | null {
-        return containerOf(unit).querySelector('select ~ *') as HTMLElement | null;
+    function isOpen(unit: xnew.Unit): boolean {
+        return fieldOf(unit).hasAttribute('data-open');
     }
 
-    function open(unit: xnew.Unit): HTMLElement {
+    function open(unit: xnew.Unit): void {
         jest.advanceTimersByTime(0);
-        containerOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
+        fieldOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
         jest.advanceTimersByTime(0);
-        return dropdownOf(unit) as HTMLElement;
     }
 
     it('nests a hidden native select with the items and initial selection', () => {
-        const unit = xnew(InputSelect, { items: ['low', 'mid', 'high'], value: 'mid', name: 'level' });
-        const select = unit.element as HTMLSelectElement;
+        const { unit } = build({ value: 'mid', name: 'level' }, ['low', 'mid', 'high']);
+        const el = selectOf(unit);
 
-        expect(select.tagName).toBe('SELECT');
-        expect(select.getAttribute('name')).toBe('level');
-        expect(select.style.display).toBe('none');
-        expect(Array.from(select.options).map((o) => o.value)).toEqual(['low', 'mid', 'high']);
-        expect(select.value).toBe('mid');
+        expect(el.tagName).toBe('SELECT');
+        expect(el.getAttribute('name')).toBe('level');
+        expect(el.style.display).toBe('none');
+        expect(Array.from(el.options).map((o) => o.value)).toEqual(['low', 'mid', 'high']);
+        expect(el.value).toBe('mid');
         expect(labelOf(unit).textContent).toBe('mid');
     });
 
     it('defaults to the first item', () => {
-        const unit = xnew(InputSelect, { items: ['low', 'mid', 'high'] });
+        const { unit } = build({}, ['low', 'mid', 'high']);
 
-        expect((unit.element as HTMLSelectElement).value).toBe('low');
+        expect(selectOf(unit).value).toBe('low');
         expect(labelOf(unit).textContent).toBe('low');
     });
 
-    it('reserves the width of every item with hidden sizers in the button', () => {
-        const unit = xnew(InputSelect, { items: ['low', 'a much longer option'] });
-        const sizers = sizersOf(unit);
+    it('keeps a default width that callers override via style', () => {
+        const { unit } = build({}, ['low', 'mid']);
+        const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
-        expect(sizers.map((s) => s.textContent)).toEqual(['low', 'a much longer option']);
-        expect(sizers.every((s) => s.style.visibility === 'hidden' && s.style.height === '0px')).toBe(true);
+        expect(styleText).toContain('width: 10em;');
+        expect(labelOf(unit).textContent).toBe('low');
     });
 
     it('toggles the floating option list on click', () => {
-        const unit = xnew(InputSelect, { items: ['low', 'mid', 'high'] });
+        const { unit, menu } = build({}, ['low', 'mid', 'high']);
 
-        expect(dropdownOf(unit)).toBeNull();
-        const dropdown = open(unit);
-        expect(dropdown).not.toBeNull();
-        expect(dropdown.textContent).toBe('lowmidhigh');
+        expect(menu.style.display).toBe('none');
+        open(unit);
+        expect(menu.style.display).not.toBe('none');
+        // empty rows fall back to the value as text
+        expect(menu.textContent).toBe('lowmidhigh');
         // fixed + max-content (in the menu css rule): the list escapes overflow-clipping ancestors
-        // and outgrows the button; anchored to the button's viewport rect (all zero under jsdom)
+        // and outgrows the field; anchored to the field's viewport rect (all zero under jsdom)
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
-        expect(dropdown.className).toMatch(/xnew\d+-menu/);
+        expect(menu.className).toMatch(/xnew\d+-menu/);
         expect(styleText).toContain('position: fixed; margin-top: 0.25em; width: max-content;');
-        expect(dropdown.style.left).toBe('0px');
-        expect(dropdown.style.top).toBe('0px');
-        expect(dropdown.style.minWidth).toBe('0px');
+        expect(menu.style.left).toBe('0px');
+        expect(menu.style.top).toBe('0px');
+        expect(menu.style.minWidth).toBe('0px');
 
-        containerOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
-        expect(dropdownOf(unit)).toBeNull();
+        fieldOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
+        expect(menu.style.display).toBe('none');
     });
 
     it('selects an option: updates the label and the select, emits input, and closes', () => {
-        const unit = xnew(InputSelect, { items: ['low', 'mid', 'high'] });
+        const { unit, menu } = build({}, ['low', 'mid', 'high']);
 
         const received: string[] = [];
         unit.on('input', ({ value }: { value: string }) => received.push(value));
 
-        const dropdown = open(unit);
-        const options = Array.from(dropdown.children) as HTMLElement[];
-        options[2].dispatchEvent(new Event('click', { bubbles: true }));
+        open(unit);
+        rowsOf(menu)[2].dispatchEvent(new Event('click', { bubbles: true }));
 
         expect(received).toEqual(['high']);
-        expect((unit.element as HTMLSelectElement).value).toBe('high');
+        expect(selectOf(unit).value).toBe('high');
         expect(labelOf(unit).textContent).toBe('high');
-        expect(dropdownOf(unit)).toBeNull();
+        expect(isOpen(unit)).toBe(false);
     });
 
     it('marks the current value with data-checked in the option list', () => {
-        const unit = xnew(InputSelect, { items: ['low', 'mid', 'high'], value: 'mid' });
+        const { menu } = build({ value: 'mid' }, ['low', 'mid', 'high']);
 
-        const options = Array.from(open(unit).children) as HTMLElement[];
-        expect(options.map((o) => o.hasAttribute('data-checked'))).toEqual([false, true, false]);
+        expect(rowsOf(menu).map((r) => r.hasAttribute('data-checked'))).toEqual([false, true, false]);
     });
 
-    it('suppresses the button hover tint via data-open while the option list is open', () => {
-        const unit = xnew(InputSelect, { items: ['low', 'mid'] });
+    it('suppresses the field hover tint via data-open while the option list is open', () => {
+        const { unit } = build({}, ['low', 'mid']);
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
         expect(styleText).toContain('&:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }');
 
-        expect(containerOf(unit).hasAttribute('data-open')).toBe(false);
+        expect(isOpen(unit)).toBe(false);
         open(unit);
-        expect(containerOf(unit).hasAttribute('data-open')).toBe(true);
+        expect(isOpen(unit)).toBe(true);
 
-        containerOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
-        expect(containerOf(unit).hasAttribute('data-open')).toBe(false);
+        fieldOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
+        expect(isOpen(unit)).toBe(false);
     });
 
-    it('applies designs to the label, menu, and item parts', () => {
-        const unit = xnew(InputSelect, {
-            items: ['low', 'mid'],
-            designs: {
-                label: { style: 'font-weight: bold;' },
-                menu: { style: 'border-radius: 0.5em;' },
-                item: { className: 'row' },
-            },
+    it('lets each item nest its own row content, falling back to the value text when empty', () => {
+        let menu!: HTMLElement;
+        const unit = xnew((u) => {
+            xnew.extend(InputSelect);
+            xnew(u.container, (m: xnew.Unit) => {
+                xnew.extend(InputSelectMenu);
+                menu = m.container as HTMLElement;
+                xnew(InputSelectItem, { value: 'plain' });
+                xnew((item: xnew.Unit) => {
+                    xnew.extend(InputSelectItem, { value: 'rich' });
+                    xnew('<span class="tag">', 'RICH');
+                });
+            });
+        });
+
+        open(unit);
+        const rows = rowsOf(menu);
+        expect(rows[0].textContent).toBe('plain');
+        expect(rows[1].querySelector('.tag')?.textContent).toBe('RICH');
+        // the custom row keeps its own content instead of the value fallback
+        expect(rows[1].textContent).toBe('RICH');
+    });
+
+    it('applies the InputSelect label design and InputSelectItem className to the rows', () => {
+        let menu!: HTMLElement;
+        const unit = xnew((u) => {
+            xnew.extend(InputSelect, { designs: { label: { style: 'font-weight: bold;' } } });
+            xnew(u.container, (m: xnew.Unit) => {
+                xnew.extend(InputSelectMenu);
+                menu = m.container as HTMLElement;
+                xnew(InputSelectItem, { value: 'low', className: 'row' });
+                xnew(InputSelectItem, { value: 'mid', className: 'row' });
+            });
         });
 
         expect(labelOf(unit).getAttribute('style')).toContain('font-weight: bold;');
-        const dropdown = open(unit);
-        expect(dropdown.getAttribute('style')).toContain('border-radius: 0.5em;');
-        expect(Array.from(dropdown.children).every((o) => (o as HTMLElement).className.includes('row'))).toBe(true);
+        expect(rowsOf(menu).every((o) => o.className.includes('row'))).toBe(true);
     });
 
-    it('applies className and style to the container element', () => {
-        const unit = xnew(InputSelect, { items: ['low'], className: 'boxed', style: 'width: 12em;' });
+    it('applies className and style to the InputSelectMenu element', () => {
+        let menu!: HTMLElement;
+        xnew((u) => {
+            xnew.extend(InputSelect);
+            xnew(u.container, (m: xnew.Unit) => {
+                xnew.extend(InputSelectMenu, { className: 'panel', style: 'border-radius: 0.5em;' });
+                menu = m.container as HTMLElement;
+                xnew(InputSelectItem, { value: 'low' });
+            });
+        });
 
-        expect(containerOf(unit).className).toContain('boxed');
-        expect(containerOf(unit).getAttribute('style')).toContain('width: 12em;');
+        expect(menu.className).toContain('panel');
+        expect(menu.getAttribute('style')).toContain('border-radius: 0.5em;');
+    });
+
+    it('applies className and style to the field element', () => {
+        const { unit } = build({ className: 'boxed', style: 'width: 12em;' }, ['low']);
+
+        expect(fieldOf(unit).className).toContain('boxed');
+        expect(fieldOf(unit).getAttribute('style')).toContain('width: 12em;');
     });
 
     it('wears the surface color behind the control on the option list', () => {
         const host = document.createElement('div');
         host.style.backgroundColor = 'rgb(1, 2, 3)';
         document.body.appendChild(host);
-        const unit = xnew(host, InputSelect, { items: ['low', 'mid'] });
+        let menu!: HTMLElement;
+        const unit = xnew(host, (u: xnew.Unit) => {
+            xnew.extend(InputSelect);
+            xnew(u.container, (m: xnew.Unit) => {
+                xnew.extend(InputSelectMenu);
+                menu = m.container as HTMLElement;
+                xnew(InputSelectItem, { value: 'low' });
+                xnew(InputSelectItem, { value: 'mid' });
+            });
+        });
 
-        expect(open(unit).style.backgroundColor).toBe('rgb(1, 2, 3)');
+        open(unit);
+        expect(menu.style.backgroundColor).toBe('rgb(1, 2, 3)');
         host.remove();
     });
 
     it('closes the option list on a pointerdown outside the control', () => {
-        const unit = xnew(InputSelect, { items: ['low', 'mid'] });
+        const { unit } = build({}, ['low', 'mid']);
 
-        expect(open(unit)).not.toBeNull();
+        open(unit);
+        expect(isOpen(unit)).toBe(true);
         document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
-        expect(dropdownOf(unit)).toBeNull();
+        expect(isOpen(unit)).toBe(false);
     });
 
     it('keeps the option list open on a pointerdown inside the control', () => {
-        const unit = xnew(InputSelect, { items: ['low', 'mid'] });
+        const { unit, menu } = build({}, ['low', 'mid']);
 
-        const dropdown = open(unit);
-        dropdown.children[0].dispatchEvent(new Event('pointerdown', { bubbles: true }));
-        expect(dropdownOf(unit)).not.toBeNull();
+        open(unit);
+        rowsOf(menu)[0].dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        expect(isOpen(unit)).toBe(true);
+    });
+
+    it('drives the menu open / close with a Gate, animating a composed Accordion', () => {
+        let menu!: HTMLElement;
+        let accordion!: HTMLElement;
+        const unit = xnew((u) => {
+            xnew.extend(InputSelect);
+            xnew(u.container, (m: xnew.Unit) => {
+                xnew.extend(Gate, { open: false, duration: 200 });
+                xnew.extend(InputSelectMenu);
+                menu = m.container as HTMLElement;
+                xnew((acc: xnew.Unit) => {
+                    xnew.extend(Accordion);
+                    accordion = acc.element as HTMLElement;
+                    xnew(InputSelectItem, { value: 'low' });
+                    xnew(InputSelectItem, { value: 'mid' });
+                });
+            });
+        });
+
+        // the gate's deferred initial emit sets the closed state; the Accordion follows it
+        jest.advanceTimersByTime(0);
+        expect(menu.style.display).toBe('none');
+        expect(accordion.style.opacity).toBe('0');
+
+        // open: the menu shows immediately, the Accordion expands to opacity 1 over the duration
+        fieldOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
+        expect(menu.style.display).toBe('block');
+        jest.advanceTimersByTime(250);
+        expect(accordion.style.opacity).toBe('1');
+
+        // close: the Accordion collapses; the menu stays shown until the gate reports fully closed
+        fieldOf(unit).dispatchEvent(new Event('click', { bubbles: false }));
+        expect(menu.style.display).toBe('block');
+        jest.advanceTimersByTime(250);
+        expect(accordion.style.opacity).toBe('0');
+        expect(menu.style.display).toBe('none');
     });
 });

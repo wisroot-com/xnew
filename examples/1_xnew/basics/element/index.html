@@ -26,7 +26,7 @@
 <body class="m-0 p-0 w-full h-screen">
   <div id="main" class="relative w-full h-full"></div>
   <script type="module">
-    import { xnew, xbasics } from '@mulsense/xnew';
+    import { xnew, xbasics, xicons } from '@mulsense/xnew';
 
     xnew(document.querySelector('#main'), (unit) => {
       xnew.nest('<div class="m-2 p-4 w-[36rem] text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg flex flex-col gap-4">');
@@ -87,16 +87,49 @@
       xnew.nest('<div>');
       xnew('<div class="mb-1">', 'InputRadio');
       xnew.nest('<div class="flex gap-4 items-center">');
-      xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'mid' });
-      xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'high', designs: { frame: { style: 'border-radius: 9999px;' }, item: { style: 'font-weight: bold;' } } });
+      xnew('<div class="h-8 w-56 flex border rounded overflow-hidden">', () => {
+        xnew(xbasics.InputRadio, { name: 'level1', value: 'low' });
+        xnew(xbasics.InputRadio, { name: 'level1', value: 'mid', checked: true });
+        xnew(xbasics.InputRadio, { name: 'level1', value: 'high' });
+      });
+      xnew('<div class="h-8 w-56 flex border rounded-full overflow-hidden">', () => {
+        xnew(xbasics.InputRadio, { name: 'level2', value: 'low', style: 'font-weight: bold;' });
+        xnew(xbasics.InputRadio, { name: 'level2', value: 'mid', style: 'font-weight: bold;' });
+        xnew(xbasics.InputRadio, { name: 'level2', value: 'high', checked: true, style: 'font-weight: bold;' });
+      });
     }
 
     function MyInputSelect(unit) {
       xnew.nest('<div>');
       xnew('<div class="mb-1">', 'InputSelect');
       xnew.nest('<div class="flex gap-4 items-center">');
-      xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'] });
-      xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'], value: 'banana', designs: { frame: { style: 'border-radius: 9999px;' }, item: { style: 'font-style: italic;' } } });
+      xnew((unit) => {
+        xnew.extend(xbasics.InputSelect);
+        xnew(unit.container, (menu) => {
+          xnew.extend(xbasics.InputSelectMenu);
+          xnew(xbasics.InputSelectItem, { value: 'apple' });
+          xnew(xbasics.InputSelectItem, { value: 'banana' });
+          xnew(xbasics.InputSelectItem, { value: 'cherry' });
+        });
+      });
+      // the menu's open / close is driven by a Gate; an Accordion inside collapses the rows open
+      xnew((unit) => {
+        xnew.extend(xbasics.InputSelect, { value: 'banana', style: 'border-radius: 9999px;' });
+        xnew(unit.container, (menu) => {
+          xnew.extend(xbasics.Gate, { open: false, duration: 200 });
+          xnew.extend(xbasics.InputSelectMenu);
+          xnew((accordion) => {
+            xnew.extend(xbasics.Accordion);
+            ['apple', 'banana', 'cherry'].forEach((fruit) => {
+              xnew((item) => {
+                xnew.extend(xbasics.InputSelectItem, { value: fruit });
+                xnew(xicons.Star, { style: 'flex: none; width: 1em; height: 1em; margin-right: 0.5em;' });
+                xnew('<span style="font-style: italic;">', fruit);
+              });
+            });
+          });
+        });
+      });
     }
 
     function MyInputRange(unit) {

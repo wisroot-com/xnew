@@ -304,28 +304,41 @@ declare function InputSwitch(unit: xnew.Unit, { value, className, style, designs
     [key: string]: any;
 }): void;
 
-declare function InputRadio(unit: xnew.Unit, { value, items, name, className, style, designs }?: {
+declare function InputRadio(unit: xnew.Unit, { value, name, checked, className, style, ...others }?: {
     value?: string;
-    items?: string[];
     name?: string;
+    checked?: boolean;
     className?: string;
     style?: string;
-    designs?: {
-        frame?: Design;
-        item?: Design;
-    };
+    [key: string]: any;
 }): void;
 
-declare function InputSelect(unit: xnew.Unit, { value, items, className, style, designs, ...others }?: {
+declare function InputSelect(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
     value?: string;
-    items?: string[];
     className?: string;
     style?: string;
     designs?: {
         label?: Design;
-        menu?: Design;
-        item?: Design;
     };
+    [key: string]: any;
+}): {
+    readonly value: string;
+    readonly container: HTMLElement | SVGElement;
+    register(itemValue: string, row: HTMLElement): void;
+    fill(): void;
+    choose(itemValue: string): void;
+};
+declare function InputSelectMenu(unit: xnew.Unit, { className, style, ...others }?: {
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    readonly container: HTMLElement | SVGElement;
+};
+declare function InputSelectItem(unit: xnew.Unit, { value, className, style, ...others }?: {
+    value?: string;
+    className?: string;
+    style?: string;
     [key: string]: any;
 }): void;
 
@@ -480,6 +493,8 @@ declare const xbasics: {
     InputSwitch: typeof InputSwitch;
     InputRadio: typeof InputRadio;
     InputSelect: typeof InputSelect;
+    InputSelectMenu: typeof InputSelectMenu;
+    InputSelectItem: typeof InputSelectItem;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;

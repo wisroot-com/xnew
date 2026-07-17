@@ -283,6 +283,13 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **A component's body-ending element is where a host's `unit.on(domEvent)` attaches — so any native
+  event you want the host to catch must bubble to THAT element.** `unit.on('input', …)` registered after
+  a component is extended lands on the unit's *final* element. When InputSelect's body ended on the menu
+  (a sibling of the hidden `<select>`), the select's bubbling `input` never reached it and every host
+  `unit.on('input')` silently missed. Fix: nest the emitter *inside* the body-ending element (moved the
+  `<select>` into the menu) so its event bubbles up to where hosts listen.
+
 - **Anything registered on the shared `io` (server side) must be detached on `finalize` — including
   inside `sync.boot`.** Rooms are created and destroyed continuously, so a dead room that leaves its
   `io.on('connection')` behind grows the namespace's listener count without bound (MaxListenersExceededWarning
