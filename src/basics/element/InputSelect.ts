@@ -21,7 +21,7 @@ export function InputSelect(unit: xnew.Unit,
         // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
         field: {
             layer: 'base',
-            block: `
+            body: `
                 display: inline-flex; align-items: center;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
                 border: 1px solid currentColor; border-radius: 0.25em;
@@ -33,7 +33,7 @@ export function InputSelect(unit: xnew.Unit,
         // InputText) that callers override via className / style, so no per-item sizing is needed
         label: {
             layer: 'base',
-            block: `
+            body: `
                 flex: 1 1 0; min-width: 0; padding: 0 0.5em;
                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             `,
@@ -124,7 +124,7 @@ export function InputSelectMenu(unit: xnew.Unit,
     const css = xnew.css({
         menu: {
             layer: 'base',
-            block: `
+            body: `
                 position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000;
                 max-height: 12em;
                 border: 1px solid currentColor;
@@ -223,7 +223,7 @@ export function InputSelectItem(unit: xnew.Unit,
     const css = xnew.css({
         item: {
             layer: 'base',
-            block: `
+            body: `
                 height: 2em; padding: 0 0.5em;
                 display: flex; align-items: center;
                 white-space: nowrap;

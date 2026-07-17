@@ -15,7 +15,7 @@ export function InputCheckbox(unit: xnew.Unit,
         // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
         container: {
             layer: 'base',
-            block: `
+            body: `
                 display: inline-block;
                 width: 1.5em; height: 1.5em; margin: 0.125em;
                 position: relative;
@@ -24,7 +24,7 @@ export function InputCheckbox(unit: xnew.Unit,
         // full-extent overlay carrying the framed look; the checked state is on the container
         frame: {
             layer: 'base',
-            block: `
+            body: `
                 position: absolute; inset: 0;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 [data-checked] > & { background: color-mix(in srgb, currentColor 20%, transparent); }
@@ -32,7 +32,7 @@ export function InputCheckbox(unit: xnew.Unit,
         },
         svg: {
             layer: 'base',
-            block: `
+            body: `
                 box-sizing: border-box; display: block; width: 100%; height: 100%;
                 stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
                 fill: none;
@@ -42,7 +42,7 @@ export function InputCheckbox(unit: xnew.Unit,
         },
         input: {
             layer: 'base',
-            block: `
+            body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;
             `,

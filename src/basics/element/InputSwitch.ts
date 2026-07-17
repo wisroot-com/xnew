@@ -15,7 +15,7 @@ export function InputSwitch(unit: xnew.Unit,
         // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
         container: {
             layer: 'base',
-            block: `
+            body: `
                 display: inline-block;
                 width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
                 position: relative;
@@ -24,7 +24,7 @@ export function InputSwitch(unit: xnew.Unit,
         // full-extent overlay carrying the framed look; the on state is on the container
         frame: {
             layer: 'base',
-            block: `
+            body: `
                 position: absolute; inset: 0;
                 border: 1px solid currentColor; border-radius: 1em;
                 [data-checked] > & { background: color-mix(in srgb, currentColor 20%, transparent); }
@@ -32,7 +32,7 @@ export function InputSwitch(unit: xnew.Unit,
         },
         knob: {
             layer: 'base',
-            block: `
+            body: `
                 position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
                 aspect-ratio: 1 / 1; border-radius: 50%;
                 background: currentColor;
@@ -42,7 +42,7 @@ export function InputSwitch(unit: xnew.Unit,
         },
         input: {
             layer: 'base',
-            block: `
+            body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;
             `,

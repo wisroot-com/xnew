@@ -6,7 +6,7 @@
 
 import { Unit } from './unit';
 
-export interface CssDef { layer?: string; type?: string; block: string; }
+export interface CssDef { layer?: string; type?: string; body: string; }
 
 interface CssEntry { names: Record<string, string>; refs: number; style: HTMLStyleElement; }
 
@@ -36,7 +36,7 @@ export function applyCss(unit: Unit, defs: Record<string, string | CssDef>): Rec
                 throw new Error(`xnew.css: invalid local name "${name}".`);
             }
         }
-        const resolve = (block: string) => block.replace(reference, (_, ref: string) => {
+        const resolve = (body: string) => body.replace(reference, (_, ref: string) => {
             if (names[ref] === undefined) {
                 throw new Error(`xnew.css: unknown reference "$${ref}".`);
             } else {
@@ -44,13 +44,13 @@ export function applyCss(unit: Unit, defs: Record<string, string | CssDef>): Rec
             }
         });
         const text = Object.entries(defs).map(([name, value]) => {
-            const def = typeof value === 'string' ? { block: value } : value;
+            const def = typeof value === 'string' ? { body: value } : value;
 
             let rule: string;
             if (def.type === undefined) {
-                rule = `.${names[name]} {\n${resolve(def.block)}\n}`;
+                rule = `.${names[name]} {\n${resolve(def.body)}\n}`;
             } else if (typeName.test(def.type) === true) {
-                rule = `@${def.type} ${names[name]} {\n${resolve(def.block)}\n}`;
+                rule = `@${def.type} ${names[name]} {\n${resolve(def.body)}\n}`;
             } else {
                 throw new Error(`xnew.css: invalid type "${def.type}".`);
             }

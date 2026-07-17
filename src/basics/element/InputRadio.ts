@@ -15,7 +15,7 @@ export function InputRadio(unit: xnew.Unit,
         // :has(input:checked) paints the selected tint with no JS
         container: {
             layer: 'base',
-            block: `
+            body: `
                 padding: 0.25em 0.5em;
                 flex: 1 1 0;
                 display: flex; align-items: center; justify-content: center;
@@ -29,7 +29,7 @@ export function InputRadio(unit: xnew.Unit,
         // 0-sized (not display:none) so it keeps focus and native arrow-key navigation within the group
         input: {
             layer: 'base',
-            block: `
+            body: `
                 width: 0; height: 0; margin: 0;
                 opacity: 0;
             `,

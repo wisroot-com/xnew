@@ -23,7 +23,7 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
         // the vertical padding sits outside the scrollport so the scrollbar stays clear of the host's rounded corners
         const css = xnew.css({
             // transparent track lets the surface behind show through, so the scrollbar blends into any background
-            scroll: { block: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
+            scroll: { body: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;' },
         });
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
         xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
@@ -65,22 +65,18 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
 }
 
 function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
-    // the Accordion (extended last, so its collapse box wraps only the rows) owns the Gate; the header
-    // toggles it via the merged `group.gate` and the chevron follows the Gate's own '-transition'
-    let chevron: xnew.Unit | undefined;
     if (name) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header: xnew.Unit) => {
             header.on('click', () => group.gate.toggle());
-            chevron = xnew((unit: xnew.Unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
+            const chevron = xnew((unit: xnew.Unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
+            group.on('-transition', ({ value }: { value: number }) => {
+                chevron.element.style.transform = `rotate(${(value - 1) * 90}deg)`;
+            });
             xnew('<div>', name);
         });
     }
-    const gate = xnew.extend(Accordion, { gate: { open } }).gate;
-    gate.on('-transition', ({ value }: { value: number }) => {
-        if (chevron) {
-            chevron.element.style.transform = `rotate(${(value - 1) * 90}deg)`;
-        }
-    });
+    xnew.extend(Accordion, { gate: { open } });
+
 }
 
 function Separator(unit: xnew.Unit) {

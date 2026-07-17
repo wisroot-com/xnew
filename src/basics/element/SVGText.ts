@@ -15,7 +15,7 @@ export function SVGText(unit: xnew.Unit,
         // the presentation defaults (text = visible fill) inherit down to the <text>
         svg: {
             layer: 'base',
-            block: `
+            body: `
                 stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
                 fill: currentColor; fill-opacity: 1;
                 overflow: visible;

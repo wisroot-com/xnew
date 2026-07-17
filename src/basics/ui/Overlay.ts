@@ -16,7 +16,7 @@ export function Overlay(unit: xnew.Unit,
     const css = xnew.css({
         container: {
             layer: 'base',
-            block: `
+            body: `
                 position: fixed; inset: 0; z-index: 1000;
                 opacity: 0;
             `,

@@ -18,7 +18,7 @@ export function InputRange(unit: xnew.Unit,
         // margin-box cap while a border here would inset the absolute children off the frame ring
         container: {
             layer: 'base',
-            block: `
+            body: `
                 display: inline-block;
                 position: relative; margin: 0.125em;
             `,
@@ -26,14 +26,14 @@ export function InputRange(unit: xnew.Unit,
         // horizontal: 10em wide bar; max-width: stretch caps the margin box so a caller margin never overflows
         horizontal: {
             layer: 'base',
-            block: `
+            body: `
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
             `,
         },
         // vertical: 10em tall bar; max-height: stretch caps the margin box the same way on the long axis
         vertical: {
             layer: 'base',
-            block: `
+            body: `
                 width: 1.8em; height: 10em; max-height: -webkit-fill-available; max-height: -moz-available; max-height: stretch;
             `,
         },
@@ -41,7 +41,7 @@ export function InputRange(unit: xnew.Unit,
         // geometry and overlap exactly whatever the border widths
         frame: {
             layer: 'base',
-            block: `
+            body: `
                 position: absolute; inset: 0;
                 border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
                 border-radius: 0.25em;
@@ -50,7 +50,7 @@ export function InputRange(unit: xnew.Unit,
         // value-driven meter; the growth axis (width / height) is set per orientation, driven from the container edge
         meter: {
             layer: 'base',
-            block: `
+            body: `
                 position: absolute;
                 box-sizing: border-box;
                 border: 1px solid currentColor; border-radius: 0.25em;
@@ -59,14 +59,14 @@ export function InputRange(unit: xnew.Unit,
         },
         meterHorizontal: {
             layer: 'base',
-            block: `
+            body: `
                 top: 0; left: 0; bottom: 0;
                 transition: width 0.05s;
             `,
         },
         meterVertical: {
             layer: 'base',
-            block: `
+            body: `
                 left: 0; right: 0; bottom: 0;
                 transition: height 0.05s;
             `,
@@ -74,7 +74,7 @@ export function InputRange(unit: xnew.Unit,
         // value readout painted above the meter (pointer-events: none keeps the drag on the input)
         status: {
             layer: 'base',
-            block: `
+            body: `
                 position: absolute; inset: 0;
                 box-sizing: border-box;
                 display: flex;
@@ -83,14 +83,14 @@ export function InputRange(unit: xnew.Unit,
         },
         statusHorizontal: {
             layer: 'base',
-            block: `
+            body: `
                 padding: 0 0.5em;
                 justify-content: flex-end; align-items: center;
             `,
         },
         statusVertical: {
             layer: 'base',
-            block: `
+            body: `
                 padding: 0.5em 0;
                 justify-content: center; align-items: flex-end;
             `,
@@ -100,7 +100,7 @@ export function InputRange(unit: xnew.Unit,
         // tracks the cursor (natively the thumb center only travels between the half-thumb insets)
         input: {
             layer: 'base',
-            block: `
+            body: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; user-select: none; margin: 0;
                 appearance: none;
@@ -108,7 +108,7 @@ export function InputRange(unit: xnew.Unit,
         },
         inputHorizontal: {
             layer: 'base',
-            block: `
+            body: `
                 &::-webkit-slider-thumb { appearance: none; width: 0; }
                 &::-moz-range-thumb { width: 0; border: none; }
             `,
@@ -117,7 +117,7 @@ export function InputRange(unit: xnew.Unit,
         // bottom so dragging up increases (the deprecated appearance: slider-vertical is avoided)
         inputVertical: {
             layer: 'base',
-            block: `
+            body: `
                 writing-mode: vertical-lr; direction: rtl;
                 &::-webkit-slider-thumb { appearance: none; height: 0; }
                 &::-moz-range-thumb { height: 0; border: none; }

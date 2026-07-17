@@ -14,7 +14,7 @@ export function Aspect(unit: xnew.Unit,
         // outer flex box that centers the ratio box; container-type: size exposes the parent extent to cqw / cqh
         container: {
             layer: 'base',
-            block: `
+            body: `
                 width: 100%; height: 100%;
                 display: flex; align-items: center; justify-content: center;
                 container-type: size;
@@ -23,7 +23,7 @@ export function Aspect(unit: xnew.Unit,
         // ratio box; aspect-ratio and the fitting width are aspect-dependent, so they stay inline
         inner: {
             layer: 'base',
-            block: `
+            body: `
                 position: relative;
                 container-type: size;
             `,
