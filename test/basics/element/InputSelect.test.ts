@@ -16,14 +16,18 @@ describe('basics InputSelect', () => {
         return unit.element.parentElement as HTMLElement;
     }
 
-    // container children: the frame overlay first, then the label box (visible label first,
-    // then the hidden per-item sizers)
-    function frameOf(unit: xnew.Unit): HTMLElement {
+    // container children: the label box (visible label first, then the hidden per-item sizers),
+    // the chevron icon, then the hidden native select
+    function labelBoxOf(unit: xnew.Unit): HTMLElement {
         return containerOf(unit).firstElementChild as HTMLElement;
     }
 
     function labelOf(unit: xnew.Unit): HTMLElement {
-        return containerOf(unit).children[1]?.firstElementChild as HTMLElement;
+        return labelBoxOf(unit).firstElementChild as HTMLElement;
+    }
+
+    function sizersOf(unit: xnew.Unit): HTMLElement[] {
+        return Array.from(labelBoxOf(unit).children).slice(1) as HTMLElement[];
     }
 
     function dropdownOf(unit: xnew.Unit): HTMLElement | null {
@@ -58,7 +62,7 @@ describe('basics InputSelect', () => {
 
     it('reserves the width of every item with hidden sizers in the button', () => {
         const unit = xnew(InputSelect, { items: ['low', 'a much longer option'] });
-        const sizers = Array.from((labelOf(unit).parentElement as HTMLElement).children).slice(1) as HTMLElement[];
+        const sizers = sizersOf(unit);
 
         expect(sizers.map((s) => s.textContent)).toEqual(['low', 'a much longer option']);
         expect(sizers.every((s) => s.style.visibility === 'hidden' && s.style.height === '0px')).toBe(true);
@@ -110,7 +114,7 @@ describe('basics InputSelect', () => {
     it('suppresses the button hover tint via data-open while the option list is open', () => {
         const unit = xnew(InputSelect, { items: ['low', 'mid'] });
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
-        expect(styleText).toContain(':not([data-open]):hover > & { background: color-mix(in srgb, currentColor 20%, transparent); }');
+        expect(styleText).toContain('&:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }');
 
         expect(containerOf(unit).hasAttribute('data-open')).toBe(false);
         open(unit);
@@ -120,18 +124,16 @@ describe('basics InputSelect', () => {
         expect(containerOf(unit).hasAttribute('data-open')).toBe(false);
     });
 
-    it('applies designs to the frame, label, menu, and item parts', () => {
+    it('applies designs to the label, menu, and item parts', () => {
         const unit = xnew(InputSelect, {
             items: ['low', 'mid'],
             designs: {
-                frame: { className: 'pill' },
                 label: { style: 'font-weight: bold;' },
                 menu: { style: 'border-radius: 0.5em;' },
                 item: { className: 'row' },
             },
         });
 
-        expect(frameOf(unit).className).toContain('pill');
         expect(labelOf(unit).getAttribute('style')).toContain('font-weight: bold;');
         const dropdown = open(unit);
         expect(dropdown.getAttribute('style')).toContain('border-radius: 0.5em;');

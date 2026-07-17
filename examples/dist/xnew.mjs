@@ -2188,26 +2188,18 @@ for (const name of Object.keys(iconData)) {
 const xicons = icons;
 
 function InputSelect(unit, _a = {}) {
-    var _b, _c, _d, _e, _f, _g, _h;
+    var _b, _c, _d, _e;
     var { value, items = [], className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "items", "className", "style", "designs"]);
     const initial = (_b = value !== null && value !== void 0 ? value : items[0]) !== null && _b !== void 0 ? _b : '';
     const css = xnew.css({
         container: {
             layer: 'base',
             block: `
-                position: relative;
                 display: inline-flex; align-items: center;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
-                cursor: pointer; user-select: none;
-            `,
-        },
-        frame: {
-            layer: 'base',
-            block: `
-                position: absolute; inset: 0;
                 border: 1px solid currentColor; border-radius: 0.25em;
-                pointer-events: none;
-                :not([data-open]):hover > & { background: color-mix(in srgb, currentColor 20%, transparent); }
+                cursor: pointer; user-select: none;
+                &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
         label: {
@@ -2237,11 +2229,9 @@ function InputSelect(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const container = unit.element;
-    xnew({ tag: 'div', className: `${css.frame} ${(_d = (_c = designs.frame) === null || _c === void 0 ? void 0 : _c.className) !== null && _d !== void 0 ? _d : ''}`, style: (_e = designs.frame) === null || _e === void 0 ? void 0 : _e.style });
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
-    const label = xnew(labelBox, { tag: 'div', className: `${css.label} ${(_g = (_f = designs.label) === null || _f === void 0 ? void 0 : _f.className) !== null && _g !== void 0 ? _g : ''}`, style: (_h = designs.label) === null || _h === void 0 ? void 0 : _h.style }, initial);
+    const label = xnew(labelBox, { tag: 'div', className: `${css.label} ${(_d = (_c = designs.label) === null || _c === void 0 ? void 0 : _c.className) !== null && _d !== void 0 ? _d : ''}`, style: (_e = designs.label) === null || _e === void 0 ? void 0 : _e.style }, initial);
     for (const item of items) {
         xnew(labelBox, '<div style="visibility: hidden; height: 0; white-space: nowrap;">', item);
     }

@@ -322,7 +322,6 @@ declare function InputSelect(unit: xnew.Unit, { value, items, className, style, 
     className?: string;
     style?: string;
     designs?: {
-        frame?: Design;
         label?: Design;
         menu?: Design;
         item?: Design;

@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // InputSelect — listbox-style pulldown backed by a hidden native <select>
-// The native popup cannot be styled, so a framed button opens a floating option list; the open /
+// The native popup cannot be styled, so a framed button opens a floating option list; open /
 // selected looks live in css rules keyed on data-open / data-checked, so designs stay intact.
 //----------------------------------------------------------------------------------------------------
 
@@ -10,31 +10,24 @@ import { Design } from '../design';
 
 export function InputSelect(unit: xnew.Unit,
     { value, items = [], className = '', style = '', designs = {}, ...others }:
-    { value?: string, items?: string[], className?: string, style?: string, designs?: { frame?: Design, label?: Design, menu?: Design, item?: Design }, [key: string]: any } = {}
+    { value?: string, items?: string[], className?: string, style?: string, designs?: { label?: Design, menu?: Design, item?: Design }, [key: string]: any } = {}
 ) {
     const initial = value ?? items[0] ?? '';
 
     const css = xnew.css({
-        // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        // the framed button surface; hover tint is suppressed by data-open while the list is open.
+        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
         container: {
             layer: 'base',
             block: `
-                position: relative;
                 display: inline-flex; align-items: center;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em; margin: 0.125em 0;
-                cursor: pointer; user-select: none;
-            `,
-        },
-        // full-extent overlay carrying the framed look; hover / open state is on the container
-        frame: {
-            layer: 'base',
-            block: `
-                position: absolute; inset: 0;
                 border: 1px solid currentColor; border-radius: 0.25em;
-                pointer-events: none;
-                :not([data-open]):hover > & { background: color-mix(in srgb, currentColor 20%, transparent); }
+                cursor: pointer; user-select: none;
+                &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
+        // the visible value with ellipsis; the flex slot's hidden per-item sizers reserve the widest item's width
         label: {
             layer: 'base',
             block: `
@@ -63,10 +56,7 @@ export function InputSelect(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const container = unit.element as HTMLElement;
-
-    xnew({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
 
     const labelBox = xnew('<div style="flex: 1 1 0; min-width: 0; padding: 0 0.5em;">');
     const label = xnew(labelBox, { tag: 'div', className: `${css.label} ${designs.label?.className ?? ''}`, style: designs.label?.style }, initial);
