@@ -45,7 +45,7 @@
     }
 
     function MyModal(unit) {
-      xnew.extend(xbasics.Overlay, { gate: { open: false }, style: 'background: rgba(0, 0, 0, 0.1);' });
+      xnew.extend(xbasics.Overlay, { gate: { open: false }, className: 'bg-black/10' });
       unit.gate.open();
 
       xnew.nest('<div class="absolute inset-0 m-auto w-max h-max">');
