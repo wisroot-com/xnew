@@ -75,7 +75,7 @@ function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?:
             xnew('<div>', name);
         });
     }
-    xnew.extend(Accordion, { gate: { open } });
+    xnew.extend(Accordion, { gate: { open, duration: 200 } });
 
 }
 
