@@ -104,7 +104,7 @@
       xnew('<div class="mb-1">', 'Listbox');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.Listbox, (box) => {
-        xnew(xicons.ChevronDown, { className: 'flex-none w-[0.9em] h-[0.9em] mr-[0.5em]' });
+        xnew(xicons.ChevronDown, { className: 'flex-none size-[0.9em]' });
         xnew(xbasics.ListboxMenu, () => {
           xnew(xbasics.ListboxItem, { value: 'apple' });
           xnew(xbasics.ListboxItem, { value: 'banana' });
@@ -114,13 +114,13 @@
       // the Listbox owns the Gate (duration 200): ListboxMenu opens / closes it, and the Accordion
       // (after the menu, so its collapse box wraps the rows) rides the same box.gate to animate in step
       xnew(xbasics.Listbox, { value: 'banana', gate: { open: false, duration: 200 }, style: 'border-radius: 9999px;' }, (box) => {
-        xnew(xicons.ChevronDown, { className: 'flex-none w-[0.9em] h-[0.9em] mr-[0.5em]' });
+        xnew(xicons.ChevronUpDown, { className: 'flex-none size-[0.9em]' });
         xnew(xbasics.ListboxMenu, (menu) => {
           xnew.extend(xbasics.Accordion, { gate: box.gate });
-          ['apple', 'banana', 'cherry'].forEach((fruit) => {
-            xnew(xbasics.ListboxItem, { value: fruit }, (item) => {
-              xnew(xicons.Star, { style: 'flex: none; width: 1em; height: 1em; margin-right: 0.5em;' });
-              xnew('<span style="font-style: italic;">', fruit);
+          [{ value: 'apple', icon: xicons.Heart }, { value: 'banana', icon: xicons.Bolt }, { value: 'cherry', icon: xicons.Fire }].forEach(({ value, icon }) => {
+            xnew(xbasics.ListboxItem, { value }, (item) => {
+              xnew(icon, { style: 'flex: none; width: 1em; height: 1em; margin-right: 0.5em;' });
+              xnew('<span style="font-style: italic;">', value);
             });
           });
         });
