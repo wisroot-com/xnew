@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------
-// Listbox — a styleable select: Listbox (framed field + value) + ListboxMenu (floating list) + ListboxItem (row)
+// Listbox — a styleable select: Listbox (framed container + value) + ListboxMenu (floating list) + ListboxItem (row)
 // The native <select> popup can't be styled, so selection is held in JS (no native control at all).
 // Hosts read the current value with `.value` and observe changes with `.on('-change', ({ value }) => …)`.
 //----------------------------------------------------------------------------------------------------
@@ -10,7 +10,7 @@ import { Overlay } from '../ui/Overlay';
 import { Design } from '../design';
 
 //----------------------------------------------------------------------------------------------------
-// Listbox — the framed field, the visible label, and the selection state
+// Listbox — the framed container, the visible label, and the selection state
 //----------------------------------------------------------------------------------------------------
 
 export function Listbox(unit: xnew.Unit,
@@ -18,9 +18,9 @@ export function Listbox(unit: xnew.Unit,
     { value?: string, className?: string, style?: string, designs?: { label?: Design }, [key: string]: any } = {}
 ) {
     const css = xnew.css({
-        // the framed field surface; hover tint is suppressed by data-open while the list is open.
+        // the framed container surface; hover tint is suppressed by data-open while the list is open.
         // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        field: {
+        container: {
             layer: 'base',
             body: `
                 display: inline-flex; align-items: center;
@@ -46,31 +46,36 @@ export function Listbox(unit: xnew.Unit,
     const hasInitial = value !== undefined;
     let selected = value ?? '';
 
-    // the body stays on the field, so ListboxMenu / ListboxItem nest into it and unit.on('click') covers the whole control
-    const field = xnew.nest({ tag: 'div', className: `${css.field} ${className}`, style, ...others });
+    // the body stays on the container, so ListboxMenu / ListboxItem nest into it and unit.on('click') covers the whole control
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
 
     const label = xnew({ tag: 'div', className: `${css.label} ${designs.label?.className ?? ''}`, style: designs.label?.style }, '');
 
     xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
 
-    // clicking anywhere on the field toggles the list (ListboxItem stops its own click from reaching here)
+    // clicking anywhere on the container toggles the list (ListboxItem stops its own click from reaching here)
     unit.on('click', () => xnew.emit('-toggle'));
+
+    // reflect `selected` onto the view: the label text and each row's data-checked
+    function apply() {
+        label.element.textContent = selected;
+        for (const item of items) {
+            item.row.toggleAttribute('data-checked', item.value === selected);
+        }
+    }
 
     return {
         get value() {
             return selected;
         },
-        // called by each ListboxItem: records its row and, if it is the current selection, shows it.
+        // called by each ListboxItem: records its row and reflects the current selection.
         // the first item claims the default when no initial value was given
         register(itemValue: string, row: HTMLElement) {
             items.push({ value: itemValue, row });
             if (!hasInitial && selected === '') {
                 selected = itemValue;
             }
-            if (itemValue === selected) {
-                label.element.textContent = itemValue;
-            }
-            row.toggleAttribute('data-checked', itemValue === selected);
+            apply();
         },
         // rows the caller left empty fall back to the value as text (the menu calls this before opening,
         // once every row's custom content has mounted)
@@ -84,10 +89,7 @@ export function Listbox(unit: xnew.Unit,
         // a ListboxItem was clicked: update the value, notify hosts with '-change', and close the list
         choose(itemValue: string) {
             selected = itemValue;
-            label.element.textContent = itemValue;
-            for (const item of items) {
-                item.row.toggleAttribute('data-checked', item.value === itemValue);
-            }
+            apply();
             xnew.emit('-change', { value: itemValue });
             xnew.emit('-close');
         },
@@ -96,7 +98,7 @@ export function Listbox(unit: xnew.Unit,
 
 //----------------------------------------------------------------------------------------------------
 // ListboxMenu — the floating option list, built on Overlay (backdrop + anchor tracking + outside-click + fade).
-// Follows the Listbox field's '-toggle' / '-close'; reuses a shared Gate (e.g. an Accordion's) or makes its own.
+// Follows the Listbox container's '-toggle' / '-close'; reuses a shared Gate (e.g. an Accordion's) or makes its own.
 //----------------------------------------------------------------------------------------------------
 
 export function ListboxMenu(_unit: xnew.Unit,
@@ -104,10 +106,10 @@ export function ListboxMenu(_unit: xnew.Unit,
     { gate?: xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const box = xnew.context(Listbox);
-    const field = box.element as HTMLElement;
+    const container = box.element as HTMLElement;
 
     const css = xnew.css({
-        // hangs under Overlay's anchor-tracking box (the field's rect), so top: 100% lands it at the field's foot
+        // hangs under Overlay's anchor-tracking box (the container's rect), so top: 100% lands it at the container's foot
         menu: {
             layer: 'base',
             body: `
@@ -119,20 +121,20 @@ export function ListboxMenu(_unit: xnew.Unit,
         },
     });
 
-    // Overlay owns the backdrop, the field-rect tracking, the outside-click close and the fade; its
+    // Overlay owns the backdrop, the container-rect tracking, the outside-click close and the fade; its
     // anchor box becomes the positioned parent the menu hangs under. A caller Gate (shared with an
     // Accordion) is reused; otherwise Overlay makes its own — instant (duration 0), starting closed.
-    const overlay = xnew.extend(Overlay, { gate: gate ?? { open: false, duration: 0 }, anchor: field });
+    const overlay = xnew.extend(Overlay, { gate: gate ?? { open: false, duration: 0 }, anchor: container });
 
     // element now ends on Overlay's anchor box; nest the list into it so ListboxItem rows nest into the list
     const menu = xnew.nest({ tag: 'div', className: `${css.menu} ${className}`, style, ...others }) as HTMLElement;
 
     let opened = false;
 
-    // the floating list wears the surface color behind the control (the field face is transparent,
-    // and reading the field itself would capture its hover tint)
+    // the floating list wears the surface color behind the control (the container face is transparent,
+    // and reading the container itself would capture its hover tint)
     function surfaceColor() {
-        for (let element = field.parentElement; element !== null; element = element.parentElement) {
+        for (let element = container.parentElement; element !== null; element = element.parentElement) {
             const color = getComputedStyle(element).backgroundColor;
             if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
                 return color;
@@ -145,17 +147,22 @@ export function ListboxMenu(_unit: xnew.Unit,
         if (opened === false) {
             opened = true;
             box.fill();
-            // data-open suppresses the field's hover tint while the list is up
-            field.toggleAttribute('data-open', true);
+            // data-open suppresses the container's hover tint while the list is up
+            container.toggleAttribute('data-open', true);
             menu.style.background = surfaceColor();
             overlay.gate.open();
         }
     }
 
+    // clear the local open state and the container's data-open (does not touch the gate)
+    function markClosed() {
+        opened = false;
+        container.toggleAttribute('data-open', false);
+    }
+
     function hide() {
         if (opened === true) {
-            opened = false;
-            field.toggleAttribute('data-open', false);
+            markClosed();
             overlay.gate.close();
         }
     }
@@ -165,10 +172,7 @@ export function ListboxMenu(_unit: xnew.Unit,
 
     // an outside-click close is driven by Overlay (it calls the gate directly, bypassing hide), so clear
     // the open state once the gate reports fully closed
-    overlay.gate.on('-closed', () => {
-        opened = false;
-        field.toggleAttribute('data-open', false);
-    });
+    overlay.gate.on('-closed', markClosed);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -180,7 +184,7 @@ export function ListboxItem(unit: xnew.Unit,
     { value = '', className = '', style = '', ...others }:
     { value?: string, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const box = xnew.context(Listbox);
+    const listbox = xnew.context(Listbox);
 
     const css = xnew.css({
         item: {
@@ -197,12 +201,12 @@ export function ListboxItem(unit: xnew.Unit,
     });
 
     const row = xnew.nest({ tag: 'div', className: `${css.item} ${className}`, style, ...others });
-    box.register(value, row);
+    listbox.register(value, row);
 
     // registered while the current element is the row, so a click anywhere on it selects the item;
-    // stopPropagation keeps the bubble from reaching the field's toggle
+    // stopPropagation keeps the bubble from reaching the container's toggle
     unit.on('click', ({ event }: { event: PointerEvent }) => {
         event.stopPropagation();
-        box.choose(value);
+        listbox.choose(value);
     });
 }
