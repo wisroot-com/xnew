@@ -1801,7 +1801,7 @@ function InputRadio(unit, _a = {}) {
     xnew.nest(Object.assign({ tag: 'input', type: 'radio', name, value, checked, className: css.input }, others));
 }
 
-function Gate(unit, { open = true, duration = 200, easing = 'ease' }) {
+function Gate(unit, { open = true, duration = 0, easing = 'ease' }) {
     let value = open ? 1.0 : 0.0;
     let sign = open ? +1 : -1;
     let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
@@ -2965,7 +2965,7 @@ function List(unit, _a) {
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
     xnew.extend(Listbox, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%; height: 2em;' }));
-    xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
+    xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em;' });
     xnew(ListboxMenu, () => {
         items.forEach((item) => xnew(ListboxItem, { value: item }));
     });

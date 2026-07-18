@@ -104,7 +104,7 @@ function List(unit: xnew.Unit, { name = '', value, items = [], ...others }: { na
 
     // Listbox extends onto this unit (so its '-change' fires here); the floating list nests into its field
     xnew.extend(Listbox, { value, ...others, style: 'max-width: 60%; height: 2em;' });
-    xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
+    xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em;' });
     xnew(ListboxMenu, () => {
         items.forEach((item: string) => xnew(ListboxItem, { value: item }));
     });
