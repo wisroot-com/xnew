@@ -17,7 +17,7 @@ import { InputText } from './element/InputText';
 import { InputNumber } from './element/InputNumber';
 import { InputSwitch } from './element/InputSwitch';
 import { InputRadio } from './element/InputRadio';
-import { ListBox, ListMenu, ListItem } from './element/ListBox';
+import { Listbox, ListMenu, ListItem } from './element/Listbox';
 import { AudioTrack } from './audio/AudioTrack';
 import { Synthesizer } from './audio/Synthesizer';
 import { Volume } from './audio/master';
@@ -43,7 +43,7 @@ export const xbasics = {
     InputNumber,
     InputSwitch,
     InputRadio,
-    ListBox,
+    Listbox,
     ListMenu,
     ListItem,
     AudioTrack,

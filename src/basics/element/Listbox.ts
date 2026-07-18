@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------
-// ListBox — a styleable select: ListBox (framed field + value) + ListMenu (floating list) + ListItem (row)
+// Listbox — a styleable select: Listbox (framed field + value) + ListMenu (floating list) + ListItem (row)
 // The native <select> popup can't be styled, so selection is held in JS (no native control at all).
 // Hosts read the current value with `.value` and observe changes with `.on('-change', ({ value }) => …)`.
 //----------------------------------------------------------------------------------------------------
@@ -9,10 +9,10 @@ import { xicons } from '../../icons/xicons';
 import { Design } from '../design';
 
 //----------------------------------------------------------------------------------------------------
-// ListBox — the framed field, the visible label, and the selection state
+// Listbox — the framed field, the visible label, and the selection state
 //----------------------------------------------------------------------------------------------------
 
-export function ListBox(unit: xnew.Unit,
+export function Listbox(unit: xnew.Unit,
     { value, className = '', style = '', designs = {}, ...others }:
     { value?: string, className?: string, style?: string, designs?: { label?: Design }, [key: string]: any } = {}
 ) {
@@ -94,7 +94,7 @@ export function ListBox(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListMenu — the floating option list; nests into the ListBox field and follows its '-toggle' / '-close'.
+// ListMenu — the floating option list; nests into the Listbox field and follows its '-toggle' / '-close'.
 // Pass a shared Gate unit (the same one an Accordion animates) and it opens / closes that gate, deferring
 // the hide to the gate's '-closed'; without a gate it shows / hides instantly.
 //----------------------------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ export function ListMenu(unit: xnew.Unit,
     { gate, className = '', style = '', ...others }:
     { gate?: xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const box = xnew.context(ListBox);
+    const box = xnew.context(Listbox);
     const field = box.element as HTMLElement;
 
     const css = xnew.css({
@@ -188,7 +188,7 @@ export function ListMenu(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListItem — one option row of a ListBox; nests into the ListMenu it is created inside.
+// ListItem — one option row of a Listbox; nests into the ListMenu it is created inside.
 // Leave the row empty to show the value as text, or nest custom content into it.
 //----------------------------------------------------------------------------------------------------
 
@@ -196,7 +196,7 @@ export function ListItem(unit: xnew.Unit,
     { value = '', className = '', style = '', ...others }:
     { value?: string, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const box = xnew.context(ListBox);
+    const box = xnew.context(Listbox);
 
     const css = xnew.css({
         item: {

@@ -101,9 +101,9 @@
 
     function MyListBox(unit) {
       xnew.nest('<div>');
-      xnew('<div class="mb-1">', 'ListBox');
+      xnew('<div class="mb-1">', 'Listbox');
       xnew.nest('<div class="flex gap-4 items-center">');
-      xnew(xbasics.ListBox, (box) => {
+      xnew(xbasics.Listbox, (box) => {
         xnew(xbasics.ListMenu, () => {
           xnew(xbasics.ListItem, { value: 'apple' });
           xnew(xbasics.ListItem, { value: 'banana' });
@@ -112,7 +112,7 @@
       });
       // one shared Gate drives the menu's open / close and the Accordion's slide: ListMenu opens /
       // closes it, Accordion (after the menu, so its collapse box wraps the rows) animates it
-      xnew(xbasics.ListBox, { value: 'banana', style: 'border-radius: 9999px;' }, (box) => {
+      xnew(xbasics.Listbox, { value: 'banana', style: 'border-radius: 9999px;' }, (box) => {
         const gate = xnew(xbasics.Gate, { open: false, duration: 200 });
         xnew(xbasics.ListMenu, { gate }, (menu) => {
           xnew.extend(xbasics.Accordion, { gate });
