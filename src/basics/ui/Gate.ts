@@ -17,6 +17,11 @@ export function Gate(unit: xnew.Unit,
 
     // animate `value` toward 1 (dir +1, open) or 0 (dir -1, close), scaling duration by remaining distance
     function animate(dir: number) {
+        if (unit.state === 'closed') {
+            xnew.emit('-open');
+        } else if (unit.state === 'opened') {
+            xnew.emit('-close');
+        }
         sign = dir;
         const d = dir > 0 ? 1 - value : value;
         timer.clear();

@@ -20,6 +20,7 @@ export function Overlay(unit: xnew.Unit,
             body: `
                 position: fixed; inset: 0; z-index: 1000;
                 opacity: 0; pointer-events: none;
+                cursor: default;
             `,
         },
         // an absolute box on the backdrop, kept aligned to `anchor`'s on-screen rect every update tick
@@ -32,16 +33,15 @@ export function Overlay(unit: xnew.Unit,
     });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
-    const container = unit.element as HTMLElement;
     // close on a press outside the nested content: the backdrop, or the anchor-tracking box's own
     // surface (the "hole" over the anchor) — but not the box's children, which hold the actual content
     let box: HTMLElement | null = null;
-    unit.on('click', ({ event }: { event: PointerEvent }) => (event.target === container || event.target === box) && gate.close());
+    unit.on('click', ({ event }: { event: PointerEvent }) => (event.target === unit.element || event.target === box) && gate.close());
 
     gate.on('-transition', ({ value }: { value: number }) => {
-        container.style.opacity = value.toString();
+        unit.element.style.opacity = value.toString();
         // let the page through the backdrop while fully closed, so a permanently-mounted Overlay stays inert
-        container.style.pointerEvents = value > 0 ? 'auto' : 'none';
+        unit.element.style.pointerEvents = value > 0 ? 'auto' : 'none';
     });
 
     if (anchor !== undefined) {

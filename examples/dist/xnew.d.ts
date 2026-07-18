@@ -322,21 +322,23 @@ declare function InputRadio(unit: xnew.Unit, { value, name, checked, className, 
     [key: string]: any;
 }): void;
 
-declare function Listbox(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
+declare function Listbox(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
     value?: string;
+    gate?: {
+        open?: boolean;
+        duration?: number;
+        easing?: string;
+    } | xnew.Unit;
     className?: string;
     style?: string;
-    designs?: {
-        label?: Design;
-    };
     [key: string]: any;
 }): {
     readonly value: string;
+    readonly gate: Unit;
     register(item: xnew.Unit): void;
-    select(itemValue: string): void;
+    select(value: string): void;
 };
-declare function ListboxMenu(_unit: xnew.Unit, { gate, className, style, ...others }?: {
-    gate?: xnew.Unit;
+declare function ListboxMenu(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
     style?: string;
     [key: string]: any;
@@ -416,6 +418,7 @@ declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
     easing?: string;
 }): {
     readonly value: number;
+    readonly state: "opened" | "closed" | "opening" | "closing";
     toggle(): void;
     open(): void;
     close(): void;
