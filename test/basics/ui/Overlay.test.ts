@@ -1,0 +1,95 @@
+import { Unit } from '../../../src/core/unit';
+import { xnew } from '../../../src/core/xnew';
+import { Overlay } from '../../../src/basics/ui/Overlay';
+
+describe('basics Overlay', () => {
+    beforeEach(() => {
+        jest.useFakeTimers();
+        Unit.reset();
+    });
+    afterEach(() => {
+        Unit.engineRoot?.finalize();
+        jest.useRealTimers();
+    });
+
+    function mockRect(element: Element, rect: Partial<DOMRect>): void {
+        element.getBoundingClientRect = () => ({
+            left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0,
+            toJSON: () => ({}), ...rect,
+        }) as DOMRect;
+    }
+
+    it('nests a full-viewport backdrop and ends on it when no target is given', () => {
+        const overlay = xnew(Overlay, {});
+        const backdrop = overlay.element as HTMLElement;
+        const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+
+        expect(styleText).toContain('position: fixed; inset: 0; z-index: 1000;');
+        // the body ends on the backdrop itself (no inner tether box)
+        expect(backdrop.className).toMatch(/xnew\d+-container/);
+    });
+
+    it('adds a tether box that mirrors the target rect and re-syncs each update tick', () => {
+        const target = document.createElement('div');
+        mockRect(target, { left: 10, top: 20, width: 100, height: 40 });
+
+        const overlay = xnew(Overlay, { target });
+        const box = overlay.element as HTMLElement; // the body ends on the tether box
+        const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+
+        expect(styleText).toContain('position: absolute; box-sizing: border-box;');
+        expect(box.className).toMatch(/xnew\d+-tether/);
+        // the box lives on the backdrop
+        expect((box.parentElement as HTMLElement).className).toMatch(/xnew\d+-container/);
+
+        // the initial sync runs synchronously in the body
+        expect(box.style.left).toBe('10px');
+        expect(box.style.top).toBe('20px');
+        expect(box.style.width).toBe('100px');
+        expect(box.style.height).toBe('40px');
+
+        // moving the target and ticking re-aligns the box
+        mockRect(target, { left: 30, top: 50, width: 120, height: 60 });
+        Unit.update(Unit.engineRoot!);
+        expect(box.style.left).toBe('30px');
+        expect(box.style.top).toBe('50px');
+        expect(box.style.width).toBe('120px');
+        expect(box.style.height).toBe('60px');
+    });
+
+    it('closes on a press on the tether box surface, but not on its nested content', () => {
+        const target = document.createElement('div');
+        mockRect(target, { left: 0, top: 0, width: 10, height: 10 });
+
+        const overlay = xnew(Overlay, { target });
+        const box = overlay.element as HTMLElement;
+        let finalized = false;
+        overlay.on('finalize', () => { finalized = true; });
+
+        overlay.gate.open();
+        jest.advanceTimersByTime(1000);
+
+        // a press on nested content (a child of the box) keeps the overlay open
+        const content = document.createElement('div');
+        box.appendChild(content);
+        content.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        jest.advanceTimersByTime(1000);
+        expect(finalized).toBe(false);
+
+        // a press on the box's own surface (the "hole" over the target) closes it
+        box.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        jest.advanceTimersByTime(1000);
+        expect(finalized).toBe(true);
+    });
+
+    it('accepts a unit as the target and reads its element rect', () => {
+        const targetUnit = xnew('<div>');
+        mockRect(targetUnit.element, { left: 5, top: 5, width: 50, height: 50 });
+
+        const overlay = xnew(Overlay, { target: targetUnit });
+        const box = overlay.element as HTMLElement;
+
+        expect(box.style.left).toBe('5px');
+        expect(box.style.width).toBe('50px');
+    });
+});

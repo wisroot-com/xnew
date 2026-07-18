@@ -25,11 +25,8 @@
       const button1 = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open modal!');
       button1.on('click', () => xnew(MyModal));
 
-      // wrap the button so the menu mounts as its sibling (not inside the <button>, where its text
-      // couldn't be selected and its clicks would re-trigger the button); the wrapper anchors the dropdown
-      const anchor = xnew('<div class="relative flex">');
-      const button2 = xnew(anchor, '<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open menu!');
-      button2.on('click', () => xnew(anchor, MyMenu));
+      const button2 = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open menu!');
+      button2.on('click', () => xnew(MyMenu, { target: button2 }));
     });
 
     function MyAccordion(unit) {
@@ -62,20 +59,18 @@
       xnew('<div class="p-2 border-t">', Contents);
     }
 
-    function MyMenu(unit) {
-      // a transparent backdrop covers the page (incl. the opener button) while open, so the button
-      // can't be re-triggered; a press on the backdrop closes the menu
-      const gate = xnew(xbasics.Overlay, { gate: { open: false } }).gate;
-      gate.on('-closed', () => unit.finalize());
+    function MyMenu(unit, { target }) {
+      // Overlay covers the page with a click-to-close backdrop (so the button can't be re-triggered) and,
+      // via target, gives a box tracking the button's rect; Overlay finalizes this unit when fully closed
+      xnew.extend(xbasics.Overlay, { gate: { open: false }, target });
 
-      // the dropdown is anchored to the wrapper and stacked above the backdrop
-      xnew.nest('<div class="absolute top-full right-0 py-2" style="z-index: 1001;">');
-      // Accordion shares the Overlay's Gate, so the dropdown and backdrop animate together
-      xnew.extend(xbasics.Accordion, { gate });
+      // the dropdown hangs just below the tracked box; Accordion shares the Gate so both animate together
+      xnew.nest('<div class="absolute top-full right-0 py-2">');
+      xnew.extend(xbasics.Accordion, { gate: unit.gate });
       xnew.nest('<div class="w-[300px] border rounded-lg bg-white">');
       xnew('<div class="p-2">', Contents);
 
-      gate.open();
+      unit.gate.open();
     }
 
     function Contents(unit) {

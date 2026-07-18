@@ -2727,7 +2727,7 @@ function Accordion(unit, _a = {}) {
 }
 
 function Overlay(unit, _a = {}) {
-    var { gate = {}, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
+    var { gate = {}, target, className = '', style = '' } = _a, others = __rest(_a, ["gate", "target", "className", "style"]);
     const gateUnit = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
     const css = xnew.css({
         container: {
@@ -2737,13 +2737,35 @@ function Overlay(unit, _a = {}) {
                 opacity: 0;
             `,
         },
+        tether: {
+            layer: 'base',
+            body: `
+                position: absolute; box-sizing: border-box;
+            `,
+        },
     });
     gateUnit.on('-closed', () => unit.finalize());
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
-    unit.on('click', ({ event }) => event.target === unit.element && gateUnit.close());
+    const container = unit.element;
+    let box = null;
+    unit.on('click', ({ event }) => (event.target === container || event.target === box) && gateUnit.close());
     gateUnit.on('-transition', ({ value }) => {
-        unit.element.style.opacity = value.toString();
+        container.style.opacity = value.toString();
     });
+    if (target !== undefined) {
+        const element = (target instanceof xnew.Unit ? target.element : target);
+        const tetherBox = xnew.nest({ tag: 'div', className: css.tether });
+        box = tetherBox;
+        sync();
+        unit.on('update', sync);
+        function sync() {
+            const rect = element.getBoundingClientRect();
+            tetherBox.style.left = `${rect.left}px`;
+            tetherBox.style.top = `${rect.top}px`;
+            tetherBox.style.width = `${rect.width}px`;
+            tetherBox.style.height = `${rect.height}px`;
+        }
+    }
     return {
         get gate() {
             return gateUnit;
