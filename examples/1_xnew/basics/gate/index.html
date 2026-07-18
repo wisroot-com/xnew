@@ -46,6 +46,7 @@
 
     function MyModal(unit) {
       xnew.extend(xbasics.Overlay, { gate: { open: false }, className: 'bg-black/10' });
+      unit.gate.on('-closed', () => unit.finalize());
       unit.gate.open();
 
       xnew.nest('<div class="absolute inset-0 m-auto w-max h-max">');
@@ -61,8 +62,9 @@
 
     function MyMenu(unit, { anchor }) {
       // Overlay covers the page with a click-to-close backdrop (so the button can't be re-triggered) and,
-      // via anchor, gives a box tracking the button's rect; Overlay finalizes this unit when fully closed
+      // via anchor, gives a box tracking the button's rect; finalize this unit once the gate reports closed
       xnew.extend(xbasics.Overlay, { gate: { open: false }, anchor });
+      unit.gate.on('-closed', () => unit.finalize());
 
       // the dropdown hangs just below the tracked box; Accordion shares the Gate so both animate together
       xnew.nest('<div class="absolute top-full right-0 py-2">');

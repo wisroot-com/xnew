@@ -318,7 +318,7 @@ declare function InputRadio(unit: xnew.Unit, { value, name, checked, className, 
     [key: string]: any;
 }): void;
 
-declare function ListBox(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
+declare function Listbox(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
     value?: string;
     className?: string;
     style?: string;
@@ -332,7 +332,7 @@ declare function ListBox(unit: xnew.Unit, { value, className, style, designs, ..
     fill(): void;
     choose(itemValue: string): void;
 };
-declare function ListMenu(unit: xnew.Unit, { gate, className, style, ...others }?: {
+declare function ListMenu(_unit: xnew.Unit, { gate, className, style, ...others }?: {
     gate?: xnew.Unit;
     className?: string;
     style?: string;
@@ -510,7 +510,7 @@ declare const xbasics: {
     InputNumber: typeof InputNumber;
     InputSwitch: typeof InputSwitch;
     InputRadio: typeof InputRadio;
-    ListBox: typeof ListBox;
+    Listbox: typeof Listbox;
     ListMenu: typeof ListMenu;
     ListItem: typeof ListItem;
     AudioTrack: typeof AudioTrack;

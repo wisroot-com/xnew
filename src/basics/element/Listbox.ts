@@ -6,6 +6,7 @@
 
 import { xnew } from '../../core/xnew';
 import { xicons } from '../../icons/xicons';
+import { Overlay } from '../ui/Overlay';
 import { Design } from '../design';
 
 //----------------------------------------------------------------------------------------------------
@@ -94,12 +95,11 @@ export function Listbox(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListMenu — the floating option list; nests into the Listbox field and follows its '-toggle' / '-close'.
-// Pass a shared Gate unit (the same one an Accordion animates) and it opens / closes that gate, deferring
-// the hide to the gate's '-closed'; without a gate it shows / hides instantly.
+// ListMenu — the floating option list, built on Overlay (backdrop + anchor tracking + outside-click + fade).
+// Follows the Listbox field's '-toggle' / '-close'; reuses a shared Gate (e.g. an Accordion's) or makes its own.
 //----------------------------------------------------------------------------------------------------
 
-export function ListMenu(unit: xnew.Unit,
+export function ListMenu(_unit: xnew.Unit,
     { gate, className = '', style = '', ...others }:
     { gate?: xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
@@ -107,22 +107,27 @@ export function ListMenu(unit: xnew.Unit,
     const field = box.element as HTMLElement;
 
     const css = xnew.css({
+        // hangs under Overlay's anchor-tracking box (the field's rect), so top: 100% lands it at the field's foot
         menu: {
             layer: 'base',
             body: `
-                position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000;
-                max-height: 12em;
+                position: absolute; top: 100%; left: 0; margin-top: 0.25em;
+                min-width: 100%; width: max-content; max-height: 12em;
                 border: 1px solid currentColor;
                 overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
             `,
         },
     });
 
-    // nested last, so the unit's element ends on the menu — ListItem rows nest into it
-    const menu = xnew.nest({ tag: 'div', className: `${css.menu} ${className}`, style: `display: none; ${style}`, ...others });
+    // Overlay owns the backdrop, the field-rect tracking, the outside-click close and the fade; its
+    // anchor box becomes the positioned parent the menu hangs under. A caller Gate (shared with an
+    // Accordion) is reused; otherwise Overlay makes its own — instant (duration 0), starting closed.
+    const overlay = xnew.extend(Overlay, { gate: gate ?? { open: false, duration: 0 }, anchor: field });
+
+    // element now ends on Overlay's anchor box; nest the list into it so ListItem rows nest into the list
+    const menu = xnew.nest({ tag: 'div', className: `${css.menu} ${className}`, style, ...others }) as HTMLElement;
 
     let opened = false;
-    let session: xnew.Unit | null = null;
 
     // the floating list wears the surface color behind the control (the field face is transparent,
     // and reading the field itself would capture its hover tint)
@@ -136,30 +141,14 @@ export function ListMenu(unit: xnew.Unit,
         return 'Canvas';
     }
 
-    // re-anchored every update tick while open, so scrolling never shifts the list off the field
-    function anchor() {
-        const rect = field.getBoundingClientRect();
-        menu.style.left = `${rect.left}px`;
-        menu.style.top = `${rect.bottom}px`;
-        menu.style.minWidth = `${rect.width}px`;
-    }
-
     function show() {
         if (opened === false) {
             opened = true;
             box.fill();
+            // data-open suppresses the field's hover tint while the list is up
             field.toggleAttribute('data-open', true);
-            menu.style.display = 'block';
             menu.style.background = surfaceColor();
-            anchor();
-            // bound to the field so 'outside' means outside the whole control
-            session = xnew(field, (list: xnew.Unit) => {
-                list.on('pointerdown.outside', () => hide());
-                list.on('update', anchor);
-            });
-            if (gate) {
-                gate.open();
-            }
+            overlay.gate.open();
         }
     }
 
@@ -167,23 +156,18 @@ export function ListMenu(unit: xnew.Unit,
         if (opened === true) {
             opened = false;
             field.toggleAttribute('data-open', false);
-            session?.finalize();
-            session = null;
-            if (gate) {
-                gate.close();
-            } else {
-                menu.style.display = 'none';
-            }
+            overlay.gate.close();
         }
     }
 
     box.on('-toggle', () => (opened ? hide() : show()));
     box.on('-close', () => hide());
 
-    // a shared Gate (e.g. animated by an Accordion) hands off the visual: keep the element shown through
-    // the close animation, hiding only once the gate reports fully closed on its own unit.
-    gate?.on('-closed', () => {
-        menu.style.display = 'none';
+    // an outside-click close is driven by Overlay (it calls the gate directly, bypassing hide), so clear
+    // the open state once the gate reports fully closed
+    overlay.gate.on('-closed', () => {
+        opened = false;
+        field.toggleAttribute('data-open', false);
     });
 }
 

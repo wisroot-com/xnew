@@ -65,6 +65,8 @@ describe('basics Overlay', () => {
         const box = overlay.element as HTMLElement;
         let finalized = false;
         overlay.on('finalize', () => { finalized = true; });
+        // Overlay no longer self-finalizes; the caller wires close → finalize
+        overlay.gate.on('-closed', () => overlay.finalize());
 
         overlay.gate.open();
         jest.advanceTimersByTime(1000);
@@ -80,6 +82,28 @@ describe('basics Overlay', () => {
         box.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         jest.advanceTimersByTime(1000);
         expect(finalized).toBe(true);
+    });
+
+    it('is click-through while fully closed and interactive once opened', () => {
+        const overlay = xnew(Overlay, { gate: { open: false, duration: 200 } });
+        const backdrop = overlay.element as HTMLElement;
+
+        // the deferred initial emit lands the closed state: transparent and click-through
+        jest.advanceTimersByTime(0);
+        expect(backdrop.style.opacity).toBe('0');
+        expect(backdrop.style.pointerEvents).toBe('none');
+
+        // opening turns the backdrop opaque and interactive
+        overlay.gate.open();
+        jest.advanceTimersByTime(250);
+        expect(backdrop.style.opacity).toBe('1');
+        expect(backdrop.style.pointerEvents).toBe('auto');
+
+        // closing returns it to click-through so a mounted-but-closed Overlay never eats page clicks
+        overlay.gate.close();
+        jest.advanceTimersByTime(250);
+        expect(backdrop.style.opacity).toBe('0');
+        expect(backdrop.style.pointerEvents).toBe('none');
     });
 
     it('accepts a unit as the anchor and reads its element rect', () => {

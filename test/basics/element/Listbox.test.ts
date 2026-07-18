@@ -78,23 +78,27 @@ describe('basics Listbox', () => {
 
     it('toggles the floating option list on click', () => {
         const { box, menu } = build({}, ['low', 'mid', 'high']);
+        const backdrop = () => fieldOf(box).querySelector('[class*="-container"]') as HTMLElement;
 
-        expect(menu.style.display).toBe('none');
+        expect(isOpen(box)).toBe(false);
         open(box);
-        expect(menu.style.display).not.toBe('none');
+        expect(isOpen(box)).toBe(true);
+        // Overlay's backdrop turns visible and interactive while open
+        expect(backdrop().style.opacity).toBe('1');
+        expect(backdrop().style.pointerEvents).toBe('auto');
         // empty rows fall back to the value as text
         expect(menu.textContent).toBe('lowmidhigh');
-        // fixed + max-content (in the menu css rule): the list escapes overflow-clipping ancestors
-        // and outgrows the field; anchored to the field's viewport rect (all zero under jsdom)
+        // the list hangs under Overlay's anchor-tracking box (absolute, top: 100%) instead of a fixed rect
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
         expect(menu.className).toMatch(/xnew\d+-menu/);
-        expect(styleText).toContain('position: fixed; margin-top: 0.25em; width: max-content;');
-        expect(menu.style.left).toBe('0px');
-        expect(menu.style.top).toBe('0px');
-        expect(menu.style.minWidth).toBe('0px');
+        expect(styleText).toContain('position: absolute; top: 100%; left: 0;');
 
         fieldOf(box).dispatchEvent(new Event('click', { bubbles: false }));
-        expect(menu.style.display).toBe('none');
+        jest.advanceTimersByTime(0);
+        expect(isOpen(box)).toBe(false);
+        // the backdrop goes click-through once fully closed, so the page stays interactive
+        expect(backdrop().style.opacity).toBe('0');
+        expect(backdrop().style.pointerEvents).toBe('none');
     });
 
     it('selects an option: updates the label and value, emits -change, and closes', () => {
@@ -214,16 +218,18 @@ describe('basics Listbox', () => {
         host.remove();
     });
 
-    it('closes the option list on a pointerdown outside the control', () => {
+    it('closes the option list on a click on the backdrop', () => {
         const { box } = build({}, ['low', 'mid']);
 
         open(box);
         expect(isOpen(box)).toBe(true);
-        document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        const backdrop = fieldOf(box).querySelector('[class*="-container"]') as HTMLElement;
+        backdrop.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        jest.advanceTimersByTime(0);
         expect(isOpen(box)).toBe(false);
     });
 
-    it('keeps the option list open on a pointerdown inside the control', () => {
+    it('keeps the option list open on a press inside the content', () => {
         const { box, menu } = build({}, ['low', 'mid']);
 
         open(box);
@@ -233,14 +239,12 @@ describe('basics Listbox', () => {
 
     it('drives the menu open / close with a shared Gate, animating an Accordion over the same unit', () => {
         let box!: xnew.Unit;
-        let menu!: HTMLElement;
         let accordion!: HTMLElement;
         xnew(() => {
             box = xnew(Listbox, () => {
                 // one shared Gate: the menu opens / closes it, the Accordion (after the menu) animates it
                 const gate = xnew(Gate, { open: false, duration: 200 });
                 xnew(ListMenu, { gate }, (m: xnew.Unit) => {
-                    menu = m.element as HTMLElement;
                     xnew.extend(Accordion, { gate });
                     accordion = m.element as HTMLElement;
                     xnew(ListItem, { value: 'low' });
@@ -251,20 +255,19 @@ describe('basics Listbox', () => {
 
         // the gate's deferred initial emit sets the closed state; the Accordion follows it
         jest.advanceTimersByTime(0);
-        expect(menu.style.display).toBe('none');
+        expect(isOpen(box)).toBe(false);
         expect(accordion.style.opacity).toBe('0');
 
-        // open: the menu shows immediately, the Accordion expands to opacity 1 over the duration
+        // open: data-open flips immediately, the Accordion expands to opacity 1 over the duration
         fieldOf(box).dispatchEvent(new Event('click', { bubbles: false }));
-        expect(menu.style.display).toBe('block');
+        expect(isOpen(box)).toBe(true);
         jest.advanceTimersByTime(250);
         expect(accordion.style.opacity).toBe('1');
 
-        // close: the Accordion collapses; the menu stays shown until the gate reports fully closed
+        // close: data-open clears immediately, the Accordion collapses to opacity 0 over the duration
         fieldOf(box).dispatchEvent(new Event('click', { bubbles: false }));
-        expect(menu.style.display).toBe('block');
+        expect(isOpen(box)).toBe(false);
         jest.advanceTimersByTime(250);
         expect(accordion.style.opacity).toBe('0');
-        expect(menu.style.display).toBe('none');
     });
 });

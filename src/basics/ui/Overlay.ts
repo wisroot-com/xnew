@@ -1,7 +1,8 @@
 //----------------------------------------------------------------------------------------------------
-// Overlay — full-viewport backdrop that fades in/out with its Gate and finalizes when it reports closed
-// `gate` is Gate props (new child Gate) or an existing Gate unit to reuse, exposed as `gate`; opening is
-// the caller's (`.gate.open()`). With `anchor` set, an inner box tracks that element's on-screen rect.
+// Overlay — full-viewport backdrop that fades in/out with its Gate
+// `gate` is Gate props (new child Gate) or an existing Gate unit to reuse, exposed as `gate`; opening,
+// closing, and reacting to `-closed` (e.g. finalizing) are the caller's. `anchor` tracks an element's rect.
+// While the gate is fully closed the backdrop is click-through, so it can stay mounted and just toggle.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -11,14 +12,14 @@ export function Overlay(unit: xnew.Unit,
     { gate = {}, anchor, className = '', style = '', ...others }:
     { gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, anchor?: xnew.Unit | HTMLElement, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const gateUnit: xnew.Unit = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
+    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
 
     const css = xnew.css({
         container: {
             layer: 'base',
             body: `
                 position: fixed; inset: 0; z-index: 1000;
-                opacity: 0;
+                opacity: 0; pointer-events: none;
             `,
         },
         // an absolute box on the backdrop, kept aligned to `anchor`'s on-screen rect every update tick
@@ -30,17 +31,17 @@ export function Overlay(unit: xnew.Unit,
         },
     });
 
-    gateUnit.on('-closed', () => unit.finalize());
-
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
     const container = unit.element as HTMLElement;
     // close on a press outside the nested content: the backdrop, or the anchor-tracking box's own
     // surface (the "hole" over the anchor) — but not the box's children, which hold the actual content
     let box: HTMLElement | null = null;
-    unit.on('click', ({ event }: { event: PointerEvent }) => (event.target === container || event.target === box) && gateUnit.close());
+    unit.on('click', ({ event }: { event: PointerEvent }) => (event.target === container || event.target === box) && gate.close());
 
-    gateUnit.on('-transition', ({ value }: { value: number }) => {
+    gate.on('-transition', ({ value }: { value: number }) => {
         container.style.opacity = value.toString();
+        // let the page through the backdrop while fully closed, so a permanently-mounted Overlay stays inert
+        container.style.pointerEvents = value > 0 ? 'auto' : 'none';
     });
 
     if (anchor !== undefined) {
@@ -62,7 +63,7 @@ export function Overlay(unit: xnew.Unit,
 
     return {
         get gate() {
-            return gateUnit;
+            return gate;
         },
     };
 }

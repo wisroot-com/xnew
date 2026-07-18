@@ -2164,7 +2164,85 @@ for (const name of Object.keys(iconData)) {
 }
 const xicons = icons;
 
-function ListBox(unit, _a = {}) {
+function Gate(unit, { open = true, duration = 200, easing = 'ease' }) {
+    let value = open ? 1.0 : 0.0;
+    let sign = open ? +1 : -1;
+    let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
+    function animate(dir) {
+        sign = dir;
+        const d = dir > 0 ? 1 - value : value;
+        timer.clear();
+        timer = xnew.transition(({ value: x }) => {
+            const remaining = x < 1.0 ? (1 - x) * d : 0.0;
+            value = dir > 0 ? 1.0 - remaining : remaining;
+            xnew.emit('-transition', { value });
+        }, duration * d, easing)
+            .timeout(() => xnew.emit(dir > 0 ? '-opened' : '-closed'));
+    }
+    return {
+        get value() {
+            return value;
+        },
+        toggle() {
+            animate(sign < 0 ? +1 : -1);
+        },
+        open() {
+            animate(+1);
+        },
+        close() {
+            animate(-1);
+        },
+    };
+}
+
+function Overlay(unit, _a = {}) {
+    var { gate = {}, anchor, className = '', style = '' } = _a, others = __rest(_a, ["gate", "anchor", "className", "style"]);
+    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
+    const css = xnew.css({
+        container: {
+            layer: 'base',
+            body: `
+                position: fixed; inset: 0; z-index: 1000;
+                opacity: 0; pointer-events: none;
+            `,
+        },
+        tether: {
+            layer: 'base',
+            body: `
+                position: absolute; box-sizing: border-box;
+            `,
+        },
+    });
+    xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    const container = unit.element;
+    let box = null;
+    unit.on('click', ({ event }) => (event.target === container || event.target === box) && gate.close());
+    gate.on('-transition', ({ value }) => {
+        container.style.opacity = value.toString();
+        container.style.pointerEvents = value > 0 ? 'auto' : 'none';
+    });
+    if (anchor !== undefined) {
+        const element = (anchor instanceof xnew.Unit ? anchor.element : anchor);
+        const tetherBox = xnew.nest({ tag: 'div', className: css.tether });
+        box = tetherBox;
+        sync();
+        unit.on('update', sync);
+        function sync() {
+            const rect = element.getBoundingClientRect();
+            tetherBox.style.left = `${rect.left}px`;
+            tetherBox.style.top = `${rect.top}px`;
+            tetherBox.style.width = `${rect.width}px`;
+            tetherBox.style.height = `${rect.height}px`;
+        }
+    }
+    return {
+        get gate() {
+            return gate;
+        },
+    };
+}
+
+function Listbox(unit, _a = {}) {
     var _b, _c, _d;
     var { value, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
     const css = xnew.css({
@@ -2225,24 +2303,24 @@ function ListBox(unit, _a = {}) {
         },
     };
 }
-function ListMenu(unit, _a = {}) {
+function ListMenu(_unit, _a = {}) {
     var { gate, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
-    const box = xnew.context(ListBox);
+    const box = xnew.context(Listbox);
     const field = box.element;
     const css = xnew.css({
         menu: {
             layer: 'base',
             body: `
-                position: fixed; margin-top: 0.25em; width: max-content; z-index: 1000;
-                max-height: 12em;
+                position: absolute; top: 100%; left: 0; margin-top: 0.25em;
+                min-width: 100%; width: max-content; max-height: 12em;
                 border: 1px solid currentColor;
                 overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
             `,
         },
     });
-    const menu = xnew.nest(Object.assign({ tag: 'div', className: `${css.menu} ${className}`, style: `display: none; ${style}` }, others));
+    const overlay = xnew.extend(Overlay, { gate: gate !== null && gate !== void 0 ? gate : { open: false, duration: 0 }, anchor: field });
+    const menu = xnew.nest(Object.assign({ tag: 'div', className: `${css.menu} ${className}`, style }, others));
     let opened = false;
-    let session = null;
     function surfaceColor() {
         for (let element = field.parentElement; element !== null; element = element.parentElement) {
             const color = getComputedStyle(element).backgroundColor;
@@ -2252,52 +2330,32 @@ function ListMenu(unit, _a = {}) {
         }
         return 'Canvas';
     }
-    function anchor() {
-        const rect = field.getBoundingClientRect();
-        menu.style.left = `${rect.left}px`;
-        menu.style.top = `${rect.bottom}px`;
-        menu.style.minWidth = `${rect.width}px`;
-    }
     function show() {
         if (opened === false) {
             opened = true;
             box.fill();
             field.toggleAttribute('data-open', true);
-            menu.style.display = 'block';
             menu.style.background = surfaceColor();
-            anchor();
-            session = xnew(field, (list) => {
-                list.on('pointerdown.outside', () => hide());
-                list.on('update', anchor);
-            });
-            if (gate) {
-                gate.open();
-            }
+            overlay.gate.open();
         }
     }
     function hide() {
         if (opened === true) {
             opened = false;
             field.toggleAttribute('data-open', false);
-            session === null || session === void 0 ? void 0 : session.finalize();
-            session = null;
-            if (gate) {
-                gate.close();
-            }
-            else {
-                menu.style.display = 'none';
-            }
+            overlay.gate.close();
         }
     }
     box.on('-toggle', () => (opened ? hide() : show()));
     box.on('-close', () => hide());
-    gate === null || gate === void 0 ? void 0 : gate.on('-closed', () => {
-        menu.style.display = 'none';
+    overlay.gate.on('-closed', () => {
+        opened = false;
+        field.toggleAttribute('data-open', false);
     });
 }
 function ListItem(unit, _a = {}) {
     var { value = '', className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
-    const box = xnew.context(ListBox);
+    const box = xnew.context(Listbox);
     const css = xnew.css({
         item: {
             layer: 'base',
@@ -2663,37 +2721,6 @@ function Synthesizer(unit, props) {
     return { press };
 }
 
-function Gate(unit, { open = true, duration = 200, easing = 'ease' }) {
-    let value = open ? 1.0 : 0.0;
-    let sign = open ? +1 : -1;
-    let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
-    function animate(dir) {
-        sign = dir;
-        const d = dir > 0 ? 1 - value : value;
-        timer.clear();
-        timer = xnew.transition(({ value: x }) => {
-            const remaining = x < 1.0 ? (1 - x) * d : 0.0;
-            value = dir > 0 ? 1.0 - remaining : remaining;
-            xnew.emit('-transition', { value });
-        }, duration * d, easing)
-            .timeout(() => xnew.emit(dir > 0 ? '-opened' : '-closed'));
-    }
-    return {
-        get value() {
-            return value;
-        },
-        toggle() {
-            animate(sign < 0 ? +1 : -1);
-        },
-        open() {
-            animate(+1);
-        },
-        close() {
-            animate(-1);
-        },
-    };
-}
-
 function Accordion(unit, _a = {}) {
     var { gate = {}, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
     gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
@@ -2717,53 +2744,6 @@ function Accordion(unit, _a = {}) {
     return {
         get gate() {
             return gate;
-        },
-    };
-}
-
-function Overlay(unit, _a = {}) {
-    var { gate = {}, anchor, className = '', style = '' } = _a, others = __rest(_a, ["gate", "anchor", "className", "style"]);
-    const gateUnit = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
-    const css = xnew.css({
-        container: {
-            layer: 'base',
-            body: `
-                position: fixed; inset: 0; z-index: 1000;
-                opacity: 0;
-            `,
-        },
-        tether: {
-            layer: 'base',
-            body: `
-                position: absolute; box-sizing: border-box;
-            `,
-        },
-    });
-    gateUnit.on('-closed', () => unit.finalize());
-    xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
-    const container = unit.element;
-    let box = null;
-    unit.on('click', ({ event }) => (event.target === container || event.target === box) && gateUnit.close());
-    gateUnit.on('-transition', ({ value }) => {
-        container.style.opacity = value.toString();
-    });
-    if (anchor !== undefined) {
-        const element = (anchor instanceof xnew.Unit ? anchor.element : anchor);
-        const tetherBox = xnew.nest({ tag: 'div', className: css.tether });
-        box = tetherBox;
-        sync();
-        unit.on('update', sync);
-        function sync() {
-            const rect = element.getBoundingClientRect();
-            tetherBox.style.left = `${rect.left}px`;
-            tetherBox.style.top = `${rect.top}px`;
-            tetherBox.style.width = `${rect.width}px`;
-            tetherBox.style.height = `${rect.height}px`;
-        }
-    }
-    return {
-        get gate() {
-            return gateUnit;
         },
     };
 }
@@ -2973,7 +2953,7 @@ function List(unit, _a) {
     var { name = '', value, items = [] } = _a, others = __rest(_a, ["name", "value", "items"]);
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
-    xnew.extend(ListBox, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%; height: 2em;' }));
+    xnew.extend(Listbox, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%; height: 2em;' }));
     xnew(ListMenu, () => {
         items.forEach((item) => xnew(ListItem, { value: item }));
     });
@@ -3057,7 +3037,7 @@ const xbasics = {
     InputNumber,
     InputSwitch,
     InputRadio,
-    ListBox,
+    Listbox,
     ListMenu,
     ListItem,
     AudioTrack,
