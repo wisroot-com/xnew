@@ -92,7 +92,7 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   `xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style })`.
   Single-element components (Button, Image, InputNumber, InputText, SVG, SVGText)
   ALSO spread `...others` onto that element; multi-part components (InputCheckbox / InputRadio /
-  InputRange / InputSelect / InputSwitch, and `ui/AnalogStick` / `ui/DPad`) keep the container
+  InputRange / InputSwitch / ListBox, and `ui/AnalogStick` / `ui/DPad`) keep the container
   STRICTLY layout-only (prelude + position: relative + interaction props, NO visual look) — the
   framed look (border / radius / state tints) lives on an inner `frame` part (`designs.frame`),
   and `value`, `name`, rest members stay with the inner parts (usually the hidden native input),

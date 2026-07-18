@@ -2164,7 +2164,7 @@ for (const name of Object.keys(iconData)) {
 }
 const xicons = icons;
 
-function InputSelect(unit, _a = {}) {
+function ListBox(unit, _a = {}) {
     var _b, _c, _d;
     var { value, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
     const css = xnew.css({
@@ -2189,34 +2189,20 @@ function InputSelect(unit, _a = {}) {
     const items = [];
     const hasInitial = value !== undefined;
     let selected = value !== null && value !== void 0 ? value : '';
-    const field = xnew.nest({ tag: 'div', className: `${css.field} ${className}`, style });
+    xnew.nest(Object.assign({ tag: 'div', className: `${css.field} ${className}`, style }, others));
     const label = xnew({ tag: 'div', className: `${css.label} ${(_c = (_b = designs.label) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.label) === null || _d === void 0 ? void 0 : _d.style }, '');
     xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
     unit.on('click', () => xnew.emit('-toggle'));
-    unit.on('input', ({ value }) => {
-        label.element.textContent = value;
-        for (const item of items) {
-            item.row.toggleAttribute('data-checked', item.value === value);
-        }
-    });
-    const select = xnew.nest(Object.assign({ tag: 'select', style: 'display: none;' }, others));
     return {
         get value() {
-            return select.value;
-        },
-        get container() {
-            return field;
+            return selected;
         },
         register(itemValue, row) {
-            const option = document.createElement('option');
-            option.value = itemValue;
-            select.appendChild(option);
             items.push({ value: itemValue, row });
             if (!hasInitial && selected === '') {
                 selected = itemValue;
             }
             if (itemValue === selected) {
-                option.selected = true;
                 label.element.textContent = itemValue;
             }
             row.toggleAttribute('data-checked', itemValue === selected);
@@ -2229,16 +2215,20 @@ function InputSelect(unit, _a = {}) {
             }
         },
         choose(itemValue) {
-            select.value = itemValue;
-            select.dispatchEvent(new Event('input', { bubbles: true }));
+            selected = itemValue;
+            label.element.textContent = itemValue;
+            for (const item of items) {
+                item.row.toggleAttribute('data-checked', item.value === itemValue);
+            }
+            xnew.emit('-change', { value: itemValue });
             xnew.emit('-close');
         },
     };
 }
-function InputSelectMenu(unit, _a = {}) {
+function ListMenu(unit, _a = {}) {
     var { gate, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
-    const parent = xnew.context(InputSelect);
-    const field = parent.container;
+    const box = xnew.context(ListBox);
+    const field = box.element;
     const css = xnew.css({
         menu: {
             layer: 'base',
@@ -2271,7 +2261,7 @@ function InputSelectMenu(unit, _a = {}) {
     function show() {
         if (opened === false) {
             opened = true;
-            parent.fill();
+            box.fill();
             field.toggleAttribute('data-open', true);
             menu.style.display = 'block';
             menu.style.background = surfaceColor();
@@ -2299,20 +2289,15 @@ function InputSelectMenu(unit, _a = {}) {
             }
         }
     }
-    parent.on('-toggle', () => (opened ? hide() : show()));
-    parent.on('-close', () => hide());
+    box.on('-toggle', () => (opened ? hide() : show()));
+    box.on('-close', () => hide());
     gate === null || gate === void 0 ? void 0 : gate.on('-closed', () => {
         menu.style.display = 'none';
     });
-    return {
-        get container() {
-            return menu;
-        },
-    };
 }
-function InputSelectItem(unit, _a = {}) {
+function ListItem(unit, _a = {}) {
     var { value = '', className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
-    const parent = xnew.context(InputSelect);
+    const box = xnew.context(ListBox);
     const css = xnew.css({
         item: {
             layer: 'base',
@@ -2327,10 +2312,10 @@ function InputSelectItem(unit, _a = {}) {
         },
     });
     const row = xnew.nest(Object.assign({ tag: 'div', className: `${css.item} ${className}`, style }, others));
-    parent.register(value, row);
+    box.register(value, row);
     unit.on('click', ({ event }) => {
         event.stopPropagation();
-        parent.choose(value);
+        box.choose(value);
     });
 }
 
@@ -2930,12 +2915,12 @@ function Panel(unit, { params, nested = false }) {
         button({ name = '' } = {}) {
             return xnew(Button, { text: name, style: 'width: 100%;' });
         },
-        select({ name = '', value, items = [] } = {}) {
+        listbox({ name = '', value, items = [] } = {}) {
             var _a, _b;
             object[name] = (_b = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : items[0]) !== null && _b !== void 0 ? _b : '';
-            const select = xnew(Select, { name, value: object[name], items });
-            select.on('input', ({ value }) => object[name] = value);
-            return select;
+            const box = xnew(List, { name, value: object[name], items });
+            box.on('-change', ({ value }) => object[name] = value);
+            return box;
         },
         range({ name = '', value, min = 0, max = 100, step = 1 } = {}) {
             var _a;
@@ -2984,17 +2969,13 @@ function Checkbox(unit, _a) {
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
     xnew(InputCheckbox, Object.assign(Object.assign({ name }, others), { style: 'width: 1.25em; height: 1.25em;' }));
 }
-function Select(unit, _a) {
+function List(unit, _a) {
     var { name = '', value, items = [] } = _a, others = __rest(_a, ["name", "value", "items"]);
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
-    xnew((field) => {
-        xnew.extend(InputSelect, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%; height: 2em;' }));
-        xnew(field.container, () => {
-            const gate = xnew(Gate, { open: false, duration: 0 });
-            xnew.extend(InputSelectMenu, { gate });
-            items.forEach((item) => xnew(InputSelectItem, { value: item }));
-        });
+    xnew.extend(ListBox, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%; height: 2em;' }));
+    xnew(ListMenu, () => {
+        items.forEach((item) => xnew(ListItem, { value: item }));
     });
 }
 
@@ -3076,9 +3057,9 @@ const xbasics = {
     InputNumber,
     InputSwitch,
     InputRadio,
-    InputSelect,
-    InputSelectMenu,
-    InputSelectItem,
+    ListBox,
+    ListMenu,
+    ListItem,
     AudioTrack,
     Synthesizer,
     Volume,

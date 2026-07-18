@@ -316,7 +316,7 @@
       } else if (tab === 'filter') {
         const panel = xnew(xbasics.Panel, { params: state.filter });
         toggleSection(panel, state.filter, (sub) => {
-          sub.select({ name: 'type', items: ['lowpass', 'highpass', 'bandpass'] }).on('input', emitParams);
+          sub.listbox({ name: 'type', items: ['lowpass', 'highpass', 'bandpass'] }).on('-change', emitParams);
           sub.range({ name: 'cutoff', min: 100, max: 8000, step: 100 }).on('input', emitParams);
         });
       } else if (tab === 'amp') {

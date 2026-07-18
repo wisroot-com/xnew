@@ -9,8 +9,7 @@ import { xicons } from '../../icons/xicons';
 import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
 import { InputCheckbox } from '../element/InputCheckbox';
-import { InputSelect, InputSelectMenu, InputSelectItem } from '../element/InputSelect';
-import { Gate } from './Gate';
+import { ListBox, ListMenu, ListItem } from '../element/ListBox';
 import { Accordion } from './Accordion';
 
 // nested is internal: group() marks its inner Panel so only the root creates the scroll container
@@ -41,11 +40,11 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
         button({ name = '' }: { name?: string } = {}) {
             return xnew(Button, { text: name, style: 'width: 100%;' });
         },
-        select({ name = '', value, items = [] }: { name?: string, value?: string, items?: string[] } = {}) {
+        listbox({ name = '', value, items = [] }: { name?: string, value?: string, items?: string[] } = {}) {
             object[name] = value ?? object[name] ?? items[0] ?? '';
-            const select = xnew(Select, { name, value: object[name], items });
-            select.on('input', ({ value }: { value: string }) => object[name] = value);
-            return select;
+            const box = xnew(List, { name, value: object[name], items });
+            box.on('-change', ({ value }: { value: string }) => object[name] = value);
+            return box;
         },
         range({ name = '', value, min = 0, max = 100, step = 1 }: { name?: string, value?: number, min?: number, max?: number, step?: number } = {}) {
             object[name] = value ?? object[name] ?? min;
@@ -99,18 +98,13 @@ function Checkbox(unit: xnew.Unit, { name = '', ...others }: { name?: string, [k
     xnew(InputCheckbox, { name, ...others, style: 'width: 1.25em; height: 1.25em;' });
 }
 
-function Select(unit: xnew.Unit, { name = '', value, items = [], ...others }: { name?: string, value?: string, items?: string[], [key: string]: any }) {
+function List(unit: xnew.Unit, { name = '', value, items = [], ...others }: { name?: string, value?: string, items?: string[], [key: string]: any }) {
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
 
-    // field + floating list: one shared Gate lets the menu open/close while the Accordion slides the rows
-    xnew((field: xnew.Unit) => {
-        xnew.extend(InputSelect, { value, ...others, style: 'max-width: 60%; height: 2em;' });
-        xnew(field.container, () => {
-            const gate = xnew(Gate, { open: false, duration: 0 });
-            // the field sits at the right of the row, so anchor the list to its right edge
-            xnew.extend(InputSelectMenu, { gate });
-            items.forEach((item: string) => xnew(InputSelectItem, { value: item }));
-        });
+    // ListBox extends onto this unit (so its '-change' fires here); the floating list nests into its field
+    xnew.extend(ListBox, { value, ...others, style: 'max-width: 60%; height: 2em;' });
+    xnew(ListMenu, () => {
+        items.forEach((item: string) => xnew(ListItem, { value: item }));
     });
 }

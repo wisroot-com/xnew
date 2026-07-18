@@ -37,7 +37,7 @@
       xnew(MyInputCheckbox);
       xnew(MyInputSwitch);
       xnew(MyInputRadio);
-      xnew(MyInputSelect);
+      xnew(MyListBox);
       xnew(MyInputRange);
     });
 
@@ -99,30 +99,25 @@
       });
     }
 
-    function MyInputSelect(unit) {
+    function MyListBox(unit) {
       xnew.nest('<div>');
-      xnew('<div class="mb-1">', 'InputSelect');
+      xnew('<div class="mb-1">', 'ListBox');
       xnew.nest('<div class="flex gap-4 items-center">');
-      xnew((unit) => {
-        xnew.extend(xbasics.InputSelect);
-        xnew(unit.container, (menu) => {
-          xnew.extend(xbasics.InputSelectMenu);
-          xnew(xbasics.InputSelectItem, { value: 'apple' });
-          xnew(xbasics.InputSelectItem, { value: 'banana' });
-          xnew(xbasics.InputSelectItem, { value: 'cherry' });
+      xnew(xbasics.ListBox, (box) => {
+        xnew(xbasics.ListMenu, () => {
+          xnew(xbasics.ListItem, { value: 'apple' });
+          xnew(xbasics.ListItem, { value: 'banana' });
+          xnew(xbasics.ListItem, { value: 'cherry' });
         });
       });
-      // one shared Gate drives the menu's open / close and the Accordion's slide: InputSelectMenu opens /
+      // one shared Gate drives the menu's open / close and the Accordion's slide: ListMenu opens /
       // closes it, Accordion (after the menu, so its collapse box wraps the rows) animates it
-      xnew((unit) => {
-        xnew.extend(xbasics.InputSelect, { value: 'banana', style: 'border-radius: 9999px;' });
-        xnew(unit.container, (menu) => {
-          const gate = xnew(xbasics.Gate, { open: false, duration: 200 });
-          xnew.extend(xbasics.InputSelectMenu, { gate });
+      xnew(xbasics.ListBox, { value: 'banana', style: 'border-radius: 9999px;' }, (box) => {
+        const gate = xnew(xbasics.Gate, { open: false, duration: 200 });
+        xnew(xbasics.ListMenu, { gate }, (menu) => {
           xnew.extend(xbasics.Accordion, { gate });
           ['apple', 'banana', 'cherry'].forEach((fruit) => {
-            xnew((item) => {
-              xnew.extend(xbasics.InputSelectItem, { value: fruit });
+            xnew(xbasics.ListItem, { value: fruit }, (item) => {
               xnew(xicons.Star, { style: 'flex: none; width: 1em; height: 1em; margin-right: 0.5em;' });
               xnew('<span style="font-style: italic;">', fruit);
             });

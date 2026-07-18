@@ -318,7 +318,7 @@ declare function InputRadio(unit: xnew.Unit, { value, name, checked, className, 
     [key: string]: any;
 }): void;
 
-declare function InputSelect(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
+declare function ListBox(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
     value?: string;
     className?: string;
     style?: string;
@@ -328,20 +328,17 @@ declare function InputSelect(unit: xnew.Unit, { value, className, style, designs
     [key: string]: any;
 }): {
     readonly value: string;
-    readonly container: HTMLElement | SVGElement;
     register(itemValue: string, row: HTMLElement): void;
     fill(): void;
     choose(itemValue: string): void;
 };
-declare function InputSelectMenu(unit: xnew.Unit, { gate, className, style, ...others }?: {
+declare function ListMenu(unit: xnew.Unit, { gate, className, style, ...others }?: {
     gate?: xnew.Unit;
     className?: string;
     style?: string;
     [key: string]: any;
-}): {
-    readonly container: HTMLElement | SVGElement;
-};
-declare function InputSelectItem(unit: xnew.Unit, { value, className, style, ...others }?: {
+}): void;
+declare function ListItem(unit: xnew.Unit, { value, className, style, ...others }?: {
     value?: string;
     className?: string;
     style?: string;
@@ -473,7 +470,7 @@ declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
     button({ name }?: {
         name?: string;
     }): Unit;
-    select({ name, value, items }?: {
+    listbox({ name, value, items }?: {
         name?: string;
         value?: string;
         items?: string[];
@@ -513,9 +510,9 @@ declare const xbasics: {
     InputNumber: typeof InputNumber;
     InputSwitch: typeof InputSwitch;
     InputRadio: typeof InputRadio;
-    InputSelect: typeof InputSelect;
-    InputSelectMenu: typeof InputSelectMenu;
-    InputSelectItem: typeof InputSelectItem;
+    ListBox: typeof ListBox;
+    ListMenu: typeof ListMenu;
+    ListItem: typeof ListItem;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;

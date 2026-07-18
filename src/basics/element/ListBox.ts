@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
-// InputSelect — listbox pulldown split into InputSelect (framed field) + InputSelectMenu (list) + InputSelectItem (row)
-// The native popup cannot be styled, so a framed field toggles a floating list. The field emits
-// '-toggle' / '-close'; the menu (optionally driven by a composed Gate) shows / hides in response.
+// ListBox — a styleable select: ListBox (framed field + value) + ListMenu (floating list) + ListItem (row)
+// The native <select> popup can't be styled, so selection is held in JS (no native control at all).
+// Hosts read the current value with `.value` and observe changes with `.on('-change', ({ value }) => …)`.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -9,10 +9,10 @@ import { xicons } from '../../icons/xicons';
 import { Design } from '../design';
 
 //----------------------------------------------------------------------------------------------------
-// InputSelect — the framed field, the hidden native <select>, and the selection state
+// ListBox — the framed field, the visible label, and the selection state
 //----------------------------------------------------------------------------------------------------
 
-export function InputSelect(unit: xnew.Unit,
+export function ListBox(unit: xnew.Unit,
     { value, className = '', style = '', designs = {}, ...others }:
     { value?: string, className?: string, style?: string, designs?: { label?: Design }, [key: string]: any } = {}
 ) {
@@ -40,51 +40,33 @@ export function InputSelect(unit: xnew.Unit,
         },
     });
 
-    // filled by InputSelectItem.register(); rows persist in the menu, the <option>s back the native value
+    // filled by ListItem.register(); rows persist in the menu and mark the current value with data-checked
     const items: { value: string, row: HTMLElement }[] = [];
     const hasInitial = value !== undefined;
     let selected = value ?? '';
 
-    const field = xnew.nest({ tag: 'div', className: `${css.field} ${className}`, style });
+    // the body stays on the field, so ListMenu / ListItem nest into it and unit.on('click') covers the whole control
+    const field = xnew.nest({ tag: 'div', className: `${css.field} ${className}`, style, ...others });
 
     const label = xnew({ tag: 'div', className: `${css.label} ${designs.label?.className ?? ''}`, style: designs.label?.style }, '');
 
     xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
 
-    // registered while the current element is the field, so the whole field toggles the list
+    // clicking anywhere on the field toggles the list (ListItem stops its own click from reaching here)
     unit.on('click', () => xnew.emit('-toggle'));
-    // the native input bubbling up from the <select> updates the label and the checked row
-    unit.on('input', ({ value }: { value: string }) => {
-        label.element.textContent = value;
-        for (const item of items) {
-            item.row.toggleAttribute('data-checked', item.value === value);
-        }
-    });
-
-    // nested last, so the unit's element ends on the <select> — a host's unit.on('input') attaches here
-    const select = xnew.nest({ tag: 'select', style: 'display: none;', ...others }) as HTMLSelectElement;
 
     return {
         get value() {
-            return select.value;
+            return selected;
         },
-        // the field element; an InputSelectMenu mounts into it and anchors to it
-        get container() {
-            return field;
-        },
-        // called by each InputSelectItem: backs it with a hidden <option> and records the row.
+        // called by each ListItem: records its row and, if it is the current selection, shows it.
         // the first item claims the default when no initial value was given
         register(itemValue: string, row: HTMLElement) {
-            const option = document.createElement('option');
-            option.value = itemValue;
-            select.appendChild(option);
             items.push({ value: itemValue, row });
-
             if (!hasInitial && selected === '') {
                 selected = itemValue;
             }
             if (itemValue === selected) {
-                option.selected = true;
                 label.element.textContent = itemValue;
             }
             row.toggleAttribute('data-checked', itemValue === selected);
@@ -98,28 +80,31 @@ export function InputSelect(unit: xnew.Unit,
                 }
             }
         },
-        // an InputSelectItem was clicked: set the native value, notify hosts, and close the list
+        // a ListItem was clicked: update the value, notify hosts with '-change', and close the list
         choose(itemValue: string) {
-            select.value = itemValue;
-            // fires on the <select> (the unit's element) so a host's unit.on('input') catches it
-            select.dispatchEvent(new Event('input', { bubbles: true }));
+            selected = itemValue;
+            label.element.textContent = itemValue;
+            for (const item of items) {
+                item.row.toggleAttribute('data-checked', item.value === itemValue);
+            }
+            xnew.emit('-change', { value: itemValue });
             xnew.emit('-close');
         },
     };
 }
 
 //----------------------------------------------------------------------------------------------------
-// InputSelectMenu — the floating option list; mounts into the field and follows the field's '-toggle' /
-// '-close'. Pass a shared Gate unit (the same one an Accordion animates) and it opens / closes that gate,
-// deferring the hide to the gate's '-closed'; without a gate it shows / hides instantly.
+// ListMenu — the floating option list; nests into the ListBox field and follows its '-toggle' / '-close'.
+// Pass a shared Gate unit (the same one an Accordion animates) and it opens / closes that gate, deferring
+// the hide to the gate's '-closed'; without a gate it shows / hides instantly.
 //----------------------------------------------------------------------------------------------------
 
-export function InputSelectMenu(unit: xnew.Unit,
+export function ListMenu(unit: xnew.Unit,
     { gate, className = '', style = '', ...others }:
     { gate?: xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const parent = xnew.context(InputSelect);
-    const field = parent.container as HTMLElement;
+    const box = xnew.context(ListBox);
+    const field = box.element as HTMLElement;
 
     const css = xnew.css({
         menu: {
@@ -133,7 +118,7 @@ export function InputSelectMenu(unit: xnew.Unit,
         },
     });
 
-    // nested last, so the unit's element ends on the menu — InputSelectItem rows nest into it
+    // nested last, so the unit's element ends on the menu — ListItem rows nest into it
     const menu = xnew.nest({ tag: 'div', className: `${css.menu} ${className}`, style: `display: none; ${style}`, ...others });
 
     let opened = false;
@@ -162,7 +147,7 @@ export function InputSelectMenu(unit: xnew.Unit,
     function show() {
         if (opened === false) {
             opened = true;
-            parent.fill();
+            box.fill();
             field.toggleAttribute('data-open', true);
             menu.style.display = 'block';
             menu.style.background = surfaceColor();
@@ -192,33 +177,26 @@ export function InputSelectMenu(unit: xnew.Unit,
         }
     }
 
-    parent.on('-toggle', () => (opened ? hide() : show()));
-    parent.on('-close', () => hide());
+    box.on('-toggle', () => (opened ? hide() : show()));
+    box.on('-close', () => hide());
 
     // a shared Gate (e.g. animated by an Accordion) hands off the visual: keep the element shown through
     // the close animation, hiding only once the gate reports fully closed on its own unit.
     gate?.on('-closed', () => {
         menu.style.display = 'none';
     });
-
-    return {
-        // the menu element; InputSelectItem rows mount into it
-        get container() {
-            return menu;
-        },
-    };
 }
 
 //----------------------------------------------------------------------------------------------------
-// InputSelectItem — one option row of an InputSelect; nests into the menu it is created inside.
+// ListItem — one option row of a ListBox; nests into the ListMenu it is created inside.
 // Leave the row empty to show the value as text, or nest custom content into it.
 //----------------------------------------------------------------------------------------------------
 
-export function InputSelectItem(unit: xnew.Unit,
+export function ListItem(unit: xnew.Unit,
     { value = '', className = '', style = '', ...others }:
     { value?: string, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const parent = xnew.context(InputSelect);
+    const box = xnew.context(ListBox);
 
     const css = xnew.css({
         item: {
@@ -235,12 +213,12 @@ export function InputSelectItem(unit: xnew.Unit,
     });
 
     const row = xnew.nest({ tag: 'div', className: `${css.item} ${className}`, style, ...others });
-    parent.register(value, row);
+    box.register(value, row);
 
     // registered while the current element is the row, so a click anywhere on it selects the item;
     // stopPropagation keeps the bubble from reaching the field's toggle
     unit.on('click', ({ event }: { event: PointerEvent }) => {
         event.stopPropagation();
-        parent.choose(value);
+        box.choose(value);
     });
 }
