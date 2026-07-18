@@ -19,7 +19,7 @@ describe('basics Overlay', () => {
         }) as DOMRect;
     }
 
-    it('nests a full-viewport backdrop and ends on it when no target is given', () => {
+    it('nests a full-viewport backdrop and ends on it when no anchor is given', () => {
         const overlay = xnew(Overlay, {});
         const backdrop = overlay.element as HTMLElement;
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
@@ -29,11 +29,11 @@ describe('basics Overlay', () => {
         expect(backdrop.className).toMatch(/xnew\d+-container/);
     });
 
-    it('adds a tether box that mirrors the target rect and re-syncs each update tick', () => {
-        const target = document.createElement('div');
-        mockRect(target, { left: 10, top: 20, width: 100, height: 40 });
+    it('adds a tether box that mirrors the anchor rect and re-syncs each update tick', () => {
+        const anchor = document.createElement('div');
+        mockRect(anchor, { left: 10, top: 20, width: 100, height: 40 });
 
-        const overlay = xnew(Overlay, { target });
+        const overlay = xnew(Overlay, { anchor });
         const box = overlay.element as HTMLElement; // the body ends on the tether box
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
@@ -48,8 +48,8 @@ describe('basics Overlay', () => {
         expect(box.style.width).toBe('100px');
         expect(box.style.height).toBe('40px');
 
-        // moving the target and ticking re-aligns the box
-        mockRect(target, { left: 30, top: 50, width: 120, height: 60 });
+        // moving the anchor and ticking re-aligns the box
+        mockRect(anchor, { left: 30, top: 50, width: 120, height: 60 });
         Unit.update(Unit.engineRoot!);
         expect(box.style.left).toBe('30px');
         expect(box.style.top).toBe('50px');
@@ -58,10 +58,10 @@ describe('basics Overlay', () => {
     });
 
     it('closes on a press on the tether box surface, but not on its nested content', () => {
-        const target = document.createElement('div');
-        mockRect(target, { left: 0, top: 0, width: 10, height: 10 });
+        const anchor = document.createElement('div');
+        mockRect(anchor, { left: 0, top: 0, width: 10, height: 10 });
 
-        const overlay = xnew(Overlay, { target });
+        const overlay = xnew(Overlay, { anchor });
         const box = overlay.element as HTMLElement;
         let finalized = false;
         overlay.on('finalize', () => { finalized = true; });
@@ -76,17 +76,17 @@ describe('basics Overlay', () => {
         jest.advanceTimersByTime(1000);
         expect(finalized).toBe(false);
 
-        // a press on the box's own surface (the "hole" over the target) closes it
+        // a press on the box's own surface (the "hole" over the anchor) closes it
         box.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         jest.advanceTimersByTime(1000);
         expect(finalized).toBe(true);
     });
 
-    it('accepts a unit as the target and reads its element rect', () => {
-        const targetUnit = xnew('<div>');
-        mockRect(targetUnit.element, { left: 5, top: 5, width: 50, height: 50 });
+    it('accepts a unit as the anchor and reads its element rect', () => {
+        const anchorUnit = xnew('<div>');
+        mockRect(anchorUnit.element, { left: 5, top: 5, width: 50, height: 50 });
 
-        const overlay = xnew(Overlay, { target: targetUnit });
+        const overlay = xnew(Overlay, { anchor: anchorUnit });
         const box = overlay.element as HTMLElement;
 
         expect(box.style.left).toBe('5px');

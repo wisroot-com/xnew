@@ -26,7 +26,7 @@
       button1.on('click', () => xnew(MyModal));
 
       const button2 = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open menu!');
-      button2.on('click', () => xnew(MyMenu, { target: button2 }));
+      button2.on('click', () => xnew(MyMenu, { anchor: button2 }));
     });
 
     function MyAccordion(unit) {
@@ -59,10 +59,10 @@
       xnew('<div class="p-2 border-t">', Contents);
     }
 
-    function MyMenu(unit, { target }) {
+    function MyMenu(unit, { anchor }) {
       // Overlay covers the page with a click-to-close backdrop (so the button can't be re-triggered) and,
-      // via target, gives a box tracking the button's rect; Overlay finalizes this unit when fully closed
-      xnew.extend(xbasics.Overlay, { gate: { open: false }, target });
+      // via anchor, gives a box tracking the button's rect; Overlay finalizes this unit when fully closed
+      xnew.extend(xbasics.Overlay, { gate: { open: false }, anchor });
 
       // the dropdown hangs just below the tracked box; Accordion shares the Gate so both animate together
       xnew.nest('<div class="absolute top-full right-0 py-2">');

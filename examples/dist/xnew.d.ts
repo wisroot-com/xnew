@@ -427,13 +427,13 @@ declare function Accordion(unit: xnew.Unit, { gate, className, style, ...others 
     readonly gate: Unit;
 };
 
-declare function Overlay(unit: xnew.Unit, { gate, target, className, style, ...others }?: {
+declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...others }?: {
     gate?: {
         open?: boolean;
         duration?: number;
         easing?: string;
     } | xnew.Unit;
-    target?: xnew.Unit | HTMLElement;
+    anchor?: xnew.Unit | HTMLElement;
     className?: string;
     style?: string;
     [key: string]: any;

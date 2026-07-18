@@ -2727,7 +2727,7 @@ function Accordion(unit, _a = {}) {
 }
 
 function Overlay(unit, _a = {}) {
-    var { gate = {}, target, className = '', style = '' } = _a, others = __rest(_a, ["gate", "target", "className", "style"]);
+    var { gate = {}, anchor, className = '', style = '' } = _a, others = __rest(_a, ["gate", "anchor", "className", "style"]);
     const gateUnit = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
     const css = xnew.css({
         container: {
@@ -2752,8 +2752,8 @@ function Overlay(unit, _a = {}) {
     gateUnit.on('-transition', ({ value }) => {
         container.style.opacity = value.toString();
     });
-    if (target !== undefined) {
-        const element = (target instanceof xnew.Unit ? target.element : target);
+    if (anchor !== undefined) {
+        const element = (anchor instanceof xnew.Unit ? anchor.element : anchor);
         const tetherBox = xnew.nest({ tag: 'div', className: css.tether });
         box = tetherBox;
         sync();
