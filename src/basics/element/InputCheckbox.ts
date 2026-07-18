@@ -1,14 +1,17 @@
 //----------------------------------------------------------------------------------------------------
 // InputCheckbox — framed check box backed by a hidden native <input type="checkbox">
-// The invisible native control captures interaction; the checked look lives in css rules keyed
-// on a data-checked attribute, so caller attributes stay intact.
+// Holds a Gate for the checked state and exposes it as `gate`; the invisible native input captures
+// interaction. A trailing function composes the mark into the container and reacts to `gate`
+// (`xnew(InputCheckbox, {}, (unit) => { … unit.gate … xnew(xicons.Check) })`); left empty, a default
+// check svg is drawn. unit.element is the container (not the input), so composed content nests inside it.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { Gate } from '../ui/Gate';
 
 export function InputCheckbox(unit: xnew.Unit,
-    { value = false, className = '', style = '', ...others }:
-    { value?: boolean, className?: string, style?: string, [key: string]: any } = {}
+    { value = false, gate, className = '', style = '', ...others }:
+    { value?: boolean, gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css({
         // the box itself carries the framed look; the checked tint is keyed on data-checked
@@ -22,37 +25,62 @@ export function InputCheckbox(unit: xnew.Unit,
                 &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
-        svg: {
+        input: {
             layer: 'base',
             body: `
-                box-sizing: border-box; display: block; width: 100%; height: 100%;
+                position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
+                opacity: 0; cursor: pointer; margin: 0;
+            `,
+        },
+        mark: {
+            layer: 'base',
+            body: `
+                box-sizing: border-box; position: absolute; inset: 0; width: 100%; height: 100%;
                 stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
                 fill: none;
                 opacity: 0;
                 [data-checked] > & { opacity: 1; }
             `,
         },
-        input: {
-            layer: 'base',
-            body: `
-                position: absolute; inset: 0; width: 100%; height: 100%;
-                opacity: 0; cursor: pointer; margin: 0;
-            `,
-        },
     });
 
-    // capture the container: after the input is nested below, unit.element is the input, not this box
+    // container is the unit's element: after the input nests below as a child unit, composed content
+    // (and the fallback mark) still land inside the container, not inside the hidden input
     const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
 
-    xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg }, (unit: xnew.Unit) => {
-        xnew('<path d="M2 6 5 9 10 3"/>');
-    });
+    // hidden native input for interaction; a child unit so the container stays the current element
+    const input = xnew({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
 
-    container.toggleAttribute('data-checked', value);
+    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate ?? { open: value, duration: 0 });
+    container.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
+    gate.on('-open', () => container.toggleAttribute('data-checked', true));
+    gate.on('-closed', () => container.toggleAttribute('data-checked', false));
 
-    // hidden native input for interaction
-    xnew.nest({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
+    // native input events bubble up to the container, where this listener lives
     unit.on('input', ({ value }: { value: boolean }) => {
-        container.toggleAttribute('data-checked', value);
+        if (value === true) {
+            gate.open();
+        } else {
+            gate.close();
+        }
     });
+
+    // fall back to a default check mark when the caller composed none (its trailing function has run by now)
+    xnew.timeout(() => {
+        const composed = [...container.children].some((element) => element.classList.contains(css.input) === false);
+        if (composed === false) {
+            xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.mark }, () => {
+                xnew('<path d="M2 6 5 9 10 3"/>');
+            });
+        }
+    });
+
+    return {
+        get value() {
+            return gate.state === 'opened' || gate.state === 'opening';
+        },
+        get gate() {
+            return gate;
+        },
+    };
 }

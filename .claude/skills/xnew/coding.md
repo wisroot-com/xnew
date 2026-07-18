@@ -292,6 +292,18 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **InputCheckbox holds a Gate for its checked state and its `unit.element` is the CONTAINER, not the
+  hidden input (modeled on Listbox, 2026-07).** The `<input>` is nested as a *child unit*
+  (`xnew({ tag: 'input', … })`, no `xnew.nest`) so the container stays current — a trailing function
+  then composes the mark INTO the box (`xnew(InputCheckbox, {}, (unit) => { … unit.gate … xnew(xicons.Check) })`);
+  left empty, a one-tick `xnew.timeout` fallback draws a default check svg (detect "caller composed
+  something" by any container child that is not the input). The hidden input gets `z-index: 1` so composed
+  marks never steal its clicks. Native `input` bubbles up to the container where `unit.on('input', …)`
+  lives → toggles `gate.open()/close()`; `gate.on('-open'/'-closed')` toggles `data-checked` on the
+  container (set it once initially from `gate.state`, since the Gate's constructor emits the first `-open`
+  before you subscribe). Do NOT assume `unit.element` is the input here — that still holds for InputSwitch,
+  but InputCheckbox diverged.
+
 - **A basics component's `frame` ring may be merged INTO the `container` (user decision, 2026-07) —
   the container then carries the border / radius / state tint directly, and there is no separate frame
   part.** InputCheckbox and InputRange did this: the container css gains `border` + `border-radius`

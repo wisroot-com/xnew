@@ -278,12 +278,20 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, 
     [key: string]: any;
 }): void;
 
-declare function InputCheckbox(unit: xnew.Unit, { value, className, style, ...others }?: {
+declare function InputCheckbox(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
     value?: boolean;
+    gate?: {
+        open?: boolean;
+        duration?: number;
+        easing?: string;
+    } | xnew.Unit;
     className?: string;
     style?: string;
     [key: string]: any;
-}): void;
+}): {
+    readonly value: boolean;
+    readonly gate: Unit;
+};
 
 declare function InputText(unit: xnew.Unit, { value, className, style, ...others }?: {
     value?: string;

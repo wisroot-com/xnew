@@ -37,5 +37,5 @@ export function InputRadio(unit: xnew.Unit,
     });
 
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style }, value);
-    xnew.nest({ tag: 'input', type: 'radio', name, value, checked, className: css.input, ...others });
+    const input = xnew({ tag: 'input', type: 'radio', name, value, checked, className: css.input, ...others });
 }

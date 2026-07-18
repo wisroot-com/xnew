@@ -1627,8 +1627,61 @@ function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false
     });
 }
 
+function Gate(unit, { open = true, duration = 0, easing = 'ease' }) {
+    let value = open ? 1.0 : 0.0;
+    if (open === true) {
+        xnew.emit('-open');
+        xnew.emit('-opened');
+    }
+    else {
+        xnew.emit('-close');
+        xnew.emit('-closed');
+    }
+    let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
+    let moving = 0;
+    function move(direction) {
+        if (direction === moving)
+            return;
+        xnew.emit(direction > 0 ? '-open' : '-close');
+        moving = direction;
+        const d = direction > 0 ? 1 - value : value;
+        timer.clear();
+        timer = xnew.transition(({ value: x }) => {
+            const remaining = x < 1.0 ? (1 - x) * d : 0.0;
+            value = direction > 0 ? 1.0 - remaining : remaining;
+            xnew.emit('-transition', { value });
+        }, duration * d, easing)
+            .timeout(() => {
+            moving = 0;
+            xnew.emit(direction > 0 ? '-opened' : '-closed');
+        });
+    }
+    return {
+        get value() {
+            return value;
+        },
+        get state() {
+            if (moving === 0) {
+                return value > 0 ? 'opened' : 'closed';
+            }
+            else {
+                return moving > 0 ? 'opening' : 'closing';
+            }
+        },
+        toggle() {
+            move((unit.state === 'opened' || unit.state === 'opening') ? -1 : +1);
+        },
+        open() {
+            move(+1);
+        },
+        close() {
+            move(-1);
+        },
+    };
+}
+
 function InputCheckbox(unit, _a = {}) {
-    var { value = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
+    var { value = false, gate, className = '', style = '' } = _a, others = __rest(_a, ["value", "gate", "className", "style"]);
     const css = xnew.css({
         container: {
             layer: 'base',
@@ -1640,33 +1693,54 @@ function InputCheckbox(unit, _a = {}) {
                 &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
-        svg: {
+        input: {
             layer: 'base',
             body: `
-                box-sizing: border-box; display: block; width: 100%; height: 100%;
+                position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
+                opacity: 0; cursor: pointer; margin: 0;
+            `,
+        },
+        mark: {
+            layer: 'base',
+            body: `
+                box-sizing: border-box; position: absolute; inset: 0; width: 100%; height: 100%;
                 stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
                 fill: none;
                 opacity: 0;
                 [data-checked] > & { opacity: 1; }
             `,
         },
-        input: {
-            layer: 'base',
-            body: `
-                position: absolute; inset: 0; width: 100%; height: 100%;
-                opacity: 0; cursor: pointer; margin: 0;
-            `,
-        },
     });
     const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg }, (unit) => {
-        xnew('<path d="M2 6 5 9 10 3"/>');
-    });
-    container.toggleAttribute('data-checked', value);
-    xnew.nest(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
+    xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
+    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
+    container.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
+    gate.on('-open', () => container.toggleAttribute('data-checked', true));
+    gate.on('-closed', () => container.toggleAttribute('data-checked', false));
     unit.on('input', ({ value }) => {
-        container.toggleAttribute('data-checked', value);
+        if (value === true) {
+            gate.open();
+        }
+        else {
+            gate.close();
+        }
     });
+    xnew.timeout(() => {
+        const composed = [...container.children].some((element) => element.classList.contains(css.input) === false);
+        if (composed === false) {
+            xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.mark }, () => {
+                xnew('<path d="M2 6 5 9 10 3"/>');
+            });
+        }
+    });
+    return {
+        get value() {
+            return gate.state === 'opened' || gate.state === 'opening';
+        },
+        get gate() {
+            return gate;
+        },
+    };
 }
 
 function InputText(unit, _a = {}) {
@@ -1818,60 +1892,7 @@ function InputRadio(unit, _a = {}) {
         },
     });
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style }, value);
-    xnew.nest(Object.assign({ tag: 'input', type: 'radio', name, value, checked, className: css.input }, others));
-}
-
-function Gate(unit, { open = true, duration = 0, easing = 'ease' }) {
-    let value = open ? 1.0 : 0.0;
-    if (open === true) {
-        xnew.emit('-open');
-        xnew.emit('-opened');
-    }
-    else {
-        xnew.emit('-close');
-        xnew.emit('-closed');
-    }
-    let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
-    let moving = 0;
-    function move(direction) {
-        if (direction === moving)
-            return;
-        xnew.emit(direction > 0 ? '-open' : '-close');
-        moving = direction;
-        const d = direction > 0 ? 1 - value : value;
-        timer.clear();
-        timer = xnew.transition(({ value: x }) => {
-            const remaining = x < 1.0 ? (1 - x) * d : 0.0;
-            value = direction > 0 ? 1.0 - remaining : remaining;
-            xnew.emit('-transition', { value });
-        }, duration * d, easing)
-            .timeout(() => {
-            moving = 0;
-            xnew.emit(direction > 0 ? '-opened' : '-closed');
-        });
-    }
-    return {
-        get value() {
-            return value;
-        },
-        get state() {
-            if (moving === 0) {
-                return value > 0 ? 'opened' : 'closed';
-            }
-            else {
-                return moving > 0 ? 'opening' : 'closing';
-            }
-        },
-        toggle() {
-            move((unit.state === 'opened' || unit.state === 'opening') ? -1 : +1);
-        },
-        open() {
-            move(+1);
-        },
-        close() {
-            move(-1);
-        },
-    };
+    xnew(Object.assign({ tag: 'input', type: 'radio', name, value, checked, className: css.input }, others));
 }
 
 function Overlay(unit, _a = {}) {
