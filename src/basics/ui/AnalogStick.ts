@@ -5,11 +5,11 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Design } from '../design';
+import { ElementAttributes } from '../element/attributes';
 
 export function AnalogStick(unit: xnew.Unit,
-    { className = '', style = '', designs = {} }:
-    { className?: string, style?: string, designs?: { svg?: Design } } = {}
+    { className = '', style = '', attributes = {} }:
+    { className?: string, style?: string, attributes?: { svg?: ElementAttributes } } = {}
 ) {
     const css = xnew.css({
         container: {
@@ -31,7 +31,7 @@ export function AnalogStick(unit: xnew.Unit,
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
 
-    const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: designs.svg?.style };
+    const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${attributes.svg?.className ?? ''}`, style: attributes.svg?.style };
 
     xnew((unit: xnew.Unit) => {
         xnew.nest(svg);

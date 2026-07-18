@@ -95,8 +95,8 @@ describe('basics InputCheckbox', () => {
         expect(container.getAttribute('style')).toContain('width: 2em;');
     });
 
-    it('applies designs to the frame part', () => {
-        const unit = xnew(InputCheckbox, { designs: { frame: { className: 'round', style: 'border-radius: 50%;' } } });
+    it('applies attributes to the frame part', () => {
+        const unit = xnew(InputCheckbox, { attributes: { frame: { className: 'round', style: 'border-radius: 50%;' } } });
         const frame = frameOf(unit);
 
         expect(frame.className).toContain('round');

@@ -72,7 +72,7 @@
       xnew('<div class="mb-1">', 'InputCheckbox');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputCheckbox, { value: true });
-      xnew(xbasics.InputCheckbox, { value: true, designs: { frame: { style: 'border-radius: 50%;' } } });
+      xnew(xbasics.InputCheckbox, { value: true, attributes: { frame: { style: 'border-radius: 50%;' } } });
     }
 
     function MyInputSwitch(unit) {
@@ -80,7 +80,7 @@
       xnew('<div class="mb-1">', 'InputSwitch');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputSwitch, { value: true });
-      xnew(xbasics.InputSwitch, { value: true, designs: { frame: { style: 'border-radius: 0.25em;' }, knob: { style: 'border-radius: 0.25em; background: #4f46e5;' } } });
+      xnew(xbasics.InputSwitch, { value: true, attributes: { frame: { style: 'border-radius: 0.25em;' }, knob: { style: 'border-radius: 0.25em; background: #4f46e5;' } } });
     }
 
     function MyInputRadio(unit) {
@@ -132,9 +132,9 @@
       xnew('<div class="mb-1">', 'InputRange');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputRange, { value: 30 });
-      xnew(xbasics.InputRange, { value: 60, designs: { meter: { style: 'background: #fbbf24; border-color: #b45309;' } } });
+      xnew(xbasics.InputRange, { value: 60, attributes: { meter: { style: 'background: #fbbf24; border-color: #b45309;' } } });
       xnew(xbasics.InputRange, { value: 40, vertical: true });
-      xnew(xbasics.InputRange, { value: 70, vertical: true, designs: { meter: { style: 'background: #fbbf24; border-color: #b45309;' } } });
+      xnew(xbasics.InputRange, { value: 70, vertical: true, attributes: { meter: { style: 'background: #fbbf24; border-color: #b45309;' } } });
     }
   </script>
 </body>

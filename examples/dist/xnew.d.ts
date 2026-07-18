@@ -257,12 +257,13 @@ declare function SVGText(unit: xnew.Unit, { text, fontSize, className, style, ..
     [key: string]: any;
 }): void;
 
-interface Design {
+interface ElementAttributes {
     className?: string;
     style?: string;
+    [key: string]: any;
 }
 
-declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, className, style, designs, ...others }?: {
+declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, className, style, attributes, ...others }?: {
     value?: number;
     min?: number;
     max?: number;
@@ -270,20 +271,20 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, 
     vertical?: boolean;
     className?: string;
     style?: string;
-    designs?: {
-        frame?: Design;
-        meter?: Design;
-        status?: Design;
+    attributes?: {
+        frame?: ElementAttributes;
+        meter?: ElementAttributes;
+        status?: ElementAttributes;
     };
     [key: string]: any;
 }): void;
 
-declare function InputCheckbox(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
+declare function InputCheckbox(unit: xnew.Unit, { value, className, style, attributes, ...others }?: {
     value?: boolean;
     className?: string;
     style?: string;
-    designs?: {
-        frame?: Design;
+    attributes?: {
+        frame?: ElementAttributes;
     };
     [key: string]: any;
 }): void;
@@ -302,13 +303,13 @@ declare function InputNumber(unit: xnew.Unit, { value, className, style, ...othe
     [key: string]: any;
 }): void;
 
-declare function InputSwitch(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
+declare function InputSwitch(unit: xnew.Unit, { value, className, style, attributes, ...others }?: {
     value?: boolean;
     className?: string;
     style?: string;
-    designs?: {
-        frame?: Design;
-        knob?: Design;
+    attributes?: {
+        frame?: ElementAttributes;
+        knob?: ElementAttributes;
     };
     [key: string]: any;
 }): void;
@@ -451,20 +452,20 @@ declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...o
     readonly gate: Unit;
 };
 
-declare function AnalogStick(unit: xnew.Unit, { className, style, designs }?: {
+declare function AnalogStick(unit: xnew.Unit, { className, style, attributes }?: {
     className?: string;
     style?: string;
-    designs?: {
-        svg?: Design;
+    attributes?: {
+        svg?: ElementAttributes;
     };
 }): void;
 
-declare function DPad(unit: xnew.Unit, { diagonal, className, style, designs }?: {
+declare function DPad(unit: xnew.Unit, { diagonal, className, style, attributes }?: {
     diagonal?: boolean;
     className?: string;
     style?: string;
-    designs?: {
-        svg?: Design;
+    attributes?: {
+        svg?: ElementAttributes;
     };
 }): void;
 

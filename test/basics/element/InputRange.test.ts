@@ -141,9 +141,9 @@ describe('basics InputRange', () => {
         expect(containerOf(unit).getAttribute('style')).toContain('height: 2em;');
     });
 
-    it('applies designs to the frame and meter parts', () => {
+    it('applies attributes to the frame and meter parts', () => {
         const unit = xnew(InputRange, {
-            designs: {
+            attributes: {
                 frame: { className: 'rail', style: 'border-radius: 0;' },
                 meter: { className: 'gold', style: 'background: gold;' },
             },

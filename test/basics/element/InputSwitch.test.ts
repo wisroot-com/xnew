@@ -70,8 +70,8 @@ describe('basics InputSwitch', () => {
         expect(containerOf(unit).hasAttribute('data-checked')).toBe(true);
     });
 
-    it('applies designs to the frame and knob parts', () => {
-        const unit = xnew(InputSwitch, { designs: { frame: { className: 'pill' }, knob: { style: 'background: gold;' } } });
+    it('applies attributes to the frame and knob parts', () => {
+        const unit = xnew(InputSwitch, { attributes: { frame: { className: 'pill' }, knob: { style: 'background: gold;' } } });
 
         expect(frameOf(unit).className).toContain('pill');
         expect(knobOf(unit).getAttribute('style')).toContain('background: gold;');

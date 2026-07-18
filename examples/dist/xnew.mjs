@@ -1504,7 +1504,7 @@ function SVGText(unit, _a = {}) {
 
 function InputRange(unit, _a = {}) {
     var _b, _c, _d, _e, _f, _g, _h, _j, _k;
-    var { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "vertical", "className", "style", "designs"]);
+    var { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '', attributes = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "vertical", "className", "style", "attributes"]);
     const initial = value !== null && value !== void 0 ? value : min;
     const css = xnew.css({
         container: {
@@ -1606,11 +1606,11 @@ function InputRange(unit, _a = {}) {
     });
     const sizeClass = vertical ? css.vertical : css.horizontal;
     xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
-    xnew({ tag: 'div', className: `${css.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
+    xnew({ tag: 'div', className: `${css.frame} ${(_c = (_b = attributes.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = attributes.frame) === null || _d === void 0 ? void 0 : _d.style });
     const meterClass = vertical ? css.meterVertical : css.meterHorizontal;
-    const meter = xnew({ tag: 'div', className: `${css.meter} ${meterClass} ${(_f = (_e = designs.meter) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.meter) === null || _g === void 0 ? void 0 : _g.style });
+    const meter = xnew({ tag: 'div', className: `${css.meter} ${meterClass} ${(_f = (_e = attributes.meter) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = attributes.meter) === null || _g === void 0 ? void 0 : _g.style });
     const statusClass = vertical ? css.statusVertical : css.statusHorizontal;
-    const status = xnew({ tag: 'div', className: `${css.status} ${statusClass} ${(_j = (_h = designs.status) === null || _h === void 0 ? void 0 : _h.className) !== null && _j !== void 0 ? _j : ''}`, style: (_k = designs.status) === null || _k === void 0 ? void 0 : _k.style });
+    const status = xnew({ tag: 'div', className: `${css.status} ${statusClass} ${(_j = (_h = attributes.status) === null || _h === void 0 ? void 0 : _h.className) !== null && _j !== void 0 ? _j : ''}`, style: (_k = attributes.status) === null || _k === void 0 ? void 0 : _k.style });
     const update = (v) => {
         const percent = `${(v - min) / (max - min) * 100}%`;
         if (vertical) {
@@ -1631,7 +1631,7 @@ function InputRange(unit, _a = {}) {
 
 function InputCheckbox(unit, _a = {}) {
     var _b, _c, _d;
-    var { value = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
+    var { value = false, className = '', style = '', attributes = {} } = _a, others = __rest(_a, ["value", "className", "style", "attributes"]);
     const css = xnew.css({
         container: {
             layer: 'base',
@@ -1668,7 +1668,7 @@ function InputCheckbox(unit, _a = {}) {
         },
     });
     const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    xnew({ tag: 'div', className: `${css.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
+    xnew({ tag: 'div', className: `${css.frame} ${(_c = (_b = attributes.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = attributes.frame) === null || _d === void 0 ? void 0 : _d.style });
     xnew((unit) => {
         xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg });
         xnew('<path d="M2 6 5 9 10 3"/>');
@@ -1724,7 +1724,7 @@ function InputNumber(unit, _a = {}) {
 
 function InputSwitch(unit, _a = {}) {
     var _b, _c, _d, _e, _f, _g;
-    var { value = false, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
+    var { value = false, className = '', style = '', attributes = {} } = _a, others = __rest(_a, ["value", "className", "style", "attributes"]);
     const css = xnew.css({
         container: {
             layer: 'base',
@@ -1761,8 +1761,8 @@ function InputSwitch(unit, _a = {}) {
         },
     });
     const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    xnew({ tag: 'div', className: `${css.frame} ${(_c = (_b = designs.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.frame) === null || _d === void 0 ? void 0 : _d.style });
-    xnew({ tag: 'div', className: `${css.knob} ${(_f = (_e = designs.knob) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = designs.knob) === null || _g === void 0 ? void 0 : _g.style });
+    xnew({ tag: 'div', className: `${css.frame} ${(_c = (_b = attributes.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = attributes.frame) === null || _d === void 0 ? void 0 : _d.style });
+    xnew({ tag: 'div', className: `${css.knob} ${(_f = (_e = attributes.knob) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = attributes.knob) === null || _g === void 0 ? void 0 : _g.style });
     const update = (checked) => {
         container.toggleAttribute('data-checked', checked);
     };
@@ -2384,7 +2384,7 @@ function Accordion(unit, _a = {}) {
     };
 }
 
-function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
+function AnalogStick(unit, { className = '', style = '', attributes = {} } = {}) {
     var _a, _b, _c;
     const css = xnew.css({
         container: {
@@ -2404,7 +2404,7 @@ function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
         },
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_b = (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = designs.svg) === null || _c === void 0 ? void 0 : _c.style };
+    const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_b = (_a = attributes.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = attributes.svg) === null || _c === void 0 ? void 0 : _c.style };
     xnew((unit) => {
         xnew.nest(svg);
         xnew('<polygon points="32  7 27 13 37 13">');
@@ -2432,7 +2432,7 @@ function AnalogStick(unit, { className = '', style = '', designs = {} } = {}) {
     });
 }
 
-function DPad(unit, { diagonal = true, className = '', style = '', designs = {} } = {}) {
+function DPad(unit, { diagonal = true, className = '', style = '', attributes = {} } = {}) {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     const css = xnew.css({
         container: {
@@ -2452,8 +2452,8 @@ function DPad(unit, { diagonal = true, className = '', style = '', designs = {} 
         },
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_b = (_a = designs.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: `stroke: none; ${(_d = (_c = designs.svg) === null || _c === void 0 ? void 0 : _c.style) !== null && _d !== void 0 ? _d : ''}` };
-    const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_f = (_e = designs.svg) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: `fill: none; ${(_h = (_g = designs.svg) === null || _g === void 0 ? void 0 : _g.style) !== null && _h !== void 0 ? _h : ''}` };
+    const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_b = (_a = attributes.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: `stroke: none; ${(_d = (_c = attributes.svg) === null || _c === void 0 ? void 0 : _c.style) !== null && _d !== void 0 ? _d : ''}` };
+    const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_f = (_e = attributes.svg) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: `fill: none; ${(_h = (_g = attributes.svg) === null || _g === void 0 ? void 0 : _g.style) !== null && _h !== void 0 ? _h : ''}` };
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
         '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
@@ -2937,7 +2937,7 @@ function Group(group, { name, open = false }) {
             xnew('<div>', name);
         });
     }
-    xnew.extend(Accordion, { gate: { open } });
+    xnew.extend(Accordion, { gate: { open, duration: 200 } });
 }
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);

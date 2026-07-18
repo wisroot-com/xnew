@@ -1,15 +1,15 @@
 //----------------------------------------------------------------------------------------------------
 // InputSwitch — sliding on / off switch backed by a hidden native <input type="checkbox">
 // The invisible native checkbox captures interaction; the on state lives in css rules keyed on
-// a data-checked attribute, so designs stay intact.
+// a data-checked attribute, so caller attributes stay intact.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Design } from '../design';
+import { ElementAttributes } from './attributes';
 
 export function InputSwitch(unit: xnew.Unit,
-    { value = false, className = '', style = '', designs = {}, ...others }:
-    { value?: boolean, className?: string, style?: string, designs?: { frame?: Design, knob?: Design }, [key: string]: any } = {}
+    { value = false, className = '', style = '', attributes = {}, ...others }:
+    { value?: boolean, className?: string, style?: string, attributes?: { frame?: ElementAttributes, knob?: ElementAttributes }, [key: string]: any } = {}
 ) {
     const css = xnew.css({
         // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
@@ -51,9 +51,9 @@ export function InputSwitch(unit: xnew.Unit,
 
     const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
 
-    xnew({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
+    xnew({ tag: 'div', className: `${css.frame} ${attributes.frame?.className ?? ''}`, style: attributes.frame?.style });
 
-    xnew({ tag: 'div', className: `${css.knob} ${designs.knob?.className ?? ''}`, style: designs.knob?.style });
+    xnew({ tag: 'div', className: `${css.knob} ${attributes.knob?.className ?? ''}`, style: attributes.knob?.style });
 
     const update = (checked: boolean) => {
         container.toggleAttribute('data-checked', checked);

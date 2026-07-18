@@ -5,11 +5,11 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Design } from '../design';
+import { ElementAttributes } from '../element/attributes';
 
 export function DPad(unit: xnew.Unit,
-    { diagonal = true, className = '', style = '', designs = {} }:
-    { diagonal?: boolean, className?: string, style?: string, designs?: { svg?: Design } } = {}
+    { diagonal = true, className = '', style = '', attributes = {} }:
+    { diagonal?: boolean, className?: string, style?: string, attributes?: { svg?: ElementAttributes } } = {}
 ) {
     const css = xnew.css({
         container: {
@@ -31,9 +31,9 @@ export function DPad(unit: xnew.Unit,
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
 
-    // each layer disables the irrelevant paint inline; the caller's designs.svg comes later, so it wins
-    const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: `stroke: none; ${designs.svg?.style ?? ''}` };
-    const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${designs.svg?.className ?? ''}`, style: `fill: none; ${designs.svg?.style ?? ''}` };
+    // each layer disables the irrelevant paint inline; the caller's attributes.svg comes later, so it wins
+    const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${attributes.svg?.className ?? ''}`, style: `stroke: none; ${attributes.svg?.style ?? ''}` };
+    const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${attributes.svg?.className ?? ''}`, style: `fill: none; ${attributes.svg?.style ?? ''}` };
 
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',

@@ -5,11 +5,11 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Design } from '../design';
+import { ElementAttributes } from './attributes';
 
 export function InputRange(unit: xnew.Unit,
-    { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '', designs = {}, ...others }:
-    { value?: number, min?: number, max?: number, step?: number, vertical?: boolean, className?: string, style?: string, designs?: { frame?: Design, meter?: Design, status?: Design }, [key: string]: any } = {}
+    { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '', attributes = {}, ...others }:
+    { value?: number, min?: number, max?: number, step?: number, vertical?: boolean, className?: string, style?: string, attributes?: { frame?: ElementAttributes, meter?: ElementAttributes, status?: ElementAttributes }, [key: string]: any } = {}
 ) {
     const initial = value ?? min;
 
@@ -128,13 +128,13 @@ export function InputRange(unit: xnew.Unit,
     const sizeClass = vertical ? css.vertical : css.horizontal;
     xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
 
-    xnew({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
+    xnew({ tag: 'div', className: `${css.frame} ${attributes.frame?.className ?? ''}`, style: attributes.frame?.style });
 
     const meterClass = vertical ? css.meterVertical : css.meterHorizontal;
-    const meter = xnew({ tag: 'div', className: `${css.meter} ${meterClass} ${designs.meter?.className ?? ''}`, style: designs.meter?.style });
+    const meter = xnew({ tag: 'div', className: `${css.meter} ${meterClass} ${attributes.meter?.className ?? ''}`, style: attributes.meter?.style });
 
     const statusClass = vertical ? css.statusVertical : css.statusHorizontal;
-    const status = xnew({ tag: 'div', className: `${css.status} ${statusClass} ${designs.status?.className ?? ''}`, style: designs.status?.style });
+    const status = xnew({ tag: 'div', className: `${css.status} ${statusClass} ${attributes.status?.className ?? ''}`, style: attributes.status?.style });
 
     const update = (v: number) => {
         const percent = `${(v - min) / (max - min) * 100}%`;

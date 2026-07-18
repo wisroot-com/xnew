@@ -1,15 +1,15 @@
 //----------------------------------------------------------------------------------------------------
 // InputCheckbox — framed check box backed by a hidden native <input type="checkbox">
 // The invisible native control captures interaction; the checked look lives in css rules keyed
-// on a data-checked attribute, so designs stay intact.
+// on a data-checked attribute, so caller attributes stay intact.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Design } from '../design';
+import { ElementAttributes } from './attributes';
 
 export function InputCheckbox(unit: xnew.Unit,
-    { value = false, className = '', style = '', designs = {}, ...others }:
-    { value?: boolean, className?: string, style?: string, designs?: { frame?: Design }, [key: string]: any } = {}
+    { value = false, className = '', style = '', attributes = {}, ...others }:
+    { value?: boolean, className?: string, style?: string, attributes?: { frame?: ElementAttributes }, [key: string]: any } = {}
 ) {
     const css = xnew.css({
         // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
@@ -51,7 +51,7 @@ export function InputCheckbox(unit: xnew.Unit,
 
     const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
 
-    xnew({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
+    xnew({ tag: 'div', className: `${css.frame} ${attributes.frame?.className ?? ''}`, style: attributes.frame?.style });
 
     xnew((unit: xnew.Unit) => {
         xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg });
