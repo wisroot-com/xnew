@@ -33,21 +33,14 @@ export function Overlay(unit: xnew.Unit,
     });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
-    // close on a press outside the nested content: the backdrop, or the anchor-tracking box's own
-    // surface (the "hole" over the anchor) — but not the box's children, which hold the actual content
-    let box: HTMLElement | null = null;
-    unit.on('click', ({ event }: { event: PointerEvent }) => (event.target === unit.element || event.target === box) && gate.close());
 
-    gate.on('-transition', ({ value }: { value: number }) => {
-        unit.element.style.opacity = value.toString();
-        // let the page through the backdrop while fully closed, so a permanently-mounted Overlay stays inert
-        unit.element.style.pointerEvents = value > 0 ? 'auto' : 'none';
-    });
+    gate.on('-transition', ({ value }: { value: number }) => unit.element.style.opacity = value.toString());
+    gate.on('-open', () => unit.element.style.pointerEvents = 'auto');
+    gate.on('-closed', () => unit.element.style.pointerEvents = 'none');
 
     if (anchor !== undefined) {
         const element = (anchor instanceof xnew.Unit ? anchor.element : anchor) as Element;
         const tetherBox = xnew.nest({ tag: 'div', className: css.tether }) as HTMLElement;
-        box = tetherBox;
         sync();
         unit.on('update', sync);
 

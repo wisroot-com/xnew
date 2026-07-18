@@ -11,51 +11,55 @@ export function Gate(unit: xnew.Unit,
     { open?: boolean, duration?: number, easing?: string }
 ) {
     let value = open ? 1.0 : 0.0;
-    let sign: number = open ? +1 : -1;
-    // deferred initial emit: presentation layers subscribe after this body, so publish the starting value next tick
+
+    if (open === true) {
+        xnew.emit('-open');
+        xnew.emit('-opened');
+    } else {
+        xnew.emit('-close');
+        xnew.emit('-closed');
+    }
     let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
 
-    // animate `value` toward 1 (dir +1, open) or 0 (dir -1, close), scaling duration by remaining distance
-    function animate(dir: number) {
-        if (unit.state === 'closed') {
-            xnew.emit('-open');
-        } else if (unit.state === 'opened') {
-            xnew.emit('-close');
-        }
-        sign = dir;
-        const d = dir > 0 ? 1 - value : value;
+    let moving: number = 0;
+    function move(direction: number) {
+        if (direction === moving) return;
+        xnew.emit(direction > 0 ? '-open' : '-close');
+
+        moving = direction;
+
+        const d = direction > 0 ? 1 - value : value;
         timer.clear();
         timer = xnew.transition(({ value: x }: { value: number }) => {
             const remaining = x < 1.0 ? (1 - x) * d : 0.0;
-            value = dir > 0 ? 1.0 - remaining : remaining;
+            value = direction > 0 ? 1.0 - remaining : remaining;
             xnew.emit('-transition', { value });
         }, duration * d, easing)
-        .timeout(() => xnew.emit(dir > 0 ? '-opened' : '-closed'));
+        .timeout(() => {
+            moving = 0;
+            xnew.emit(direction > 0 ? '-opened' : '-closed');
+        });
     }
 
     return {
-        // current 0..1 progress, so a presentation layer can apply the starting state synchronously
         get value() {
             return value;
         },
-        // settled 'opened'/'closed', or 'opening'/'closing' while a transition is in flight
-        get state() {
-            if (value >= 1.0) {
-                return 'opened';
-            } else if (value <= 0.0) {
-                return 'closed';
+        get state(): 'opening' | 'closing' | 'opened' | 'closed' {
+            if (moving === 0) {
+                return value > 0 ? 'opened' : 'closed';
             } else {
-                return sign > 0 ? 'opening' : 'closing';
+                return moving > 0 ? 'opening' : 'closing';
             }
         },
         toggle() {
-            animate(sign < 0 ? +1 : -1);
+            move((unit.state === 'opened' || unit.state === 'opening') ? -1 : +1);
         },
         open() {
-            animate(+1);
+            move(+1);
         },
         close() {
-            animate(-1);
+            move(-1);
         },
     };
 }

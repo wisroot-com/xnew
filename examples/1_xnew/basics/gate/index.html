@@ -51,6 +51,8 @@
 
       xnew.nest('<div class="absolute inset-0 m-auto w-max h-max">');
       xnew.nest('<div class="m-auto w-[300px] max-w-[80%] border rounded-lg bg-white">');
+      // close on a press outside the dialog box (click.outside excludes the current element's subtree)
+      unit.on('click.outside', () => unit.gate.close());
 
       xnew('<div class="p-2 flex justify-between">', () => {
         xnew('<span>', 'Title');
@@ -61,13 +63,15 @@
     }
 
     function MyMenu(unit, { anchor }) {
-      // Overlay covers the page with a click-to-close backdrop (so the button can't be re-triggered) and,
-      // via anchor, gives a box tracking the button's rect; finalize this unit once the gate reports closed
+      // Overlay covers the page with a backdrop (so the button can't be re-triggered) and, via anchor,
+      // gives a box tracking the button's rect; finalize this unit once the gate reports closed
       xnew.extend(xbasics.Overlay, { gate: { open: false, duration: 200 }, anchor });
       unit.gate.on('-closed', () => unit.finalize());
 
       // the dropdown hangs just below the tracked box; Accordion shares the Gate so both animate together
       xnew.nest('<div class="absolute top-full right-0 py-2">');
+      // close on a press outside the dropdown (click.outside excludes the current element's subtree)
+      unit.on('click.outside', () => unit.gate.close());
       xnew.extend(xbasics.Accordion, { gate: unit.gate });
       xnew.nest('<div class="w-[300px] border rounded-lg bg-white">');
       xnew('<div class="p-2">', Contents);

@@ -57,7 +57,7 @@ describe('basics Overlay', () => {
         expect(box.style.height).toBe('60px');
     });
 
-    it('closes on a press on the tether box surface, but not on its nested content', () => {
+    it('has no built-in click-to-close; closing is the caller\'s responsibility', () => {
         const anchor = document.createElement('div');
         mockRect(anchor, { left: 0, top: 0, width: 10, height: 10 });
 
@@ -65,33 +65,26 @@ describe('basics Overlay', () => {
         const box = overlay.element as HTMLElement;
         let finalized = false;
         overlay.on('finalize', () => { finalized = true; });
-        // Overlay no longer self-finalizes; the caller wires close → finalize
         overlay.gate.on('-closed', () => overlay.finalize());
 
         overlay.gate.open();
         jest.advanceTimersByTime(1000);
 
-        // a press on nested content (a child of the box) keeps the overlay open
-        const content = document.createElement('div');
-        box.appendChild(content);
-        content.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        jest.advanceTimersByTime(1000);
-        expect(finalized).toBe(false);
-
-        // a press on the box's own surface (the "hole" over the anchor) closes it
+        // a press anywhere on the overlay never closes it on its own — the caller wires close (see the gate example)
         box.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         jest.advanceTimersByTime(1000);
-        expect(finalized).toBe(true);
+        expect(finalized).toBe(false);
     });
 
     it('is click-through while fully closed and interactive once opened', () => {
         const overlay = xnew(Overlay, { gate: { open: false, duration: 200 } });
         const backdrop = overlay.element as HTMLElement;
 
-        // the deferred initial emit lands the closed state: transparent and click-through
+        // the deferred initial emit lands the closed state: transparent; while closed the backdrop is
+        // click-through via its CSS default (pointer-events: none), so the inline override stays empty
         jest.advanceTimersByTime(0);
         expect(backdrop.style.opacity).toBe('0');
-        expect(backdrop.style.pointerEvents).toBe('none');
+        expect(backdrop.style.pointerEvents).toBe('');
 
         // opening turns the backdrop opaque and interactive
         overlay.gate.open();

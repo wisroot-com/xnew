@@ -292,6 +292,14 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **For close-on-outside-press, use the built-in `unit.on('click.outside', …)` — don't hand-roll a
+  backdrop `click` listener.** `click.outside` (also `pointerdown/move/up.outside`, `dom.ts`) attaches
+  at `document` and fires only when the press target is NOT inside `unit.element` **as of registration
+  time** — so register it right after nesting the content box you want to protect. DOM listeners attach
+  via `setTimeout(0)`, so the same press that opened the popup can't self-close it. Cleaned up on
+  finalize like any listener. `Overlay` deliberately has NO built-in click-to-close (removed 2026-07);
+  the caller wires it (see `examples/1_xnew/basics/gate/index.html`).
+
 - **When two sibling components must share a driver unit (e.g. a Gate), create the driver with `xnew(Gate,
   props)` and pass the SAME unit into each — don't rely on `xnew.context` or a merged control surface.**
   A deferred callback runs in the SCOPE SNAPSHOT from when it was scheduled, so `xnew.context(X)` inside it

@@ -418,7 +418,7 @@ declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
     easing?: string;
 }): {
     readonly value: number;
-    readonly state: "opened" | "closed" | "opening" | "closing";
+    readonly state: "opening" | "closing" | "opened" | "closed";
     toggle(): void;
     open(): void;
     close(): void;

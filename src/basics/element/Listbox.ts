@@ -93,7 +93,7 @@ export function ListboxMenu(unit: xnew.Unit,
             body: `
                 position: absolute; top: 100%; left: 0; margin-top: 0.25em;
                 min-width: 100%; width: max-content; max-height: 12em;
-                border: 1px solid currentColor;
+                border: 1px solid currentColor; border-radius: 0.25em;
                 overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
             `,
         },
