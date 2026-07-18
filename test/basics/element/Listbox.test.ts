@@ -94,7 +94,8 @@ describe('basics Listbox', () => {
         expect(styleText).toContain('position: absolute; top: 100%; left: 0;');
 
         fieldOf(box).dispatchEvent(new Event('click', { bubbles: false }));
-        jest.advanceTimersByTime(0);
+        // data-open now clears once the gate reports fully closed, so let the close settle
+        jest.advanceTimersByTime(300);
         expect(isOpen(box)).toBe(false);
         // the backdrop goes click-through once fully closed, so the page stays interactive
         expect(backdrop().style.opacity).toBe('0');
@@ -113,6 +114,8 @@ describe('basics Listbox', () => {
         expect(received).toEqual(['high']);
         expect(box.value).toBe('high');
         expect(labelOf(box).textContent).toBe('high');
+        // data-open persists through the close animation and clears once the gate is fully closed
+        jest.advanceTimersByTime(300);
         expect(isOpen(box)).toBe(false);
     });
 
@@ -132,6 +135,8 @@ describe('basics Listbox', () => {
         expect(isOpen(box)).toBe(true);
 
         fieldOf(box).dispatchEvent(new Event('click', { bubbles: false }));
+        // data-open is kept through the fade-out and removed once the gate reports fully closed
+        jest.advanceTimersByTime(300);
         expect(isOpen(box)).toBe(false);
     });
 
@@ -245,7 +250,8 @@ describe('basics Listbox', () => {
         expect(isOpen(box)).toBe(true);
         const backdrop = fieldOf(box).querySelector('[class*="-container"]') as HTMLElement;
         backdrop.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        jest.advanceTimersByTime(0);
+        // data-open clears once the gate reports fully closed
+        jest.advanceTimersByTime(300);
         expect(isOpen(box)).toBe(false);
     });
 
@@ -284,10 +290,12 @@ describe('basics Listbox', () => {
         jest.advanceTimersByTime(250);
         expect(accordion.style.opacity).toBe('1');
 
-        // close: data-open clears immediately, the Accordion collapses to opacity 0 over the duration
+        // close: data-open is held through the collapse (so the field's hover tint stays suppressed
+        // while the menu is still a hovered descendant), then clears once the gate is fully closed
         fieldOf(box).dispatchEvent(new Event('click', { bubbles: false }));
-        expect(isOpen(box)).toBe(false);
+        expect(isOpen(box)).toBe(true);
         jest.advanceTimersByTime(250);
         expect(accordion.style.opacity).toBe('0');
+        expect(isOpen(box)).toBe(false);
     });
 });

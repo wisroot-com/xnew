@@ -2345,19 +2345,18 @@ function ListboxMenu(_unit, _a = {}) {
             overlay.gate.open();
         }
     }
-    function markClosed() {
-        opened = false;
-        container.toggleAttribute('data-open', false);
-    }
     function hide() {
         if (opened === true) {
-            markClosed();
+            opened = false;
             overlay.gate.close();
         }
     }
     box.on('-toggle', () => (opened ? hide() : show()));
     box.on('-close', () => hide());
-    overlay.gate.on('-closed', markClosed);
+    overlay.gate.on('-closed', () => {
+        opened = false;
+        container.toggleAttribute('data-open', false);
+    });
 }
 function ListboxItem(unit, _a = {}) {
     var { value = '', className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);

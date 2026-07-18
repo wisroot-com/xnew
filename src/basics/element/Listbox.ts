@@ -154,15 +154,9 @@ export function ListboxMenu(_unit: xnew.Unit,
         }
     }
 
-    // clear the local open state and the container's data-open (does not touch the gate)
-    function markClosed() {
-        opened = false;
-        container.toggleAttribute('data-open', false);
-    }
-
     function hide() {
         if (opened === true) {
-            markClosed();
+            opened = false;
             overlay.gate.close();
         }
     }
@@ -170,9 +164,13 @@ export function ListboxMenu(_unit: xnew.Unit,
     box.on('-toggle', () => (opened ? hide() : show()));
     box.on('-close', () => hide());
 
-    // an outside-click close is driven by Overlay (it calls the gate directly, bypassing hide), so clear
-    // the open state once the gate reports fully closed
-    overlay.gate.on('-closed', markClosed);
+    // drop data-open only once the gate is fully closed (this also covers Overlay's outside-click close,
+    // which calls the gate directly): keeping it through the fade-out leaves the menu a hovered descendant
+    // of the container, so removing it early would flash the container's hover tint until the menu vanishes
+    overlay.gate.on('-closed', () => {
+        opened = false;
+        container.toggleAttribute('data-open', false);
+    });
 }
 
 //----------------------------------------------------------------------------------------------------
