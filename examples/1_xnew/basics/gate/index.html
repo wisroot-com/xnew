@@ -39,13 +39,13 @@
         header.on('click', () => unit.gate.toggle());
       });
 
-      xnew.extend(xbasics.Accordion, { gate: { open: true } });
+      xnew.extend(xbasics.Accordion, { gate: { open: true, duration: 200 } });
 
       xnew('<div class="p-2 border-t">', Contents);
     }
 
     function MyModal(unit) {
-      xnew.extend(xbasics.Overlay, { gate: { open: false }, className: 'bg-black/10' });
+      xnew.extend(xbasics.Overlay, { gate: { open: false, duration: 200 }, className: 'bg-black/10' });
       unit.gate.on('-closed', () => unit.finalize());
       unit.gate.open();
 
@@ -63,7 +63,7 @@
     function MyMenu(unit, { anchor }) {
       // Overlay covers the page with a click-to-close backdrop (so the button can't be re-triggered) and,
       // via anchor, gives a box tracking the button's rect; finalize this unit once the gate reports closed
-      xnew.extend(xbasics.Overlay, { gate: { open: false }, anchor });
+      xnew.extend(xbasics.Overlay, { gate: { open: false, duration: 200 }, anchor });
       unit.gate.on('-closed', () => unit.finalize());
 
       // the dropdown hangs just below the tracked box; Accordion shares the Gate so both animate together
