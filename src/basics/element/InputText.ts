@@ -26,4 +26,9 @@ export function InputText(unit: xnew.Unit,
     });
 
     xnew.nest({ tag: 'input', type: 'text', value, className: `${css.input} ${className}`, style, ...others });
+    return {
+        get value() {
+            return (unit.element as HTMLInputElement).value;
+        }
+    }
 }

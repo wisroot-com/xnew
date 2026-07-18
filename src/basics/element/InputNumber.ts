@@ -29,4 +29,9 @@ export function InputNumber(unit: xnew.Unit,
     });
 
     xnew.nest({ tag: 'input', type: 'number', value, className: `${css.input} ${className}`, style, ...others });
+    return {
+        get value() {
+            return parseFloat((unit.element as HTMLInputElement).value);
+        }
+    }
 }

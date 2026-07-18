@@ -11,7 +11,6 @@ export function InputRange(unit: xnew.Unit,
     { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '', attributes = {}, ...others }:
     { value?: number, min?: number, max?: number, step?: number, vertical?: boolean, className?: string, style?: string, attributes?: { meter?: ElementAttributes, status?: ElementAttributes }, [key: string]: any } = {}
 ) {
-    const initial = value ?? min;
 
     const css = xnew.css({
         // the box itself carries the frame ring; the size prelude lives on the orientation variant so the
@@ -72,6 +71,7 @@ export function InputRange(unit: xnew.Unit,
     const sizeClass = vertical ? css.vertical : css.horizontal;
     xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
 
+    const initial = value ?? min;
     xnew(InputRangeMeter, { value: initial, min, max, vertical, attributes });
 
     // hidden native input for interaction (min / max / step before value, so value never clamps against defaults)

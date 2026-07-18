@@ -290,14 +290,18 @@ declare function InputText(unit: xnew.Unit, { value, className, style, ...others
     className?: string;
     style?: string;
     [key: string]: any;
-}): void;
+}): {
+    readonly value: string;
+};
 
 declare function InputNumber(unit: xnew.Unit, { value, className, style, ...others }?: {
     value?: number;
     className?: string;
     style?: string;
     [key: string]: any;
-}): void;
+}): {
+    readonly value: number;
+};
 
 declare function InputSwitch(unit: xnew.Unit, { value, className, style, attributes, ...others }?: {
     value?: boolean;

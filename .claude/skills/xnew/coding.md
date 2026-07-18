@@ -292,6 +292,24 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **A basics component's `frame` ring may be merged INTO the `container` (user decision, 2026-07) —
+  the container then carries the border / radius / state tint directly, and there is no separate frame
+  part.** InputCheckbox and InputRange did this: the container css gains `border` + `border-radius`
+  (add `box-sizing: border-box` so the border stays inside the declared size) and the checked tint keys
+  on `&[data-checked]` (self) instead of `[data-checked] > &` (child overlay). Caller `className` / `style`
+  now style the ring; the `attributes.frame` part is dropped. Sibling parts (svg / meter / status) still
+  react via `[data-checked] > &` since they remain children of the container. (This supersedes the older
+  "frame lives on an inner part" guidance in §4 for these components.)
+
+- **To split a multi-part basics component, mount the display sub-component on the SHARED container and
+  let it listen to the bubbling native event — don't thread a value-setter define across the boundary.**
+  InputRange became InputRange (container + hidden input) + a same-file `InputRangeMeter` (meter + status).
+  `xnew(InputRangeMeter, …)` with no `xnew.nest` keeps the meter's `unit.element` = the container, so its
+  `unit.on('input', …)` catches the input event that bubbles up from the later-nested `<input>`. Works
+  because the core reads the value off `event.target` (the range input), not the bound element (`dom.ts`
+  `defineEvent(['change','input'])`), so an ancestor listener still gets the numeric value. Native `input`
+  events bubble — tests must dispatch with `{ bubbles: true }`.
+
 - **For close-on-outside-press, use the built-in `unit.on('click.outside', …)` — don't hand-roll a
   backdrop `click` listener.** `click.outside` (also `pointerdown/move/up.outside`, `dom.ts`) attaches
   at `document` and fires only when the press target is NOT inside `unit.element` **as of registration

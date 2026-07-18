@@ -1504,7 +1504,6 @@ function SVGText(unit, _a = {}) {
 
 function InputRange(unit, _a = {}) {
     var { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '', attributes = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "vertical", "className", "style", "attributes"]);
-    const initial = value !== null && value !== void 0 ? value : min;
     const css = xnew.css({
         container: {
             layer: 'base',
@@ -1553,6 +1552,7 @@ function InputRange(unit, _a = {}) {
     });
     const sizeClass = vertical ? css.vertical : css.horizontal;
     xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
+    const initial = value !== null && value !== void 0 ? value : min;
     xnew(InputRangeMeter, { value: initial, min, max, vertical, attributes });
     const inputClass = vertical ? css.inputVertical : css.inputHorizontal;
     xnew.nest(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: `${css.input} ${inputClass}` }, others));
@@ -1672,40 +1672,68 @@ function InputCheckbox(unit, _a = {}) {
 function InputText(unit, _a = {}) {
     var { value, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css({
+        container: {
+            layer: 'base',
+            body: `
+                display: inline-flex; align-items: center;
+                box-sizing: border-box;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+                margin: 0.125em 0; padding: 0 0.5em;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
+            `,
+        },
         input: {
             layer: 'base',
             body: `
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
-                margin: 0.125em 0; padding: 0 0.5em;
+                flex: 1 1 0; min-width: 0; height: 100%;
                 background: transparent; color: inherit; font: inherit;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                outline: none;
-                &:focus { background: color-mix(in srgb, currentColor 20%, transparent); }
+                border: none; outline: none;
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'input', type: 'text', value, className: `${css.input} ${className}`, style }, others));
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    const input = xnew.nest(Object.assign({ tag: 'input', type: 'text', value, className: css.input }, others));
+    return {
+        get input() {
+            return input;
+        },
+    };
 }
 
 function InputNumber(unit, _a = {}) {
     var { value, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css({
+        container: {
+            layer: 'base',
+            body: `
+                display: inline-flex; align-items: center;
+                box-sizing: border-box;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+                margin: 0.125em 0; padding: 0 0.5em;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
+            `,
+        },
         input: {
             layer: 'base',
             body: `
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
-                margin: 0.125em 0; padding: 0 0.5em;
+                flex: 1 1 0; min-width: 0; height: 100%;
                 text-align: center;
                 background: transparent; color: inherit; font: inherit;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                outline: none;
+                border: none; outline: none;
                 -moz-appearance: textfield; appearance: textfield;
                 &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
-                &:focus { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'input', type: 'number', value, className: `${css.input} ${className}`, style }, others));
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    const input = xnew.nest(Object.assign({ tag: 'input', type: 'number', value, className: css.input }, others));
+    return {
+        get input() {
+            return input;
+        },
+    };
 }
 
 function InputSwitch(unit, _a = {}) {
@@ -1778,7 +1806,8 @@ function InputRadio(unit, _a = {}) {
         input: {
             layer: 'base',
             body: `
-                width: 0; height: 0; margin: 0;
+                position: absolute; inset: 0;
+                margin: 0;
                 opacity: 0;
             `,
         },
