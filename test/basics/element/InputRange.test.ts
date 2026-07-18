@@ -12,21 +12,18 @@ describe('basics InputRange', () => {
         jest.useRealTimers();
     });
 
-    // container children: the frame ring first, then the meter, then the status readout, then the hidden input
+    // the container carries the frame ring; its div children are the meter first, then the status readout
+    // (the hidden input is the last child but is an <input>, not a <div>)
     function containerOf(unit: xnew.Unit): HTMLElement {
         return unit.element.parentElement as HTMLElement;
     }
 
-    function frameOf(unit: xnew.Unit): HTMLElement {
+    function meterOf(unit: xnew.Unit): HTMLElement {
         return containerOf(unit).querySelectorAll('div')[0] as HTMLElement;
     }
 
-    function meterOf(unit: xnew.Unit): HTMLElement {
-        return containerOf(unit).querySelectorAll('div')[1] as HTMLElement;
-    }
-
     function statusOf(unit: xnew.Unit): HTMLElement {
-        return containerOf(unit).querySelectorAll('div')[2] as HTMLElement;
+        return containerOf(unit).querySelectorAll('div')[1] as HTMLElement;
     }
 
     it('nests a hidden native range input with the given attributes', () => {
@@ -60,7 +57,7 @@ describe('basics InputRange', () => {
         jest.advanceTimersByTime(0);
 
         input.value = '75';
-        input.dispatchEvent(new Event('input', { bubbles: false }));
+        input.dispatchEvent(new Event('input', { bubbles: true }));
 
         expect(meterOf(unit).style.width).toBe('75%');
     });
@@ -73,7 +70,7 @@ describe('basics InputRange', () => {
         expect(statusOf(unit).textContent).toBe('30');
 
         input.value = '75';
-        input.dispatchEvent(new Event('input', { bubbles: false }));
+        input.dispatchEvent(new Event('input', { bubbles: true }));
         expect(statusOf(unit).textContent).toBe('75');
     });
 
@@ -85,7 +82,7 @@ describe('basics InputRange', () => {
         unit.on('input', ({ value }: { value: number }) => received.push(value));
         jest.advanceTimersByTime(0);
         input.value = '40';
-        input.dispatchEvent(new Event('input', { bubbles: false }));
+        input.dispatchEvent(new Event('input', { bubbles: true }));
 
         expect(received).toEqual([40]);
     });
@@ -112,7 +109,7 @@ describe('basics InputRange', () => {
         jest.advanceTimersByTime(0);
 
         input.value = '75';
-        input.dispatchEvent(new Event('input', { bubbles: false }));
+        input.dispatchEvent(new Event('input', { bubbles: true }));
 
         expect(meterOf(unit).style.height).toBe('75%');
         expect(statusOf(unit).textContent).toBe('75');
@@ -126,11 +123,11 @@ describe('basics InputRange', () => {
         expect((anonymous.element as HTMLInputElement).hasAttribute('name')).toBe(false);
     });
 
-    it('marks the max extent with a frame ring fainter than the meter border', () => {
+    it('marks the extent with a container frame ring fainter than the meter border', () => {
         const unit = xnew(InputRange, { value: 30 });
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
-        expect(frameOf(unit).className).toMatch(/xnew\d+-frame/);
+        expect(containerOf(unit).className).toMatch(/xnew\d+-container/);
         expect(styleText).toContain('border: 1px solid color-mix(in srgb, currentColor 40%, transparent);');
     });
 
@@ -141,18 +138,19 @@ describe('basics InputRange', () => {
         expect(containerOf(unit).getAttribute('style')).toContain('height: 2em;');
     });
 
-    it('applies attributes to the frame and meter parts', () => {
+    it('applies attributes to the meter and status parts', () => {
         const unit = xnew(InputRange, {
             attributes: {
-                frame: { className: 'rail', style: 'border-radius: 0;' },
                 meter: { className: 'gold', style: 'background: gold;' },
+                status: { className: 'label', style: 'color: red;' },
             },
         });
         const meter = meterOf(unit);
+        const status = statusOf(unit);
 
-        expect(frameOf(unit).className).toContain('rail');
-        expect(frameOf(unit).getAttribute('style')).toContain('border-radius: 0;');
         expect(meter.className).toContain('gold');
         expect(meter.getAttribute('style')).toContain('background: gold;');
+        expect(status.className).toContain('label');
+        expect(status.getAttribute('style')).toContain('color: red;');
     });
 });

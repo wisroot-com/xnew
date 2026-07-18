@@ -12,13 +12,9 @@ describe('basics InputCheckbox', () => {
         jest.useRealTimers();
     });
 
-    // container > [frame, svg, input]
+    // container (carries the frame ring) > [svg, input]
     function containerOf(unit: xnew.Unit): HTMLElement {
         return unit.element.parentElement as HTMLElement;
-    }
-
-    function frameOf(unit: xnew.Unit): HTMLElement {
-        return containerOf(unit).querySelector('div') as HTMLElement;
     }
 
     it('nests a hidden native checkbox input with the given attributes', () => {
@@ -48,7 +44,7 @@ describe('basics InputCheckbox', () => {
         xnew(InputCheckbox);
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
-        expect(styleText).toContain('[data-checked] > & { background: color-mix(in srgb, currentColor 20%, transparent); }');
+        expect(styleText).toContain('&[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }');
         expect(styleText).toContain('[data-checked] > & { opacity: 1; }');
     });
 
@@ -88,18 +84,11 @@ describe('basics InputCheckbox', () => {
     });
 
     it('applies className and style to the container element', () => {
-        const unit = xnew(InputCheckbox, { className: 'boxed', style: 'width: 2em;' });
+        const unit = xnew(InputCheckbox, { className: 'boxed', style: 'width: 2em; border-radius: 50%;' });
         const container = containerOf(unit);
 
         expect(container.className).toContain('boxed');
         expect(container.getAttribute('style')).toContain('width: 2em;');
-    });
-
-    it('applies attributes to the frame part', () => {
-        const unit = xnew(InputCheckbox, { attributes: { frame: { className: 'round', style: 'border-radius: 50%;' } } });
-        const frame = frameOf(unit);
-
-        expect(frame.className).toContain('round');
-        expect(frame.getAttribute('style')).toContain('border-radius: 50%;');
+        expect(container.getAttribute('style')).toContain('border-radius: 50%;');
     });
 });

@@ -1503,7 +1503,6 @@ function SVGText(unit, _a = {}) {
 }
 
 function InputRange(unit, _a = {}) {
-    var _b, _c, _d, _e, _f, _g, _h, _j, _k;
     var { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '', attributes = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "vertical", "className", "style", "attributes"]);
     const initial = value !== null && value !== void 0 ? value : min;
     const css = xnew.css({
@@ -1511,7 +1510,9 @@ function InputRange(unit, _a = {}) {
             layer: 'base',
             body: `
                 display: inline-block;
+                box-sizing: border-box;
                 position: relative; margin: 0.125em;
+                border: 1px solid color-mix(in srgb, currentColor 40%, transparent); border-radius: 0.25em;
             `,
         },
         horizontal: {
@@ -1526,14 +1527,39 @@ function InputRange(unit, _a = {}) {
                 width: 1.8em; height: 10em; max-height: -webkit-fill-available; max-height: -moz-available; max-height: stretch;
             `,
         },
-        frame: {
+        input: {
             layer: 'base',
             body: `
-                position: absolute; inset: 0;
-                border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
-                border-radius: 0.25em;
+                position: absolute; inset: 0; width: 100%; height: 100%;
+                opacity: 0; cursor: pointer; user-select: none; margin: 0;
+                appearance: none;
             `,
         },
+        inputHorizontal: {
+            layer: 'base',
+            body: `
+                &::-webkit-slider-thumb { appearance: none; width: 0; }
+                &::-moz-range-thumb { width: 0; border: none; }
+            `,
+        },
+        inputVertical: {
+            layer: 'base',
+            body: `
+                writing-mode: vertical-lr; direction: rtl;
+                &::-webkit-slider-thumb { appearance: none; height: 0; }
+                &::-moz-range-thumb { height: 0; border: none; }
+            `,
+        },
+    });
+    const sizeClass = vertical ? css.vertical : css.horizontal;
+    xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
+    xnew(InputRangeMeter, { value: initial, min, max, vertical, attributes });
+    const inputClass = vertical ? css.inputVertical : css.inputHorizontal;
+    xnew.nest(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: `${css.input} ${inputClass}` }, others));
+}
+function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false, attributes = {} } = {}) {
+    var _a, _b, _c, _d, _e, _f;
+    const css = xnew.css({
         meter: {
             layer: 'base',
             body: `
@@ -1580,38 +1606,12 @@ function InputRange(unit, _a = {}) {
                 justify-content: center; align-items: flex-end;
             `,
         },
-        input: {
-            layer: 'base',
-            body: `
-                position: absolute; inset: 0; width: 100%; height: 100%;
-                opacity: 0; cursor: pointer; user-select: none; margin: 0;
-                appearance: none;
-            `,
-        },
-        inputHorizontal: {
-            layer: 'base',
-            body: `
-                &::-webkit-slider-thumb { appearance: none; width: 0; }
-                &::-moz-range-thumb { width: 0; border: none; }
-            `,
-        },
-        inputVertical: {
-            layer: 'base',
-            body: `
-                writing-mode: vertical-lr; direction: rtl;
-                &::-webkit-slider-thumb { appearance: none; height: 0; }
-                &::-moz-range-thumb { height: 0; border: none; }
-            `,
-        },
     });
-    const sizeClass = vertical ? css.vertical : css.horizontal;
-    xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
-    xnew({ tag: 'div', className: `${css.frame} ${(_c = (_b = attributes.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = attributes.frame) === null || _d === void 0 ? void 0 : _d.style });
     const meterClass = vertical ? css.meterVertical : css.meterHorizontal;
-    const meter = xnew({ tag: 'div', className: `${css.meter} ${meterClass} ${(_f = (_e = attributes.meter) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = attributes.meter) === null || _g === void 0 ? void 0 : _g.style });
+    const meter = xnew({ tag: 'div', className: `${css.meter} ${meterClass} ${(_b = (_a = attributes.meter) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = attributes.meter) === null || _c === void 0 ? void 0 : _c.style });
     const statusClass = vertical ? css.statusVertical : css.statusHorizontal;
-    const status = xnew({ tag: 'div', className: `${css.status} ${statusClass} ${(_j = (_h = attributes.status) === null || _h === void 0 ? void 0 : _h.className) !== null && _j !== void 0 ? _j : ''}`, style: (_k = attributes.status) === null || _k === void 0 ? void 0 : _k.style });
-    const update = (v) => {
+    const status = xnew({ tag: 'div', className: `${css.status} ${statusClass} ${(_e = (_d = attributes.status) === null || _d === void 0 ? void 0 : _d.className) !== null && _e !== void 0 ? _e : ''}`, style: (_f = attributes.status) === null || _f === void 0 ? void 0 : _f.style });
+    function update(v) {
         const percent = `${(v - min) / (max - min) * 100}%`;
         if (vertical) {
             meter.element.style.height = percent;
@@ -1620,10 +1620,8 @@ function InputRange(unit, _a = {}) {
             meter.element.style.width = percent;
         }
         status.element.textContent = String(v);
-    };
-    update(initial);
-    const inputClass = vertical ? css.inputVertical : css.inputHorizontal;
-    xnew.nest(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: `${css.input} ${inputClass}` }, others));
+    }
+    update(value);
     unit.on('input', ({ value }) => {
         update(value);
     });
@@ -1660,82 +1658,54 @@ function InputCheckbox(unit, _a = {}) {
             `,
         },
     });
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg }, (unit) => {
         xnew('<path d="M2 6 5 9 10 3"/>');
     });
-    unit.element.toggleAttribute('data-checked', value);
+    container.toggleAttribute('data-checked', value);
     xnew.nest(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
     unit.on('input', ({ value }) => {
-        unit.element.toggleAttribute('data-checked', value);
+        container.toggleAttribute('data-checked', value);
     });
 }
 
 function InputText(unit, _a = {}) {
     var { value, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css({
-        container: {
-            layer: 'base',
-            body: `
-                display: inline-flex; align-items: center;
-                box-sizing: border-box;
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
-                margin: 0.125em 0; padding: 0 0.5em;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
-        },
         input: {
             layer: 'base',
             body: `
-                flex: 1 1 0; min-width: 0; height: 100%;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+                margin: 0.125em 0; padding: 0 0.5em;
                 background: transparent; color: inherit; font: inherit;
-                border: none; outline: none;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                outline: none;
+                &:focus { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
     });
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const input = xnew.nest(Object.assign({ tag: 'input', type: 'text', value, className: css.input }, others));
-    return {
-        get input() {
-            return input;
-        },
-    };
+    xnew.nest(Object.assign({ tag: 'input', type: 'text', value, className: `${css.input} ${className}`, style }, others));
 }
 
 function InputNumber(unit, _a = {}) {
     var { value, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css({
-        container: {
-            layer: 'base',
-            body: `
-                display: inline-flex; align-items: center;
-                box-sizing: border-box;
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
-                margin: 0.125em 0; padding: 0 0.5em;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
-        },
         input: {
             layer: 'base',
             body: `
-                flex: 1 1 0; min-width: 0; height: 100%;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+                margin: 0.125em 0; padding: 0 0.5em;
                 text-align: center;
                 background: transparent; color: inherit; font: inherit;
-                border: none; outline: none;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                outline: none;
                 -moz-appearance: textfield; appearance: textfield;
                 &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
+                &:focus { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
     });
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const input = xnew.nest(Object.assign({ tag: 'input', type: 'number', value, className: css.input }, others));
-    return {
-        get input() {
-            return input;
-        },
-    };
+    xnew.nest(Object.assign({ tag: 'input', type: 'number', value, className: `${css.input} ${className}`, style }, others));
 }
 
 function InputSwitch(unit, _a = {}) {
@@ -1808,8 +1778,7 @@ function InputRadio(unit, _a = {}) {
         input: {
             layer: 'base',
             body: `
-                position: absolute; inset: 0;
-                margin: 0;
+                width: 0; height: 0; margin: 0;
                 opacity: 0;
             `,
         },

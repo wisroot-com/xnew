@@ -272,7 +272,6 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, 
     className?: string;
     style?: string;
     attributes?: {
-        frame?: ElementAttributes;
         meter?: ElementAttributes;
         status?: ElementAttributes;
     };

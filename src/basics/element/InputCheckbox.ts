@@ -41,17 +41,18 @@ export function InputCheckbox(unit: xnew.Unit,
         },
     });
 
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    // capture the container: after the input is nested below, unit.element is the input, not this box
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
 
     xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg }, (unit: xnew.Unit) => {
         xnew('<path d="M2 6 5 9 10 3"/>');
     });
 
-    unit.element.toggleAttribute('data-checked', value);
+    container.toggleAttribute('data-checked', value);
 
     // hidden native input for interaction
     xnew.nest({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
     unit.on('input', ({ value }: { value: boolean }) => {
-        unit.element.toggleAttribute('data-checked', value);
+        container.toggleAttribute('data-checked', value);
     });
 }
