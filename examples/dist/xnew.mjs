@@ -2274,34 +2274,29 @@ function Listbox(unit, _a = {}) {
     const hasInitial = value !== undefined;
     let selected = value !== null && value !== void 0 ? value : '';
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
-    const label = xnew({ tag: 'div', className: `${css.label} ${(_c = (_b = designs.label) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.label) === null || _d === void 0 ? void 0 : _d.style }, '');
+    const label = xnew({ tag: 'div', className: `${css.label} ${(_c = (_b = designs.label) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.label) === null || _d === void 0 ? void 0 : _d.style }, selected);
     xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
     unit.on('click', () => xnew.emit('-toggle'));
     function apply() {
         label.element.textContent = selected;
         for (const item of items) {
-            item.row.toggleAttribute('data-checked', item.value === selected);
+            item.check(item.value === selected);
         }
     }
+    xnew.timeout(() => {
+        if (!hasInitial && selected === '' && items.length > 0) {
+            selected = items[0].value;
+            apply();
+        }
+    });
     return {
         get value() {
             return selected;
         },
-        register(itemValue, row) {
-            items.push({ value: itemValue, row });
-            if (!hasInitial && selected === '') {
-                selected = itemValue;
-            }
-            apply();
+        register(item) {
+            items.push(item);
         },
-        fill() {
-            for (const item of items) {
-                if (!item.row.hasChildNodes()) {
-                    item.row.textContent = item.value;
-                }
-            }
-        },
-        choose(itemValue) {
+        select(itemValue) {
             selected = itemValue;
             apply();
             xnew.emit('-change', { value: itemValue });
@@ -2311,8 +2306,8 @@ function Listbox(unit, _a = {}) {
 }
 function ListboxMenu(_unit, _a = {}) {
     var { gate, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
-    const box = xnew.context(Listbox);
-    const container = box.element;
+    const listbox = xnew.context(Listbox);
+    const container = listbox.element;
     const css = xnew.css({
         menu: {
             layer: 'base',
@@ -2328,7 +2323,7 @@ function ListboxMenu(_unit, _a = {}) {
     const menu = xnew.nest(Object.assign({ tag: 'div', className: `${css.menu} ${className}`, style }, others));
     let opened = false;
     function surfaceColor() {
-        for (let element = container.parentElement; element !== null; element = element.parentElement) {
+        for (let element = listbox.element.parentElement; element !== null; element = element.parentElement) {
             const color = getComputedStyle(element).backgroundColor;
             if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
                 return color;
@@ -2339,8 +2334,7 @@ function ListboxMenu(_unit, _a = {}) {
     function show() {
         if (opened === false) {
             opened = true;
-            box.fill();
-            container.toggleAttribute('data-open', true);
+            listbox.element.toggleAttribute('data-open', true);
             menu.style.background = surfaceColor();
             overlay.gate.open();
         }
@@ -2351,11 +2345,11 @@ function ListboxMenu(_unit, _a = {}) {
             overlay.gate.close();
         }
     }
-    box.on('-toggle', () => (opened ? hide() : show()));
-    box.on('-close', () => hide());
+    listbox.on('-toggle', () => (opened ? hide() : show()));
+    listbox.on('-close', () => hide());
     overlay.gate.on('-closed', () => {
         opened = false;
-        container.toggleAttribute('data-open', false);
+        listbox.element.toggleAttribute('data-open', false);
     });
 }
 function ListboxItem(unit, _a = {}) {
@@ -2374,12 +2368,26 @@ function ListboxItem(unit, _a = {}) {
             `,
         },
     });
-    const row = xnew.nest(Object.assign({ tag: 'div', className: `${css.item} ${className}`, style }, others));
-    listbox.register(value, row);
+    xnew.nest(Object.assign({ tag: 'div', className: `${css.item} ${className}`, style }, others));
+    listbox.register(unit);
+    unit.element.toggleAttribute('data-checked', listbox.value === value);
+    xnew.timeout(() => {
+        if (unit.element.hasChildNodes() === false) {
+            unit.element.textContent = value;
+        }
+    });
     unit.on('click', ({ event }) => {
         event.stopPropagation();
-        listbox.choose(value);
+        listbox.select(value);
     });
+    return {
+        get value() {
+            return value;
+        },
+        check(current) {
+            unit.element.toggleAttribute('data-checked', current);
+        },
+    };
 }
 
 var _a;

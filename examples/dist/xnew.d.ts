@@ -332,9 +332,8 @@ declare function Listbox(unit: xnew.Unit, { value, className, style, designs, ..
     [key: string]: any;
 }): {
     readonly value: string;
-    register(itemValue: string, row: HTMLElement): void;
-    fill(): void;
-    choose(itemValue: string): void;
+    register(item: xnew.Unit): void;
+    select(itemValue: string): void;
 };
 declare function ListboxMenu(_unit: xnew.Unit, { gate, className, style, ...others }?: {
     gate?: xnew.Unit;
@@ -347,7 +346,10 @@ declare function ListboxItem(unit: xnew.Unit, { value, className, style, ...othe
     className?: string;
     style?: string;
     [key: string]: any;
-}): void;
+}): {
+    readonly value: string;
+    check(current: boolean): void;
+};
 
 declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
     url: string;

@@ -63,6 +63,8 @@ describe('basics Listbox', () => {
 
     it('defaults to the first item', () => {
         const { box } = build({}, ['low', 'mid', 'high']);
+        // the default is adopted one tick later, once every item has registered its value
+        jest.advanceTimersByTime(0);
 
         expect(box.value).toBe('low');
         expect(labelOf(box).textContent).toBe('low');
@@ -70,6 +72,8 @@ describe('basics Listbox', () => {
 
     it('keeps a default width that callers override via style', () => {
         const { box } = build({}, ['low', 'mid']);
+        // the default label text is adopted one tick after the items register
+        jest.advanceTimersByTime(0);
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
         expect(styleText).toContain('width: 10em;');
