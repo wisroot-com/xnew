@@ -26,7 +26,7 @@
       button1.on('click', () => xnew(MyModal));
 
       const button2 = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open menu!');
-      button2.on('click', () => xnew(MyMenu, { anchor: button2 }));
+      button2.on('click', () => xnew(MyMenu, { anchor: button2.element }));
     });
 
     function MyAccordion(unit) {

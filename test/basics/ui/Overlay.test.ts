@@ -35,10 +35,10 @@ describe('basics Overlay', () => {
 
         const overlay = xnew(Overlay, { anchor });
         const box = overlay.element as HTMLElement; // the body ends on the tether box
-        const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
-        expect(styleText).toContain('position: absolute; box-sizing: border-box;');
-        expect(box.className).toMatch(/xnew\d+-tether/);
+        // the tether carries its positioning inline (no CSS class)
+        expect(box.style.position).toBe('absolute');
+        expect(box.style.boxSizing).toBe('border-box');
         // the box lives on the backdrop
         expect((box.parentElement as HTMLElement).className).toMatch(/xnew\d+-container/);
 
@@ -97,16 +97,5 @@ describe('basics Overlay', () => {
         jest.advanceTimersByTime(250);
         expect(backdrop.style.opacity).toBe('0');
         expect(backdrop.style.pointerEvents).toBe('none');
-    });
-
-    it('accepts a unit as the anchor and reads its element rect', () => {
-        const anchorUnit = xnew('<div>');
-        mockRect(anchorUnit.element, { left: 5, top: 5, width: 50, height: 50 });
-
-        const overlay = xnew(Overlay, { anchor: anchorUnit });
-        const box = overlay.element as HTMLElement;
-
-        expect(box.style.left).toBe('5px');
-        expect(box.style.width).toBe('50px');
     });
 });
