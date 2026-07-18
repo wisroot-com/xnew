@@ -443,7 +443,7 @@ declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...o
         duration?: number;
         easing?: string;
     } | xnew.Unit;
-    anchor?: xnew.Unit | HTMLElement;
+    anchor?: HTMLElement;
     className?: string;
     style?: string;
     [key: string]: any;

@@ -1866,28 +1866,21 @@ function Overlay(unit, _a = {}) {
                 cursor: default;
             `,
         },
-        tether: {
-            layer: 'base',
-            body: `
-                position: absolute; box-sizing: border-box;
-            `,
-        },
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     gate.on('-transition', ({ value }) => unit.element.style.opacity = value.toString());
     gate.on('-open', () => unit.element.style.pointerEvents = 'auto');
     gate.on('-closed', () => unit.element.style.pointerEvents = 'none');
-    if (anchor !== undefined) {
-        const element = (anchor instanceof xnew.Unit ? anchor.element : anchor);
-        const tetherBox = xnew.nest({ tag: 'div', className: css.tether });
+    if (anchor instanceof HTMLElement) {
+        const tether = xnew.nest({ tag: 'div', style: 'position: absolute; box-sizing: border-box' });
         sync();
         unit.on('update', sync);
         function sync() {
-            const rect = element.getBoundingClientRect();
-            tetherBox.style.left = `${rect.left}px`;
-            tetherBox.style.top = `${rect.top}px`;
-            tetherBox.style.width = `${rect.width}px`;
-            tetherBox.style.height = `${rect.height}px`;
+            const rect = anchor.getBoundingClientRect();
+            tether.style.left = `${rect.left}px`;
+            tether.style.top = `${rect.top}px`;
+            tether.style.width = `${rect.width}px`;
+            tether.style.height = `${rect.height}px`;
         }
     }
     return {

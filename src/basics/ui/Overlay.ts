@@ -10,7 +10,7 @@ import { Gate } from './Gate';
 
 export function Overlay(unit: xnew.Unit,
     { gate = {}, anchor, className = '', style = '', ...others }:
-    { gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, anchor?: xnew.Unit | HTMLElement, className?: string, style?: string, [key: string]: any } = {}
+    { gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, anchor?: HTMLElement, className?: string, style?: string, [key: string]: any } = {}
 ) {
     gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
 
@@ -23,13 +23,6 @@ export function Overlay(unit: xnew.Unit,
                 cursor: default;
             `,
         },
-        // an absolute box on the backdrop, kept aligned to `anchor`'s on-screen rect every update tick
-        tether: {
-            layer: 'base',
-            body: `
-                position: absolute; box-sizing: border-box;
-            `,
-        },
     });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
@@ -38,19 +31,18 @@ export function Overlay(unit: xnew.Unit,
     gate.on('-open', () => unit.element.style.pointerEvents = 'auto');
     gate.on('-closed', () => unit.element.style.pointerEvents = 'none');
 
-    if (anchor !== undefined) {
-        const element = (anchor instanceof xnew.Unit ? anchor.element : anchor) as Element;
-        const tetherBox = xnew.nest({ tag: 'div', className: css.tether }) as HTMLElement;
+    if (anchor instanceof HTMLElement) {
+        const tether = xnew.nest({ tag: 'div', style: 'position: absolute; box-sizing: border-box' }) as HTMLElement;
         sync();
         unit.on('update', sync);
 
         // the backdrop fills the viewport from its origin, so the anchor's client rect maps straight to the box
         function sync(): void {
-            const rect = element.getBoundingClientRect();
-            tetherBox.style.left = `${rect.left}px`;
-            tetherBox.style.top = `${rect.top}px`;
-            tetherBox.style.width = `${rect.width}px`;
-            tetherBox.style.height = `${rect.height}px`;
+            const rect = (anchor as Element).getBoundingClientRect();
+            tether.style.left = `${rect.left}px`;
+            tether.style.top = `${rect.top}px`;
+            tether.style.width = `${rect.width}px`;
+            tether.style.height = `${rect.height}px`;
         }
     }
 
