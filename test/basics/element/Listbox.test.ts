@@ -158,6 +158,26 @@ describe('basics Listbox', () => {
         expect(rows[1].textContent).toBe('RICH');
     });
 
+    it('lets an item set its row text via a trailing string, decoupled from the value', () => {
+        let box!: xnew.Unit;
+        let menu!: HTMLElement;
+        xnew(() => {
+            box = xnew(Listbox, () => {
+                xnew(ListboxMenu, (m: xnew.Unit) => {
+                    menu = m.element as HTMLElement;
+                    xnew(ListboxItem, { value: 'apple' }, 'りんご');
+                });
+            });
+        });
+
+        open(box);
+        const rows = rowsOf(menu);
+        // the trailing text sets the row label; the value stays 'apple'
+        expect(rows[0].textContent).toBe('りんご');
+        rows[0].dispatchEvent(new Event('click', { bubbles: true }));
+        expect(box.value).toBe('apple');
+    });
+
     it('applies the Listbox label design and ListboxItem className to the rows', () => {
         let box!: xnew.Unit;
         let menu!: HTMLElement;

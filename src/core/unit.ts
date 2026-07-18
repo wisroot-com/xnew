@@ -25,6 +25,12 @@ export type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends 
 // Extract the props type of a Component ({} if absent).
 export type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
 
+// Component that writes a text/number literal into the unit's current element.
+// Used for both the base (xnew(target, 'text')) and the trailing ExComponent (xnew(Base, props, 'text')) forms.
+function textComponent(content: string | number): (unit: Unit) => void {
+    return (unit: Unit) => { unit.element.textContent = content.toString(); };
+}
+
 //----------------------------------------------------------------------------------------------------
 // unit
 //----------------------------------------------------------------------------------------------------
@@ -112,16 +118,19 @@ export class Unit {
             props = args.shift() as Object | undefined;
         }
 
+        // a trailing function extends on top of Base; a trailing string/number sets the element's text
         let ExComponent: Function | undefined;
         if (typeof args[0] === 'function') {
             ExComponent = args.shift() as Function;
+        } else if (typeof args[0] === 'string' || typeof args[0] === 'number') {
+            ExComponent = textComponent(args.shift() as string | number);
         }
 
         let baseComponent: Function;
         if (typeof Component === 'function') {
             baseComponent = Component;
         } else if (typeof Component === 'string' || typeof Component === 'number') {
-            baseComponent = (unit: Unit) => { unit.element.textContent = Component.toString(); };
+            baseComponent = textComponent(Component);
         } else {
             baseComponent = (unit: Unit) => {};
         }

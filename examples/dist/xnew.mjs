@@ -469,6 +469,9 @@ function keyboardEvent(matched, props) {
     }, props.options);
 }
 
+function textComponent(content) {
+    return (unit) => { unit.element.textContent = content.toString(); };
+}
 class Unit {
     constructor(parent = null) {
         var _a, _b;
@@ -525,12 +528,15 @@ class Unit {
         if (typeof args[0] === 'function') {
             ExComponent = args.shift();
         }
+        else if (typeof args[0] === 'string' || typeof args[0] === 'number') {
+            ExComponent = textComponent(args.shift());
+        }
         let baseComponent;
         if (typeof Component === 'function') {
             baseComponent = Component;
         }
         else if (typeof Component === 'string' || typeof Component === 'number') {
-            baseComponent = (unit) => { unit.element.textContent = Component.toString(); };
+            baseComponent = textComponent(Component);
         }
         else {
             baseComponent = (unit) => { };
@@ -2246,7 +2252,7 @@ function Listbox(unit, _a = {}) {
     var _b, _c, _d;
     var { value, className = '', style = '', designs = {} } = _a, others = __rest(_a, ["value", "className", "style", "designs"]);
     const css = xnew.css({
-        field: {
+        container: {
             layer: 'base',
             body: `
                 display: inline-flex; align-items: center;
@@ -2267,10 +2273,16 @@ function Listbox(unit, _a = {}) {
     const items = [];
     const hasInitial = value !== undefined;
     let selected = value !== null && value !== void 0 ? value : '';
-    xnew.nest(Object.assign({ tag: 'div', className: `${css.field} ${className}`, style }, others));
+    xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     const label = xnew({ tag: 'div', className: `${css.label} ${(_c = (_b = designs.label) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = designs.label) === null || _d === void 0 ? void 0 : _d.style }, '');
     xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
     unit.on('click', () => xnew.emit('-toggle'));
+    function apply() {
+        label.element.textContent = selected;
+        for (const item of items) {
+            item.row.toggleAttribute('data-checked', item.value === selected);
+        }
+    }
     return {
         get value() {
             return selected;
@@ -2280,10 +2292,7 @@ function Listbox(unit, _a = {}) {
             if (!hasInitial && selected === '') {
                 selected = itemValue;
             }
-            if (itemValue === selected) {
-                label.element.textContent = itemValue;
-            }
-            row.toggleAttribute('data-checked', itemValue === selected);
+            apply();
         },
         fill() {
             for (const item of items) {
@@ -2294,10 +2303,7 @@ function Listbox(unit, _a = {}) {
         },
         choose(itemValue) {
             selected = itemValue;
-            label.element.textContent = itemValue;
-            for (const item of items) {
-                item.row.toggleAttribute('data-checked', item.value === itemValue);
-            }
+            apply();
             xnew.emit('-change', { value: itemValue });
             xnew.emit('-close');
         },
@@ -2306,7 +2312,7 @@ function Listbox(unit, _a = {}) {
 function ListboxMenu(_unit, _a = {}) {
     var { gate, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
     const box = xnew.context(Listbox);
-    const field = box.element;
+    const container = box.element;
     const css = xnew.css({
         menu: {
             layer: 'base',
@@ -2318,11 +2324,11 @@ function ListboxMenu(_unit, _a = {}) {
             `,
         },
     });
-    const overlay = xnew.extend(Overlay, { gate: gate !== null && gate !== void 0 ? gate : { open: false, duration: 0 }, anchor: field });
+    const overlay = xnew.extend(Overlay, { gate: gate !== null && gate !== void 0 ? gate : { open: false, duration: 0 }, anchor: container });
     const menu = xnew.nest(Object.assign({ tag: 'div', className: `${css.menu} ${className}`, style }, others));
     let opened = false;
     function surfaceColor() {
-        for (let element = field.parentElement; element !== null; element = element.parentElement) {
+        for (let element = container.parentElement; element !== null; element = element.parentElement) {
             const color = getComputedStyle(element).backgroundColor;
             if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
                 return color;
@@ -2334,28 +2340,28 @@ function ListboxMenu(_unit, _a = {}) {
         if (opened === false) {
             opened = true;
             box.fill();
-            field.toggleAttribute('data-open', true);
+            container.toggleAttribute('data-open', true);
             menu.style.background = surfaceColor();
             overlay.gate.open();
         }
     }
+    function markClosed() {
+        opened = false;
+        container.toggleAttribute('data-open', false);
+    }
     function hide() {
         if (opened === true) {
-            opened = false;
-            field.toggleAttribute('data-open', false);
+            markClosed();
             overlay.gate.close();
         }
     }
     box.on('-toggle', () => (opened ? hide() : show()));
     box.on('-close', () => hide());
-    overlay.gate.on('-closed', () => {
-        opened = false;
-        field.toggleAttribute('data-open', false);
-    });
+    overlay.gate.on('-closed', markClosed);
 }
 function ListboxItem(unit, _a = {}) {
     var { value = '', className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
-    const box = xnew.context(Listbox);
+    const listbox = xnew.context(Listbox);
     const css = xnew.css({
         item: {
             layer: 'base',
@@ -2370,10 +2376,10 @@ function ListboxItem(unit, _a = {}) {
         },
     });
     const row = xnew.nest(Object.assign({ tag: 'div', className: `${css.item} ${className}`, style }, others));
-    box.register(value, row);
+    listbox.register(value, row);
     unit.on('click', ({ event }) => {
         event.stopPropagation();
-        box.choose(value);
+        listbox.choose(value);
     });
 }
 

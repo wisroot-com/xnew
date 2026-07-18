@@ -177,7 +177,8 @@ export function ListboxMenu(_unit: xnew.Unit,
 
 //----------------------------------------------------------------------------------------------------
 // ListboxItem — one option row of a Listbox; nests into the ListboxMenu it is created inside.
-// Leave the row empty to show the value as text, or nest custom content into it.
+// Pass row content as a trailing text (xnew(ListboxItem, { value }, 'label')) or an inline function;
+// leave it empty to fall back to the value as text (filled by Listbox.fill() on open).
 //----------------------------------------------------------------------------------------------------
 
 export function ListboxItem(unit: xnew.Unit,

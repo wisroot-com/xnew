@@ -50,6 +50,10 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   Equivalent to `xnew((unit) => { xnew.extend(Base, props); … })`: `Base` is extended first,
   then the `ExComponent` runs on the same unit; both receive `props`. Defines from both merge
   onto the unit.
+- `xnew(Base, props?, 'text')` — a **trailing string/number after a component** is an
+  `ExComponent` too: it becomes a component that sets the unit's current element `textContent`
+  (same wrapper as the base-position `xnew(target, 'text')` form). Runs after `Base`, so it
+  writes into whatever element `Base`'s body ended on (e.g. `ListboxItem`'s row).
 - **Init-only helpers** (throw if called after `invoked`, i.e. outside the
   synchronous body or in a later callback): `xnew.nest`, `xnew.extend`,
   `sync.server`, `sync.client`, `sync.register`, `sync.state`.

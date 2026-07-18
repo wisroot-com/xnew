@@ -86,4 +86,15 @@ describe('xnew(Base, props?, body)', () => {
         expect(unit.tag()).toBe('base');
         expect(unit.where()).toBe('section');
     });
+
+    it('treats a trailing string/number as text set on the element', () => {
+        function Base(_: Unit) { return { tag() { return 'base'; } }; }
+
+        const withProps = xnew('<div>', Base, { key: 'k' }, 'hello') as any;
+        expect(withProps.tag()).toBe('base');
+        expect(withProps.element.textContent).toBe('hello');
+
+        const noProps = xnew('<div>', Base, 42) as any;
+        expect(noProps.element.textContent).toBe('42');
+    });
 });
