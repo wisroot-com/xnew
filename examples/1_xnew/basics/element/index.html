@@ -115,11 +115,11 @@
       // (after the menu, so its collapse box wraps the rows) rides the same box.gate to animate in step
       xnew(xbasics.Listbox, { value: 'banana', gate: { open: false, duration: 200 }, style: 'border-radius: 9999px;' }, (listbox) => {
         xnew(xicons.ChevronUpDown, { className: 'flex-none size-[0.9em]' });
-        xnew(xbasics.ListboxMenu, { className: 'rounded' }, (menu) => {
+        xnew(xbasics.ListboxMenu, { className: 'border-green-700' }, (menu) => {
           xnew.extend(xbasics.Accordion, { gate: listbox.gate });
           [{ value: 'apple', icon: xicons.Heart }, { value: 'banana', icon: xicons.Bolt }, { value: 'cherry', icon: xicons.Fire }].forEach(({ value, icon }) => {
             xnew(xbasics.ListboxItem, { value }, (item) => {
-              xnew(icon, { style: 'flex: none; width: 1em; height: 1em; margin-right: 0.5em;' });
+              xnew(icon, { className: 'flex-none size-5 mr-2' });
               xnew('<span style="font-style: italic;">', value);
             });
           });
