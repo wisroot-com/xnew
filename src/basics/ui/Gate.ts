@@ -33,6 +33,16 @@ export function Gate(unit: xnew.Unit,
         get value() {
             return value;
         },
+        // settled 'opened'/'closed', or 'opening'/'closing' while a transition is in flight
+        get state() {
+            if (value >= 1.0) {
+                return 'opened';
+            } else if (value <= 0.0) {
+                return 'closed';
+            } else {
+                return sign > 0 ? 'opening' : 'closing';
+            }
+        },
         toggle() {
             animate(sign < 0 ? +1 : -1);
         },
