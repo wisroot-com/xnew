@@ -279,13 +279,10 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, 
     [key: string]: any;
 }): void;
 
-declare function InputCheckbox(unit: xnew.Unit, { value, className, style, attributes, ...others }?: {
+declare function InputCheckbox(unit: xnew.Unit, { value, className, style, ...others }?: {
     value?: boolean;
     className?: string;
     style?: string;
-    attributes?: {
-        frame?: ElementAttributes;
-    };
     [key: string]: any;
 }): void;
 

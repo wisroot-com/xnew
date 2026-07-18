@@ -1630,8 +1630,7 @@ function InputRange(unit, _a = {}) {
 }
 
 function InputCheckbox(unit, _a = {}) {
-    var _b, _c, _d;
-    var { value = false, className = '', style = '', attributes = {} } = _a, others = __rest(_a, ["value", "className", "style", "attributes"]);
+    var { value = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css({
         container: {
             layer: 'base',
@@ -1639,14 +1638,8 @@ function InputCheckbox(unit, _a = {}) {
                 display: inline-block;
                 width: 1.5em; height: 1.5em; margin: 0.125em;
                 position: relative;
-            `,
-        },
-        frame: {
-            layer: 'base',
-            body: `
-                position: absolute; inset: 0;
                 border: 1px solid currentColor; border-radius: 0.25em;
-                [data-checked] > & { background: color-mix(in srgb, currentColor 20%, transparent); }
+                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
         svg: {
@@ -1667,59 +1660,82 @@ function InputCheckbox(unit, _a = {}) {
             `,
         },
     });
-    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    xnew({ tag: 'div', className: `${css.frame} ${(_c = (_b = attributes.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = attributes.frame) === null || _d === void 0 ? void 0 : _d.style });
-    xnew((unit) => {
-        xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg });
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg }, (unit) => {
         xnew('<path d="M2 6 5 9 10 3"/>');
     });
-    update(value);
+    unit.element.toggleAttribute('data-checked', value);
     xnew.nest(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
     unit.on('input', ({ value }) => {
-        update(value);
+        unit.element.toggleAttribute('data-checked', value);
     });
-    function update(checked) {
-        container.toggleAttribute('data-checked', checked);
-    }
 }
 
 function InputText(unit, _a = {}) {
     var { value, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css({
+        container: {
+            layer: 'base',
+            body: `
+                display: inline-flex; align-items: center;
+                box-sizing: border-box;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+                margin: 0.125em 0; padding: 0 0.5em;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
+            `,
+        },
         input: {
             layer: 'base',
             body: `
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
-                margin: 0.125em 0; padding: 0 0.5em;
+                flex: 1 1 0; min-width: 0; height: 100%;
                 background: transparent; color: inherit; font: inherit;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                outline: none;
-                &:focus { background: color-mix(in srgb, currentColor 20%, transparent); }
+                border: none; outline: none;
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'input', type: 'text', value, className: `${css.input} ${className}`, style }, others));
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    const input = xnew.nest(Object.assign({ tag: 'input', type: 'text', value, className: css.input }, others));
+    return {
+        get input() {
+            return input;
+        },
+    };
 }
 
 function InputNumber(unit, _a = {}) {
     var { value, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css({
+        container: {
+            layer: 'base',
+            body: `
+                display: inline-flex; align-items: center;
+                box-sizing: border-box;
+                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+                margin: 0.125em 0; padding: 0 0.5em;
+                border: 1px solid currentColor; border-radius: 0.25em;
+                &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
+            `,
+        },
         input: {
             layer: 'base',
             body: `
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
-                margin: 0.125em 0; padding: 0 0.5em;
+                flex: 1 1 0; min-width: 0; height: 100%;
                 text-align: center;
                 background: transparent; color: inherit; font: inherit;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                outline: none;
+                border: none; outline: none;
                 -moz-appearance: textfield; appearance: textfield;
                 &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
-                &:focus { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
     });
-    xnew.nest(Object.assign({ tag: 'input', type: 'number', value, className: `${css.input} ${className}`, style }, others));
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    const input = xnew.nest(Object.assign({ tag: 'input', type: 'number', value, className: css.input }, others));
+    return {
+        get input() {
+            return input;
+        },
+    };
 }
 
 function InputSwitch(unit, _a = {}) {
@@ -1792,7 +1808,8 @@ function InputRadio(unit, _a = {}) {
         input: {
             layer: 'base',
             body: `
-                width: 0; height: 0; margin: 0;
+                position: absolute; inset: 0;
+                margin: 0;
                 opacity: 0;
             `,
         },

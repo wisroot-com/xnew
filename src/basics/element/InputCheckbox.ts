@@ -5,29 +5,21 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { ElementAttributes } from './attributes';
 
 export function InputCheckbox(unit: xnew.Unit,
-    { value = false, className = '', style = '', attributes = {}, ...others }:
-    { value?: boolean, className?: string, style?: string, attributes?: { frame?: ElementAttributes }, [key: string]: any } = {}
+    { value = false, className = '', style = '', ...others }:
+    { value?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css({
-        // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        // the box itself carries the framed look; the checked tint is keyed on data-checked
         container: {
             layer: 'base',
             body: `
                 display: inline-block;
                 width: 1.5em; height: 1.5em; margin: 0.125em;
                 position: relative;
-            `,
-        },
-        // full-extent overlay carrying the framed look; the checked state is on the container
-        frame: {
-            layer: 'base',
-            body: `
-                position: absolute; inset: 0;
                 border: 1px solid currentColor; border-radius: 0.25em;
-                [data-checked] > & { background: color-mix(in srgb, currentColor 20%, transparent); }
+                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
         svg: {
@@ -49,24 +41,17 @@ export function InputCheckbox(unit: xnew.Unit,
         },
     });
 
-    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
 
-    xnew({ tag: 'div', className: `${css.frame} ${attributes.frame?.className ?? ''}`, style: attributes.frame?.style });
-
-    xnew((unit: xnew.Unit) => {
-        xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg });
+    xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg }, (unit: xnew.Unit) => {
         xnew('<path d="M2 6 5 9 10 3"/>');
     });
 
-    update(value);
+    unit.element.toggleAttribute('data-checked', value);
 
     // hidden native input for interaction
     xnew.nest({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
     unit.on('input', ({ value }: { value: boolean }) => {
-        update(value);
+        unit.element.toggleAttribute('data-checked', value);
     });
-
-    function update(checked: boolean) {
-        container.toggleAttribute('data-checked', checked);
-    }
 }
