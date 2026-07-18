@@ -1680,24 +1680,27 @@ function InputText(unit, _a = {}) {
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
                 margin: 0.125em 0; padding: 0 0.5em;
                 border: 1px solid currentColor; border-radius: 0.25em;
+                cursor: text;
                 &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
         input: {
             layer: 'base',
             body: `
-                flex: 1 1 0; min-width: 0; height: 100%;
+                width: 100%; height: 100%;
+                margin: 0; padding: 0;
                 background: transparent; color: inherit; font: inherit;
                 border: none; outline: none;
             `,
         },
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const input = xnew.nest(Object.assign({ tag: 'input', type: 'text', value, className: css.input }, others));
+    const input = xnew(Object.assign({ tag: 'input', type: 'text', value, className: css.input }, others));
+    unit.on('click', () => input.element.focus());
     return {
-        get input() {
-            return input;
-        },
+        get value() {
+            return input.element.value;
+        }
     };
 }
 
@@ -1712,13 +1715,15 @@ function InputNumber(unit, _a = {}) {
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
                 margin: 0.125em 0; padding: 0 0.5em;
                 border: 1px solid currentColor; border-radius: 0.25em;
+                cursor: text;
                 &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
         input: {
             layer: 'base',
             body: `
-                flex: 1 1 0; min-width: 0; height: 100%;
+                width: 100%; height: 100%;
+                margin: 0; padding: 0;
                 text-align: center;
                 background: transparent; color: inherit; font: inherit;
                 border: none; outline: none;
@@ -1728,11 +1733,12 @@ function InputNumber(unit, _a = {}) {
         },
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const input = xnew.nest(Object.assign({ tag: 'input', type: 'number', value, className: css.input }, others));
+    const input = xnew(Object.assign({ tag: 'input', type: 'number', value, className: css.input }, others));
+    unit.on('click', () => input.element.focus());
     return {
-        get input() {
-            return input;
-        },
+        get value() {
+            return parseFloat(input.element.value);
+        }
     };
 }
 
@@ -1806,8 +1812,7 @@ function InputRadio(unit, _a = {}) {
         input: {
             layer: 'base',
             body: `
-                position: absolute; inset: 0;
-                margin: 0;
+                width: 0; height: 0; margin: 0;
                 opacity: 0;
             `,
         },
