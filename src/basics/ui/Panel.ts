@@ -9,7 +9,7 @@ import { xicons } from '../../icons/xicons';
 import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
 import { InputCheckbox } from '../element/InputCheckbox';
-import { Listbox, ListMenu, ListItem } from '../element/Listbox';
+import { Listbox, ListboxMenu, ListboxItem } from '../element/Listbox';
 import { Accordion } from './Accordion';
 
 // nested is internal: group() marks its inner Panel so only the root creates the scroll container
@@ -104,7 +104,7 @@ function List(unit: xnew.Unit, { name = '', value, items = [], ...others }: { na
 
     // Listbox extends onto this unit (so its '-change' fires here); the floating list nests into its field
     xnew.extend(Listbox, { value, ...others, style: 'max-width: 60%; height: 2em;' });
-    xnew(ListMenu, () => {
-        items.forEach((item: string) => xnew(ListItem, { value: item }));
+    xnew(ListboxMenu, () => {
+        items.forEach((item: string) => xnew(ListboxItem, { value: item }));
     });
 }

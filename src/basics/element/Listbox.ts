@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------
-// Listbox — a styleable select: Listbox (framed field + value) + ListMenu (floating list) + ListItem (row)
+// Listbox — a styleable select: Listbox (framed field + value) + ListboxMenu (floating list) + ListboxItem (row)
 // The native <select> popup can't be styled, so selection is held in JS (no native control at all).
 // Hosts read the current value with `.value` and observe changes with `.on('-change', ({ value }) => …)`.
 //----------------------------------------------------------------------------------------------------
@@ -41,26 +41,26 @@ export function Listbox(unit: xnew.Unit,
         },
     });
 
-    // filled by ListItem.register(); rows persist in the menu and mark the current value with data-checked
+    // filled by ListboxItem.register(); rows persist in the menu and mark the current value with data-checked
     const items: { value: string, row: HTMLElement }[] = [];
     const hasInitial = value !== undefined;
     let selected = value ?? '';
 
-    // the body stays on the field, so ListMenu / ListItem nest into it and unit.on('click') covers the whole control
+    // the body stays on the field, so ListboxMenu / ListboxItem nest into it and unit.on('click') covers the whole control
     const field = xnew.nest({ tag: 'div', className: `${css.field} ${className}`, style, ...others });
 
     const label = xnew({ tag: 'div', className: `${css.label} ${designs.label?.className ?? ''}`, style: designs.label?.style }, '');
 
     xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em; margin-right: 0.5em;' });
 
-    // clicking anywhere on the field toggles the list (ListItem stops its own click from reaching here)
+    // clicking anywhere on the field toggles the list (ListboxItem stops its own click from reaching here)
     unit.on('click', () => xnew.emit('-toggle'));
 
     return {
         get value() {
             return selected;
         },
-        // called by each ListItem: records its row and, if it is the current selection, shows it.
+        // called by each ListboxItem: records its row and, if it is the current selection, shows it.
         // the first item claims the default when no initial value was given
         register(itemValue: string, row: HTMLElement) {
             items.push({ value: itemValue, row });
@@ -81,7 +81,7 @@ export function Listbox(unit: xnew.Unit,
                 }
             }
         },
-        // a ListItem was clicked: update the value, notify hosts with '-change', and close the list
+        // a ListboxItem was clicked: update the value, notify hosts with '-change', and close the list
         choose(itemValue: string) {
             selected = itemValue;
             label.element.textContent = itemValue;
@@ -95,11 +95,11 @@ export function Listbox(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListMenu — the floating option list, built on Overlay (backdrop + anchor tracking + outside-click + fade).
+// ListboxMenu — the floating option list, built on Overlay (backdrop + anchor tracking + outside-click + fade).
 // Follows the Listbox field's '-toggle' / '-close'; reuses a shared Gate (e.g. an Accordion's) or makes its own.
 //----------------------------------------------------------------------------------------------------
 
-export function ListMenu(_unit: xnew.Unit,
+export function ListboxMenu(_unit: xnew.Unit,
     { gate, className = '', style = '', ...others }:
     { gate?: xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
@@ -124,7 +124,7 @@ export function ListMenu(_unit: xnew.Unit,
     // Accordion) is reused; otherwise Overlay makes its own — instant (duration 0), starting closed.
     const overlay = xnew.extend(Overlay, { gate: gate ?? { open: false, duration: 0 }, anchor: field });
 
-    // element now ends on Overlay's anchor box; nest the list into it so ListItem rows nest into the list
+    // element now ends on Overlay's anchor box; nest the list into it so ListboxItem rows nest into the list
     const menu = xnew.nest({ tag: 'div', className: `${css.menu} ${className}`, style, ...others }) as HTMLElement;
 
     let opened = false;
@@ -172,11 +172,11 @@ export function ListMenu(_unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListItem — one option row of a Listbox; nests into the ListMenu it is created inside.
+// ListboxItem — one option row of a Listbox; nests into the ListboxMenu it is created inside.
 // Leave the row empty to show the value as text, or nest custom content into it.
 //----------------------------------------------------------------------------------------------------
 
-export function ListItem(unit: xnew.Unit,
+export function ListboxItem(unit: xnew.Unit,
     { value = '', className = '', style = '', ...others }:
     { value?: string, className?: string, style?: string, [key: string]: any } = {}
 ) {

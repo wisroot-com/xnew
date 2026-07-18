@@ -2303,7 +2303,7 @@ function Listbox(unit, _a = {}) {
         },
     };
 }
-function ListMenu(_unit, _a = {}) {
+function ListboxMenu(_unit, _a = {}) {
     var { gate, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
     const box = xnew.context(Listbox);
     const field = box.element;
@@ -2353,7 +2353,7 @@ function ListMenu(_unit, _a = {}) {
         field.toggleAttribute('data-open', false);
     });
 }
-function ListItem(unit, _a = {}) {
+function ListboxItem(unit, _a = {}) {
     var { value = '', className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const box = xnew.context(Listbox);
     const css = xnew.css({
@@ -2954,8 +2954,8 @@ function List(unit, _a) {
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
     xnew.extend(Listbox, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%; height: 2em;' }));
-    xnew(ListMenu, () => {
-        items.forEach((item) => xnew(ListItem, { value: item }));
+    xnew(ListboxMenu, () => {
+        items.forEach((item) => xnew(ListboxItem, { value: item }));
     });
 }
 
@@ -3038,8 +3038,8 @@ const xbasics = {
     InputSwitch,
     InputRadio,
     Listbox,
-    ListMenu,
-    ListItem,
+    ListboxMenu,
+    ListboxItem,
     AudioTrack,
     Synthesizer,
     Volume,

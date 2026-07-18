@@ -104,20 +104,20 @@
       xnew('<div class="mb-1">', 'Listbox');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.Listbox, (box) => {
-        xnew(xbasics.ListMenu, () => {
-          xnew(xbasics.ListItem, { value: 'apple' });
-          xnew(xbasics.ListItem, { value: 'banana' });
-          xnew(xbasics.ListItem, { value: 'cherry' });
+        xnew(xbasics.ListboxMenu, () => {
+          xnew(xbasics.ListboxItem, { value: 'apple' });
+          xnew(xbasics.ListboxItem, { value: 'banana' });
+          xnew(xbasics.ListboxItem, { value: 'cherry' });
         });
       });
-      // one shared Gate drives the menu's open / close and the Accordion's slide: ListMenu opens /
+      // one shared Gate drives the menu's open / close and the Accordion's slide: ListboxMenu opens /
       // closes it, Accordion (after the menu, so its collapse box wraps the rows) animates it
       xnew(xbasics.Listbox, { value: 'banana', style: 'border-radius: 9999px;' }, (box) => {
         const gate = xnew(xbasics.Gate, { open: false, duration: 200 });
-        xnew(xbasics.ListMenu, { gate }, (menu) => {
+        xnew(xbasics.ListboxMenu, { gate }, (menu) => {
           xnew.extend(xbasics.Accordion, { gate });
           ['apple', 'banana', 'cherry'].forEach((fruit) => {
-            xnew(xbasics.ListItem, { value: fruit }, (item) => {
+            xnew(xbasics.ListboxItem, { value: fruit }, (item) => {
               xnew(xicons.Star, { style: 'flex: none; width: 1em; height: 1em; margin-right: 0.5em;' });
               xnew('<span style="font-style: italic;">', fruit);
             });
