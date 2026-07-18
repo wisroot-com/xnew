@@ -45,6 +45,11 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   that DOM target. A tag string creates and nests the element.
 - `xnew(target, 'text')` / `xnew('text')` — sets `textContent` (safe for user input).
 - `xnew(target, (unit) => { … })` — an inline component function.
+- `xnew(Base, props?, (unit, props) => { … })` — a **trailing function after a component**
+  is an **extension component** (`ExComponent`) extended on top of `Base` (props optional).
+  Equivalent to `xnew((unit) => { xnew.extend(Base, props); … })`: `Base` is extended first,
+  then the `ExComponent` runs on the same unit; both receive `props`. Defines from both merge
+  onto the unit.
 - **Init-only helpers** (throw if called after `invoked`, i.e. outside the
   synchronous body or in a later callback): `xnew.nest`, `xnew.extend`,
   `sync.server`, `sync.client`, `sync.register`, `sync.state`.

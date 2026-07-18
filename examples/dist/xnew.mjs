@@ -516,8 +516,15 @@ class Unit {
         else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
             Unit.nest(unit, args.shift());
         }
-        const Component = args[0];
-        const props = args[1];
+        const Component = args.shift();
+        let props;
+        if (typeof args[0] === 'object') {
+            props = args.shift();
+        }
+        let ExComponent;
+        if (typeof args[0] === 'function') {
+            ExComponent = args.shift();
+        }
         let baseComponent;
         if (typeof Component === 'function') {
             baseComponent = Component;
@@ -532,6 +539,9 @@ class Unit {
         const backup = Unit.currentUnit;
         Unit.currentUnit = unit;
         Unit.extend(unit, baseComponent, props);
+        if (ExComponent !== undefined) {
+            Unit.extend(unit, ExComponent, props);
+        }
         if (unit._.phase === 'invoked') {
             unit._.phase = 'initialized';
         }

@@ -103,8 +103,19 @@ export class Unit {
             Unit.nest(unit, args.shift() as string | DomElementDef);
         }
 
-        const Component = args[0] as Function | string | number | undefined;
-        const props = args[1] as Object | undefined;
+        // xnew(Base, props?, ExComponent?): pull off the component, then an optional props
+        // object, then a trailing extension component extended on top of Base.
+        const Component = args.shift() as Function | string | number | undefined;
+
+        let props: Object | undefined;
+        if (typeof args[0] === 'object') {
+            props = args.shift() as Object | undefined;
+        }
+
+        let ExComponent: Function | undefined;
+        if (typeof args[0] === 'function') {
+            ExComponent = args.shift() as Function;
+        }
 
         let baseComponent: Function;
         if (typeof Component === 'function') {
@@ -121,6 +132,9 @@ export class Unit {
         Unit.currentUnit = unit;
 
         Unit.extend(unit, baseComponent, props);
+        if (ExComponent !== undefined) {
+            Unit.extend(unit, ExComponent, props);
+        }
 
         if (unit._.phase === 'invoked') {
             unit._.phase = 'initialized';
