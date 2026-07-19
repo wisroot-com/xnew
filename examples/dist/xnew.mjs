@@ -1498,7 +1498,7 @@ function InputRange(unit, _a = {}) {
         container: `
             display: inline-block;
             position: relative; margin: 0.125em;
-            border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 40%, transparent);
             border-radius: 0.25em;
         `,
         horizontal: `
@@ -1541,23 +1541,22 @@ function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false
             background: color-mix(in srgb, currentColor 20%, transparent);
         `,
         horizontal: `
-            top: -1px; left: -1px; bottom: -1px;
+            top: 0; left: 0; bottom: 0;
             transition: width 0.05s;
         `,
         vertical: `
-            left: -1px; right: -1px; bottom: -1px;
+            left: 0; right: 0; bottom: 0;
             transition: height 0.05s;
         `,
     });
     const meter = xnew({ tag: 'div', className: `${css.meter} ${vertical ? css.vertical : css.horizontal}` });
     function update(v) {
-        const fraction = (v - min) / (max - min);
-        const length = `calc(${fraction * 100}% + ${fraction * 2}px)`;
+        const percent = `${(v - min) / (max - min) * 100}%`;
         if (vertical) {
-            meter.element.style.height = length;
+            meter.element.style.height = percent;
         }
         else {
-            meter.element.style.width = length;
+            meter.element.style.width = percent;
         }
     }
     update(value);

@@ -13,13 +13,14 @@ export function InputRange(unit: xnew.Unit,
 ) {
 
     const css = xnew.css('base', {
-        // the container carries the faint frame ring; the absolute meter overlaps it from the padding box
-        // via a -1px offset on its pinned sides. The size prelude lives on the orientation variant so the
-        // long axis carries the margin-box cap
+        // the container carries the faint frame ring as an inset box-shadow (not a border) so it costs no
+        // box-model width — the padding box then equals the border box, and the absolute meter shares the
+        // container's coordinate system (clean inset: 0 / width: f, no -1px / +2px). The size prelude lives
+        // on the orientation variant so the long axis carries the margin-box cap
         container: `
             display: inline-block;
             position: relative; margin: 0.125em;
-            border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 40%, transparent);
             border-radius: 0.25em;
         `,
         // horizontal: 10em wide bar; max-width: stretch caps the margin box so a caller margin never overflows
@@ -76,9 +77,9 @@ function InputRangeMeter(unit: xnew.Unit,
     { value?: number, min?: number, max?: number, vertical?: boolean } = {}
 ) {
     const css = xnew.css('base', {
-        // value-driven meter; the growth axis (width / height) is set per orientation. The pinned sides sit
-        // at -1px so the meter border rides on the container frame ring instead of insetting 1px within it
-        // (the meter's containing block is the container padding box, inside the 1px frame border)
+        // value-driven meter; the growth axis (width / height) is set per orientation. The container frame is
+        // an inset box-shadow (no border), so the padding box equals the border box — the meter pins flush at
+        // 0 and its border coincides with the frame ring, and a full value fills exactly 100%
         meter: `
             position: absolute;
             box-sizing: border-box;
@@ -86,11 +87,11 @@ function InputRangeMeter(unit: xnew.Unit,
             background: color-mix(in srgb, currentColor 20%, transparent);
         `,
         horizontal: `
-            top: -1px; left: -1px; bottom: -1px;
+            top: 0; left: 0; bottom: 0;
             transition: width 0.05s;
         `,
         vertical: `
-            left: -1px; right: -1px; bottom: -1px;
+            left: 0; right: 0; bottom: 0;
             transition: height 0.05s;
         `,
     });
@@ -98,14 +99,11 @@ function InputRangeMeter(unit: xnew.Unit,
     const meter = xnew({ tag: 'div', className: `${css.meter} ${vertical ? css.vertical : css.horizontal}` });
 
     function update(v: number) {
-        // +2px at full (scaled by fraction) so the meter's leading border reaches -1px past the padding
-        // box and overlaps the container frame ring, matching the always-pinned sides
-        const fraction = (v - min) / (max - min);
-        const length = `calc(${fraction * 100}% + ${fraction * 2}px)`;
+        const percent = `${(v - min) / (max - min) * 100}%`;
         if (vertical) {
-            meter.element.style.height = length;
+            meter.element.style.height = percent;
         } else {
-            meter.element.style.width = length;
+            meter.element.style.width = percent;
         }
     }
     update(value);

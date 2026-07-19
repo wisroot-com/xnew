@@ -316,7 +316,12 @@ the rule, then one line of why.
   on `&[data-checked]` (self) instead of `[data-checked] > &` (child overlay). Caller `className` / `style`
   now style the ring; the `attributes.frame` part is dropped. Sibling parts (svg / meter / status) still
   react via `[data-checked] > &` since they remain children of the container. (This supersedes the older
-  "frame lives on an inner part" guidance in §4 for these components.)
+  "frame lives on an inner part" guidance in §4 for these components.) InputRange draws its container frame
+  as an **inset `box-shadow`** rather than a `border` (user decision, 2026-07): the shadow costs no
+  box-model width, so the padding box equals the border box and the absolute meter shares the container's
+  coordinate system — the meter pins flush at `0` (no `-1px`) and a full value fills exactly `100%` (no
+  `+2px` correction), its leading border landing on the frame ring. A caller drops the frame with
+  `style: 'box-shadow: none;'` (not `border: none;`).
 
 - **To split a multi-part basics component, mount each display sub-component on the SHARED container and
   let it listen to the bubbling native event — don't thread a value-setter define across the boundary.**

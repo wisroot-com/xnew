@@ -45,14 +45,14 @@ describe('basics InputRange', () => {
     it('sets the initial meter width from value / min / max', () => {
         const unit = xnew(InputRange, { value: 30, min: 10, max: 50 });
 
-        expect(meterOf(unit).style.width).toBe('calc(50% + 1px)');
+        expect(meterOf(unit).style.width).toBe('50%');
     });
 
     it('defaults value to min (empty meter)', () => {
         const unit = xnew(InputRange, { min: 20, max: 100 });
 
         expect(inputOf(unit).value).toBe('20');
-        expect(meterOf(unit).style.width).toBe('calc(0% + 0px)');
+        expect(meterOf(unit).style.width).toBe('0%');
     });
 
     it('updates the meter width on input', () => {
@@ -63,7 +63,7 @@ describe('basics InputRange', () => {
         input.value = '75';
         input.dispatchEvent(new Event('input', { bubbles: true }));
 
-        expect(meterOf(unit).style.width).toBe('calc(75% + 1.5px)');
+        expect(meterOf(unit).style.width).toBe('75%');
     });
 
     it('shows the current value in the status readout', () => {
@@ -95,7 +95,7 @@ describe('basics InputRange', () => {
         const unit = xnew(InputRange, { value: 50 });
         const meter = meterOf(unit);
 
-        expect(meter.style.width).toBe('calc(50% + 1px)');
+        expect(meter.style.width).toBe('50%');
         expect(meter.style.height).toBe('');
     });
 
@@ -103,7 +103,7 @@ describe('basics InputRange', () => {
         const unit = xnew(InputRange, { value: 50, vertical: true });
         const meter = meterOf(unit);
 
-        expect(meter.style.height).toBe('calc(50% + 1px)');
+        expect(meter.style.height).toBe('50%');
         expect(meter.style.width).toBe('');
     });
 
@@ -115,7 +115,7 @@ describe('basics InputRange', () => {
         input.value = '75';
         input.dispatchEvent(new Event('input', { bubbles: true }));
 
-        expect(meterOf(unit).style.height).toBe('calc(75% + 1.5px)');
+        expect(meterOf(unit).style.height).toBe('75%');
         expect(statusOf(unit).textContent).toBe('75');
     });
 
@@ -132,7 +132,7 @@ describe('basics InputRange', () => {
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
         expect(containerOf(unit).className).toMatch(/xnew\d+-container/);
-        expect(styleText).toContain('border: 1px solid color-mix(in srgb, currentColor 40%, transparent);');
+        expect(styleText).toContain('box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 40%, transparent);');
     });
 
     it('applies className and style to the container element', () => {
