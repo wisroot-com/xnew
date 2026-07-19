@@ -1,33 +1,25 @@
 //----------------------------------------------------------------------------------------------------
 // DPad — virtual game-pad directional pad with a quantized 4 or 8 way vector
 // Translates pointer drags into a quantized vector (x / y in {-1, 0, 1}) emitted as events;
-// `diagonal: false` restricts to 4 directions.
+// `diagonal: false` restricts to 4 directions. The container is the <svg> itself.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { ElementAttributes } from '../element/attributes';
 
 export function DPad(unit: xnew.Unit,
-    { diagonal = true, className = '', style = '', attributes = {} }:
-    { diagonal?: boolean, className?: string, style?: string, attributes?: { svg?: ElementAttributes } } = {}
+    { diagonal = true, className = '', style = '' }:
+    { diagonal?: boolean, className?: string, style?: string } = {}
 ) {
     const css = xnew.css('base', {
         container: `
-                position: relative;
-                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
-            `,
-        svg: `
-                position: absolute; inset: 0; box-sizing: border-box; display: block; width: 100%; height: 100%;
-                stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
-                fill: #FFF; fill-opacity: 0.8;
-            `,
+            display: block; box-sizing: border-box;
+            cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
+            stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+            fill: #FFF; fill-opacity: 0.8;
+        `,
     });
 
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-
-    // each layer disables the irrelevant paint inline; the caller's attributes.svg comes later, so it wins
-    const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${attributes.svg?.className ?? ''}`, style: `stroke: none; ${attributes.svg?.style ?? ''}` };
-    const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${attributes.svg?.className ?? ''}`, style: `fill: none; ${attributes.svg?.style ?? ''}` };
+    xnew.nest({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.container} ${className}`, style });
 
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
@@ -36,15 +28,16 @@ export function DPad(unit: xnew.Unit,
         '<polygon points="32 32 41 23 60 23 61 24 61 40 60 41 41 41">'
     ];
 
-    const targets = polygons.map((polygon) => {
-        return xnew((unit: xnew.Unit) => {
-            xnew.nest(fillSvg);
-            xnew(polygon);
-        });
+    // fill quadrants (stroke disabled); each highlights independently
+    let targets: xnew.Unit[] = [];
+    xnew(() => {
+        xnew.nest('<g style="stroke: none;">');
+        targets = polygons.map((polygon) => xnew(polygon));
     });
 
-    xnew((unit: xnew.Unit) => {
-        xnew.nest(strokeSvg);
+    // stroke outline plus center arrows (fill disabled)
+    xnew(() => {
+        xnew.nest('<g style="fill: none;">');
         xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
         xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
         xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');

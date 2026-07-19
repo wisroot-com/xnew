@@ -1493,78 +1493,62 @@ function SVGText(unit, _a = {}) {
 }
 
 function InputRange(unit, _a = {}) {
-    var { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '', attributes = {} } = _a, others = __rest(_a, ["value", "min", "max", "step", "vertical", "className", "style", "attributes"]);
+    var { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "min", "max", "step", "vertical", "className", "style"]);
     const css = xnew.css('base', {
         container: `
-                display: inline-block;
-                position: relative; margin: 0.125em;
-                border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
-                border-radius: 0.25em;
-            `,
+            display: inline-block;
+            position: relative; margin: 0.125em;
+            border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+            border-radius: 0.25em;
+        `,
         horizontal: `
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
-            `,
+            width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+        `,
         vertical: `
-                width: 1.8em; height: 10em; max-height: -webkit-fill-available; max-height: -moz-available; max-height: stretch;
-            `,
+            width: 1.8em; height: 10em; max-height: -webkit-fill-available; max-height: -moz-available; max-height: stretch;
+        `,
         input: `
-                position: absolute; inset: 0; width: 100%; height: 100%;
-                opacity: 0; cursor: pointer; user-select: none; margin: 0;
-                appearance: none;
-            `,
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            opacity: 0; cursor: pointer; user-select: none; margin: 0;
+            appearance: none;
+        `,
         inputHorizontal: `
-                &::-webkit-slider-thumb { appearance: none; width: 0; }
-                &::-moz-range-thumb { width: 0; border: none; }
-            `,
+            &::-webkit-slider-thumb { appearance: none; width: 0; }
+            &::-moz-range-thumb { width: 0; border: none; }
+        `,
         inputVertical: `
-                writing-mode: vertical-lr; direction: rtl;
-                &::-webkit-slider-thumb { appearance: none; height: 0; }
-                &::-moz-range-thumb { height: 0; border: none; }
-            `,
+            writing-mode: vertical-lr; direction: rtl;
+            &::-webkit-slider-thumb { appearance: none; height: 0; }
+            &::-moz-range-thumb { height: 0; border: none; }
+        `,
     });
     const sizeClass = vertical ? css.vertical : css.horizontal;
     xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
     const initial = value !== null && value !== void 0 ? value : min;
-    xnew(InputRangeMeter, { value: initial, min, max, vertical, attributes });
+    xnew(InputRangeMeter, { value: initial, min, max, vertical });
+    xnew(InputRangeStatus, { value: initial, vertical });
     const inputClass = vertical ? css.inputVertical : css.inputHorizontal;
     xnew.nest(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: `${css.input} ${inputClass}` }, others));
 }
-function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false, attributes = {} } = {}) {
-    var _a, _b, _c, _d, _e, _f;
+function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false } = {}) {
     const css = xnew.css('base', {
         meter: `
-                position: absolute;
-                box-sizing: border-box;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                background: color-mix(in srgb, currentColor 20%, transparent);
-            `,
+            position: absolute;
+            box-sizing: border-box;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            background: color-mix(in srgb, currentColor 20%, transparent);
+        `,
         meterHorizontal: `
-                top: -1px; left: -1px; bottom: -1px;
-                transition: width 0.05s;
-            `,
+            top: -1px; left: -1px; bottom: -1px;
+            transition: width 0.05s;
+        `,
         meterVertical: `
-                left: -1px; right: -1px; bottom: -1px;
-                transition: height 0.05s;
-            `,
-        status: `
-                position: absolute; inset: 0;
-                box-sizing: border-box;
-                display: flex;
-                pointer-events: none;
-            `,
-        statusHorizontal: `
-                padding: 0 0.5em;
-                justify-content: flex-end; align-items: center;
-            `,
-        statusVertical: `
-                padding: 0.5em 0;
-                justify-content: center; align-items: flex-end;
-            `,
+            left: -1px; right: -1px; bottom: -1px;
+            transition: height 0.05s;
+        `,
     });
     const meterClass = vertical ? css.meterVertical : css.meterHorizontal;
-    const meter = xnew({ tag: 'div', className: `${css.meter} ${meterClass} ${(_b = (_a = attributes.meter) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = attributes.meter) === null || _c === void 0 ? void 0 : _c.style });
-    const statusClass = vertical ? css.statusVertical : css.statusHorizontal;
-    const status = xnew({ tag: 'div', className: `${css.status} ${statusClass} ${(_e = (_d = attributes.status) === null || _d === void 0 ? void 0 : _d.className) !== null && _e !== void 0 ? _e : ''}`, style: (_f = attributes.status) === null || _f === void 0 ? void 0 : _f.style });
+    const meter = xnew({ tag: 'div', className: `${css.meter} ${meterClass}` });
     function update(v) {
         const percent = `${(v - min) / (max - min) * 100}%`;
         if (vertical) {
@@ -1573,6 +1557,32 @@ function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false
         else {
             meter.element.style.width = percent;
         }
+    }
+    update(value);
+    unit.on('input', ({ value }) => {
+        update(value);
+    });
+}
+function InputRangeStatus(unit, { value = 0, vertical = false } = {}) {
+    const css = xnew.css('base', {
+        status: `
+            position: absolute; inset: 0;
+            box-sizing: border-box;
+            display: flex;
+            pointer-events: none;
+        `,
+        statusHorizontal: `
+            padding: 0 0.5em;
+            justify-content: flex-end; align-items: center;
+        `,
+        statusVertical: `
+            padding: 0.5em 0;
+            justify-content: center; align-items: flex-end;
+        `,
+    });
+    const statusClass = vertical ? css.statusVertical : css.statusHorizontal;
+    const status = xnew({ tag: 'div', className: `${css.status} ${statusClass}` });
+    function update(v) {
         status.element.textContent = String(v);
     }
     update(value);
@@ -2320,32 +2330,21 @@ function Accordion(unit, _a = {}) {
     };
 }
 
-function AnalogStick(unit, { className = '', style = '', attributes = {} } = {}) {
-    var _a, _b, _c;
+function AnalogStick(unit, { className = '', style = '' } = {}) {
     const css = xnew.css('base', {
         container: `
-                position: relative;
-                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
-            `,
-        svg: `
-                position: absolute; inset: 0; box-sizing: border-box; display: block; width: 100%; height: 100%;
-                stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
-                fill: #FFF; fill-opacity: 0.8;
-            `,
+            display: block; box-sizing: border-box;
+            cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
+            stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+            fill: #FFF; fill-opacity: 0.8;
+        `,
     });
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const svg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_b = (_a = attributes.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: (_c = attributes.svg) === null || _c === void 0 ? void 0 : _c.style };
-    xnew((unit) => {
-        xnew.nest(svg);
-        xnew('<polygon points="32  7 27 13 37 13">');
-        xnew('<polygon points="32 57 27 51 37 51">');
-        xnew('<polygon points=" 7 32 13 27 13 37">');
-        xnew('<polygon points="57 32 51 27 51 37">');
-    });
-    const target = xnew((unit) => {
-        xnew.nest(svg);
-        xnew('<circle cx="32" cy="32" r="14">');
-    });
+    xnew.nest({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.container} ${className}`, style });
+    xnew('<polygon points="32  7 27 13 37 13">');
+    xnew('<polygon points="32 57 27 51 37 51">');
+    xnew('<polygon points=" 7 32 13 27 13 37">');
+    xnew('<polygon points="57 32 51 27 51 37">');
+    const target = xnew('<circle cx="32" cy="32" r="14">');
     unit.on('dragstart dragmove', ({ type, position }) => {
         const size = unit.element.clientWidth;
         const x = position.x - size / 2;
@@ -2353,45 +2352,40 @@ function AnalogStick(unit, { className = '', style = '', attributes = {} } = {})
         const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
         const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
         const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-        Object.assign(target.element.style, { filter: 'brightness(80%)', left: `${vector.x * size / 4}px`, top: `${vector.y * size / 4}px` });
+        target.element.setAttribute('transform', `translate(${vector.x * 16} ${vector.y * 16})`);
+        target.element.style.filter = 'brightness(80%)';
         xnew.emit({ dragstart: '-down', dragmove: '-move' }[type], { vector });
     });
     unit.on('dragend', () => {
-        Object.assign(target.element.style, { filter: '', left: '0px', top: '0px' });
+        target.element.removeAttribute('transform');
+        target.element.style.filter = '';
         xnew.emit('-up', { vector: { x: 0, y: 0 } });
     });
 }
 
-function DPad(unit, { diagonal = true, className = '', style = '', attributes = {} } = {}) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+function DPad(unit, { diagonal = true, className = '', style = '' } = {}) {
     const css = xnew.css('base', {
         container: `
-                position: relative;
-                cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
-            `,
-        svg: `
-                position: absolute; inset: 0; box-sizing: border-box; display: block; width: 100%; height: 100%;
-                stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
-                fill: #FFF; fill-opacity: 0.8;
-            `,
+            display: block; box-sizing: border-box;
+            cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
+            stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+            fill: #FFF; fill-opacity: 0.8;
+        `,
     });
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const fillSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_b = (_a = attributes.svg) === null || _a === void 0 ? void 0 : _a.className) !== null && _b !== void 0 ? _b : ''}`, style: `stroke: none; ${(_d = (_c = attributes.svg) === null || _c === void 0 ? void 0 : _c.style) !== null && _d !== void 0 ? _d : ''}` };
-    const strokeSvg = { tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${(_f = (_e = attributes.svg) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: `fill: none; ${(_h = (_g = attributes.svg) === null || _g === void 0 ? void 0 : _g.style) !== null && _h !== void 0 ? _h : ''}` };
+    xnew.nest({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.container} ${className}`, style });
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
         '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
         '<polygon points="32 32 23 23  4 23  3 24  3 40  4 41 23 41">',
         '<polygon points="32 32 41 23 60 23 61 24 61 40 60 41 41 41">'
     ];
-    const targets = polygons.map((polygon) => {
-        return xnew((unit) => {
-            xnew.nest(fillSvg);
-            xnew(polygon);
-        });
+    let targets = [];
+    xnew(() => {
+        xnew.nest('<g style="stroke: none;">');
+        targets = polygons.map((polygon) => xnew(polygon));
     });
-    xnew((unit) => {
-        xnew.nest(strokeSvg);
+    xnew(() => {
+        xnew.nest('<g style="fill: none;">');
         xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
         xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
         xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');

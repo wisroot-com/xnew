@@ -137,20 +137,4 @@ describe('basics InputRange', () => {
         expect(containerOf(unit).className).toContain('gauge');
         expect(containerOf(unit).getAttribute('style')).toContain('height: 2em;');
     });
-
-    it('applies attributes to the meter and status parts', () => {
-        const unit = xnew(InputRange, {
-            attributes: {
-                meter: { className: 'gold', style: 'background: gold;' },
-                status: { className: 'label', style: 'color: red;' },
-            },
-        });
-        const meter = meterOf(unit);
-        const status = statusOf(unit);
-
-        expect(meter.className).toContain('gold');
-        expect(meter.getAttribute('style')).toContain('background: gold;');
-        expect(status.className).toContain('label');
-        expect(status.getAttribute('style')).toContain('color: red;');
-    });
 });

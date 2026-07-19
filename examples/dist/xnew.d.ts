@@ -256,13 +256,7 @@ declare function SVGText(unit: xnew.Unit, { text, fontSize, className, style, ..
     [key: string]: any;
 }): void;
 
-interface ElementAttributes {
-    className?: string;
-    style?: string;
-    [key: string]: any;
-}
-
-declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, className, style, attributes, ...others }?: {
+declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, className, style, ...others }?: {
     value?: number;
     min?: number;
     max?: number;
@@ -270,10 +264,6 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, 
     vertical?: boolean;
     className?: string;
     style?: string;
-    attributes?: {
-        meter?: ElementAttributes;
-        status?: ElementAttributes;
-    };
     [key: string]: any;
 }): void;
 
@@ -309,6 +299,12 @@ declare function InputNumber(unit: xnew.Unit, { value, className, style, ...othe
 }): {
     readonly value: number;
 };
+
+interface ElementAttributes {
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}
 
 declare function InputSwitch(unit: xnew.Unit, { value, gate, className, style, attributes, ...others }?: {
     value?: boolean;
@@ -466,21 +462,15 @@ declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...o
     readonly gate: Unit;
 };
 
-declare function AnalogStick(unit: xnew.Unit, { className, style, attributes }?: {
+declare function AnalogStick(unit: xnew.Unit, { className, style }?: {
     className?: string;
     style?: string;
-    attributes?: {
-        svg?: ElementAttributes;
-    };
 }): void;
 
-declare function DPad(unit: xnew.Unit, { diagonal, className, style, attributes }?: {
+declare function DPad(unit: xnew.Unit, { diagonal, className, style }?: {
     diagonal?: boolean;
     className?: string;
     style?: string;
-    attributes?: {
-        svg?: ElementAttributes;
-    };
 }): void;
 
 interface PanelOptions {

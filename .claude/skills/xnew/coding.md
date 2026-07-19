@@ -97,8 +97,8 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   `@layer base` css entry, and the caller's `className` / `style` decorate that element:
   `xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style })`.
   Single-element components (Button, Image, InputNumber, InputText, SVG, SVGText)
-  ALSO spread `...others` onto that element; multi-part components (InputCheckbox / InputRadio /
-  InputRange / InputSwitch / ListBox, and `ui/AnalogStick` / `ui/DPad`) keep the container
+  ALSO spread `...others` onto that element; multi-part form components (InputCheckbox / InputRadio /
+  InputRange / InputSwitch / ListBox) keep the container
   STRICTLY layout-only (prelude + position: relative + interaction props, NO visual look) — the
   framed look (border / radius / state tints) lives on an inner `frame` part (`designs.frame`),
   and `value`, `name`, rest members stay with the inner parts (usually the hidden native input),
@@ -315,14 +315,24 @@ the rule, then one line of why.
   react via `[data-checked] > &` since they remain children of the container. (This supersedes the older
   "frame lives on an inner part" guidance in §4 for these components.)
 
-- **To split a multi-part basics component, mount the display sub-component on the SHARED container and
+- **To split a multi-part basics component, mount each display sub-component on the SHARED container and
   let it listen to the bubbling native event — don't thread a value-setter define across the boundary.**
-  InputRange became InputRange (container + hidden input) + a same-file `InputRangeMeter` (meter + status).
-  `xnew(InputRangeMeter, …)` with no `xnew.nest` keeps the meter's `unit.element` = the container, so its
-  `unit.on('input', …)` catches the input event that bubbles up from the later-nested `<input>`. Works
-  because the core reads the value off `event.target` (the range input), not the bound element (`dom.ts`
-  `defineEvent(['change','input'])`), so an ancestor listener still gets the numeric value. Native `input`
-  events bubble — tests must dispatch with `{ bubbles: true }`.
+  InputRange is InputRange (container + hidden input) + two same-file sub-components `InputRangeMeter`
+  (the growing meter) and `InputRangeStatus` (the value readout), each mounted with `xnew(…)` and no
+  `xnew.nest` so their `unit.element` = the container; each `unit.on('input', …)` catches the input event
+  that bubbles up from the later-nested `<input>`. Works because the core reads the value off
+  `event.target` (the range input), not the bound element (`dom.ts` `defineEvent(['change','input'])`),
+  so an ancestor listener still gets the numeric value. Native `input` events bubble — tests must dispatch
+  with `{ bubbles: true }`. These parts are NOT caller-customizable (no `attributes`/`designs` bag —
+  user decision, 2026-07); recolor by editing the component, not from the call site.
+
+- **`ui/AnalogStick` and `ui/DPad` make the container itself the `<svg>` (user decision, 2026-07) —
+  no wrapping `<div>`, no separate `svg` part, no `attributes` bag.** All shapes are drawn directly
+  inside the container svg (viewBox `0 0 64 64`); fill / stroke variants split via inner `<g style="…">`
+  groups. Caller `style` lands on the svg and inherits down (`fill` reaches the shapes), so recoloring is
+  `style: 'fill: …'` at the call site — no part hook needed. The movable knob shifts in viewBox units via a
+  `transform` presentation attribute (travel radius = a quarter of the 64-unit span = 16), not pixel
+  left / top on a nested svg.
 
 - **For close-on-outside-press, use the built-in `unit.on('click.outside', …)` — don't hand-roll a
   backdrop `click` listener.** `click.outside` (also `pointerdown/move/up.outside`, `dom.ts`) attaches
