@@ -304,7 +304,10 @@ the rule, then one line of why.
   lives → toggles `gate.open()/close()`; `gate.on('-open'/'-closed')` toggles `data-checked` on the
   container (set it once initially from `gate.state`, since the Gate's constructor emits the first `-open`
   before you subscribe). Do NOT assume `unit.element` is the input here — that still holds for InputSwitch,
-  but InputCheckbox diverged.
+  but InputCheckbox and InputRange diverged (their `unit.element` is the container; the input is a
+  `xnew({ tag: 'input', … })` child, not an `xnew.nest`). InputRange follows the same compose gate:
+  its default `InputRangeMeter` + `InputRangeStatus` are drawn only when `xnew.composed === false`, so a
+  trailing compose function replaces them with caller content.
 
 - **A basics component's `frame` ring may be merged INTO the `container` (user decision, 2026-07) —
   the container then carries the border / radius / state tint directly, and there is no separate frame

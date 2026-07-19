@@ -12,10 +12,14 @@ describe('basics InputRange', () => {
         jest.useRealTimers();
     });
 
-    // the container carries the frame ring; its div children are the meter first, then the status readout
-    // (the hidden input is the last child but is an <input>, not a <div>)
+    // unit.element is the container; its div children are the meter first, then the status readout
+    // (the hidden input is a child too but an <input>, not a <div>)
     function containerOf(unit: xnew.Unit): HTMLElement {
-        return unit.element.parentElement as HTMLElement;
+        return unit.element as HTMLElement;
+    }
+
+    function inputOf(unit: xnew.Unit): HTMLInputElement {
+        return containerOf(unit).querySelector('input') as HTMLInputElement;
     }
 
     function meterOf(unit: xnew.Unit): HTMLElement {
@@ -28,7 +32,7 @@ describe('basics InputRange', () => {
 
     it('nests a hidden native range input with the given attributes', () => {
         const unit = xnew(InputRange, { value: 30, min: 10, max: 50, step: 5 });
-        const input = unit.element as HTMLInputElement;
+        const input = inputOf(unit);
 
         expect(input.tagName).toBe('INPUT');
         expect(input.type).toBe('range');
@@ -47,13 +51,13 @@ describe('basics InputRange', () => {
     it('defaults value to min (empty meter)', () => {
         const unit = xnew(InputRange, { min: 20, max: 100 });
 
-        expect((unit.element as HTMLInputElement).value).toBe('20');
+        expect(inputOf(unit).value).toBe('20');
         expect(meterOf(unit).style.width).toBe('0%');
     });
 
     it('updates the meter width on input', () => {
         const unit = xnew(InputRange, { value: 0 });
-        const input = unit.element as HTMLInputElement;
+        const input = inputOf(unit);
         jest.advanceTimersByTime(0);
 
         input.value = '75';
@@ -64,7 +68,7 @@ describe('basics InputRange', () => {
 
     it('shows the current value in the status readout', () => {
         const unit = xnew(InputRange, { value: 30 });
-        const input = unit.element as HTMLInputElement;
+        const input = inputOf(unit);
         jest.advanceTimersByTime(0);
 
         expect(statusOf(unit).textContent).toBe('30');
@@ -76,7 +80,7 @@ describe('basics InputRange', () => {
 
     it('delivers a numeric value to input listeners', () => {
         const unit = xnew(InputRange, { value: 0 });
-        const input = unit.element as HTMLInputElement;
+        const input = inputOf(unit);
 
         const received: number[] = [];
         unit.on('input', ({ value }: { value: number }) => received.push(value));
@@ -105,7 +109,7 @@ describe('basics InputRange', () => {
 
     it('updates the meter height on input when vertical', () => {
         const unit = xnew(InputRange, { value: 0, vertical: true });
-        const input = unit.element as HTMLInputElement;
+        const input = inputOf(unit);
         jest.advanceTimersByTime(0);
 
         input.value = '75';
@@ -119,8 +123,8 @@ describe('basics InputRange', () => {
         const named = xnew(InputRange, { name: 'volume' });
         const anonymous = xnew(InputRange);
 
-        expect((named.element as HTMLInputElement).getAttribute('name')).toBe('volume');
-        expect((anonymous.element as HTMLInputElement).hasAttribute('name')).toBe(false);
+        expect(inputOf(named).getAttribute('name')).toBe('volume');
+        expect(inputOf(anonymous).hasAttribute('name')).toBe(false);
     });
 
     it('marks the extent with a container frame ring fainter than the meter border', () => {
@@ -136,5 +140,12 @@ describe('basics InputRange', () => {
 
         expect(containerOf(unit).className).toContain('gauge');
         expect(containerOf(unit).getAttribute('style')).toContain('height: 2em;');
+    });
+
+    it('omits the default meter and status when composed by the caller', () => {
+        const unit = xnew(InputRange, { value: 30 }, () => {});
+
+        expect(containerOf(unit).querySelectorAll('div')).toHaveLength(0);
+        expect(inputOf(unit).tagName).toBe('INPUT');
     });
 });

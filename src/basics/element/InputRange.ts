@@ -1,7 +1,8 @@
 //----------------------------------------------------------------------------------------------------
 // InputRange — text-free gauge backed by a hidden native <input type="range">, horizontal or vertical (`vertical: true`)
-// The container carries the faint frame ring and the interaction input; the nested InputRangeMeter and
-// InputRangeStatus each follow the bubbling input event on the shared container to drive the meter and readout.
+// unit.element is the container (frame ring + interaction input); left un-composed, the default
+// InputRangeMeter + InputRangeStatus are drawn, each following the bubbling input event on the shared
+// container. A trailing compose function replaces them with caller content (xnew.composed === false gate).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -54,12 +55,14 @@ export function InputRange(unit: xnew.Unit,
     xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
 
     const initial = value ?? min;
-    xnew(InputRangeMeter, { value: initial, min, max, vertical });
-    xnew(InputRangeStatus, { value: initial, vertical });
+    if (xnew.composed === false) {
+        xnew(InputRangeMeter, { value: initial, min, max, vertical });
+        xnew(InputRangeStatus, { value: initial, vertical });
+    }
 
     // hidden native input for interaction (min / max / step before value, so value never clamps against defaults)
     const inputClass = vertical ? css.inputVertical : css.inputHorizontal;
-    xnew.nest({ tag: 'input', type: 'range', min, max, step, value: initial, className: `${css.input} ${inputClass}`, ...others });
+    xnew({ tag: 'input', type: 'range', min, max, step, value: initial, className: `${css.input} ${inputClass}`, ...others });
 }
 
 //----------------------------------------------------------------------------------------------------

@@ -1525,10 +1525,12 @@ function InputRange(unit, _a = {}) {
     const sizeClass = vertical ? css.vertical : css.horizontal;
     xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
     const initial = value !== null && value !== void 0 ? value : min;
-    xnew(InputRangeMeter, { value: initial, min, max, vertical });
-    xnew(InputRangeStatus, { value: initial, vertical });
+    if (xnew.composed === false) {
+        xnew(InputRangeMeter, { value: initial, min, max, vertical });
+        xnew(InputRangeStatus, { value: initial, vertical });
+    }
     const inputClass = vertical ? css.inputVertical : css.inputHorizontal;
-    xnew.nest(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: `${css.input} ${inputClass}` }, others));
+    xnew(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: `${css.input} ${inputClass}` }, others));
 }
 function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false } = {}) {
     const css = xnew.css('base', {
