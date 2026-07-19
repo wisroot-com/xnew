@@ -33,24 +33,15 @@ export function VolumeController(unit: xnew.Unit,
 ) {
     const config = placements[placement] ?? placements.left;
 
-    const css = xnew.css({
-        container: {
-            layer: 'base',
-            body: `position: relative;`,
-        },
-        button: {
-            layer: 'base',
-            body: `width: 100%; height: 100%; cursor: pointer;`,
-        },
+    const css = xnew.css('base', {
+        container: `position: relative;`,
+        button: `width: 100%; height: 100%; cursor: pointer;`,
         // slider holder anchored to an icon edge; the growth axis animates from 0, cross axis is centered
-        outer: {
-            layer: 'base',
-            body: `
+        outer: `
                 position: absolute;
                 display: flex; align-items: center; justify-content: center;
                 opacity: 0; pointer-events: none;
             `,
-        },
     });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });

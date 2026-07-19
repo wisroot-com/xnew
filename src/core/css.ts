@@ -1,12 +1,11 @@
 //----------------------------------------------------------------------------------------------------
 // css — pseudo-scoped CSS backing xnew.css (local names → unique generated names)
 // True local CSS is impossible in the light DOM, so scoping is emulated by renaming — and made
-// mandatory: every rule hangs off a renamed key, so a definition cannot emit a global rule.
+// mandatory: every rule hangs off a renamed key (an at-rule value must stay nameless), so a
+// definition cannot emit a global rule. An optional layer wraps the whole block in @layer.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit } from './unit';
-
-export interface CssDef { layer?: string; type?: string; body: string; }
 
 interface CssEntry { names: Record<string, string>; refs: number; style: HTMLStyleElement; }
 
@@ -15,18 +14,22 @@ let counter = 0;
 
 const localName = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const layerName = /^[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*)*$/;
-const typeName = /^[a-z-]+$/;
+// a nameless at-rule fragment: the generated name is spliced in, so scoping stays mandatory
+const atRule = /^@([a-z-]+)\s*\{([\s\S]*)\}\s*$/;
 // a letter must follow '$', so attribute selectors like [href$="…"] are never rewritten
 const reference = /\$([A-Za-z][A-Za-z0-9_-]*)/g;
 
-export function applyCss(unit: Unit, defs: Record<string, string | CssDef>): Record<string, string> {
+export function applyCss(unit: Unit, layer: string | undefined, defs: Record<string, string>): Record<string, string> {
     if (globalThis.document?.head === undefined) {
         return Object.fromEntries(Object.keys(defs).map((name) => [name, name]));
     }
 
-    const key = JSON.stringify(defs);
+    const key = JSON.stringify([layer, defs]);
     let entry = registry.get(key);
     if (entry === undefined) {
+        if (layer !== undefined && layerName.test(layer) === false) {
+            throw new Error(`xnew.css: invalid layer "${layer}".`);
+        }
         const id = counter++;
         const names: Record<string, string> = {};
         for (const name of Object.keys(defs)) {
@@ -43,26 +46,18 @@ export function applyCss(unit: Unit, defs: Record<string, string | CssDef>): Rec
                 return names[ref];
             }
         });
-        const text = Object.entries(defs).map(([name, value]) => {
-            const def = typeof value === 'string' ? { body: value } : value;
-
-            let rule: string;
-            if (def.type === undefined) {
-                rule = `.${names[name]} {\n${resolve(def.body)}\n}`;
-            } else if (typeName.test(def.type) === true) {
-                rule = `@${def.type} ${names[name]} {\n${resolve(def.body)}\n}`;
+        const rules = Object.entries(defs).map(([name, value]) => {
+            if (value.trim().startsWith('@') === true) {
+                const match = value.trim().match(atRule);
+                if (match === null) {
+                    throw new Error(`xnew.css: at-rule "${name}" must be nameless, as "@type { … }".`);
+                }
+                return `@${match[1]} ${names[name]} {\n${resolve(match[2].trim())}\n}`;
             } else {
-                throw new Error(`xnew.css: invalid type "${def.type}".`);
-            }
-
-            if (def.layer === undefined) {
-                return rule;
-            } else if (layerName.test(def.layer) === true) {
-                return `@layer ${def.layer} {\n${rule}\n}`;
-            } else {
-                throw new Error(`xnew.css: invalid layer "${def.layer}".`);
+                return `.${names[name]} {\n${resolve(value)}\n}`;
             }
         }).join('\n');
+        const text = layer === undefined ? rules : `@layer ${layer} {\n${rules}\n}`;
 
         const style = document.createElement('style');
         style.textContent = text;

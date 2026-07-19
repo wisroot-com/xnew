@@ -89,19 +89,16 @@
       });
     }
 
-    // An object entry { type: 'keyframes', body } scopes the animation name like a
-    // class key; $turn links the animation: reference to it, so no global name is created.
+    // A nameless "@keyframes { … }" entry scopes the animation name like a class key;
+    // $turn links the animation: reference to it, so no global name is created.
     function Spinners(unit) {
       xnew.extend(Base, { name: 'xnew.css: @keyframes (scoped animation name)' });
 
       const css = xnew.css({
-        turn: {
-          type: 'keyframes',
-          body: `
-            from { transform: rotate(0turn); }
-            to { transform: rotate(1turn); }
-          `,
-        },
+        turn: `@keyframes {
+          from { transform: rotate(0turn); }
+          to { transform: rotate(1turn); }
+        }`,
         spinner: `
           width: 2rem; height: 2rem; border-radius: 50%;
           border: 0.25rem solid #dbeafe; border-top-color: #3b82f6;

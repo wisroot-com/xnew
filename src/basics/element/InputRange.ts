@@ -12,61 +12,43 @@ export function InputRange(unit: xnew.Unit,
     { value?: number, min?: number, max?: number, step?: number, vertical?: boolean, className?: string, style?: string, attributes?: { meter?: ElementAttributes, status?: ElementAttributes }, [key: string]: any } = {}
 ) {
 
-    const css = xnew.css({
+    const css = xnew.css('base', {
         // the container carries the faint frame ring; the absolute meter overlaps it from the padding box
         // via a -1px offset on its pinned sides. The size prelude lives on the orientation variant so the
         // long axis carries the margin-box cap
-        container: {
-            layer: 'base',
-            body: `
+        container: `
                 display: inline-block;
                 position: relative; margin: 0.125em;
                 border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
                 border-radius: 0.25em;
             `,
-        },
         // horizontal: 10em wide bar; max-width: stretch caps the margin box so a caller margin never overflows
-        horizontal: {
-            layer: 'base',
-            body: `
+        horizontal: `
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
             `,
-        },
         // vertical: 10em tall bar; max-height: stretch caps the margin box the same way on the long axis
-        vertical: {
-            layer: 'base',
-            body: `
+        vertical: `
                 width: 1.8em; height: 10em; max-height: -webkit-fill-available; max-height: -moz-available; max-height: stretch;
             `,
-        },
         // invisible native control stretched over the whole surface; the thumb is shrunk to zero
         // extent along the track so the pointer→value mapping spans the full length and the bar tip
         // tracks the cursor (natively the thumb center only travels between the half-thumb insets)
-        input: {
-            layer: 'base',
-            body: `
+        input: `
                 position: absolute; inset: 0; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; user-select: none; margin: 0;
                 appearance: none;
             `,
-        },
-        inputHorizontal: {
-            layer: 'base',
-            body: `
+        inputHorizontal: `
                 &::-webkit-slider-thumb { appearance: none; width: 0; }
                 &::-moz-range-thumb { width: 0; border: none; }
             `,
-        },
         // writing-mode makes the native range run along the block axis; direction: rtl puts min at the
         // bottom so dragging up increases (the deprecated appearance: slider-vertical is avoided)
-        inputVertical: {
-            layer: 'base',
-            body: `
+        inputVertical: `
                 writing-mode: vertical-lr; direction: rtl;
                 &::-webkit-slider-thumb { appearance: none; height: 0; }
                 &::-moz-range-thumb { height: 0; border: none; }
             `,
-        },
     });
 
     const sizeClass = vertical ? css.vertical : css.horizontal;
@@ -90,57 +72,39 @@ function InputRangeMeter(unit: xnew.Unit,
     { value = 0, min = 0, max = 100, vertical = false, attributes = {} }:
     { value?: number, min?: number, max?: number, vertical?: boolean, attributes?: { meter?: ElementAttributes, status?: ElementAttributes } } = {}
 ) {
-    const css = xnew.css({
+    const css = xnew.css('base', {
         // value-driven meter; the growth axis (width / height) is set per orientation. The pinned sides sit
         // at -1px so the meter border rides on the container frame ring instead of insetting 1px within it
         // (the meter's containing block is the container padding box, inside the 1px frame border)
-        meter: {
-            layer: 'base',
-            body: `
+        meter: `
                 position: absolute;
                 box-sizing: border-box;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 background: color-mix(in srgb, currentColor 20%, transparent);
             `,
-        },
-        meterHorizontal: {
-            layer: 'base',
-            body: `
+        meterHorizontal: `
                 top: -1px; left: -1px; bottom: -1px;
                 transition: width 0.05s;
             `,
-        },
-        meterVertical: {
-            layer: 'base',
-            body: `
+        meterVertical: `
                 left: -1px; right: -1px; bottom: -1px;
                 transition: height 0.05s;
             `,
-        },
         // value readout painted above the meter (pointer-events: none keeps the drag on the input)
-        status: {
-            layer: 'base',
-            body: `
+        status: `
                 position: absolute; inset: 0;
                 box-sizing: border-box;
                 display: flex;
                 pointer-events: none;
             `,
-        },
-        statusHorizontal: {
-            layer: 'base',
-            body: `
+        statusHorizontal: `
                 padding: 0 0.5em;
                 justify-content: flex-end; align-items: center;
             `,
-        },
-        statusVertical: {
-            layer: 'base',
-            body: `
+        statusVertical: `
                 padding: 0.5em 0;
                 justify-content: center; align-items: flex-end;
             `,
-        },
     });
 
     const meterClass = vertical ? css.meterVertical : css.meterHorizontal;

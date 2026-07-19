@@ -13,25 +13,19 @@ export function InputCheckbox(unit: xnew.Unit,
     { value = false, gate, className = '', style = '', ...others }:
     { value?: boolean, gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const css = xnew.css({
+    const css = xnew.css('base', {
         // the box itself carries the framed look; the checked tint is keyed on data-checked
-        container: {
-            layer: 'base',
-            body: `
+        container: `
                 display: inline-block;
                 width: 1.5em; height: 1.5em; margin: 0.125em;
                 position: relative;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
-        },
-        input: {
-            layer: 'base',
-            body: `
+        input: `
                 position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
                 opacity: 0; cursor: pointer; margin: 0;
             `,
-        },
     });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
@@ -64,17 +58,14 @@ export function InputCheckbox(unit: xnew.Unit,
 //----------------------------------------------------------------------------------------------------
 
 function CheckMark() {
-    const css = xnew.css({
-        mark: {
-            layer: 'base',
-            body: `
+    const css = xnew.css('base', {
+        mark: `
                 box-sizing: border-box; position: absolute; inset: 0; width: 100%; height: 100%;
                 stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
                 fill: none;
                 opacity: 0;
                 [data-checked] > & { opacity: 1; }
             `,
-        },
     });
 
     xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.mark });

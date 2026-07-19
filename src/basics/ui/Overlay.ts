@@ -14,15 +14,12 @@ export function Overlay(unit: xnew.Unit,
 ) {
     gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
 
-    const css = xnew.css({
-        container: {
-            layer: 'base',
-            body: `
+    const css = xnew.css('base', {
+        container: `
                 position: fixed; inset: 0; z-index: 1000;
                 opacity: 0; pointer-events: none;
                 cursor: default;
             `,
-        },
     });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });

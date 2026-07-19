@@ -11,22 +11,16 @@ export function AnalogStick(unit: xnew.Unit,
     { className = '', style = '', attributes = {} }:
     { className?: string, style?: string, attributes?: { svg?: ElementAttributes } } = {}
 ) {
-    const css = xnew.css({
-        container: {
-            layer: 'base',
-            body: `
+    const css = xnew.css('base', {
+        container: `
                 position: relative;
                 cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
             `,
-        },
-        svg: {
-            layer: 'base',
-            body: `
+        svg: `
                 position: absolute; inset: 0; box-sizing: border-box; display: block; width: 100%; height: 100%;
                 stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
                 fill: #FFF; fill-opacity: 0.8;
             `,
-        },
     });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });

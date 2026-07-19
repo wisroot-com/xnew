@@ -10,17 +10,14 @@ export function SVGText(unit: xnew.Unit,
     { text = '', fontSize = 20, className = '', style = '', ...others }:
     { text?: string, fontSize?: number, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const css = xnew.css({
+    const css = xnew.css('base', {
         // sized by resize(); overflow keeps the stroke halo outside the bbox visible;
         // the presentation defaults (text = visible fill) inherit down to the <text>
-        svg: {
-            layer: 'base',
-            body: `
+        svg: `
                 stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
                 fill: currentColor; fill-opacity: 1;
                 overflow: visible;
             `,
-        },
     });
 
     xnew.nest({ tag: 'svg', className: `${css.svg} ${className}`, style, ...others });

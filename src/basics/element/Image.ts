@@ -12,12 +12,9 @@ export function Image(unit: xnew.Unit,
     { src, className = '', style = '', ...others }:
     { src: ImageSource | Promise<ImageSource>, className?: string, style?: string, [key: string]: any }
 ) {
-    const css = xnew.css({
-        image: {
-            layer: 'base',
-            body: `
+    const css = xnew.css('base', {
+        image: `
             `,
-        },
     });
 
     xnew.nest({ tag: 'img', className: `${css.image} ${className}`, style, ...others });

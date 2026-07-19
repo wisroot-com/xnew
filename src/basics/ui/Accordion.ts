@@ -13,14 +13,11 @@ export function Accordion(unit: xnew.Unit,
 ) {
     gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
 
-    const css = xnew.css({
-        container: {
-            layer: 'base',
-            body: `
+    const css = xnew.css('base', {
+        container: `
                 overflow: hidden;
                 box-sizing: border-box;
             `,
-        },
     });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });

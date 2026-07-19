@@ -15,23 +15,17 @@ export function Template(unit: xnew.Unit,
     { mode = 'outline', className = '', style = '', paths, ...others }:
     IconProps & { paths: IconPaths }
 ) {
-    const css = xnew.css({
-        outline: {
-            layer: 'base',
-            body: `
+    const css = xnew.css('base', {
+        outline: `
                 width: 1em; height: 1em;
                 stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round;
                 fill: none;
             `,
-        },
-        solid: {
-            layer: 'base',
-            body: `
+        solid: `
                 width: 1em; height: 1em;
                 stroke: none;
                 fill: currentColor;
             `,
-        },
     });
 
     xnew.nest({ tag: 'svg', viewBox: '0 0 24 24', className: `${css[mode]} ${className}`, style, ...others });

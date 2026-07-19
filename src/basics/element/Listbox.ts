@@ -16,10 +16,8 @@ export function Listbox(unit: xnew.Unit,
     { value, gate, className = '', style = '', ...others }:
     { value?: string, gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const css = xnew.css({
-        container: {
-            layer: 'base',
-            body: `
+    const css = xnew.css('base', {
+        container: `
                 display: inline-flex; align-items: center;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
                 margin: 0.125em 0; padding: 0 0.5em;
@@ -27,14 +25,10 @@ export function Listbox(unit: xnew.Unit,
                 cursor: pointer; user-select: none;
                 &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
-        },
-        label: {
-            layer: 'base',
-            body: `
+        label: `
                 flex: 1 1 0; min-width: 0;
                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             `,
-        },
     });
 
     let selected = value ?? '';
@@ -87,16 +81,13 @@ export function ListboxMenu(unit: xnew.Unit,
 ) {
     const listbox = xnew.context(Listbox);
 
-    const css = xnew.css({
-        menu: {
-            layer: 'base',
-            body: `
+    const css = xnew.css('base', {
+        menu: `
                 position: absolute; top: 100%; left: 0; margin-top: 0.25em;
                 min-width: 100%; width: max-content; max-height: 12em;
                 border: 1px solid currentColor; border-radius: 0.25em;
                 overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
             `,
-        },
     });
 
     xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.element });
@@ -129,10 +120,8 @@ export function ListboxItem(unit: xnew.Unit,
     const listbox = xnew.context(Listbox);
     listbox.register(unit);
 
-    const css = xnew.css({
-        item: {
-            layer: 'base',
-            body: `
+    const css = xnew.css('base', {
+        item: `
                 height: 2em; padding: 0 0.5em;
                 display: flex; align-items: center;
                 white-space: nowrap;
@@ -140,7 +129,6 @@ export function ListboxItem(unit: xnew.Unit,
                 &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
                 &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
-        },
     });
     xnew.nest({ tag: 'div', className: `${css.item} ${className}`, style, ...others });
 

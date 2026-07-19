@@ -10,24 +10,18 @@ export function Aspect(unit: xnew.Unit,
     { aspect = 1.0, fit = 'contain' }:
     { aspect?: number, fit?: 'contain' | 'cover' } = {}
 ) {
-    const css = xnew.css({
+    const css = xnew.css('base', {
         // outer flex box that centers the ratio box; container-type: size exposes the parent extent to cqw / cqh
-        container: {
-            layer: 'base',
-            body: `
+        container: `
                 width: 100%; height: 100%;
                 display: flex; align-items: center; justify-content: center;
                 container-type: size;
             `,
-        },
         // ratio box; aspect-ratio and the fitting width are aspect-dependent, so they stay inline
-        inner: {
-            layer: 'base',
-            body: `
+        inner: `
                 position: relative;
                 container-type: size;
             `,
-        },
     });
 
     xnew.nest({ tag: 'div', className: css.container });

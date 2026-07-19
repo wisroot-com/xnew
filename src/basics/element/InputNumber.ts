@@ -10,12 +10,10 @@ export function InputNumber(unit: xnew.Unit,
     { value, className = '', style = '', ...others }:
     { value?: number, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const css = xnew.css({
+    const css = xnew.css('base', {
         // container carries the frame ring / spacing; :focus-within tints it while the inner input is active
         // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        container: {
-            layer: 'base',
-            body: `
+        container: `
                 display: inline-flex; align-items: center;
                 box-sizing: border-box;
                 width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
@@ -24,11 +22,8 @@ export function InputNumber(unit: xnew.Unit,
                 cursor: text;
                 &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
-        },
         // transparent native field filling the container; the container owns the frame, the spinner is hidden
-        input: {
-            layer: 'base',
-            body: `
+        input: `
                 width: 100%; height: 100%;
                 margin: 0; padding: 0;
                 text-align: center;
@@ -37,7 +32,6 @@ export function InputNumber(unit: xnew.Unit,
                 -moz-appearance: textfield; appearance: textfield;
                 &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
             `,
-        },
     });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });

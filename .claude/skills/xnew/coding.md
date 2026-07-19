@@ -61,23 +61,25 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
 ## 4. DOM: element, nest, events
 
 - `unit.element` is the unit's current DOM element.
-- `xnew.css({ name: 'decls…' })` registers pseudo-scoped CSS with **mandatory scoping**
-  (single argument): every key is a local name, always renamed to a page-unique one, and keys
-  must match `[A-Za-z][A-Za-z0-9_-]*` (anything else throws) — there is no way to emit a
-  global rule. A value is either a **declaration block string**, wrapped as
-  `.xnewN-key { … }` (native CSS nesting works inside: `&:hover`, `@media`, descendant
-  selectors), or an **object** `{ layer?, type?, block }`: `type` names an at-rule without
-  `@` to hang the generated name on — `turn: { type: 'keyframes', block: 'from {…} to {…}' }`
-  emits a **scoped animation** `@keyframes xnewN-turn { … }` (absent: a class rule) — and
-  `layer` wraps that entry in `@layer` (invalid types / layers throw). `$key` inside a block
-  references another entry's generated name — `animation: $turn 0.8s linear infinite;` —
-  and an unknown `$key` throws (a letter must follow `$`, so `[href$=".png"]` is untouched).
-  The return value maps each key to its generated name (typed via `keyof`) to embed in tag
-  strings (`xnew.nest(`<div class="${css.name}">`)`). Identical definitions share one
-  ref-counted `<style>`, removed when the last user unit finalizes; on the server (no DOM)
-  keys map to themselves and nothing is injected.
-  Entries without `layer` stay unlayered (normal strength). **Every xnew.css entry inside
-  `src/basics/` must set `layer: 'base'`** — component defaults are overridable-by-design:
+- `xnew.css((layer,) { name: 'decls…' })` registers pseudo-scoped CSS with **mandatory
+  scoping**: every key is a local name, always renamed to a page-unique one, and keys must
+  match `[A-Za-z][A-Za-z0-9_-]*` (anything else throws) — there is no way to emit a global
+  rule. A value is always a **CSS fragment string**: a **declaration block**, wrapped as
+  `.xnewN-key { … }` (native CSS nesting works inside: `&:hover`, `&[data-checked]`, `@media`,
+  descendant selectors), or a **nameless at-rule** `@type { … }` that hangs the generated name
+  on it — `turn: '@keyframes { from {…} to {…} }'` emits a **scoped animation**
+  `@keyframes xnewN-turn { … }`. A name inside the at-rule (`@keyframes spin { … }`) throws, so
+  scoping always holds. `$key` inside a value references another entry's generated name —
+  `animation: $turn 0.8s linear infinite;` — and an unknown `$key` throws (a letter must
+  follow `$`, so `[href$=".png"]` is untouched). An **optional `layer` string first argument**
+  wraps the whole block in `@layer` (invalid layer throws). The return value maps each key to
+  its generated name (typed via `keyof`) to embed in tag strings
+  (`xnew.nest(`<div class="${css.name}">`)`). Identical definitions share one ref-counted
+  `<style>`, removed when the last user unit finalizes; on the server (no DOM) keys map to
+  themselves and nothing is injected.
+  Calls without a `layer` argument stay unlayered (normal strength). **Every xnew.css call
+  inside `src/basics/` must pass `'base'` as the layer argument** — component defaults are
+  overridable-by-design:
   any unlayered page CSS (or a later layer) overrides them regardless of specificity or order.
   The target position is **above reset/preflight styles, below page component / utility
   layers** — not simply weakest, or resets (`border: 0 solid` etc.) wipe the defaults. Using

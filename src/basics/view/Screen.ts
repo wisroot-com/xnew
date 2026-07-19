@@ -12,15 +12,12 @@ export function Screen(unit: xnew.Unit,
 ) {
     xnew.extend(Aspect, { aspect: width / height, fit });
 
-    const css = xnew.css({
+    const css = xnew.css('base', {
         // vertical-align: bottom drops the inline-canvas baseline gap so the buffer fills the ratio box exactly
-        canvas: {
-            layer: 'base',
-            body: `
+        canvas: `
                 width: 100%; height: 100%;
                 vertical-align: bottom;
             `,
-        },
     });
 
     const canvas = xnew({ tag: 'canvas', width, height, className: css.canvas });

@@ -10,14 +10,11 @@ export function SVG(unit: xnew.Unit,
     { className = '', style = '', ...others }:
     { className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const css = xnew.css({
-        svg: {
-            layer: 'base',
-            body: `
+    const css = xnew.css('base', {
+        svg: `
                 stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
                 fill: none; fill-opacity: 1;
             `,
-        },
     });
 
     xnew.nest({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${className}`, style, ...others });
