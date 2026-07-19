@@ -85,25 +85,27 @@ function InputRangeMeter(unit: xnew.Unit,
             border: 1px solid currentColor; border-radius: 0.25em;
             background: color-mix(in srgb, currentColor 20%, transparent);
         `,
-        meterHorizontal: `
+        horizontal: `
             top: -1px; left: -1px; bottom: -1px;
             transition: width 0.05s;
         `,
-        meterVertical: `
+        vertical: `
             left: -1px; right: -1px; bottom: -1px;
             transition: height 0.05s;
         `,
     });
 
-    const meterClass = vertical ? css.meterVertical : css.meterHorizontal;
-    const meter = xnew({ tag: 'div', className: `${css.meter} ${meterClass}` });
+    const meter = xnew({ tag: 'div', className: `${css.meter} ${vertical ? css.vertical : css.horizontal}` });
 
     function update(v: number) {
-        const percent = `${(v - min) / (max - min) * 100}%`;
+        // +2px at full (scaled by fraction) so the meter's leading border reaches -1px past the padding
+        // box and overlaps the container frame ring, matching the always-pinned sides
+        const fraction = (v - min) / (max - min);
+        const length = `calc(${fraction * 100}% + ${fraction * 2}px)`;
         if (vertical) {
-            meter.element.style.height = percent;
+            meter.element.style.height = length;
         } else {
-            meter.element.style.width = percent;
+            meter.element.style.width = length;
         }
     }
     update(value);
@@ -130,18 +132,17 @@ function InputRangeStatus(unit: xnew.Unit,
             display: flex;
             pointer-events: none;
         `,
-        statusHorizontal: `
+        horizontal: `
             padding: 0 0.5em;
             justify-content: flex-end; align-items: center;
         `,
-        statusVertical: `
+        vertical: `
             padding: 0.5em 0;
             justify-content: center; align-items: flex-end;
         `,
     });
 
-    const statusClass = vertical ? css.statusVertical : css.statusHorizontal;
-    const status = xnew({ tag: 'div', className: `${css.status} ${statusClass}` });
+    const status = xnew({ tag: 'div', className: `${css.status} ${vertical ? css.vertical : css.horizontal}` });
 
     function update(v: number) {
         status.element.textContent = String(v);
