@@ -1510,27 +1510,19 @@ function InputRange(unit, _a = {}) {
         input: `
             position: absolute; inset: 0; width: 100%; height: 100%;
             opacity: 0; cursor: pointer; user-select: none; margin: 0;
+            &::-webkit-slider-thumb { appearance: none; width: 0; height: 0; }
+            &::-moz-range-thumb { width: 0; height: 0; border: none; }
             appearance: none;
         `,
-        inputHorizontal: `
-            &::-webkit-slider-thumb { appearance: none; width: 0; }
-            &::-moz-range-thumb { width: 0; border: none; }
-        `,
-        inputVertical: `
-            writing-mode: vertical-lr; direction: rtl;
-            &::-webkit-slider-thumb { appearance: none; height: 0; }
-            &::-moz-range-thumb { height: 0; border: none; }
-        `,
     });
-    const sizeClass = vertical ? css.vertical : css.horizontal;
-    xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
+    xnew.nest({ tag: 'div', className: `${css.container} ${vertical ? css.vertical : css.horizontal} ${className}`, style });
     const initial = value !== null && value !== void 0 ? value : min;
+    const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
+    xnew(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: css.input, style: direction }, others));
     if (xnew.composed === false) {
         xnew(InputRangeMeter, { value: initial, min, max, vertical });
         xnew(InputRangeStatus, { value: initial, vertical });
     }
-    const inputClass = vertical ? css.inputVertical : css.inputHorizontal;
-    xnew(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: `${css.input} ${inputClass}` }, others));
 }
 function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false } = {}) {
     const css = xnew.css('base', {

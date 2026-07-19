@@ -11,7 +11,6 @@ export function InputRange(unit: xnew.Unit,
     { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '', ...others }:
     { value?: number, min?: number, max?: number, step?: number, vertical?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
-
     const css = xnew.css('base', {
         // the container carries the faint frame ring as an inset box-shadow (not a border) so it costs no
         // box-model width — the padding box then equals the border box, and the absolute meter shares the
@@ -37,33 +36,24 @@ export function InputRange(unit: xnew.Unit,
         input: `
             position: absolute; inset: 0; width: 100%; height: 100%;
             opacity: 0; cursor: pointer; user-select: none; margin: 0;
+            &::-webkit-slider-thumb { appearance: none; width: 0; height: 0; }
+            &::-moz-range-thumb { width: 0; height: 0; border: none; }
             appearance: none;
-        `,
-        inputHorizontal: `
-            &::-webkit-slider-thumb { appearance: none; width: 0; }
-            &::-moz-range-thumb { width: 0; border: none; }
-        `,
-        // writing-mode makes the native range run along the block axis; direction: rtl puts min at the
-        // bottom so dragging up increases (the deprecated appearance: slider-vertical is avoided)
-        inputVertical: `
-            writing-mode: vertical-lr; direction: rtl;
-            &::-webkit-slider-thumb { appearance: none; height: 0; }
-            &::-moz-range-thumb { height: 0; border: none; }
         `,
     });
 
-    const sizeClass = vertical ? css.vertical : css.horizontal;
-    xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
+    xnew.nest({ tag: 'div', className: `${css.container} ${vertical ? css.vertical : css.horizontal} ${className}`, style });
 
     const initial = value ?? min;
+    
+    // hidden native input for interaction (min / max / step before value, so value never clamps against defaults)
+    const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
+    xnew({ tag: 'input', type: 'range', min, max, step, value: initial, className: css.input, style: direction, ...others });
+
     if (xnew.composed === false) {
         xnew(InputRangeMeter, { value: initial, min, max, vertical });
         xnew(InputRangeStatus, { value: initial, vertical });
     }
-
-    // hidden native input for interaction (min / max / step before value, so value never clamps against defaults)
-    const inputClass = vertical ? css.inputVertical : css.inputHorizontal;
-    xnew({ tag: 'input', type: 'range', min, max, step, value: initial, className: `${css.input} ${inputClass}`, ...others });
 }
 
 //----------------------------------------------------------------------------------------------------
