@@ -65,15 +65,12 @@ export function InputCheckbox(unit: xnew.Unit,
         }
     });
 
-    // fall back to a default check mark when the caller composed none (its trailing function has run by now)
-    xnew.timeout(() => {
-        const composed = [...container.children].some((element) => element.classList.contains(css.input) === false);
-        if (composed === false) {
-            xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.mark }, () => {
-                xnew('<path d="M2 6 5 9 10 3"/>');
-            });
-        }
-    });
+    // fall back to a default check mark when the caller composed none
+    if (xnew.extended === false) {
+        xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.mark }, () => {
+            xnew('<path d="M2 6 5 9 10 3"/>');
+        });
+    }
 
     return {
         get value() {

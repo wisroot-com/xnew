@@ -126,4 +126,13 @@ describe('basics InputCheckbox', () => {
         expect(unit.element.querySelector('.my-mark')).not.toBeNull();
         expect(unit.element.querySelector('svg')).toBeNull();
     });
+
+    it('suppresses the default when extended onto an outer component', () => {
+        const unit = xnew(() => {
+            xnew.extend(InputCheckbox);
+        });
+        jest.advanceTimersByTime(0);
+
+        expect(unit.element.querySelector('svg')).toBeNull();
+    });
 });

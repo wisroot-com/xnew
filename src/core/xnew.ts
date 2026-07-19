@@ -24,6 +24,10 @@ export interface XnewBase {
     (content: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
+
+    // True when the component whose body is currently running is composed by its caller: it carries a trailing
+    // ExComponent (xnew(Base, props, fn)) or is itself extended onto another component (xnew.extend(Base)).
+    readonly extended: boolean;
 }
 
 export const xnew = Object.assign(
@@ -133,6 +137,13 @@ export const xnew = Object.assign(
 
     }
 );
+
+// A getter (not a plain member) so it reads Unit.current at access time; Object.assign would freeze the value.
+Object.defineProperty(xnew, 'extended', {
+    get(): boolean {
+        return Unit.current._.extended;
+    },
+});
 
 // Merges the type namespace onto the callable value (public types such as xnew.Unit).
 export namespace xnew {

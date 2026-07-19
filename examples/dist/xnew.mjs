@@ -491,6 +491,7 @@ class Unit {
             parent,
             phase: 'invoked',
             protected: false,
+            extended: false,
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
@@ -544,9 +545,15 @@ class Unit {
         unit._.key = (_a = props === null || props === void 0 ? void 0 : props.key) !== null && _a !== void 0 ? _a : null;
         const backup = Unit.currentUnit;
         Unit.currentUnit = unit;
-        Unit.extend(unit, baseComponent, props);
         if (ExComponent !== undefined) {
-            Unit.extend(unit, ExComponent, props);
+            const Ex = ExComponent;
+            Unit.extend(unit, (unit, props) => {
+                Unit.extend(unit, baseComponent, props);
+                Unit.extend(unit, Ex, props);
+            }, props);
+        }
+        else {
+            Unit.extend(unit, baseComponent, props);
         }
         if (unit._.phase === 'invoked') {
             unit._.phase = 'initialized';
@@ -608,6 +615,8 @@ class Unit {
     static extend(unit, Component, props) {
         var _a;
         const backupComponent = unit._.currentComponent;
+        const backupExtended = unit._.extended;
+        unit._.extended = backupComponent !== null;
         unit._.currentComponent = Component;
         if (unit._.parent !== null) {
             Unit.addContext(unit._.parent, unit, Component, unit);
@@ -615,6 +624,7 @@ class Unit {
         Unit.addContext(unit, unit, Component, unit);
         const defines = (_a = Component(unit, props !== null && props !== void 0 ? props : {})) !== null && _a !== void 0 ? _a : {};
         unit._.currentComponent = backupComponent;
+        unit._.extended = backupExtended;
         Unit.component2units.add(Component, unit);
         unit._.Components.push(Component);
         Object.keys(defines).forEach((key) => {
@@ -1058,6 +1068,11 @@ const xnew = Object.assign((function (...args) {
         Unit.current._.protected = true;
     },
     Unit,
+});
+Object.defineProperty(xnew, 'extended', {
+    get() {
+        return Unit.current._.extended;
+    },
 });
 
 function getEnvironment() {
@@ -1725,14 +1740,11 @@ function InputCheckbox(unit, _a = {}) {
             gate.close();
         }
     });
-    xnew.timeout(() => {
-        const composed = [...container.children].some((element) => element.classList.contains(css.input) === false);
-        if (composed === false) {
-            xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.mark }, () => {
-                xnew('<path d="M2 6 5 9 10 3"/>');
-            });
-        }
-    });
+    if (xnew.extended === false) {
+        xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.mark }, () => {
+            xnew('<path d="M2 6 5 9 10 3"/>');
+        });
+    }
     return {
         get value() {
             return gate.state === 'opened' || gate.state === 'opening';

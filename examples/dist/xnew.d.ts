@@ -54,6 +54,7 @@ declare class Unit {
         children: Unit[];
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
+        extended: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
         systems: Record<'update' | 'finalize', {
@@ -150,6 +151,7 @@ interface XnewBase {
     (content: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
+    readonly extended: boolean;
 }
 declare const xnew: XnewBase & {
     nest(tag: string | DomElementDef, textContent?: string): HTMLElement | SVGElement;
