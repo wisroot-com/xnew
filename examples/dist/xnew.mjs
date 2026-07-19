@@ -1077,7 +1077,7 @@ function getEnvironment() {
 const syncData = new WeakMap();
 function syncOf(unit) {
     if (syncData.has(unit) === false) {
-        syncData.set(unit, { id: null, state: {}, registry: {} });
+        syncData.set(unit, { id: null, state: {}, registry: {}, visibility: null });
     }
     return syncData.get(unit);
 }
@@ -1130,7 +1130,7 @@ function bootServer(opts, parent, args) {
     rootInfos.set(root, info);
     Unit.initialize(root, ...args);
     let nextId = 1;
-    const captureStateTree = () => {
+    const captureStateTree = (clientId) => {
         const nodes = [];
         const syncName = (unit) => {
             var _a;
@@ -1147,18 +1147,23 @@ function bootServer(opts, parent, args) {
         const walk = (unit, parent) => {
             var _a;
             const name = syncName(unit);
-            if (name !== undefined) {
-                const data = syncOf(unit);
-                (_a = data.id) !== null && _a !== void 0 ? _a : (data.id = nextId++);
-                nodes.push({ id: data.id, name, parent, state: Object.assign({}, data.state) });
-                parent = data.id;
+            if (name === undefined) {
+                unit._.children.forEach((child) => walk(child, parent));
             }
-            unit._.children.forEach((child) => walk(child, parent));
+            else {
+                const data = syncOf(unit);
+                const visible = data.visibility === null || data.visibility(clientId) === true;
+                if (visible === true) {
+                    (_a = data.id) !== null && _a !== void 0 ? _a : (data.id = nextId++);
+                    nodes.push({ id: data.id, name, parent, state: Object.assign({}, data.state) });
+                    unit._.children.forEach((child) => walk(child, data.id));
+                }
+            }
         };
         walk(root, null);
         return nodes;
     };
-    root.on('update', () => io.to(room.id).emit('sync', captureStateTree()));
+    root.on('update', () => info.clients.forEach((client) => io.to(client.id).emit('sync', captureStateTree(client.id))));
     const connection = (socket) => {
         var _a, _b;
         const query = (_a = socket.handshake) === null || _a === void 0 ? void 0 : _a.query;
@@ -1216,7 +1221,7 @@ function bootClient(opts, parent, args) {
                 continue;
             }
             const unit = new Unit(nodeParent);
-            syncData.set(unit, { id: node.id, state: Object.assign({}, node.state), registry: {} });
+            syncData.set(unit, { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null });
             Unit.initialize(unit, Component);
             reconcileMap.set(node.id, unit);
         }
@@ -1271,6 +1276,22 @@ const xsync = {
             throw new Error('xsync.register must be called during component initialization.');
         }
         Object.assign(syncOf(unit).registry, Components);
+    },
+    visibleTo(target) {
+        const data = syncOf(Unit.current);
+        if (target === null) {
+            data.visibility = null;
+        }
+        else if (typeof target === 'function') {
+            data.visibility = target;
+        }
+        else if (Array.isArray(target)) {
+            const allowed = new Set(target);
+            data.visibility = (clientId) => allowed.has(clientId);
+        }
+        else {
+            data.visibility = (clientId) => clientId === target;
+        }
     },
     get session() {
         const info = rootInfoOf(Unit.current);
@@ -1458,17 +1479,6 @@ function Image(unit, _a) {
     });
 }
 
-function SVG(unit, _a = {}) {
-    var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
-    const css = xnew.css('base', {
-        svg: `
-                stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
-                fill: none; fill-opacity: 1;
-            `,
-    });
-    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.svg} ${className}`, style }, others));
-}
-
 function SVGText(unit, _a = {}) {
     var { text = '', fontSize = 20, className = '', style = '' } = _a, others = __rest(_a, ["text", "fontSize", "className", "style"]);
     const css = xnew.css('base', {
@@ -1479,14 +1489,12 @@ function SVGText(unit, _a = {}) {
             `,
     });
     xnew.nest(Object.assign({ tag: 'svg', className: `${css.svg} ${className}`, style }, others));
-    const svg = unit.element;
-    const textUnit = xnew({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' });
-    textUnit.element.textContent = text;
+    const textUnit = xnew({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' }, text);
     function resize() {
         const bbox = textUnit.element.getBBox();
-        svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
-        svg.style.width = bbox.width + 'px';
-        svg.style.height = bbox.height + 'px';
+        unit.element.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+        unit.element.style.width = bbox.width + 'px';
+        unit.element.style.height = bbox.height + 'px';
     }
     resize();
     textUnit.on('resize', resize);
@@ -2932,7 +2940,6 @@ const xbasics = {
     Scene,
     Button,
     Image,
-    SVG,
     SVGText,
     InputRange,
     InputCheckbox,

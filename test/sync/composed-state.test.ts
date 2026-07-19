@@ -80,6 +80,7 @@ describe('composed synced state (base + extend)', () => {
         function ActorBase(unit: Unit, props: any = {}) { xsync.state({ x: 0, y: props.y ?? 0 }); }
         function EnemyDerived(unit: Unit, props: any = {}) { xnew.extend(ActorBase, props); xsync.state({ hp: 3 }); }
         const server = bootServer({ io: hub.io }, function S() { xsync.register({ ActorBase, EnemyDerived }); xnew(EnemyDerived, { y: 8 }); });
+        hub.connect();   // capture は接続 client ごとの投影: 1 つつないでその投影を受ける
 
         asServer(() => Unit.update(server));
         const tree = hub.lastSync();

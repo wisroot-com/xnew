@@ -1,7 +1,8 @@
 //----------------------------------------------------------------------------------------------------
 // xsync — networking layer: shared state + boot + facade (exported as `xsync`)
-// The server root is the source of truth: each update it emits its registered units as a flat
-// pre-order node list ('sync'); client roots only diff-apply it into replica units.
+// The server root is the source of truth: each update it projects its registered units per connected
+// client (respecting xsync.visibleTo) and emits that flat pre-order node list ('sync') to each socket
+// individually; client roots only diff-apply the tree they receive into replica units.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';
@@ -21,13 +22,15 @@ export function getEnvironment(): 'server' | 'client' {
 //----------------------------------------------------------------------------------------------------
 
 export interface SyncNode { id: number; name: string; parent: number | null; state: Record<string, any>; }
-interface SyncData { id: number | null; state: Record<string, any>; registry: Record<string, Function>; }
+// visibility === null → public (sent to every client); otherwise a predicate re-evaluated per capture,
+// so a closure over dynamic state (e.g. a `revealed` flag) can widen a node from private to public.
+interface SyncData { id: number | null; state: Record<string, any>; registry: Record<string, Function>; visibility: ((clientId: string) => boolean) | null; }
 
 const syncData: WeakMap<Unit, SyncData> = new WeakMap();
 
 export function syncOf(unit: Unit): SyncData {
     if (syncData.has(unit) === false) {
-        syncData.set(unit, { id: null, state: {}, registry: {} });
+        syncData.set(unit, { id: null, state: {}, registry: {}, visibility: null });
     }
     return syncData.get(unit)!;
 }
@@ -111,7 +114,10 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
     // a sync target is a unit registered in its direct parent's registry; nextId is monotonic
     // across captures so a unit keeps its id for its whole lifetime.
     let nextId = 1;
-    const captureStateTree = (): SyncNode[] => {
+    // project the registered unit tree for one client: a node declared visible only to some clients
+    // (xsync.visibleTo) is skipped — together with its subtree, which would otherwise lose its parent
+    // link — for any client it excludes, so private state never reaches that client's wire.
+    const captureStateTree = (clientId: string): SyncNode[] => {
         const nodes: SyncNode[] = [];
         // _.Components is [base..., most-derived]; match the registered name from the tail.
         const syncName = (unit: Unit): string | undefined => {
@@ -127,19 +133,24 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
         };
         const walk = (unit: Unit, parent: number | null): void => {
             const name = syncName(unit);
-            if (name !== undefined) {
+            if (name === undefined) {
+                unit._.children.forEach((child) => walk(child, parent));   // pass-through: keep the same parent id
+            } else {
                 const data = syncOf(unit);
-                data.id ??= nextId++;
-                nodes.push({ id: data.id, name, parent, state: { ...data.state } });
-                parent = data.id;
+                const visible = data.visibility === null || data.visibility(clientId) === true;
+                if (visible === true) {
+                    data.id ??= nextId++;
+                    nodes.push({ id: data.id, name, parent, state: { ...data.state } });
+                    unit._.children.forEach((child) => walk(child, data.id));
+                }
+                // else: a hidden sync node — skip it and its whole subtree for this client
             }
-            unit._.children.forEach((child) => walk(child, parent));
         };
         walk(root, null);
         return nodes;
     };
 
-    root.on('update', () => io.to(room.id).emit('sync', captureStateTree()));
+    root.on('update', () => info.clients.forEach((client) => io.to(client.id).emit('sync', captureStateTree(client.id))));
     // keep the handler so finalize can detach it — a room that dies must not leave a listener on io
     // (rooms come and go, and io's listener count would otherwise grow without bound).
     const connection = (socket: any) => {
@@ -201,7 +212,7 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
             if (!Component) { continue; }
             // seed SyncData before initialize so the body's xsync.state sees the server state and fixed id
             const unit = new Unit(nodeParent);
-            syncData.set(unit, { id: node.id, state: { ...node.state }, registry: {} });
+            syncData.set(unit, { id: node.id, state: { ...node.state }, registry: {}, visibility: null });
             Unit.initialize(unit, Component);
             reconcileMap.set(node.id, unit);
         }
@@ -254,6 +265,22 @@ export const xsync = {
             throw new Error('xsync.register must be called during component initialization.');
         }
         Object.assign(syncOf(unit).registry, Components);
+    },
+    // Restrict this sync node (and its subtree) to the given client(s): a client id, a list of ids, or a
+    // predicate re-evaluated on every capture. Pass null to make it public again. Unset ⇒ public. The
+    // predicate form is the way to reveal dynamically — close over a flag and flip it (see examples).
+    visibleTo(target: string | string[] | ((clientId: string) => boolean) | null): void {
+        const data = syncOf(Unit.current);
+        if (target === null) {
+            data.visibility = null;
+        } else if (typeof target === 'function') {
+            data.visibility = target;
+        } else if (Array.isArray(target)) {
+            const allowed = new Set(target);
+            data.visibility = (clientId) => allowed.has(clientId);
+        } else {
+            data.visibility = (clientId) => clientId === target;
+        }
     },
     get session(): { room: RoomStatus; clients: ClientStatus[]; myself: ClientStatus } {
         const info = rootInfoOf(Unit.current);

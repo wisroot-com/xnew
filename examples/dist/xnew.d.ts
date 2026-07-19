@@ -199,6 +199,7 @@ declare const xsync: {
     client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
     state(initial?: Record<string, any>): Record<string, any>;
     register(Components: Record<string, Function>): void;
+    visibleTo(target: string | string[] | ((clientId: string) => boolean) | null): void;
     readonly session: {
         room: RoomStatus;
         clients: ClientStatus[];
@@ -237,12 +238,6 @@ declare function Button(unit: xnew.Unit, { text, className, style, ...others }?:
 type ImageSource = string | Blob | ArrayBuffer | ArrayBufferView<ArrayBuffer>;
 declare function Image(unit: xnew.Unit, { src, className, style, ...others }: {
     src: ImageSource | Promise<ImageSource>;
-    className?: string;
-    style?: string;
-    [key: string]: any;
-}): void;
-
-declare function SVG(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
     style?: string;
     [key: string]: any;
@@ -507,7 +502,6 @@ declare const xbasics: {
     Scene: typeof Scene;
     Button: typeof Button;
     Image: typeof Image;
-    SVG: typeof SVG;
     SVGText: typeof SVGText;
     InputRange: typeof InputRange;
     InputCheckbox: typeof InputCheckbox;
