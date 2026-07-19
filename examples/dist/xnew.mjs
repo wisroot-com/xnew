@@ -1746,7 +1746,7 @@ function InputNumber(unit, _a = {}) {
 }
 
 function InputSwitch(unit, _a = {}) {
-    var { value = false, gate, className = '', style = '', attributes = {} } = _a, others = __rest(_a, ["value", "gate", "className", "style", "attributes"]);
+    var { value = false, gate, className = '', style = '' } = _a, others = __rest(_a, ["value", "gate", "className", "style"]);
     const css = xnew.css('base', {
         container: `
                 display: inline-block;
@@ -1762,12 +1762,14 @@ function InputSwitch(unit, _a = {}) {
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
-    xnew(Knob, attributes.knob);
     gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
     gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
     gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
     unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
     unit.on('input', ({ value }) => value ? gate.open() : gate.close());
+    if (xnew.composed === false) {
+        xnew(Knob);
+    }
     return {
         get value() {
             return gate.state === 'opened' || gate.state === 'opening';
@@ -1777,7 +1779,7 @@ function InputSwitch(unit, _a = {}) {
         },
     };
 }
-function Knob(unit, { className = '', style = '' } = {}) {
+function Knob() {
     const css = xnew.css('base', {
         knob: `
                 position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
@@ -1787,7 +1789,7 @@ function Knob(unit, { className = '', style = '' } = {}) {
                 [data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }
             `,
     });
-    xnew.nest({ tag: 'div', className: `${css.knob} ${className}`, style });
+    xnew.nest({ tag: 'div', className: css.knob });
 }
 
 function InputRadio(unit, _a = {}) {

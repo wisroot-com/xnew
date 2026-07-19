@@ -300,13 +300,7 @@ declare function InputNumber(unit: xnew.Unit, { value, className, style, ...othe
     readonly value: number;
 };
 
-interface ElementAttributes {
-    className?: string;
-    style?: string;
-    [key: string]: any;
-}
-
-declare function InputSwitch(unit: xnew.Unit, { value, gate, className, style, attributes, ...others }?: {
+declare function InputSwitch(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
     value?: boolean;
     gate?: {
         open?: boolean;
@@ -315,9 +309,6 @@ declare function InputSwitch(unit: xnew.Unit, { value, gate, className, style, a
     } | xnew.Unit;
     className?: string;
     style?: string;
-    attributes?: {
-        knob?: ElementAttributes;
-    };
     [key: string]: any;
 }): {
     readonly value: boolean;

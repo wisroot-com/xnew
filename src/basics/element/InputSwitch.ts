@@ -1,17 +1,17 @@
 //----------------------------------------------------------------------------------------------------
 // InputSwitch — sliding on / off switch backed by a hidden native <input type="checkbox">
 // Holds a Gate for the on/off state and exposes it as `gate`; the invisible native input captures
-// interaction. The container carries the framed pill look and the on tint (keyed on data-checked); the
-// sliding Knob nests inside it. unit.element is the container (not the input).
+// interaction. The container carries the framed pill look and the on tint (keyed on data-checked).
+// unit.element is the container (not the input); left un-composed, the default sliding Knob is drawn,
+// and a trailing compose function replaces it with caller content (xnew.composed === false gate).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 import { Gate } from '../ui/Gate';
-import { ElementAttributes } from './attributes';
 
 export function InputSwitch(unit: xnew.Unit,
-    { value = false, gate, className = '', style = '', attributes = {}, ...others }:
-    { value?: boolean, gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, attributes?: { knob?: ElementAttributes }, [key: string]: any } = {}
+    { value = false, gate, className = '', style = '', ...others }:
+    { value?: boolean, gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         // the container carries the framed pill look; the on tint is keyed on data-checked
@@ -32,14 +32,16 @@ export function InputSwitch(unit: xnew.Unit,
 
     xnew({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
 
-    xnew(Knob, attributes.knob);
-
     gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate ?? { open: value, duration: 0 });
     gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
     gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
     unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
 
     unit.on('input', ({ value }: { value: boolean }) => value ? gate.open() : gate.close());
+
+    if (xnew.composed === false) {
+        xnew(Knob);
+    }
 
     return {
         get value() {
@@ -55,7 +57,7 @@ export function InputSwitch(unit: xnew.Unit,
 // Knob — the sliding indicator; rides to the far side while the container is data-checked
 //----------------------------------------------------------------------------------------------------
 
-function Knob(unit: xnew.Unit, { className = '', style = '' }: ElementAttributes = {}) {
+function Knob() {
     const css = xnew.css('base', {
         knob: `
                 position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
@@ -66,5 +68,5 @@ function Knob(unit: xnew.Unit, { className = '', style = '' }: ElementAttributes
             `,
     });
 
-    xnew.nest({ tag: 'div', className: `${css.knob} ${className}`, style });
+    xnew.nest({ tag: 'div', className: css.knob });
 }

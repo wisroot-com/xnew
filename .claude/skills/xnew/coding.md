@@ -98,22 +98,21 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   `xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style })`.
   Single-element components (Button, Image, InputNumber, InputText, SVG, SVGText)
   ALSO spread `...others` onto that element; multi-part form components (InputCheckbox / InputRadio /
-  InputRange / InputSwitch / ListBox) keep the container
-  STRICTLY layout-only (prelude + position: relative + interaction props, NO visual look) — the
-  framed look (border / radius / state tints) lives on an inner `frame` part (`designs.frame`),
-  and `value`, `name`, rest members stay with the inner parts (usually the hidden native input),
-  decorated via `designs`. State attributes (`data-checked` / `data-open`) toggle on the
-  container; frame / knob / svg react via parent-keyed rules (`[data-checked] > & { … }`).
-  There is no `container` getter anywhere;
-  `unit.element` ends on the innermost nested part (the hidden input / select), and the
-  caller-facing container is its ancestor — capture the container element right after nesting it when
-  the component needs it later.
-- **Internal parts of a basics component are decorated via its `designs` prop** — one
-  `Design` (`{ className?, style? }`, from `src/basics/design.ts`) per named part, e.g.
-  InputRange's `designs: { frame?, meter?, status? }`. The container is NOT a designs part (caller
-  `className` / `style` hit it directly). Generated class names are page-unique, so
-  page CSS cannot target parts directly; `designs` is the supported hook (never expose
-  stable global part classes).
+  InputRange / InputSwitch / ListBox) carry the framed look (border / radius / state tints) ON the
+  container itself (frame merged in, 2026-07), and `value` / `name` / rest members go to the inner
+  hidden native input. State attributes (`data-checked` / `data-open`) toggle on the container; inner
+  parts (knob / meter / status / mark) react via parent-keyed rules (`[data-checked] > & { … }`).
+  There is no `container` getter anywhere; for InputCheckbox / InputRange / InputSwitch `unit.element`
+  IS the container (input / knob / meter are children) — for the others it ends on the innermost
+  nested part, so capture the container right after nesting it when the component needs it later.
+- **Basics components expose NO part-customization bag** (no `attributes` / `designs` prop — all
+  removed 2026-07). A caller restyles only via `className` / `style` on the container, which reaches
+  inner parts through inheritance — the frame border, the knob / meter background, and the state tint
+  all key on `currentColor`, so a single `className: 'text-indigo-600'` recolors the whole control
+  cohesively. For structural change, InputCheckbox / InputRange / InputSwitch accept a **trailing
+  compose function** that replaces their default inner content — the mark, the meter + status, the
+  knob respectively (`xnew.composed === false` gate). Generated
+  class names are page-unique, so page CSS cannot target inner parts directly by design.
 - `xnew.nest(tagOrDef, textContent?)` creates a child element from a **tag string**
   (`'<div …>'`) or an **element definition object** — an existing element is rejected
   (`invalid tag string`); the optional second argument sets the element's text. The object

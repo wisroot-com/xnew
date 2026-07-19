@@ -17,10 +17,6 @@ describe('basics InputSwitch', () => {
         return unit.element.querySelector('input') as HTMLInputElement;
     }
 
-    function knobOf(unit: xnew.Unit): HTMLElement {
-        return unit.element.querySelectorAll('div')[0] as HTMLElement;
-    }
-
     it('nests a hidden native checkbox with the given state', () => {
         const unit = xnew(InputSwitch, { value: true, name: 'sound' });
         const input = inputOf(unit);
@@ -68,17 +64,17 @@ describe('basics InputSwitch', () => {
         expect(unit.element.hasAttribute('data-checked')).toBe(true);
     });
 
-    it('applies attributes to the knob part', () => {
-        const unit = xnew(InputSwitch, { attributes: { knob: { className: 'dot', style: 'background: gold;' } } });
-
-        expect(knobOf(unit).className).toContain('dot');
-        expect(knobOf(unit).getAttribute('style')).toContain('background: gold;');
-    });
-
     it('applies className and style to the container element', () => {
         const unit = xnew(InputSwitch, { className: 'pill', style: 'width: 4em;' });
 
         expect(unit.element.className).toContain('pill');
         expect(unit.element.getAttribute('style')).toContain('width: 4em;');
+    });
+
+    it('omits the default knob when composed by the caller', () => {
+        const unit = xnew(InputSwitch, { value: true }, () => {});
+
+        expect(unit.element.querySelectorAll('div')).toHaveLength(0);
+        expect(inputOf(unit).tagName).toBe('INPUT');
     });
 });

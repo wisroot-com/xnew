@@ -85,7 +85,20 @@
       xnew('<div class="mb-1">', 'InputSwitch');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputSwitch, { value: true });
-      xnew(xbasics.InputSwitch, { value: true, style: 'border-radius: 0.25em;', attributes: { knob: { style: 'border-radius: 0.25em; background: #4f46e5;' } } });
+      // compose a custom knob with xnew.css, driven off the container's data-checked like the default Knob:
+      // the [data-checked] > & rule slides it (the InputSwitch toggles data-checked on its container)
+      xnew(xbasics.InputSwitch, { value: true, className: 'rounded' }, () => {
+        const css = xnew.css({
+          knob: `
+            position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
+            aspect-ratio: 1 / 1; border-radius: 0.25em;
+            background: #4f46e5;
+            transition: left 0.15s, transform 0.15s;
+            [data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }
+          `,
+        });
+        xnew.nest({ tag: 'div', className: css.knob });
+      });
     }
 
     function MyInputRadio(unit) {
