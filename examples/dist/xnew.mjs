@@ -2051,11 +2051,9 @@ function ListboxItem(unit, _a = {}) {
             listbox.gate.close();
         }
     });
-    xnew.timeout(() => {
-        if (unit.element.hasChildNodes() === false) {
-            unit.element.textContent = value;
-        }
-    });
+    if (xnew.extended === false) {
+        unit.element.textContent = value;
+    }
     return {
         get value() {
             return value;

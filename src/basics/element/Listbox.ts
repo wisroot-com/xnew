@@ -119,7 +119,7 @@ export function ListboxMenu(unit: xnew.Unit,
 //----------------------------------------------------------------------------------------------------
 // ListboxItem — one option row of a Listbox; nests into the ListboxMenu it is created inside.
 // Pass row content as a trailing text (xnew(ListboxItem, { value }, 'label')) or an inline function;
-// leave it empty to fall back to the value as text (filled one tick after creation).
+// leave it empty to fall back to the value as text.
 //----------------------------------------------------------------------------------------------------
 
 export function ListboxItem(unit: xnew.Unit,
@@ -153,13 +153,10 @@ export function ListboxItem(unit: xnew.Unit,
             listbox.gate.close();
         }
     });
-    // a trailing text / inline function mounts the row's content after this body, so fall back to the
-    // value as text one tick later, only when the caller left the row empty
-    xnew.timeout(() => {
-        if (unit.element.hasChildNodes() === false) {
-            unit.element.textContent = value;
-        }
-    });
+    // fall back to the value as text when the caller composed no content into the row
+    if (xnew.extended === false) {
+        unit.element.textContent = value;
+    }
 
     return {
         get value() {
