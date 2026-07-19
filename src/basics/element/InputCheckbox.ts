@@ -32,6 +32,39 @@ export function InputCheckbox(unit: xnew.Unit,
                 opacity: 0; cursor: pointer; margin: 0;
             `,
         },
+    });
+
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+
+    xnew({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
+
+    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate ?? { open: value, duration: 0 });
+    gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
+    gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
+    unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
+
+    unit.on('input', ({ value }: { value: boolean }) => value ? gate.open() : gate.close());
+
+    if (xnew.composed === false) {
+        xnew(CheckMark);
+    }
+
+    return {
+        get value() {
+            return gate.state === 'opened' || gate.state === 'opening';
+        },
+        get gate() {
+            return gate;
+        },
+    };
+}
+
+//----------------------------------------------------------------------------------------------------
+// CheckMark — the default check svg drawn when the caller composed no content; shown while data-checked
+//----------------------------------------------------------------------------------------------------
+
+function CheckMark() {
+    const css = xnew.css({
         mark: {
             layer: 'base',
             body: `
@@ -44,40 +77,6 @@ export function InputCheckbox(unit: xnew.Unit,
         },
     });
 
-    // container is the unit's element: after the input nests below as a child unit, composed content
-    // (and the fallback mark) still land inside the container, not inside the hidden input
-    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-
-    // hidden native input for interaction; a child unit so the container stays the current element
-    const input = xnew({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
-
-    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate ?? { open: value, duration: 0 });
-    container.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
-    gate.on('-open', () => container.toggleAttribute('data-checked', true));
-    gate.on('-closed', () => container.toggleAttribute('data-checked', false));
-
-    // native input events bubble up to the container, where this listener lives
-    unit.on('input', ({ value }: { value: boolean }) => {
-        if (value === true) {
-            gate.open();
-        } else {
-            gate.close();
-        }
-    });
-
-    // fall back to a default check mark when the caller composed none
-    if (xnew.composed === false) {
-        xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.mark }, () => {
-            xnew('<path d="M2 6 5 9 10 3"/>');
-        });
-    }
-
-    return {
-        get value() {
-            return gate.state === 'opened' || gate.state === 'opening';
-        },
-        get gate() {
-            return gate;
-        },
-    };
+    xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.mark });
+    xnew('<path d="M2 6 5 9 10 3"/>');
 }
