@@ -9,7 +9,6 @@ import { Screen } from './view/Screen';
 import { Scene } from './view/Scene';
 import { Button } from './element/Button';
 import { Image } from './element/Image';
-import { SVG } from './element/SVG';
 import { SVGText } from './element/SVGText';
 import { InputRange } from './element/InputRange';
 import { InputCheckbox } from './element/InputCheckbox';
@@ -35,7 +34,6 @@ export const xbasics = {
     Scene,
     Button,
     Image,
-    SVG,
     SVGText,
     InputRange,
     InputCheckbox,
