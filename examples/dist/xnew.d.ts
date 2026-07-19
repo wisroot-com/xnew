@@ -313,16 +313,23 @@ declare function InputNumber(unit: xnew.Unit, { value, className, style, ...othe
     readonly value: number;
 };
 
-declare function InputSwitch(unit: xnew.Unit, { value, className, style, attributes, ...others }?: {
+declare function InputSwitch(unit: xnew.Unit, { value, gate, className, style, attributes, ...others }?: {
     value?: boolean;
+    gate?: {
+        open?: boolean;
+        duration?: number;
+        easing?: string;
+    } | xnew.Unit;
     className?: string;
     style?: string;
     attributes?: {
-        frame?: ElementAttributes;
         knob?: ElementAttributes;
     };
     [key: string]: any;
-}): void;
+}): {
+    readonly value: boolean;
+    readonly gate: Unit;
+};
 
 declare function InputRadio(unit: xnew.Unit, { value, name, checked, className, style, ...others }?: {
     value?: string;

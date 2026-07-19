@@ -1,35 +1,68 @@
 //----------------------------------------------------------------------------------------------------
 // InputSwitch — sliding on / off switch backed by a hidden native <input type="checkbox">
-// The invisible native checkbox captures interaction; the on state lives in css rules keyed on
-// a data-checked attribute, so caller attributes stay intact.
+// Holds a Gate for the on/off state and exposes it as `gate`; the invisible native input captures
+// interaction. The container carries the framed pill look and the on tint (keyed on data-checked); the
+// sliding Knob nests inside it. unit.element is the container (not the input).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { Gate } from '../ui/Gate';
 import { ElementAttributes } from './attributes';
 
 export function InputSwitch(unit: xnew.Unit,
-    { value = false, className = '', style = '', attributes = {}, ...others }:
-    { value?: boolean, className?: string, style?: string, attributes?: { frame?: ElementAttributes, knob?: ElementAttributes }, [key: string]: any } = {}
+    { value = false, gate, className = '', style = '', attributes = {}, ...others }:
+    { value?: boolean, gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, attributes?: { knob?: ElementAttributes }, [key: string]: any } = {}
 ) {
     const css = xnew.css({
-        // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
+        // the container carries the framed pill look; the on tint is keyed on data-checked
         container: {
             layer: 'base',
             body: `
                 display: inline-block;
                 width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
                 position: relative;
+                border: 1px solid currentColor; border-radius: 1em;
+                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
-        // full-extent overlay carrying the framed look; the on state is on the container
-        frame: {
+        input: {
             layer: 'base',
             body: `
-                position: absolute; inset: 0;
-                border: 1px solid currentColor; border-radius: 1em;
-                [data-checked] > & { background: color-mix(in srgb, currentColor 20%, transparent); }
+                position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
+                opacity: 0; cursor: pointer; margin: 0;
             `,
         },
+    });
+
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+
+    xnew({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
+
+    xnew(Knob, attributes.knob);
+
+    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate ?? { open: value, duration: 0 });
+    gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
+    gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
+    unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
+
+    unit.on('input', ({ value }: { value: boolean }) => value ? gate.open() : gate.close());
+
+    return {
+        get value() {
+            return gate.state === 'opened' || gate.state === 'opening';
+        },
+        get gate() {
+            return gate;
+        },
+    };
+}
+
+//----------------------------------------------------------------------------------------------------
+// Knob — the sliding indicator; rides to the far side while the container is data-checked
+//----------------------------------------------------------------------------------------------------
+
+function Knob(unit: xnew.Unit, { className = '', style = '' }: ElementAttributes = {}) {
+    const css = xnew.css({
         knob: {
             layer: 'base',
             body: `
@@ -40,29 +73,7 @@ export function InputSwitch(unit: xnew.Unit,
                 [data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }
             `,
         },
-        input: {
-            layer: 'base',
-            body: `
-                position: absolute; inset: 0; width: 100%; height: 100%;
-                opacity: 0; cursor: pointer; margin: 0;
-            `,
-        },
     });
 
-    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-
-    xnew({ tag: 'div', className: `${css.frame} ${attributes.frame?.className ?? ''}`, style: attributes.frame?.style });
-
-    xnew({ tag: 'div', className: `${css.knob} ${attributes.knob?.className ?? ''}`, style: attributes.knob?.style });
-
-    const update = (checked: boolean) => {
-        container.toggleAttribute('data-checked', checked);
-    };
-    update(value);
-
-    // hidden native input for interaction
-    xnew.nest({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
-    unit.on('input', ({ value }: { value: boolean }) => {
-        update(value);
-    });
+    xnew.nest({ tag: 'div', className: `${css.knob} ${className}`, style });
 }

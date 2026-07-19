@@ -1524,9 +1524,15 @@ function InputRange(unit, _a = {}) {
             layer: 'base',
             body: `
                 display: inline-block;
-                box-sizing: border-box;
                 position: relative; margin: 0.125em;
-                border: 1px solid color-mix(in srgb, currentColor 40%, transparent); border-radius: 0.25em;
+            `,
+        },
+        frame: {
+            layer: 'base',
+            body: `
+                position: absolute; inset: 0;
+                border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+                border-radius: 0.25em;
             `,
         },
         horizontal: {
@@ -1567,6 +1573,7 @@ function InputRange(unit, _a = {}) {
     });
     const sizeClass = vertical ? css.vertical : css.horizontal;
     xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
+    xnew({ tag: 'div', className: css.frame });
     const initial = value !== null && value !== void 0 ? value : min;
     xnew(InputRangeMeter, { value: initial, min, max, vertical, attributes });
     const inputClass = vertical ? css.inputVertical : css.inputHorizontal;
@@ -1715,6 +1722,28 @@ function InputCheckbox(unit, _a = {}) {
                 opacity: 0; cursor: pointer; margin: 0;
             `,
         },
+    });
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
+    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
+    gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
+    gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
+    unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
+    unit.on('input', ({ value }) => value ? gate.open() : gate.close());
+    if (xnew.composed === false) {
+        xnew(CheckMark);
+    }
+    return {
+        get value() {
+            return gate.state === 'opened' || gate.state === 'opening';
+        },
+        get gate() {
+            return gate;
+        },
+    };
+}
+function CheckMark() {
+    const css = xnew.css({
         mark: {
             layer: 'base',
             body: `
@@ -1726,33 +1755,8 @@ function InputCheckbox(unit, _a = {}) {
             `,
         },
     });
-    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
-    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
-    container.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
-    gate.on('-open', () => container.toggleAttribute('data-checked', true));
-    gate.on('-closed', () => container.toggleAttribute('data-checked', false));
-    unit.on('input', ({ value }) => {
-        if (value === true) {
-            gate.open();
-        }
-        else {
-            gate.close();
-        }
-    });
-    if (xnew.composed === false) {
-        xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.mark }, () => {
-            xnew('<path d="M2 6 5 9 10 3"/>');
-        });
-    }
-    return {
-        get value() {
-            return gate.state === 'opened' || gate.state === 'opening';
-        },
-        get gate() {
-            return gate;
-        },
-    };
+    xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.mark });
+    xnew('<path d="M2 6 5 9 10 3"/>');
 }
 
 function InputText(unit, _a = {}) {
@@ -1829,8 +1833,7 @@ function InputNumber(unit, _a = {}) {
 }
 
 function InputSwitch(unit, _a = {}) {
-    var _b, _c, _d, _e, _f, _g;
-    var { value = false, className = '', style = '', attributes = {} } = _a, others = __rest(_a, ["value", "className", "style", "attributes"]);
+    var { value = false, gate, className = '', style = '', attributes = {} } = _a, others = __rest(_a, ["value", "gate", "className", "style", "attributes"]);
     const css = xnew.css({
         container: {
             layer: 'base',
@@ -1838,16 +1841,37 @@ function InputSwitch(unit, _a = {}) {
                 display: inline-block;
                 width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
                 position: relative;
+                border: 1px solid currentColor; border-radius: 1em;
+                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
         },
-        frame: {
+        input: {
             layer: 'base',
             body: `
-                position: absolute; inset: 0;
-                border: 1px solid currentColor; border-radius: 1em;
-                [data-checked] > & { background: color-mix(in srgb, currentColor 20%, transparent); }
+                position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
+                opacity: 0; cursor: pointer; margin: 0;
             `,
         },
+    });
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
+    xnew(Knob, attributes.knob);
+    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
+    gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
+    gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
+    unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
+    unit.on('input', ({ value }) => value ? gate.open() : gate.close());
+    return {
+        get value() {
+            return gate.state === 'opened' || gate.state === 'opening';
+        },
+        get gate() {
+            return gate;
+        },
+    };
+}
+function Knob(unit, { className = '', style = '' } = {}) {
+    const css = xnew.css({
         knob: {
             layer: 'base',
             body: `
@@ -1858,25 +1882,8 @@ function InputSwitch(unit, _a = {}) {
                 [data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }
             `,
         },
-        input: {
-            layer: 'base',
-            body: `
-                position: absolute; inset: 0; width: 100%; height: 100%;
-                opacity: 0; cursor: pointer; margin: 0;
-            `,
-        },
     });
-    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    xnew({ tag: 'div', className: `${css.frame} ${(_c = (_b = attributes.frame) === null || _b === void 0 ? void 0 : _b.className) !== null && _c !== void 0 ? _c : ''}`, style: (_d = attributes.frame) === null || _d === void 0 ? void 0 : _d.style });
-    xnew({ tag: 'div', className: `${css.knob} ${(_f = (_e = attributes.knob) === null || _e === void 0 ? void 0 : _e.className) !== null && _f !== void 0 ? _f : ''}`, style: (_g = attributes.knob) === null || _g === void 0 ? void 0 : _g.style });
-    const update = (checked) => {
-        container.toggleAttribute('data-checked', checked);
-    };
-    update(value);
-    xnew.nest(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
-    unit.on('input', ({ value }) => {
-        update(value);
-    });
+    xnew.nest({ tag: 'div', className: `${css.knob} ${className}`, style });
 }
 
 function InputRadio(unit, _a = {}) {

@@ -12,18 +12,18 @@ describe('basics InputRange', () => {
         jest.useRealTimers();
     });
 
-    // the container carries the frame ring; its div children are the meter first, then the status readout
-    // (the hidden input is the last child but is an <input>, not a <div>)
+    // the container is layout only; its div children are the frame ring first, then the meter, then the
+    // status readout (the hidden input is the last child but is an <input>, not a <div>)
     function containerOf(unit: xnew.Unit): HTMLElement {
         return unit.element.parentElement as HTMLElement;
     }
 
     function meterOf(unit: xnew.Unit): HTMLElement {
-        return containerOf(unit).querySelectorAll('div')[0] as HTMLElement;
+        return containerOf(unit).querySelectorAll('div')[1] as HTMLElement;
     }
 
     function statusOf(unit: xnew.Unit): HTMLElement {
-        return containerOf(unit).querySelectorAll('div')[1] as HTMLElement;
+        return containerOf(unit).querySelectorAll('div')[2] as HTMLElement;
     }
 
     it('nests a hidden native range input with the given attributes', () => {

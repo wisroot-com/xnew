@@ -13,15 +13,24 @@ export function InputRange(unit: xnew.Unit,
 ) {
 
     const css = xnew.css({
-        // the box itself carries the frame ring; the size prelude lives on the orientation variant so the
-        // long axis carries the margin-box cap. box-sizing: border-box keeps the ring border inside the size
+        // layout only; the ring lives on a separate frame part, not here — a border here would inset the
+        // absolute children off the ring. The size prelude lives on the orientation variant so the long
+        // axis carries the margin-box cap
         container: {
             layer: 'base',
             body: `
                 display: inline-block;
-                box-sizing: border-box;
                 position: relative; margin: 0.125em;
-                border: 1px solid color-mix(in srgb, currentColor 40%, transparent); border-radius: 0.25em;
+            `,
+        },
+        // full-extent faint ring; a sibling of the meter, so both borders share the same inset-0 geometry
+        // and overlap exactly whatever the border widths (no thickness-dependent offset needed)
+        frame: {
+            layer: 'base',
+            body: `
+                position: absolute; inset: 0;
+                border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+                border-radius: 0.25em;
             `,
         },
         // horizontal: 10em wide bar; max-width: stretch caps the margin box so a caller margin never overflows
@@ -71,6 +80,8 @@ export function InputRange(unit: xnew.Unit,
     const sizeClass = vertical ? css.vertical : css.horizontal;
     xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
 
+    xnew({ tag: 'div', className: css.frame });
+
     const initial = value ?? min;
     xnew(InputRangeMeter, { value: initial, min, max, vertical, attributes });
 
@@ -90,7 +101,9 @@ function InputRangeMeter(unit: xnew.Unit,
     { value?: number, min?: number, max?: number, vertical?: boolean, attributes?: { meter?: ElementAttributes, status?: ElementAttributes } } = {}
 ) {
     const css = xnew.css({
-        // value-driven meter; the growth axis (width / height) is set per orientation, driven from the container edge
+        // value-driven meter; the growth axis (width / height) is set per orientation. The pinned sides sit
+        // at 0 — the same inset-0 geometry as the frame ring, so their borders overlap exactly regardless of
+        // thickness (both are absolute children of the container, sharing its padding box)
         meter: {
             layer: 'base',
             body: `
