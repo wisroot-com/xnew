@@ -21,16 +21,14 @@ export function SVGText(unit: xnew.Unit,
     });
 
     xnew.nest({ tag: 'svg', className: `${css.svg} ${className}`, style, ...others });
-    const svg = unit.element as SVGSVGElement;
 
-    const textUnit = xnew({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' });
-    textUnit.element.textContent = text;
+    const textUnit = xnew({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' }, text);
 
     function resize() {
         const bbox = (textUnit.element as SVGGraphicsElement).getBBox();
-        svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
-        svg.style.width = bbox.width + 'px';
-        svg.style.height = bbox.height + 'px';
+        unit.element.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+        unit.element.style.width = bbox.width + 'px';
+        unit.element.style.height = bbox.height + 'px';
     }
     resize();
     textUnit.on('resize', resize);
