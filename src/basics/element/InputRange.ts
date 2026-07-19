@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // InputRange — text-free gauge backed by a hidden native <input type="range">, horizontal or vertical (`vertical: true`)
-// InputRange owns the container frame ring and the interaction input; the nested InputRangeMeter owns the
+// The container carries the faint frame ring and the interaction input; the nested InputRangeMeter owns the
 // value-driven meter and status readout, following the bubbling input event on the shared container.
 //----------------------------------------------------------------------------------------------------
 
@@ -13,22 +13,14 @@ export function InputRange(unit: xnew.Unit,
 ) {
 
     const css = xnew.css({
-        // layout only; the ring lives on a separate frame part, not here — a border here would inset the
-        // absolute children off the ring. The size prelude lives on the orientation variant so the long
-        // axis carries the margin-box cap
+        // the container carries the faint frame ring; the absolute meter overlaps it from the padding box
+        // via a -1px offset on its pinned sides. The size prelude lives on the orientation variant so the
+        // long axis carries the margin-box cap
         container: {
             layer: 'base',
             body: `
                 display: inline-block;
                 position: relative; margin: 0.125em;
-            `,
-        },
-        // full-extent faint ring; a sibling of the meter, so both borders share the same inset-0 geometry
-        // and overlap exactly whatever the border widths (no thickness-dependent offset needed)
-        frame: {
-            layer: 'base',
-            body: `
-                position: absolute; inset: 0;
                 border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
                 border-radius: 0.25em;
             `,
@@ -80,8 +72,6 @@ export function InputRange(unit: xnew.Unit,
     const sizeClass = vertical ? css.vertical : css.horizontal;
     xnew.nest({ tag: 'div', className: `${css.container} ${sizeClass} ${className}`, style });
 
-    xnew({ tag: 'div', className: css.frame });
-
     const initial = value ?? min;
     xnew(InputRangeMeter, { value: initial, min, max, vertical, attributes });
 
@@ -102,8 +92,8 @@ function InputRangeMeter(unit: xnew.Unit,
 ) {
     const css = xnew.css({
         // value-driven meter; the growth axis (width / height) is set per orientation. The pinned sides sit
-        // at 0 — the same inset-0 geometry as the frame ring, so their borders overlap exactly regardless of
-        // thickness (both are absolute children of the container, sharing its padding box)
+        // at -1px so the meter border rides on the container frame ring instead of insetting 1px within it
+        // (the meter's containing block is the container padding box, inside the 1px frame border)
         meter: {
             layer: 'base',
             body: `
@@ -116,14 +106,14 @@ function InputRangeMeter(unit: xnew.Unit,
         meterHorizontal: {
             layer: 'base',
             body: `
-                top: 0; left: 0; bottom: 0;
+                top: -1px; left: -1px; bottom: -1px;
                 transition: width 0.05s;
             `,
         },
         meterVertical: {
             layer: 'base',
             body: `
-                left: 0; right: 0; bottom: 0;
+                left: -1px; right: -1px; bottom: -1px;
                 transition: height 0.05s;
             `,
         },
