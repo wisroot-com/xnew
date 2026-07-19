@@ -66,7 +66,7 @@ export function InputCheckbox(unit: xnew.Unit,
     });
 
     // fall back to a default check mark when the caller composed none
-    if (xnew.extended === false) {
+    if (xnew.composed === false) {
         xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.mark }, () => {
             xnew('<path d="M2 6 5 9 10 3"/>');
         });

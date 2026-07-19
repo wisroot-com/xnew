@@ -27,7 +27,7 @@ export interface XnewBase {
 
     // True when the component whose body is currently running is composed by its caller: it carries a trailing
     // ExComponent (xnew(Base, props, fn)) or is itself extended onto another component (xnew.extend(Base)).
-    readonly extended: boolean;
+    readonly composed: boolean;
 }
 
 export const xnew = Object.assign(
@@ -139,9 +139,9 @@ export const xnew = Object.assign(
 );
 
 // A getter (not a plain member) so it reads Unit.current at access time; Object.assign would freeze the value.
-Object.defineProperty(xnew, 'extended', {
+Object.defineProperty(xnew, 'composed', {
     get(): boolean {
-        return Unit.current._.extended;
+        return Unit.current._.composed;
     },
 });
 

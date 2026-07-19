@@ -154,7 +154,7 @@ export function ListboxItem(unit: xnew.Unit,
         }
     });
     // fall back to the value as text when the caller composed no content into the row
-    if (xnew.extended === false) {
+    if (xnew.composed === false) {
         unit.element.textContent = value;
     }
 

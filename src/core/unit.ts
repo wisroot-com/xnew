@@ -44,7 +44,7 @@ export class Unit {
 
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
-        extended: boolean;
+        composed: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
         systems: Record<'update' | 'finalize', { listener: Function, execute: Function, count: number, owner: Unit }[]>;
@@ -81,7 +81,7 @@ export class Unit {
             parent,
             phase: 'invoked',
             protected: false,
-            extended: false,
+            composed: false,
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
@@ -143,7 +143,7 @@ export class Unit {
         Unit.currentUnit = unit;
 
         // a trailing ExComponent is composed with the base inside one synthetic component, so both reach
-        // the unit through the ordinary nested extend and each sees itself as extended (no special-casing)
+        // the unit through the ordinary nested extend and each sees itself as composed (no special-casing)
         if (ExComponent !== undefined) {
             const Ex = ExComponent;
             Unit.extend(unit, (unit: Unit, props: Object) => {
@@ -227,10 +227,10 @@ export class Unit {
 
     static extend(unit: Unit, Component: Function, props?: Object): { [key: string]: any } {
         const backupComponent = unit._.currentComponent;
-        const backupExtended = unit._.extended;
-        // extended is scoped to this invocation (restored on exit) so a component's own inner xnew.extend
+        const backupComposed = unit._.composed;
+        // composed is scoped to this invocation (restored on exit) so a component's own inner xnew.extend
         // never flips its own value: true when it rides on an outer component, false when it is the base
-        unit._.extended = backupComponent !== null;
+        unit._.composed = backupComponent !== null;
         unit._.currentComponent = Component;
 
         if (unit._.parent !== null) {
@@ -241,7 +241,7 @@ export class Unit {
         const defines = Component(unit, props ?? {}) ?? {};
 
         unit._.currentComponent = backupComponent;
-        unit._.extended = backupExtended;
+        unit._.composed = backupComposed;
 
         Unit.component2units.add(Component, unit);
         unit._.Components.push(Component);

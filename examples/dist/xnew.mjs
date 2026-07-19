@@ -491,7 +491,7 @@ class Unit {
             parent,
             phase: 'invoked',
             protected: false,
-            extended: false,
+            composed: false,
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
@@ -615,8 +615,8 @@ class Unit {
     static extend(unit, Component, props) {
         var _a;
         const backupComponent = unit._.currentComponent;
-        const backupExtended = unit._.extended;
-        unit._.extended = backupComponent !== null;
+        const backupComposed = unit._.composed;
+        unit._.composed = backupComponent !== null;
         unit._.currentComponent = Component;
         if (unit._.parent !== null) {
             Unit.addContext(unit._.parent, unit, Component, unit);
@@ -624,7 +624,7 @@ class Unit {
         Unit.addContext(unit, unit, Component, unit);
         const defines = (_a = Component(unit, props !== null && props !== void 0 ? props : {})) !== null && _a !== void 0 ? _a : {};
         unit._.currentComponent = backupComponent;
-        unit._.extended = backupExtended;
+        unit._.composed = backupComposed;
         Unit.component2units.add(Component, unit);
         unit._.Components.push(Component);
         Object.keys(defines).forEach((key) => {
@@ -1069,9 +1069,9 @@ const xnew = Object.assign((function (...args) {
     },
     Unit,
 });
-Object.defineProperty(xnew, 'extended', {
+Object.defineProperty(xnew, 'composed', {
     get() {
-        return Unit.current._.extended;
+        return Unit.current._.composed;
     },
 });
 
@@ -1740,7 +1740,7 @@ function InputCheckbox(unit, _a = {}) {
             gate.close();
         }
     });
-    if (xnew.extended === false) {
+    if (xnew.composed === false) {
         xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.mark }, () => {
             xnew('<path d="M2 6 5 9 10 3"/>');
         });
@@ -2051,7 +2051,7 @@ function ListboxItem(unit, _a = {}) {
             listbox.gate.close();
         }
     });
-    if (xnew.extended === false) {
+    if (xnew.composed === false) {
         unit.element.textContent = value;
     }
     return {
