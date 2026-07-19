@@ -303,6 +303,22 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **A sync `game.js` (shared by Node server + browser client) must NOT statically import addon/browser-only
+  libs (`pixi.js`, `three`, `@mulsense/xnew/addons/*`, `voxelkit`) — Node evaluates the whole module and
+  fails to resolve them.** Put the browser libs in a separate browser-only file, and have the client entry
+  inject them on a global for the client branches to read — the same flavor as `io: window.io`:
+  `index.js` does `import * as gfx from './render.js'; window.gfx = gfx;` before `xsync.boot(Game)` (static
+  imports fully resolve first), then `game.js`'s `xsync.client()` blocks use `window.gfx.xpixi` etc. Node
+  never runs client branches nor sets the global, so it stays clean. Initialize the addons in the client
+  branch of the **sync root** (Game) BEFORE its synced children exist, so `xnew.context(xpixiRoot)` resolves
+  for every reconciled replica (context is inherited from the root's end-of-body snapshot). Composite
+  Three into Pixi as a bg sprite (`PIXI.Texture.from(xthree.canvas)`, `texture.source.update()` per frame)
+  and give scene children explicit `zIndex` + `scene.sortableChildren = true` — replicas mount async, so
+  add-order can't be relied on for layering. Addon event callbacks (`pixiObject.on('pointertap', …)`,
+  a Three raycast handler, etc.) fire OUTSIDE the tick/scope, so any `xsync.emitToServer` / `xnew.emit` /
+  `xnew(...)` inside them must be wrapped in `xnew.scope(...)` (§7) — otherwise `emitToServer` throws
+  `no socket bound to this root` (Unit.current isn't the sync node). (See `examples/3_games/card/`.)
+
 - **InputCheckbox holds a Gate for its checked state and its `unit.element` is the CONTAINER, not the
   hidden input (modeled on Listbox, 2026-07).** The `<input>` is nested as a *child unit*
   (`xnew({ tag: 'input', … })`, no `xnew.nest`) so the container stays current — a trailing function
