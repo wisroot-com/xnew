@@ -29,7 +29,7 @@
     import { xnew, xbasics, xicons } from '@mulsense/xnew';
 
     xnew(document.querySelector('#main'), (unit) => {
-      xnew.nest('<div class="m-2 p-4 w-[36rem] text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg flex flex-col gap-4">');
+      xnew.nest('<div class="m-2 p-4 text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg flex flex-wrap content-start gap-x-6 gap-y-3">');
 
       xnew(MyButton);
       xnew(MyInputText);
@@ -39,6 +39,7 @@
       xnew(MyInputRadio);
       xnew(MyListBox);
       xnew(MyInputRange);
+      xnew(MyGraphicText);
     });
 
     // each block: the default look next to a designed variant
@@ -170,6 +171,18 @@
         }
         move(70);
         range.on('input', ({ value }) => move(value));
+      });
+    }
+
+    function MyGraphicText(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'GraphicText');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      // text drawn as SVG, auto-fitted to its bbox; fill picks up currentColor from the className color
+      xnew(xbasics.GraphicText, { text: 'default', fontSize: 32, className: 'text-indigo-600' });
+      // stroke + fill give a game-style outlined label (paint-order draws the stroke behind the fill)
+      xnew('<div class="px-3 py-1 rounded-lg bg-slate-800">', () => {
+        xnew(xbasics.GraphicText, { text: 'OUTLINE', fontSize: 32, className: 'text-emerald-300', style: 'stroke: #0f172a; stroke-width: 3;' });
       });
     }
   </script>
