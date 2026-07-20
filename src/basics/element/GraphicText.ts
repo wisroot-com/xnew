@@ -21,14 +21,14 @@ export function GraphicText(unit: xnew.Unit,
 
     xnew.nest({ tag: 'svg', className: `${css.container} ${className}`, style });
 
-    const textUnit = xnew({ tag: 'text', x: 0, y: 0, paintOrder: 'stroke fill', ...others }, text);
+    const inner = xnew({ tag: 'text', x: 0, y: 0, paintOrder: 'stroke fill', ...others }, text);
 
     function resize() {
-        const bbox = (textUnit.element as SVGGraphicsElement).getBBox();
+        const bbox = (inner.element as SVGGraphicsElement).getBBox();
         unit.element.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
         unit.element.style.width = bbox.width + 'px';
         unit.element.style.height = bbox.height + 'px';
     }
     resize();
-    textUnit.on('resize', resize);
+    inner.on('resize', resize);
 }
