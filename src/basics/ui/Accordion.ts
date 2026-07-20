@@ -29,7 +29,6 @@ export function Accordion(unit: xnew.Unit,
     function apply(value: number) {
         unit.element.style.height = value < 1.0 ? unit.element.scrollHeight * value + 'px' : 'auto';
         unit.element.style.opacity = value.toString();
-        xnew.emit('-transition', { value });
     }
 
     return {

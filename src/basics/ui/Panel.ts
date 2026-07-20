@@ -11,6 +11,7 @@ import { InputRange } from '../element/InputRange';
 import { InputCheckbox } from '../element/InputCheckbox';
 import { Listbox, ListboxMenu, ListboxItem } from '../element/Listbox';
 import { Accordion } from './Accordion';
+import { Gate } from './Gate';
 
 // nested is internal: group() marks its inner Panel so only the root creates the scroll container
 interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; nested?: boolean; }
@@ -64,19 +65,19 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
     }
 }
 
-function Group(group: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
+function Group(unit: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
+    const gate = xnew(Gate, { open, duration: 200 });
     if (name) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header: xnew.Unit) => {
-            header.on('click', () => group.gate.toggle());
+            header.on('click', () => gate.toggle());
             const chevron = xnew((unit: xnew.Unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
-            group.on('-transition', ({ value }: { value: number }) => {
+            gate.on('-transition', ({ value }: { value: number }) => {
                 chevron.element.style.transform = `rotate(${(value - 1) * 90}deg)`;
             });
             xnew('<div>', name);
         });
     }
-    xnew.extend(Accordion, { gate: { open, duration: 200 } });
-
+    xnew.extend(Accordion, { gate });
 }
 
 function Separator(unit: xnew.Unit) {

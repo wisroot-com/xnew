@@ -1490,15 +1490,15 @@ function GraphicText(unit, _a = {}) {
             `,
     });
     xnew.nest({ tag: 'svg', className: `${css.container} ${className}`, style });
-    const textUnit = xnew(Object.assign({ tag: 'text', x: 0, y: 0, paintOrder: 'stroke fill' }, others), text);
+    const inner = xnew(Object.assign({ tag: 'text', x: 0, y: 0, paintOrder: 'stroke fill' }, others), text);
     function resize() {
-        const bbox = textUnit.element.getBBox();
+        const bbox = inner.element.getBBox();
         unit.element.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
         unit.element.style.width = bbox.width + 'px';
         unit.element.style.height = bbox.height + 'px';
     }
     resize();
-    textUnit.on('resize', resize);
+    inner.on('resize', resize);
 }
 
 function InputRange(unit, _a = {}) {
@@ -2324,7 +2324,6 @@ function Accordion(unit, _a = {}) {
     function apply(value) {
         unit.element.style.height = value < 1.0 ? unit.element.scrollHeight * value + 'px' : 'auto';
         unit.element.style.opacity = value.toString();
-        xnew.emit('-transition', { value });
     }
     return {
         get gate() {
@@ -2842,17 +2841,18 @@ function Panel(unit, { params, nested = false }) {
     };
 }
 function Group(group, { name, open = false }) {
+    const gate = xnew(Gate, { open, duration: 200 });
     if (name) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header) => {
-            header.on('click', () => group.gate.toggle());
+            header.on('click', () => gate.toggle());
             const chevron = xnew((unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
-            group.on('-transition', ({ value }) => {
+            gate.on('-transition', ({ value }) => {
                 chevron.element.style.transform = `rotate(${(value - 1) * 90}deg)`;
             });
             xnew('<div>', name);
         });
     }
-    xnew.extend(Accordion, { gate: { open, duration: 200 } });
+    xnew.extend(Accordion, { gate });
 }
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
