@@ -446,13 +446,19 @@ declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...o
     readonly gate: Unit;
 };
 
+declare function VectorPad(unit: xnew.Unit, { type, className, style }?: {
+    type?: 'analog' | '4way' | '8way';
+    className?: string;
+    style?: string;
+}): void;
+
 declare function AnalogStick(unit: xnew.Unit, { className, style }?: {
     className?: string;
     style?: string;
 }): void;
 
-declare function DPad(unit: xnew.Unit, { diagonal, className, style }?: {
-    diagonal?: boolean;
+declare function DPad(unit: xnew.Unit, { type, className, style }?: {
+    type?: '4way' | '8way';
     className?: string;
     style?: string;
 }): void;
@@ -516,6 +522,7 @@ declare const xbasics: {
     Gate: typeof Gate;
     Accordion: typeof Accordion;
     Overlay: typeof Overlay;
+    VectorPad: typeof VectorPad;
     AnalogStick: typeof AnalogStick;
     DPad: typeof DPad;
     Panel: typeof Panel;

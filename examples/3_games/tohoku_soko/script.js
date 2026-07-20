@@ -462,7 +462,7 @@ function LeftBlock(unit, { id }) {
   });
 
   xnew('<div class="absolute bottom-[8cqh] left-0 right-0 m-auto size-[18cqw] text-green-700">', () => {
-    const dpad = xnew(xbasics.DPad, { diagonal: false, style: 'fill: #228B22; fill-opacity: 0.4;' });
+    const dpad = xnew(xbasics.DPad, { type: '4way', style: 'fill: #228B22; fill-opacity: 0.4;' });
     dpad.on('-down', ({ vector }) => move(vector));
   });
 

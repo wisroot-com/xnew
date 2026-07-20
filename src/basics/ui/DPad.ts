@@ -1,25 +1,17 @@
 //----------------------------------------------------------------------------------------------------
 // DPad — virtual game-pad directional pad with a quantized 4 or 8 way vector
-// Translates pointer drags into a quantized vector (x / y in {-1, 0, 1}) emitted as events;
-// `diagonal: false` restricts to 4 directions. The container is the <svg> itself.
+// Extends VectorPad ('8way' / '4way') for input; draws 4 quadrants that
+// highlight per direction on -down / -move and clear on -up.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { VectorPad } from './VectorPad';
 
 export function DPad(unit: xnew.Unit,
-    { diagonal = true, className = '', style = '' }:
-    { diagonal?: boolean, className?: string, style?: string } = {}
+    { type = '8way', className = '', style = '' }:
+    { type?: '4way' | '8way', className?: string, style?: string } = {}
 ) {
-    const css = xnew.css('base', {
-        container: `
-            display: block; box-sizing: border-box;
-            cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
-            stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
-            fill: #FFF; fill-opacity: 0.8;
-        `,
-    });
-
-    xnew.nest({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.container} ${className}`, style });
+    xnew.extend(VectorPad, { type, className, style });
 
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
@@ -48,36 +40,16 @@ export function DPad(unit: xnew.Unit,
         xnew('<polygon points="57 32 51 27 51 37">');
     });
 
-    unit.on('dragstart dragmove', ({ type, position }: { type: string, position: { x: number, y: number } }) => {
-        const size = unit.element.clientWidth;
-        const x = position.x - size / 2;
-        const y = position.y - size / 2;
-        const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
-        const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
-        const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-        if (diagonal === true) {
-            vector.x = Math.abs(vector.x) > 0.5 ? Math.sign(vector.x) : 0;
-            vector.y = Math.abs(vector.y) > 0.5 ? Math.sign(vector.y) : 0;
-        } else if (Math.abs(vector.x) > Math.abs(vector.y)) {
-            vector.x = Math.abs(vector.x) > 0.5 ? Math.sign(vector.x) : 0;
-            vector.y = 0;
-        } else {
-            vector.x = 0;
-            vector.y = Math.abs(vector.y) > 0.5 ? Math.sign(vector.y) : 0;
-        }
-
+    unit.on('-down -move', ({ vector }: { vector: { x: number, y: number } }) => {
         targets[0].element.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
         targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
         targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
         targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
-        xnew.emit({ dragstart: '-down', dragmove: '-move' }[type] as string, { vector });
     });
-
-    unit.on('dragend', () => {
+    unit.on('-up', () => {
         targets[0].element.style.filter = '';
         targets[1].element.style.filter = '';
         targets[2].element.style.filter = '';
         targets[3].element.style.filter = '';
-        xnew.emit('-up', { vector: { x: 0, y: 0 } });
     });
 }

@@ -2334,7 +2334,7 @@ function Accordion(unit, _a = {}) {
     };
 }
 
-function AnalogStick(unit, { className = '', style = '' } = {}) {
+function VectorPad(unit, { type = 'analog', className = '', style = '' } = {}) {
     const css = xnew.css('base', {
         container: `
             display: block; box-sizing: border-box;
@@ -2344,39 +2344,53 @@ function AnalogStick(unit, { className = '', style = '' } = {}) {
         `,
     });
     xnew.nest({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.container} ${className}`, style });
-    xnew('<polygon points="32  7 27 13 37 13">');
-    xnew('<polygon points="32 57 27 51 37 51">');
-    xnew('<polygon points=" 7 32 13 27 13 37">');
-    xnew('<polygon points="57 32 51 27 51 37">');
-    const target = xnew('<circle cx="32" cy="32" r="14">');
-    unit.on('dragstart dragmove', ({ type, position }) => {
+    unit.on('dragstart dragmove', ({ type: event, position }) => {
         const size = unit.element.clientWidth;
         const x = position.x - size / 2;
         const y = position.y - size / 2;
         const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
         const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
         const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-        target.element.setAttribute('transform', `translate(${vector.x * 16} ${vector.y * 16})`);
-        target.element.style.filter = 'brightness(80%)';
-        xnew.emit({ dragstart: '-down', dragmove: '-move' }[type], { vector });
+        if (type === '8way') {
+            vector.x = Math.abs(vector.x) > 0.5 ? Math.sign(vector.x) : 0;
+            vector.y = Math.abs(vector.y) > 0.5 ? Math.sign(vector.y) : 0;
+        }
+        else if (type === '4way') {
+            if (Math.abs(vector.x) > Math.abs(vector.y)) {
+                vector.x = Math.abs(vector.x) > 0.5 ? Math.sign(vector.x) : 0;
+                vector.y = 0;
+            }
+            else {
+                vector.x = 0;
+                vector.y = Math.abs(vector.y) > 0.5 ? Math.sign(vector.y) : 0;
+            }
+        }
+        xnew.emit({ dragstart: '-down', dragmove: '-move' }[event], { vector });
     });
     unit.on('dragend', () => {
-        target.element.removeAttribute('transform');
-        target.element.style.filter = '';
         xnew.emit('-up', { vector: { x: 0, y: 0 } });
     });
 }
 
-function DPad(unit, { diagonal = true, className = '', style = '' } = {}) {
-    const css = xnew.css('base', {
-        container: `
-            display: block; box-sizing: border-box;
-            cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; pointer-events: auto;
-            stroke: currentColor; stroke-opacity: 0.8; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
-            fill: #FFF; fill-opacity: 0.8;
-        `,
+function AnalogStick(unit, { className = '', style = '' } = {}) {
+    xnew.extend(VectorPad, { type: 'analog', className, style });
+    xnew('<polygon points="32  7 27 13 37 13">');
+    xnew('<polygon points="32 57 27 51 37 51">');
+    xnew('<polygon points=" 7 32 13 27 13 37">');
+    xnew('<polygon points="57 32 51 27 51 37">');
+    const target = xnew('<circle cx="32" cy="32" r="14">');
+    unit.on('-down -move', ({ vector }) => {
+        target.element.setAttribute('transform', `translate(${vector.x * 16} ${vector.y * 16})`);
+        target.element.style.filter = 'brightness(80%)';
     });
-    xnew.nest({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.container} ${className}`, style });
+    unit.on('-up', () => {
+        target.element.removeAttribute('transform');
+        target.element.style.filter = '';
+    });
+}
+
+function DPad(unit, { type = '8way', className = '', style = '' } = {}) {
+    xnew.extend(VectorPad, { type, className, style });
     const polygons = [
         '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
         '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
@@ -2399,37 +2413,17 @@ function DPad(unit, { diagonal = true, className = '', style = '' } = {}) {
         xnew('<polygon points=" 7 32 13 27 13 37">');
         xnew('<polygon points="57 32 51 27 51 37">');
     });
-    unit.on('dragstart dragmove', ({ type, position }) => {
-        const size = unit.element.clientWidth;
-        const x = position.x - size / 2;
-        const y = position.y - size / 2;
-        const a = (y !== 0 || x !== 0) ? Math.atan2(y, x) : 0;
-        const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
-        const vector = { x: Math.cos(a) * d, y: Math.sin(a) * d };
-        if (diagonal === true) {
-            vector.x = Math.abs(vector.x) > 0.5 ? Math.sign(vector.x) : 0;
-            vector.y = Math.abs(vector.y) > 0.5 ? Math.sign(vector.y) : 0;
-        }
-        else if (Math.abs(vector.x) > Math.abs(vector.y)) {
-            vector.x = Math.abs(vector.x) > 0.5 ? Math.sign(vector.x) : 0;
-            vector.y = 0;
-        }
-        else {
-            vector.x = 0;
-            vector.y = Math.abs(vector.y) > 0.5 ? Math.sign(vector.y) : 0;
-        }
+    unit.on('-down -move', ({ vector }) => {
         targets[0].element.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
         targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
         targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
         targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
-        xnew.emit({ dragstart: '-down', dragmove: '-move' }[type], { vector });
     });
-    unit.on('dragend', () => {
+    unit.on('-up', () => {
         targets[0].element.style.filter = '';
         targets[1].element.style.filter = '';
         targets[2].element.style.filter = '';
         targets[3].element.style.filter = '';
-        xnew.emit('-up', { vector: { x: 0, y: 0 } });
     });
 }
 
@@ -2959,6 +2953,7 @@ const xbasics = {
     Gate,
     Accordion,
     Overlay,
+    VectorPad,
     AnalogStick,
     DPad,
     Panel,
