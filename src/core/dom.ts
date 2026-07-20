@@ -16,7 +16,6 @@ export function isDomElement(value: unknown): value is DomElement {
 // element definition object — the tag-string alternative for computed / conditional attributes
 //----------------------------------------------------------------------------------------------------
 
-// source name kept distinct from the public member (xnew.ElementDef), or the d.ts self-references
 export interface DomElementDef { tag: string; className?: string; style?: string; [key: string]: any; }
 
 export function isElementDef(value: unknown): value is DomElementDef {

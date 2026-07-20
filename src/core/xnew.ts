@@ -158,6 +158,5 @@ export namespace xnew {
     export type Unit = InstanceType<typeof Unit>;
     export type Timer = InstanceType<typeof UnitTimer>;
     export type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
-    export type ElementDef = DomElementDef;
 }
 
