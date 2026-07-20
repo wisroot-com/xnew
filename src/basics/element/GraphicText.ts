@@ -1,8 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // GraphicText — decoratable (fill + stroke halo) text drawn as SVG, auto-fitted to its bounding box
-// display: inline-block by default, so it flows inline within surrounding text; the svg is resized
-// to the text's bbox, so its footprint matches the glyphs. className / style land on the svg;
-// rest props (fontSize, fontFamily, …) land on the inner <text>.
+// display: inline-block by default, so it flows inline; the svg is resized to the text's bbox.
+// className / style land on the svg; rest props (fontSize, fontFamily, …) land on the inner <text>.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

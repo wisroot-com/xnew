@@ -1,8 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputRange — text-free gauge backed by a hidden native <input type="range">, horizontal or vertical (`vertical: true`)
 // unit.element is the container (frame ring + interaction input); left un-composed, the default
-// InputRangeMeter + InputRangeStatus are drawn, each following the bubbling input event on the shared
-// container. A trailing compose function replaces them with caller content (xnew.composed === false gate).
+// InputRangeMeter + InputRangeStatus are drawn; a trailing compose fn replaces them (xnew.composed gate).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

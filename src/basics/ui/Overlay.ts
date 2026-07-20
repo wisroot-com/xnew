@@ -1,8 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Overlay — full-viewport backdrop that fades in/out with its Gate
-// `gate` is Gate props (new child Gate) or an existing Gate unit to reuse, exposed as `gate`; opening,
-// closing, and reacting to `-closed` (e.g. finalizing) are the caller's. `anchor` tracks an element's rect.
-// While the gate is fully closed the backdrop is click-through, so it can stay mounted and just toggle.
+// `gate` is Gate props (new child Gate) or an existing Gate unit reused, exposed as `gate`; `anchor`
+// tracks an element's rect. Fully closed the backdrop is click-through, so it can stay mounted.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

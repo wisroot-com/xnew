@@ -1,9 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputSwitch — sliding on / off switch backed by a hidden native <input type="checkbox">
 // Holds a Gate for the on/off state and exposes it as `gate`; the invisible native input captures
-// interaction. The container carries the framed pill look and the on tint (keyed on data-checked).
-// unit.element is the container (not the input); left un-composed, the default sliding Knob is drawn,
-// and a trailing compose function replaces it with caller content (xnew.composed === false gate).
+// interaction. unit.element is the container; un-composed it draws the default Knob, else a compose fn.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

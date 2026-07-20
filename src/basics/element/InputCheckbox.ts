@@ -1,9 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputCheckbox — framed check box backed by a hidden native <input type="checkbox">
 // Holds a Gate for the checked state and exposes it as `gate`; the invisible native input captures
-// interaction. A trailing function composes the mark into the container and reacts to `gate`
-// (`xnew(InputCheckbox, {}, (unit) => { … unit.gate … xnew(xicons.Check) })`); left empty, a default
-// check svg is drawn. unit.element is the container (not the input), so composed content nests inside it.
+// interaction. unit.element is the container (not the input), so a trailing compose fn nests inside it.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
