@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "../../thirdparty/three/three.module.js",
+        "three/addons/": "../../thirdparty/three/addons/",
+        "@pixiv/three-vrm": "../../thirdparty/three-vrm/three-vrm.module.min.js",
+        "@pixiv/three-vrm-animation": "../../thirdparty/three-vrm/three-vrm-animation.module.min.js",
+        "voxelkit": "../../thirdparty/voxelkit/voxelkit.mjs",
+        "@mulsense/xnew": "../../dist/xnew.mjs",
+        "@mulsense/xnew/addons/xthree": "../../dist/addons/xthree.mjs"
+      }
+    }
+  </script>
+  <script type="module" src="./script.js"></script>
+  <script src="../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden bg-neutral-800">
+  <div id="main" class="relative w-full h-full"></div>
+</body>
+
+</html>
