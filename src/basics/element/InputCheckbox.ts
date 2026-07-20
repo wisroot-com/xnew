@@ -36,7 +36,7 @@ export function InputCheckbox(unit: xnew.Unit,
 
     unit.on('input', ({ value }: { value: boolean }) => value ? gate.open() : gate.close());
 
-    if (xnew.composed === false) {
+    if (xnew.standalone === true) {
         xnew(CheckMark);
     }
 
@@ -51,7 +51,7 @@ export function InputCheckbox(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// CheckMark — the default check svg drawn when the caller composed no content; shown while data-checked
+// CheckMark — the default check svg drawn when the component is used standalone; shown while data-checked
 //----------------------------------------------------------------------------------------------------
 
 function CheckMark() {

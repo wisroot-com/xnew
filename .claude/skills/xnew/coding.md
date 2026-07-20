@@ -111,7 +111,7 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   all key on `currentColor`, so a single `className: 'text-indigo-600'` recolors the whole control
   cohesively. For structural change, InputCheckbox / InputRange / InputSwitch accept a **trailing
   compose function** that replaces their default inner content — the mark, the meter + status, the
-  knob respectively (`xnew.composed === false` gate). Generated
+  knob respectively (`xnew.standalone === true` gate). Generated
   class names are page-unique, so page CSS cannot target inner parts directly by design.
 - `xnew.nest(tagOrDef, textContent?)` creates a child element from a **tag string**
   (`'<div …>'`) or an **element definition object** — an existing element is rejected
@@ -331,7 +331,7 @@ the rule, then one line of why.
   before you subscribe). Do NOT assume `unit.element` is the input here — that still holds for InputSwitch,
   but InputCheckbox and InputRange diverged (their `unit.element` is the container; the input is a
   `xnew({ tag: 'input', … })` child, not an `xnew.nest`). InputRange follows the same compose gate:
-  its default `InputRangeMeter` + `InputRangeStatus` are drawn only when `xnew.composed === false`, so a
+  its default `InputRangeMeter` + `InputRangeStatus` are drawn only when `xnew.standalone === true`, so a
   trailing compose function replaces them with caller content.
 
 - **A basics component's `frame` ring may be merged INTO the `container` (user decision, 2026-07) —

@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputSwitch — sliding on / off switch backed by a hidden native <input type="checkbox">
 // Holds a Gate for the on/off state and exposes it as `gate`; the invisible native input captures
-// interaction. unit.element is the container; un-composed it draws the default Knob, else a compose fn.
+// interaction. unit.element is the container; used standalone it draws the default Knob, else a compose fn.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -36,7 +36,7 @@ export function InputSwitch(unit: xnew.Unit,
 
     unit.on('input', ({ value }: { value: boolean }) => value ? gate.open() : gate.close());
 
-    if (xnew.composed === false) {
+    if (xnew.standalone === true) {
         xnew(Knob);
     }
 

@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputRange — text-free gauge backed by a hidden native <input type="range">, horizontal or vertical (`vertical: true`)
-// unit.element is the container (frame ring + interaction input); left un-composed, the default
-// InputRangeMeter + InputRangeStatus are drawn; a trailing compose fn replaces them (xnew.composed gate).
+// unit.element is the container (frame ring + interaction input); used standalone, the default
+// InputRangeMeter + InputRangeStatus are drawn; a trailing compose fn replaces them (xnew.standalone gate).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -40,7 +40,7 @@ export function InputRange(unit: xnew.Unit,
     const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
     xnew({ tag: 'input', type: 'range', min, max, step, value: initial, className: css.input, style: direction, ...others });
 
-    if (xnew.composed === false) {
+    if (xnew.standalone === true) {
         xnew(InputRangeMeter, { value: initial, min, max, vertical });
         xnew(InputRangeStatus, { value: initial, vertical });
     }

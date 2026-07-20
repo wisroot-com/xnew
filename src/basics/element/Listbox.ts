@@ -141,8 +141,8 @@ export function ListboxItem(unit: xnew.Unit,
             listbox.gate.close();
         }
     });
-    // fall back to the value as text when the caller composed no content into the row
-    if (xnew.composed === false) {
+    // fall back to the value as text when the row is used standalone (no content composed into it)
+    if (xnew.standalone === true) {
         unit.element.textContent = value;
     }
 
