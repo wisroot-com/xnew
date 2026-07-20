@@ -13,11 +13,11 @@ export function Image(unit: xnew.Unit,
     { src: ImageSource | Promise<ImageSource>, className?: string, style?: string, [key: string]: any }
 ) {
     const css = xnew.css('base', {
-        image: `
+        container: `
             `,
     });
 
-    xnew.nest({ tag: 'img', className: `${css.image} ${className}`, style, ...others });
+    xnew.nest({ tag: 'img', className: `${css.container} ${className}`, style, ...others });
     const element = unit.element as HTMLImageElement;
 
     let objectURL: string | null = null;

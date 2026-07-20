@@ -82,7 +82,7 @@ export function ListboxMenu(unit: xnew.Unit,
     const listbox = xnew.context(Listbox);
 
     const css = xnew.css('base', {
-        menu: `
+        container: `
                 position: absolute; top: 100%; left: 0; margin-top: 0.25em;
                 min-width: 100%; width: max-content; max-height: 12em;
                 border: 1px solid currentColor; border-radius: 0.25em;
@@ -92,7 +92,7 @@ export function ListboxMenu(unit: xnew.Unit,
 
     xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.element });
 
-    xnew.nest({ tag: 'div', className: `${css.menu} ${className}`, style, ...others }) as HTMLElement;
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others }) as HTMLElement;
 
     listbox.gate.on('-open', () => unit.element.style.background = surfaceColor());
 
@@ -121,7 +121,7 @@ export function ListboxItem(unit: xnew.Unit,
     listbox.register(unit);
 
     const css = xnew.css('base', {
-        item: `
+        container: `
                 height: 2em; padding: 0 0.5em;
                 display: flex; align-items: center;
                 white-space: nowrap;
@@ -130,7 +130,7 @@ export function ListboxItem(unit: xnew.Unit,
                 &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
     });
-    xnew.nest({ tag: 'div', className: `${css.item} ${className}`, style, ...others });
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
 
     unit.on('click', ({ event }: { event: PointerEvent }) => {
         event.stopPropagation();

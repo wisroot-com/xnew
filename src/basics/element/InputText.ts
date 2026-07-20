@@ -10,8 +10,6 @@ export function InputText(unit: xnew.Unit,
     { value?: string, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
-        // container carries the frame ring / spacing; :focus-within tints it while the inner input is active
-        // max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
         container: `
                 display: inline-flex; align-items: center;
                 box-sizing: border-box;
@@ -21,7 +19,6 @@ export function InputText(unit: xnew.Unit,
                 cursor: text;
                 &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
-        // transparent native field filling the container; the container owns the frame
         input: `
                 width: 100%; height: 100%;
                 margin: 0; padding: 0;

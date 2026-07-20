@@ -11,8 +11,6 @@ export function InputRadio(unit: xnew.Unit,
     { value?: string, name?: string, checked?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
-        // the label is the whole segment; wrapping the input lets a click toggle it natively, and
-        // :has(input:checked) paints the selected tint with no JS
         container: `
                 padding: 0.25em 0.5em;
                 flex: 1 1 0;
@@ -23,10 +21,8 @@ export function InputRadio(unit: xnew.Unit,
                 &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
                 &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
             `,
-        // 0-sized (not display:none) so it keeps focus and native arrow-key navigation within the group
         input: `
-                width: 0; height: 0; margin: 0;
-                opacity: 0;
+                width: 0; height: 0; margin: 0; opacity: 0;
             `,
     });
 

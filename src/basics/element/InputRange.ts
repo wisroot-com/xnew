@@ -11,27 +11,18 @@ export function InputRange(unit: xnew.Unit,
     { value?: number, min?: number, max?: number, step?: number, vertical?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
-        // the container carries the faint frame ring as an inset box-shadow (not a border) so it costs no
-        // box-model width — the padding box then equals the border box, and the absolute meter shares the
-        // container's coordinate system (clean inset: 0 / width: f, no -1px / +2px). The size prelude lives
-        // on the orientation variant so the long axis carries the margin-box cap
         container: `
             display: inline-block;
             position: relative; margin: 0.125em;
             box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 40%, transparent);
             border-radius: 0.25em;
         `,
-        // horizontal: 10em wide bar; max-width: stretch caps the margin box so a caller margin never overflows
         horizontal: `
             width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
         `,
-        // vertical: 10em tall bar; max-height: stretch caps the margin box the same way on the long axis
         vertical: `
             width: 1.8em; height: 10em; max-height: -webkit-fill-available; max-height: -moz-available; max-height: stretch;
         `,
-        // invisible native control stretched over the whole surface; the thumb is shrunk to zero
-        // extent along the track so the pointer→value mapping spans the full length and the bar tip
-        // tracks the cursor (natively the thumb center only travels between the half-thumb insets)
         input: `
             position: absolute; inset: 0; width: 100%; height: 100%;
             opacity: 0; cursor: pointer; user-select: none; margin: 0;
@@ -66,9 +57,6 @@ function InputRangeMeter(unit: xnew.Unit,
     { value?: number, min?: number, max?: number, vertical?: boolean } = {}
 ) {
     const css = xnew.css('base', {
-        // value-driven meter; the growth axis (width / height) is set per orientation. The container frame is
-        // an inset box-shadow (no border), so the padding box equals the border box — the meter pins flush at
-        // 0 and its border coincides with the frame ring, and a full value fills exactly 100%
         meter: `
             position: absolute;
             box-sizing: border-box;

@@ -11,10 +11,7 @@ export function GraphicText(unit: xnew.Unit,
     { text?: string, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
-        // inline-block so it flows inline within surrounding text; sized by resize(); overflow keeps
-        // the stroke halo outside the bbox visible; the presentation defaults (text = visible fill)
-        // inherit down to the <text>
-        svg: `
+        container: `
                 display: inline-block;
                 stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
                 fill: currentColor; fill-opacity: 1;
@@ -22,7 +19,7 @@ export function GraphicText(unit: xnew.Unit,
             `,
     });
 
-    xnew.nest({ tag: 'svg', className: `${css.svg} ${className}`, style });
+    xnew.nest({ tag: 'svg', className: `${css.container} ${className}`, style });
 
     const textUnit = xnew({ tag: 'text', x: 0, y: 0, paintOrder: 'stroke fill', ...others }, text);
 

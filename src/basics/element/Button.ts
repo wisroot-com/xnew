@@ -11,9 +11,8 @@ export function Button(unit: xnew.Unit,
     { text?: string, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
-        // inline-flex centers the label while flowing like a native control; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        button: `
-                min-width: 6em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em; margin: 0.125em;
+        container: `
+                min-width: 6em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em;
                 padding: 0 0.5em; margin: 0.125em;
                 cursor: pointer; user-select: none;
                 border: 1px solid currentColor; border-radius: 0.25em;
@@ -22,5 +21,5 @@ export function Button(unit: xnew.Unit,
             `,
     });
 
-    xnew.nest({ tag: 'button', type: 'button', className: `${css.button} ${className}`, style, ...others }, text);
+    xnew.nest({ tag: 'button', type: 'button', className: `${css.container} ${className}`, style, ...others }, text);
 }
