@@ -192,12 +192,35 @@ function makeWoodTopTexture(size = 512) {
     ctx.fillStyle = '#d5c096';
     ctx.fillRect(0, 0, size, size);
 
-    // 横線（間隔・太さ・色を線ごとに微妙にばらつかせる）
+    // 歪みの中心点（この点を中心に、平行線を垂直方向へ押し出して歪ませる）
+    const centers = [];
+    const centerCount = 3 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < centerCount; i++) {
+        centers.push({
+            cx: size * (0.1 + Math.random() * 0.8),
+            cy: size * (0.1 + Math.random() * 0.8),
+            wx: size * (0.06 + Math.random() * 0.08),    // 横方向の影響範囲
+            wy: size * (0.05 + Math.random() * 0.06),    // 縦方向の影響範囲
+            ampU: size * (0.008 + Math.random() * 0.014),   // 上側の押し出し量
+            ampD: size * (0.008 + Math.random() * 0.014),   // 下側の押し出し量（上下で微妙に変える）
+        });
+    }
+
+    // 横線（間隔・太さ・色を微妙にばらつかせつつ、中心点付近で垂直方向に歪ませる）
     for (let y = 3; y < size; y += 4 + Math.random() * 4) {
         const tint = (Math.random() - 0.5) * 24;   // 線ごとの色味差
         ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(size, y);
+        for (let x = 0; x <= size; x += 6) {
+            let dy = 0;
+            for (const c of centers) {
+                const ux = (x - c.cx) / c.wx;
+                const uy = (y - c.cy) / c.wy;
+                const amp = y < c.cy ? c.ampU : c.ampD;   // 上下で押し出し量を変える
+                dy += Math.exp(-ux * ux) * Math.exp(-uy * uy) * Math.sign(y - c.cy) * amp;
+            }
+            const yy = y + dy;
+            if (x === 0) { ctx.moveTo(x, yy); } else { ctx.lineTo(x, yy); }
+        }
         ctx.strokeStyle = `rgba(${118 + tint}, ${86 + tint}, ${48 + tint}, ${0.1 + Math.random() * 0.18})`;
         ctx.lineWidth = 0.6 + Math.random() * 1.4;
         ctx.stroke();
