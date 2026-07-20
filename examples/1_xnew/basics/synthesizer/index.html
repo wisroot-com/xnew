@@ -114,7 +114,7 @@
 
       xnew(Piano);
 
-      xnew('<div class="mt-3 flex flex-col gap-3">', () => {
+      xnew('<div class="mt-3 flex flex-col gap-3 w-128">', () => {
         xnew(ControlPanel);
         xnew(Console);
       });
@@ -339,7 +339,7 @@
         const enabled = group.checkbox({ name: 'enabled' });
         const sub = group.group({ open: params.enabled }, inner);
         enabled.on('input', ({ value }) => {
-          value ? sub.open() : sub.close();
+          value ? sub.gate.open() : sub.gate.close();
           emitParams();
         });
       });
@@ -350,7 +350,7 @@
       const enabled = panel.checkbox({ name: 'enabled' });
       const sub = panel.group({ open: params.enabled, params }, inner);
       enabled.on('input', ({ value }) => {
-        value ? sub.open() : sub.close();
+        value ? sub.gate.open() : sub.gate.close();
         emitParams();
       });
     }
