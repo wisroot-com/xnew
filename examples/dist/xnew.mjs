@@ -2334,7 +2334,7 @@ function Accordion(unit, _a = {}) {
     };
 }
 
-function VectorPad(unit, { type = 'analog', className = '', style = '' } = {}) {
+function VirtualPad(unit, { type = 'analog', className = '', style = '' } = {}) {
     const css = xnew.css('base', {
         container: `
             display: block; box-sizing: border-box;
@@ -2370,61 +2370,59 @@ function VectorPad(unit, { type = 'analog', className = '', style = '' } = {}) {
     unit.on('dragend', () => {
         xnew.emit('-up', { vector: { x: 0, y: 0 } });
     });
-}
-
-function AnalogStick(unit, { className = '', style = '' } = {}) {
-    xnew.extend(VectorPad, { type: 'analog', className, style });
-    xnew('<polygon points="32  7 27 13 37 13">');
-    xnew('<polygon points="32 57 27 51 37 51">');
-    xnew('<polygon points=" 7 32 13 27 13 37">');
-    xnew('<polygon points="57 32 51 27 51 37">');
-    const target = xnew('<circle cx="32" cy="32" r="14">');
-    unit.on('-down -move', ({ vector }) => {
-        target.element.setAttribute('transform', `translate(${vector.x * 16} ${vector.y * 16})`);
-        target.element.style.filter = 'brightness(80%)';
-    });
-    unit.on('-up', () => {
-        target.element.removeAttribute('transform');
-        target.element.style.filter = '';
-    });
-}
-
-function DPad(unit, { type = '8way', className = '', style = '' } = {}) {
-    xnew.extend(VectorPad, { type, className, style });
-    const polygons = [
-        '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
-        '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
-        '<polygon points="32 32 23 23  4 23  3 24  3 40  4 41 23 41">',
-        '<polygon points="32 32 41 23 60 23 61 24 61 40 60 41 41 41">'
-    ];
-    let targets = [];
-    xnew(() => {
-        xnew.nest('<g style="stroke: none;">');
-        targets = polygons.map((polygon) => xnew(polygon));
-    });
-    xnew(() => {
-        xnew.nest('<g style="fill: none;">');
-        xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
-        xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
-        xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');
-        xnew('<polyline points="41 23 60 23 61 24 61 40 60 41 41 41">');
-        xnew('<polygon points="32  7 27 13 37 13">');
-        xnew('<polygon points="32 57 27 51 37 51">');
-        xnew('<polygon points=" 7 32 13 27 13 37">');
-        xnew('<polygon points="57 32 51 27 51 37">');
-    });
-    unit.on('-down -move', ({ vector }) => {
-        targets[0].element.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
-        targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
-        targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
-        targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
-    });
-    unit.on('-up', () => {
-        targets[0].element.style.filter = '';
-        targets[1].element.style.filter = '';
-        targets[2].element.style.filter = '';
-        targets[3].element.style.filter = '';
-    });
+    if (xnew.standalone === true) {
+        if (type === 'analog') {
+            xnew('<polygon points="32  7 27 13 37 13">');
+            xnew('<polygon points="32 57 27 51 37 51">');
+            xnew('<polygon points=" 7 32 13 27 13 37">');
+            xnew('<polygon points="57 32 51 27 51 37">');
+            const target = xnew('<circle cx="32" cy="32" r="14">');
+            unit.on('-down -move', ({ vector }) => {
+                target.element.setAttribute('transform', `translate(${vector.x * 16} ${vector.y * 16})`);
+                target.element.style.filter = 'brightness(80%)';
+            });
+            unit.on('-up', () => {
+                target.element.removeAttribute('transform');
+                target.element.style.filter = '';
+            });
+        }
+        else {
+            const polygons = [
+                '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
+                '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
+                '<polygon points="32 32 23 23  4 23  3 24  3 40  4 41 23 41">',
+                '<polygon points="32 32 41 23 60 23 61 24 61 40 60 41 41 41">'
+            ];
+            let targets = [];
+            xnew(() => {
+                xnew.nest('<g style="stroke: none;">');
+                targets = polygons.map((polygon) => xnew(polygon));
+            });
+            xnew(() => {
+                xnew.nest('<g style="fill: none;">');
+                xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
+                xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
+                xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');
+                xnew('<polyline points="41 23 60 23 61 24 61 40 60 41 41 41">');
+                xnew('<polygon points="32  7 27 13 37 13">');
+                xnew('<polygon points="32 57 27 51 37 51">');
+                xnew('<polygon points=" 7 32 13 27 13 37">');
+                xnew('<polygon points="57 32 51 27 51 37">');
+            });
+            unit.on('-down -move', ({ vector }) => {
+                targets[0].element.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
+                targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
+                targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
+                targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
+            });
+            unit.on('-up', () => {
+                targets[0].element.style.filter = '';
+                targets[1].element.style.filter = '';
+                targets[2].element.style.filter = '';
+                targets[3].element.style.filter = '';
+            });
+        }
+    }
 }
 
 function Template(unit, _a) {
@@ -2953,9 +2951,7 @@ const xbasics = {
     Gate,
     Accordion,
     Overlay,
-    VectorPad,
-    AnalogStick,
-    DPad,
+    VirtualPad,
     Panel,
     VolumeController,
 };

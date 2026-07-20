@@ -88,7 +88,7 @@ function Controller(unit) {
     xnew.nest('<div class="absolute left-0 right-0 bottom-0 w-full h-[30%] pointer-events-none" style="container-type: size;">');
     xnew.nest('<div class="absolute left-0 top-0 bottom-0 w-[100cqh] h-full">');
     // directional pad
-    const dpad = xnew('<div class="absolute inset-[5cqh]">', xbasics.DPad, {});
+    const dpad = xnew('<div class="absolute inset-[5cqh]">', xbasics.VirtualPad, { type: '8way' });
     dpad.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));
 
     dpad.on('pointerdown', ({ event }) => {

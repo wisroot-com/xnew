@@ -30,11 +30,11 @@
       xnew.nest('<div class="absolute left-0 right-0 bottom-0 w-full h-[30%]" style="container-type: size;">');
 
       // directional pad (left bottom)
-      const dpad = xnew(xbasics.DPad, { className: 'absolute left-[5cqh] bottom-[5cqh] w-[90cqh] h-[90cqh]' });
+      const dpad = xnew(xbasics.VirtualPad, { type: '8way', className: 'absolute left-[5cqh] bottom-[5cqh] w-[90cqh] h-[90cqh]' });
       dpad.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));
 
       // analog stick (right bottom)
-      const stick = xnew(xbasics.AnalogStick, { className: 'absolute right-[5cqh] bottom-[5cqh] w-[90cqh] h-[90cqh]' });
+      const stick = xnew(xbasics.VirtualPad, { type: 'analog', className: 'absolute right-[5cqh] bottom-[5cqh] w-[90cqh] h-[90cqh]' });
       stick.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));
     }
 

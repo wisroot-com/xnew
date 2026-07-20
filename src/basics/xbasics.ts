@@ -23,9 +23,7 @@ import { Volume } from './audio/master';
 import { Gate } from './ui/Gate';
 import { Accordion } from './ui/Accordion';
 import { Overlay } from './ui/Overlay';
-import { VectorPad } from './ui/VectorPad';
-import { AnalogStick } from './ui/AnalogStick';
-import { DPad } from './ui/DPad';
+import { VirtualPad } from './ui/VirtualPad';
 import { Panel } from './ui/Panel';
 import { VolumeController } from './ui/VolumeController';
 
@@ -51,9 +49,7 @@ export const xbasics = {
     Gate,
     Accordion,
     Overlay,
-    VectorPad,
-    AnalogStick,
-    DPad,
+    VirtualPad,
     Panel,
     VolumeController,
 };
