@@ -19,7 +19,7 @@ export function Gate(unit: xnew.Unit,
         xnew.emit('-close');
         xnew.emit('-closed');
     }
-    let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
+    let timer: xnew.Timer = xnew.timeout(() => xnew.emit('-transition', { value }));
 
     let moving: number = 0;
     function move(direction: number) {

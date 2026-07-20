@@ -32,7 +32,7 @@
     function MyAccordion(unit) {
       xnew.nest('<div class="w-64 border rounded-lg">');
 
-      const gate = xnew(xbasics.Gate, { open: true, duration: 200 });
+      const gate = xnew(xbasics.Gate, { open: false, duration: 200 });
       xnew('<div class="flex items-center select-none cursor-pointer">', (header) => {
         const chevron = xnew((unit) => xnew.extend(xicons.ChevronRight, { className: 'size-4' }));
         gate.on('-transition', ({ value }) => chevron.element.style.transform = `rotate(${value * 90}deg)`);

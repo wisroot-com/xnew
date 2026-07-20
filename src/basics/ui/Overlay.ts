@@ -11,7 +11,7 @@ export function Overlay(unit: xnew.Unit,
     { gate = {}, anchor, className = '', style = '', ...others }:
     { gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, anchor?: HTMLElement, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
+    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate);
 
     const css = xnew.css('base', {
         container: `

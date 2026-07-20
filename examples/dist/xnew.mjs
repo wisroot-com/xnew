@@ -1063,7 +1063,9 @@ const xnew = Object.assign((function (...args) {
     protect() {
         Unit.current._.protected = true;
     },
-    Unit,
+    isUnit(value) {
+        return value instanceof Unit;
+    },
 });
 Object.defineProperty(xnew, 'standalone', {
     get() {
@@ -1663,7 +1665,7 @@ function InputCheckbox(unit, _a = {}) {
     });
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
     xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
-    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
+    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
     gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
     gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
     unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
@@ -1772,7 +1774,7 @@ function InputSwitch(unit, _a = {}) {
     });
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
     xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
-    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
+    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
     gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
     gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
     unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
@@ -1825,7 +1827,7 @@ function InputRadio(unit, _a = {}) {
 
 function Overlay(unit, _a = {}) {
     var { gate = {}, anchor, className = '', style = '' } = _a, others = __rest(_a, ["gate", "anchor", "className", "style"]);
-    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
+    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate);
     const css = xnew.css('base', {
         container: `
                 position: fixed; inset: 0; z-index: 1000;
@@ -1876,7 +1878,7 @@ function Listbox(unit, _a = {}) {
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     const label = xnew({ tag: 'div', className: css.label }, selected);
     const items = [];
-    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: false, duration: 0 });
+    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: false, duration: 0 });
     unit.on('click', () => gate.toggle());
     gate.on('-open', () => unit.element.toggleAttribute('data-open', true));
     gate.on('-closed', () => unit.element.toggleAttribute('data-open', false));
@@ -2311,7 +2313,7 @@ function Synthesizer(unit, props) {
 
 function Accordion(unit, _a = {}) {
     var { gate = {}, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
-    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate);
+    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate);
     const css = xnew.css('base', {
         container: `
                 overflow: hidden;
@@ -2319,12 +2321,10 @@ function Accordion(unit, _a = {}) {
             `,
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
-    apply(gate.value);
-    gate.on('-transition', ({ value }) => apply(value));
-    function apply(value) {
+    gate.on('-transition', ({ value }) => {
         unit.element.style.height = value < 1.0 ? unit.element.scrollHeight * value + 'px' : 'auto';
         unit.element.style.opacity = value.toString();
-    }
+    });
     return {
         get gate() {
             return gate;
@@ -2840,7 +2840,7 @@ function Panel(unit, { params, nested = false }) {
         }
     };
 }
-function Group(group, { name, open = false }) {
+function Group(unit, { name, open = false }) {
     const gate = xnew(Gate, { open, duration: 200 });
     if (name) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header) => {

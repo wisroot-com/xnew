@@ -168,10 +168,11 @@ declare const xnew: XnewBase & {
     interval(callback: Function, duration: number, iterations?: number): UnitTimer;
     transition(transition: Function, duration?: number, easing?: string): UnitTimer;
     protect(): void;
-    Unit: typeof Unit;
+    isUnit(value: any): value is Unit;
 };
 declare namespace xnew {
     type Unit = InstanceType<typeof Unit>;
+    type Timer = InstanceType<typeof UnitTimer>;
     type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
     type ElementDef = DomElementDef;
 }

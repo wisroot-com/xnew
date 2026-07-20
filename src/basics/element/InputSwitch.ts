@@ -29,7 +29,7 @@ export function InputSwitch(unit: xnew.Unit,
 
     xnew({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
 
-    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate ?? { open: value, duration: 0 });
+    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate ?? { open: value, duration: 0 });
     gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
     gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
     unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');

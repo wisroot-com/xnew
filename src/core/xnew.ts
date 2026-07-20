@@ -137,8 +137,11 @@ export const xnew = Object.assign(
             Unit.current._.protected = true;
         },
 
-        // The Unit class itself, exposed as a runtime value so callers can test `x instanceof xnew.Unit`.
-        Unit,
+        // Runtime type guard for a Unit — the discriminator for `props | Unit` params. The Unit class
+        // itself is not exposed as a value, so use this instead of `x instanceof xnew.Unit`.
+        isUnit(value: any): value is Unit {
+            return value instanceof Unit;
+        },
 
     }
 );
@@ -153,6 +156,7 @@ Object.defineProperty(xnew, 'standalone', {
 // Merges the type namespace onto the callable value (public types such as xnew.Unit).
 export namespace xnew {
     export type Unit = InstanceType<typeof Unit>;
+    export type Timer = InstanceType<typeof UnitTimer>;
     export type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
     export type ElementDef = DomElementDef;
 }

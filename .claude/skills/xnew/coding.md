@@ -382,8 +382,10 @@ the rule, then one line of why.
   extended before the `Accordion`). `Accordion` / `Overlay` take `gate: props | unit` — props ⇒ they create
   a child `xnew(Gate, props)`; a unit ⇒ they reuse it — and expose it as `.gate`. A child Gate emits
   `-transition` / `-closed` on its OWN unit, so subscribe on `accordion.gate.on(...)`, not the host unit.
-- **`xnew.Unit` is both a type AND a runtime value** (the `Unit` class is on the `xnew` object), so
-  `x instanceof xnew.Unit` works and narrows the type — use it to discriminate a passed unit from a props object.
+- **The `Unit` class is NOT exposed as a runtime value; `xnew.Unit` is a TYPE only.** To discriminate a
+  passed unit from a props object at runtime, use the `xnew.isUnit(x): x is xnew.Unit` type guard (narrows
+  like the old `instanceof`) — `x instanceof xnew.Unit` no longer compiles. `xnew.Timer` is likewise a
+  type-only alias for the timer object returned by `xnew.timeout` / `interval` / `transition`.
 
 - **A component's body-ending element is where a host's `unit.on(domEvent)` attaches — so any native
   event you want the host to catch must bubble to THAT element.** `unit.on('input', …)` registered after

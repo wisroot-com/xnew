@@ -37,7 +37,7 @@ export function Listbox(unit: xnew.Unit,
 
     const items: xnew.Unit[] = [];
 
-    gate = gate instanceof xnew.Unit ? gate : xnew(Gate, gate ?? { open: false, duration: 0 });
+    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate ?? { open: false, duration: 0 });
 
     unit.on('click', () => gate.toggle());
     gate.on('-open', () => unit.element.toggleAttribute('data-open', true));

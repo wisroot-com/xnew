@@ -100,7 +100,7 @@ describe('basics InputCheckbox', () => {
     it('exposes the checked-state gate, reflecting it in .value', () => {
         const unit = xnew(InputCheckbox, { value: true });
 
-        expect(unit.gate).toBeInstanceOf(xnew.Unit);
+        expect(xnew.isUnit(unit.gate)).toBe(true);
         expect(unit.gate.state).toBe('opened');
 
         unit.gate.close();
