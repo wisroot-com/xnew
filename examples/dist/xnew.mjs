@@ -2316,15 +2316,17 @@ function Accordion(unit, _a = {}) {
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate);
     const css = xnew.css('base', {
         container: `
-                overflow: hidden;
-                box-sizing: border-box;
-            `,
+            overflow: hidden;
+            box-sizing: border-box;
+        `,
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
-    gate.on('-transition', ({ value }) => {
+    apply(gate.value);
+    gate.on('-transition', ({ value }) => apply(value));
+    function apply(value) {
         unit.element.style.height = value < 1.0 ? unit.element.scrollHeight * value + 'px' : 'auto';
         unit.element.style.opacity = value.toString();
-    });
+    }
     return {
         get gate() {
             return gate;
