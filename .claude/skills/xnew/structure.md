@@ -1,15 +1,10 @@
----
-name: xnew-structure
-description: Visualize the structure of an xnew program — analyze a script/example that uses xnew() / xnew.extend() / unit.change() and produce a simple, human-readable Markdown file with one Mermaid flowchart per component (scene). Use when the user wants to understand or document how the component functions of an xnew program relate to each other.
----
-
 # xnew structure visualizer
 
 xnew のプログラム（`script.js` など）を読み取り、**コンポーネント関数ごとの内部構造**を
-シンプルな Markdown + Mermaid 図に変換するためのスキル。
+シンプルな Markdown + Mermaid 図に変換するための手順。
 
 xnew は「コンポーネント指向」ライブラリで、アプリは小さなコンポーネント関数 `(unit, props) => {...}`
-を組み合わせて構成される。このスキルは、各コンポーネント（とくに Scene）が `xnew()` で
+を組み合わせて構成される。ここでは、各コンポーネント（とくに Scene）が `xnew()` で
 **どの子コンポーネントを生成するか**を、1コンポーネント＝1図として描く。
 
 ## 出力イメージ（これがゴール）
