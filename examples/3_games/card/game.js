@@ -10,9 +10,11 @@
 //   進行: 接続順に席 0..3 を割り当て、各自 3 枚配る。自分の手番になったら手札を 1 枚出して山札から 1 枚引く。
 //         出したら次の席へ手番が移り、自分の番まで待つ、の繰り返し。5 人目以降は席が無く観戦になる。
 //
-//   描画（browser 専用ライブラリは window.gfx 経由。index.js が render.js を載せる）:
-//     - Three : テーブルを囲む 4 体のボクセルキャラ（歩きモーション付き）。OffscreenCanvas に描いて…
-//     - Pixi  : …その canvas を最背面スプライトに、その上に山札・各自の出したカード・自分の手札 UI を重ねる。
+//   描画（browser 専用ライブラリは window.gfx 経由。index.js が render.js を載せる。3D の見た目は
+//   2_addons/three_chabudai を移植）:
+//     - Three : 畳の床・円形ちゃぶ台・囲む 4 体のボクセルキャラ・山札(3D)・各自の出したカード(3D)。
+//               OffscreenCanvas に描いて…
+//     - Pixi  : …その canvas を最背面スプライトに、その上に名札・HUD・自分の手札 UI(2D) を重ねる。
 //----------------------------------------------------------------------------------------------------
 
 import { xnew, xsync } from '@mulsense/xnew';
@@ -22,9 +24,17 @@ const SEATS = 4;
 const HAND_SIZE = 3;
 const MOGS = ['zundamon', 'kiritan', 'zunko', 'itako'];     // 席 → モデル
 const LABELS = ['ずんだもん', 'きりたん', 'ずんこ', 'いたこ']; // 席 → 表示名
-const VRMA = '/assets/VRMA_01.vrma';                        // 歩きモーション
-// 席 → 3D 位置 [x, y, z]（テーブル中央=原点。手前 / 左 / 奥 / 右）
-const SEAT_POS = [[0, 0, 2.6], [-3.4, 0, 0.2], [0, 0, -2.6], [3.4, 0, 0.2]];
+const VRMA = '/assets/walk.vrma';                           // 歩きモーション
+// 席 → テーブル周りの角度（0=手前 / 1=左 / 2=奥 / 3=右）。位置は x=sin(a)*R, z=cos(a)*R で出す。
+const SEAT_ANGLE = [0, -Math.PI / 2, Math.PI, Math.PI / 2];
+const CAM = { r: 3.1, y: 2.8, lookY: 0.15 };               // カメラ: 水平半径 / 高さ / 注視点の高さ
+
+// 指定席の後ろにカメラを回す（その席のキャラが手前に来る）。scene ではなく camera を回すので名札の投影もずれない。
+function orientCamera(camera, seat) {
+    const a = SEAT_ANGLE[seat];
+    camera.position.set(Math.sin(a) * CAM.r, CAM.y, Math.cos(a) * CAM.r);
+    camera.lookAt(0, CAM.lookY, 0);
+}
 
 //----------------------------------------------------------------------------------------------------
 // server helpers（deck / 席 / 手番）
@@ -134,10 +144,10 @@ export function Game(unit) {
         const { Screen, xpixi, xthree, PIXI, THREE } = window.gfx;
         xnew.extend(Screen, { width: W, height: H });
 
-        // three: OffscreenCanvas にキャラを描く（テーブルを見下ろすカメラ）
-        const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
-        camera.position.set(0, 5.6, 7.2);
-        camera.lookAt(0, 0.7, 0);
+        // three: OffscreenCanvas に描く。望遠ぎみ（低 FOV + 引き）でちゃぶ台の歪みを抑え、少し上から見下ろす。
+        // 初期は手前(seat0)基準。自分の Player が判明したらその席の後ろへ向け直す（下の update ループ）。
+        const camera = new THREE.PerspectiveCamera(34, W / H, 0.1, 100);
+        orientCamera(camera, 0);
         xthree.initialize({ canvas: new OffscreenCanvas(W, H), camera });
 
         // pixi: 画面 canvas（背景は透過）。この上にカードと UI を重ねる
@@ -152,85 +162,79 @@ export function Game(unit) {
             const background = xpixi.add(new PIXI.Sprite(texture));
             background.width = W; background.height = H; background.zIndex = 0;
 
+            // 自分の id に対応するキャラが手前に来るよう、席が判明したらカメラをその席の後ろへ回す
+            let camSeat = 0;
             unit.on('update', () => {
+                const myPlayer = xnew.find(Player).find((p) => p.clientId === xsync.session.myself.id);
+                const seat = myPlayer ? myPlayer.seat : 0;
+                if (seat !== camSeat) { camSeat = seat; orientCamera(camera, seat); }
                 xthree.renderer.render(xthree.scene, xthree.camera);
                 texture.source.update();
                 xpixi.renderer.render(xpixi.scene);
             });
 
-            xnew(Scene3D);   // ライト / 地面 / テーブル（three）
-            xnew(Board);     // 山札 / 手番表示（pixi）
+            xnew(Scene3D);   // ライト / 畳の床 / ちゃぶ台（three）
+            xnew(Board);     // 山札(3D) + 手番表示(HUD)
         });
     });
 }
 
 //----------------------------------------------------------------------------------------------------
-// Scene3D — three のライト・地面・丸テーブル（キャラは各 Player が nest する）
+// Scene3D — ライト・畳の床・円形ちゃぶ台（render.js の共通部品。キャラ / カードは各ノードが nest する）
 //----------------------------------------------------------------------------------------------------
 
 function Scene3D(unit) {
-    const { xthree, THREE } = window.gfx;
-
-    const dir = xthree.add(new THREE.DirectionalLight(0xffffff, 2.0));
-    dir.position.set(4, 8, 6);
-    dir.castShadow = true;
-    dir.shadow.mapSize.set(1024, 1024);
-    Object.assign(dir.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8 });
-    dir.shadow.camera.updateProjectionMatrix();
-
-    xthree.add(new THREE.AmbientLight(0xffffff, 1.2));
-
-    const ground = xthree.add(new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.25 })));
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-
-    const table = xthree.add(new THREE.Mesh(new THREE.CircleGeometry(3.0, 48), new THREE.MeshStandardMaterial({ color: 0x15803d })));
-    table.rotation.x = -Math.PI / 2;
-    table.position.y = 0.01;
-    table.receiveShadow = true;
+    const { Lights, Ground, Chabudai } = window.gfx;
+    xnew(Lights);
+    xnew(Ground);
+    xnew(Chabudai);
 }
 
 //----------------------------------------------------------------------------------------------------
-// Board — 山札の山と、手番 / 観戦の表示（client 専用・Table の共有状態を find で読む）
+// Board — 天面中央の山札(3D) と、手番 / 観戦の HUD 表示（client 専用・Table の共有状態を find で読む）
 //----------------------------------------------------------------------------------------------------
 
 function Board(unit) {
-    const { xpixi, PIXI } = window.gfx;
+    const { xpixi, PIXI, Deck3D } = window.gfx;
+
+    // HUD（2D テキスト）
     const group = xpixi.nest(new PIXI.Container());
     group.zIndex = 50;
-
-    const pile = makeCard(PIXI, { number: 0, w: 70, h: 98, faceUp: false });
-    pile.position.set(W / 2, H / 2);
-    group.addChild(pile);
-
-    const deckText = new PIXI.Text({ text: '', style: { fontFamily: 'sans-serif', fontSize: 16, fontWeight: 'bold', fill: 0xffffff } });
-    deckText.anchor.set(0.5);
-    deckText.position.set(W / 2, H / 2 + 66);
-    group.addChild(deckText);
-
-    const title = new PIXI.Text({ text: 'カードサンプル', style: { fontFamily: 'sans-serif', fontSize: 20, fontWeight: 'bold', fill: 0xffffff } });
+    const title = new PIXI.Text({ text: 'カードサンプル', style: { fontFamily: 'sans-serif', fontSize: 20, fontWeight: 'bold', fill: 0xffffff, stroke: { color: 0x0f172a, width: 4 } } });
     title.position.set(16, 12);
     group.addChild(title);
-
-    const turnText = new PIXI.Text({ text: '', style: { fontFamily: 'sans-serif', fontSize: 15, fill: 0xcbd5e1 } });
+    const turnText = new PIXI.Text({ text: '', style: { fontFamily: 'sans-serif', fontSize: 15, fill: 0xcbd5e1, stroke: { color: 0x0f172a, width: 4 } } });
     turnText.position.set(16, 42);
     group.addChild(turnText);
+
+    // 山札(3D): 枚数に応じた高さで積む。枚数の段（4 枚ごと）が変わったときだけ作り直す。
+    let deckUnit = null;
+    let shownLayers = -1;
 
     unit.on('update', () => {
         const table = xnew.find(Table)[0];
         if (!table) { return; }
         const turnSeat = table.shared.turnSeat;
         const turnName = turnSeat >= 0 ? LABELS[turnSeat] : '—';
-        deckText.text = `山札 ${table.shared.deckCount}`;
+
+        const count = table.shared.deckCount;
+        const layers = Math.round(count / 4);
+        if (layers !== shownLayers) {
+            shownLayers = layers;
+            deckUnit?.finalize();
+            deckUnit = count > 0 ? xnew(Deck3D, { count }) : null;
+        }
 
         const myself = xsync.session.myself.id;
         const myPlayer = xnew.find(Player).find((p) => p.clientId === myself);
         if (myPlayer) {
             const myTurn = myPlayer.seat === turnSeat;
-            turnText.text = myTurn ? 'あなたの番です！手札をクリックして出してください' : `${turnName} の番を待っています`;
+            turnText.text = myTurn
+                ? `あなたの番です！手札をクリックして出す（山札 ${count}）`
+                : `${turnName} の番を待っています（山札 ${count}）`;
             turnText.style.fill = myTurn ? 0xfcd34d : 0xcbd5e1;
         } else {
-            turnText.text = `観戦中（${turnName} の番）`;
+            turnText.text = `観戦中（${turnName} の番・山札 ${count}）`;
             turnText.style.fill = 0xcbd5e1;
         }
     });
@@ -260,8 +264,10 @@ export function Player(unit, { seat = 0, clientId = '', name = '', mog = '' } = 
     }));
 
     xsync.client(() => {
-        const { xpixi, xthree, PIXI, Character } = window.gfx;
-        const [px, , pz] = SEAT_POS[state.seat];
+        const { xpixi, xthree, PIXI, Character, Card3D, TABLE } = window.gfx;
+        const angle = SEAT_ANGLE[state.seat];
+        const R = TABLE.RADIUS + 0.2;                              // キャラはテーブル外周のすぐ外
+        const px = Math.sin(angle) * R, pz = Math.cos(angle) * R;
 
         xnew(Character, { mogPath: `/assets/${state.mog}.mog`, vrmaPath: VRMA, x: px, z: pz });
 
@@ -271,8 +277,9 @@ export function Player(unit, { seat = 0, clientId = '', name = '', mog = '' } = 
         label.anchor.set(0.5, 1);
         group.addChild(label);
 
-        let shownPlayed = undefined;   // 出したカードの表示（変化したときだけ作り直す）
-        let playedCard = null;
+        // 出したカードは 3D で天面に置く（席と中央の間）。変化したときだけ作り直す。
+        let shownPlayed = undefined;
+        let cardUnit = null;
 
         unit.on('update', () => {
             const head = xthree.coord3dTo2d(px, 1.9, pz);           // 頭上の 2D 位置に名札を置く
@@ -285,16 +292,12 @@ export function Player(unit, { seat = 0, clientId = '', name = '', mog = '' } = 
 
             if (state.played !== shownPlayed) {
                 shownPlayed = state.played;
-                playedCard?.destroy();
-                playedCard = null;
+                cardUnit?.finalize();
+                cardUnit = null;
                 if (shownPlayed != null) {
-                    playedCard = makeCard(PIXI, { number: shownPlayed, w: 52, h: 72, faceUp: true });
-                    group.addChild(playedCard);
+                    const cr = TABLE.RADIUS * 0.55;                 // 席方向・中央寄りの天面
+                    cardUnit = xnew(Card3D, { number: shownPlayed, x: Math.sin(angle) * cr, z: Math.cos(angle) * cr, rot: angle });
                 }
-            }
-            if (playedCard) {
-                const spot = xthree.coord3dTo2d(px * 0.4, 0.05, pz * 0.4);   // 席と中央の間に出したカードを置く
-                playedCard.position.set(spot.x, spot.y);
             }
         });
     });
