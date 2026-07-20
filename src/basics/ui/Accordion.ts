@@ -15,17 +15,19 @@ export function Accordion(unit: xnew.Unit,
 
     const css = xnew.css('base', {
         container: `
-                overflow: hidden;
-                box-sizing: border-box;
-            `,
+            overflow: hidden;
+            box-sizing: border-box;
+        `,
     });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
 
-    gate.on('-transition', ({ value }: { value: number }) => {
+    apply(gate.value);
+    gate.on('-transition', ({ value }: { value: number }) => apply(value));
+    function apply(value: number) {
         unit.element.style.height = value < 1.0 ? unit.element.scrollHeight * value + 'px' : 'auto';
         unit.element.style.opacity = value.toString();
-    });
+    }
 
     return {
         get gate() {
