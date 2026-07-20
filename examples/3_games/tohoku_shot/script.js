@@ -412,7 +412,7 @@ function StoryTheater(unit) {
   xnew('<div class="absolute left-0 right-0 bottom-[26cqw] h-[0.28cqw]" style="background: linear-gradient(90deg, transparent, rgba(255,143,163,0.75) 18%, rgba(255,143,163,0.75) 82%, transparent); box-shadow: 0 0 1.4cqw rgba(255,143,163,0.55);">');
 }
 
-// ストーリーのセリフをサイバーな字幕フレームで黒帯の上に重ねる。build=本文(SVGText 群) / accent=アクセント色 /
+// ストーリーのセリフをサイバーな字幕フレームで黒帯の上に重ねる。build=本文(GraphicText 群) / accent=アクセント色 /
 // tag=見出しラベル / bottomCqw=下端位置。ヘッダー(点滅● + ▶TAG) と四隅ブラケット＋発光を付与。
 // extend して使う。本文は呼び出し元が extend 後に続けて追加する（最後の nest = 本文 wrap が
 // current 要素になるため）。例:
@@ -471,9 +471,9 @@ function StoryPageHit(unit) {
   xnew(() => {
     xnew.extend(StoryDialog, { accent: '#FF8FA3', tag: 'ALERT', bottomCqw: 4.5 });
 
-    xnew('<div style="color:#FF8FA3;">', () => { xnew(xbasics.SVGText, { text: 'ずんだアローに当たってしまった！', fontSize: '5.2cqw', style: 'stroke: #0a1830; stroke-width: 0.25cqw;', className: 'inline-block' }); });
+    xnew('<div style="color:#FF8FA3;">', () => { xnew(xbasics.GraphicText, { text: 'ずんだアローに当たってしまった！', fontSize: '5.2cqw', style: 'stroke: #0a1830; stroke-width: 0.25cqw;' }); });
     sub = xnew('<div class="mt-[0.6cqw]" style="color:#FCEFA0; opacity:0;">', () => {
-      xnew(xbasics.SVGText, { text: '（ずんだアローに当たると、ずんだ餅にされてしまう…）', fontSize: '2.5cqw', style: 'stroke: #0a1830; stroke-width: 0.2cqw;', className: 'inline-block' });
+      xnew(xbasics.GraphicText, { text: '（ずんだアローに当たると、ずんだ餅にされてしまう…）', fontSize: '2.5cqw', style: 'stroke: #0a1830; stroke-width: 0.2cqw;' });
     });
   });
 
@@ -522,8 +522,8 @@ function StoryPageSwarm(unit) {
   xnew(() => {
     xnew.extend(StoryDialog, { accent: '#9BE53C', tag: 'MISSION', bottomCqw: 5 });
 
-    xnew('<div class="mb-[0.6cqw]">', () => { xnew(xbasics.SVGText, { text: '体内の免疫キャラを操作し、', fontSize: '4cqw', style: 'stroke: #0a1830; stroke-width: 0.22cqw;', className: 'inline-block' }); });
-    xnew('<div style="color:#9BE53C;">', () => { xnew(xbasics.SVGText, { text: 'ずんだ因子の増殖を食い止めろ！', fontSize: '4.4cqw', style: 'stroke: #0a1830; stroke-width: 0.25cqw;', className: 'inline-block' }); });
+    xnew('<div class="mb-[0.6cqw]">', () => { xnew(xbasics.GraphicText, { text: '体内の免疫キャラを操作し、', fontSize: '4cqw', style: 'stroke: #0a1830; stroke-width: 0.22cqw;' }); });
+    xnew('<div style="color:#9BE53C;">', () => { xnew(xbasics.GraphicText, { text: 'ずんだ因子の増殖を食い止めろ！', fontSize: '4.4cqw', style: 'stroke: #0a1830; stroke-width: 0.25cqw;' }); });
   });
 }
 
@@ -744,10 +744,10 @@ function WaveTransition(unit, { wave }) {
 // 右パネル上部の "Wave N" 表示（wave のメインカラーに追従）
 function WaveLabel(unit, { wave = 1 } = {}) {
   xnew.nest('<div class="absolute top-[1.5cqw] right-0 w-[25cqw] text-center font-bold text-lime-400">');
-  const text = xnew(xbasics.SVGText, { text: 'Wave 1', fontSize: '6cqw', style: 'stroke: #102008; stroke-width: 0.2cqw;', className: 'inline-block' });
+  const text = xnew(xbasics.GraphicText, { text: 'Wave 1', fontSize: '6cqw', style: 'stroke: #102008; stroke-width: 0.2cqw;' });
   function update({ wave }) {
     text.element.textContent = `Wave ${wave}`;
-    unit.element.style.color = waveCss(wave); // SVGText の fill=currentColor が追従
+    unit.element.style.color = waveCss(wave); // GraphicText の fill=currentColor が追従
   }
   update({ wave });
   unit.on('+wave', update);
@@ -1735,23 +1735,23 @@ function ResultBackground(unit, { gradient, textColor }) {
   }
 }
 
-// タイトルの見出し（縁取り SVGText）。text=文言 / color="text-..."。
+// タイトルの見出し（縁取り GraphicText）。text=文言 / color="text-..."。
 function TitleText(unit, { text, color }) {
   xnew.nest(`<div class="absolute w-full top-[16cqw] text-center ${color} font-bold">`);
-  xnew(xbasics.SVGText, { text, fontSize: '10cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;', className: 'inline-block' });
+  xnew(xbasics.GraphicText, { text, fontSize: '10cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
 }
 
 // 点滅する "touch start"。color="text-..."。
 function TouchMessage(unit, { color }) {
   xnew.nest(`<div class="absolute w-full top-[30cqw] text-center ${color} font-bold">`);
-  xnew(xbasics.SVGText, { text: 'touch start', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;', className: 'inline-block' });
+  xnew(xbasics.GraphicText, { text: 'touch start', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   unit.on('update', ({ count }) => unit.element.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
 }
 
 // 中央に降りてくる "Game Over"。className で横位置を調整（既定は全幅中央）。
 function GameOverText(unit, { className = 'w-full' }) {
   xnew.nest(`<div class="absolute ${className} text-center text-red-400 font-bold">`);
-  xnew(xbasics.SVGText, { text: 'Game Over', fontSize: '12cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;', className: 'inline-block' });
+  xnew(xbasics.GraphicText, { text: 'Game Over', fontSize: '12cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   xnew.transition(({ value }) => {
     Object.assign(unit.element.style, { opacity: value, top: `${10 + value * 15}cqw` });
   }, 1000, 'ease');

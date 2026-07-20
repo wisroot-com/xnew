@@ -55,18 +55,18 @@
       xnew('<path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1">');
     }
 
-    // xbasics.SVGText renders text as SVG and auto-fits the viewBox to the
+    // xbasics.GraphicText renders text as SVG and auto-fits the viewBox to the
     // text bounding box; stroke + fill give a game-style outlined label.
     function Texts(unit) {
-      xnew('<p class="font-bold">', 'xbasics.SVGText');
+      xnew('<p class="font-bold">', 'xbasics.GraphicText');
       xnew.nest('<div class="flex flex-col gap-2 items-start">');
 
       xnew('<div class="text-indigo-600">', () => {
-        xnew(xbasics.SVGText, { text: 'Hello xnew!', fontSize: 48, className: 'inline-block' });
+        xnew(xbasics.GraphicText, { text: 'Hello xnew!', fontSize: 48 });
       });
 
       xnew('<div class="p-3 rounded-lg bg-slate-800 text-emerald-300">', () => {
-        xnew(xbasics.SVGText, { text: 'GAME START', fontSize: 40, className: 'inline-block', style: 'stroke: #ffffff; stroke-width: 2;' });
+        xnew(xbasics.GraphicText, { text: 'GAME START', fontSize: 40, style: 'stroke: #ffffff; stroke-width: 2;' });
       });
     }
   </script>

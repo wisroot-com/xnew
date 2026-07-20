@@ -243,9 +243,8 @@ declare function Image(unit: xnew.Unit, { src, className, style, ...others }: {
     [key: string]: any;
 }): void;
 
-declare function SVGText(unit: xnew.Unit, { text, fontSize, className, style, ...others }?: {
+declare function GraphicText(unit: xnew.Unit, { text, className, style, ...others }?: {
     text?: string;
-    fontSize?: number;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -502,7 +501,7 @@ declare const xbasics: {
     Scene: typeof Scene;
     Button: typeof Button;
     Image: typeof Image;
-    SVGText: typeof SVGText;
+    GraphicText: typeof GraphicText;
     InputRange: typeof InputRange;
     InputCheckbox: typeof InputCheckbox;
     InputText: typeof InputText;

@@ -1479,17 +1479,18 @@ function Image(unit, _a) {
     });
 }
 
-function SVGText(unit, _a = {}) {
-    var { text = '', fontSize = 20, className = '', style = '' } = _a, others = __rest(_a, ["text", "fontSize", "className", "style"]);
+function GraphicText(unit, _a = {}) {
+    var { text = '', className = '', style = '' } = _a, others = __rest(_a, ["text", "className", "style"]);
     const css = xnew.css('base', {
         svg: `
+                display: inline-block;
                 stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
                 fill: currentColor; fill-opacity: 1;
                 overflow: visible;
             `,
     });
-    xnew.nest(Object.assign({ tag: 'svg', className: `${css.svg} ${className}`, style }, others));
-    const textUnit = xnew({ tag: 'text', x: 0, y: 0, fontSize, paintOrder: 'stroke fill' }, text);
+    xnew.nest({ tag: 'svg', className: `${css.svg} ${className}`, style });
+    const textUnit = xnew(Object.assign({ tag: 'text', x: 0, y: 0, paintOrder: 'stroke fill' }, others), text);
     function resize() {
         const bbox = textUnit.element.getBBox();
         unit.element.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
@@ -2941,7 +2942,7 @@ const xbasics = {
     Scene,
     Button,
     Image,
-    SVGText,
+    GraphicText,
     InputRange,
     InputCheckbox,
     InputText,

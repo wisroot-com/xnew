@@ -31,7 +31,7 @@ Recommended reading order.
 | [panel](basics/panel/) | `Panel` — groups, buttons, range / checkbox / select |
 | [gate](basics/gate/) | `Gate` + `Accordion` / `Overlay` (accordion, modal, menu) |
 | [controller](basics/controller/) | `DPad` / `AnalogStick` virtual game pad |
-| [svg](basics/svg/) | `SVG` icon base, `SVGText` outlined labels |
+| [svg](basics/svg/) | `SVG` icon base, `GraphicText` outlined labels |
 | [audiotrack](basics/audiotrack/) | `AudioTrack` music playback, `Volume` master gain |
 | [synthesizer](basics/synthesizer/) | `Synthesizer` interactive keyboard playground |
 | [soundeffect](basics/soundeffect/) | `Synthesizer` recipes for game sound effects |

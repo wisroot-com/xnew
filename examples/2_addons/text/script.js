@@ -62,7 +62,7 @@ function HtmlText(unit) {
 }
 
 function SVGText(unit) {
-  xnew(xbasics.SVGText, {
+  xnew(xbasics.GraphicText, {
     className: 'absolute left-0 top-[10cqw]',
     text: 'This text is rendered by SVG',
     style: 'stroke: #00FF00; stroke-width: 0.5cqw;',
