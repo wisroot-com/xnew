@@ -194,7 +194,7 @@ function makeWoodTopTexture(size = 512) {
 
     // 歪みの中心点（この点を中心に、平行線を垂直方向へ押し出して歪ませる）
     const centers = [];
-    const centerCount = 3 + Math.floor(Math.random() * 3);
+    const centerCount = 5 + Math.floor(Math.random() * 4);
     for (let i = 0; i < centerCount; i++) {
         centers.push({
             cx: size * (0.1 + Math.random() * 0.8),
@@ -224,6 +224,30 @@ function makeWoodTopTexture(size = 512) {
         ctx.strokeStyle = `rgba(${118 + tint}, ${86 + tint}, ${48 + tint}, ${0.1 + Math.random() * 0.18})`;
         ctx.lineWidth = 0.6 + Math.random() * 1.4;
         ctx.stroke();
+    }
+
+    // 歪みで開いた隙間を、その形状に合わせた入れ子の楕円状木目で埋める（線方向の細い端は埋めない）
+    for (const c of centers) {
+        const ringCount = 1 + Math.floor(Math.random() * 2);
+        for (let ri = 1; ri <= ringCount; ri++) {
+            const s = (ri / (ringCount + 1)) * 0.8;   // 内側ほど小さく（横も縦も）
+            const rx = c.wx * 1.4 * s;                // 横半径（細い端まで伸ばさない）
+            const tint = (Math.random() - 0.5) * 24;
+            const segs = 60;
+            ctx.beginPath();
+            for (let i = 0; i <= segs; i++) {
+                const t = (i / segs) * Math.PI * 2;
+                const st = Math.sin(t);
+                const ry = (st < 0 ? c.ampU : c.ampD) * s;   // 上下非対称（押し出しと同じ ampU/ampD）
+                const x = c.cx + Math.cos(t) * rx;
+                const y = c.cy + st * ry;
+                if (i === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+            }
+            ctx.closePath();
+            ctx.strokeStyle = `rgba(${118 + tint}, ${86 + tint}, ${48 + tint}, ${0.05 + Math.random() * 0.1})`;
+            ctx.lineWidth = 0.6 + Math.random() * 1.4;
+            ctx.stroke();
+        }
     }
 
     const texture = new THREE.CanvasTexture(canvas);

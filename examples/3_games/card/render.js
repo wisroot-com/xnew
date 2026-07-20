@@ -221,38 +221,72 @@ function makeTatamiTexture(size = 512) {
     return texture;
 }
 
-// 天板の天面: 同心円の年輪 + 微妙なムラ
+// 天板の天面: 横線ベースの木目。数箇所の中心点で平行線を垂直方向に歪ませ、隙間を楕円状の木目で埋める
 function makeWoodTopTexture(size = 512) {
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = size;
     const ctx = canvas.getContext('2d');
-    const cx = size / 2, cy = size / 2;
 
-    const base = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.72);
-    base.addColorStop(0, '#d3a367');
-    base.addColorStop(1, '#c08f4f');
-    ctx.fillStyle = base;
+    // 下地（淡い木色）
+    ctx.fillStyle = '#d5c096';
     ctx.fillRect(0, 0, size, size);
 
-    const maxR = size * 0.72;
-    for (let r = 8; r < maxR; r += 3 + Math.random() * 5) {
+    // 歪みの中心点（この点を中心に、平行線を垂直方向へ押し出して歪ませる）
+    const centers = [];
+    const centerCount = 5 + Math.floor(Math.random() * 4);
+    for (let i = 0; i < centerCount; i++) {
+        centers.push({
+            cx: size * (0.1 + Math.random() * 0.8),
+            cy: size * (0.1 + Math.random() * 0.8),
+            wx: size * (0.06 + Math.random() * 0.08),    // 横方向の影響範囲
+            wy: size * (0.05 + Math.random() * 0.06),    // 縦方向の影響範囲
+            ampU: size * (0.008 + Math.random() * 0.014),   // 上側の押し出し量
+            ampD: size * (0.008 + Math.random() * 0.014),   // 下側の押し出し量（上下で微妙に変える）
+        });
+    }
+
+    // 横線（間隔・太さ・色を微妙にばらつかせつつ、中心点付近で垂直方向に歪ませる）
+    for (let y = 3; y < size; y += 4 + Math.random() * 4) {
+        const tint = (Math.random() - 0.5) * 24;   // 線ごとの色味差
         ctx.beginPath();
-        const segs = 160;
-        for (let i = 0; i <= segs; i++) {
-            const a = (i / segs) * Math.PI * 2;
-            const wobble = Math.sin(a * 3 + r * 0.15) * (r * 0.03) + (Math.random() - 0.5) * 2.5;
-            const rr = r + wobble;
-            const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
-            if (i === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+        for (let x = 0; x <= size; x += 6) {
+            let dy = 0;
+            for (const c of centers) {
+                const ux = (x - c.cx) / c.wx;
+                const uy = (y - c.cy) / c.wy;
+                const amp = y < c.cy ? c.ampU : c.ampD;   // 上下で押し出し量を変える
+                dy += Math.exp(-ux * ux) * Math.exp(-uy * uy) * Math.sign(y - c.cy) * amp;
+            }
+            const yy = y + dy;
+            if (x === 0) { ctx.moveTo(x, yy); } else { ctx.lineTo(x, yy); }
         }
-        ctx.strokeStyle = `rgba(90, 55, 25, ${0.10 + Math.random() * 0.18})`;
-        ctx.lineWidth = 1 + Math.random() * 1.6;
+        ctx.strokeStyle = `rgba(${118 + tint}, ${86 + tint}, ${48 + tint}, ${0.1 + Math.random() * 0.18})`;
+        ctx.lineWidth = 0.6 + Math.random() * 1.4;
         ctx.stroke();
     }
-    for (let i = 0; i < 1600; i++) {
-        const a = Math.random() * Math.PI * 2, rr = Math.random() * maxR;
-        ctx.fillStyle = `rgba(70, 45, 20, ${Math.random() * 0.06})`;
-        ctx.fillRect(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 1.5, 1.5);
+
+    // 歪みで開いた隙間を、その形状に合わせた入れ子の楕円状木目で埋める（線方向の細い端は埋めない）
+    for (const c of centers) {
+        const ringCount = 1 + Math.floor(Math.random() * 2);
+        for (let ri = 1; ri <= ringCount; ri++) {
+            const s = (ri / (ringCount + 1)) * 0.8;   // 内側ほど小さく（横も縦も）
+            const rx = c.wx * 1.4 * s;                // 横半径（細い端まで伸ばさない）
+            const tint = (Math.random() - 0.5) * 24;
+            const segs = 60;
+            ctx.beginPath();
+            for (let i = 0; i <= segs; i++) {
+                const t = (i / segs) * Math.PI * 2;
+                const st = Math.sin(t);
+                const ry = (st < 0 ? c.ampU : c.ampD) * s;   // 上下非対称（押し出しと同じ ampU/ampD）
+                const x = c.cx + Math.cos(t) * rx;
+                const y = c.cy + st * ry;
+                if (i === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+            }
+            ctx.closePath();
+            ctx.strokeStyle = `rgba(${118 + tint}, ${86 + tint}, ${48 + tint}, ${0.05 + Math.random() * 0.1})`;
+            ctx.lineWidth = 0.6 + Math.random() * 1.4;
+            ctx.stroke();
+        }
     }
 
     const texture = new THREE.CanvasTexture(canvas);
