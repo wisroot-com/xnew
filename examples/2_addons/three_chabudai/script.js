@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // three_chabudai — three.js で立体的に組んだ円形ちゃぶ台（木目つき）と、周りに並ぶ .mog ボクセルキャラ。
-//   木目は外部画像を使わず、canvas に同心円の年輪を描いた CanvasTexture で表現する（円卓天面の UV は
-//   中心からの放射状なので同心円がそのまま年輪になる）。テーブルは天板(円柱) + 縁(トーラス) + 脚(円柱)。
+//   木目は外部画像を使わず、canvas に描いた CanvasTexture で表現する（天面は横線ベースの木目、
+//   側面と脚は横木目）。テーブルは天板(円柱) + 縁(トーラス) + 脚(円柱)。
 //----------------------------------------------------------------------------------------------------
 
 import { xnew, xbasics } from '@mulsense/xnew';
@@ -182,42 +182,25 @@ function Chabudai(unit) {
     }
 }
 
-// 同心円の年輪 + 微妙なムラを canvas に描いて CanvasTexture 化する（外部画像は不要）
+// 横線だけのシンプルな木目テクスチャ。線の間隔・太さ・色を微妙に変えて canvas に描き CanvasTexture 化する
 function makeWoodTopTexture(size = 512) {
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = size;
     const ctx = canvas.getContext('2d');
-    const cx = size / 2, cy = size / 2;
 
-    // 下地（明るい木色のグラデーション）
-    const base = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.72);
-    base.addColorStop(0, '#d3a367');
-    base.addColorStop(1, '#c08f4f');
-    ctx.fillStyle = base;
+    // 下地（淡い木色）
+    ctx.fillStyle = '#d5c096';
     ctx.fillRect(0, 0, size, size);
 
-    // 年輪（中心から外へ、少し揺らぎながら濃い線を重ねる）
-    const maxR = size * 0.72;
-    for (let r = 8; r < maxR; r += 3 + Math.random() * 5) {
+    // 横線（間隔・太さ・色を線ごとに微妙にばらつかせる）
+    for (let y = 3; y < size; y += 4 + Math.random() * 4) {
+        const tint = (Math.random() - 0.5) * 24;   // 線ごとの色味差
         ctx.beginPath();
-        const segs = 160;
-        for (let i = 0; i <= segs; i++) {
-            const a = (i / segs) * Math.PI * 2;
-            const wobble = Math.sin(a * 3 + r * 0.15) * (r * 0.03) + (Math.random() - 0.5) * 2.5;
-            const rr = r + wobble;
-            const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
-            if (i === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
-        }
-        ctx.strokeStyle = `rgba(90, 55, 25, ${0.10 + Math.random() * 0.18})`;
-        ctx.lineWidth = 1 + Math.random() * 1.6;
+        ctx.moveTo(0, y);
+        ctx.lineTo(size, y);
+        ctx.strokeStyle = `rgba(${118 + tint}, ${86 + tint}, ${48 + tint}, ${0.1 + Math.random() * 0.18})`;
+        ctx.lineWidth = 0.6 + Math.random() * 1.4;
         ctx.stroke();
-    }
-
-    // 細かい導管っぽいノイズ点
-    for (let i = 0; i < 1600; i++) {
-        const a = Math.random() * Math.PI * 2, rr = Math.random() * maxR;
-        ctx.fillStyle = `rgba(70, 45, 20, ${Math.random() * 0.06})`;
-        ctx.fillRect(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 1.5, 1.5);
     }
 
     const texture = new THREE.CanvasTexture(canvas);
