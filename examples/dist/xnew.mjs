@@ -1539,6 +1539,7 @@ function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false
             box-sizing: border-box;
             border: 1px solid currentColor; border-radius: 0.25em;
             background: color-mix(in srgb, currentColor 20%, transparent);
+            pointer-events: none;
         `,
         horizontal: `
             top: 0; left: 0; bottom: 0;
