@@ -260,7 +260,7 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, 
     [key: string]: any;
 }): void;
 
-declare function InputCheckBox(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
+declare function InputCheckbox(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
     value?: boolean;
     gate?: {
         open?: boolean;
@@ -317,7 +317,7 @@ declare function InputRadio(unit: xnew.Unit, { value, name, checked, className, 
     [key: string]: any;
 }): void;
 
-declare function ListBox(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
+declare function Listbox(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
     value?: string;
     gate?: {
         open?: boolean;
@@ -334,17 +334,17 @@ declare function ListBox(unit: xnew.Unit, { value, gate, className, style, ...ot
     bind(label: HTMLElement): void;
     select(value: string): void;
 };
-declare function ListBoxButton(unit: xnew.Unit, { className, style, ...others }?: {
+declare function ListboxButton(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
     style?: string;
     [key: string]: any;
 }): void;
-declare function ListBoxMenu(unit: xnew.Unit, { className, style, ...others }?: {
+declare function ListboxMenu(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
     style?: string;
     [key: string]: any;
 }): void;
-declare function ListBoxItem(unit: xnew.Unit, { value, className, style, ...others }?: {
+declare function ListboxItem(unit: xnew.Unit, { value, className, style, ...others }?: {
     value?: string;
     className?: string;
     style?: string;
@@ -503,15 +503,15 @@ declare const xbasics: {
     Image: typeof Image;
     GraphicText: typeof GraphicText;
     InputRange: typeof InputRange;
-    InputCheckBox: typeof InputCheckBox;
+    InputCheckbox: typeof InputCheckbox;
     InputText: typeof InputText;
     InputNumber: typeof InputNumber;
     InputSwitch: typeof InputSwitch;
     InputRadio: typeof InputRadio;
-    ListBox: typeof ListBox;
-    ListBoxButton: typeof ListBoxButton;
-    ListBoxMenu: typeof ListBoxMenu;
-    ListBoxItem: typeof ListBoxItem;
+    Listbox: typeof Listbox;
+    ListboxButton: typeof ListboxButton;
+    ListboxMenu: typeof ListboxMenu;
+    ListboxItem: typeof ListboxItem;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;

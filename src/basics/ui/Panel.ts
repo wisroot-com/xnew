@@ -8,8 +8,8 @@ import { xnew } from '../../core/xnew';
 import { xicons } from '../../icons/xicons';
 import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
-import { InputCheckBox } from '../element/InputCheckBox';
-import { ListBox, ListBoxButton, ListBoxMenu, ListBoxItem } from '../element/ListBox';
+import { InputCheckbox } from '../element/InputCheckbox';
+import { Listbox, ListboxButton, ListboxMenu, ListboxItem } from '../element/Listbox';
 import { Accordion } from './Accordion';
 import { Gate } from './Gate';
 
@@ -96,19 +96,19 @@ function Checkbox(unit: xnew.Unit, { name = '', ...others }: { name?: string, [k
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
 
-    xnew(InputCheckBox, { name, ...others, style: 'width: 1.25em; height: 1.25em;' });
+    xnew(InputCheckbox, { name, ...others, style: 'width: 1.25em; height: 1.25em;' });
 }
 
 function List(unit: xnew.Unit, { name = '', value, items = [], ...others }: { name?: string, value?: string, items?: string[], [key: string]: any }) {
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
 
-    // ListBox extends onto this unit (so its '-change' fires here); the button draws the trigger, the floating list nests in
-    xnew.extend(ListBox, { value, ...others, style: 'max-width: 60%;' });
-    xnew(ListBoxButton, { style: 'height: 2em;' }, () => {
+    // Listbox extends onto this unit (so its '-change' fires here); the button draws the trigger, the floating list nests in
+    xnew.extend(Listbox, { value, ...others, style: 'max-width: 60%;' });
+    xnew(ListboxButton, { style: 'height: 2em;' }, () => {
         xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em;' });
     });
-    xnew(ListBoxMenu, () => {
-        items.forEach((item: string) => xnew(ListBoxItem, { value: item }));
+    xnew(ListboxMenu, () => {
+        items.forEach((item: string) => xnew(ListboxItem, { value: item }));
     });
 }

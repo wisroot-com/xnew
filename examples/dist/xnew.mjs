@@ -1648,7 +1648,7 @@ function Gate(unit, { open = true, duration = 0, easing = 'ease' }) {
     };
 }
 
-function InputCheckBox(unit, _a = {}) {
+function InputCheckbox(unit, _a = {}) {
     var { value = false, gate, className = '', style = '' } = _a, others = __rest(_a, ["value", "gate", "className", "style"]);
     const css = xnew.css('base', {
         container: `
@@ -1858,7 +1858,7 @@ function Overlay(unit, _a = {}) {
     };
 }
 
-function ListBox(unit, _a = {}) {
+function Listbox(unit, _a = {}) {
     var { value, gate, className = '', style = '' } = _a, others = __rest(_a, ["value", "gate", "className", "style"]);
     const css = xnew.css('base', {
         container: `
@@ -1903,9 +1903,9 @@ function ListBox(unit, _a = {}) {
         },
     };
 }
-function ListBoxButton(unit, _a = {}) {
+function ListboxButton(unit, _a = {}) {
     var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
-    const listbox = xnew.context(ListBox);
+    const listbox = xnew.context(Listbox);
     const css = xnew.css('base', {
         container: `
             display: inline-flex; align-items: center;
@@ -1930,9 +1930,9 @@ function ListBoxButton(unit, _a = {}) {
     listbox.gate.on('-open', () => unit.element.toggleAttribute('data-open', true));
     listbox.gate.on('-closed', () => unit.element.toggleAttribute('data-open', false));
 }
-function ListBoxMenu(unit, _a = {}) {
+function ListboxMenu(unit, _a = {}) {
     var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
-    const listbox = xnew.context(ListBox);
+    const listbox = xnew.context(Listbox);
     const css = xnew.css('base', {
         container: `
             position: absolute; top: 100%; left: 0; margin-top: 0.25em;
@@ -1960,9 +1960,9 @@ function ListBoxMenu(unit, _a = {}) {
         return 'Canvas';
     }
 }
-function ListBoxItem(unit, _a = {}) {
+function ListboxItem(unit, _a = {}) {
     var { value = '', className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
-    const listbox = xnew.context(ListBox);
+    const listbox = xnew.context(Listbox);
     listbox.register(unit);
     const css = xnew.css('base', {
         container: `
@@ -2894,18 +2894,18 @@ function Checkbox(unit, _a) {
     var { name = '' } = _a, others = __rest(_a, ["name"]);
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
-    xnew(InputCheckBox, Object.assign(Object.assign({ name }, others), { style: 'width: 1.25em; height: 1.25em;' }));
+    xnew(InputCheckbox, Object.assign(Object.assign({ name }, others), { style: 'width: 1.25em; height: 1.25em;' }));
 }
 function List(unit, _a) {
     var { name = '', value, items = [] } = _a, others = __rest(_a, ["name", "value", "items"]);
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
-    xnew.extend(ListBox, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%;' }));
-    xnew(ListBoxButton, { style: 'height: 2em;' }, () => {
+    xnew.extend(Listbox, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%;' }));
+    xnew(ListboxButton, { style: 'height: 2em;' }, () => {
         xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em;' });
     });
-    xnew(ListBoxMenu, () => {
-        items.forEach((item) => xnew(ListBoxItem, { value: item }));
+    xnew(ListboxMenu, () => {
+        items.forEach((item) => xnew(ListboxItem, { value: item }));
     });
 }
 
@@ -2972,15 +2972,15 @@ const xbasics = {
     Image,
     GraphicText,
     InputRange,
-    InputCheckBox,
+    InputCheckbox,
     InputText,
     InputNumber,
     InputSwitch,
     InputRadio,
-    ListBox,
-    ListBoxButton,
-    ListBoxMenu,
-    ListBoxItem,
+    Listbox,
+    ListboxButton,
+    ListboxMenu,
+    ListboxItem,
     AudioTrack,
     Synthesizer,
     Volume,

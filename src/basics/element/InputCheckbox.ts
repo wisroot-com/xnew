@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------
-// InputCheckBox — framed check box backed by a hidden native <input type="checkbox">
+// InputCheckbox — framed check box backed by a hidden native <input type="checkbox">
 // Holds a Gate for the checked state and exposes it as `gate`; the invisible native input captures
 // interaction. unit.element is the container (not the input), so a trailing compose fn nests inside it.
 //----------------------------------------------------------------------------------------------------
@@ -7,7 +7,7 @@
 import { xnew } from '../../core/xnew';
 import { Gate } from '../ui/Gate';
 
-export function InputCheckBox(unit: xnew.Unit,
+export function InputCheckbox(unit: xnew.Unit,
     { value = false, gate, className = '', style = '', ...others }:
     { value?: boolean, gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {

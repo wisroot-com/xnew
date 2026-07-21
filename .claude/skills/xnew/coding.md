@@ -98,7 +98,7 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   `xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style })`.
   Single-element components (Button, Image, InputNumber, InputText, SVG, SVGText)
   ALSO spread `...others` onto that element; multi-part form components (InputCheckbox / InputRadio /
-  InputRange / InputSwitch / ListBox) carry the framed look (border / radius / state tints) ON the
+  InputRange / InputSwitch / Listbox) carry the framed look (border / radius / state tints) ON the
   container itself (frame merged in, 2026-07), and `value` / `name` / rest members go to the inner
   hidden native input. State attributes (`data-checked` / `data-open`) toggle on the container; inner
   parts (knob / meter / status / mark) react via parent-keyed rules (`[data-checked] > & { … }`).
@@ -343,8 +343,8 @@ the rule, then one line of why.
   is still `'opening'` right after the open (its completion `.timeout` fires at +1ms, not +0), so
   `state === 'opened' || state === 'opening'`. **Tests must dispatch the trigger click with `bubbles: true`**
   — a `bubbles: false` click can't reach the document closer, so it hides this whole class of bug (it hid
-  the ListBox self-close until a bubbling repro exposed it). (Bit ListBox when the framed trigger + toggle
-  moved from the container into a new `ListBoxButton`, so backdrop clicks no longer closed "for free" via the
+  the Listbox self-close until a bubbling repro exposed it). (Bit Listbox when the framed trigger + toggle
+  moved from the container into a new `ListboxButton`, so backdrop clicks no longer closed "for free" via the
   container's toggle, 2026-07.)
 
 - **A sync `game.js` (shared by Node server + browser client) must NOT statically import addon/browser-only

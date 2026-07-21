@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------
-// ListBox — a styleable select: ListBox (state + fit-to-content host) + ListBoxButton (framed trigger + label) + ListBoxMenu (floating list) + ListBoxItem (row)
+// Listbox — a styleable select: Listbox (state + fit-to-content host) + ListboxButton (framed trigger + label) + ListboxMenu (floating list) + ListboxItem (row)
 // The native <select> popup can't be styled, so selection is held in JS (no native control at all).
 // Hosts read the current value with `.value` and observe changes with `.on('-change', ({ value }) => …)`.
 //----------------------------------------------------------------------------------------------------
@@ -9,10 +9,10 @@ import { Gate } from '../ui/Gate';
 import { Overlay } from '../ui/Overlay';
 
 //----------------------------------------------------------------------------------------------------
-// ListBox — the selection state and the fit-to-content host (no frame; ListBoxButton draws the trigger)
+// Listbox — the selection state and the fit-to-content host (no frame; ListboxButton draws the trigger)
 //----------------------------------------------------------------------------------------------------
 
-export function ListBox(unit: xnew.Unit,
+export function Listbox(unit: xnew.Unit,
     { value, gate, className = '', style = '', ...others }:
     { value?: string, gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
@@ -68,15 +68,15 @@ export function ListBox(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListBoxButton — the framed trigger: draws the border / label, toggles the ListBox gate on click.
+// ListboxButton — the framed trigger: draws the border / label, toggles the Listbox gate on click.
 // Compose extra content (e.g. a chevron icon) with a trailing function; the label reflects the value.
 //----------------------------------------------------------------------------------------------------
 
-export function ListBoxButton(unit: xnew.Unit,
+export function ListboxButton(unit: xnew.Unit,
     { className = '', style = '', ...others }:
     { className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const listbox = xnew.context(ListBox);
+    const listbox = xnew.context(Listbox);
 
     const css = xnew.css('base', {
         container: `
@@ -97,7 +97,7 @@ export function ListBoxButton(unit: xnew.Unit,
     const label = xnew({ tag: 'div', className: css.label });
     listbox.bind(label.element);
 
-    // stop the opening click from bubbling to the document, or ListBoxMenu's click.outside would self-close it
+    // stop the opening click from bubbling to the document, or ListboxMenu's click.outside would self-close it
     unit.on('click', ({ event }: { event: PointerEvent }) => {
         event.stopPropagation();
         listbox.gate.toggle();
@@ -107,15 +107,15 @@ export function ListBoxButton(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListBoxMenu — the floating option list, built on Overlay (backdrop + anchor tracking + outside-click + fade).
-// Follows the ListBox container's '-toggle' / '-close'; rides the Gate the ListBox owns (`listbox.gate`).
+// ListboxMenu — the floating option list, built on Overlay (backdrop + anchor tracking + outside-click + fade).
+// Follows the Listbox container's '-toggle' / '-close'; rides the Gate the Listbox owns (`listbox.gate`).
 //----------------------------------------------------------------------------------------------------
 
-export function ListBoxMenu(unit: xnew.Unit,
+export function ListboxMenu(unit: xnew.Unit,
     { className = '', style = '', ...others }:
     { className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const listbox = xnew.context(ListBox);
+    const listbox = xnew.context(Listbox);
 
     const css = xnew.css('base', {
         container: `
@@ -153,16 +153,16 @@ export function ListBoxMenu(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListBoxItem — one option row of a ListBox; nests into the ListBoxMenu it is created inside.
-// Pass row content as a trailing text (xnew(ListBoxItem, { value }, 'label')) or an inline function;
+// ListboxItem — one option row of a Listbox; nests into the ListboxMenu it is created inside.
+// Pass row content as a trailing text (xnew(ListboxItem, { value }, 'label')) or an inline function;
 // leave it empty to fall back to the value as text.
 //----------------------------------------------------------------------------------------------------
 
-export function ListBoxItem(unit: xnew.Unit,
+export function ListboxItem(unit: xnew.Unit,
     { value = '', className = '', style = '', ...others }:
     { value?: string, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const listbox = xnew.context(ListBox);
+    const listbox = xnew.context(Listbox);
     listbox.register(unit);
 
     const css = xnew.css('base', {
