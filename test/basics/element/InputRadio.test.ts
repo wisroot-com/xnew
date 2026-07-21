@@ -13,10 +13,10 @@ describe('basics InputRadio', () => {
     });
 
     // each InputRadio is a <label> (its value as text) wrapping a hidden native <input type="radio">;
-    // the unit's element ends on the input, so its parent is the label
+    // the unit's element is the label container, and the input is a child unit nested inside it
     function partsOf(unit: xnew.Unit): { label: HTMLElement, input: HTMLInputElement } {
-        const input = unit.element as HTMLInputElement;
-        return { label: input.parentElement as HTMLElement, input };
+        const label = unit.element as HTMLElement;
+        return { label, input: label.querySelector('input') as HTMLInputElement };
     }
 
     it('renders a label wrapping a hidden radio, with the value as its text', () => {
