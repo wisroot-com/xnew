@@ -1,9 +1,9 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
-import { Listbox, ListboxMenu, ListboxItem } from '../../../src/basics/element/Listbox';
+import { ListBox, ListBoxMenu, ListBoxItem } from '../../../src/basics/element/ListBox';
 import { Accordion } from '../../../src/basics/ui/Accordion';
 
-describe('basics Listbox', () => {
+describe('basics ListBox', () => {
     beforeEach(() => {
         jest.useFakeTimers();
         Unit.reset();
@@ -13,17 +13,17 @@ describe('basics Listbox', () => {
         jest.useRealTimers();
     });
 
-    // Listbox is the field (its element ends on the field); a ListboxMenu nests into it and holds one
-    // ListboxItem row per value. The trailing function is the ExComponent form: xnew(Base, props, inline).
+    // ListBox is the field (its element ends on the field); a ListBoxMenu nests into it and holds one
+    // ListBoxItem row per value. The trailing function is the ExComponent form: xnew(Base, props, inline).
     function build(props: any, values: string[]): { box: xnew.Unit, menu: HTMLElement } {
         let box!: xnew.Unit;
         let menu!: HTMLElement;
         xnew(() => {
-            box = xnew(Listbox, props, () => {
-                xnew(ListboxMenu, (m: xnew.Unit) => {
+            box = xnew(ListBox, props, () => {
+                xnew(ListBoxMenu, (m: xnew.Unit) => {
                     menu = m.element as HTMLElement;
                     for (const value of values) {
-                        xnew(ListboxItem, { value });
+                        xnew(ListBoxItem, { value });
                     }
                 });
             });
@@ -147,11 +147,11 @@ describe('basics Listbox', () => {
         let box!: xnew.Unit;
         let menu!: HTMLElement;
         xnew(() => {
-            box = xnew(Listbox, () => {
-                xnew(ListboxMenu, (m: xnew.Unit) => {
+            box = xnew(ListBox, () => {
+                xnew(ListBoxMenu, (m: xnew.Unit) => {
                     menu = m.element as HTMLElement;
-                    xnew(ListboxItem, { value: 'plain' });
-                    xnew(ListboxItem, { value: 'rich' }, () => {
+                    xnew(ListBoxItem, { value: 'plain' });
+                    xnew(ListBoxItem, { value: 'rich' }, () => {
                         xnew('<span class="tag">', 'RICH');
                     });
                 });
@@ -170,10 +170,10 @@ describe('basics Listbox', () => {
         let box!: xnew.Unit;
         let menu!: HTMLElement;
         xnew(() => {
-            box = xnew(Listbox, () => {
-                xnew(ListboxMenu, (m: xnew.Unit) => {
+            box = xnew(ListBox, () => {
+                xnew(ListBoxMenu, (m: xnew.Unit) => {
                     menu = m.element as HTMLElement;
-                    xnew(ListboxItem, { value: 'apple' }, 'りんご');
+                    xnew(ListBoxItem, { value: 'apple' }, 'りんご');
                 });
             });
         });
@@ -186,14 +186,14 @@ describe('basics Listbox', () => {
         expect(box.value).toBe('apple');
     });
 
-    it('applies the ListboxItem className to the rows', () => {
+    it('applies the ListBoxItem className to the rows', () => {
         let menu!: HTMLElement;
         xnew(() => {
-            xnew(Listbox, () => {
-                xnew(ListboxMenu, (m: xnew.Unit) => {
+            xnew(ListBox, () => {
+                xnew(ListBoxMenu, (m: xnew.Unit) => {
                     menu = m.element as HTMLElement;
-                    xnew(ListboxItem, { value: 'low', className: 'row' });
-                    xnew(ListboxItem, { value: 'mid', className: 'row' });
+                    xnew(ListBoxItem, { value: 'low', className: 'row' });
+                    xnew(ListBoxItem, { value: 'mid', className: 'row' });
                 });
             });
         });
@@ -201,13 +201,13 @@ describe('basics Listbox', () => {
         expect(rowsOf(menu).every((o) => o.className.includes('row'))).toBe(true);
     });
 
-    it('applies className and style to the ListboxMenu element', () => {
+    it('applies className and style to the ListBoxMenu element', () => {
         let menu!: HTMLElement;
         xnew(() => {
-            xnew(Listbox, () => {
-                xnew(ListboxMenu, { className: 'panel', style: 'border-radius: 0.5em;' }, (m: xnew.Unit) => {
+            xnew(ListBox, () => {
+                xnew(ListBoxMenu, { className: 'panel', style: 'border-radius: 0.5em;' }, (m: xnew.Unit) => {
                     menu = m.element as HTMLElement;
-                    xnew(ListboxItem, { value: 'low' });
+                    xnew(ListBoxItem, { value: 'low' });
                 });
             });
         });
@@ -230,11 +230,11 @@ describe('basics Listbox', () => {
         let box!: xnew.Unit;
         let menu!: HTMLElement;
         xnew(host, () => {
-            box = xnew(Listbox, () => {
-                xnew(ListboxMenu, (m: xnew.Unit) => {
+            box = xnew(ListBox, () => {
+                xnew(ListBoxMenu, (m: xnew.Unit) => {
                     menu = m.element as HTMLElement;
-                    xnew(ListboxItem, { value: 'low' });
-                    xnew(ListboxItem, { value: 'mid' });
+                    xnew(ListBoxItem, { value: 'low' });
+                    xnew(ListBoxItem, { value: 'mid' });
                 });
             });
         });
@@ -268,13 +268,13 @@ describe('basics Listbox', () => {
         let box!: xnew.Unit;
         let accordion!: HTMLElement;
         xnew(() => {
-            // the Listbox owns the Gate: the menu opens / closes it, the Accordion (after the menu) rides box.gate
-            box = xnew(Listbox, { gate: { open: false, duration: 200 } }, (b: xnew.Unit) => {
-                xnew(ListboxMenu, (m: xnew.Unit) => {
+            // the ListBox owns the Gate: the menu opens / closes it, the Accordion (after the menu) rides box.gate
+            box = xnew(ListBox, { gate: { open: false, duration: 200 } }, (b: xnew.Unit) => {
+                xnew(ListBoxMenu, (m: xnew.Unit) => {
                     xnew.extend(Accordion, { gate: b.gate });
                     accordion = m.element as HTMLElement;
-                    xnew(ListboxItem, { value: 'low' });
-                    xnew(ListboxItem, { value: 'mid' });
+                    xnew(ListBoxItem, { value: 'low' });
+                    xnew(ListBoxItem, { value: 'mid' });
                 });
             });
         });

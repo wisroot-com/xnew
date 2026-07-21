@@ -11,12 +11,12 @@ import { Button } from './element/Button';
 import { Image } from './element/Image';
 import { GraphicText } from './element/GraphicText';
 import { InputRange } from './element/InputRange';
-import { InputCheckbox } from './element/InputCheckbox';
+import { InputCheckBox } from './element/InputCheckBox';
 import { InputText } from './element/InputText';
 import { InputNumber } from './element/InputNumber';
 import { InputSwitch } from './element/InputSwitch';
 import { InputRadio } from './element/InputRadio';
-import { Listbox, ListboxMenu, ListboxItem } from './element/Listbox';
+import { ListBox, ListBoxMenu, ListBoxItem } from './element/ListBox';
 import { AudioTrack } from './audio/AudioTrack';
 import { Synthesizer } from './audio/Synthesizer';
 import { Volume } from './audio/master';
@@ -35,14 +35,14 @@ export const xbasics = {
     Image,
     GraphicText,
     InputRange,
-    InputCheckbox,
+    InputCheckBox,
     InputText,
     InputNumber,
     InputSwitch,
     InputRadio,
-    Listbox,
-    ListboxMenu,
-    ListboxItem,
+    ListBox,
+    ListBoxMenu,
+    ListBoxItem,
     AudioTrack,
     Synthesizer,
     Volume,
