@@ -18,17 +18,17 @@ export function Listbox(unit: xnew.Unit,
 ) {
     const css = xnew.css('base', {
         container: `
-                display: inline-flex; align-items: center;
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
-                margin: 0.125em 0; padding: 0 0.5em;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                cursor: pointer; user-select: none;
-                &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
+            display: inline-flex; align-items: center;
+            width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+            margin: 0.125em 0; padding: 0 0.5em;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            cursor: pointer; user-select: none;
+            &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
         label: `
-                flex: 1 1 0; min-width: 0;
-                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            `,
+            flex: 1 1 0; min-width: 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        `,
     });
 
     let selected = value ?? '';
@@ -83,11 +83,11 @@ export function ListboxMenu(unit: xnew.Unit,
 
     const css = xnew.css('base', {
         container: `
-                position: absolute; top: 100%; left: 0; margin-top: 0.25em;
-                min-width: 100%; width: max-content; max-height: 12em;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
-            `,
+            position: absolute; top: 100%; left: 0; margin-top: 0.25em;
+            min-width: 100%; width: max-content; max-height: 12em;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
+        `,
     });
 
     xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.element });
@@ -100,7 +100,7 @@ export function ListboxMenu(unit: xnew.Unit,
         for (let element = listbox.element.parentElement; element !== null; element = element.parentElement) {
             const color = getComputedStyle(element).backgroundColor;
             if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
-                return color;
+            return color;
             }
         }
         return 'Canvas';
@@ -122,13 +122,13 @@ export function ListboxItem(unit: xnew.Unit,
 
     const css = xnew.css('base', {
         container: `
-                height: 2em; padding: 0 0.5em;
-                display: flex; align-items: center;
-                white-space: nowrap;
-                cursor: pointer; user-select: none;
-                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
+            height: 2em; padding: 0 0.5em;
+            display: flex; align-items: center;
+            white-space: nowrap;
+            cursor: pointer; user-select: none;
+            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
 

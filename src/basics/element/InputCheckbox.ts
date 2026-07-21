@@ -13,16 +13,16 @@ export function InputCheckbox(unit: xnew.Unit,
 ) {
     const css = xnew.css('base', {
         container: `
-                display: inline-block;
-                width: 1.5em; height: 1.5em; margin: 0.125em;
-                position: relative;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                cursor: pointer; user-select: none;
-                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
+            display: inline-block;
+            width: 1.5em; height: 1.5em; margin: 0.125em;
+            position: relative;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            cursor: pointer; user-select: none;
+            &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
         input: `
-                width: 0; height: 0; margin: 0; opacity: 0;
-            `,
+            width: 0; height: 0; margin: 0; opacity: 0;
+        `,
     });
 
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
@@ -57,12 +57,12 @@ export function InputCheckbox(unit: xnew.Unit,
 function CheckMark() {
     const css = xnew.css('base', {
         container: `
-                box-sizing: border-box; position: absolute; inset: 0; width: 100%; height: 100%;
-                stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
-                fill: none;
-                opacity: 0;
-                [data-checked] > & { opacity: 1; }
-            `,
+            box-sizing: border-box; position: absolute; inset: 0; width: 100%; height: 100%;
+            stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
+            fill: none;
+            opacity: 0;
+            [data-checked] > & { opacity: 1; }
+        `,
     });
 
     xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.container });

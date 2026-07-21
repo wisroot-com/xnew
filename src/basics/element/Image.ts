@@ -14,7 +14,7 @@ export function Image(unit: xnew.Unit,
 ) {
     const css = xnew.css('base', {
         container: `
-            `,
+        `,
     });
 
     xnew.nest({ tag: 'img', className: `${css.container} ${className}`, style, ...others });

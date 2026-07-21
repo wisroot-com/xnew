@@ -12,18 +12,18 @@ export function InputRadio(unit: xnew.Unit,
 ) {
     const css = xnew.css('base', {
         container: `
-                padding: 0.25em 0.5em;
-                flex: 1 1 0;
-                display: flex; align-items: center; justify-content: center;
-                white-space: nowrap;
-                cursor: pointer; user-select: none;
-                & + & { border-left: 1px solid currentColor; }
-                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-                &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
+            padding: 0.25em 0.5em;
+            flex: 1 1 0;
+            display: flex; align-items: center; justify-content: center;
+            white-space: nowrap;
+            cursor: pointer; user-select: none;
+            & + & { border-left: 1px solid currentColor; }
+            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
         input: `
-                width: 0; height: 0; margin: 0; opacity: 0;
-            `,
+            width: 0; height: 0; margin: 0; opacity: 0;
+        `,
     });
 
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style }, value);

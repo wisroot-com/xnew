@@ -13,16 +13,16 @@ export function InputSwitch(unit: xnew.Unit,
 ) {
     const css = xnew.css('base', {
         container: `
-                display: inline-block;
-                width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
-                position: relative;
-                border: 1px solid currentColor; border-radius: 1em;
-                cursor: pointer; user-select: none;
-                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
+            display: inline-block;
+            width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
+            position: relative;
+            border: 1px solid currentColor; border-radius: 1em;
+            cursor: pointer; user-select: none;
+            &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
         input: `
-                width: 0; height: 0; margin: 0; opacity: 0;
-            `,
+            width: 0; height: 0; margin: 0; opacity: 0;
+        `,
     });
 
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
@@ -57,12 +57,12 @@ export function InputSwitch(unit: xnew.Unit,
 function Knob() {
     const css = xnew.css('base', {
         container: `
-                position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
-                aspect-ratio: 1 / 1; border-radius: 50%;
-                background: currentColor;
-                transition: left 0.15s, transform 0.15s;
-                [data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }
-            `,
+            position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
+            aspect-ratio: 1 / 1; border-radius: 50%;
+            background: currentColor;
+            transition: left 0.15s, transform 0.15s;
+            [data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }
+        `,
     });
 
     xnew.nest({ tag: 'div', className: css.container });

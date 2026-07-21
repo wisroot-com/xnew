@@ -35,7 +35,7 @@ export function InputRange(unit: xnew.Unit,
     xnew.nest({ tag: 'div', className: `${css.container} ${vertical ? css.vertical : css.horizontal} ${className}`, style });
 
     const initial = value ?? min;
-    
+
     // hidden native input for interaction (min / max / step before value, so value never clamps against defaults)
     const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
     xnew({ tag: 'input', type: 'range', min, max, step, value: initial, className: css.input, style: direction, ...others });

@@ -12,11 +12,11 @@ export function GraphicText(unit: xnew.Unit,
 ) {
     const css = xnew.css('base', {
         container: `
-                display: inline-block;
-                stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
-                fill: currentColor; fill-opacity: 1;
-                overflow: visible;
-            `,
+            display: inline-block;
+            stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+            fill: currentColor; fill-opacity: 1;
+            overflow: visible;
+        `,
     });
 
     xnew.nest({ tag: 'svg', className: `${css.container} ${className}`, style });

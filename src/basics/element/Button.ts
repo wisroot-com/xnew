@@ -12,13 +12,13 @@ export function Button(unit: xnew.Unit,
 ) {
     const css = xnew.css('base', {
         container: `
-                min-width: 6em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em;
-                padding: 0 0.5em; margin: 0.125em;
-                cursor: pointer; user-select: none;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-                &:active { filter: brightness(0.5); }
-            `,
+            min-width: 6em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em;
+            padding: 0 0.5em; margin: 0.125em;
+            cursor: pointer; user-select: none;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:active { filter: brightness(0.5); }
+        `,
     });
 
     xnew.nest({ tag: 'button', type: 'button', className: `${css.container} ${className}`, style, ...others }, text);
