@@ -9,7 +9,7 @@ import { xicons } from '../../icons/xicons';
 import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
 import { InputCheckBox } from '../element/InputCheckBox';
-import { ListBox, ListBoxMenu, ListBoxItem } from '../element/ListBox';
+import { ListBox, ListBoxButton, ListBoxMenu, ListBoxItem } from '../element/ListBox';
 import { Accordion } from './Accordion';
 import { Gate } from './Gate';
 
@@ -103,9 +103,11 @@ function List(unit: xnew.Unit, { name = '', value, items = [], ...others }: { na
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
 
-    // ListBox extends onto this unit (so its '-change' fires here); the floating list nests into its field
-    xnew.extend(ListBox, { value, ...others, style: 'max-width: 60%; height: 2em;' });
-    xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em;' });
+    // ListBox extends onto this unit (so its '-change' fires here); the button draws the trigger, the floating list nests in
+    xnew.extend(ListBox, { value, ...others, style: 'max-width: 60%;' });
+    xnew(ListBoxButton, { style: 'height: 2em;' }, () => {
+        xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em;' });
+    });
     xnew(ListBoxMenu, () => {
         items.forEach((item: string) => xnew(ListBoxItem, { value: item }));
     });

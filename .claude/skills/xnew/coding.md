@@ -303,6 +303,22 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **An open-toggle trigger and a document-level `click.outside` closer are a self-close trap: the trigger's
+  own click bubbles to `document` and fires `click.outside`, closing what it just opened.** `click.outside`
+  attaches on `document` in the BUBBLE phase (`dom.ts`), so the trigger's `unit.on('click')` fires first
+  (opens) and then the bubbled document handler fires (closes). Fix: the trigger must
+  `event.stopPropagation()` in its click so the opening press never reaches the document closer; genuine
+  outside presses (backdrop, elsewhere) don't pass through the trigger, so they still close. Put ONE
+  `click.outside` on the menu/overlay (not one per row — N identical document handlers), registered right
+  after nesting the menu; a press on a row stays *inside* the menu so `click.outside` skips it and the row's
+  own click handles select+close. Its guard must accept `'opening'`, not just `'opened'`: a duration-0 Gate
+  is still `'opening'` right after the open (its completion `.timeout` fires at +1ms, not +0), so
+  `state === 'opened' || state === 'opening'`. **Tests must dispatch the trigger click with `bubbles: true`**
+  — a `bubbles: false` click can't reach the document closer, so it hides this whole class of bug (it hid
+  the ListBox self-close until a bubbling repro exposed it). (Bit ListBox when the framed trigger + toggle
+  moved from the container into a new `ListBoxButton`, so backdrop clicks no longer closed "for free" via the
+  container's toggle, 2026-07.)
+
 - **A sync `game.js` (shared by Node server + browser client) must NOT statically import addon/browser-only
   libs (`pixi.js`, `three`, `@mulsense/xnew/addons/*`, `voxelkit`) — Node evaluates the whole module and
   fails to resolve them.** Put the browser libs in a separate browser-only file, and have the client entry

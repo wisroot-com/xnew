@@ -1439,13 +1439,13 @@ function Button(unit, _a = {}) {
     var { text = '', className = '', style = '' } = _a, others = __rest(_a, ["text", "className", "style"]);
     const css = xnew.css('base', {
         container: `
-                min-width: 6em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em;
-                padding: 0 0.5em; margin: 0.125em;
-                cursor: pointer; user-select: none;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-                &:active { filter: brightness(0.5); }
-            `,
+            min-width: 6em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em;
+            padding: 0 0.5em; margin: 0.125em;
+            cursor: pointer; user-select: none;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:active { filter: brightness(0.5); }
+        `,
     });
     xnew.nest(Object.assign({ tag: 'button', type: 'button', className: `${css.container} ${className}`, style }, others), text);
 }
@@ -1454,7 +1454,7 @@ function Image(unit, _a) {
     var { src, className = '', style = '' } = _a, others = __rest(_a, ["src", "className", "style"]);
     const css = xnew.css('base', {
         container: `
-            `,
+        `,
     });
     xnew.nest(Object.assign({ tag: 'img', className: `${css.container} ${className}`, style }, others));
     const element = unit.element;
@@ -1485,11 +1485,11 @@ function GraphicText(unit, _a = {}) {
     var { text = '', className = '', style = '' } = _a, others = __rest(_a, ["text", "className", "style"]);
     const css = xnew.css('base', {
         container: `
-                display: inline-block;
-                stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
-                fill: currentColor; fill-opacity: 1;
-                overflow: visible;
-            `,
+            display: inline-block;
+            stroke: none; stroke-opacity: 1; stroke-width: 1; stroke-linejoin: round; stroke-linecap: round;
+            fill: currentColor; fill-opacity: 1;
+            overflow: visible;
+        `,
     });
     xnew.nest({ tag: 'svg', className: `${css.container} ${className}`, style });
     const inner = xnew(Object.assign({ tag: 'text', x: 0, y: 0, paintOrder: 'stroke fill' }, others), text);
@@ -1648,20 +1648,20 @@ function Gate(unit, { open = true, duration = 0, easing = 'ease' }) {
     };
 }
 
-function InputCheckbox(unit, _a = {}) {
+function InputCheckBox(unit, _a = {}) {
     var { value = false, gate, className = '', style = '' } = _a, others = __rest(_a, ["value", "gate", "className", "style"]);
     const css = xnew.css('base', {
         container: `
-                display: inline-block;
-                width: 1.5em; height: 1.5em; margin: 0.125em;
-                position: relative;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                cursor: pointer; user-select: none;
-                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
+            display: inline-block;
+            width: 1.5em; height: 1.5em; margin: 0.125em;
+            position: relative;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            cursor: pointer; user-select: none;
+            &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
         input: `
-                width: 0; height: 0; margin: 0; opacity: 0;
-            `,
+            width: 0; height: 0; margin: 0; opacity: 0;
+        `,
     });
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
     xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
@@ -1685,12 +1685,12 @@ function InputCheckbox(unit, _a = {}) {
 function CheckMark() {
     const css = xnew.css('base', {
         container: `
-                box-sizing: border-box; position: absolute; inset: 0; width: 100%; height: 100%;
-                stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
-                fill: none;
-                opacity: 0;
-                [data-checked] > & { opacity: 1; }
-            `,
+            box-sizing: border-box; position: absolute; inset: 0; width: 100%; height: 100%;
+            stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
+            fill: none;
+            opacity: 0;
+            [data-checked] > & { opacity: 1; }
+        `,
     });
     xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.container });
     xnew('<path d="M2 6 5 9 10 3"/>');
@@ -1700,20 +1700,20 @@ function InputText(unit, _a = {}) {
     var { value, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css('base', {
         container: `
-                display: inline-flex; align-items: center;
-                box-sizing: border-box;
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
-                margin: 0.125em 0; padding: 0 0.5em;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                cursor: text;
-                &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
+            display: inline-flex; align-items: center;
+            box-sizing: border-box;
+            width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+            margin: 0.125em 0; padding: 0 0.5em;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            cursor: text;
+            &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
         input: `
-                width: 100%; height: 100%;
-                margin: 0; padding: 0;
-                background: transparent; color: inherit; font: inherit;
-                border: none; outline: none;
-            `,
+            width: 100%; height: 100%;
+            margin: 0; padding: 0;
+            background: transparent; color: inherit; font: inherit;
+            border: none; outline: none;
+        `,
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     const input = xnew(Object.assign({ tag: 'input', type: 'text', value, className: css.input }, others));
@@ -1729,23 +1729,23 @@ function InputNumber(unit, _a = {}) {
     var { value, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css('base', {
         container: `
-                display: inline-flex; align-items: center;
-                box-sizing: border-box;
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
-                margin: 0.125em 0; padding: 0 0.5em;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                cursor: text;
-                &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
+            display: inline-flex; align-items: center;
+            box-sizing: border-box;
+            width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
+            margin: 0.125em 0; padding: 0 0.5em;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            cursor: text;
+            &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
         input: `
-                width: 100%; height: 100%;
-                margin: 0; padding: 0;
-                text-align: center;
-                background: transparent; color: inherit; font: inherit;
-                border: none; outline: none;
-                -moz-appearance: textfield; appearance: textfield;
-                &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
-            `,
+            width: 100%; height: 100%;
+            margin: 0; padding: 0;
+            text-align: center;
+            background: transparent; color: inherit; font: inherit;
+            border: none; outline: none;
+            -moz-appearance: textfield; appearance: textfield;
+            &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
+        `,
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     const input = xnew(Object.assign({ tag: 'input', type: 'number', value, className: css.input }, others));
@@ -1761,16 +1761,16 @@ function InputSwitch(unit, _a = {}) {
     var { value = false, gate, className = '', style = '' } = _a, others = __rest(_a, ["value", "gate", "className", "style"]);
     const css = xnew.css('base', {
         container: `
-                display: inline-block;
-                width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
-                position: relative;
-                border: 1px solid currentColor; border-radius: 1em;
-                cursor: pointer; user-select: none;
-                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
+            display: inline-block;
+            width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
+            position: relative;
+            border: 1px solid currentColor; border-radius: 1em;
+            cursor: pointer; user-select: none;
+            &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
         input: `
-                width: 0; height: 0; margin: 0; opacity: 0;
-            `,
+            width: 0; height: 0; margin: 0; opacity: 0;
+        `,
     });
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
     xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
@@ -1794,12 +1794,12 @@ function InputSwitch(unit, _a = {}) {
 function Knob() {
     const css = xnew.css('base', {
         container: `
-                position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
-                aspect-ratio: 1 / 1; border-radius: 50%;
-                background: currentColor;
-                transition: left 0.15s, transform 0.15s;
-                [data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }
-            `,
+            position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
+            aspect-ratio: 1 / 1; border-radius: 50%;
+            background: currentColor;
+            transition: left 0.15s, transform 0.15s;
+            [data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }
+        `,
     });
     xnew.nest({ tag: 'div', className: css.container });
 }
@@ -1808,18 +1808,18 @@ function InputRadio(unit, _a = {}) {
     var { value = '', name = '', checked = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "name", "checked", "className", "style"]);
     const css = xnew.css('base', {
         container: `
-                padding: 0.25em 0.5em;
-                flex: 1 1 0;
-                display: flex; align-items: center; justify-content: center;
-                white-space: nowrap;
-                cursor: pointer; user-select: none;
-                & + & { border-left: 1px solid currentColor; }
-                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-                &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
+            padding: 0.25em 0.5em;
+            flex: 1 1 0;
+            display: flex; align-items: center; justify-content: center;
+            white-space: nowrap;
+            cursor: pointer; user-select: none;
+            & + & { border-left: 1px solid currentColor; }
+            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
         input: `
-                width: 0; height: 0; margin: 0; opacity: 0;
-            `,
+            width: 0; height: 0; margin: 0; opacity: 0;
+        `,
     });
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style }, value);
     xnew(Object.assign({ tag: 'input', type: 'radio', name, value, checked, className: css.input }, others));
@@ -1858,37 +1858,30 @@ function Overlay(unit, _a = {}) {
     };
 }
 
-function Listbox(unit, _a = {}) {
+function ListBox(unit, _a = {}) {
     var { value, gate, className = '', style = '' } = _a, others = __rest(_a, ["value", "gate", "className", "style"]);
     const css = xnew.css('base', {
         container: `
-                display: inline-flex; align-items: center;
-                width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
-                margin: 0.125em 0; padding: 0 0.5em;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                cursor: pointer; user-select: none;
-                &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
-        label: `
-                flex: 1 1 0; min-width: 0;
-                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            `,
+            display: inline-flex;
+            max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;
+            margin: 0.125em 0;
+        `,
     });
     let selected = value !== null && value !== void 0 ? value : '';
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
-    const label = xnew({ tag: 'div', className: css.label }, selected);
     const items = [];
+    const labels = [];
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: false, duration: 0 });
-    unit.on('click', () => gate.toggle());
-    gate.on('-open', () => unit.element.toggleAttribute('data-open', true));
-    gate.on('-closed', () => unit.element.toggleAttribute('data-open', false));
     function apply(value) {
-        label.element.textContent = selected = value;
+        selected = value;
+        for (const label of labels) {
+            label.textContent = selected;
+        }
         for (const item of items) {
             item.check(item.value === selected);
         }
     }
-    xnew.timeout(() => selected === '' && items.length > 0 && apply(items[0].value));
+    xnew.timeout(() => apply(selected === '' && items.length > 0 ? items[0].value : selected));
     return {
         get value() {
             return selected;
@@ -1899,26 +1892,63 @@ function Listbox(unit, _a = {}) {
         register(item) {
             items.push(item);
         },
+        bind(label) {
+            labels.push(label);
+            label.textContent = selected;
+        },
         select(value) {
             apply(value);
-            xnew.emit('-select', { value });
+            xnew.emit('-change', { value });
             gate.close();
         },
     };
 }
-function ListboxMenu(unit, _a = {}) {
+function ListBoxButton(unit, _a = {}) {
     var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
-    const listbox = xnew.context(Listbox);
+    const listbox = xnew.context(ListBox);
     const css = xnew.css('base', {
         container: `
-                position: absolute; top: 100%; left: 0; margin-top: 0.25em;
-                min-width: 100%; width: max-content; max-height: 12em;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
-            `,
+            display: inline-flex; align-items: center;
+            width: 10em; max-width: 100%; height: 1.8em;
+            padding: 0 0.5em;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            cursor: pointer; user-select: none;
+            &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
+        label: `
+            flex: 1 1 0; min-width: 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        `,
+    });
+    xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    const label = xnew({ tag: 'div', className: css.label });
+    listbox.bind(label.element);
+    unit.on('click', ({ event }) => {
+        event.stopPropagation();
+        listbox.gate.toggle();
+    });
+    listbox.gate.on('-open', () => unit.element.toggleAttribute('data-open', true));
+    listbox.gate.on('-closed', () => unit.element.toggleAttribute('data-open', false));
+}
+function ListBoxMenu(unit, _a = {}) {
+    var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
+    const listbox = xnew.context(ListBox);
+    const css = xnew.css('base', {
+        container: `
+            position: absolute; top: 100%; left: 0; margin-top: 0.25em;
+            min-width: 100%; width: max-content; max-height: 12em;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
+        `,
     });
     xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.element });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    unit.on('click.outside', () => {
+        const state = listbox.gate.state;
+        if (state === 'opened' || state === 'opening') {
+            listbox.gate.close();
+        }
+    });
     listbox.gate.on('-open', () => unit.element.style.background = surfaceColor());
     function surfaceColor() {
         for (let element = listbox.element.parentElement; element !== null; element = element.parentElement) {
@@ -1930,29 +1960,24 @@ function ListboxMenu(unit, _a = {}) {
         return 'Canvas';
     }
 }
-function ListboxItem(unit, _a = {}) {
+function ListBoxItem(unit, _a = {}) {
     var { value = '', className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
-    const listbox = xnew.context(Listbox);
+    const listbox = xnew.context(ListBox);
     listbox.register(unit);
     const css = xnew.css('base', {
         container: `
-                height: 2em; padding: 0 0.5em;
-                display: flex; align-items: center;
-                white-space: nowrap;
-                cursor: pointer; user-select: none;
-                &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-                &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
+            height: 2em; padding: 0 0.5em;
+            display: flex; align-items: center;
+            white-space: nowrap;
+            cursor: pointer; user-select: none;
+            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     unit.on('click', ({ event }) => {
         event.stopPropagation();
         listbox.select(value);
-    });
-    unit.on('click.outside', () => {
-        if (listbox.gate.state === 'opened') {
-            listbox.gate.close();
-        }
     });
     if (xnew.standalone === true) {
         unit.element.textContent = value;
@@ -2372,57 +2397,65 @@ function VirtualPad(unit, { type = 'analog', className = '', style = '' } = {}) 
     });
     if (xnew.standalone === true) {
         if (type === 'analog') {
-            xnew('<polygon points="32  7 27 13 37 13">');
-            xnew('<polygon points="32 57 27 51 37 51">');
-            xnew('<polygon points=" 7 32 13 27 13 37">');
-            xnew('<polygon points="57 32 51 27 51 37">');
-            const target = xnew('<circle cx="32" cy="32" r="14">');
-            unit.on('-down -move', ({ vector }) => {
-                target.element.setAttribute('transform', `translate(${vector.x * 16} ${vector.y * 16})`);
-                target.element.style.filter = 'brightness(80%)';
-            });
-            unit.on('-up', () => {
-                target.element.removeAttribute('transform');
-                target.element.style.filter = '';
-            });
+            xnew(VirtualPadAnalog);
         }
         else {
-            const polygons = [
-                '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
-                '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
-                '<polygon points="32 32 23 23  4 23  3 24  3 40  4 41 23 41">',
-                '<polygon points="32 32 41 23 60 23 61 24 61 40 60 41 41 41">'
-            ];
-            let targets = [];
-            xnew(() => {
-                xnew.nest('<g style="stroke: none;">');
-                targets = polygons.map((polygon) => xnew(polygon));
-            });
-            xnew(() => {
-                xnew.nest('<g style="fill: none;">');
-                xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
-                xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
-                xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');
-                xnew('<polyline points="41 23 60 23 61 24 61 40 60 41 41 41">');
-                xnew('<polygon points="32  7 27 13 37 13">');
-                xnew('<polygon points="32 57 27 51 37 51">');
-                xnew('<polygon points=" 7 32 13 27 13 37">');
-                xnew('<polygon points="57 32 51 27 51 37">');
-            });
-            unit.on('-down -move', ({ vector }) => {
-                targets[0].element.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
-                targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
-                targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
-                targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
-            });
-            unit.on('-up', () => {
-                targets[0].element.style.filter = '';
-                targets[1].element.style.filter = '';
-                targets[2].element.style.filter = '';
-                targets[3].element.style.filter = '';
-            });
+            xnew(VirtualPadDPad);
         }
     }
+}
+function VirtualPadAnalog() {
+    const pad = xnew.context(VirtualPad);
+    xnew('<polygon points="32  7 27 13 37 13">');
+    xnew('<polygon points="32 57 27 51 37 51">');
+    xnew('<polygon points=" 7 32 13 27 13 37">');
+    xnew('<polygon points="57 32 51 27 51 37">');
+    const target = xnew('<circle cx="32" cy="32" r="14">');
+    pad.on('-down -move', ({ vector }) => {
+        target.element.setAttribute('transform', `translate(${vector.x * 16} ${vector.y * 16})`);
+        target.element.style.filter = 'brightness(80%)';
+    });
+    pad.on('-up', () => {
+        target.element.removeAttribute('transform');
+        target.element.style.filter = '';
+    });
+}
+function VirtualPadDPad() {
+    const pad = xnew.context(VirtualPad);
+    const polygons = [
+        '<polygon points="32 32 23 23 23  4 24  3 40  3 41  4 41 23">',
+        '<polygon points="32 32 23 41 23 60 24 61 40 61 41 60 41 41">',
+        '<polygon points="32 32 23 23  4 23  3 24  3 40  4 41 23 41">',
+        '<polygon points="32 32 41 23 60 23 61 24 61 40 60 41 41 41">'
+    ];
+    let targets = [];
+    xnew(() => {
+        xnew.nest('<g style="stroke: none;">');
+        targets = polygons.map((polygon) => xnew(polygon));
+    });
+    xnew(() => {
+        xnew.nest('<g style="fill: none;">');
+        xnew('<polyline points="23 23 23  4 24  3 40  3 41  4 41 23">');
+        xnew('<polyline points="23 41 23 60 24 61 40 61 41 60 41 41">');
+        xnew('<polyline points="23 23  4 23  3 24  3 40  4 41 23 41">');
+        xnew('<polyline points="41 23 60 23 61 24 61 40 60 41 41 41">');
+        xnew('<polygon points="32  7 27 13 37 13">');
+        xnew('<polygon points="32 57 27 51 37 51">');
+        xnew('<polygon points=" 7 32 13 27 13 37">');
+        xnew('<polygon points="57 32 51 27 51 37">');
+    });
+    pad.on('-down -move', ({ vector }) => {
+        targets[0].element.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
+        targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
+        targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
+        targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
+    });
+    pad.on('-up', () => {
+        targets[0].element.style.filter = '';
+        targets[1].element.style.filter = '';
+        targets[2].element.style.filter = '';
+        targets[3].element.style.filter = '';
+    });
 }
 
 function Template(unit, _a) {
@@ -2861,16 +2894,18 @@ function Checkbox(unit, _a) {
     var { name = '' } = _a, others = __rest(_a, ["name"]);
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
-    xnew(InputCheckbox, Object.assign(Object.assign({ name }, others), { style: 'width: 1.25em; height: 1.25em;' }));
+    xnew(InputCheckBox, Object.assign(Object.assign({ name }, others), { style: 'width: 1.25em; height: 1.25em;' }));
 }
 function List(unit, _a) {
     var { name = '', value, items = [] } = _a, others = __rest(_a, ["name", "value", "items"]);
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
-    xnew.extend(Listbox, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%; height: 2em;' }));
-    xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em;' });
-    xnew(ListboxMenu, () => {
-        items.forEach((item) => xnew(ListboxItem, { value: item }));
+    xnew.extend(ListBox, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%;' }));
+    xnew(ListBoxButton, { style: 'height: 2em;' }, () => {
+        xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em;' });
+    });
+    xnew(ListBoxMenu, () => {
+        items.forEach((item) => xnew(ListBoxItem, { value: item }));
     });
 }
 
@@ -2937,14 +2972,15 @@ const xbasics = {
     Image,
     GraphicText,
     InputRange,
-    InputCheckbox,
+    InputCheckBox,
     InputText,
     InputNumber,
     InputSwitch,
     InputRadio,
-    Listbox,
-    ListboxMenu,
-    ListboxItem,
+    ListBox,
+    ListBoxButton,
+    ListBoxMenu,
+    ListBoxItem,
     AudioTrack,
     Synthesizer,
     Volume,

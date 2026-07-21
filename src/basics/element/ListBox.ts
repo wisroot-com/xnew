@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------
-// ListBox — a styleable select: ListBox (framed container + value) + ListBoxMenu (floating list) + ListBoxItem (row)
+// ListBox — a styleable select: ListBox (state + fit-to-content host) + ListBoxButton (framed trigger + label) + ListBoxMenu (floating list) + ListBoxItem (row)
 // The native <select> popup can't be styled, so selection is held in JS (no native control at all).
 // Hosts read the current value with `.value` and observe changes with `.on('-change', ({ value }) => …)`.
 //----------------------------------------------------------------------------------------------------
@@ -9,7 +9,7 @@ import { Gate } from '../ui/Gate';
 import { Overlay } from '../ui/Overlay';
 
 //----------------------------------------------------------------------------------------------------
-// ListBox — the framed container, the visible label, and the selection state
+// ListBox — the selection state and the fit-to-content host (no frame; ListBoxButton draws the trigger)
 //----------------------------------------------------------------------------------------------------
 
 export function ListBox(unit: xnew.Unit,
@@ -18,39 +18,32 @@ export function ListBox(unit: xnew.Unit,
 ) {
     const css = xnew.css('base', {
         container: `
-            display: inline-flex; align-items: center;
-            width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
-            margin: 0.125em 0; padding: 0 0.5em;
-            border: 1px solid currentColor; border-radius: 0.25em;
-            cursor: pointer; user-select: none;
-            &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-        `,
-        label: `
-            flex: 1 1 0; min-width: 0;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            display: inline-flex;
+            max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;
+            margin: 0.125em 0;
         `,
     });
 
     let selected = value ?? '';
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
-    const label = xnew({ tag: 'div', className: css.label }, selected);
 
     const items: xnew.Unit[] = [];
+    const labels: HTMLElement[] = [];
 
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate ?? { open: false, duration: 0 });
 
-    unit.on('click', () => gate.toggle());
-    gate.on('-open', () => unit.element.toggleAttribute('data-open', true));
-    gate.on('-closed', () => unit.element.toggleAttribute('data-open', false));
-
     function apply(value: string) {
-        label.element.textContent = selected = value;
+        selected = value;
+        for (const label of labels) {
+            label.textContent = selected;
+        }
         for (const item of items) {
             item.check(item.value === selected);
         }
     }
 
-    xnew.timeout(() => selected === '' && items.length > 0 && apply(items[0].value));
+    // once every item has registered, adopt the first as the default when none was given, and sync checked state either way
+    xnew.timeout(() => apply(selected === '' && items.length > 0 ? items[0].value : selected));
 
     return {
         get value() {
@@ -62,12 +55,55 @@ export function ListBox(unit: xnew.Unit,
         register(item: xnew.Unit) {
             items.push(item);
         },
+        bind(label: HTMLElement) {
+            labels.push(label);
+            label.textContent = selected;
+        },
         select(value: string) {
             apply(value);
-            xnew.emit('-select', { value });
+            xnew.emit('-change', { value });
             gate.close();
         },
     };
+}
+
+//----------------------------------------------------------------------------------------------------
+// ListBoxButton — the framed trigger: draws the border / label, toggles the ListBox gate on click.
+// Compose extra content (e.g. a chevron icon) with a trailing function; the label reflects the value.
+//----------------------------------------------------------------------------------------------------
+
+export function ListBoxButton(unit: xnew.Unit,
+    { className = '', style = '', ...others }:
+    { className?: string, style?: string, [key: string]: any } = {}
+) {
+    const listbox = xnew.context(ListBox);
+
+    const css = xnew.css('base', {
+        container: `
+            display: inline-flex; align-items: center;
+            width: 10em; max-width: 100%; height: 1.8em;
+            padding: 0 0.5em;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            cursor: pointer; user-select: none;
+            &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
+        label: `
+            flex: 1 1 0; min-width: 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        `,
+    });
+
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
+    const label = xnew({ tag: 'div', className: css.label });
+    listbox.bind(label.element);
+
+    // stop the opening click from bubbling to the document, or ListBoxMenu's click.outside would self-close it
+    unit.on('click', ({ event }: { event: PointerEvent }) => {
+        event.stopPropagation();
+        listbox.gate.toggle();
+    });
+    listbox.gate.on('-open', () => unit.element.toggleAttribute('data-open', true));
+    listbox.gate.on('-closed', () => unit.element.toggleAttribute('data-open', false));
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -93,6 +129,15 @@ export function ListBoxMenu(unit: xnew.Unit,
     xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.element });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others }) as HTMLElement;
+
+    // one outside-press closer for the whole list (registered right after nesting the menu, so the press
+    // that opened it can't self-close it); a press on a row stays inside the menu and is handled by the item
+    unit.on('click.outside', () => {
+        const state = listbox.gate.state;
+        if (state === 'opened' || state === 'opening') {
+            listbox.gate.close();
+        }
+    });
 
     listbox.gate.on('-open', () => unit.element.style.background = surfaceColor());
 
@@ -135,11 +180,6 @@ export function ListBoxItem(unit: xnew.Unit,
     unit.on('click', ({ event }: { event: PointerEvent }) => {
         event.stopPropagation();
         listbox.select(value);
-    });
-    unit.on('click.outside', () => {
-        if (listbox.gate.state === 'opened') {
-            listbox.gate.close();
-        }
     });
     // fall back to the value as text when the row is used standalone (no content composed into it)
     if (xnew.standalone === true) {
