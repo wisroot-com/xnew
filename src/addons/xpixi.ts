@@ -1,7 +1,8 @@
 //----------------------------------------------------------------------------------------------------
 // xpixi — PixiJS 8 integration: ties the Pixi scene graph to the xnew unit tree
-// Display objects attached via nest / add are removed and destroyed when the owning unit
-// finalizes (textures are kept — they may be shared). nest is stateful; add places siblings.
+// nest() makes a group Container and moves the current parent into it (stateful); add(obj) attaches a
+// leaf without moving — so a leaf can never become a parent. Objects are removed/destroyed on the
+// owning unit's finalize (textures kept — they may be shared).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '@mulsense/xnew';
@@ -14,7 +15,9 @@ export const xpixi = {
     ) {
         return xnew.promise(xnew(Root, { canvas }));
     },
-    nest(object: any) {
+    // create a group Container, attach it, and move the current parent into it (stateful)
+    nest(): PIXI.Container {
+        const object = new PIXI.Container();
         xnew(Nest, { object });
         xnew.extend(() => {
             return {
@@ -23,6 +26,7 @@ export const xpixi = {
         });
         return object;
     },
+    // attach a display object to the current parent; the current parent stays unchanged
     add(object: any) {
         xnew(Add, { object });
         return object;

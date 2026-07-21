@@ -47,7 +47,7 @@ function Contents(unit) {
 }
 
 function Rectangle(unit, { x, y, w, h, color, options = {} }) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
   object.position.set(x, y);
   object.addChild(new PIXI.Graphics().rect(-w / 2, -h / 2, w, h).fill(color));
  
@@ -64,7 +64,7 @@ function Rectangle(unit, { x, y, w, h, color, options = {} }) {
 }
 
 function Circle(unit, { x, y, radius, color, options = {} }) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
   object.position.set(x, y);
   object.addChild(new PIXI.Graphics().circle(0, 0, radius).fill(color));
  
@@ -80,7 +80,7 @@ function Circle(unit, { x, y, radius, color, options = {} }) {
 }
 
 function Polygon(unit, { x, y, sides, radius, color, options = {} }) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
   object.position.set(x, y);
   object.addChild(new PIXI.Graphics().regularPoly(0, 0, radius, sides).fill(color));
   
@@ -97,7 +97,7 @@ function Polygon(unit, { x, y, sides, radius, color, options = {} }) {
 }
 
 function Dumbbell(unit, { x, y, size, angle, color, options = {} }) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
   const graphics = new PIXI.Graphics();
   graphics.rect(-size, -size / 8, size * 2, size / 4).fill(color);
   graphics.circle(-size, 0, size / 2).fill(color);
@@ -122,7 +122,7 @@ function Dumbbell(unit, { x, y, size, angle, color, options = {} }) {
 }
 
 function Car(unit, { x, y, size }) {
-  const container = xpixi.nest(new PIXI.Container());
+  const container = xpixi.nest();
 
   const car = Matter.Composite.create({ label: 'car' });
   Matter.Composite.add(xmatter.world, car);
@@ -180,7 +180,7 @@ function Car(unit, { x, y, size }) {
 }
 
 function LShape(unit, { x, y, color, size, options = {} }) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
 
   const a = size;
   const b = size / 4;

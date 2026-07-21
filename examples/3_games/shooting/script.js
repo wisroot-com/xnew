@@ -27,7 +27,7 @@ function Contents(unit) {
 }
 
 function Background(unit) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
   object.addChild(new PIXI.Graphics().rect(0, 0, xpixi.canvas.width, xpixi.canvas.height).fill(0x000000));
 
   for (let i = 0; i < 100; i++) {
@@ -36,7 +36,7 @@ function Background(unit) {
 }
 
 function Dot(unit) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
   object.position.set(Math.random() * xpixi.canvas.width, Math.random() * xpixi.canvas.height);
   object.addChild(new PIXI.Graphics().circle(0, 0, 1).fill(0xFFFFFF));
 
@@ -57,7 +57,7 @@ function TitleScene(unit) {
 }
 
 function TitleText(unit) {
-  const object = xpixi.nest(new PIXI.Text('touch start', { fontSize: 32, fill: 0xFFFFFF }));
+  const object = xpixi.add(new PIXI.Text('touch start', { fontSize: 32, fill: 0xFFFFFF }));
   object.position.set(xpixi.canvas.width / 2, xpixi.canvas.height / 2);
   object.anchor.set(0.5);
 }
@@ -109,7 +109,7 @@ function Controller(unit) {
 }
 
 function ScoreText(unit) {
-  const object = xpixi.nest(new PIXI.Text('score 0', { fontSize: 32, fill: 0xFFFFFF }));
+  const object = xpixi.add(new PIXI.Text('score 0', { fontSize: 32, fill: 0xFFFFFF }));
   object.position.set(xpixi.canvas.width - 10, 10); // top right
   object.anchor.set(1.0, 0.0);
 
@@ -118,13 +118,13 @@ function ScoreText(unit) {
 }
 
 function GameOverText(unit) {
-  const object = xpixi.nest(new PIXI.Text('game over', { fontSize: 32, fill: 0xFFFFFF }));
+  const object = xpixi.add(new PIXI.Text('game over', { fontSize: 32, fill: 0xFFFFFF }));
   object.position.set(xpixi.canvas.width / 2, xpixi.canvas.height / 2);
   object.anchor.set(0.5);
 }
 
 function Player(unit) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
   object.position.set(xpixi.canvas.width / 2, xpixi.canvas.height / 2);
   xnew(Sprite, { rects: [[0, 0, 32, 32], [32, 0, 32, 32]] });
 
@@ -164,7 +164,7 @@ function Player(unit) {
 }
 
 function Shot(unit, { x, y }) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
   object.position.set(x, y);
   object.addChild(new PIXI.Graphics().ellipse(0, 0, 4, 24).fill(0x22FFFF));
 
@@ -189,7 +189,7 @@ function Shot(unit, { x, y }) {
 }
 
 function Enemy(unit) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
   object.position.set(Math.random() * xpixi.canvas.width, 0);
   xnew(Sprite, { rects: [[0, 32, 32, 32], [32, 32, 32, 32], [64, 32, 32, 32]] });
 
@@ -236,7 +236,7 @@ function Enemy(unit) {
 }
 
 function CrashText(unit, { x, y, score }) {
-  const object = xpixi.nest(new PIXI.Text(`+ ${score}`, { fontSize: 24, fill: '#FFFF22' }));
+  const object = xpixi.add(new PIXI.Text(`+ ${score}`, { fontSize: 24, fill: '#FFFF22' }));
   object.position.set(x, y);
   object.anchor.set(0.5);
 
@@ -249,7 +249,7 @@ function CrashText(unit, { x, y, score }) {
 }
 
 function Crash(unit, { x, y, score }) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
   object.position.set(x, y);
   xnew(Sprite, { rects: [[0, 64, 32, 32]] });
 
@@ -279,7 +279,7 @@ function Crash(unit, { x, y, score }) {
 }
 
 function Sprite(unit, { rects }) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
   xnew.promise(PIXI.Assets.load('texture.png')).then((texture) => {
     texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
     const textures = rects.map((rect) => new PIXI.Texture({ source: texture, frame: new PIXI.Rectangle(...rect) }));

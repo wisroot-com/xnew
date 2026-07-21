@@ -5,7 +5,8 @@ const xpixi = {
     initialize({ canvas }) {
         return xnew.promise(xnew(Root, { canvas }));
     },
-    nest(object) {
+    nest() {
+        const object = new PIXI.Container();
         xnew(Nest, { object });
         xnew.extend(() => {
             return {

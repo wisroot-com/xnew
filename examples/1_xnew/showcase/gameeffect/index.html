@@ -62,7 +62,7 @@
 
     // 3 x 2 grid, one flame design per cell
     function Gallery(unit) {
-      const grid = xpixi.nest(new PIXI.Container());
+      const grid = xpixi.nest();
 
       const lines = new PIXI.Graphics();
       for (let c = 1; c < 3; c++) {
@@ -125,7 +125,7 @@
     //----------------------------------------------------------------------------------------------------
 
     function Flame(unit, cfg) {
-      const container = xpixi.nest(new PIXI.Container());
+      const container = xpixi.nest();
       container.position.set(cfg.x, cfg.y);
 
       if (cfg.baseGlow) {
@@ -370,7 +370,7 @@
 
     function Fireball(unit, { x, y }) {
       const flame = xnew(Flame, fireballCfg(x, y));
-      const ringLayer = xpixi.nest(new PIXI.Container());
+      const ringLayer = xpixi.nest();
       ringLayer.position.set(x, y);
       const rings = [];
 
@@ -407,7 +407,7 @@
       const flame = xnew(Flame, fireballCfg(x, y));
       flame.burst(56);
 
-      const ringLayer = xpixi.nest(new PIXI.Container());
+      const ringLayer = xpixi.nest();
       ringLayer.position.set(x, y);
       const ring = new PIXI.Graphics();
       ring.blendMode = 'add';
@@ -431,7 +431,7 @@
     //----------------------------------------------------------------------------------------------------
 
     function Logs(unit, { x, y }) {
-      const c = xpixi.nest(new PIXI.Container());
+      const c = xpixi.nest();
       c.position.set(x, y + 8);
       [[-1, 0x5b3a21], [1, 0x6b4526]].forEach(([dir, color]) => {
         const g = new PIXI.Graphics();
@@ -449,7 +449,7 @@
     }
 
     function TorchStick(unit, { x, y }) {
-      const c = xpixi.nest(new PIXI.Container());
+      const c = xpixi.nest();
       c.position.set(x, y);
       c.addChild(new PIXI.Graphics().roundRect(-6, 8, 12, 78, 5).fill(0x4a3220));
       c.addChild(new PIXI.Graphics().roundRect(-13, -4, 26, 20, 6).fill(0x2a2a2e));

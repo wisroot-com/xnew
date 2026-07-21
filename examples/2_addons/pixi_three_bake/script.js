@@ -125,7 +125,7 @@ function ViewScene(unit, { texturesList }) {
     const y = cellH * row + cellH * 0.4;
 
     xnew(() => {
-      const sprite = xpixi.nest(new PIXI.AnimatedSprite(textures));
+      const sprite = xpixi.add(new PIXI.AnimatedSprite(textures));
       sprite.position.set(x, y);
       sprite.anchor.set(0.5);
       sprite.scale.set(1.5);

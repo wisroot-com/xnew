@@ -5,7 +5,7 @@ import { xpixi } from '@mulsense/xnew/addons/xpixi';
 
 export function Background(unit) {
   xnew(() => {
-    const object = xpixi.nest(new PIXI.Container());
+    const object = xpixi.nest();
     xnew.promise(PIXI.Assets.load('./background.png')).then((texture) => {
       const sprite = new PIXI.Sprite(texture);
       sprite.scale.set(xpixi.canvas.width / texture.frame.width, xpixi.canvas.height / texture.frame.height);
@@ -13,7 +13,7 @@ export function Background(unit) {
     });
   })
 
-  const container = xpixi.nest(new PIXI.Container());
+  const container = xpixi.nest();
   const particles = [];
   const particleCount = 30;
 

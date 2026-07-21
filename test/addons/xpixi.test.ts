@@ -29,16 +29,14 @@ function setup() {
 
 test('nest: 親ユニットの nest が子ユニットの nest の親になる（入れ子が機能する）', () => {
     const canvas = setup();
-    const group = new PIXI.Container();
-    const child = new PIXI.Container();
-    let scene;
+    let group, child, scene;
 
     xnew(() => {
         xpixi.initialize({ canvas });
         scene = xpixi.scene;
         xnew(() => {
-            xpixi.nest(group);
-            xnew(() => { xpixi.nest(child); });
+            group = xpixi.nest();
+            xnew(() => { child = xpixi.nest(); });
         });
     });
 
@@ -48,15 +46,13 @@ test('nest: 親ユニットの nest が子ユニットの nest の親になる�
 
 test('nest: 同一ユニットで2回呼ぶと2回目は1回目の子になる（状態を変える）', () => {
     const canvas = setup();
-    const a = new PIXI.Container();
-    const b = new PIXI.Container();
-    let scene;
+    let a, b, scene;
 
     xnew(() => {
         xpixi.initialize({ canvas });
         scene = xpixi.scene;
-        xpixi.nest(a);
-        xpixi.nest(b);
+        a = xpixi.nest();
+        b = xpixi.nest();
     });
 
     expect(a.parent).toBe(scene);
@@ -82,16 +78,15 @@ test('add: 現在の親に追加するが親を変えない（同一ユニット
 
 test('add: nest の中の add は nest の親に入り、後続の nest を汚染しない', () => {
     const canvas = setup();
-    const group = new PIXI.Container();
     const added = new PIXI.Container();
-    const nested = new PIXI.Container();
+    let group, nested;
 
     xnew(() => {
         xpixi.initialize({ canvas });
         xnew(() => {
-            xpixi.nest(group);
+            group = xpixi.nest();
             xnew(() => { xpixi.add(added); });
-            xnew(() => { xpixi.nest(nested); });
+            xnew(() => { nested = xpixi.nest(); });
         });
     });
 

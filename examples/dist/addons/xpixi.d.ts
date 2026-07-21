@@ -15,7 +15,7 @@ declare const xpixi: {
     initialize({ canvas }: {
         canvas: HTMLCanvasElement;
     }): UnitPromise;
-    nest(object: any): any;
+    nest(): PIXI.Container;
     add(object: any): any;
     readonly renderer: any;
     readonly scene: PIXI.Container;

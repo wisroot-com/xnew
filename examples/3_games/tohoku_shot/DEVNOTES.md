@@ -186,7 +186,7 @@ TitleScene ──tap/Space──▶ StoryScene ──2ページ目のtap/Space�
   （例: `GameScene` で先に作った `ScoreManager`/`SoundFX`/`ShotEnergy` を Player 等が参照）。
   生成順に注意（参照される側を先に `xnew` する）。
 - **`xnew.find(Comp)`** はグローバル検索（全 Enemy など）。
-- **pixi 連携**: `xpixi.nest(obj)` でシーングラフに追加＆ unit finalize に連動。
+- **pixi 連携**: `xpixi.nest()` でグループ生成＆その階層へ移動、`xpixi.add(obj)` で要素追加。unit finalize に連動し
   finalize で親から外して `destroy({children:true})`（テクスチャは温存）。
   → 多数生成するエフェクトはこの破棄に乗るので、手動 destroy で**共有テクスチャを壊さない**。
 - **タイマー/トランジション**: `xnew.timeout(cb, ms)`, `xnew.interval(cb, ms)`（`.clear()`),

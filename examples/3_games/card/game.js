@@ -198,7 +198,7 @@ function Board(unit) {
     const { xpixi, PIXI, Deck3D } = window.gfx;
 
     // HUD（2D テキスト）
-    const group = xpixi.nest(new PIXI.Container());
+    const group = xpixi.nest();
     group.zIndex = 50;
     const title = new PIXI.Text({ text: 'カードサンプル', style: { fontFamily: 'sans-serif', fontSize: 20, fontWeight: 'bold', fill: 0xffffff, stroke: { color: 0x0f172a, width: 4 } } });
     title.position.set(16, 12);
@@ -271,7 +271,7 @@ export function Player(unit, { seat = 0, clientId = '', name = '', mog = '' } = 
 
         xnew(Character, { mogPath: `/assets/${state.mog}.mog`, vrmaPath: VRMA, x: px, z: pz });
 
-        const group = xpixi.nest(new PIXI.Container());
+        const group = xpixi.nest();
         group.zIndex = 20;
         const label = new PIXI.Text({ text: '', style: { fontFamily: 'sans-serif', fontSize: 15, fontWeight: 'bold', fill: 0xffffff, stroke: { color: 0x0f172a, width: 4 } } });
         label.anchor.set(0.5, 1);
@@ -328,7 +328,7 @@ export function Hand(unit, { ownerId = '' } = {}) {
     // Hand が届くのは本人だけなので、client 分岐は常に「自分の手札」を描く。
     xsync.client(() => {
         const { xpixi, PIXI } = window.gfx;
-        const group = xpixi.nest(new PIXI.Container());
+        const group = xpixi.nest();
         group.zIndex = 40;
 
         let shown = null;   // 手札 or 手番が変わったときだけ作り直す

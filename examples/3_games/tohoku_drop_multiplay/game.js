@@ -277,7 +277,8 @@ function Ball(unit, { x = 0, y = 0, id = 0 } = {}) {
 //----------------------------------------------------------------------------------------------------
 
 function Cursor(unit, { player, color }) {
-    const object = xpixi.nest(new PIXI.Container({ position: { x: WIDTH / 2, y: DROP_Y } }));
+    const object = xpixi.nest();
+    object.position.set(WIDTH / 2, DROP_Y);
     const graphics = new PIXI.Graphics();
     graphics.moveTo(-24, 0).lineTo(24, 0).stroke({ color, width: 12 });
     graphics.moveTo(0, -24).lineTo(0, 24).stroke({ color, width: 12 });
@@ -402,7 +403,7 @@ function QueuePreview(unit, { player }) {
 //----------------------------------------------------------------------------------------------------
 
 function Background(unit) {
-    const object = xpixi.nest(new PIXI.Container());
+    const object = xpixi.nest();
     xnew.promise(PIXI.Assets.load('./background.jpg')).then((texture) => {
         const sprite = new PIXI.Sprite(texture);
         sprite.scale.set(xpixi.canvas.width / texture.frame.width, xpixi.canvas.height / texture.frame.height);
@@ -411,11 +412,11 @@ function Background(unit) {
 }
 
 function ThreeTexture(unit) {
-    xpixi.nest(new PIXI.Sprite(PIXI.Texture.from(xthree.canvas)));
+    xpixi.add(new PIXI.Sprite(PIXI.Texture.from(xthree.canvas)));
 }
 
 function BowlVisual(unit) {
-    const object = xpixi.nest(new PIXI.Container());
+    const object = xpixi.nest();
     const graphics = new PIXI.Graphics();
     for (let a = 10; a <= 170; a++) {
         const x = BOWL.cx + Math.cos((a * Math.PI) / 180) * BOWL.rx;

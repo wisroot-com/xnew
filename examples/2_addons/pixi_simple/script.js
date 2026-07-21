@@ -24,7 +24,7 @@ function Contents(unit) {
 }
 
 function Boxes(unit) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
   object.position.set(xpixi.canvas.width / 2, xpixi.canvas.height / 2); // center
 
   for (let y = -1; y <= 1; y++) {
@@ -39,7 +39,7 @@ function Boxes(unit) {
 }
 
 function Box(unit, { x, y, size, color }) {
-  const object = xpixi.nest(new PIXI.Container());
+  const object = xpixi.nest();
   object.position.set(x, y);
   object.addChild(new PIXI.Graphics().rect(-size / 2, -size / 2, size, size).fill(color));
 

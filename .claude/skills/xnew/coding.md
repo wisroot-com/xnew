@@ -303,21 +303,23 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
-- **`xpixi.nest` is stateful (it makes its object the current Pixi parent), so DON'T line up two
-  `nest` calls for sibling leaves — the 2nd lands INSIDE the 1st. Use `xpixi.add` for siblings.**
-  `nest(a); nest(b)` reparents `b` under `a`, so `b` inherits `a`'s transform (a title's position /
-  anchor dragged the guide text off-screen). Reserve `nest` for a container that later objects/units
-  should nest into (call it once per body); for independent leaf display objects that share the current
-  parent, use `xpixi.add(obj)` — it attaches without changing the current parent. (Bit
-  `examples/3_games/platformer/` TitleScene: title + guide were both `nest`; fixed to `add`.)
+- **`xpixi.nest()` takes NO argument (2026-07): it creates a group Container and moves the current
+  parent into it (stateful); `xpixi.add(obj)` attaches a leaf/display object without moving. Place
+  leaves with `add`, never hand-`addChild`, and there is no way to nest an existing object.**
+  Rationale: in Pixi v8 every display object (Text/Sprite/Graphics) extends Container, so a leaf could
+  silently be nested and `nest(a); nest(b)` reparented `b` under `a` (a title dragged the guide text
+  off-screen). Making `nest` arg-less removes that footgun structurally — the only way to place a leaf
+  is `add`, which never changes the current parent; two `nest()` calls = a group inside a group (legit).
+  A former `nest(new PIXI.Container({ position }))` becomes `xpixi.nest().position.set(x, y)`. (Audit
+  found zero real "nest an existing object as parent" uses across all examples.)
 
-- **`xpixi.nest(container)` makes only the child units created AFTER it (in the same body / later
-  in the same unit's scope) nest into that container — call it FIRST, then spawn the actors.**
+- **`xpixi.nest()` makes only the child units created AFTER it (in the same body / later in the same
+  unit's scope) nest into that group — call it FIRST, then spawn the actors.**
   `nest` does `addContext(parent, …, Nest, …)`, so the Nest context is threaded onto the parent's
   evolving context chain and inherited by *subsequently* created siblings (not earlier ones, not
   units created in a sibling's scope). A scrolling-camera World therefore does
-  `const view = xpixi.nest(container)` up top, then `xnew(Player/Enemy/Coin)` below, and moves
-  `container.x` to scroll them all; anything nested from a unit that never called `xpixi.nest`
+  `const view = xpixi.nest()` up top, then `xnew(Player/Enemy/Coin)` below, and moves
+  `view.x` to scroll them all; anything nested from a unit that never called `xpixi.nest()`
   (HUD, result text) lands on the root scene = fixed screen space. (See `examples/3_games/platformer/`.)
 
 - **Tile-collision AABB tests must treat the max edges as half-open (`Math.ceil(hi/T)-1`), or a body

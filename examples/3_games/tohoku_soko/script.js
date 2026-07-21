@@ -187,7 +187,7 @@ function GameScene(unit, { id }) {
 
 function ThreeTexture(unit, { position = { x: 0, y: 0} }) {
   const texture = PIXI.Texture.from(xthree.canvas)
-  const object = xpixi.nest(new PIXI.Sprite(texture));
+  const object = xpixi.add(new PIXI.Sprite(texture));
   object.position.set(position.x, position.y);
 }
 
