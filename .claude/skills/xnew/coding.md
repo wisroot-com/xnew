@@ -303,6 +303,14 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **`xpixi.nest` is stateful (it makes its object the current Pixi parent), so DON'T line up two
+  `nest` calls for sibling leaves — the 2nd lands INSIDE the 1st. Use `xpixi.add` for siblings.**
+  `nest(a); nest(b)` reparents `b` under `a`, so `b` inherits `a`'s transform (a title's position /
+  anchor dragged the guide text off-screen). Reserve `nest` for a container that later objects/units
+  should nest into (call it once per body); for independent leaf display objects that share the current
+  parent, use `xpixi.add(obj)` — it attaches without changing the current parent. (Bit
+  `examples/3_games/platformer/` TitleScene: title + guide were both `nest`; fixed to `add`.)
+
 - **`xpixi.nest(container)` makes only the child units created AFTER it (in the same body / later
   in the same unit's scope) nest into that container — call it FIRST, then spawn the actors.**
   `nest` does `addContext(parent, …, Nest, …)`, so the Nest context is threaded onto the parent's
