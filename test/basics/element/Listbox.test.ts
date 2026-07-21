@@ -1,7 +1,7 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
 import { Listbox, ListboxButton, ListboxMenu, ListboxItem } from '../../../src/basics/element/Listbox';
-import { Accordion } from '../../../src/basics/ui/Accordion';
+import { Accordion } from '../../../src/basics/widget/Accordion';
 
 describe('basics Listbox', () => {
     beforeEach(() => {

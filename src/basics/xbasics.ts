@@ -4,9 +4,9 @@
 // Networking components deliberately live under `xsync`, not here, so xbasics stays transport-free.
 //----------------------------------------------------------------------------------------------------
 
-import { Aspect } from './view/Aspect';
-import { Screen } from './view/Screen';
-import { Scene } from './view/Scene';
+import { Aspect } from './layout/Aspect';
+import { Screen } from './layout/Screen';
+import { Scene } from './layout/Scene';
 import { Button } from './element/Button';
 import { Image } from './element/Image';
 import { GraphicText } from './element/GraphicText';
@@ -20,12 +20,12 @@ import { Listbox, ListboxButton, ListboxMenu, ListboxItem } from './element/List
 import { AudioTrack } from './audio/AudioTrack';
 import { Synthesizer } from './audio/Synthesizer';
 import { Volume } from './audio/master';
-import { Gate } from './ui/Gate';
-import { Accordion } from './ui/Accordion';
-import { Overlay } from './ui/Overlay';
-import { VirtualPad } from './ui/VirtualPad';
-import { Panel } from './ui/Panel';
-import { VolumeController } from './ui/VolumeController';
+import { Gate } from './widget/Gate';
+import { Accordion } from './widget/Accordion';
+import { Overlay } from './widget/Overlay';
+import { VirtualPad } from './widget/VirtualPad';
+import { Panel } from './widget/Panel';
+import { VolumeController } from './widget/VolumeController';
 
 export const xbasics = {
     Aspect,

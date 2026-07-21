@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Gate } from '../ui/Gate';
+import { Gate } from '../widget/Gate';
 
 export function InputCheckbox(unit: xnew.Unit,
     { value = false, gate, className = '', style = '', ...others }:

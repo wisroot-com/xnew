@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
-import { Overlay } from '../../../src/basics/ui/Overlay';
+import { Overlay } from '../../../src/basics/widget/Overlay';
 
 describe('basics Overlay', () => {
     beforeEach(() => {

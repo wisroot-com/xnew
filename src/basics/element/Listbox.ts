@@ -5,8 +5,8 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Gate } from '../ui/Gate';
-import { Overlay } from '../ui/Overlay';
+import { Gate } from '../widget/Gate';
+import { Overlay } from '../widget/Overlay';
 
 //----------------------------------------------------------------------------------------------------
 // Listbox — the selection state and the fit-to-content host (no frame; ListboxButton draws the trigger)

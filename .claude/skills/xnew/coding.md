@@ -403,7 +403,7 @@ the rule, then one line of why.
   with `{ bubbles: true }`. These parts are NOT caller-customizable (no `attributes`/`designs` bag —
   user decision, 2026-07); recolor by editing the component, not from the call site.
 
-- **`ui/AnalogStick` and `ui/DPad` make the container itself the `<svg>` (user decision, 2026-07) —
+- **`widget/AnalogStick` and `widget/DPad` make the container itself the `<svg>` (user decision, 2026-07) —
   no wrapping `<div>`, no separate `svg` part, no `attributes` bag.** All shapes are drawn directly
   inside the container svg (viewBox `0 0 64 64`); fill / stroke variants split via inner `<g style="…">`
   groups. Caller `style` lands on the svg and inherits down (`fill` reaches the shapes), so recoloring is

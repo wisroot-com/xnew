@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
-import { Scene } from '../../../src/basics/view/Scene';
+import { Scene } from '../../../src/basics/layout/Scene';
 
 describe('basics Scene', () => {
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); });
