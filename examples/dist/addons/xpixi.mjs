@@ -5,8 +5,25 @@ const xpixi = {
     initialize({ canvas }) {
         return xnew.promise(xnew(Root, { canvas }));
     },
-    nest() {
+    nest(options) {
         const object = new PIXI.Container();
+        if (options !== undefined) {
+            const { position, scale, rotation } = options;
+            if (position !== undefined) {
+                object.position.set(position.x, position.y);
+            }
+            if (scale !== undefined) {
+                if (typeof scale === 'number') {
+                    object.scale.set(scale);
+                }
+                else {
+                    object.scale.set(scale.x, scale.y);
+                }
+            }
+            if (rotation !== undefined) {
+                object.rotation = rotation;
+            }
+        }
         xnew(Nest, { object });
         xnew.extend(() => {
             return {

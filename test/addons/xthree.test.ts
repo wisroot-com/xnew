@@ -87,6 +87,30 @@ test('add: nest の中の add は nest の親に入り、後続の nest を汚�
     expect(nested.parent).toBe(group);
 });
 
+test('nest: options で新しいグループの transform を設定できる（position / scale / rotation、z 任意）', () => {
+    const canvas = setup();
+    let group;
+
+    xnew(() => {
+        xthree.initialize({ canvas });
+        group = xthree.nest({
+            position: { x: 1, y: 2, z: 3 },
+            scale: 2,
+            rotation: { x: 0.1, y: 0.2 },
+        });
+    });
+
+    expect(group.position.x).toBe(1);
+    expect(group.position.y).toBe(2);
+    expect(group.position.z).toBe(3);
+    expect(group.scale.x).toBe(2);
+    expect(group.scale.y).toBe(2);
+    expect(group.scale.z).toBe(2);
+    expect(group.rotation.x).toBe(0.1);
+    expect(group.rotation.y).toBe(0.2);
+    expect(group.rotation.z).toBe(0); // z 省略時は 0
+});
+
 test('finalize: ユニット破棄で親から外れる', () => {
     const canvas = setup();
     const obj = new THREE.Object3D();

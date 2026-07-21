@@ -36,8 +36,7 @@ function Background(unit) {
 }
 
 function Dot(unit) {
-  const object = xpixi.nest();
-  object.position.set(Math.random() * xpixi.canvas.width, Math.random() * xpixi.canvas.height);
+  const object = xpixi.nest({ position: { x: Math.random() * xpixi.canvas.width, y: Math.random() * xpixi.canvas.height } });
   object.addChild(new PIXI.Graphics().circle(0, 0, 1).fill(0xFFFFFF));
 
   let velocity = Math.random() + 0.1;
@@ -124,8 +123,7 @@ function GameOverText(unit) {
 }
 
 function Player(unit) {
-  const object = xpixi.nest();
-  object.position.set(xpixi.canvas.width / 2, xpixi.canvas.height / 2);
+  const object = xpixi.nest({ position: { x: xpixi.canvas.width / 2, y: xpixi.canvas.height / 2 } });
   xnew(Sprite, { rects: [[0, 0, 32, 32], [32, 0, 32, 32]] });
 
   // actions
@@ -164,8 +162,7 @@ function Player(unit) {
 }
 
 function Shot(unit, { x, y }) {
-  const object = xpixi.nest();
-  object.position.set(x, y);
+  const object = xpixi.nest({ position: { x, y } });
   object.addChild(new PIXI.Graphics().ellipse(0, 0, 4, 24).fill(0x22FFFF));
 
   unit.on('update', () => {
@@ -189,8 +186,7 @@ function Shot(unit, { x, y }) {
 }
 
 function Enemy(unit) {
-  const object = xpixi.nest();
-  object.position.set(Math.random() * xpixi.canvas.width, 0);
+  const object = xpixi.nest({ position: { x: Math.random() * xpixi.canvas.width, y: 0 } });
   xnew(Sprite, { rects: [[0, 32, 32, 32], [32, 32, 32, 32], [64, 32, 32, 32]] });
 
   // set velocity and angle of the object
@@ -249,8 +245,7 @@ function CrashText(unit, { x, y, score }) {
 }
 
 function Crash(unit, { x, y, score }) {
-  const object = xpixi.nest();
-  object.position.set(x, y);
+  const object = xpixi.nest({ position: { x, y } });
   xnew(Sprite, { rects: [[0, 64, 32, 32]] });
 
   const v = Math.random() * 4 + 1; // 1 ~ 5

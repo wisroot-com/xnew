@@ -3,7 +3,12 @@
 // 最小限（Container の親子・破棄、autoDetectRenderer）だけをモックする。
 jest.mock('pixi.js', () => {
     class Container {
-        constructor() { this.parent = null; this.children = []; this.destroyed = false; }
+        constructor() {
+            this.parent = null; this.children = []; this.destroyed = false;
+            this.position = { x: 0, y: 0, set(x, y) { this.x = x; this.y = y; } };
+            this.scale = { x: 1, y: 1, set(x, y = x) { this.x = x; this.y = y; } };
+            this.rotation = 0;
+        }
         addChild(o) { o.parent = this; this.children.push(o); return o; }
         removeChild(o) { o.parent = null; this.children = this.children.filter((c) => c !== o); return o; }
         destroy() { this.destroyed = true; }
@@ -92,6 +97,35 @@ test('add: nest の中の add は nest の親に入り、後続の nest を汚�
 
     expect(added.parent).toBe(group);
     expect(nested.parent).toBe(group);
+});
+
+test('nest: options で新しいグループの transform を設定できる（position / scale / rotation）', () => {
+    const canvas = setup();
+    let group;
+
+    xnew(() => {
+        xpixi.initialize({ canvas });
+        group = xpixi.nest({ position: { x: 10, y: 20 }, scale: 2, rotation: 0.5 });
+    });
+
+    expect(group.position.x).toBe(10);
+    expect(group.position.y).toBe(20);
+    expect(group.scale.x).toBe(2);
+    expect(group.scale.y).toBe(2);
+    expect(group.rotation).toBe(0.5);
+});
+
+test('nest: scale はオブジェクトで x / y 別々に指定できる', () => {
+    const canvas = setup();
+    let group;
+
+    xnew(() => {
+        xpixi.initialize({ canvas });
+        group = xpixi.nest({ scale: { x: 3, y: 4 } });
+    });
+
+    expect(group.scale.x).toBe(3);
+    expect(group.scale.y).toBe(4);
 });
 
 test('finalize: ユニット破棄で親から外れる', () => {

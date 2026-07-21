@@ -277,8 +277,7 @@ function Ball(unit, { x = 0, y = 0, id = 0 } = {}) {
 //----------------------------------------------------------------------------------------------------
 
 function Cursor(unit, { player, color }) {
-    const object = xpixi.nest();
-    object.position.set(WIDTH / 2, DROP_Y);
+    const object = xpixi.nest({ position: { x: WIDTH / 2, y: DROP_Y } });
     const graphics = new PIXI.Graphics();
     graphics.moveTo(-24, 0).lineTo(24, 0).stroke({ color, width: 12 });
     graphics.moveTo(0, -24).lineTo(0, 24).stroke({ color, width: 12 });

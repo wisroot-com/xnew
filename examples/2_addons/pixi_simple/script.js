@@ -24,8 +24,7 @@ function Contents(unit) {
 }
 
 function Boxes(unit) {
-  const object = xpixi.nest();
-  object.position.set(xpixi.canvas.width / 2, xpixi.canvas.height / 2); // center
+  const object = xpixi.nest({ position: { x: xpixi.canvas.width / 2, y: xpixi.canvas.height / 2 } }); // center
 
   for (let y = -1; y <= 1; y++) {
     for (let x = -1; x <= 1; x++) {
@@ -39,8 +38,7 @@ function Boxes(unit) {
 }
 
 function Box(unit, { x, y, size, color }) {
-  const object = xpixi.nest();
-  object.position.set(x, y);
+  const object = xpixi.nest({ position: { x, y } });
   object.addChild(new PIXI.Graphics().rect(-size / 2, -size / 2, size, size).fill(color));
 
   unit.on('update', () => {

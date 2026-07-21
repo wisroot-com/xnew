@@ -39,8 +39,7 @@ function Contents(unit) {
 }
 
 function Rectangle(self, { x, y, w, h, color = 0xFFFFFF, dynamic = true, options = {} }) {
-  const object = xpixi.nest();
-  object.position.set(x, y);
+  const object = xpixi.nest({ position: { x, y } });
   object.addChild(new PIXI.Graphics().rect(-w / 2, -h / 2, w, h).fill(color));
 
   // Create a dynamic rigid-body using xrapier2d

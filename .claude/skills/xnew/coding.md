@@ -303,17 +303,19 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
-- **`xpixi.nest()` takes NO argument (2026-07): it creates a group Container and moves the current
-  parent into it (stateful); `xpixi.add(obj)` attaches a leaf/display object without moving. Place
-  leaves with `add`, never hand-`addChild`, and there is no way to nest an existing object.**
-  Rationale: in Pixi v8 every display object (Text/Sprite/Graphics) extends Container, so a leaf could
-  silently be nested and `nest(a); nest(b)` reparented `b` under `a` (a title dragged the guide text
-  off-screen). Making `nest` arg-less removes that footgun structurally — the only way to place a leaf
-  is `add`, which never changes the current parent; two `nest()` calls = a group inside a group (legit).
-  A former `nest(new PIXI.Container({ position }))` becomes `xpixi.nest().position.set(x, y)`. (Audit
-  found zero real "nest an existing object as parent" uses across all examples.)
-  **`xthree.nest()` / `xthree.add()` work identically** (nest() makes a `THREE.Group`); Three meshes /
-  lights are leaves → `add`, only `Object3D` / `Group` were the real groups (they keep `.add(child)`).
+- **`xpixi.nest()` never takes an EXISTING object — it always creates a fresh group Container and moves
+  the current parent into it (stateful); `xpixi.add(obj)` attaches a leaf/display object without moving.
+  Place leaves with `add`, never hand-`addChild`.** Its only argument is an optional transform config
+  `{ position: {x,y}, scale: number|{x,y}, rotation }` applied to the new group (added 2026-07) — a
+  convenience for `xpixi.nest().position.set(x, y)`, NOT a way to pass in a pre-made object.
+  Rationale: in Pixi v8 every display object (Text/Sprite/Graphics) extends Container, so accepting a
+  leaf would let `nest(a); nest(b)` reparent `b` under `a` (a title dragged the guide text off-screen).
+  Restricting the arg to plain transform values keeps that footgun structurally impossible — the only
+  way to place a leaf is `add`, which never changes the current parent; two `nest()` calls = a group
+  inside a group (legit).
+  **`xthree.nest()` / `xthree.add()` work identically** (nest() makes a `THREE.Group`; its transform
+  config is 3D — `position/scale/rotation` take `{x,y,z}`, z optional); Three meshes / lights are
+  leaves → `add`, only `Object3D` / `Group` were the real groups (they keep `.add(child)`).
 
 - **`xpixi.nest()` makes only the child units created AFTER it (in the same body / later in the same
   unit's scope) nest into that group — call it FIRST, then spawn the actors.**

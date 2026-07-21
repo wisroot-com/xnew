@@ -47,8 +47,7 @@ function Contents(unit) {
 }
 
 function Rectangle(unit, { x, y, w, h, color, options = {} }) {
-  const object = xpixi.nest();
-  object.position.set(x, y);
+  const object = xpixi.nest({ position: { x, y } });
   object.addChild(new PIXI.Graphics().rect(-w / 2, -h / 2, w, h).fill(color));
  
   const pyshics = Matter.Bodies.rectangle(0, 0, w, h, options);
@@ -64,8 +63,7 @@ function Rectangle(unit, { x, y, w, h, color, options = {} }) {
 }
 
 function Circle(unit, { x, y, radius, color, options = {} }) {
-  const object = xpixi.nest();
-  object.position.set(x, y);
+  const object = xpixi.nest({ position: { x, y } });
   object.addChild(new PIXI.Graphics().circle(0, 0, radius).fill(color));
  
   const pyshics = Matter.Bodies.circle(0, 0, radius, options);
@@ -80,8 +78,7 @@ function Circle(unit, { x, y, radius, color, options = {} }) {
 }
 
 function Polygon(unit, { x, y, sides, radius, color, options = {} }) {
-  const object = xpixi.nest();
-  object.position.set(x, y);
+  const object = xpixi.nest({ position: { x, y } });
   object.addChild(new PIXI.Graphics().regularPoly(0, 0, radius, sides).fill(color));
   
   const pyshics = Matter.Bodies.polygon(0, 0, sides, radius, options);

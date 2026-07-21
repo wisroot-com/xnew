@@ -399,10 +399,7 @@ function makeCardFaceTexture(number, red) {
 //----------------------------------------------------------------------------------------------------
 
 function Character(unit, { mogPath, x = 0, z = 0, scale = 1.1 }) {
-    const object = xthree.nest();
-    object.position.set(x, 0, z);
-    object.scale.setScalar(scale);
-    object.rotation.y = Math.atan2(-x, -z);   // テーブル中央を向く
+    const object = xthree.nest({ position: { x, y: 0, z }, scale, rotation: { x: 0, y: Math.atan2(-x, -z) } });   // テーブル中央を向く
 
     xnew.promise('vrm', voxelkit.load(mogPath)
         .then((composits) => voxelkit.convertVRM(composits[0]))

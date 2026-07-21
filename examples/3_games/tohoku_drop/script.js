@@ -283,8 +283,7 @@ function Model(unit, { id = 0, position = null, rotation = null, scale }) {
 }
 
 function Cursor(unit) {
-  const object = xpixi.nest();
-  object.position.set(400, 40);
+  const object = xpixi.nest({ position: { x: 400, y: 40 } });
 
   const graphics = new PIXI.Graphics();
   graphics.moveTo(-24, 0).lineTo(24, 0).stroke({ color: 0xE84A57, width: 12 })
@@ -362,8 +361,7 @@ function ModelBall(ball, { x, y, id = 0 }) {
 }
 
 function StarParticles(unit, { x, y }) {
-  const container = xpixi.nest();
-  container.position.set(x, y);
+  const container = xpixi.nest({ position: { x, y } });
 
   for (let i = 0; i < 5; i++) {
     const size = 12 + Math.random() * 20;
@@ -393,8 +391,7 @@ function StarParticles(unit, { x, y }) {
 }
 
 function Circle(unit, { x, y, radius, color = 0xFFFFFF, alpha = 1.0, options = {} }) {
-  const object = xpixi.nest();
-  object.position.set(x, y);
+  const object = xpixi.nest({ position: { x, y } });
   const pyshics = Matter.Bodies.circle(x, y, radius, options);
   Matter.Composite.add(xmatter.world, pyshics);
   unit.on('finalize', () => Matter.Composite.remove(xmatter.world, pyshics));

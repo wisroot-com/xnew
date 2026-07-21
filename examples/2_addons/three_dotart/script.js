@@ -129,10 +129,7 @@ function Crystal(unit, { radius, position, rotation }) {
 }
 
 function Model(unit, { mogPath, vrmaPath, position, rotation }) {
-  const object = xthree.nest();
-  object.rotation.set(rotation.x, rotation.y, rotation.z);
-  object.position.set(position.x, position.y, position.z);
-  object.scale.set(2, 2, 2);
+  const object = xthree.nest({ rotation, position, scale: 2 });
 
   xnew.promise('vrm', voxelkit.load(mogPath))
   .then((composits) => {

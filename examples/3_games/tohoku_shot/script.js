@@ -865,7 +865,7 @@ function PanelBackdrop(unit, { wave = 1 } = {}) {
 const TARGET_Y = 148; // ターゲット表示(敵キャラ+レティクル)の中心 y
 
 function WaveEnemyDisplay(unit) {
-  xpixi.nest().position.set(PLAY_RIGHT + PANEL_W / 2, TARGET_Y);
+  xpixi.nest({ position: { x: PLAY_RIGHT + PANEL_W / 2, y: TARGET_Y } });
   let current = null; // 現在表示中の BakedSprite unit（クロスフェードで差し替える）
 
   unit.on('+wave', ({ wave }) => {
@@ -885,7 +885,7 @@ function WaveEnemyDisplay(unit) {
 // 敵キャラを囲うサイバーなターゲットレティクル（色は wave 連動）。
 // 多重リング（逆回転）+ レーダー掃引 + 呼吸するロックオンブラケット + 周回する解析ブリップ。
 function TargetReticle(unit, { wave = 1 } = {}) {
-  xpixi.nest().position.set(PLAY_RIGHT + PANEL_W / 2, TARGET_Y);
+  xpixi.nest({ position: { x: PLAY_RIGHT + PANEL_W / 2, y: TARGET_Y } });
   const R = 46;
 
   // 独立回転させる層（container の子に直接 rotation を持たせる）
@@ -1062,7 +1062,7 @@ function TargetInfo(unit, { wave = 1 } = {}) {
 // パネル下部の中国うさぎ。画面内の敵数に応じて表情をクロスフェードで切り替える。
 // （pixi スプライトで描画＝リザルトのキャプチャにも含まれる）
 function UsagiFace(unit) {
-  xpixi.nest().position.set(PLAY_RIGHT + PANEL_W / 2, 596);
+  xpixi.nest({ position: { x: PLAY_RIGHT + PANEL_W / 2, y: 596 } });
   const urls = [0, 1, 2].map((i) => asset(`usagi0${i}.png`));
 
   let back = null, front = null, current = 0;
@@ -1129,8 +1129,7 @@ function BackgroundBase(unit) {
 
 // 奥行きのある浮遊粒子。下方向ドリフトで前進感、奥ほど小さく遅く暗い。
 function Mote(unit) {
-  const object = xpixi.nest();
-  object.position.set(Math.random() * 800, Math.random() * 600);
+  const object = xpixi.nest({ position: { x: Math.random() * 800, y: Math.random() * 600 } });
 
   const depth = Math.random(); // 0:奥 〜 1:手前
   const size = 1 + depth * 4;
@@ -1211,8 +1210,7 @@ function ScoreManager(unit, { wave = 1 } = {}) {
 }
 
 function Player(unit) {
-  const object = xpixi.nest();
-  object.position.set(PLAY_RIGHT / 2, 500);
+  const object = xpixi.nest({ position: { x: PLAY_RIGHT / 2, y: 500 } });
 
   // 自機＝中国うさぎ（後ろ向きベイク）
   const sprite = xnew(BakedSprite, { textures: xnew.context(Assets).playerTextures, scale: 0.7 }).sprite;
@@ -1284,8 +1282,7 @@ function StarSprite(unit, { color, baseR, spin = 0.15, shrink = 0, twinkleAmp = 
 }
 
 function Shot(unit, { x, y }) {
-  const object = xpixi.nest();
-  object.position.set(x, y);
+  const object = xpixi.nest({ position: { x, y } });
 
   // くっきりした星（回転 + 脈動）
   xnew(StarSprite, { color: 0x66FFFF, baseR: 18, spin: 0.15, twinkleAmp: 0.12, twinkleFreq: 0.6 });
@@ -1307,9 +1304,8 @@ function Shot(unit, { x, y }) {
 // ---- Enemy system ----
 
 function Enemy(unit, { id, x, y, invincible = false, knockback = null }) {
-  const object = xpixi.nest();
   // 自動出現は画面上部 20%（y ∈ [20,120]）のエリアに湧く。分裂はその場（x,y 指定）に出す。
-  object.position.set(x ?? (20 + Math.random() * (PLAY_RIGHT - 40)), y ?? (20 + Math.random() * 100));
+  const object = xpixi.nest({ position: { x: x ?? (20 + Math.random() * (PLAY_RIGHT - 40)), y: y ?? (20 + Math.random() * 100) } });
 
   // ベイクテクスチャでスプライト表示。scale 0 から pop-in（下の update で 0→1 に拡大）。
   const sprite = xnew(BakedSprite, { id, scale: 0, frame: 'random' }).sprite;
@@ -1415,8 +1411,7 @@ function Enemy(unit, { id, x, y, invincible = false, knockback = null }) {
 }
 
 function Star(unit, { x, y, score, angle = randAngle() }) {
-  const object = xpixi.nest();
-  object.position.set(x, y);
+  const object = xpixi.nest({ position: { x, y } });
 
   const baseR = randRange(9, 16) * 1.5;
   const color = pick([0xFFF066, 0xFFD700, 0xFFA53C, 0xFFFFFF, 0xFF8FD0, 0x9BE5FF]);
@@ -1458,8 +1453,7 @@ function ScorePopup(unit, { x, y, score }) {
 
 // 倒された敵のノックバック表現：薄れながら当たった方向へ飛んで消える
 function EnemyCorpse(unit, { id, x, y, scale, frame = 0, direction, power }) {
-  const object = xpixi.nest();
-  object.position.set(x, y);
+  const object = xpixi.nest({ position: { x, y } });
 
   xnew(BakedSprite, { id, scale, frame, play: false }); // コープスは再生せず1フレーム固定
 
@@ -1485,7 +1479,7 @@ function EnemyCorpse(unit, { id, x, y, scale, frame = 0, direction, power }) {
 function ExpandingBurst(unit, { x, y, duration = 16, power = 1, flash, ring }) {
   flash = flash ?? { r: 16 * power, alpha: 0.9, grow: 0.6, fade: (p) => 0.9 * (1 - p) };
   ring = ring ?? { r: 10 * power, width: 4, alpha: 0.9, grow: 2.4, fade: (p) => 0.9 * (1 - p) };
-  xpixi.nest().position.set(x, y);
+  xpixi.nest({ position: { x, y } });
   const flashG = xpixi.add(new PIXI.Graphics().circle(0, 0, flash.r).fill({ color: 0xFFFFFF, alpha: flash.alpha }));
   const ringG = xpixi.add(new PIXI.Graphics().circle(0, 0, ring.r).stroke({ color: 0x66E0FF, width: ring.width, alpha: ring.alpha }));
   // duration は従来どおりフレーム数指定。0→1 を duration フレーム相当の時間で動かし、終端で finalize。

@@ -96,9 +96,7 @@ function Ground(unit) {
 }
 
 function Model(unit, { mogPath, vrmaPath, position }) {
-  const object = xthree.nest();
-  object.rotation.x = Math.PI / 2;
-  object.position.set(position.x, position.y, position.z);
+  const object = xthree.nest({ rotation: { x: Math.PI / 2, y: 0 }, position });
 
   xnew.promise('vrm', voxelkit.load(mogPath))
   .then((composits) => {

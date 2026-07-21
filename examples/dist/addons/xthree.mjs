@@ -5,8 +5,26 @@ const xthree = {
     initialize({ canvas, camera = null }) {
         return xnew.promise(xnew(Root, { canvas, camera }));
     },
-    nest() {
+    nest(options) {
+        var _a, _b, _c;
         const object = new THREE.Group();
+        if (options !== undefined) {
+            const { position, scale, rotation } = options;
+            if (position !== undefined) {
+                object.position.set(position.x, position.y, (_a = position.z) !== null && _a !== void 0 ? _a : 0);
+            }
+            if (scale !== undefined) {
+                if (typeof scale === 'number') {
+                    object.scale.set(scale, scale, scale);
+                }
+                else {
+                    object.scale.set(scale.x, scale.y, (_b = scale.z) !== null && _b !== void 0 ? _b : 1);
+                }
+            }
+            if (rotation !== undefined) {
+                object.rotation.set(rotation.x, rotation.y, (_c = rotation.z) !== null && _c !== void 0 ? _c : 0);
+            }
+        }
         xnew(Nest, { object });
         xnew.extend(() => {
             return {

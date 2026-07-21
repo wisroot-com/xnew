@@ -334,9 +334,8 @@ function Goal(goal, { x, y }) {
 }
 
 function Player(player, { id, x, y }) {
-  const object = xthree.nest();
+  const object = xthree.nest({ rotation: { x: -30 * Math.PI / 180, y: 0 } });
   xnew(Model, { id, scale: 0.7 });
-  object.rotation.x = -30 * Math.PI / 180;
 
   player.on('+playermove', ({ dx, dy }) => {
     if (canMove(x + dx, y + dy) === false) return;

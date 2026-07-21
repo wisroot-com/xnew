@@ -15,9 +15,32 @@ export const xpixi = {
     ) {
         return xnew.promise(xnew(Root, { canvas }));
     },
-    // create a group Container, attach it, and move the current parent into it (stateful)
-    nest(): PIXI.Container {
+    // create a group Container, attach it, and move the current parent into it (stateful).
+    // options set the new group's transform only — an existing object can never be nested.
+    nest(
+        options?: {
+            position?: { x: number, y: number },
+            scale?: number | { x: number, y: number },
+            rotation?: number,
+        }
+    ): PIXI.Container {
         const object = new PIXI.Container();
+        if (options !== undefined) {
+            const { position, scale, rotation } = options;
+            if (position !== undefined) {
+                object.position.set(position.x, position.y);
+            }
+            if (scale !== undefined) {
+                if (typeof scale === 'number') {
+                    object.scale.set(scale);
+                } else {
+                    object.scale.set(scale.x, scale.y);
+                }
+            }
+            if (rotation !== undefined) {
+                object.rotation = rotation;
+            }
+        }
         xnew(Nest, { object });
         xnew.extend(() => {
             return {
