@@ -76,7 +76,7 @@ function InputRangeMeter(unit: xnew.Unit,
 
     const meter = xnew({ tag: 'div', className: `${css.meter} ${vertical ? css.vertical : css.horizontal}` });
 
-    function update(v: number) {
+    function apply(v: number) {
         const percent = `${(v - min) / (max - min) * 100}%`;
         if (vertical) {
             meter.element.style.height = percent;
@@ -84,10 +84,10 @@ function InputRangeMeter(unit: xnew.Unit,
             meter.element.style.width = percent;
         }
     }
-    update(value);
+    apply(value);
 
     unit.on('input', ({ value }: { value: number }) => {
-        update(value);
+        apply(value);
     });
 }
 
@@ -120,12 +120,12 @@ function InputRangeStatus(unit: xnew.Unit,
 
     const status = xnew({ tag: 'div', className: `${css.status} ${vertical ? css.vertical : css.horizontal}` });
 
-    function update(v: number) {
+    function apply(v: number) {
         status.element.textContent = String(v);
     }
-    update(value);
+    apply(value);
 
     unit.on('input', ({ value }: { value: number }) => {
-        update(value);
+        apply(value);
     });
 }

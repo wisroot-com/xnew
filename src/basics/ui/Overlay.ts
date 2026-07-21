@@ -29,11 +29,11 @@ export function Overlay(unit: xnew.Unit,
 
     if (anchor instanceof HTMLElement) {
         const tether = xnew.nest({ tag: 'div', style: 'position: absolute; box-sizing: border-box' }) as HTMLElement;
-        sync();
-        unit.on('update', sync);
+        track();
+        unit.on('update', track);
 
         // the backdrop fills the viewport from its origin, so the anchor's client rect maps straight to the box
-        function sync(): void {
+        function track(): void {
             const rect = (anchor as Element).getBoundingClientRect();
             tether.style.left = `${rect.left}px`;
             tether.style.top = `${rect.top}px`;

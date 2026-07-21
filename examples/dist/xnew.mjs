@@ -1554,7 +1554,7 @@ function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false
         `,
     });
     const meter = xnew({ tag: 'div', className: `${css.meter} ${vertical ? css.vertical : css.horizontal}` });
-    function update(v) {
+    function apply(v) {
         const percent = `${(v - min) / (max - min) * 100}%`;
         if (vertical) {
             meter.element.style.height = percent;
@@ -1563,9 +1563,9 @@ function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false
             meter.element.style.width = percent;
         }
     }
-    update(value);
+    apply(value);
     unit.on('input', ({ value }) => {
-        update(value);
+        apply(value);
     });
 }
 function InputRangeStatus(unit, { value = 0, vertical = false } = {}) {
@@ -1586,12 +1586,12 @@ function InputRangeStatus(unit, { value = 0, vertical = false } = {}) {
         `,
     });
     const status = xnew({ tag: 'div', className: `${css.status} ${vertical ? css.vertical : css.horizontal}` });
-    function update(v) {
+    function apply(v) {
         status.element.textContent = String(v);
     }
-    update(value);
+    apply(value);
     unit.on('input', ({ value }) => {
-        update(value);
+        apply(value);
     });
 }
 
@@ -1841,9 +1841,9 @@ function Overlay(unit, _a = {}) {
     gate.on('-closed', () => unit.element.style.pointerEvents = 'none');
     if (anchor instanceof HTMLElement) {
         const tether = xnew.nest({ tag: 'div', style: 'position: absolute; box-sizing: border-box' });
-        sync();
-        unit.on('update', sync);
-        function sync() {
+        track();
+        unit.on('update', track);
+        function track() {
             const rect = anchor.getBoundingClientRect();
             tether.style.left = `${rect.left}px`;
             tether.style.top = `${rect.top}px`;
