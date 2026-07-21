@@ -3,7 +3,12 @@
 // 最小限（Container の親子・破棄、autoDetectRenderer）だけをモックする。
 jest.mock('pixi.js', () => {
     class Container {
-        constructor() { this.parent = null; this.children = []; this.destroyed = false; }
+        constructor() {
+            this.parent = null; this.children = []; this.destroyed = false;
+            this.position = { x: 0, y: 0, set(x, y) { this.x = x; this.y = y; } };
+            this.scale = { x: 1, y: 1, set(x, y = x) { this.x = x; this.y = y; } };
+            this.rotation = 0;
+        }
         addChild(o) { o.parent = this; this.children.push(o); return o; }
         removeChild(o) { o.parent = null; this.children = this.children.filter((c) => c !== o); return o; }
         destroy() { this.destroyed = true; }
@@ -29,16 +34,14 @@ function setup() {
 
 test('nest: 親ユニットの nest が子ユニットの nest の親になる（入れ子が機能する）', () => {
     const canvas = setup();
-    const group = new PIXI.Container();
-    const child = new PIXI.Container();
-    let scene;
+    let group, child, scene;
 
     xnew(() => {
         xpixi.initialize({ canvas });
         scene = xpixi.scene;
         xnew(() => {
-            xpixi.nest(group);
-            xnew(() => { xpixi.nest(child); });
+            group = xpixi.nest();
+            xnew(() => { child = xpixi.nest(); });
         });
     });
 
@@ -48,15 +51,13 @@ test('nest: 親ユニットの nest が子ユニットの nest の親になる�
 
 test('nest: 同一ユニットで2回呼ぶと2回目は1回目の子になる（状態を変える）', () => {
     const canvas = setup();
-    const a = new PIXI.Container();
-    const b = new PIXI.Container();
-    let scene;
+    let a, b, scene;
 
     xnew(() => {
         xpixi.initialize({ canvas });
         scene = xpixi.scene;
-        xpixi.nest(a);
-        xpixi.nest(b);
+        a = xpixi.nest();
+        b = xpixi.nest();
     });
 
     expect(a.parent).toBe(scene);
@@ -82,21 +83,49 @@ test('add: 現在の親に追加するが親を変えない（同一ユニット
 
 test('add: nest の中の add は nest の親に入り、後続の nest を汚染しない', () => {
     const canvas = setup();
-    const group = new PIXI.Container();
     const added = new PIXI.Container();
-    const nested = new PIXI.Container();
+    let group, nested;
 
     xnew(() => {
         xpixi.initialize({ canvas });
         xnew(() => {
-            xpixi.nest(group);
+            group = xpixi.nest();
             xnew(() => { xpixi.add(added); });
-            xnew(() => { xpixi.nest(nested); });
+            xnew(() => { nested = xpixi.nest(); });
         });
     });
 
     expect(added.parent).toBe(group);
     expect(nested.parent).toBe(group);
+});
+
+test('nest: options で新しいグループの transform を設定できる（position / scale / rotation）', () => {
+    const canvas = setup();
+    let group;
+
+    xnew(() => {
+        xpixi.initialize({ canvas });
+        group = xpixi.nest({ position: { x: 10, y: 20 }, scale: 2, rotation: 0.5 });
+    });
+
+    expect(group.position.x).toBe(10);
+    expect(group.position.y).toBe(20);
+    expect(group.scale.x).toBe(2);
+    expect(group.scale.y).toBe(2);
+    expect(group.rotation).toBe(0.5);
+});
+
+test('nest: scale はオブジェクトで x / y 別々に指定できる', () => {
+    const canvas = setup();
+    let group;
+
+    xnew(() => {
+        xpixi.initialize({ canvas });
+        group = xpixi.nest({ scale: { x: 3, y: 4 } });
+    });
+
+    expect(group.scale.x).toBe(3);
+    expect(group.scale.y).toBe(4);
 });
 
 test('finalize: ユニット破棄で親から外れる', () => {

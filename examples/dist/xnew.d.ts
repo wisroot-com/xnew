@@ -54,6 +54,7 @@ declare class Unit {
         children: Unit[];
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
+        standalone: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
         systems: Record<'update' | 'finalize', {
@@ -129,24 +130,30 @@ declare class UnitTimer {
     private start;
 }
 
-interface CssDef {
-    layer?: string;
-    type?: string;
-    body: string;
-}
-
 interface XnewBase {
+    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(Base: C, props: PropsOf<C>, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
+    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(Base: C, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
+    <C extends ComponentFn<any, any>>(Base: C, props: PropsOf<C>, content: string | number): Unit & DefinesOf<C>;
+    <C extends ComponentFn<any, any>>(Base: C, content: string | number): Unit & DefinesOf<C>;
     <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
+    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, props: PropsOf<C>, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
+    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
+    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, props: PropsOf<C>, content: string | number): Unit & DefinesOf<C>;
+    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, content: string | number): Unit & DefinesOf<C>;
     <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
     (target: DomElement | string | DomElementDef, content?: string | number): Unit;
     (content: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
+    readonly standalone: boolean;
 }
 declare const xnew: XnewBase & {
     nest(tag: string | DomElementDef, textContent?: string): HTMLElement | SVGElement;
     extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
-    css<T extends Record<string, string | CssDef>>(defs: T): Record<keyof T, string>;
+    css: {
+        <T extends Record<string, string>>(defs: T): Record<keyof T, string>;
+        <T extends Record<string, string>>(layer: string, defs: T): Record<keyof T, string>;
+    };
     context(key: any): any;
     promise: {
         (promise: Function | Promise<any> | Unit): UnitPromise;
@@ -161,11 +168,11 @@ declare const xnew: XnewBase & {
     interval(callback: Function, duration: number, iterations?: number): UnitTimer;
     transition(transition: Function, duration?: number, easing?: string): UnitTimer;
     protect(): void;
+    isUnit(value: any): value is Unit;
 };
 declare namespace xnew {
     type Unit = InstanceType<typeof Unit>;
-    type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
-    type ElementDef = DomElementDef;
+    type Timer = InstanceType<typeof UnitTimer>;
 }
 
 interface ClientStatus {
@@ -191,6 +198,7 @@ declare const xsync: {
     client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
     state(initial?: Record<string, any>): Record<string, any>;
     register(Components: Record<string, Function>): void;
+    visibleTo(target: string | string[] | ((clientId: string) => boolean) | null): void;
     readonly session: {
         room: RoomStatus;
         clients: ClientStatus[];
@@ -215,28 +223,12 @@ declare function Screen(unit: xnew.Unit, { width, height, fit }?: {
 };
 
 declare function Scene(unit: xnew.Unit): {
-    change(target: string | Function, props?: any): void;
+    change(Component: Function, props?: any): void;
     add(Component: Function, props?: any): xnew.Unit;
-};
-
-type SceneEntry = [Function, any?];
-declare function SceneList(unit: xnew.Unit, { list }?: {
-    list?: {
-        [label: string]: SceneEntry;
-    };
-}): {
-    resolve(label: string): SceneEntry | undefined;
 };
 
 declare function Button(unit: xnew.Unit, { text, className, style, ...others }?: {
     text?: string;
-    className?: string;
-    style?: string;
-    [key: string]: any;
-}): void;
-
-declare function Chevron(unit: xnew.Unit, { direction, className, style, ...others }?: {
-    direction?: 'up' | 'down' | 'left' | 'right';
     className?: string;
     style?: string;
     [key: string]: any;
@@ -250,98 +242,117 @@ declare function Image(unit: xnew.Unit, { src, className, style, ...others }: {
     [key: string]: any;
 }): void;
 
-declare function SVG(unit: xnew.Unit, { className, style, ...others }?: {
-    className?: string;
-    style?: string;
-    [key: string]: any;
-}): void;
-
-declare function SVGText(unit: xnew.Unit, { text, fontSize, className, style, ...others }?: {
+declare function GraphicText(unit: xnew.Unit, { text, className, style, ...others }?: {
     text?: string;
-    fontSize?: number;
     className?: string;
     style?: string;
     [key: string]: any;
 }): void;
 
-interface Design {
-    className?: string;
-    style?: string;
-}
-
-declare function InputRange(unit: xnew.Unit, { value, min, max, step, className, style, designs, ...others }?: {
+declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, className, style, ...others }?: {
     value?: number;
     min?: number;
     max?: number;
     step?: number;
+    vertical?: boolean;
     className?: string;
     style?: string;
-    designs?: {
-        frame?: Design;
-        meter?: Design;
-        status?: Design;
-    };
     [key: string]: any;
 }): void;
 
-declare function InputCheckbox(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
+declare function InputCheckbox(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
     value?: boolean;
-    className?: string;
-    style?: string;
-    designs?: {
-        frame?: Design;
-    };
-    [key: string]: any;
-}): void;
-
-declare function InputText(unit: xnew.Unit, { className, style, ...others }?: {
+    gate?: {
+        open?: boolean;
+        duration?: number;
+        easing?: string;
+    } | xnew.Unit;
     className?: string;
     style?: string;
     [key: string]: any;
-}): void;
+}): {
+    readonly value: boolean;
+    readonly gate: Unit;
+};
 
-declare function InputNumber(unit: xnew.Unit, { className, style, ...others }?: {
-    className?: string;
-    style?: string;
-    [key: string]: any;
-}): void;
-
-declare function InputSwitch(unit: xnew.Unit, { value, className, style, designs, ...others }?: {
-    value?: boolean;
-    className?: string;
-    style?: string;
-    designs?: {
-        frame?: Design;
-        knob?: Design;
-    };
-    [key: string]: any;
-}): void;
-
-declare function InputRadio(unit: xnew.Unit, { value, items, name, className, style, designs }?: {
+declare function InputText(unit: xnew.Unit, { value, className, style, ...others }?: {
     value?: string;
-    items?: string[];
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    readonly value: string;
+};
+
+declare function InputNumber(unit: xnew.Unit, { value, className, style, ...others }?: {
+    value?: number;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    readonly value: number;
+};
+
+declare function InputSwitch(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
+    value?: boolean;
+    gate?: {
+        open?: boolean;
+        duration?: number;
+        easing?: string;
+    } | xnew.Unit;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    readonly value: boolean;
+    readonly gate: Unit;
+};
+
+declare function InputRadio(unit: xnew.Unit, { value, name, checked, className, style, ...others }?: {
+    value?: string;
     name?: string;
+    checked?: boolean;
     className?: string;
     style?: string;
-    designs?: {
-        frame?: Design;
-        item?: Design;
-    };
-}): void;
-
-declare function InputSelect(unit: xnew.Unit, { value, items, className, style, designs, ...others }?: {
-    value?: string;
-    items?: string[];
-    className?: string;
-    style?: string;
-    designs?: {
-        frame?: Design;
-        label?: Design;
-        menu?: Design;
-        item?: Design;
-    };
     [key: string]: any;
 }): void;
+
+declare function Listbox(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
+    value?: string;
+    gate?: {
+        open?: boolean;
+        duration?: number;
+        easing?: string;
+    } | xnew.Unit;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    readonly value: string;
+    readonly gate: Unit;
+    register(item: xnew.Unit): void;
+    bind(label: HTMLElement): void;
+    select(value: string): void;
+};
+declare function ListboxButton(unit: xnew.Unit, { className, style, ...others }?: {
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): void;
+declare function ListboxMenu(unit: xnew.Unit, { className, style, ...others }?: {
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): void;
+declare function ListboxItem(unit: xnew.Unit, { value, className, style, ...others }?: {
+    value?: string;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    readonly value: string;
+    check(current: boolean): void;
+};
 
 declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
     url: string;
@@ -402,35 +413,49 @@ declare function Volume(unit: xnew.Unit): {
     volume: number;
 };
 
-declare function OpenAndClose(unit: xnew.Unit, { open, duration, easing }: {
+declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
     open?: boolean;
     duration?: number;
     easing?: string;
 }): {
+    readonly value: number;
+    readonly state: "opening" | "closing" | "opened" | "closed";
     toggle(): void;
     open(): void;
     close(): void;
 };
 
-declare function Accordion(unit: xnew.Unit): void;
-
-declare function Popup(unit: xnew.Unit): void;
-
-declare function AnalogStick(unit: xnew.Unit, { className, style, designs }?: {
+declare function Accordion(unit: xnew.Unit, { gate, className, style, ...others }?: {
+    gate?: {
+        open?: boolean;
+        duration?: number;
+        easing?: string;
+    } | xnew.Unit;
     className?: string;
     style?: string;
-    designs?: {
-        svg?: Design;
-    };
-}): void;
+    [key: string]: any;
+}): {
+    readonly gate: Unit;
+};
 
-declare function DPad(unit: xnew.Unit, { diagonal, className, style, designs }?: {
-    diagonal?: boolean;
+declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...others }?: {
+    gate?: {
+        open?: boolean;
+        duration?: number;
+        easing?: string;
+    } | xnew.Unit;
+    anchor?: HTMLElement;
     className?: string;
     style?: string;
-    designs?: {
-        svg?: Design;
-    };
+    [key: string]: any;
+}): {
+    readonly gate: Unit;
+};
+
+declare function VirtualPad(unit: xnew.Unit, { type, className, style }?: {
+    type?: 'analog' | '4way' | '8way';
+    className?: string;
+    style?: string;
 }): void;
 
 interface PanelOptions {
@@ -440,11 +465,11 @@ interface PanelOptions {
     nested?: boolean;
 }
 declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
-    group({ name, open, params }: PanelOptions, inner: Function): Unit;
+    folder({ name, open, params }: PanelOptions, inner: Function): Unit;
     button({ name }?: {
         name?: string;
     }): Unit;
-    select({ name, value, items }?: {
+    listbox({ name, value, items }?: {
         name?: string;
         value?: string;
         items?: string[];
@@ -463,32 +488,39 @@ declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
     separator(): void;
 };
 
+type Placement = 'left' | 'right' | 'top' | 'bottom';
+declare function VolumeController(unit: xnew.Unit, { placement, className, style }?: {
+    placement?: Placement;
+    className?: string;
+    style?: string;
+}): void;
+
 declare const xbasics: {
     Aspect: typeof Aspect;
     Screen: typeof Screen;
     Scene: typeof Scene;
-    SceneList: typeof SceneList;
     Button: typeof Button;
-    Chevron: typeof Chevron;
     Image: typeof Image;
-    SVG: typeof SVG;
-    SVGText: typeof SVGText;
+    GraphicText: typeof GraphicText;
     InputRange: typeof InputRange;
     InputCheckbox: typeof InputCheckbox;
     InputText: typeof InputText;
     InputNumber: typeof InputNumber;
     InputSwitch: typeof InputSwitch;
     InputRadio: typeof InputRadio;
-    InputSelect: typeof InputSelect;
+    Listbox: typeof Listbox;
+    ListboxButton: typeof ListboxButton;
+    ListboxMenu: typeof ListboxMenu;
+    ListboxItem: typeof ListboxItem;
     AudioTrack: typeof AudioTrack;
     Synthesizer: typeof Synthesizer;
     Volume: typeof Volume;
-    OpenAndClose: typeof OpenAndClose;
+    Gate: typeof Gate;
     Accordion: typeof Accordion;
-    Popup: typeof Popup;
-    AnalogStick: typeof AnalogStick;
-    DPad: typeof DPad;
+    Overlay: typeof Overlay;
+    VirtualPad: typeof VirtualPad;
     Panel: typeof Panel;
+    VolumeController: typeof VolumeController;
 };
 
 type IconProps = {

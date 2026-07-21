@@ -36,15 +36,8 @@
       xnew(Button, { name: 'restart' }).on('click', () => {
         music.play({ offset: 0, fade: 1000 });
       });
-      // A minimal volume slider: extend xbasics.Volume for master-gain access, then bind a plain
-      // <input type="range"> to it.
-      xnew('<div class="absolute right-2 bottom-2 flex items-center gap-2 text-stone-500">', (unit) => {
-        const volume = xnew.extend(xbasics.Volume);
-        xnew('<span class="text-sm">', 'volume');
-        const input = xnew('<input type="range" min="0" max="100" class="cursor-pointer">');
-        input.element.value = volume.volume * 100;
-        input.on('input', ({ event }) => volume.volume = event.target.value / 100);
-      });
+      // Master-volume control: a speaker icon that reveals a slider on click (xbasics.Volume + InputRange inside).
+      xnew(xbasics.VolumeController, { className: 'absolute right-2 bottom-2 size-10 text-stone-500' });
     }
 
     function Button(unit, { name }) {

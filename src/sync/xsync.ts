@@ -1,7 +1,8 @@
 //----------------------------------------------------------------------------------------------------
 // xsync — networking layer: shared state + boot + facade (exported as `xsync`)
-// The server root is the source of truth: each update it emits its registered units as a flat
-// pre-order node list ('sync'); client roots only diff-apply it into replica units.
+// The server root is the source of truth: each update it projects its registered units per connected
+// client (respecting xsync.visibleTo) and emits that flat pre-order node list ('sync') to each socket
+// individually; client roots only diff-apply the tree they receive into replica units.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';
@@ -21,13 +22,15 @@ export function getEnvironment(): 'server' | 'client' {
 //----------------------------------------------------------------------------------------------------
 
 export interface SyncNode { id: number; name: string; parent: number | null; state: Record<string, any>; }
-interface SyncData { id: number | null; state: Record<string, any>; registry: Record<string, Function>; }
+// visibility === null → public (sent to every client); otherwise a predicate re-evaluated per capture,
+// so a closure over dynamic state (e.g. a `revealed` flag) can widen a node from private to public.
+interface SyncData { id: number | null; state: Record<string, any>; registry: Record<string, Function>; visibility: ((clientId: string) => boolean) | null; }
 
 const syncData: WeakMap<Unit, SyncData> = new WeakMap();
 
 export function syncOf(unit: Unit): SyncData {
     if (syncData.has(unit) === false) {
-        syncData.set(unit, { id: null, state: {}, registry: {} });
+        syncData.set(unit, { id: null, state: {}, registry: {}, visibility: null });
     }
     return syncData.get(unit)!;
 }
@@ -46,9 +49,8 @@ const rootInfos: WeakMap<Unit, ServerInfo | ClientInfo> = new WeakMap();
 
 function findRootInfo(unit: Unit): ServerInfo | ClientInfo | undefined {
     for (let u: Unit | null = unit; u !== null; u = u._.parent) {
-        const info = rootInfos.get(u);
-        if (info !== undefined) {
-            return info;
+        if (rootInfos.has(u) === true) {
+            return rootInfos.get(u);
         }
     }
     return undefined;
@@ -66,23 +68,29 @@ function rootInfoOf(unit: Unit): ServerInfo | ClientInfo {
 // transport
 //----------------------------------------------------------------------------------------------------
 
-// Reserved wire events for emitToServer / emitToClients (never used as app `type`s).
+// Reserved wire events (never used as app `type`s). Message direction is fixed: clients may only
+// reach the server (emitToServer); fan-out to clients is server-authoritative (emitToClients) — there
+// is no client→client relay, so a client can never route a message to another client.
 const WIRE_TO_SERVER = 'sync:toServer';   // client→server: { type, syncId, data }      → dispatch `type` on the server
-const WIRE_TO_CLIENT = 'sync:toClient';   // client→server: { type, syncId, data, ids } → server fans out to clients
 const WIRE_DELIVER = 'sync:deliver';      // server→client: { type, syncId, id, data }   → dispatch `type` on the client
 
 function dispatch(info: ServerInfo | ClientInfo, event: string, id: string | undefined, payload: any): void {
     const data = payload && payload.data !== null && typeof payload.data === 'object' ? payload.data : {};
     const syncId = payload ? payload.syncId : undefined;
     (Unit.type2units.get(event) ?? []).forEach((unit) => {
+        // socket callbacks run outside the tick/scope machinery: a message landing after finalize()
+        // (or mid-finalize, which Unit.scope does not guard) must not fire a dying unit's handler.
+        if (unit._.phase === 'finalized' || unit._.phase === 'finalizing') return;
         if (findRootInfo(unit) !== info) return; // skip units of another root
         if (event[0] === '-' && syncOf(unit).id !== syncId) return; // skip units of another sync node
         unit._.listeners.get(event)?.forEach((item) => item.execute({ id, ...data }));
     });
 }
 
-function relayToClients(info: ServerInfo, type: string, senderId: string | undefined, syncId: number | null, data: any, ids?: string[]): void {
-    const envelope = { type, syncId, id: senderId, data };
+// server→clients only; the envelope id is left undefined (server-originated), so a relaying handler
+// that wants to name the original sender carries the id inside data.
+function relayToClients(info: ServerInfo, type: string, syncId: number | null, data: any, ids?: string[]): void {
+    const envelope = { type, syncId, id: undefined, data };
     if (Array.isArray(ids) && ids.length > 0) {
         ids.forEach((cid) => info.io.to(cid).emit(WIRE_DELIVER, envelope));   // each socket is in a room named by its id
     } else {
@@ -106,7 +114,10 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
     // a sync target is a unit registered in its direct parent's registry; nextId is monotonic
     // across captures so a unit keeps its id for its whole lifetime.
     let nextId = 1;
-    const captureStateTree = (): SyncNode[] => {
+    // project the registered unit tree for one client: a node declared visible only to some clients
+    // (xsync.visibleTo) is skipped — together with its subtree, which would otherwise lose its parent
+    // link — for any client it excludes, so private state never reaches that client's wire.
+    const captureStateTree = (clientId: string): SyncNode[] => {
         const nodes: SyncNode[] = [];
         // _.Components is [base..., most-derived]; match the registered name from the tail.
         const syncName = (unit: Unit): string | undefined => {
@@ -122,20 +133,27 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
         };
         const walk = (unit: Unit, parent: number | null): void => {
             const name = syncName(unit);
-            if (name !== undefined) {
+            if (name === undefined) {
+                unit._.children.forEach((child) => walk(child, parent));   // pass-through: keep the same parent id
+            } else {
                 const data = syncOf(unit);
-                data.id ??= nextId++;
-                nodes.push({ id: data.id, name, parent, state: { ...data.state } });
-                parent = data.id;
+                const visible = data.visibility === null || data.visibility(clientId) === true;
+                if (visible === true) {
+                    data.id ??= nextId++;
+                    nodes.push({ id: data.id, name, parent, state: { ...data.state } });
+                    unit._.children.forEach((child) => walk(child, data.id));
+                }
+                // else: a hidden sync node — skip it and its whole subtree for this client
             }
-            unit._.children.forEach((child) => walk(child, parent));
         };
         walk(root, null);
         return nodes;
     };
 
-    root.on('update', () => io.to(room.id).emit('sync', captureStateTree()));
-    io.on('connection', (socket: any) => {
+    root.on('update', () => info.clients.forEach((client) => io.to(client.id).emit('sync', captureStateTree(client.id))));
+    // keep the handler so finalize can detach it — a room that dies must not leave a listener on io
+    // (rooms come and go, and io's listener count would otherwise grow without bound).
+    const connection = (socket: any) => {
         const query = socket.handshake?.query;
         if (query?.roomId !== room.id) return; // ignore other rooms
         socket.join(room.id);
@@ -145,16 +163,17 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
         socket.onAny((event: string, payload: any) => {
             if (event === WIRE_TO_SERVER) {
                 dispatch(info, payload?.type, socket.id, payload);
-            } else if (event === WIRE_TO_CLIENT) {
-                relayToClients(info, payload?.type, socket.id, payload?.syncId ?? null, payload?.data, payload?.ids);
             }
+            // no client→client relay: a client can only reach the server (WIRE_TO_SERVER).
         });
         socket.on('disconnect', () => {
             info.clients = info.clients.filter((c) => c.id !== socket.id);
             dispatch(info, 'sync.disconnect', socket.id, undefined);
             statusUpdate();
         });
-    });
+    };
+    io.on('connection', connection);
+    root.on('finalize', () => io.off('connection', connection));
     function statusUpdate() {
         io.to(room.id).emit('status', { clients: info.clients });
         dispatch(info, 'sync.statusupdate', undefined, undefined);
@@ -179,7 +198,13 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
         for (const node of tree) {
             const existing = reconcileMap.get(node.id);
             if (existing !== undefined) {
-                Object.assign(syncOf(existing).state, node.state);   // never delete a once-set key (v1 simplification)
+                // reconcile in place (keep the object identity component bodies captured via xsync.state):
+                // drop keys the authoritative state no longer has, then assign the incoming ones.
+                const state = syncOf(existing).state;
+                for (const key of Object.keys(state)) {
+                    if ((key in node.state) === false) { delete state[key]; }
+                }
+                Object.assign(state, node.state);
                 continue;
             }
             const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
@@ -187,7 +212,7 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
             if (!Component) { continue; }
             // seed SyncData before initialize so the body's xsync.state sees the server state and fixed id
             const unit = new Unit(nodeParent);
-            syncData.set(unit, { id: node.id, state: { ...node.state }, registry: {} });
+            syncData.set(unit, { id: node.id, state: { ...node.state }, registry: {}, visibility: null });
             Unit.initialize(unit, Component);
             reconcileMap.set(node.id, unit);
         }
@@ -241,6 +266,22 @@ export const xsync = {
         }
         Object.assign(syncOf(unit).registry, Components);
     },
+    // Restrict this sync node (and its subtree) to the given client(s): a client id, a list of ids, or a
+    // predicate re-evaluated on every capture. Pass null to make it public again. Unset ⇒ public. The
+    // predicate form is the way to reveal dynamically — close over a flag and flip it (see examples).
+    visibleTo(target: string | string[] | ((clientId: string) => boolean) | null): void {
+        const data = syncOf(Unit.current);
+        if (target === null) {
+            data.visibility = null;
+        } else if (typeof target === 'function') {
+            data.visibility = target;
+        } else if (Array.isArray(target)) {
+            const allowed = new Set(target);
+            data.visibility = (clientId) => allowed.has(clientId);
+        } else {
+            data.visibility = (clientId) => clientId === target;
+        }
+    },
     get session(): { room: RoomStatus; clients: ClientStatus[]; myself: ClientStatus } {
         const info = rootInfoOf(Unit.current);
         const isServer = getEnvironment() === 'server';
@@ -264,14 +305,15 @@ export const xsync = {
             (info as ClientInfo).socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.current).id, data: props });
         }
     },
+    // server→clients only. Clients cannot fan out to other clients; from a client, emit to the server
+    // (emitToServer) and let a server handler relay via emitToClients.
     emitToClients(type: string, props: Record<string, any> = {}, ids?: string[]): void {
+        if (getEnvironment() !== 'server') {
+            throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
+        }
         const info = rootInfoOf(Unit.current);
         const syncId = syncOf(Unit.current).id;
-        if (getEnvironment() === 'server') {
-            relayToClients(info as ServerInfo, type, undefined, syncId, props, ids);
-        } else {
-            (info as ClientInfo).socket.emit(WIRE_TO_CLIENT, { type, syncId, data: props, ids });
-        }
+        relayToClients(info as ServerInfo, type, syncId, props, ids);
     },
     boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit {
         if (getEnvironment() === 'server') {

@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { context, master } from './bus';
+import { context, master, resume } from './master';
 
 export function AudioTrack(unit: xnew.Unit, { url, volume, loop = false }: { url: string, volume?: number, loop?: boolean }) {
     let buffer: AudioBuffer | undefined;
@@ -99,6 +99,7 @@ export function AudioTrack(unit: xnew.Unit, { url, volume, loop = false }: { url
         // Called before decode finishes, it defers until the load resolves; called while playing, it
         // restarts at the offset.
         play: function play({ offset, fade: fadeMs = 0, loop: loopArg }: { offset?: number, fade?: number, loop?: boolean } = {}): void {
+            resume();   // wake a suspended context (autoplay policy); no-op once running
             if (buffer === undefined) {
                 promise.then(() => play({ offset, fade: fadeMs, loop: loopArg }));
                 return;

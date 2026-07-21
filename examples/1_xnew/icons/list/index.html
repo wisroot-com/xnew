@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full min-h-screen bg-white text-slate-800">
+  <div id="main" class="relative w-full"></div>
+  <script type="module">
+    import { xnew, xicons } from '@mulsense/xnew';
+
+    const names = Object.keys(xicons);
+
+    xnew(document.querySelector('#main'), (unit) => {
+      let mode = 'outline';
+      xnew.nest('<div class="p-4 flex flex-col gap-4">');
+
+      // header: icon count + an outline / solid toggle broadcast to every cell
+      xnew((ctrl) => {
+        xnew.nest('<div class="flex gap-3 items-center sticky top-0 bg-white/90 py-2">');
+        xnew('<div class="text-sm text-slate-500">', `${names.length} heroicons`);
+        const btn = xnew('<button class="px-3 py-1 text-sm border rounded hover:bg-slate-100">', `mode: ${mode}`);
+        btn.on('click', () => {
+          mode = mode === 'outline' ? 'solid' : 'outline';
+          btn.element.textContent = `mode: ${mode}`;
+          xnew.emit('+mode', { mode });
+        });
+      });
+
+      xnew.nest('<div class="grid grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] gap-1">');
+      for (const name of names) {
+        xnew(Cell, { name, mode });
+      }
+    });
+
+    // one cell: the icon in a slot (re-created on mode change) plus its name
+    function Cell(cell, { name, mode }) {
+      xnew.nest(`<div class="flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-100" title="${name}">`);
+
+      const slot = xnew('<div class="flex items-center justify-center h-8">');
+      let icon = xnew(slot, xicons[name], { mode, className: 'size-6' });
+      cell.on('+mode', ({ mode }) => {
+        icon.finalize();
+        icon = xnew(slot, xicons[name], { mode, className: 'size-6' });
+      });
+
+      xnew('<div class="text-[10px] text-slate-400 truncate max-w-[6rem]">', name);
+    }
+  </script>
+</body>
+
+</html>

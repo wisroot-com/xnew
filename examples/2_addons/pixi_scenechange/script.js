@@ -42,14 +42,13 @@ function Scene2(unit) {
 }
 
 function Text(unit, { text }) {
-  const object = xpixi.nest(new PIXI.Text(text, { fontSize: 24, fill: 0x000000 }));
+  const object = xpixi.add(new PIXI.Text(text, { fontSize: 24, fill: 0x000000 }));
   object.position.set(10, 10);
 }
 
 function Box(unit, { x, y, size, color }) {
-  const object = xpixi.nest(new PIXI.Container());
-  object.position.set(x, y);
-  object.addChild(new PIXI.Graphics().rect(-size / 2, -size / 2, size, size).fill(color));
+  const object = xpixi.nest({ position: { x, y } });
+  xpixi.add(new PIXI.Graphics().rect(-size / 2, -size / 2, size, size).fill(color));
   
   unit.on('update', () => {
     object.rotation += 0.01;

@@ -6,7 +6,7 @@
 
 import { MapSet, MapMap } from './map';
 import { Ticker, Timer } from './time';
-import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, buildTag, svgAttributeName } from './dom';
+import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, createElement } from './dom';
 
 //----------------------------------------------------------------------------------------------------
 // definitions
@@ -25,6 +25,12 @@ export type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends 
 // Extract the props type of a Component ({} if absent).
 export type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
 
+// Component that writes a text/number literal into the unit's current element.
+// Used for both the base (xnew(target, 'text')) and the trailing ExComponent (xnew(Base, props, 'text')) forms.
+function textComponent(content: string | number): (unit: Unit) => void {
+    return (unit: Unit) => { unit.element.textContent = content.toString(); };
+}
+
 //----------------------------------------------------------------------------------------------------
 // unit
 //----------------------------------------------------------------------------------------------------
@@ -38,6 +44,7 @@ export class Unit {
 
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
+        standalone: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
         systems: Record<'update' | 'finalize', { listener: Function, execute: Function, count: number, owner: Unit }[]>;
@@ -74,6 +81,7 @@ export class Unit {
             parent,
             phase: 'invoked',
             protected: false,
+            standalone: true,
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
@@ -103,14 +111,28 @@ export class Unit {
             Unit.nest(unit, args.shift() as string | DomElementDef);
         }
 
-        const Component = args[0] as Function | string | number | undefined;
-        const props = args[1] as Object | undefined;
+        // xnew(Base, props?, ExComponent?): pull off the component, then an optional props
+        // object, then a trailing extension component extended on top of Base.
+        const Component = args.shift() as Function | string | number | undefined;
+
+        let props: Object | undefined;
+        if (typeof args[0] === 'object') {
+            props = args.shift() as Object | undefined;
+        }
+
+        // a trailing function extends on top of Base; a trailing string/number sets the element's text
+        let ExComponent: Function | undefined;
+        if (typeof args[0] === 'function') {
+            ExComponent = args.shift() as Function;
+        } else if (typeof args[0] === 'string' || typeof args[0] === 'number') {
+            ExComponent = textComponent(args.shift() as string | number);
+        }
 
         let baseComponent: Function;
         if (typeof Component === 'function') {
             baseComponent = Component;
         } else if (typeof Component === 'string' || typeof Component === 'number') {
-            baseComponent = (unit: Unit) => { unit.element.textContent = Component.toString(); };
+            baseComponent = textComponent(Component);
         } else {
             baseComponent = (unit: Unit) => {};
         }
@@ -120,7 +142,17 @@ export class Unit {
         const backup = Unit.currentUnit;
         Unit.currentUnit = unit;
 
-        Unit.extend(unit, baseComponent, props);
+        // a trailing ExComponent is composed with the base inside one synthetic component, so both reach
+        // the unit through the ordinary nested extend and neither sees itself as standalone (no special-casing)
+        if (ExComponent !== undefined) {
+            const Ex = ExComponent;
+            Unit.extend(unit, (unit: Unit, props: Object) => {
+                Unit.extend(unit, baseComponent, props);
+                Unit.extend(unit, Ex, props);
+            }, props);
+        } else {
+            Unit.extend(unit, baseComponent, props);
+        }
 
         if (unit._.phase === 'invoked') {
             unit._.phase = 'initialized';
@@ -184,31 +216,21 @@ export class Unit {
     }
 
     static nest(unit: Unit, tag: string | DomElementDef, textContent?: string): DomElement {
-        const { text, members } = buildTag(tag);
-
-        unit._.currentElement.insertAdjacentHTML('beforeend', text);
-        const element = unit._.currentElement.children[unit._.currentElement.children.length - 1] as DomElement;
+        const element = createElement(unit._.currentElement, tag);
         unit._.currentElement = element;
         if (textContent !== undefined) {
             element.textContent = textContent;
         }
         unit._.nestElements.push(element);
-
-        for (const [key, value] of members) {
-            // SVG DOM properties (viewBox, …) are read-only animated values; attributes are the setter
-            if (element instanceof SVGElement) {
-                element.setAttribute(svgAttributeName(key), String(value));
-            } else if (key in element) {
-                (element as any)[key] = value;
-            } else {
-                element.setAttribute(key, String(value));
-            }
-        }
         return element;
     }
 
     static extend(unit: Unit, Component: Function, props?: Object): { [key: string]: any } {
         const backupComponent = unit._.currentComponent;
+        const backupStandalone = unit._.standalone;
+        // standalone is scoped to this invocation (restored on exit) so a component's own inner xnew.extend
+        // never flips its own value: false when it rides on an outer component, true when it is the base alone
+        unit._.standalone = backupComponent === null;
         unit._.currentComponent = Component;
 
         if (unit._.parent !== null) {
@@ -219,6 +241,7 @@ export class Unit {
         const defines = Component(unit, props ?? {}) ?? {};
 
         unit._.currentComponent = backupComponent;
+        unit._.standalone = backupStandalone;
 
         Unit.component2units.add(Component, unit);
         unit._.Components.push(Component);

@@ -4,56 +4,53 @@
 // Networking components deliberately live under `xsync`, not here, so xbasics stays transport-free.
 //----------------------------------------------------------------------------------------------------
 
-import { Aspect } from './view/Aspect';
-import { Screen } from './view/Screen';
-import { Scene } from './view/Scene';
-import { SceneList } from './view/SceneList';
+import { Aspect } from './layout/Aspect';
+import { Screen } from './layout/Screen';
+import { Scene } from './layout/Scene';
 import { Button } from './element/Button';
-import { Chevron } from './element/Chevron';
 import { Image } from './element/Image';
-import { SVG } from './element/SVG';
-import { SVGText } from './element/SVGText';
+import { GraphicText } from './element/GraphicText';
 import { InputRange } from './element/InputRange';
 import { InputCheckbox } from './element/InputCheckbox';
 import { InputText } from './element/InputText';
 import { InputNumber } from './element/InputNumber';
 import { InputSwitch } from './element/InputSwitch';
 import { InputRadio } from './element/InputRadio';
-import { InputSelect } from './element/InputSelect';
+import { Listbox, ListboxButton, ListboxMenu, ListboxItem } from './element/Listbox';
 import { AudioTrack } from './audio/AudioTrack';
 import { Synthesizer } from './audio/Synthesizer';
-import { Volume } from './audio/Volume';
-import { OpenAndClose } from './ui/OpenAndClose';
-import { Accordion } from './ui/Accordion';
-import { Popup } from './ui/Popup';
-import { AnalogStick } from './ui/AnalogStick';
-import { DPad } from './ui/DPad';
-import { Panel } from './ui/Panel';
+import { Volume } from './audio/master';
+import { Gate } from './widget/Gate';
+import { Accordion } from './widget/Accordion';
+import { Overlay } from './widget/Overlay';
+import { VirtualPad } from './widget/VirtualPad';
+import { Panel } from './widget/Panel';
+import { VolumeController } from './widget/VolumeController';
 
 export const xbasics = {
     Aspect,
     Screen,
     Scene,
-    SceneList,
     Button,
-    Chevron,
     Image,
-    SVG,
-    SVGText,
+    GraphicText,
     InputRange,
     InputCheckbox,
     InputText,
     InputNumber,
     InputSwitch,
     InputRadio,
-    InputSelect,
+    Listbox,
+    ListboxButton,
+    ListboxMenu,
+    ListboxItem,
     AudioTrack,
     Synthesizer,
     Volume,
-    OpenAndClose,
+    Gate,
     Accordion,
-    Popup,
-    AnalogStick,
-    DPad,
+    Overlay,
+    VirtualPad,
     Panel,
+    VolumeController,
 };

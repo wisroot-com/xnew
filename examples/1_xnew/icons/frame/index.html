@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full min-h-screen bg-white text-slate-800">
+  <div id="main" class="relative w-full"></div>
+  <script type="module">
+    import { xnew, xicons } from '@mulsense/xnew';
+
+    // xicons has no frame option; a frame is just a bordered <div> the icon is mounted into:
+    //   xnew('<div class="border rounded-full ...">', xicons.Xxx, { className: '...' })
+    const frameBase = 'inline-flex items-center justify-center border-2 border-current p-3';
+    const variants = [
+      { label: 'none', wrap: null },
+      { label: 'circle', wrap: `${frameBase} rounded-full` },
+      { label: 'square', wrap: frameBase },
+      { label: 'rounded', wrap: `${frameBase} rounded-xl` },
+    ];
+    const gallery = ['Bell', 'Camera', 'Heart', 'Star', 'Bolt', 'Cog6Tooth', 'User', 'Envelope', 'Bookmark', 'Fire', 'Sparkles', 'Sun'];
+    const colors = ['text-rose-500', 'text-amber-500', 'text-emerald-500', 'text-sky-500', 'text-violet-500', 'text-slate-600'];
+
+    xnew(document.querySelector('#main'), (unit) => {
+      xnew.nest('<div class="p-6 flex flex-col gap-10">');
+
+      xnew('<div>', () => {
+        xnew('<div class="text-lg font-semibold">', 'xicons — frame');
+        xnew('<div class="text-sm text-slate-500">', "wrap an icon in a bordered <div>: xnew('<div class=\"border ...\">', xicons.Xxx, {...})");
+      });
+
+      // no frame + the three border shapes, side by side
+      xnew(Section, { title: 'none / circle / square / rounded', inner: () => {
+        xnew('<div class="flex gap-8 items-start text-sky-600">', () => {
+          for (const { label, wrap } of variants) {
+            xnew('<div class="flex flex-col items-center gap-2">', () => {
+              if (wrap === null) {
+                xnew(xicons.Bell, { className: 'size-14' });
+              } else {
+                xnew(`<div class="${wrap}">`, xicons.Bell, { className: 'size-14' });
+              }
+              xnew('<div class="text-xs text-slate-400 font-mono">', label);
+            });
+          }
+        });
+      } });
+
+      // a colored gallery, all rounded
+      xnew(Section, { title: 'gallery (rounded)', inner: () => {
+        xnew('<div class="flex flex-wrap gap-4">', () => {
+          gallery.forEach((name, i) => {
+            xnew(`<div class="${frameBase} rounded-xl ${colors[i % colors.length]}">`, xicons[name], { className: 'size-10' });
+          });
+        });
+      } });
+    });
+
+    // labelled section wrapper: a heading over the caller-provided body
+    function Section(unit, { title, inner }) {
+      xnew.nest('<div class="flex flex-col gap-3">');
+      xnew('<div class="text-sm font-medium text-slate-600">', title);
+      inner(unit);
+    }
+  </script>
+</body>
+
+</html>

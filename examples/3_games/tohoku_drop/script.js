@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import voxelkit from 'voxelkit';
-import { xnew, xbasics } from '@mulsense/xnew';
+import { xnew, xbasics, xicons } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import { xmatter } from '@mulsense/xnew/addons/xmatter';
@@ -72,7 +72,7 @@ function TitleScene(unit) {
 
   xnew(TitleText, { text: 'とーほくドロップ', color: 'text-green-600' });
   xnew(TouchMessage, { color: 'text-green-600' });
-  xnew(VolumeControl, { className: 'text-stone-500' });
+  xnew(xbasics.VolumeController, { className: 'absolute right-[2cqw] bottom-[2cqw] size-[6cqw] text-stone-500' });
 }
 
 function GameScene(unit) {
@@ -93,7 +93,7 @@ function GameScene(unit) {
   xnew(Queue);
   xnew(ThreeTexture); // render three.js canvas as pixi texture
   xnew(ScoreText);
-  xnew(VolumeControl, { className: 'text-stone-500' });
+  xnew(xbasics.VolumeController, { className: 'absolute right-[2cqw] bottom-[2cqw] size-[6cqw] text-stone-500' });
 
   const playing = xnew((unit) => {
     xnew(Controller);
@@ -138,12 +138,12 @@ function ResultScene(unit, { image }) {
 
 function ThreeTexture(unit) {
   const texture = PIXI.Texture.from(xthree.canvas)
-  const object = xpixi.nest(new PIXI.Sprite(texture));
+  const object = xpixi.add(new PIXI.Sprite(texture));
 }
 
 function ScoreText(unit) {
   xnew.nest('<div class="absolute top-[1cqw] right-[2cqw] w-full text-right text-green-600 font-bold">');
-  const text = xnew(xbasics.SVGText, { text: 'score 0', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;', className: 'inline-block' });
+  const text = xnew(xbasics.GraphicText, { text: 'score 0', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   let sum = 0;
   unit.on('+scoreup', ({ score }) => {
     text.element.textContent = `score ${sum += Math.pow(2, score)}`;
@@ -177,19 +177,19 @@ function ResultDetail(unit) {
 }
 
 function DirectionalLight(unit, { x, y, z }) {
-  const object = xthree.nest(new THREE.DirectionalLight(0xFFFFFF, 1.7));
+  const object = xthree.add(new THREE.DirectionalLight(0xFFFFFF, 1.7));
   object.position.set(x, y, z);
   object.castShadow = true;
 }
 
 function AmbientLight(unit) {
-  const object = xthree.nest(new THREE.AmbientLight(0xFFFFFF, 1.2));
+  const object = xthree.add(new THREE.AmbientLight(0xFFFFFF, 1.2));
 }
 
 function ShadowPlane(unit) {
   const geometry = new THREE.PlaneGeometry(16, 14);
   const material = new THREE.ShadowMaterial({ opacity: 0.25 });
-  const plane = xthree.nest(new THREE.Mesh(geometry, material));
+  const plane = xthree.add(new THREE.Mesh(geometry, material));
   plane.receiveShadow = true;
   plane.rotation.x = -Math.PI / 2;
   plane.position.set(0.0, -2.9, -2.0);
@@ -233,7 +233,7 @@ function Queue(unit) {
 }
 
 function Model(unit, { id = 0, position = null, rotation = null, scale }) {
-  const object = xthree.nest(new THREE.Object3D());
+  const object = xthree.nest();
   if (position) object.position.set(position.x, position.y, position.z);
   if (rotation) object.rotation.set(rotation.x, rotation.y, rotation.z);
 
@@ -283,12 +283,12 @@ function Model(unit, { id = 0, position = null, rotation = null, scale }) {
 }
 
 function Cursor(unit) {
-  const object = xpixi.nest(new PIXI.Container({ position: { x: 400, y: 40 } }));
+  const object = xpixi.nest({ position: { x: 400, y: 40 } });
 
   const graphics = new PIXI.Graphics();
   graphics.moveTo(-24, 0).lineTo(24, 0).stroke({ color: 0xE84A57, width: 12 })
   graphics.moveTo(0, -24).lineTo(0, 24).stroke({ color: 0xE84A57, width: 12 });
-  object.addChild(graphics);
+  xpixi.add(graphics);
 
   unit.on('+move', ({ x }) => object.x = Math.max(Math.min(x, xpixi.canvas.width / 2 + 190), xpixi.canvas.width / 2 - 190));
 
@@ -361,7 +361,7 @@ function ModelBall(ball, { x, y, id = 0 }) {
 }
 
 function StarParticles(unit, { x, y }) {
-  const container = xpixi.nest(new PIXI.Container({ position: { x, y } }));
+  xpixi.nest({ position: { x, y } });
 
   for (let i = 0; i < 5; i++) {
     const size = 12 + Math.random() * 20;
@@ -369,7 +369,7 @@ function StarParticles(unit, { x, y }) {
     const color = [0xFFFF00, 0xFFD700, 0xFFA500, 0xFFFFFF, 0xFF69B4, 0x87CEEB, 0x98FB98, 0xFFB6C1][Math.floor(Math.random() * 8)];
 
     const graphics = new PIXI.Graphics().star(0, 0, 5, size, size * 0.5).fill(color);
-    container.addChild(graphics);
+    xpixi.add(graphics);
 
     const angle = (Math.PI * 2 / 5) * i + Math.random() * 0.5;
     const speed = 1 + Math.random() * 1.5;
@@ -391,13 +391,13 @@ function StarParticles(unit, { x, y }) {
 }
 
 function Circle(unit, { x, y, radius, color = 0xFFFFFF, alpha = 1.0, options = {} }) {
-  const object = xpixi.nest(new PIXI.Container({ position: { x, y } }));
+  const object = xpixi.nest({ position: { x, y } });
   const pyshics = Matter.Bodies.circle(x, y, radius, options);
   Matter.Composite.add(xmatter.world, pyshics);
   unit.on('finalize', () => Matter.Composite.remove(xmatter.world, pyshics));
 
   const graphics = new PIXI.Graphics().circle(0, 0, radius).fill(color);
-  object.addChild(graphics);
+  xpixi.add(graphics);
   object.alpha = alpha;
 
   unit.on('update', () => {
@@ -407,31 +407,6 @@ function Circle(unit, { x, y, radius, color = 0xFFFFFF, alpha = 1.0, options = {
 }
 
 // ---- UI parts (title / result / volume) ----
-
-// 丸枠アイコン: 外周の円 + 中央70%に path 群。Camera / ArrowUturnLeft で共有。
-function RingIcon(unit, { paths }) {
-  xnew('<div style="position: absolute; inset: 0; margin: auto; width: 100%; height: 100%;">', () => {
-    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', style: 'display: block; width: 100%; height: 100%; stroke: currentColor;' });
-    xnew('<circle cx="12" cy="12" r="11">');
-  });
-  xnew('<div style="position: absolute; inset: 0; margin: auto; width: 70%; height: 70%;">', () => {
-    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', style: 'display: block; width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.5;' });
-    for (const d of paths) {
-      xnew(`<path d="${d}">`);
-    }
-  });
-}
-
-function Camera(_unit) {
-  xnew.extend(RingIcon, { paths: [
-    'M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23q-.57.08-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a48 48 0 0 0-1.134-.175a2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.19 2.19 0 0 0-1.736-1.039a49 49 0 0 0-5.232 0a2.19 2.19 0 0 0-1.736 1.039z',
-    'M16.5 12.75a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m2.25-2.25h.008v.008h-.008z',
-  ] });
-}
-
-function ArrowUturnLeft(_unit) {
-  xnew.extend(RingIcon, { paths: ['M9 15L3 9m0 0l6-6M3 9h12a6 6 0 0 1 0 12h-3'] });
-}
 
 // 生成時に渡された要素を白で覆ってからフェードアウトしつつ撮影し、PNG をダウンロードする。
 function ScreenShot(unit) {
@@ -454,17 +429,19 @@ function ScreenShot(unit) {
 }
 
 // リザルトのフッター。「画面を保存」(ScreenShot) と「戻る」(onBack) の2ボタン。
+// アイコンは丸枠付きの div でフレーミングする（枠線 border は cqw でアイコンの線幅に合わせる）。
 function ResultFooter(unit, { onBack }) {
+  const circleButton = 'size-[9cqw] cursor-pointer hover:scale-110 flex items-center justify-center border-[0.4cqw] border-current rounded-full';
   xnew.nest('<div class="absolute bottom-0 w-full h-[13cqh] px-[2cqw] flex justify-between text-stone-500">');
   xnew('<div class="flex items-center gap-x-[2cqw]">', () => {
-    const button = xnew('<div class="relative size-[9cqw] cursor-pointer hover:scale-110">', Camera);
+    const button = xnew(`<div class="${circleButton}">`, xicons.Camera, { className: 'size-[62%]' });
     button.on('click', () => xnew(document.querySelector('#main'), ScreenShot));
     xnew('<div class="text-[3cqw] font-bold">', '画面を保存');
   });
 
   xnew('<div class="flex items-center gap-x-[2cqw]">', () => {
     xnew('<div class="text-[3cqw] font-bold">', '戻る');
-    const button = xnew('<div class="relative size-[9cqw] cursor-pointer hover:scale-110">', ArrowUturnLeft);
+    const button = xnew(`<div class="${circleButton}">`, xicons.ArrowUturnLeft, { className: 'size-[62%]' });
     button.on('click', () => onBack());
   });
 }
@@ -493,87 +470,26 @@ function ResultBackground(unit, { gradient, textColor }) {
   }
 }
 
-// タイトルの見出し（縁取り SVGText）。text=文言 / color="text-..."。
+// タイトルの見出し（縁取り GraphicText）。text=文言 / color="text-..."。
 function TitleText(unit, { text, color }) {
   xnew.nest(`<div class="absolute w-full top-[16cqw] text-center ${color} font-bold">`);
-  xnew(xbasics.SVGText, { text, fontSize: '10cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;', className: 'inline-block' });
+  xnew(xbasics.GraphicText, { text, fontSize: '10cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
 }
 
 // 点滅する "touch start"。color="text-..."。
 function TouchMessage(unit, { color }) {
   xnew.nest(`<div class="absolute w-full top-[30cqw] text-center ${color} font-bold">`);
-  xnew(xbasics.SVGText, { text: 'touch start', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;', className: 'inline-block' });
+  xnew(xbasics.GraphicText, { text: 'touch start', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   unit.on('update', ({ count }) => unit.element.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
 }
 
 // 中央に降りてくる "Game Over"。className で横位置を調整（既定は全幅中央）。
 function GameOverText(unit, { className = 'w-full' }) {
   xnew.nest(`<div class="absolute ${className} text-center text-red-400 font-bold">`);
-  xnew(xbasics.SVGText, { text: 'Game Over', fontSize: '12cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;', className: 'inline-block' });
+  xnew(xbasics.GraphicText, { text: 'Game Over', fontSize: '12cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   xnew.transition(({ value }) => {
     Object.assign(unit.element.style, { opacity: value, top: `${10 + value * 15}cqw` });
   }, 1000, 'ease');
 }
 
-// スピーカーアイコン（muted で消音グリフに切り替わる）。
-function SpeakerIcon(unit, { muted = false } = {}) {
-  xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', style: 'display: block; width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.5;' });
-  const path = muted
-    ? 'M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z'
-    : 'M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z';
-  xnew(`<path d="${path}" />`);
-}
-
-// スピーカーアイコン + アンカー方向に開くスライダー。xbasics.Volume をマスター音量への橋渡しに使う。
-function VolumeController(unit, { anchor = 'left' } = {}) {
-  const volume = xnew.extend(xbasics.Volume);
-  xnew.extend(xbasics.Aspect, { aspect: 1.0, fit: 'contain' });
-  unit.on('pointerdown', ({ event }) => event.stopPropagation());
-
-  const system = xnew(xbasics.OpenAndClose, { open: false, duration: 250, easing: 'ease' });
-
-  const button = xnew((unit) => {
-    xnew.nest('<div style="width: 100%; height: 100%; cursor: pointer;">');
-    unit.on('click', () => system.toggle());
-    let icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
-    return {
-      update() {
-        icon?.finalize();
-        icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
-      }
-    };
-  });
-
-  xnew(() => {
-    const isHoriz = anchor === 'left' || anchor === 'right';
-    const cqUnit = isHoriz ? 'cqw' : 'cqh';
-    const sizeProp = isHoriz ? 'width' : 'height';
-
-    const outerSize = isHoriz ? `top: 20%; bottom: 20%; width: 0${cqUnit}` : `left: 20%; right: 20%; height: 0${cqUnit}`;
-    const outer = xnew.nest(`<div style="position: absolute; ${outerSize};">`);
-
-    // スライダー本体は xbasics.InputRange(トラック枠線 + フィルバー + 隠しネイティブ input)
-    // AudioParam は float32 なので読み返しに誤差が乗る。丸めて整数にする
-    xnew(xbasics.InputRange, { value: Math.round(volume.volume * 100) })
-      .on('input', ({ value }) => {
-        volume.volume = value / 100;
-        button.update();
-      });
-
-    system.on('-transition', ({ value }) => {
-      outer.style[anchor] = `-${value * 400 + 20}${cqUnit}`;
-      outer.style[sizeProp] = `${value * 400}${cqUnit}`;
-      outer.style.opacity = value.toString();
-      outer.style.pointerEvents = value < 0.9 ? 'none' : 'auto';
-    });
-  });
-
-  unit.on('click.outside', () => system.close());
-}
-
-// 右下の音量コントローラ。className で文字色等を調整。
-function VolumeControl(unit, { className = 'text-stone-300 z-10' } = {}) {
-  xnew(`<div class="absolute right-[2cqw] bottom-[2cqw] size-[6cqw] ${className}">`,
-    VolumeController, { anchor: 'left' });
-}
 

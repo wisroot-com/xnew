@@ -1,7 +1,8 @@
 //----------------------------------------------------------------------------------------------------
 // xpixi — PixiJS 8 integration: ties the Pixi scene graph to the xnew unit tree
-// Display objects attached via nest / add are removed and destroyed when the owning unit
-// finalizes (textures are kept — they may be shared). nest is stateful; add places siblings.
+// nest() makes a group Container and moves the current parent into it (stateful); add(obj) attaches a
+// leaf without moving — so a leaf can never become a parent. Objects are removed/destroyed on the
+// owning unit's finalize (textures kept — they may be shared).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '@mulsense/xnew';
@@ -14,7 +15,32 @@ export const xpixi = {
     ) {
         return xnew.promise(xnew(Root, { canvas }));
     },
-    nest(object: any) {
+    // create a group Container, attach it, and move the current parent into it (stateful).
+    // options set the new group's transform only — an existing object can never be nested.
+    nest(
+        options?: {
+            position?: { x: number, y: number },
+            scale?: number | { x: number, y: number },
+            rotation?: number,
+        }
+    ): PIXI.Container {
+        const object = new PIXI.Container();
+        if (options !== undefined) {
+            const { position, scale, rotation } = options;
+            if (position !== undefined) {
+                object.position.set(position.x, position.y);
+            }
+            if (scale !== undefined) {
+                if (typeof scale === 'number') {
+                    object.scale.set(scale);
+                } else {
+                    object.scale.set(scale.x, scale.y);
+                }
+            }
+            if (rotation !== undefined) {
+                object.rotation = rotation;
+            }
+        }
         xnew(Nest, { object });
         xnew.extend(() => {
             return {
@@ -23,6 +49,7 @@ export const xpixi = {
         });
         return object;
     },
+    // attach a display object to the current parent; the current parent stays unchanged
     add(object: any) {
         xnew(Add, { object });
         return object;
@@ -40,18 +67,29 @@ export const xpixi = {
 
 function Root(unit: xnew.Unit, { canvas }: { canvas: HTMLCanvasElement }) {
     let renderer: PIXI.Renderer | null = null;
-    xnew.promise(PIXI.autoDetectRenderer({
+    let finalized = false;
+
+    // autoDetectRenderer resolves to an already-created WebGL renderer; watch the raw promise (not the
+    // scope-guarded xnew.promise chain, which is skipped after finalize) so a renderer that lands post-finalize is destroyed
+    const source = PIXI.autoDetectRenderer({
         width: canvas.width, height: canvas.height, view: canvas,
         antialias: true, backgroundAlpha: 0,
-    })).then((value: any) => {
-        renderer = value;
+    });
+    xnew.promise(source);
+    source.then((value: any) => {
+        if (finalized === true) {
+            value.destroy();
+        } else {
+            renderer = value;
+        }
     });
 
     const scene = new PIXI.Container();
 
-    // null until async creation completes
     unit.on('finalize', () => {
+        finalized = true;
         renderer?.destroy();
+        renderer = null;
     });
 
     return {

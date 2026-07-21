@@ -12,75 +12,59 @@ describe('basics InputRadio', () => {
         jest.useRealTimers();
     });
 
-    // container > frame > item* > [label, input]; unit.element ends on the frame
-    function radiosOf(unit: xnew.Unit): HTMLInputElement[] {
-        return Array.from(unit.element.querySelectorAll('input')) as HTMLInputElement[];
+    // each InputRadio is a <label> (its value as text) wrapping a hidden native <input type="radio">;
+    // the unit's element is the label container, and the input is a child unit nested inside it
+    function partsOf(unit: xnew.Unit): { label: HTMLElement, input: HTMLInputElement } {
+        const label = unit.element as HTMLElement;
+        return { label, input: label.querySelector('input') as HTMLInputElement };
     }
 
-    function itemsOf(unit: xnew.Unit): HTMLElement[] {
-        return Array.from(unit.element.children) as HTMLElement[];
-    }
+    it('renders a label wrapping a hidden radio, with the value as its text', () => {
+        const unit = xnew(InputRadio, { value: 'low', name: 'level' });
+        const { label, input } = partsOf(unit);
 
-    it('renders one item cell with a hidden radio per item, sharing a group name', () => {
-        const unit = xnew(InputRadio, { items: ['low', 'mid', 'high'] });
-        const radios = radiosOf(unit);
-
-        expect(radios).toHaveLength(3);
-        expect(radios.map((r) => r.value)).toEqual(['low', 'mid', 'high']);
-        expect(new Set(radios.map((r) => r.name)).size).toBe(1);
-        expect(radios[0].name).not.toBe('');
-        expect(unit.element.textContent).toBe('lowmidhigh');
+        expect(label.tagName).toBe('LABEL');
+        expect(label.textContent).toBe('low');
+        expect(input.type).toBe('radio');
+        expect(input.value).toBe('low');
+        expect(input.name).toBe('level');
     });
 
-    it('uses the given name for the radio group', () => {
-        const unit = xnew(InputRadio, { items: ['a', 'b'], name: 'level' });
+    it('marks the radio checked from the checked prop', () => {
+        const on = xnew(InputRadio, { value: 'a', name: 'g', checked: true });
+        const off = xnew(InputRadio, { value: 'b', name: 'g' });
 
-        expect(radiosOf(unit).every((r) => r.name === 'level')).toBe(true);
+        expect(partsOf(on).input.checked).toBe(true);
+        expect(partsOf(off).input.checked).toBe(false);
     });
 
-    it('checks the initial value (defaulting to the first item)', () => {
-        const explicit = xnew(InputRadio, { items: ['a', 'b'], value: 'b' });
-        const defaulted = xnew(InputRadio, { items: ['a', 'b'] });
+    it('groups exclusively by a shared name (native radio behavior)', () => {
+        const container = xnew('<div>', () => {
+            xnew(InputRadio, { name: 'g', value: 'a', checked: true });
+            xnew(InputRadio, { name: 'g', value: 'b' });
+            xnew(InputRadio, { name: 'g', value: 'c' });
+        });
+        const inputs = Array.from(container.element.querySelectorAll('input')) as HTMLInputElement[];
 
-        expect(radiosOf(explicit).map((r) => r.checked)).toEqual([false, true]);
-        expect(radiosOf(defaulted).map((r) => r.checked)).toEqual([true, false]);
-        expect(itemsOf(explicit).map((s) => s.hasAttribute('data-checked'))).toEqual([false, true]);
+        expect(inputs.map((i) => i.name)).toEqual(['g', 'g', 'g']);
+        inputs[2].click();
+
+        expect(inputs.map((i) => i.checked)).toEqual([false, false, true]);
     });
 
-    it('carries the selected look in a data-checked css rule', () => {
-        xnew(InputRadio, { items: ['a'] });
+    it('carries the checked look in a :has(input:checked) css rule', () => {
+        xnew(InputRadio, { value: 'a', name: 'g' });
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
-        expect(styleText).toContain('&[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }');
+        expect(styleText).toContain('&:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }');
     });
 
-    it('delivers the selected value and moves data-checked on input', () => {
-        const unit = xnew(InputRadio, { items: ['low', 'mid', 'high'] });
-        const radios = radiosOf(unit);
+    it('applies className / style to the label and forwards others to the input', () => {
+        const unit = xnew(InputRadio, { value: 'a', name: 'g', className: 'seg', style: 'font-weight: bold;', disabled: true });
+        const { label, input } = partsOf(unit);
 
-        const received: string[] = [];
-        unit.on('input', ({ value }: { value: string }) => received.push(value));
-        jest.advanceTimersByTime(0);
-
-        radios[2].checked = true;
-        radios[2].dispatchEvent(new Event('input', { bubbles: true }));
-
-        expect(received).toEqual(['high']);
-        expect(itemsOf(unit).map((s) => s.hasAttribute('data-checked'))).toEqual([false, false, true]);
-    });
-
-    it('applies designs to the frame and item parts', () => {
-        const unit = xnew(InputRadio, { items: ['a', 'b'], designs: { frame: { className: 'pill' }, item: { style: 'font-weight: bold;' } } });
-
-        expect(unit.element.className).toContain('pill');
-        expect(itemsOf(unit).every((s) => (s.getAttribute('style') ?? '').includes('font-weight: bold;'))).toBe(true);
-    });
-
-    it('applies className and style to the container element', () => {
-        const unit = xnew(InputRadio, { items: ['a'], className: 'boxed', style: 'width: 12em;' });
-        const container = unit.element.parentElement as HTMLElement;
-
-        expect(container.className).toContain('boxed');
-        expect(container.getAttribute('style')).toContain('width: 12em;');
+        expect(label.className).toContain('seg');
+        expect(label.getAttribute('style')).toContain('font-weight: bold;');
+        expect(input.disabled).toBe(true);
     });
 });

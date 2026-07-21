@@ -60,12 +60,14 @@ export interface IoMock {
     connect(id?: string): MockClientSocket;   // 1 接続ぶんの client socket を生成
     captured: any[];                          // server boot が emit した 'sync' ツリーの記録（capture-only テスト用）
     lastSync(): any;                          // 直近に emit された 'sync' ツリー（capture は root.on('update') で走る）
+    lastSyncFor(clientId: string): any;       // その client 宛て（io.to(clientId)）に直近 emit された 'sync' ツリー
 }
 
 export function ioMock(): IoMock {
     let connectionCb: ((socket: any) => void) | null = null;
     let seq = 0;   // clientId 自動発番（'c1', 'c2', ...）
     const captured: any[] = [];   // boot が emit する 'sync' ツリーを記録（接続 client の有無に関わらず残す）
+    const syncLog: { to: string; tree: any }[] = [];   // 'sync' の宛先つき記録（per-client 投影テスト用）
 
     interface Conn {
         clientHandlers: Map<string, Set<Handler>>;   // client.on(event)
@@ -86,6 +88,10 @@ export function ioMock(): IoMock {
 
     const io = {
         on(event: string, cb: (socket: any) => void): void { if (event === 'connection') { connectionCb = cb; } },
+        // boot は finalize で自分の connection を外す。外れた後の connect() はどのハンドラにも届かない。
+        off(event: string, cb: (socket: any) => void): void {
+            if (event === 'connection' && connectionCb === cb) { connectionCb = null; }
+        },
         emit(event: string, payload?: any): void {                 // broadcast（全 client へ）
             if (event === 'sync') { captured.push(payload); }
             for (const conn of conns.values()) { deliverToClient(conn, event, payload); }
@@ -93,7 +99,7 @@ export function ioMock(): IoMock {
         to(room: string) {
             // room に join した全 client へ配信する（room は room.id でも client の id でも可）。
             return { emit(event: string, payload?: any): void {
-                if (event === 'sync') { captured.push(payload); }
+                if (event === 'sync') { captured.push(payload); syncLog.push({ to: room, tree: payload }); }
                 for (const conn of conns.values()) {
                     if (conn.rooms.has(room)) { deliverToClient(conn, event, payload); }
                 }
@@ -118,7 +124,9 @@ export function ioMock(): IoMock {
 
         return {
             id: clientId,
-            emit(event: string, payload?: any): void { conn.serverAny.forEach((h) => h(event, payload)); },   // client→server
+            // client→server: the server processes inbound wire events under the server env (a relay
+            // handler may call emitToClients, which is server-only), mirroring deliverToClient's client wrap.
+            emit(event: string, payload?: any): void { withEnvironment('server', () => conn.serverAny.forEach((h) => h(event, payload))); },
             on(event: string, handler: Handler): void {
                 let set = conn.clientHandlers.get(event);
                 if (set === undefined) { set = new Set(); conn.clientHandlers.set(event, set); }
@@ -132,7 +140,14 @@ export function ioMock(): IoMock {
         };
     }
 
-    return { io, connect, captured, lastSync: () => captured[captured.length - 1] };
+    function lastSyncFor(clientId: string): any {
+        for (let i = syncLog.length - 1; i >= 0; i--) {
+            if (syncLog[i].to === clientId) { return syncLog[i].tree; }
+        }
+        return undefined;
+    }
+
+    return { io, connect, captured, lastSync: () => captured[captured.length - 1], lastSyncFor };
 }
 
 // 実行環境（server/client）を固定して同期的な処理を走らせる。1 プロセスで両側を模すテスト用。

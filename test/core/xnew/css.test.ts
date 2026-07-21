@@ -20,7 +20,7 @@ describe('xnew.css', () => {
         expect(css.frame).not.toBe(css.icon);
     });
 
-    it('injects one <style> wrapping each block in its generated class, unlayered by default', () => {
+    it('injects one <style> wrapping each body in its generated class, unlayered by default', () => {
         let css!: Record<string, string>;
         xnew(() => {
             css = xnew.css({ frame: 'color: red;' });
@@ -32,34 +32,34 @@ describe('xnew.css', () => {
         expect(styles[0].textContent).toContain('color: red;');
     });
 
-    it('wraps an entry with a layer in @layer', () => {
+    it('wraps the whole block in @layer when a layer is given', () => {
         let css!: Record<string, string>;
         xnew(() => {
-            css = xnew.css({ frame: { layer: 'xnew', body: 'color: red;' } });
+            css = xnew.css('xnew', { frame: 'color: red;' });
         });
         const text = styleElements()[0].textContent!;
         expect(text).toMatch(/^@layer xnew \{/);
         expect(text).toContain(`.${css.frame} {`);
     });
 
-    it('layers each entry independently', () => {
+    it('wraps every entry in one shared @layer block', () => {
         let css!: Record<string, string>;
         xnew(() => {
-            css = xnew.css({
-                frame: { layer: 'xnew', body: 'color: red;' },
+            css = xnew.css('xnew', {
+                frame: 'color: red;',
                 plain: 'color: blue;',
             });
         });
         const text = styleElements()[0].textContent!;
-        expect(text).toMatch(new RegExp(`@layer xnew \\{\\s*\\.${css.frame} \\{`));
-        expect(text).toMatch(new RegExp(`\\}\\s*\\.${css.plain} \\{`));
+        expect(text).toMatch(new RegExp(`^@layer xnew \\{\\s*\\.${css.frame} \\{`));
+        expect(text).toContain(`.${css.plain} {`);
     });
 
-    it('emits an entry with type "keyframes" as a scoped keyframes rule', () => {
+    it('emits a nameless "@keyframes { … }" value as a scoped keyframes rule', () => {
         let css!: Record<string, string>;
         xnew(() => {
             css = xnew.css({
-                turn: { type: 'keyframes', body: 'to { transform: rotate(1turn); }' },
+                turn: '@keyframes { to { transform: rotate(1turn); } }',
             });
         });
         const text = styleElements()[0].textContent!;
@@ -72,7 +72,7 @@ describe('xnew.css', () => {
         let css!: Record<string, string>;
         xnew(() => {
             css = xnew.css({
-                turn: { type: 'keyframes', body: 'to { transform: rotate(1turn); }' },
+                turn: '@keyframes { to { transform: rotate(1turn); } }',
                 box: 'animation: $turn 1s linear infinite;',
             });
         });
@@ -98,15 +98,18 @@ describe('xnew.css', () => {
         }
     });
 
-    it('throws on an invalid type or layer (injection is rejected)', () => {
+    it('throws on an at-rule value that carries a name (scoping must hold)', () => {
         expect(() => {
             xnew(() => {
-                xnew.css({ bad: { type: 'body, .x', body: 'color: red;' } });
+                xnew.css({ turn: '@keyframes spin { to { transform: rotate(1turn); } }' });
             });
-        }).toThrow('invalid type');
+        }).toThrow('must be nameless');
+    });
+
+    it('throws on an invalid layer (injection is rejected)', () => {
         expect(() => {
             xnew(() => {
-                xnew.css({ bad: { layer: 'x } body { color: red; }', body: 'color: red;' } });
+                xnew.css('x } body { color: red; }', { bad: 'color: red;' });
             });
         }).toThrow('invalid layer');
     });
@@ -123,7 +126,7 @@ describe('xnew.css', () => {
     it('keeps layered and unlayered definitions of the same body separate', () => {
         let plain!: Record<string, string>, layered!: Record<string, string>;
         xnew(() => { plain = xnew.css({ frame: 'color: red;' }); });
-        xnew(() => { layered = xnew.css({ frame: { layer: 'xnew', body: 'color: red;' } }); });
+        xnew(() => { layered = xnew.css('xnew', { frame: 'color: red;' }); });
         expect(styleElements()).toHaveLength(2);
         expect(layered.frame).not.toBe(plain.frame);
     });

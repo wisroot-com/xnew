@@ -93,6 +93,16 @@ describe('applyStateTree update', () => {
         expect(syncOf(first).state).toEqual({ value: 2 });
         expect(view._.children.length).toBe(1);
     });
+
+    it('drops keys the authoritative state no longer carries, keeping the state object identity', () => {
+        const { view, socket } = makeView();
+        socket.fire('sync', [{ id: 1, name: 'Box', parent: null, state: { value: 1, flag: true } }]);
+        const state = syncOf(view._.children[0]).state;
+        socket.fire('sync', [{ id: 1, name: 'Box', parent: null, state: { value: 2 } }]);
+        expect(state).toEqual({ value: 2 });          // 'flag' が消える
+        expect('flag' in state).toBe(false);
+        expect(syncOf(view._.children[0]).state).toBe(state);   // 参照は据え置き（本体が掴んだクロージャが生きる）
+    });
 });
 
 describe('applyStateTree remove', () => {

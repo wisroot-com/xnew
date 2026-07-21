@@ -12,10 +12,12 @@ describe('basics InputText', () => {
         jest.useRealTimers();
     });
 
-    it('nests a native text input with the given value and placeholder', () => {
+    it('nests a native text input inside a container with the given value and placeholder', () => {
         const unit = xnew(InputText, { value: 'hello', placeholder: 'type here' });
-        const input = unit.element as HTMLInputElement;
+        const container = unit.element as HTMLElement;
+        const input = container.querySelector('input') as HTMLInputElement;
 
+        expect(container.tagName).toBe('DIV');
         expect(input.tagName).toBe('INPUT');
         expect(input.getAttribute('type')).toBe('text');
         expect(input.value).toBe('hello');
@@ -24,36 +26,56 @@ describe('basics InputText', () => {
 
     it('keeps arbitrary text intact (value is set as a property, not markup)', () => {
         const unit = xnew(InputText, { value: '<b>"a" & \'b\'</b>' });
+        const input = unit.element.querySelector('input') as HTMLInputElement;
 
-        expect((unit.element as HTMLInputElement).value).toBe('<b>"a" & \'b\'</b>');
+        expect(input.value).toBe('<b>"a" & \'b\'</b>');
+    });
+
+    it('reads the current value through the .value getter', () => {
+        const unit = xnew(InputText, { value: 'hello' });
+        const input = unit.element.querySelector('input') as HTMLInputElement;
+
+        input.value = 'world';
+        expect(unit.value).toBe('world');
     });
 
     it('sets the name attribute only when given', () => {
         const named = xnew(InputText, { name: 'title' });
         const anonymous = xnew(InputText);
 
-        expect((named.element as HTMLInputElement).getAttribute('name')).toBe('title');
-        expect((anonymous.element as HTMLInputElement).hasAttribute('name')).toBe(false);
+        expect((named.element.querySelector('input') as HTMLInputElement).getAttribute('name')).toBe('title');
+        expect((anonymous.element.querySelector('input') as HTMLInputElement).hasAttribute('name')).toBe(false);
     });
 
-    it('delivers a string value to input listeners', () => {
+    it('routes a click on the container to focus the inner input', () => {
         const unit = xnew(InputText);
-        const input = unit.element as HTMLInputElement;
+        const container = unit.element as HTMLElement;
+        const input = container.querySelector('input') as HTMLInputElement;
+
+        jest.advanceTimersByTime(0);
+        container.dispatchEvent(new Event('click', { bubbles: true }));
+
+        expect(document.activeElement).toBe(input);
+    });
+
+    it('delivers a string value to input listeners (the native event bubbles to the container)', () => {
+        const unit = xnew(InputText);
+        const input = unit.element.querySelector('input') as HTMLInputElement;
 
         const received: string[] = [];
         unit.on('input', ({ value }: { value: string }) => received.push(value));
         jest.advanceTimersByTime(0);
         input.value = 'abc';
-        input.dispatchEvent(new Event('input', { bubbles: false }));
+        input.dispatchEvent(new Event('input', { bubbles: true }));
 
         expect(received).toEqual(['abc']);
     });
 
-    it('applies className and style to the input element', () => {
+    it('applies className and style to the container', () => {
         const unit = xnew(InputText, { className: 'boxed', style: 'width: 8em;' });
-        const input = unit.element as HTMLInputElement;
+        const container = unit.element as HTMLElement;
 
-        expect(input.className).toContain('boxed');
-        expect(input.getAttribute('style')).toContain('width: 8em;');
+        expect(container.className).toContain('boxed');
+        expect(container.getAttribute('style')).toContain('width: 8em;');
     });
 });

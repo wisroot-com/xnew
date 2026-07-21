@@ -21,11 +21,12 @@ import { ChatView } from './chat.js';
 //              クライアントには Setup が存在しないので設定画面はスキップされ、自機も持たない＝観戦になる。
 //   - Player : synced state {x,y,clientId,slot}。server が移動、client が描画＋（自機なら）入力。
 //   - ChatView : 全シーン共通のルームチャット（client 専用・Game の client 直下に常駐・chat.js）。
-//              送信は xsync.emitToClients('chat', { text })、受信は unit.on('chat', ({ id, text })=>…)。
-//              server 経由でルーム全員（自分含む）へ届くので中継コンポーネントは不要。
+//              送信は xsync.emitToServer('chat', { text })、Game の server ブロックが emitToClients で
+//              ルーム全員（自分含む）へ中継する。受信は unit.on('chat', ({ id, text })=>…)。
 //
 //   sync イベント: 送信は emitToServer/emitToClients（payload はオブジェクト・syncId 自動付与）、受信は unit.on。
-//   emitToServer=必ず server で発火（client→server）、emitToClients=必ず client で発火（server 経由で全 client・自分含む）。
+//   emitToServer=client→server（server で type を発火）。emitToClients=server 専用（server→全 client・自分含む）。
+//   client→client は送れない。client 発の全体配信は server ハンドラ内の emitToClients で中継する。
 //   プレフィックス '-'=同一コンポーネント(同じ syncId・replica↔server で一致) / '+'・無印=全体。
 //   key: xnew(C,{key}) で同一性の目印、xnew.find(C,{key}) で引ける（key はグローバル一意の想定）。
 //----------------------------------------------------------------------------------------------------
@@ -42,9 +43,11 @@ const nameOf = (id) => xsync.session.clients.find((c) => c.id === id)?.name || (
 export function Game(unit) {
     xsync.register({ Title, Setup, World });   // 同期対象（= シーン）の型を宣言
 
-    // server: 最初のシーン Title を生成する（チャット中継は core の emitToClients が担うので不要）。
+    // server: 最初のシーン Title を生成し、client からの 'chat'（client→server）をルーム全員へ中継する
+    // （emitToClients は server 専用。送信者 id は props に載せて全 client へ配る）。
     xsync.server(() => {
         xnew(Title);
+        unit.on('chat', ({ id, text }) => xsync.emitToClients('chat', { id, text: String(text ?? '').slice(0, 200) }));
     });
 
     // client: 左にシーン（synced child）、右にルームチャット（ChatView）を横並びで置く。

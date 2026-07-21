@@ -29,9 +29,9 @@ Recommended reading order.
 | [scene](basics/scene/) | `Scene` navigation — `change` (swap sibling scenes) / `add` (overlay) |
 | [element](basics/element/) | `Button` / `Input*` form elements — `@layer base` defaults, overridable via className / style |
 | [panel](basics/panel/) | `Panel` — groups, buttons, range / checkbox / select |
-| [openandclose](basics/openandclose/) | `OpenAndClose` + `Accordion` / `Popup` (accordion, modal, menu) |
-| [controller](basics/controller/) | `DPad` / `AnalogStick` virtual game pad |
-| [svg](basics/svg/) | `SVG` icon base, `SVGText` outlined labels |
+| [gate](basics/gate/) | `Gate` + `Accordion` / `Overlay` (accordion, modal, menu) |
+| [controller](basics/controller/) | `VirtualPad` (`analog` / `8way` / `4way`) virtual game pad |
+| [svg](basics/svg/) | `SVG` icon base, `GraphicText` outlined labels |
 | [audiotrack](basics/audiotrack/) | `AudioTrack` music playback, `Volume` master gain |
 | [synthesizer](basics/synthesizer/) | `Synthesizer` interactive keyboard playground |
 | [soundeffect](basics/soundeffect/) | `Synthesizer` recipes for game sound effects |
@@ -40,7 +40,8 @@ Recommended reading order.
 
 | sample | shows |
 | --- | --- |
-| [icons](icons/) | the full heroicons set (324 icons) — `mode: 'outline' / 'solid'`, colored via `currentColor` |
+| [list](icons/list/) | the full heroicons set (324 icons) — `mode: 'outline' / 'solid'`, colored via `currentColor` |
+| [frame](icons/frame/) | framing an icon with a bordered `<div>` wrapper (circle / square / rounded) |
 
 ## sync/ — export `xsync`
 

@@ -1,4 +1,4 @@
-import { xnew, xbasics } from '@mulsense/xnew';
+import { xnew, xbasics, xicons } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as PIXI from 'pixi.js';
@@ -313,7 +313,7 @@ function TitleScene(unit, { skipStory = false } = {}) {
 
   xnew(TitleText, { text: 'とーほくショット', color: 'text-blue-600' });
   xnew(TouchMessage, { color: 'text-blue-600' });
-  xnew(VolumeControl, { className: 'text-stone-300 z-10' });
+  xnew(xbasics.VolumeController, { className: 'absolute right-[2cqw] bottom-[2cqw] size-[6cqw] text-stone-300 z-10' });
 
   unit.on('pointerdown window.keydown.space', ({ event }) => {
     event.preventDefault();
@@ -323,7 +323,7 @@ function TitleScene(unit, { skipStory = false } = {}) {
 
 // タイトル画面の主役表示：中央に中国うさぎ（usagi03、下1/3は画面外）、その周囲で敵4キャラが蠢く。
 function TitleCharacters(unit) {
-  xpixi.nest(new PIXI.Container());
+  xpixi.nest();
 
   // 周囲の敵4キャラ（id 0..3）。うさぎより先に追加して背面に置く。
   const spots = [
@@ -351,7 +351,7 @@ function DriftingFactor(unit, { id, x, y, scale }) {
   const driftX = 22, driftY = 18, driftSpeedX = 0.02, driftSpeedY = 0.025;
   const rotSpeed = 0.04, popSpeed = 0.05, squirmAmp = 0.1, squirmSpeed = 0.09;
 
-  xpixi.nest(new PIXI.Container());
+  xpixi.nest();
   const sprite = xnew(BakedSprite, { id, scale: 0, frame: 'random' }).sprite;
   sprite.position.set(x, y);
 
@@ -374,7 +374,7 @@ function StoryScene(unit) {
 
   xnew(Background);   // 体内背景を流用（タイトル/ゲームと連続感）
   xnew(CameraShake);  // 被弾時のシェイク演出用
-  xnew(VolumeControl, { className: 'text-stone-300 z-10' });
+  xnew(xbasics.VolumeController, { className: 'absolute right-[2cqw] bottom-[2cqw] size-[6cqw] text-stone-300 z-10' });
   xnew(StoryTheater); // 下部の黒帯（セリフはこの上に表示）。pages より先に作り、テキストの背面に置く
 
   const pages = [StoryPageHit, StoryPageSwarm];
@@ -412,7 +412,7 @@ function StoryTheater(unit) {
   xnew('<div class="absolute left-0 right-0 bottom-[26cqw] h-[0.28cqw]" style="background: linear-gradient(90deg, transparent, rgba(255,143,163,0.75) 18%, rgba(255,143,163,0.75) 82%, transparent); box-shadow: 0 0 1.4cqw rgba(255,143,163,0.55);">');
 }
 
-// ストーリーのセリフをサイバーな字幕フレームで黒帯の上に重ねる。build=本文(SVGText 群) / accent=アクセント色 /
+// ストーリーのセリフをサイバーな字幕フレームで黒帯の上に重ねる。build=本文(GraphicText 群) / accent=アクセント色 /
 // tag=見出しラベル / bottomCqw=下端位置。ヘッダー(点滅● + ▶TAG) と四隅ブラケット＋発光を付与。
 // extend して使う。本文は呼び出し元が extend 後に続けて追加する（最後の nest = 本文 wrap が
 // current 要素になるため）。例:
@@ -444,7 +444,7 @@ function StoryDialog(_unit, { accent, tag, bottomCqw }) {
 function StoryPageHit(unit) {
   const CX = 400, CY = 215;          // 中国うさぎの中心（黒帯の上・画面中央寄りに配置）
   const impactX = CX, impactY = CY - 30; // 矢の着弾点（体の中央やや上）
-  xpixi.nest(new PIXI.Container());
+  xpixi.nest();
 
   // 着弾フラッシュ（シェイクで端が抜けないよう広め）。usagi/arrow より後に追加して最前面に置く。
   const flashG = xpixi.add(new PIXI.Graphics().rect(-40, -40, 880, 680).fill(0xFFFFFF));
@@ -471,9 +471,9 @@ function StoryPageHit(unit) {
   xnew(() => {
     xnew.extend(StoryDialog, { accent: '#FF8FA3', tag: 'ALERT', bottomCqw: 4.5 });
 
-    xnew('<div style="color:#FF8FA3;">', () => { xnew(xbasics.SVGText, { text: 'ずんだアローに当たってしまった！', fontSize: '5.2cqw', style: 'stroke: #0a1830; stroke-width: 0.25cqw;', className: 'inline-block' }); });
+    xnew('<div style="color:#FF8FA3;">', () => { xnew(xbasics.GraphicText, { text: 'ずんだアローに当たってしまった！', fontSize: '5.2cqw', style: 'stroke: #0a1830; stroke-width: 0.25cqw;' }); });
     sub = xnew('<div class="mt-[0.6cqw]" style="color:#FCEFA0; opacity:0;">', () => {
-      xnew(xbasics.SVGText, { text: '（ずんだアローに当たると、ずんだ餅にされてしまう…）', fontSize: '2.5cqw', style: 'stroke: #0a1830; stroke-width: 0.2cqw;', className: 'inline-block' });
+      xnew(xbasics.GraphicText, { text: '（ずんだアローに当たると、ずんだ餅にされてしまう…）', fontSize: '2.5cqw', style: 'stroke: #0a1830; stroke-width: 0.2cqw;' });
     });
   });
 
@@ -507,7 +507,7 @@ function StoryPageHit(unit) {
 
 // ページ2: 体内で増殖するずんだ因子（4キャラ）が蠢く様子
 function StoryPageSwarm(unit) {
-  xpixi.nest(new PIXI.Container());
+  xpixi.nest();
 
   // 少しずつ湧いて増えていく（増殖感）。黒帯より上（テキスト帯に被らない領域）に位置・スケールをランダムに散らす。
   xnew.interval(() => {
@@ -522,8 +522,8 @@ function StoryPageSwarm(unit) {
   xnew(() => {
     xnew.extend(StoryDialog, { accent: '#9BE53C', tag: 'MISSION', bottomCqw: 5 });
 
-    xnew('<div class="mb-[0.6cqw]">', () => { xnew(xbasics.SVGText, { text: '体内の免疫キャラを操作し、', fontSize: '4cqw', style: 'stroke: #0a1830; stroke-width: 0.22cqw;', className: 'inline-block' }); });
-    xnew('<div style="color:#9BE53C;">', () => { xnew(xbasics.SVGText, { text: 'ずんだ因子の増殖を食い止めろ！', fontSize: '4.4cqw', style: 'stroke: #0a1830; stroke-width: 0.25cqw;', className: 'inline-block' }); });
+    xnew('<div class="mb-[0.6cqw]">', () => { xnew(xbasics.GraphicText, { text: '体内の免疫キャラを操作し、', fontSize: '4cqw', style: 'stroke: #0a1830; stroke-width: 0.22cqw;' }); });
+    xnew('<div style="color:#9BE53C;">', () => { xnew(xbasics.GraphicText, { text: 'ずんだ因子の増殖を食い止めろ！', fontSize: '4.4cqw', style: 'stroke: #0a1830; stroke-width: 0.25cqw;' }); });
   });
 }
 
@@ -540,7 +540,7 @@ function GameScene(unit) {
   xnew(ScoreGauge);
   xnew(ShotEnergy);
   xnew(Player);
-  xnew(VolumeControl, { className: 'text-stone-300 z-10' });
+  xnew(xbasics.VolumeController, { className: 'absolute right-[2cqw] bottom-[2cqw] size-[6cqw] text-stone-300 z-10' });
 
   const bgm = xnew(() => {
     xnew(xbasics.AudioTrack, { url: asset('maou_bgm_cyber31.mp3') }).play({ fade: 1000, loop: true });
@@ -744,10 +744,10 @@ function WaveTransition(unit, { wave }) {
 // 右パネル上部の "Wave N" 表示（wave のメインカラーに追従）
 function WaveLabel(unit, { wave = 1 } = {}) {
   xnew.nest('<div class="absolute top-[1.5cqw] right-0 w-[25cqw] text-center font-bold text-lime-400">');
-  const text = xnew(xbasics.SVGText, { text: 'Wave 1', fontSize: '6cqw', style: 'stroke: #102008; stroke-width: 0.2cqw;', className: 'inline-block' });
+  const text = xnew(xbasics.GraphicText, { text: 'Wave 1', fontSize: '6cqw', style: 'stroke: #102008; stroke-width: 0.2cqw;' });
   function update({ wave }) {
     text.element.textContent = `Wave ${wave}`;
-    unit.element.style.color = waveCss(wave); // SVGText の fill=currentColor が追従
+    unit.element.style.color = waveCss(wave); // GraphicText の fill=currentColor が追従
   }
   update({ wave });
   unit.on('+wave', update);
@@ -849,7 +849,7 @@ function SidePanel(unit) {
 
 // 半透明（約50%）のパネル背景 + 区切り線（区切り線は wave のメインカラーに追従）
 function PanelBackdrop(unit, { wave = 1 } = {}) {
-  xpixi.nest(new PIXI.Container());
+  xpixi.nest();
   xpixi.add(new PIXI.Graphics().rect(PLAY_RIGHT, 0, PANEL_W, 600).fill({ color: 0x05121A, alpha: 0.5 }));
 
   const divider = xpixi.add(new PIXI.Graphics());
@@ -865,7 +865,7 @@ function PanelBackdrop(unit, { wave = 1 } = {}) {
 const TARGET_Y = 148; // ターゲット表示(敵キャラ+レティクル)の中心 y
 
 function WaveEnemyDisplay(unit) {
-  xpixi.nest(new PIXI.Container({ position: { x: PLAY_RIGHT + PANEL_W / 2, y: TARGET_Y } }));
+  xpixi.nest({ position: { x: PLAY_RIGHT + PANEL_W / 2, y: TARGET_Y } });
   let current = null; // 現在表示中の BakedSprite unit（クロスフェードで差し替える）
 
   unit.on('+wave', ({ wave }) => {
@@ -885,7 +885,7 @@ function WaveEnemyDisplay(unit) {
 // 敵キャラを囲うサイバーなターゲットレティクル（色は wave 連動）。
 // 多重リング（逆回転）+ レーダー掃引 + 呼吸するロックオンブラケット + 周回する解析ブリップ。
 function TargetReticle(unit, { wave = 1 } = {}) {
-  xpixi.nest(new PIXI.Container({ position: { x: PLAY_RIGHT + PANEL_W / 2, y: TARGET_Y } }));
+  xpixi.nest({ position: { x: PLAY_RIGHT + PANEL_W / 2, y: TARGET_Y } });
   const R = 46;
 
   // 独立回転させる層（container の子に直接 rotation を持たせる）
@@ -1062,7 +1062,7 @@ function TargetInfo(unit, { wave = 1 } = {}) {
 // パネル下部の中国うさぎ。画面内の敵数に応じて表情をクロスフェードで切り替える。
 // （pixi スプライトで描画＝リザルトのキャプチャにも含まれる）
 function UsagiFace(unit) {
-  xpixi.nest(new PIXI.Container({ position: { x: PLAY_RIGHT + PANEL_W / 2, y: 596 } }));
+  xpixi.nest({ position: { x: PLAY_RIGHT + PANEL_W / 2, y: 596 } });
   const urls = [0, 1, 2].map((i) => asset(`usagi0${i}.png`));
 
   let back = null, front = null, current = 0;
@@ -1099,7 +1099,7 @@ function Background(unit) {
 }
 
 function BackgroundBase(unit) {
-  xpixi.nest(new PIXI.Container());
+  xpixi.nest();
 
   // 下地（カメラシェイクで端が露出しても黒く抜けないよう少し広めに）
   xpixi.add(new PIXI.Graphics().rect(-40, -40, 880, 680).fill(0x0A0306));
@@ -1129,8 +1129,7 @@ function BackgroundBase(unit) {
 
 // 奥行きのある浮遊粒子。下方向ドリフトで前進感、奥ほど小さく遅く暗い。
 function Mote(unit) {
-  const object = xpixi.nest(new PIXI.Container());
-  object.position.set(Math.random() * 800, Math.random() * 600);
+  const object = xpixi.nest({ position: { x: Math.random() * 800, y: Math.random() * 600 } });
 
   const depth = Math.random(); // 0:奥 〜 1:手前
   const size = 1 + depth * 4;
@@ -1156,7 +1155,7 @@ function Mote(unit) {
 
 // ごく薄い鼓動グロー（体内感を残す）
 function PulseGlow(unit) {
-  const g = xpixi.nest(new PIXI.Graphics().rect(0, 0, 800, 600).fill(0xFF1733));
+  const g = xpixi.add(new PIXI.Graphics().rect(0, 0, 800, 600).fill(0xFF1733));
   unit.on('update', ({ count: tick }) => {
     g.alpha = (Math.max(0, Math.sin(tick * 0.05)) ** 8) * 0.06;
   });
@@ -1168,7 +1167,7 @@ function Controller(unit) {
   xnew(() => {
     xnew.nest('<div class="absolute left-0 right-0 bottom-0 w-full h-[30%] pointer-events-none" style="container-type: size;">');
     xnew.nest('<div class="absolute left-0 top-0 bottom-0 w-[100cqh] h-full">');
-    const dpad = xnew('<div class="absolute inset-[5cqh]">', xbasics.DPad, {});
+    const dpad = xnew('<div class="absolute inset-[5cqh]">', xbasics.VirtualPad, { type: '8way' });
     dpad.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector }));
     dpad.on('pointerdown', ({ event }) => event.stopPropagation());
   });
@@ -1211,8 +1210,7 @@ function ScoreManager(unit, { wave = 1 } = {}) {
 }
 
 function Player(unit) {
-  const object = xpixi.nest(new PIXI.Container());
-  object.position.set(PLAY_RIGHT / 2, 500);
+  const object = xpixi.nest({ position: { x: PLAY_RIGHT / 2, y: 500 } });
 
   // 自機＝中国うさぎ（後ろ向きベイク）
   const sprite = xnew(BakedSprite, { textures: xnew.context(Assets).playerTextures, scale: 0.7 }).sprite;
@@ -1284,8 +1282,7 @@ function StarSprite(unit, { color, baseR, spin = 0.15, shrink = 0, twinkleAmp = 
 }
 
 function Shot(unit, { x, y }) {
-  const object = xpixi.nest(new PIXI.Container());
-  object.position.set(x, y);
+  const object = xpixi.nest({ position: { x, y } });
 
   // くっきりした星（回転 + 脈動）
   xnew(StarSprite, { color: 0x66FFFF, baseR: 18, spin: 0.15, twinkleAmp: 0.12, twinkleFreq: 0.6 });
@@ -1307,9 +1304,8 @@ function Shot(unit, { x, y }) {
 // ---- Enemy system ----
 
 function Enemy(unit, { id, x, y, invincible = false, knockback = null }) {
-  const object = xpixi.nest(new PIXI.Container());
   // 自動出現は画面上部 20%（y ∈ [20,120]）のエリアに湧く。分裂はその場（x,y 指定）に出す。
-  object.position.set(x ?? (20 + Math.random() * (PLAY_RIGHT - 40)), y ?? (20 + Math.random() * 100));
+  const object = xpixi.nest({ position: { x: x ?? (20 + Math.random() * (PLAY_RIGHT - 40)), y: y ?? (20 + Math.random() * 100) } });
 
   // ベイクテクスチャでスプライト表示。scale 0 から pop-in（下の update で 0→1 に拡大）。
   const sprite = xnew(BakedSprite, { id, scale: 0, frame: 'random' }).sprite;
@@ -1415,8 +1411,7 @@ function Enemy(unit, { id, x, y, invincible = false, knockback = null }) {
 }
 
 function Star(unit, { x, y, score, angle = randAngle() }) {
-  const object = xpixi.nest(new PIXI.Container());
-  object.position.set(x, y);
+  const object = xpixi.nest({ position: { x, y } });
 
   const baseR = randRange(9, 16) * 1.5;
   const color = pick([0xFFF066, 0xFFD700, 0xFFA53C, 0xFFFFFF, 0xFF8FD0, 0x9BE5FF]);
@@ -1445,7 +1440,7 @@ function Star(unit, { x, y, score, angle = randAngle() }) {
 }
 
 function ScorePopup(unit, { x, y, score }) {
-  const object = xpixi.nest(new PIXI.Text({ text: `+${score}`, style: { fontSize: 22, fill: 0xFFFF44, fontWeight: 'bold' } }));
+  const object = xpixi.add(new PIXI.Text({ text: `+${score}`, style: { fontSize: 22, fill: 0xFFFF44, fontWeight: 'bold' } }));
   object.position.set(x, y);
   object.anchor.set(0.5);
 
@@ -1458,7 +1453,7 @@ function ScorePopup(unit, { x, y, score }) {
 
 // 倒された敵のノックバック表現：薄れながら当たった方向へ飛んで消える
 function EnemyCorpse(unit, { id, x, y, scale, frame = 0, direction, power }) {
-  const object = xpixi.nest(new PIXI.Container({ position: { x, y } }));
+  const object = xpixi.nest({ position: { x, y } });
 
   xnew(BakedSprite, { id, scale, frame, play: false }); // コープスは再生せず1フレーム固定
 
@@ -1484,7 +1479,7 @@ function EnemyCorpse(unit, { id, x, y, scale, frame = 0, direction, power }) {
 function ExpandingBurst(unit, { x, y, duration = 16, power = 1, flash, ring }) {
   flash = flash ?? { r: 16 * power, alpha: 0.9, grow: 0.6, fade: (p) => 0.9 * (1 - p) };
   ring = ring ?? { r: 10 * power, width: 4, alpha: 0.9, grow: 2.4, fade: (p) => 0.9 * (1 - p) };
-  xpixi.nest(new PIXI.Container({ position: { x, y } }));
+  xpixi.nest({ position: { x, y } });
   const flashG = xpixi.add(new PIXI.Graphics().circle(0, 0, flash.r).fill({ color: 0xFFFFFF, alpha: flash.alpha }));
   const ringG = xpixi.add(new PIXI.Graphics().circle(0, 0, ring.r).stroke({ color: 0x66E0FF, width: ring.width, alpha: ring.alpha }));
   // duration は従来どおりフレーム数指定。0→1 を duration フレーム相当の時間で動かし、終端で finalize。
@@ -1673,31 +1668,6 @@ function ResultDetail(unit, { score, wave, kills = [0, 0, 0, 0], cleared = false
 
 // ---- UI parts (title / result / volume) ----
 
-// 丸枠アイコン: 外周の円 + 中央70%に path 群。Camera / ArrowUturnLeft で共有。
-function RingIcon(unit, { paths }) {
-  xnew('<div style="position: absolute; inset: 0; margin: auto; width: 100%; height: 100%;">', () => {
-    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', style: 'display: block; width: 100%; height: 100%; stroke: currentColor;' });
-    xnew('<circle cx="12" cy="12" r="11">');
-  });
-  xnew('<div style="position: absolute; inset: 0; margin: auto; width: 70%; height: 70%;">', () => {
-    xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', style: 'display: block; width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.5;' });
-    for (const d of paths) {
-      xnew(`<path d="${d}">`);
-    }
-  });
-}
-
-function Camera(_unit) {
-  xnew.extend(RingIcon, { paths: [
-    'M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23q-.57.08-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a48 48 0 0 0-1.134-.175a2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.19 2.19 0 0 0-1.736-1.039a49 49 0 0 0-5.232 0a2.19 2.19 0 0 0-1.736 1.039z',
-    'M16.5 12.75a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m2.25-2.25h.008v.008h-.008z',
-  ] });
-}
-
-function ArrowUturnLeft(_unit) {
-  xnew.extend(RingIcon, { paths: ['M9 15L3 9m0 0l6-6M3 9h12a6 6 0 0 1 0 12h-3'] });
-}
-
 // 生成時に渡された要素を白で覆ってからフェードアウトしつつ撮影し、PNG をダウンロードする。
 function ScreenShot(unit) {
   const cover = xnew('<div class="absolute inset-0 size-full z-10 bg-white">');
@@ -1719,17 +1689,19 @@ function ScreenShot(unit) {
 }
 
 // リザルトのフッター。「画面を保存」(ScreenShot) と「戻る」(タイトルへシーン遷移) の2ボタン。
+// アイコンは丸枠付きの div でフレーミングする（枠線 border は cqw でアイコンの線幅に合わせる）。
 function ResultFooter(unit) {
+  const circleButton = 'size-[9cqw] cursor-pointer hover:scale-110 flex items-center justify-center border-[0.4cqw] border-current rounded-full';
   xnew.nest('<div class="size-full px-[2cqw] flex justify-between text-stone-500">');
   xnew('<div class="flex items-center gap-x-[2cqw]">', () => {
-    const button = xnew('<div class="relative size-[9cqw] cursor-pointer hover:scale-110">', Camera);
+    const button = xnew(`<div class="${circleButton}">`, xicons.Camera, { className: 'size-[62%]' });
     button.on('click', () => xnew(document.querySelector('#main'), ScreenShot));
     xnew('<div class="text-[3cqw] font-bold">', '画面を保存');
   });
 
   xnew('<div class="flex items-center gap-x-[2cqw]">', () => {
     xnew('<div class="text-[3cqw] font-bold">', '戻る');
-    const button = xnew('<div class="relative size-[9cqw] cursor-pointer hover:scale-110">', ArrowUturnLeft);
+    const button = xnew(`<div class="${circleButton}">`, xicons.ArrowUturnLeft, { className: 'size-[62%]' });
     button.on('click', () => xnew.context(xbasics.Scene).change(TitleScene, { skipStory: true }));
   });
 }
@@ -1758,87 +1730,26 @@ function ResultBackground(unit, { gradient, textColor }) {
   }
 }
 
-// タイトルの見出し（縁取り SVGText）。text=文言 / color="text-..."。
+// タイトルの見出し（縁取り GraphicText）。text=文言 / color="text-..."。
 function TitleText(unit, { text, color }) {
   xnew.nest(`<div class="absolute w-full top-[16cqw] text-center ${color} font-bold">`);
-  xnew(xbasics.SVGText, { text, fontSize: '10cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;', className: 'inline-block' });
+  xnew(xbasics.GraphicText, { text, fontSize: '10cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
 }
 
 // 点滅する "touch start"。color="text-..."。
 function TouchMessage(unit, { color }) {
   xnew.nest(`<div class="absolute w-full top-[30cqw] text-center ${color} font-bold">`);
-  xnew(xbasics.SVGText, { text: 'touch start', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;', className: 'inline-block' });
+  xnew(xbasics.GraphicText, { text: 'touch start', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   unit.on('update', ({ count }) => unit.element.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
 }
 
 // 中央に降りてくる "Game Over"。className で横位置を調整（既定は全幅中央）。
 function GameOverText(unit, { className = 'w-full' }) {
   xnew.nest(`<div class="absolute ${className} text-center text-red-400 font-bold">`);
-  xnew(xbasics.SVGText, { text: 'Game Over', fontSize: '12cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;', className: 'inline-block' });
+  xnew(xbasics.GraphicText, { text: 'Game Over', fontSize: '12cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   xnew.transition(({ value }) => {
     Object.assign(unit.element.style, { opacity: value, top: `${10 + value * 15}cqw` });
   }, 1000, 'ease');
 }
 
-// スピーカーアイコン（muted で消音グリフに切り替わる）。
-function SpeakerIcon(unit, { muted = false } = {}) {
-  xnew.extend(xbasics.SVG, { viewBox: '0 0 24 24', style: 'display: block; width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.5;' });
-  const path = muted
-    ? 'M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z'
-    : 'M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9 9 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25z';
-  xnew(`<path d="${path}" />`);
-}
-
-// スピーカーアイコン + アンカー方向に開くスライダー。xbasics.Volume をマスター音量への橋渡しに使う。
-function VolumeController(unit, { anchor = 'left' } = {}) {
-  const volume = xnew.extend(xbasics.Volume);
-  xnew.extend(xbasics.Aspect, { aspect: 1.0, fit: 'contain' });
-  unit.on('pointerdown', ({ event }) => event.stopPropagation());
-
-  const system = xnew(xbasics.OpenAndClose, { open: false, duration: 250, easing: 'ease' });
-
-  const button = xnew((unit) => {
-    xnew.nest('<div style="width: 100%; height: 100%; cursor: pointer;">');
-    unit.on('click', () => system.toggle());
-    let icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
-    return {
-      update() {
-        icon?.finalize();
-        icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
-      }
-    };
-  });
-
-  xnew(() => {
-    const isHoriz = anchor === 'left' || anchor === 'right';
-    const cqUnit = isHoriz ? 'cqw' : 'cqh';
-    const sizeProp = isHoriz ? 'width' : 'height';
-
-    const outerSize = isHoriz ? `top: 20%; bottom: 20%; width: 0${cqUnit}` : `left: 20%; right: 20%; height: 0${cqUnit}`;
-    const outer = xnew.nest(`<div style="position: absolute; ${outerSize};">`);
-
-    // スライダー本体は xbasics.InputRange(トラック枠線 + フィルバー + 隠しネイティブ input)
-    // AudioParam は float32 なので読み返しに誤差が乗る。丸めて整数にする
-    xnew(xbasics.InputRange, { value: Math.round(volume.volume * 100) })
-      .on('input', ({ value }) => {
-        volume.volume = value / 100;
-        button.update();
-      });
-
-    system.on('-transition', ({ value }) => {
-      outer.style[anchor] = `-${value * 400 + 20}${cqUnit}`;
-      outer.style[sizeProp] = `${value * 400}${cqUnit}`;
-      outer.style.opacity = value.toString();
-      outer.style.pointerEvents = value < 0.9 ? 'none' : 'auto';
-    });
-  });
-
-  unit.on('click.outside', () => system.close());
-}
-
-// 右下の音量コントローラ。className で文字色等を調整。
-function VolumeControl(unit, { className = 'text-stone-300 z-10' } = {}) {
-  xnew(`<div class="absolute right-[2cqw] bottom-[2cqw] size-[6cqw] ${className}">`,
-    VolumeController, { anchor: 'left' });
-}
 

@@ -15,7 +15,17 @@ declare const xpixi: {
     initialize({ canvas }: {
         canvas: HTMLCanvasElement;
     }): UnitPromise;
-    nest(object: any): any;
+    nest(options?: {
+        position?: {
+            x: number;
+            y: number;
+        };
+        scale?: number | {
+            x: number;
+            y: number;
+        };
+        rotation?: number;
+    }): PIXI.Container;
     add(object: any): any;
     readonly renderer: any;
     readonly scene: PIXI.Container;

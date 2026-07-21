@@ -30,7 +30,7 @@ Integrations for games and interactive apps.
 
 - `src/core/` — `xnew` core: `unit`, event, time, map, env, dom
 - `src/sync/` — networking layer (exported as `xsync`): a single `xsync.ts` (shared state + boot + facade). Lobby/room "gathering place" wiring is not built in — callers assemble it from the facade (see `examples/*/server.js` + `index.js`).
-- `src/basics/` — built-in basic components (exported as `xbasics`); one component per file, grouped by category: `view/`, `element/`, `audio/`, `ui/`
+- `src/basics/` — built-in basic components (exported as `xbasics`); one component per file, grouped by category: `layout/`, `element/`, `audio/`, `widget/`
 - `src/icons/` — heroicons icon set (exported as `xicons`); path data lives in one generated `data.ts` table, `xicons.ts` builds a component per entry from it, and `Template.ts` is the shared `<svg>` shell; path data verbatim from heroicons (MIT — `license.txt`)
 - `src/addons/` — third-party library integrations
 - `examples/` — runnable samples
@@ -42,6 +42,13 @@ Integrations for games and interactive apps.
 - `npm test` — run Jest
 - `npm run build` — build with Rollup
 - `npm run dev` — Rollup in watch mode
+
+## Function style
+
+Prefer function declarations over arrow-function expressions assigned to a
+`const`. Write `function func() { ... }`, not `const func = () => { ... }`.
+Reserve arrow functions for inline callbacks and short expressions where a
+declaration doesn't fit.
 
 ## File header convention (src/)
 

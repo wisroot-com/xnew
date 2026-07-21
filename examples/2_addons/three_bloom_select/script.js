@@ -53,7 +53,7 @@ function Sphere(unit) {
 
   const geometry = new THREE.IcosahedronGeometry(1, 15);
   const material = new THREE.MeshStandardMaterial({ color: color, roughness: 1, metalness: 1 });
-  const sphere = xthree.nest(new THREE.Mesh(geometry, material));
+  const sphere = xthree.add(new THREE.Mesh(geometry, material));
   sphere.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 10 - 5);
   sphere.position.normalize().multiplyScalar(Math.random() * 4.0 + 2.0);
   sphere.scale.setScalar(Math.random() * Math.random() + 0.5);

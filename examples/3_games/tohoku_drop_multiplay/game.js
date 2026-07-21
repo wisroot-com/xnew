@@ -277,11 +277,11 @@ function Ball(unit, { x = 0, y = 0, id = 0 } = {}) {
 //----------------------------------------------------------------------------------------------------
 
 function Cursor(unit, { player, color }) {
-    const object = xpixi.nest(new PIXI.Container({ position: { x: WIDTH / 2, y: DROP_Y } }));
+    const object = xpixi.nest({ position: { x: WIDTH / 2, y: DROP_Y } });
     const graphics = new PIXI.Graphics();
     graphics.moveTo(-24, 0).lineTo(24, 0).stroke({ color, width: 12 });
     graphics.moveTo(0, -24).lineTo(0, 24).stroke({ color, width: 12 });
-    object.addChild(graphics);
+    xpixi.add(graphics);
 
     let iControl = false;   // 自分がこの player か（= このカーソルを動かせる）
     let canDrop = false;    // 自分の手番＆収束後のみドロップ
@@ -402,50 +402,50 @@ function QueuePreview(unit, { player }) {
 //----------------------------------------------------------------------------------------------------
 
 function Background(unit) {
-    const object = xpixi.nest(new PIXI.Container());
+    xpixi.nest();
     xnew.promise(PIXI.Assets.load('./background.jpg')).then((texture) => {
         const sprite = new PIXI.Sprite(texture);
         sprite.scale.set(xpixi.canvas.width / texture.frame.width, xpixi.canvas.height / texture.frame.height);
-        object.addChild(sprite);
+        xpixi.add(sprite);
     });
 }
 
 function ThreeTexture(unit) {
-    xpixi.nest(new PIXI.Sprite(PIXI.Texture.from(xthree.canvas)));
+    xpixi.add(new PIXI.Sprite(PIXI.Texture.from(xthree.canvas)));
 }
 
 function BowlVisual(unit) {
-    const object = xpixi.nest(new PIXI.Container());
+    xpixi.nest();
     const graphics = new PIXI.Graphics();
     for (let a = 10; a <= 170; a++) {
         const x = BOWL.cx + Math.cos((a * Math.PI) / 180) * BOWL.rx;
         const y = BOWL.cy + Math.sin((a * Math.PI) / 180) * BOWL.ry;
         graphics.circle(x, y, BOWL.wall).fill(0x99AAAA);
     }
-    object.addChild(graphics);
+    xpixi.add(graphics);
 }
 
 function DirectionalLight(unit, { x, y, z }) {
-    const object = xthree.nest(new THREE.DirectionalLight(0xFFFFFF, 1.7));
+    const object = xthree.add(new THREE.DirectionalLight(0xFFFFFF, 1.7));
     object.position.set(x, y, z);
     object.castShadow = true;
 }
 
 function AmbientLight(unit) {
-    xthree.nest(new THREE.AmbientLight(0xFFFFFF, 1.2));
+    xthree.add(new THREE.AmbientLight(0xFFFFFF, 1.2));
 }
 
 function ShadowPlane(unit) {
     const geometry = new THREE.PlaneGeometry(16, 14);
     const material = new THREE.ShadowMaterial({ opacity: 0.25 });
-    const plane = xthree.nest(new THREE.Mesh(geometry, material));
+    const plane = xthree.add(new THREE.Mesh(geometry, material));
     plane.receiveShadow = true;
     plane.rotation.x = -Math.PI / 2;
     plane.position.set(0.0, -2.9, -2.0);
 }
 
 function Model(unit, { id = 0, position = null, rotation = null, scale }) {
-    const object = xthree.nest(new THREE.Object3D());
+    const object = xthree.nest();
     if (position) { object.position.set(position.x, position.y, position.z); }
     if (rotation) { object.rotation.set(rotation.x, rotation.y, rotation.z); }
 

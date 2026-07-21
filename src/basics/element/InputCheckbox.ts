@@ -1,72 +1,70 @@
 //----------------------------------------------------------------------------------------------------
 // InputCheckbox — framed check box backed by a hidden native <input type="checkbox">
-// The invisible native control captures interaction; the checked look lives in css rules keyed
-// on a data-checked attribute, so designs stay intact.
+// Holds a Gate for the checked state and exposes it as `gate`; the invisible native input captures
+// interaction. unit.element is the container (not the input), so a trailing compose fn nests inside it.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Design } from '../design';
+import { Gate } from '../widget/Gate';
 
 export function InputCheckbox(unit: xnew.Unit,
-    { value = false, className = '', style = '', designs = {}, ...others }:
-    { value?: boolean, className?: string, style?: string, designs?: { frame?: Design }, [key: string]: any } = {}
+    { value = false, gate, className = '', style = '', ...others }:
+    { value?: boolean, gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
-    const css = xnew.css({
-        // layout only; max-width: stretch sizes the margin box, so any horizontal margin never overflows the parent
-        container: {
-            layer: 'base',
-            body: `
-                display: inline-block;
-                width: 1.5em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
-                position: relative;
-            `,
-        },
-        // full-extent overlay carrying the framed look; the checked state is on the container
-        frame: {
-            layer: 'base',
-            body: `
-                position: absolute; inset: 0;
-                border: 1px solid currentColor; border-radius: 0.25em;
-                [data-checked] > & { background: color-mix(in srgb, currentColor 20%, transparent); }
-            `,
-        },
-        svg: {
-            layer: 'base',
-            body: `
-                box-sizing: border-box; display: block; width: 100%; height: 100%;
-                stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
-                fill: none;
-                opacity: 0;
-                [data-checked] > & { opacity: 1; }
-            `,
-        },
-        input: {
-            layer: 'base',
-            body: `
-                position: absolute; inset: 0; width: 100%; height: 100%;
-                opacity: 0; cursor: pointer; margin: 0;
-            `,
-        },
+    const css = xnew.css('base', {
+        container: `
+            display: inline-block;
+            width: 1.5em; height: 1.5em; margin: 0.125em;
+            position: relative;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            cursor: pointer; user-select: none;
+            &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
+        input: `
+            width: 0; height: 0; margin: 0; opacity: 0;
+        `,
     });
 
-    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
 
-    xnew({ tag: 'div', className: `${css.frame} ${designs.frame?.className ?? ''}`, style: designs.frame?.style });
+    xnew({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
 
-    xnew((unit: xnew.Unit) => {
-        xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.svg });
-        xnew('<path d="M2 6 5 9 10 3"/>');
-    });
+    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate ?? { open: value, duration: 0 });
+    gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
+    gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
+    unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
 
-    update(value);
+    unit.on('input', ({ value }: { value: boolean }) => value ? gate.open() : gate.close());
 
-    // hidden native input for interaction
-    xnew.nest({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
-    unit.on('input', ({ value }: { value: boolean }) => {
-        update(value);
-    });
-
-    function update(checked: boolean) {
-        container.toggleAttribute('data-checked', checked);
+    if (xnew.standalone === true) {
+        xnew(CheckMark);
     }
+
+    return {
+        get value() {
+            return gate.state === 'opened' || gate.state === 'opening';
+        },
+        get gate() {
+            return gate;
+        },
+    };
+}
+
+//----------------------------------------------------------------------------------------------------
+// CheckMark — the default check svg drawn when the component is used standalone; shown while data-checked
+//----------------------------------------------------------------------------------------------------
+
+function CheckMark() {
+    const css = xnew.css('base', {
+        container: `
+            box-sizing: border-box; position: absolute; inset: 0; width: 100%; height: 100%;
+            stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
+            fill: none;
+            opacity: 0;
+            [data-checked] > & { opacity: 1; }
+        `,
+    });
+
+    xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.container });
+    xnew('<path d="M2 6 5 9 10 3"/>');
 }

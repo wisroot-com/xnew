@@ -4,7 +4,12 @@
   "keywords": [
     "Component-Oriented Programming"
   ],
-  "version": "0.9.3",
+  "version": "0.9.4",
+  "type": "commonjs",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
   "module": "dist/xnew.mjs",
   "types": "dist/xnew.d.ts",
   "exports": {
@@ -54,8 +59,25 @@
   "homepage": "https://github.com/mulsense/xnew#readme",
   "scripts": {
     "test": "jest",
+    "types:check": "tsc --noEmit -p tsconfig.json",
     "build": "npx rollup --config rollup.config.js --bundleConfigAsCjs",
     "dev": "npx rollup --config rollup.config.js --watch --bundleConfigAsCjs"
+  },
+  "peerDependencies": {
+    "pixi.js": "^8.0.0",
+    "three": ">=0.176.0",
+    "matter-js": "^0.20.0",
+    "@dimforge/rapier2d-compat": "^0.19.0",
+    "@dimforge/rapier3d-compat": "^0.19.0",
+    "react": ">=19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "pixi.js": { "optional": true },
+    "three": { "optional": true },
+    "matter-js": { "optional": true },
+    "@dimforge/rapier2d-compat": { "optional": true },
+    "@dimforge/rapier3d-compat": { "optional": true },
+    "react": { "optional": true }
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

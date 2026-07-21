@@ -14,9 +14,11 @@ describe('registry (scoped)', () => {
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
 
-    // component を server boot し 1 度 update して、emit された 'sync' ツリーを返す。
+    // component を server boot し、1 接続をつないで 1 度 update し、その client に emit された 'sync' ツリーを返す。
+    // capture は接続 client ごとの投影になったため、記録を得るには client を 1 つつなぐ必要がある。
     function capture(Component: any): any[] {
         bootServer({ io: hub.io }, Component);
+        hub.connect();
         asServer(() => Unit.update(Unit.engineRoot));
         return hub.lastSync() ?? [];
     }
@@ -47,6 +49,7 @@ describe('captureStateTree', () => {
 
     function capture(Component: any): any[] {
         bootServer({ io: hub.io }, Component);
+        hub.connect();
         asServer(() => Unit.update(Unit.engineRoot));
         return hub.lastSync() ?? [];
     }
@@ -68,6 +71,7 @@ describe('captureStateTree', () => {
 
     it('assigns stable ids and reflects mutated state on later captures', () => {
         const server = bootServer({ io: hub.io }, function Root() { xsync.register({ Child }); xnew(Child); });
+        hub.connect();
         asServer(() => Unit.update(Unit.engineRoot));
         const first = hub.lastSync()[0];
         syncOf(server._.children[0]).state!.position = 9;

@@ -45,6 +45,15 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   that DOM target. A tag string creates and nests the element.
 - `xnew(target, 'text')` / `xnew('text')` — sets `textContent` (safe for user input).
 - `xnew(target, (unit) => { … })` — an inline component function.
+- `xnew(Base, props?, (unit, props) => { … })` — a **trailing function after a component**
+  is an **extension component** (`ExComponent`) extended on top of `Base` (props optional).
+  Equivalent to `xnew((unit) => { xnew.extend(Base, props); … })`: `Base` is extended first,
+  then the `ExComponent` runs on the same unit; both receive `props`. Defines from both merge
+  onto the unit.
+- `xnew(Base, props?, 'text')` — a **trailing string/number after a component** is an
+  `ExComponent` too: it becomes a component that sets the unit's current element `textContent`
+  (same wrapper as the base-position `xnew(target, 'text')` form). Runs after `Base`, so it
+  writes into whatever element `Base`'s body ended on (e.g. `ListboxItem`'s row).
 - **Init-only helpers** (throw if called after `invoked`, i.e. outside the
   synchronous body or in a later callback): `xnew.nest`, `xnew.extend`,
   `sync.server`, `sync.client`, `sync.register`, `sync.state`.
@@ -52,23 +61,25 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
 ## 4. DOM: element, nest, events
 
 - `unit.element` is the unit's current DOM element.
-- `xnew.css({ name: 'decls…' })` registers pseudo-scoped CSS with **mandatory scoping**
-  (single argument): every key is a local name, always renamed to a page-unique one, and keys
-  must match `[A-Za-z][A-Za-z0-9_-]*` (anything else throws) — there is no way to emit a
-  global rule. A value is either a **declaration block string**, wrapped as
-  `.xnewN-key { … }` (native CSS nesting works inside: `&:hover`, `@media`, descendant
-  selectors), or an **object** `{ layer?, type?, body }`: `type` names an at-rule without
-  `@` to hang the generated name on — `turn: { type: 'keyframes', body: 'from {…} to {…}' }`
-  emits a **scoped animation** `@keyframes xnewN-turn { … }` (absent: a class rule) — and
-  `layer` wraps that entry in `@layer` (invalid types / layers throw). `$key` inside a body
-  references another entry's generated name — `animation: $turn 0.8s linear infinite;` —
-  and an unknown `$key` throws (a letter must follow `$`, so `[href$=".png"]` is untouched).
-  The return value maps each key to its generated name (typed via `keyof`) to embed in tag
-  strings (`xnew.nest(`<div class="${css.name}">`)`). Identical definitions share one
-  ref-counted `<style>`, removed when the last user unit finalizes; on the server (no DOM)
-  keys map to themselves and nothing is injected.
-  Entries without `layer` stay unlayered (normal strength). **Every xnew.css entry inside
-  `src/basics/` must set `layer: 'base'`** — component defaults are overridable-by-design:
+- `xnew.css((layer,) { name: 'decls…' })` registers pseudo-scoped CSS with **mandatory
+  scoping**: every key is a local name, always renamed to a page-unique one, and keys must
+  match `[A-Za-z][A-Za-z0-9_-]*` (anything else throws) — there is no way to emit a global
+  rule. A value is always a **CSS fragment string**: a **declaration block**, wrapped as
+  `.xnewN-key { … }` (native CSS nesting works inside: `&:hover`, `&[data-checked]`, `@media`,
+  descendant selectors), or a **nameless at-rule** `@type { … }` that hangs the generated name
+  on it — `turn: '@keyframes { from {…} to {…} }'` emits a **scoped animation**
+  `@keyframes xnewN-turn { … }`. A name inside the at-rule (`@keyframes spin { … }`) throws, so
+  scoping always holds. `$key` inside a value references another entry's generated name —
+  `animation: $turn 0.8s linear infinite;` — and an unknown `$key` throws (a letter must
+  follow `$`, so `[href$=".png"]` is untouched). An **optional `layer` string first argument**
+  wraps the whole block in `@layer` (invalid layer throws). The return value maps each key to
+  its generated name (typed via `keyof`) to embed in tag strings
+  (`xnew.nest(`<div class="${css.name}">`)`). Identical definitions share one ref-counted
+  `<style>`, removed when the last user unit finalizes; on the server (no DOM) keys map to
+  themselves and nothing is injected.
+  Calls without a `layer` argument stay unlayered (normal strength). **Every xnew.css call
+  inside `src/basics/` must pass `'base'` as the layer argument** — component defaults are
+  overridable-by-design:
   any unlayered page CSS (or a later layer) overrides them regardless of specificity or order.
   The target position is **above reset/preflight styles, below page component / utility
   layers** — not simply weakest, or resets (`border: 0 solid` etc.) wipe the defaults. Using
@@ -85,24 +96,23 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   it was removed 2026-07).** Every component nests its top element directly with an
   `@layer base` css entry, and the caller's `className` / `style` decorate that element:
   `xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style })`.
-  Single-element components (Button, Chevron, Image, InputNumber, InputText, SVG, SVGText)
-  ALSO spread `...others` onto that element; multi-part components (InputCheckbox / InputRadio /
-  InputRange / InputSelect / InputSwitch, and `ui/AnalogStick` / `ui/DPad`) keep the container
-  STRICTLY layout-only (prelude + position: relative + interaction props, NO visual look) — the
-  framed look (border / radius / state tints) lives on an inner `frame` part (`designs.frame`),
-  and `value`, `name`, rest members stay with the inner parts (usually the hidden native input),
-  decorated via `designs`. State attributes (`data-checked` / `data-open`) toggle on the
-  container; frame / knob / svg react via parent-keyed rules (`[data-checked] > & { … }`).
-  There is no `container` getter anywhere;
-  `unit.element` ends on the innermost nested part (the hidden input / select), and the
-  caller-facing container is its ancestor — capture the container element right after nesting it when
-  the component needs it later.
-- **Internal parts of a basics component are decorated via its `designs` prop** — one
-  `Design` (`{ className?, style? }`, from `src/basics/design.ts`) per named part, e.g.
-  InputRange's `designs: { frame?, meter?, status? }`. The container is NOT a designs part (caller
-  `className` / `style` hit it directly). Generated class names are page-unique, so
-  page CSS cannot target parts directly; `designs` is the supported hook (never expose
-  stable global part classes).
+  Single-element components (Button, Image, InputNumber, InputText, SVG, SVGText)
+  ALSO spread `...others` onto that element; multi-part form components (InputCheckbox / InputRadio /
+  InputRange / InputSwitch / Listbox) carry the framed look (border / radius / state tints) ON the
+  container itself (frame merged in, 2026-07), and `value` / `name` / rest members go to the inner
+  hidden native input. State attributes (`data-checked` / `data-open`) toggle on the container; inner
+  parts (knob / meter / status / mark) react via parent-keyed rules (`[data-checked] > & { … }`).
+  There is no `container` getter anywhere; for InputCheckbox / InputRange / InputSwitch `unit.element`
+  IS the container (input / knob / meter are children) — for the others it ends on the innermost
+  nested part, so capture the container right after nesting it when the component needs it later.
+- **Basics components expose NO part-customization bag** (no `attributes` / `designs` prop — all
+  removed 2026-07). A caller restyles only via `className` / `style` on the container, which reaches
+  inner parts through inheritance — the frame border, the knob / meter background, and the state tint
+  all key on `currentColor`, so a single `className: 'text-indigo-600'` recolors the whole control
+  cohesively. For structural change, InputCheckbox / InputRange / InputSwitch accept a **trailing
+  compose function** that replaces their default inner content — the mark, the meter + status, the
+  knob respectively (`xnew.standalone === true` gate). Generated
+  class names are page-unique, so page CSS cannot target inner parts directly by design.
 - `xnew.nest(tagOrDef, textContent?)` creates a child element from a **tag string**
   (`'<div …>'`) or an **element definition object** — an existing element is rejected
   (`invalid tag string`); the optional second argument sets the element's text. The object
@@ -195,26 +205,17 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 - `key` is a **reserved prop** used by `find(..., { key })`; assume it is globally
   unique.
 
-## 10. Scene navigation (`xbasics.Scene` + optional `xbasics.SceneList`)
+## 10. Scene navigation (`xbasics.Scene`)
 
 - **Scene is the navigator; the mounted unit itself is the navigation state.**
   A scene component does `xnew.extend(xbasics.Scene)` to get:
   `unit.change(Component, props?)` — mount the next scene under `unit.parent` and
-  finalize this one (swappable scenes must share a parent container);
-  `unit.change(label)` — resolve `[Component, props]` via
-  `xnew.context(xbasics.SceneList)` and do the same swap (no-op for unknown labels
-  or without a SceneList; no index form); and `unit.add(Component, props)` — child
-  under the scene unit, finalized together with it (returns the unit). From a
+  finalize this one (swappable scenes must share a parent container); and
+  `unit.add(Component, props)` — child under the scene unit, finalized together
+  with it (returns the unit). Navigation is **by component** only — there is no
+  label form and no SceneList lookup table (both removed 2026-07). From a
   descendant, use `xnew.context(xbasics.Scene).change/add(...)`. Scenes are
   recreated from props; they do not preserve state across moves.
-- **SceneList is an optional pure lookup table — it creates nothing.**
-  `xnew(xbasics.SceneList, { list: { title: [Title], play: [Play, props] } })`;
-  every value is exactly one `[Component, props]` scene (no arrays, no bare
-  Components, no initial). Create it BEFORE the first scene in the same scope
-  (or an ancestor) — context entries chain through the scope, so a preceding
-  sibling is visible — then mount the first scene yourself: `xnew(Title)`.
-  With nested SceneLists, `change(label)` resolves only the NEAREST one (no
-  fallthrough to outer lists).
 - **Scene leave protocol (out-in): a scene opts into an exit transition by returning a
   `leave()` define; entrance effects need no protocol (do them in the component body).**
   `change` calls the unit's own `leave()` and waits for its return value — return the
@@ -258,6 +259,16 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   - There is **no** `sync.emit`/`sync.message` anymore. The wire events
     `sync:toServer` / `sync:toClient` / `sync:deliver` are reserved — don't use them
     as app `type`s.
+- **Per-client state projection — `sync.visibleTo(target)`.** The server captures the sync tree
+  **once per connected client** and emits each socket its own projection. By default a node is
+  **public** (reaches every client). `sync.visibleTo(clientId | clientId[] | (clientId) => boolean | null)`
+  restricts the **current** sync node — **and its whole subtree**, since hidden children would lose
+  their parent link — to the clients it names; `null` makes it public again. Declare it in the
+  component's `sync.server` block so private state (hands, roles) **never reaches the wire** for
+  excluded clients — hiding on the client is not secure (DevTools sees the payload). The predicate is
+  **re-evaluated every capture**, so close over a flag (`revealed`) and flip it for a dynamic reveal —
+  no re-call needed. Typical shape: one `PlayerView` per client, `sync.visibleTo(ownerId)`, spawned on
+  `sync.connect` and removed on `sync.disconnect` (see `examples/1_xnew/sync/hidden-info/`).
 
 ## 12. TypeScript notes
 
@@ -292,6 +303,151 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **`xpixi.nest()` never takes an EXISTING object — it always creates a fresh group Container and moves
+  the current parent into it (stateful); `xpixi.add(obj)` attaches a leaf/display object without moving.
+  Place leaves with `add`, never hand-`addChild`.** Its only argument is an optional transform config
+  `{ position: {x,y}, scale: number|{x,y}, rotation }` applied to the new group (added 2026-07) — a
+  convenience for `xpixi.nest().position.set(x, y)`, NOT a way to pass in a pre-made object.
+  Rationale: in Pixi v8 every display object (Text/Sprite/Graphics) extends Container, so accepting a
+  leaf would let `nest(a); nest(b)` reparent `b` under `a` (a title dragged the guide text off-screen).
+  Restricting the arg to plain transform values keeps that footgun structurally impossible — the only
+  way to place a leaf is `add`, which never changes the current parent; two `nest()` calls = a group
+  inside a group (legit).
+  **`xthree.nest()` / `xthree.add()` work identically** (nest() makes a `THREE.Group`; its transform
+  config is 3D — `position/scale/rotation` take `{x,y,z}`, z optional); Three meshes / lights are
+  leaves → `add`, only `Object3D` / `Group` were the real groups (they keep `.add(child)`).
+
+- **`xpixi.nest()` makes only the child units created AFTER it (in the same body / later in the same
+  unit's scope) nest into that group — call it FIRST, then spawn the actors.**
+  `nest` does `addContext(parent, …, Nest, …)`, so the Nest context is threaded onto the parent's
+  evolving context chain and inherited by *subsequently* created siblings (not earlier ones, not
+  units created in a sibling's scope). A scrolling-camera World therefore does
+  `const view = xpixi.nest()` up top, then `xnew(Player/Enemy/Coin)` below, and moves
+  `view.x` to scroll them all; anything nested from a unit that never called `xpixi.nest()`
+  (HUD, result text) lands on the root scene = fixed screen space. (See `examples/3_games/platformer/`.)
+
+- **Tile-collision AABB tests must treat the max edges as half-open (`Math.ceil(hi/T)-1`), or a body
+  resting flush on a tile top reads as overlapping the ground and its horizontal move gets blocked.**
+  An entity snapped so its bottom == `row*T` has `floor(bottom/T) == groundRow`; an inclusive range
+  then reports the ground as solid during the *horizontal* pass too, freezing sideways motion on flat
+  ground. Half-open on the max edge excludes the flush tile; gravity next frame pushes the bottom a
+  hair past the boundary so the *vertical* pass still detects landing. (See platformer `World.solid`.)
+
+- **An open-toggle trigger and a document-level `click.outside` closer are a self-close trap: the trigger's
+  own click bubbles to `document` and fires `click.outside`, closing what it just opened.** `click.outside`
+  attaches on `document` in the BUBBLE phase (`dom.ts`), so the trigger's `unit.on('click')` fires first
+  (opens) and then the bubbled document handler fires (closes). Fix: the trigger must
+  `event.stopPropagation()` in its click so the opening press never reaches the document closer; genuine
+  outside presses (backdrop, elsewhere) don't pass through the trigger, so they still close. Put ONE
+  `click.outside` on the menu/overlay (not one per row — N identical document handlers), registered right
+  after nesting the menu; a press on a row stays *inside* the menu so `click.outside` skips it and the row's
+  own click handles select+close. Its guard must accept `'opening'`, not just `'opened'`: a duration-0 Gate
+  is still `'opening'` right after the open (its completion `.timeout` fires at +1ms, not +0), so
+  `state === 'opened' || state === 'opening'`. **Tests must dispatch the trigger click with `bubbles: true`**
+  — a `bubbles: false` click can't reach the document closer, so it hides this whole class of bug (it hid
+  the Listbox self-close until a bubbling repro exposed it). (Bit Listbox when the framed trigger + toggle
+  moved from the container into a new `ListboxButton`, so backdrop clicks no longer closed "for free" via the
+  container's toggle, 2026-07.)
+
+- **A sync `game.js` (shared by Node server + browser client) must NOT statically import addon/browser-only
+  libs (`pixi.js`, `three`, `@mulsense/xnew/addons/*`, `voxelkit`) — Node evaluates the whole module and
+  fails to resolve them.** Put the browser libs in a separate browser-only file, and have the client entry
+  inject them on a global for the client branches to read — the same flavor as `io: window.io`:
+  `index.js` does `import * as gfx from './render.js'; window.gfx = gfx;` before `xsync.boot(Game)` (static
+  imports fully resolve first), then `game.js`'s `xsync.client()` blocks use `window.gfx.xpixi` etc. Node
+  never runs client branches nor sets the global, so it stays clean. Initialize the addons in the client
+  branch of the **sync root** (Game) BEFORE its synced children exist, so `xnew.context(xpixiRoot)` resolves
+  for every reconciled replica (context is inherited from the root's end-of-body snapshot). Composite
+  Three into Pixi as a bg sprite (`PIXI.Texture.from(xthree.canvas)`, `texture.source.update()` per frame)
+  and give scene children explicit `zIndex` + `scene.sortableChildren = true` — replicas mount async, so
+  add-order can't be relied on for layering. Addon event callbacks (`pixiObject.on('pointertap', …)`,
+  a Three raycast handler, etc.) fire OUTSIDE the tick/scope, so any `xsync.emitToServer` / `xnew.emit` /
+  `xnew(...)` inside them must be wrapped in `xnew.scope(...)` (§7) — otherwise `emitToServer` throws
+  `no socket bound to this root` (Unit.current isn't the sync node). (See `examples/3_games/card/`.)
+
+- **InputCheckbox holds a Gate for its checked state and its `unit.element` is the CONTAINER, not the
+  hidden input (modeled on Listbox, 2026-07).** The `<input>` is nested as a *child unit*
+  (`xnew({ tag: 'input', … })`, no `xnew.nest`) so the container stays current — a trailing function
+  then composes the mark INTO the box (`xnew(InputCheckbox, {}, (unit) => { … unit.gate … xnew(xicons.Check) })`);
+  left empty, a one-tick `xnew.timeout` fallback draws a default check svg (detect "caller composed
+  something" by any container child that is not the input). The hidden input gets `z-index: 1` so composed
+  marks never steal its clicks. Native `input` bubbles up to the container where `unit.on('input', …)`
+  lives → toggles `gate.open()/close()`; `gate.on('-open'/'-closed')` toggles `data-checked` on the
+  container (set it once initially from `gate.state`, since the Gate's constructor emits the first `-open`
+  before you subscribe). Do NOT assume `unit.element` is the input here — that still holds for InputSwitch,
+  but InputCheckbox and InputRange diverged (their `unit.element` is the container; the input is a
+  `xnew({ tag: 'input', … })` child, not an `xnew.nest`). InputRange follows the same compose gate:
+  its default `InputRangeMeter` + `InputRangeStatus` are drawn only when `xnew.standalone === true`, so a
+  trailing compose function replaces them with caller content.
+
+- **A basics component's `frame` ring may be merged INTO the `container` (user decision, 2026-07) —
+  the container then carries the border / radius / state tint directly, and there is no separate frame
+  part.** InputCheckbox and InputRange did this: the container css gains `border` + `border-radius`
+  (add `box-sizing: border-box` so the border stays inside the declared size) and the checked tint keys
+  on `&[data-checked]` (self) instead of `[data-checked] > &` (child overlay). Caller `className` / `style`
+  now style the ring; the `attributes.frame` part is dropped. Sibling parts (svg / meter / status) still
+  react via `[data-checked] > &` since they remain children of the container. (This supersedes the older
+  "frame lives on an inner part" guidance in §4 for these components.) InputRange draws its container frame
+  as an **inset `box-shadow`** rather than a `border` (user decision, 2026-07): the shadow costs no
+  box-model width, so the padding box equals the border box and the absolute meter shares the container's
+  coordinate system — the meter pins flush at `0` (no `-1px`) and a full value fills exactly `100%` (no
+  `+2px` correction), its leading border landing on the frame ring. A caller drops the frame with
+  `style: 'box-shadow: none;'` (not `border: none;`).
+
+- **To split a multi-part basics component, mount each display sub-component on the SHARED container and
+  let it listen to the bubbling native event — don't thread a value-setter define across the boundary.**
+  InputRange is InputRange (container + hidden input) + two same-file sub-components `InputRangeMeter`
+  (the growing meter) and `InputRangeStatus` (the value readout), each mounted with `xnew(…)` and no
+  `xnew.nest` so their `unit.element` = the container; each `unit.on('input', …)` catches the input event
+  that bubbles up from the later-nested `<input>`. Works because the core reads the value off
+  `event.target` (the range input), not the bound element (`dom.ts` `defineEvent(['change','input'])`),
+  so an ancestor listener still gets the numeric value. Native `input` events bubble — tests must dispatch
+  with `{ bubbles: true }`. These parts are NOT caller-customizable (no `attributes`/`designs` bag —
+  user decision, 2026-07); recolor by editing the component, not from the call site.
+
+- **`widget/AnalogStick` and `widget/DPad` make the container itself the `<svg>` (user decision, 2026-07) —
+  no wrapping `<div>`, no separate `svg` part, no `attributes` bag.** All shapes are drawn directly
+  inside the container svg (viewBox `0 0 64 64`); fill / stroke variants split via inner `<g style="…">`
+  groups. Caller `style` lands on the svg and inherits down (`fill` reaches the shapes), so recoloring is
+  `style: 'fill: …'` at the call site — no part hook needed. The movable knob shifts in viewBox units via a
+  `transform` presentation attribute (travel radius = a quarter of the 64-unit span = 16), not pixel
+  left / top on a nested svg.
+
+- **For close-on-outside-press, use the built-in `unit.on('click.outside', …)` — don't hand-roll a
+  backdrop `click` listener.** `click.outside` (also `pointerdown/move/up.outside`, `dom.ts`) attaches
+  at `document` and fires only when the press target is NOT inside `unit.element` **as of registration
+  time** — so register it right after nesting the content box you want to protect. DOM listeners attach
+  via `setTimeout(0)`, so the same press that opened the popup can't self-close it. Cleaned up on
+  finalize like any listener. `Overlay` deliberately has NO built-in click-to-close (removed 2026-07);
+  the caller wires it (see `examples/1_xnew/basics/gate/index.html`).
+
+- **When two sibling components must share a driver unit (e.g. a Gate), create the driver with `xnew(Gate,
+  props)` and pass the SAME unit into each — don't rely on `xnew.context` or a merged control surface.**
+  A deferred callback runs in the SCOPE SNAPSHOT from when it was scheduled, so `xnew.context(X)` inside it
+  cannot see a component extended onto the unit AFTER the callback was scheduled (bit `InputSelectMenu`,
+  extended before the `Accordion`). `Accordion` / `Overlay` take `gate: props | unit` — props ⇒ they create
+  a child `xnew(Gate, props)`; a unit ⇒ they reuse it — and expose it as `.gate`. A child Gate emits
+  `-transition` / `-closed` on its OWN unit, so subscribe on `accordion.gate.on(...)`, not the host unit.
+- **The `Unit` class is NOT exposed as a runtime value; `xnew.Unit` is a TYPE only.** To discriminate a
+  passed unit from a props object at runtime, use the `xnew.isUnit(x): x is xnew.Unit` type guard (narrows
+  like the old `instanceof`) — `x instanceof xnew.Unit` no longer compiles. `xnew.Timer` is likewise a
+  type-only alias for the timer object returned by `xnew.timeout` / `interval` / `transition`.
+
+- **A component's body-ending element is where a host's `unit.on(domEvent)` attaches — so any native
+  event you want the host to catch must bubble to THAT element.** `unit.on('input', …)` registered after
+  a component is extended lands on the unit's *final* element. When InputSelect's body ended on the menu
+  (a sibling of the hidden `<select>`), the select's bubbling `input` never reached it and every host
+  `unit.on('input')` silently missed. Fix: nest the emitter *inside* the body-ending element (moved the
+  `<select>` into the menu) so its event bubbles up to where hosts listen.
+
+- **Anything registered on the shared `io` (server side) must be detached on `finalize` — including
+  inside `sync.boot`.** Rooms are created and destroyed continuously, so a dead room that leaves its
+  `io.on('connection')` behind grows the namespace's listener count without bound (MaxListenersExceededWarning
+  at 10, then unbounded). `bootServer` now keeps the handler in a local and does
+  `root.on('finalize', () => io.off('connection', connection))`; any io mock therefore needs an `off`.
+  Note the count is legitimately `2 × live rooms` (boot + the caller's own counter), so a server hosting
+  many rooms should raise `io.sockets.setMaxListeners(...)` rather than treat the warning as a leak.
+
 - **Every control-like `basics/element` container css starts with the same prelude: `width: …;` then
   the margin-box cap `max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;`.**
   `max-width: stretch` caps the *margin box* at the parent so a caller horizontal margin never
@@ -313,7 +469,7 @@ the rule, then one line of why.
   status until the first drag (bit the 3_games VolumeController).
 
 - **Override the SVG-drawn basics' presentation defaults (stroke / fill / …) via css, never via
-  svg attributes.** SVG / SVGText / Chevron take caller `style` / `className` directly (their shell
+  svg attributes.** SVG / SVGText and the `xicons` icons take caller `style` / `className` directly (their shell
   IS the `<svg>`; they have no `designs` prop — passing one lands as a junk attribute and does
   nothing). The defaults live in an `@layer base` css rule, and ANY css beats presentation
   attributes — an attribute like `stroke: '#EEE'` passed as a rest member is silently ignored;
@@ -399,6 +555,12 @@ the rule, then one line of why.
   server-side `xmatter.initialize()` crashed on room boot, surfacing as the client
   immediately showing "切断". (`matter-js`/`voxelkit` *do* default-export — per-package.)
 
+- **`captureStateTree(clientId)` runs once per connected client (per-client projection, 2026-07).**
+  The server no longer broadcasts one `'sync'` tree to the room; it loops `info.clients` and emits
+  `io.to(client.id).emit('sync', captureStateTree(client.id))`. Consequence for tests: a capture-only
+  test that boots the server and reads `hub.lastSync()` must **connect a client first** (`hub.connect()`),
+  or nothing is emitted (empty `info.clients` → no `'sync'`). `io-mock` records the target of each
+  `'sync'` — use `hub.lastSyncFor(clientId)` to read one client's projection.
 - **`captureStateTree` / `applyStateTree` are boot-internal (not exported).** Capture lives
   in boot's server branch (closes over `root` + a local `nextId`), apply in the client branch
   (closes over `root` + a local `reconcileMap`). The only seams are: server emits `'sync'` on

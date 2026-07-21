@@ -27,6 +27,20 @@ describe('xsync.boot({ socket, room }) — in-memory socket.io', () => {
         expect(seen).toEqual(['cX']);
     });
 
+    it('detaches its io connection listener when the server root finalizes', () => {
+        // ルームは生成・消滅を繰り返すので、死んだ root の listener が io に残ってはいけない（listener リーク）。
+        const seen: string[] = [];
+        const root = bootServer({ io: hub.io }, function Server(unit: Unit) {
+            unit.on('sync.connect', ({ id }: any) => seen.push(id));
+        });
+        hub.connect('cX');
+        expect(seen).toEqual(['cX']);
+
+        root.finalize();
+        hub.connect('cY');   // finalize 後の接続はもう届かない
+        expect(seen).toEqual(['cX']);
+    });
+
     it('environment selects which block runs at the root', () => {
         const ran: string[] = [];
         bootServer({ io: hub.io }, function S() { xsync.server(() => ran.push('server')); xsync.client(() => ran.push('client')); });

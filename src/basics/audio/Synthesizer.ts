@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { context, master } from './bus';
+import { context, master, resume } from './master';
 
 const DEFAULT_BPM = 120;
 const RELEASE_CLEANUP_DELAY_MS = 2000;
@@ -173,10 +173,16 @@ function attachReverb(amp: GainNode, target: GainNode, reverb: ReverbOptions): R
 //----------------------------------------------------------------------------------------------------
 
 export function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions) {
+    // Notes still sounding or in their release tail; finalize stops + disconnects any left over
+    // (a sustained note whose release was never called would otherwise play on after teardown).
+    interface Note { oscillators: OscillatorNode[]; nodesToDisconnect: AudioNode[]; stopped: boolean; }
+    const active = new Set<Note>();
+
     // Press a note. `frequency`: Hz or note name ('A4'). `duration`: ms or note length ('4n') — with
     // one the note auto-releases, without one it sustains and returns { release }. `wait` (ms) delays
     // the attack.
     function press(frequency: number | string, duration?: number | string, wait?: number) {
+        resume();   // wake a suspended context (autoplay policy); no-op once running
         const freq = resolveFrequency(frequency);
         const dv = resolveDurationSeconds(duration, props.bpm ?? DEFAULT_BPM);
         const start = context.currentTime + (wait ?? 0) / 1000;
@@ -235,6 +241,15 @@ export function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions) {
             nodesToDisconnect.push(reverb.convolver, reverb.depth);
         }
 
+        const note: Note = { oscillators, nodesToDisconnect, stopped: false };
+        active.add(note);
+        const cleanup = () => {
+            active.delete(note);
+            for (const n of nodesToDisconnect) {
+                n.disconnect();
+            }
+        };
+
         const release = () => {
             if (props.oscillator.envelope) {
                 const amount = semitoneOffset(freq, props.oscillator.envelope.amount);
@@ -252,12 +267,11 @@ export function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions) {
             for (const o of oscillators) {
                 o.stop(stop);
             }
+            note.stopped = true;
 
-            setTimeout(() => {
-                for (const n of nodesToDisconnect) {
-                    n.disconnect();
-                }
-            }, RELEASE_CLEANUP_DELAY_MS);
+            // xnew.timeout follows the unit lifecycle: if the unit finalizes first, this pending
+            // disconnect is cancelled and finalize handles the nodes instead.
+            xnew.timeout(cleanup, RELEASE_CLEANUP_DELAY_MS);
         };
 
         if (dv > 0) {
@@ -266,6 +280,20 @@ export function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions) {
             return { release };
         }
     }
+
+    unit.on('finalize', () => {
+        for (const note of active) {
+            if (note.stopped === false) {
+                for (const o of note.oscillators) {
+                    o.stop();
+                }
+            }
+            for (const n of note.nodesToDisconnect) {
+                n.disconnect();
+            }
+        }
+        active.clear();
+    });
 
     return { press };
 }

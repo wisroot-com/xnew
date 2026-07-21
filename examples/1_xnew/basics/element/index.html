@@ -26,10 +26,10 @@
 <body class="m-0 p-0 w-full h-screen">
   <div id="main" class="relative w-full h-full"></div>
   <script type="module">
-    import { xnew, xbasics } from '@mulsense/xnew';
+    import { xnew, xbasics, xicons } from '@mulsense/xnew';
 
     xnew(document.querySelector('#main'), (unit) => {
-      xnew.nest('<div class="m-2 p-4 w-[36rem] text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg flex flex-col gap-4">');
+      xnew.nest('<div class="m-2 p-4 text-sm text-green-900 bg-gray-100 border rounded-lg shadow-lg flex flex-wrap content-start gap-x-6 gap-y-3">');
 
       xnew(MyButton);
       xnew(MyInputText);
@@ -37,8 +37,9 @@
       xnew(MyInputCheckbox);
       xnew(MyInputSwitch);
       xnew(MyInputRadio);
-      xnew(MyInputSelect);
+      xnew(MyListbox);
       xnew(MyInputRange);
+      xnew(MyGraphicText);
     });
 
     // each block: the default look next to a designed variant
@@ -72,7 +73,12 @@
       xnew('<div class="mb-1">', 'InputCheckbox');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputCheckbox, { value: true });
-      xnew(xbasics.InputCheckbox, { value: true, designs: { frame: { style: 'border-radius: 50%;' } } });
+      xnew(xbasics.InputCheckbox, { value: true, style: 'border-radius: 50%;' });
+      // compose a custom mark: a trailing function nests it into the box and follows the checked gate
+      xnew(xbasics.InputCheckbox, { value: true }, (unit) => {
+        const mark = xnew(xicons.Check, { mode: 'solid', style: 'position: absolute; inset: 0; width: 100%; height: 100%; color: red;' });
+        unit.gate.on('-transition', ({ value }) => mark.element.style.opacity = value);
+      });
     }
 
     function MyInputSwitch(unit) {
@@ -80,23 +86,68 @@
       xnew('<div class="mb-1">', 'InputSwitch');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputSwitch, { value: true });
-      xnew(xbasics.InputSwitch, { value: true, designs: { frame: { style: 'border-radius: 0.25em;' }, knob: { style: 'border-radius: 0.25em; background: #4f46e5;' } } });
+      // compose a custom knob with xnew.css, driven off the container's data-checked like the default Knob:
+      // the [data-checked] > & rule slides it (the InputSwitch toggles data-checked on its container)
+      xnew(xbasics.InputSwitch, { value: true, className: 'rounded' }, () => {
+        const css = xnew.css({
+          knob: `
+            position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
+            aspect-ratio: 1 / 1; border-radius: 0.25em;
+            background: #4f46e5;
+            transition: left 0.15s, transform 0.15s;
+            [data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }
+          `,
+        });
+        xnew.nest({ tag: 'div', className: css.knob });
+      });
     }
 
     function MyInputRadio(unit) {
       xnew.nest('<div>');
       xnew('<div class="mb-1">', 'InputRadio');
       xnew.nest('<div class="flex gap-4 items-center">');
-      xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'mid' });
-      xnew('<div class="h-8 w-56">', xbasics.InputRadio, { items: ['low', 'mid', 'high'], value: 'high', designs: { frame: { style: 'border-radius: 9999px;' }, item: { style: 'font-weight: bold;' } } });
+      xnew('<div class="h-8 w-56 flex border rounded overflow-hidden">', () => {
+        xnew(xbasics.InputRadio, { name: 'level1', value: 'low' });
+        xnew(xbasics.InputRadio, { name: 'level1', value: 'mid', checked: true });
+        xnew(xbasics.InputRadio, { name: 'level1', value: 'high' });
+      });
+      xnew('<div class="h-8 w-56 flex border rounded-full overflow-hidden">', () => {
+        xnew(xbasics.InputRadio, { name: 'level2', value: 'low', style: 'font-weight: bold;' });
+        xnew(xbasics.InputRadio, { name: 'level2', value: 'mid', style: 'font-weight: bold;' });
+        xnew(xbasics.InputRadio, { name: 'level2', value: 'high', checked: true, style: 'font-weight: bold;' });
+      });
     }
 
-    function MyInputSelect(unit) {
+    function MyListbox(unit) {
       xnew.nest('<div>');
-      xnew('<div class="mb-1">', 'InputSelect');
+      xnew('<div class="mb-1">', 'Listbox');
       xnew.nest('<div class="flex gap-4 items-center">');
-      xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'] });
-      xnew(xbasics.InputSelect, { items: ['apple', 'banana', 'cherry'], value: 'banana', designs: { frame: { style: 'border-radius: 9999px;' }, item: { style: 'font-style: italic;' } } });
+      xnew(xbasics.Listbox, (listbox) => {
+        xnew(xbasics.ListboxButton, (button) => {
+          xnew(xicons.ChevronDown, { className: 'flex-none size-[0.9em]' });
+        });
+        xnew(xbasics.ListboxMenu, () => {
+          xnew(xbasics.ListboxItem, { value: 'apple' });
+          xnew(xbasics.ListboxItem, { value: 'banana' });
+          xnew(xbasics.ListboxItem, { value: 'cherry' });
+        });
+      });
+      // the Listbox owns the Gate (duration 200): ListboxMenu opens / closes it, and the Accordion
+      // (after the menu, so its collapse box wraps the rows) rides the same box.gate to animate in step
+      xnew(xbasics.Listbox, { value: 'banana', gate: { open: false, duration: 200 } }, (listbox) => {
+        xnew(xbasics.ListboxButton, { style: 'border-radius: 9999px;' }, (button) => {
+          xnew(xicons.ChevronUpDown, { className: 'flex-none size-[0.9em]' });
+        });
+        xnew(xbasics.ListboxMenu, { className: 'border-green-700' }, (menu) => {
+          xnew.extend(xbasics.Accordion, { gate: listbox.gate });
+          [{ value: 'apple', icon: xicons.Heart }, { value: 'banana', icon: xicons.Bolt }, { value: 'cherry', icon: xicons.Fire }].forEach(({ value, icon }) => {
+            xnew(xbasics.ListboxItem, { value }, (item) => {
+              xnew(icon, { className: 'flex-none size-5 mr-2' });
+              xnew('<span style="font-style: italic;">', value);
+            });
+          });
+        });
+      });
     }
 
     function MyInputRange(unit) {
@@ -104,7 +155,39 @@
       xnew('<div class="mb-1">', 'InputRange');
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputRange, { value: 30 });
-      xnew(xbasics.InputRange, { value: 60, designs: { meter: { style: 'background: #fbbf24; border-color: #b45309;' } } });
+      // compose a custom inner design: a sliding knob on a thin track instead of the filling gauge (no outer frame)
+      xnew(xbasics.InputRange, { value: 50, style: 'box-shadow: none;' }, (range) => {
+        xnew('<div class="absolute inset-x-2 top-1/2 h-1 -translate-y-1/2 rounded-full bg-indigo-200 pointer-events-none">');
+        const knob = xnew('<div class="absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600 shadow pointer-events-none">');
+        function move(value) {
+          knob.element.style.left = `calc(0.5rem + (100% - 1rem) * ${value / 100})`;
+        }
+        move(50);
+        range.on('input', ({ value }) => move(value));
+      });
+      xnew(xbasics.InputRange, { value: 40, vertical: true });
+      // the same knob design on the vertical axis: value grows upward, so the knob slides via bottom
+      xnew(xbasics.InputRange, { value: 70, vertical: true, style: 'box-shadow: none;' }, (range) => {
+        xnew('<div class="absolute inset-y-2 left-1/2 w-1 -translate-x-1/2 rounded-full bg-indigo-200 pointer-events-none">');
+        const knob = xnew('<div class="absolute left-1/2 size-4 -translate-x-1/2 translate-y-1/2 rounded-full bg-indigo-600 shadow pointer-events-none">');
+        function move(value) {
+          knob.element.style.bottom = `calc(0.5rem + (100% - 1rem) * ${value / 100})`;
+        }
+        move(70);
+        range.on('input', ({ value }) => move(value));
+      });
+    }
+
+    function MyGraphicText(unit) {
+      xnew.nest('<div>');
+      xnew('<div class="mb-1">', 'GraphicText');
+      xnew.nest('<div class="flex gap-4 items-center">');
+      // text drawn as SVG, auto-fitted to its bbox; fill picks up currentColor from the className color
+      xnew(xbasics.GraphicText, { text: 'default', fontSize: 32, className: 'text-indigo-600' });
+      // stroke + fill give a game-style outlined label (paint-order draws the stroke behind the fill)
+      xnew('<div class="px-3 py-1 rounded-lg bg-slate-800">', () => {
+        xnew(xbasics.GraphicText, { text: 'OUTLINE', fontSize: 32, className: 'text-emerald-300', style: 'stroke: #0f172a; stroke-width: 3;' });
+      });
     }
   </script>
 </body>

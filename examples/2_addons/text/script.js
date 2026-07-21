@@ -49,7 +49,7 @@ function Contents(unit) {
 
 function CanvasTransfer(unit) {
   const texture = PIXI.Texture.from(xthree.canvas);
-  const object = xpixi.nest(new PIXI.Sprite(texture));
+  const object = xpixi.add(new PIXI.Sprite(texture));
 
   unit.on('+prerender', () => {
     texture.source.update();
@@ -62,7 +62,7 @@ function HtmlText(unit) {
 }
 
 function SVGText(unit) {
-  xnew(xbasics.SVGText, {
+  xnew(xbasics.GraphicText, {
     className: 'absolute left-0 top-[10cqw]',
     text: 'This text is rendered by SVG',
     style: 'stroke: #00FF00; stroke-width: 0.5cqw;',
@@ -71,13 +71,13 @@ function SVGText(unit) {
 }
 
 function PixiText(unit) {
-  const object = xpixi.nest(new PIXI.Text('This text is rendered by PixiJS', { fontFamily: 'Arial', fontSize: 32, }));
+  const object = xpixi.add(new PIXI.Text('This text is rendered by PixiJS', { fontFamily: 'Arial', fontSize: 32, }));
   object.anchor.set(0.0, 0.5);
   object.position.set(0.0, xpixi.canvas.height * 3 / 10);
 }
 
 function ThreeText(unit) {
-  const object = xthree.nest(new THREE.Object3D());
+  const object = xthree.nest();
 
   const loader = new FontLoader();
   xnew.promise(new Promise((resolve) => {

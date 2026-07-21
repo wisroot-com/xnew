@@ -46,7 +46,7 @@ function Contents(unit) {
 }
 
 function DirectionalLight(unit, { x, y, z }) {
-  const object = xthree.nest(new THREE.DirectionalLight(0xffffff, 3));
+  const object = xthree.add(new THREE.DirectionalLight(0xffffff, 3));
   object.position.set(x, y, z);
   object.castShadow = true;
 
@@ -93,7 +93,7 @@ function Player(unit, { x, y, z }) {
   // Create capsule visual
   const geometry = new THREE.CapsuleGeometry(capsuleRadius, capsuleHeight, 8, 16);
   const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
   object.position.set(x, y, z);
   object.castShadow = true;
   object.receiveShadow = true;
@@ -186,7 +186,7 @@ function Player(unit, { x, y, z }) {
 function Ground(unit, { x, y, z, width, height, depth }) {
   const geometry = new THREE.BoxGeometry(width, height, depth);
   const material = new THREE.MeshStandardMaterial({ color: 0x808080 });
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
   object.position.set(x, y, z);
   object.receiveShadow = true;
 
@@ -207,7 +207,7 @@ function Ground(unit, { x, y, z, width, height, depth }) {
 function Cube(unit, { x, y, z, size }) {
   const geometry = new THREE.BoxGeometry(size, size, size);
   const material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
   object.position.set(x, y, z);
   object.castShadow = true;
   object.receiveShadow = true;

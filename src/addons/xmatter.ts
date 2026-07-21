@@ -22,6 +22,12 @@ export const xmatter = {
 function Root(unit: xnew.Unit, {}: any) {
     const engine = Matter.Engine.create();
 
+    // release the world bodies + engine state on tree teardown
+    unit.on('finalize', () => {
+        Matter.World.clear(engine.world, false);
+        Matter.Engine.clear(engine);
+    });
+
     return {
         get engine() { return engine; },
     }

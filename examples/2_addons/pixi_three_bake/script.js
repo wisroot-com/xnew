@@ -46,10 +46,10 @@ function PreRender(unit, { url }) {
   xthree.camera.position.set(0, -0.1, 2.5);
 
   xnew(() => {
-    xthree.nest(new THREE.AmbientLight(0xFFFFFF, 1.2));
+    xthree.add(new THREE.AmbientLight(0xFFFFFF, 1.2));
   });
   // xnew(() => {
-  //   const dirLight = xthree.nest(new THREE.DirectionalLight(0xFFFFFF, 1.7));
+  //   const dirLight = xthree.add(new THREE.DirectionalLight(0xFFFFFF, 1.7));
   //   dirLight.position.set(2, 5, 10);
   // });
 
@@ -92,7 +92,7 @@ function PreRender(unit, { url }) {
 }
 
 function Model(unit, { url }) {
-  const object = xthree.nest(new THREE.Object3D());
+  const object = xthree.nest();
   let resolve;
   xnew.promise((res) => { resolve = res; });
 
@@ -125,7 +125,7 @@ function ViewScene(unit, { texturesList }) {
     const y = cellH * row + cellH * 0.4;
 
     xnew(() => {
-      const sprite = xpixi.nest(new PIXI.AnimatedSprite(textures));
+      const sprite = xpixi.add(new PIXI.AnimatedSprite(textures));
       sprite.position.set(x, y);
       sprite.anchor.set(0.5);
       sprite.scale.set(1.5);

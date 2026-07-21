@@ -15,6 +15,10 @@ function Root(unit, { gravity }) {
     xnew.promise(RAPIER.init()).then(() => {
         world = new RAPIER.World(gravity);
     });
+    unit.on('finalize', () => {
+        world === null || world === void 0 ? void 0 : world.free();
+        world = null;
+    });
     return {
         get world() { return world; },
     };

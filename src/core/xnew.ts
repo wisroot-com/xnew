@@ -6,20 +6,33 @@
 
 import { Unit, UnitPromise, UnitTimer, ComponentFn, DefinesOf, PropsOf } from './unit';
 import { DomElement, DomElementDef } from './dom';
-import { applyCss, CssDef } from './css';
+import { applyCss } from './css';
 
 // Call signatures of xnew(...); passing a Component merges its defines into the return type.
 export interface XnewBase {
+    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(Base: C, props: PropsOf<C>, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
+    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(Base: C, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
+    <C extends ComponentFn<any, any>>(Base: C, props: PropsOf<C>, content: string | number): Unit & DefinesOf<C>;
+    <C extends ComponentFn<any, any>>(Base: C, content: string | number): Unit & DefinesOf<C>;
     <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
+    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, props: PropsOf<C>, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
+    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
+    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, props: PropsOf<C>, content: string | number): Unit & DefinesOf<C>;
+    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, content: string | number): Unit & DefinesOf<C>;
     <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
     (target: DomElement | string | DomElementDef, content?: string | number): Unit;
     (content: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
+
+    // True when the component whose body is currently running is used on its own — not composed by its caller:
+    // no trailing ExComponent (xnew(Base, props, fn)) and not extended onto another component (xnew.extend(Base)).
+    readonly standalone: boolean;
 }
 
 export const xnew = Object.assign(
     // Creates a new Unit: xnew((target,) Component?, props?) — target is an element or a tag string like '<div>'.
+    // A trailing function after a Component is an extension component extended on top of it: xnew(Base, props?, (unit) => { … }).
     (function(...args: any[]): Unit {
         if (args[0] instanceof Unit) {
             const parent = args.shift() as Unit;
@@ -49,9 +62,14 @@ export const xnew = Object.assign(
             return Unit.extend(Unit.current, Component, props) as DefinesOf<C>;
         },
 
-        // Registers pseudo-scoped CSS: each key is a local name, always renamed to a page-unique one (scoping is mandatory — invalid keys throw). A value is either a declaration block string, wrapped as .xnewN-key { … } (native nesting works inside, e.g. &:hover / @media), or an object { layer?, type?, body }: type names an at-rule without '@' to hang the generated name on ({ type: 'keyframes', body } → @keyframes xnewN-key; absent: a class rule), and layer wraps that entry in @layer (xbasics entries set layer: 'base'). $key inside a body references another entry's generated name (unknown references throw). Returns { key: generatedName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it finalizes.
-        css<T extends Record<string, string | CssDef>>(defs: T): Record<keyof T, string> {
-            return applyCss(Unit.current, defs) as Record<keyof T, string>;
+        // Registers pseudo-scoped CSS: each key is a local name, always renamed to a page-unique one (scoping is mandatory — invalid keys throw). A value is a CSS fragment string: a declaration body, wrapped as .xnewN-key { … } (native nesting works inside, e.g. &:hover / &[data-checked]), or a nameless at-rule "@type { … }" that hangs the generated name on it (@keyframes { … } → @keyframes xnewN-key; a name inside throws, so scoping holds). $key inside a body references another entry's generated name (unknown references throw). An optional layer (first arg) wraps the whole block in @layer (xbasics passes 'base'). Returns { key: generatedName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it finalizes.
+        css: (function(layerOrDefs: string | Record<string, string>, maybeDefs?: Record<string, string>): Record<string, string> {
+            const layer = typeof layerOrDefs === 'string' ? layerOrDefs : undefined;
+            const defs = typeof layerOrDefs === 'string' ? maybeDefs! : layerOrDefs;
+            return applyCss(Unit.current, layer, defs);
+        }) as {
+            <T extends Record<string, string>>(defs: T): Record<keyof T, string>;
+            <T extends Record<string, string>>(layer: string, defs: T): Record<keyof T, string>;
         },
 
         // Returns the nearest unit associated with the given component in the ancestor context chain.
@@ -119,13 +137,25 @@ export const xnew = Object.assign(
             Unit.current._.protected = true;
         },
 
+        // Runtime type guard for a Unit — the discriminator for `props | Unit` params. The Unit class
+        // itself is not exposed as a value, so use this instead of `x instanceof xnew.Unit`.
+        isUnit(value: any): value is Unit {
+            return value instanceof Unit;
+        },
+
     }
 );
+
+// A getter (not a plain member) so it reads Unit.current at access time; Object.assign would freeze the value.
+Object.defineProperty(xnew, 'standalone', {
+    get(): boolean {
+        return Unit.current._.standalone;
+    },
+});
 
 // Merges the type namespace onto the callable value (public types such as xnew.Unit).
 export namespace xnew {
     export type Unit = InstanceType<typeof Unit>;
-    export type Component<P extends object = any, A extends object = {}> = ComponentFn<P, A>;
-    export type ElementDef = DomElementDef;
+    export type Timer = InstanceType<typeof UnitTimer>;
 }
 

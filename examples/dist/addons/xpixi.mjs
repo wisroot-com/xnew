@@ -5,7 +5,25 @@ const xpixi = {
     initialize({ canvas }) {
         return xnew.promise(xnew(Root, { canvas }));
     },
-    nest(object) {
+    nest(options) {
+        const object = new PIXI.Container();
+        if (options !== undefined) {
+            const { position, scale, rotation } = options;
+            if (position !== undefined) {
+                object.position.set(position.x, position.y);
+            }
+            if (scale !== undefined) {
+                if (typeof scale === 'number') {
+                    object.scale.set(scale);
+                }
+                else {
+                    object.scale.set(scale.x, scale.y);
+                }
+            }
+            if (rotation !== undefined) {
+                object.rotation = rotation;
+            }
+        }
         xnew(Nest, { object });
         xnew.extend(() => {
             return {
@@ -33,15 +51,25 @@ const xpixi = {
 };
 function Root(unit, { canvas }) {
     let renderer = null;
-    xnew.promise(PIXI.autoDetectRenderer({
+    let finalized = false;
+    const source = PIXI.autoDetectRenderer({
         width: canvas.width, height: canvas.height, view: canvas,
         antialias: true, backgroundAlpha: 0,
-    })).then((value) => {
-        renderer = value;
+    });
+    xnew.promise(source);
+    source.then((value) => {
+        if (finalized === true) {
+            value.destroy();
+        }
+        else {
+            renderer = value;
+        }
     });
     const scene = new PIXI.Container();
     unit.on('finalize', () => {
+        finalized = true;
         renderer === null || renderer === void 0 ? void 0 : renderer.destroy();
+        renderer = null;
     });
     return {
         get renderer() { return renderer; },
