@@ -13,7 +13,7 @@ import { ListBox, ListBoxButton, ListBoxMenu, ListBoxItem } from '../element/Lis
 import { Accordion } from './Accordion';
 import { Gate } from './Gate';
 
-// nested is internal: group() marks its inner Panel so only the root creates the scroll container
+// nested is internal: folder() marks its inner Panel so only the root creates the scroll container
 interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; nested?: boolean; }
 
 export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions) {
@@ -31,9 +31,9 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
     }
 
     return {
-        group({ name, open, params }: PanelOptions, inner: Function) {
+        folder({ name, open, params }: PanelOptions, inner: Function) {
             return xnew((unit: xnew.Unit) => {
-                xnew.extend(Group, { name, open });
+                xnew.extend(Folder, { name, open });
                 xnew.extend(Panel, { params: params ?? object, nested: true });
                 inner(unit);
             });
@@ -65,7 +65,7 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
     }
 }
 
-function Group(unit: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
+function Folder(unit: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
     const gate = xnew(Gate, { open, duration: 200 });
     if (name) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header: xnew.Unit) => {

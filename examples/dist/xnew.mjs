@@ -2831,9 +2831,9 @@ function Panel(unit, { params, nested = false }) {
         xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
     return {
-        group({ name, open, params }, inner) {
+        folder({ name, open, params }, inner) {
             return xnew((unit) => {
-                xnew.extend(Group, { name, open });
+                xnew.extend(Folder, { name, open });
                 xnew.extend(Panel, { params: params !== null && params !== void 0 ? params : object, nested: true });
                 inner(unit);
             });
@@ -2867,7 +2867,7 @@ function Panel(unit, { params, nested = false }) {
         }
     };
 }
-function Group(unit, { name, open = false }) {
+function Folder(unit, { name, open = false }) {
     const gate = xnew(Gate, { open, duration: 200 });
     if (name) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header) => {

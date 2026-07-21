@@ -465,7 +465,7 @@ interface PanelOptions {
     nested?: boolean;
 }
 declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
-    group({ name, open, params }: PanelOptions, inner: Function): Unit;
+    folder({ name, open, params }: PanelOptions, inner: Function): Unit;
     button({ name }?: {
         name?: string;
     }): Unit;
