@@ -303,6 +303,22 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **`xpixi.nest(container)` makes only the child units created AFTER it (in the same body / later
+  in the same unit's scope) nest into that container — call it FIRST, then spawn the actors.**
+  `nest` does `addContext(parent, …, Nest, …)`, so the Nest context is threaded onto the parent's
+  evolving context chain and inherited by *subsequently* created siblings (not earlier ones, not
+  units created in a sibling's scope). A scrolling-camera World therefore does
+  `const view = xpixi.nest(container)` up top, then `xnew(Player/Enemy/Coin)` below, and moves
+  `container.x` to scroll them all; anything nested from a unit that never called `xpixi.nest`
+  (HUD, result text) lands on the root scene = fixed screen space. (See `examples/3_games/platformer/`.)
+
+- **Tile-collision AABB tests must treat the max edges as half-open (`Math.ceil(hi/T)-1`), or a body
+  resting flush on a tile top reads as overlapping the ground and its horizontal move gets blocked.**
+  An entity snapped so its bottom == `row*T` has `floor(bottom/T) == groundRow`; an inclusive range
+  then reports the ground as solid during the *horizontal* pass too, freezing sideways motion on flat
+  ground. Half-open on the max edge excludes the flush tile; gravity next frame pushes the bottom a
+  hair past the boundary so the *vertical* pass still detects landing. (See platformer `World.solid`.)
+
 - **An open-toggle trigger and a document-level `click.outside` closer are a self-close trap: the trigger's
   own click bubbles to `document` and fires `click.outside`, closing what it just opened.** `click.outside`
   attaches on `document` in the BUBBLE phase (`dom.ts`), so the trigger's `unit.on('click')` fires first
