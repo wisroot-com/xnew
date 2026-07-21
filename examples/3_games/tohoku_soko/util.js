@@ -5,15 +5,15 @@ import { xpixi } from '@mulsense/xnew/addons/xpixi';
 
 export function Background(unit) {
   xnew(() => {
-    const object = xpixi.nest();
+    xpixi.nest();
     xnew.promise(PIXI.Assets.load('./background.png')).then((texture) => {
       const sprite = new PIXI.Sprite(texture);
       sprite.scale.set(xpixi.canvas.width / texture.frame.width, xpixi.canvas.height / texture.frame.height);
-      object.addChild(sprite);
+      xpixi.add(sprite);
     });
   })
 
-  const container = xpixi.nest();
+  xpixi.nest();
   const particles = [];
   const particleCount = 30;
 
@@ -56,7 +56,7 @@ export function Background(unit) {
     };
 
     particles.push(particle);
-    container.addChild(sprite);
+    xpixi.add(sprite);
   }
 
   // 細かいチリのパーティクル生成
@@ -84,7 +84,7 @@ export function Background(unit) {
     };
 
     dustParticles.push(dust);
-    container.addChild(graphics);
+    xpixi.add(graphics);
   }
 
   let count = 0;

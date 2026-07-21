@@ -48,7 +48,7 @@ function Contents(unit) {
 
 function Rectangle(unit, { x, y, w, h, color, options = {} }) {
   const object = xpixi.nest({ position: { x, y } });
-  object.addChild(new PIXI.Graphics().rect(-w / 2, -h / 2, w, h).fill(color));
+  xpixi.add(new PIXI.Graphics().rect(-w / 2, -h / 2, w, h).fill(color));
  
   const pyshics = Matter.Bodies.rectangle(0, 0, w, h, options);
   Matter.Composite.add(xmatter.world, pyshics);
@@ -64,7 +64,7 @@ function Rectangle(unit, { x, y, w, h, color, options = {} }) {
 
 function Circle(unit, { x, y, radius, color, options = {} }) {
   const object = xpixi.nest({ position: { x, y } });
-  object.addChild(new PIXI.Graphics().circle(0, 0, radius).fill(color));
+  xpixi.add(new PIXI.Graphics().circle(0, 0, radius).fill(color));
  
   const pyshics = Matter.Bodies.circle(0, 0, radius, options);
   Matter.Composite.add(xmatter.world, pyshics);
@@ -79,7 +79,7 @@ function Circle(unit, { x, y, radius, color, options = {} }) {
 
 function Polygon(unit, { x, y, sides, radius, color, options = {} }) {
   const object = xpixi.nest({ position: { x, y } });
-  object.addChild(new PIXI.Graphics().regularPoly(0, 0, radius, sides).fill(color));
+  xpixi.add(new PIXI.Graphics().regularPoly(0, 0, radius, sides).fill(color));
   
   const pyshics = Matter.Bodies.polygon(0, 0, sides, radius, options);
   Matter.Composite.add(xmatter.world, pyshics);
@@ -99,7 +99,7 @@ function Dumbbell(unit, { x, y, size, angle, color, options = {} }) {
   graphics.rect(-size, -size / 8, size * 2, size / 4).fill(color);
   graphics.circle(-size, 0, size / 2).fill(color);
   graphics.circle(+size, 0, size / 2).fill(color);
-  object.addChild(graphics);
+  xpixi.add(graphics);
   object.position.set(x, y);
 
   const bar = Matter.Bodies.rectangle(0, 0, size * 2, size / 4);
@@ -119,7 +119,7 @@ function Dumbbell(unit, { x, y, size, angle, color, options = {} }) {
 }
 
 function Car(unit, { x, y, size }) {
-  const container = xpixi.nest();
+  xpixi.nest();
 
   const car = Matter.Composite.create({ label: 'car' });
   Matter.Composite.add(xmatter.world, car);
@@ -162,9 +162,9 @@ function Car(unit, { x, y, size }) {
   const wheelRightGraphics = new PIXI.Graphics();
   wheelRightGraphics.circle(0, 0, 15).fill(0x333333);
 
-  container.addChild(bodyGraphics);
-  container.addChild(wheelLeftGraphics);
-  container.addChild(wheelRightGraphics);
+  xpixi.add(bodyGraphics);
+  xpixi.add(wheelLeftGraphics);
+  xpixi.add(wheelRightGraphics);
 
   unit.on('update', () => {
     bodyGraphics.rotation = body.angle;
@@ -194,7 +194,7 @@ function LShape(unit, { x, y, color, size, options = {} }) {
   const graphics = new PIXI.Graphics();
   graphics.rect(-a, -a, a * 2, b * 2).fill(color);
   graphics.rect(-a, -a, b * 2, a * 2).fill(color);
-  object.addChild(graphics);
+  xpixi.add(graphics);
   object.position.set(x, y)
   object.pivot.set(offset.x, offset.y);
 

@@ -62,7 +62,7 @@
 
     // 3 x 2 grid, one flame design per cell
     function Gallery(unit) {
-      const grid = xpixi.nest();
+      xpixi.nest();
 
       const lines = new PIXI.Graphics();
       for (let c = 1; c < 3; c++) {
@@ -70,7 +70,7 @@
       }
       lines.moveTo(24, 320).lineTo(936, 320);
       lines.stroke({ width: 1, color: 0xffffff, alpha: 0.05 });
-      grid.addChild(lines);
+      xpixi.add(lines);
 
       const cells = [
         { type: 'bonfire', label: 'Bonfire' },
@@ -135,7 +135,7 @@
         glow.alpha = cfg.baseGlow.alpha;
         glow.scale.set(cfg.baseGlow.size / TEX);
         glow.position.set(0, cfg.baseGlow.y ?? 0);
-        container.addChild(glow);
+        xpixi.add(glow);
       }
 
       const step = cfg.step ?? standardStep;
@@ -405,10 +405,10 @@
       const flame = xnew(Flame, fireballCfg(x, y));
       flame.burst(56);
 
-      const ringLayer = xpixi.nest({ position: { x, y } });
+      xpixi.nest({ position: { x, y } });
       const ring = new PIXI.Graphics();
       ring.blendMode = 'add';
-      ringLayer.addChild(ring);
+      xpixi.add(ring);
 
       let age = 0;
       unit.on('update', ({ delta }) => {
@@ -428,26 +428,26 @@
     //----------------------------------------------------------------------------------------------------
 
     function Logs(unit, { x, y }) {
-      const c = xpixi.nest({ position: { x, y: y + 8 } });
+      xpixi.nest({ position: { x, y: y + 8 } });
       [[-1, 0x5b3a21], [1, 0x6b4526]].forEach(([dir, color]) => {
         const g = new PIXI.Graphics();
         g.roundRect(-42, -9, 84, 18, 9).fill(color);
         g.rotation = dir * 0.32;
         g.position.set(dir * 6, 0);
-        c.addChild(g);
+        xpixi.add(g);
 
         const lit = new PIXI.Graphics();
         lit.roundRect(-42, -9, 84, 6, 3).fill({ color: 0xffb060, alpha: 0.5 });
         lit.rotation = dir * 0.32;
         lit.position.set(dir * 6, 0);
-        c.addChild(lit);
+        xpixi.add(lit);
       });
     }
 
     function TorchStick(unit, { x, y }) {
-      const c = xpixi.nest({ position: { x, y } });
-      c.addChild(new PIXI.Graphics().roundRect(-6, 8, 12, 78, 5).fill(0x4a3220));
-      c.addChild(new PIXI.Graphics().roundRect(-13, -4, 26, 20, 6).fill(0x2a2a2e));
+      xpixi.nest({ position: { x, y } });
+      xpixi.add(new PIXI.Graphics().roundRect(-6, 8, 12, 78, 5).fill(0x4a3220));
+      xpixi.add(new PIXI.Graphics().roundRect(-13, -4, 26, 20, 6).fill(0x2a2a2e));
     }
 
     //----------------------------------------------------------------------------------------------------

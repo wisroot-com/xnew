@@ -288,7 +288,7 @@ function Cursor(unit) {
   const graphics = new PIXI.Graphics();
   graphics.moveTo(-24, 0).lineTo(24, 0).stroke({ color: 0xE84A57, width: 12 })
   graphics.moveTo(0, -24).lineTo(0, 24).stroke({ color: 0xE84A57, width: 12 });
-  object.addChild(graphics);
+  xpixi.add(graphics);
 
   unit.on('+move', ({ x }) => object.x = Math.max(Math.min(x, xpixi.canvas.width / 2 + 190), xpixi.canvas.width / 2 - 190));
 
@@ -361,7 +361,7 @@ function ModelBall(ball, { x, y, id = 0 }) {
 }
 
 function StarParticles(unit, { x, y }) {
-  const container = xpixi.nest({ position: { x, y } });
+  xpixi.nest({ position: { x, y } });
 
   for (let i = 0; i < 5; i++) {
     const size = 12 + Math.random() * 20;
@@ -369,7 +369,7 @@ function StarParticles(unit, { x, y }) {
     const color = [0xFFFF00, 0xFFD700, 0xFFA500, 0xFFFFFF, 0xFF69B4, 0x87CEEB, 0x98FB98, 0xFFB6C1][Math.floor(Math.random() * 8)];
 
     const graphics = new PIXI.Graphics().star(0, 0, 5, size, size * 0.5).fill(color);
-    container.addChild(graphics);
+    xpixi.add(graphics);
 
     const angle = (Math.PI * 2 / 5) * i + Math.random() * 0.5;
     const speed = 1 + Math.random() * 1.5;
@@ -397,7 +397,7 @@ function Circle(unit, { x, y, radius, color = 0xFFFFFF, alpha = 1.0, options = {
   unit.on('finalize', () => Matter.Composite.remove(xmatter.world, pyshics));
 
   const graphics = new PIXI.Graphics().circle(0, 0, radius).fill(color);
-  object.addChild(graphics);
+  xpixi.add(graphics);
   object.alpha = alpha;
 
   unit.on('update', () => {

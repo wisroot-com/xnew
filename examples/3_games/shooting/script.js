@@ -27,8 +27,8 @@ function Contents(unit) {
 }
 
 function Background(unit) {
-  const object = xpixi.nest();
-  object.addChild(new PIXI.Graphics().rect(0, 0, xpixi.canvas.width, xpixi.canvas.height).fill(0x000000));
+  xpixi.nest();
+  xpixi.add(new PIXI.Graphics().rect(0, 0, xpixi.canvas.width, xpixi.canvas.height).fill(0x000000));
 
   for (let i = 0; i < 100; i++) {
     xnew(Dot);
@@ -37,7 +37,7 @@ function Background(unit) {
 
 function Dot(unit) {
   const object = xpixi.nest({ position: { x: Math.random() * xpixi.canvas.width, y: Math.random() * xpixi.canvas.height } });
-  object.addChild(new PIXI.Graphics().circle(0, 0, 1).fill(0xFFFFFF));
+  xpixi.add(new PIXI.Graphics().circle(0, 0, 1).fill(0xFFFFFF));
 
   let velocity = Math.random() + 0.1;
   unit.on('update', () => {
@@ -163,7 +163,7 @@ function Player(unit) {
 
 function Shot(unit, { x, y }) {
   const object = xpixi.nest({ position: { x, y } });
-  object.addChild(new PIXI.Graphics().ellipse(0, 0, 4, 24).fill(0x22FFFF));
+  xpixi.add(new PIXI.Graphics().ellipse(0, 0, 4, 24).fill(0x22FFFF));
 
   unit.on('update', () => {
     object.y -= 12;
@@ -274,7 +274,7 @@ function Crash(unit, { x, y, score }) {
 }
 
 function Sprite(unit, { rects }) {
-  const object = xpixi.nest();
+  xpixi.nest();
   xnew.promise(PIXI.Assets.load('texture.png')).then((texture) => {
     texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
     const textures = rects.map((rect) => new PIXI.Texture({ source: texture, frame: new PIXI.Rectangle(...rect) }));
@@ -283,6 +283,6 @@ function Sprite(unit, { rects }) {
     sprite.anchor.set(0.5);
     sprite.scale.set(2);
     sprite.play();
-    object.addChild(sprite);
+    xpixi.add(sprite);
   });
 }

@@ -202,10 +202,10 @@ function Board(unit) {
     group.zIndex = 50;
     const title = new PIXI.Text({ text: 'カードサンプル', style: { fontFamily: 'sans-serif', fontSize: 20, fontWeight: 'bold', fill: 0xffffff, stroke: { color: 0x0f172a, width: 4 } } });
     title.position.set(16, 12);
-    group.addChild(title);
+    xpixi.add(title);
     const turnText = new PIXI.Text({ text: '', style: { fontFamily: 'sans-serif', fontSize: 15, fill: 0xcbd5e1, stroke: { color: 0x0f172a, width: 4 } } });
     turnText.position.set(16, 42);
-    group.addChild(turnText);
+    xpixi.add(turnText);
 
     // 山札(3D): 枚数に応じた高さで積む。枚数の段（4 枚ごと）が変わったときだけ作り直す。
     let deckUnit = null;
@@ -275,7 +275,7 @@ export function Player(unit, { seat = 0, clientId = '', name = '', mog = '' } = 
         group.zIndex = 20;
         const label = new PIXI.Text({ text: '', style: { fontFamily: 'sans-serif', fontSize: 15, fontWeight: 'bold', fill: 0xffffff, stroke: { color: 0x0f172a, width: 4 } } });
         label.anchor.set(0.5, 1);
-        group.addChild(label);
+        xpixi.add(label);
 
         // 出したカードは 3D で天面に置く（席と中央の間）。変化したときだけ作り直す。
         let shownPlayed = undefined;

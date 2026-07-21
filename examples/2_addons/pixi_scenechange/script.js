@@ -48,7 +48,7 @@ function Text(unit, { text }) {
 
 function Box(unit, { x, y, size, color }) {
   const object = xpixi.nest({ position: { x, y } });
-  object.addChild(new PIXI.Graphics().rect(-size / 2, -size / 2, size, size).fill(color));
+  xpixi.add(new PIXI.Graphics().rect(-size / 2, -size / 2, size, size).fill(color));
   
   unit.on('update', () => {
     object.rotation += 0.01;
