@@ -64,7 +64,7 @@ function Box(unit, { x, y, size, color }) {
 }
 
 function Cubes(unit) {
-  const object = xthree.nest(new THREE.Object3D());
+  const object = xthree.nest();
 
   for (let z = -1; z <= 1; z++) {
     for (let y = -1; y <= 1; y++) {
@@ -82,7 +82,7 @@ function Cubes(unit) {
 function Cube(unit, { x, y, z, size }) {
   const geometry = new THREE.BoxGeometry(size, size, size);
   const material = new THREE.MeshNormalMaterial();
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
   object.position.set(x, y, z);
 
   unit.on('update', () => {

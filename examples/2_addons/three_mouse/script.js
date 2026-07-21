@@ -38,38 +38,38 @@ function Contents(unit) {
 }
 
 function DirectionaLight(unit, { color = 0xffffff, intensity = 1.0, position }) {
-  const object = xthree.nest(new THREE.DirectionalLight(color, intensity));
+  const object = xthree.add(new THREE.DirectionalLight(color, intensity));
   object.position.set(position.x, position.y, position.z);
   object.castShadow = true;
 }
 
 function AmbientLight(unit, { color = 0xffffff, intensity = 1.0 }) {
-  const object = xthree.nest(new THREE.AmbientLight(color, intensity));
+  const object = xthree.add(new THREE.AmbientLight(color, intensity));
 }
 
 function Dorm(unit, { size }) {
   const geometry = new THREE.SphereGeometry(size, 25, 25);
   const material = new THREE.MeshBasicMaterial({ color: 0xEEEEFF, side: THREE.BackSide });
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
 }
 
 function Ground(unit, { size, color }) {
   const geometry = new THREE.PlaneGeometry(size, size, 1, 1);
   const material = new THREE.MeshStandardMaterial({ color, transparent: true, });
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
   object.receiveShadow = true;
 }
 
 function Cube(unit, { x, y, z, size, color }) {
   const geometry = new THREE.BoxGeometry(size, size, size);
   const material = new THREE.MeshLambertMaterial({ color, });
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
   object.position.set(x, y, z);
   object.castShadow = true;
 }
 
 function Controller(unit) {
-  const object = xthree.nest(new THREE.Object3D());
+  const object = xthree.nest();
   const pivot1 = new THREE.Object3D();
   const pivot2 = new THREE.Object3D();
   object.add(pivot1);

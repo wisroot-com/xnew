@@ -192,14 +192,14 @@ function ThreeTexture(unit, { position = { x: 0, y: 0} }) {
 }
 
 function DirectionalLight(unit, { x, y, z }) {
-  const object = xthree.nest(new THREE.DirectionalLight(0xFFFFFF, 0.8));
+  const object = xthree.add(new THREE.DirectionalLight(0xFFFFFF, 0.8));
   object.position.set(x, y, z);
   object.castShadow = true;
   object.shadow.camera.updateProjectionMatrix();
 }
 
 function AmbientLight(unit) {
-  const object = xthree.nest(new THREE.AmbientLight(0xFFFFFF, 0.4));
+  const object = xthree.add(new THREE.AmbientLight(0xFFFFFF, 0.4));
 }
 
 function TitleText(unit) {
@@ -236,7 +236,7 @@ function StageSelect(unit) {
 
 function Floor(unit) {
   const global = xnew.context(GameData);
-  const object = xthree.nest(new THREE.Group());
+  const object = xthree.nest();
 
   for (let y = 0; y < global.GRID; y++) {
     for (let x = 0; x < global.GRID; x++) {
@@ -280,7 +280,7 @@ function Floor(unit) {
 
 function Wall(unit, { x, y }) {
   const height = 1;
-  const object = xthree.nest(new THREE.Object3D());
+  const object = xthree.nest();
 
   xnew.promise(new Promise((resolve) => {
     new PLYLoader().load('../../assets/soko_block_fixed.ply', (geometry) => resolve(geometry));
@@ -318,7 +318,7 @@ function Goal(goal, { x, y }) {
   const depth = 0.2;
   const geometry = new THREE.CylinderGeometry(0.3, 0.3, depth, 32);
   const material = new THREE.MeshStandardMaterial({ color: 0x22CC22, emissive: 0x22CC22, emissiveIntensity: 0.3 });
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
 
   const position = convert3d(goal.x, goal.y, depth / 2);
   object.position.set(position.x, position.y, position.z);
@@ -334,7 +334,7 @@ function Goal(goal, { x, y }) {
 }
 
 function Player(player, { id, x, y }) {
-  const object = xthree.nest(new THREE.Object3D());
+  const object = xthree.nest();
   xnew(Model, { id, scale: 0.7 });
   object.rotation.x = -30 * Math.PI / 180;
 
@@ -381,7 +381,7 @@ function Player(player, { id, x, y }) {
 
 function Box(box, { x, y }) {
   const boxSize = 1;
-  const object = xthree.nest(new THREE.Object3D());
+  const object = xthree.nest();
   let material = null;
   xnew.promise(new Promise((resolve) => {
     new PLYLoader().load('../../assets/soko_block.ply', (geometry) => resolve(geometry));
@@ -509,7 +509,7 @@ function RightBlock(unit, { id }) {
 }
 
 function Model(unit, { id = 0, scale }) {
-  const object = xthree.nest(new THREE.Object3D());
+  const object = xthree.nest();
 
   const list = ['zundamon.vrm', 'usagi.vrm', 'kiritan.vrm', 'metan.vrm', 'zunko.vrm', 'sora.vrm', 'itako.vrm'];
   const path = '../../assets/' + (id < 7 ? list[id] : list[0]);

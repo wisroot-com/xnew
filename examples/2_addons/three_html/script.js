@@ -104,12 +104,12 @@ function ThreeContents(unit) {
 }
 
 function DirectionaLight(unit, x, y, z, value) {
-  const object = xthree.nest(new THREE.DirectionalLight(0xFFFFFF, value));
+  const object = xthree.add(new THREE.DirectionalLight(0xFFFFFF, value));
   object.position.set(x, y, z);
 }
 
 function AmbientLight(unit, value) {
-  const object = xthree.nest(new THREE.AmbientLight(0xFFFFFF, value));
+  const object = xthree.add(new THREE.AmbientLight(0xFFFFFF, value));
 }
 
 function Room(unit) {
@@ -119,7 +119,7 @@ function Room(unit) {
     color: 0xF8F8FF, side: THREE.BackSide,
     polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1
   });
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
 
   xnew(Grid, { tz: +size, rx: 90 });
   xnew(Grid, { tz: -size, rx: 90 });
@@ -130,7 +130,7 @@ function Room(unit) {
 }
 
 function Grid(unit, { tx = 0, ty = 0, tz = 0, rx = 0, ry = 0, rz = 0 }) {
-  const object = xthree.nest(new THREE.GridHelper(1100, 10, 0x444466, 0x444466));
+  const object = xthree.add(new THREE.GridHelper(1100, 10, 0x444466, 0x444466));
   object.rotation.set(rx * Math.PI / 180, ry * Math.PI / 180, rz * Math.PI / 180);
   object.position.set(tx, ty, tz);
 }

@@ -77,7 +77,7 @@ function Main(unit, { mogPath = '../../assets/rei.mog', vrmaPath = '../../assets
 }
 
 function DirectionaLight(unit, { x, y, z }) {
-  const object = xthree.nest(new THREE.DirectionalLight(0xFFFFFF, 1.4));
+  const object = xthree.add(new THREE.DirectionalLight(0xFFFFFF, 1.4));
   object.position.set(x, y, z);
   object.castShadow = true;
   object.shadow.mapSize.width = 2048;
@@ -85,18 +85,18 @@ function DirectionaLight(unit, { x, y, z }) {
 }
 
 function AmbientLight(unit) {
-  const object = xthree.nest(new THREE.AmbientLight(0xFFFFFF, 1.8));
+  const object = xthree.add(new THREE.AmbientLight(0xFFFFFF, 1.8));
 }
 
 function Ground(unit) {
   const geometry = new THREE.PlaneGeometry(100, 100);
   const material = new THREE.ShadowMaterial({ opacity: 0.20 });
-  const plane = xthree.nest(new THREE.Mesh(geometry, material));
+  const plane = xthree.add(new THREE.Mesh(geometry, material));
   plane.receiveShadow = true;
 }
 
 function Model(unit, { mogPath, vrmaPath, position }) {
-  const object = xthree.nest(new THREE.Object3D());
+  const object = xthree.nest();
   object.rotation.x = Math.PI / 2;
   object.position.set(position.x, position.y, position.z);
 

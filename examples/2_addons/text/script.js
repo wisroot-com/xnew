@@ -77,7 +77,7 @@ function PixiText(unit) {
 }
 
 function ThreeText(unit) {
-  const object = xthree.nest(new THREE.Object3D());
+  const object = xthree.nest();
 
   const loader = new FontLoader();
   xnew.promise(new Promise((resolve) => {

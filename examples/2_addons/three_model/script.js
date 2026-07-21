@@ -42,7 +42,7 @@ function Contents(unit) {
 }
 
 function DirectionalLight(unit, { color = 0xffffff, intensity = 3, position }) {
-  const object = xthree.nest(new THREE.DirectionalLight(color, intensity));
+  const object = xthree.add(new THREE.DirectionalLight(color, intensity));
   object.position.set(position.x, position.y, position.z);
   object.castShadow = true;
 }
@@ -50,7 +50,7 @@ function DirectionalLight(unit, { color = 0xffffff, intensity = 3, position }) {
 function Ground(unit) {
   const geometry = new THREE.PlaneGeometry(100, 100);
   const material = new THREE.ShadowMaterial({ opacity: 0.20 });
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
   object.rotation.x = - Math.PI / 2;
   object.receiveShadow = true;
 }
@@ -62,7 +62,7 @@ function Controller(unit) {
 }
 
 function Model(unit, { url }) {
-  const object = xthree.nest(new THREE.Object3D());
+  const object = xthree.nest();
   let select = 'idle';
   const baseActions = ['idle', 'walk', 'run'];
   const settings = { none: { type: 'base', action: null, weight: 0 } };

@@ -427,26 +427,26 @@ function BowlVisual(unit) {
 }
 
 function DirectionalLight(unit, { x, y, z }) {
-    const object = xthree.nest(new THREE.DirectionalLight(0xFFFFFF, 1.7));
+    const object = xthree.add(new THREE.DirectionalLight(0xFFFFFF, 1.7));
     object.position.set(x, y, z);
     object.castShadow = true;
 }
 
 function AmbientLight(unit) {
-    xthree.nest(new THREE.AmbientLight(0xFFFFFF, 1.2));
+    xthree.add(new THREE.AmbientLight(0xFFFFFF, 1.2));
 }
 
 function ShadowPlane(unit) {
     const geometry = new THREE.PlaneGeometry(16, 14);
     const material = new THREE.ShadowMaterial({ opacity: 0.25 });
-    const plane = xthree.nest(new THREE.Mesh(geometry, material));
+    const plane = xthree.add(new THREE.Mesh(geometry, material));
     plane.receiveShadow = true;
     plane.rotation.x = -Math.PI / 2;
     plane.position.set(0.0, -2.9, -2.0);
 }
 
 function Model(unit, { id = 0, position = null, rotation = null, scale }) {
-    const object = xthree.nest(new THREE.Object3D());
+    const object = xthree.nest();
     if (position) { object.position.set(position.x, position.y, position.z); }
     if (rotation) { object.rotation.set(rotation.x, rotation.y, rotation.z); }
 

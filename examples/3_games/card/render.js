@@ -59,7 +59,7 @@ export function Ground(unit) {
 //----------------------------------------------------------------------------------------------------
 
 export function Chabudai(unit) {
-    const group = xthree.nest(new THREE.Object3D());
+    const group = xthree.nest();
 
     // 天板: 円柱（側面=横木目 / 天面=年輪 / 底面=無地）
     const topMaterials = [
@@ -132,7 +132,7 @@ function cardMaterials(topTexture) {
 //----------------------------------------------------------------------------------------------------
 
 export function Character(unit, { mogPath, vrmaPath, x = 0, z = 0, scale = 1.1 }) {
-    const object = xthree.nest(new THREE.Object3D());
+    const object = xthree.nest();
     object.position.set(x, 0, z);
     object.scale.setScalar(scale);
     object.rotation.y = Math.atan2(-x, -z);   // テーブル中央を向く

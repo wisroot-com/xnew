@@ -150,7 +150,7 @@ function makeTatamiTexture(size = 512) {
 //----------------------------------------------------------------------------------------------------
 
 function Chabudai(unit) {
-    const group = xthree.nest(new THREE.Object3D());
+    const group = xthree.nest();
 
     const topTexture = makeWoodTopTexture();
     const sideTexture = makeWoodSideTexture();
@@ -399,7 +399,7 @@ function makeCardFaceTexture(number, red) {
 //----------------------------------------------------------------------------------------------------
 
 function Character(unit, { mogPath, x = 0, z = 0, scale = 1.1 }) {
-    const object = xthree.nest(new THREE.Object3D());
+    const object = xthree.nest();
     object.position.set(x, 0, z);
     object.scale.setScalar(scale);
     object.rotation.y = Math.atan2(-x, -z);   // テーブル中央を向く

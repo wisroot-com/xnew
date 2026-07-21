@@ -28,7 +28,7 @@ function Contents(unit) {
 }
 
 function DirectionalLight(unit) {
-  const object = xthree.nest(new THREE.DirectionalLight(0xFFFFFF, 1));
+  const object = xthree.add(new THREE.DirectionalLight(0xFFFFFF, 1));
   object.position.set(0, 0, 1);
 }
 
@@ -37,7 +37,7 @@ function Cube(unit) {
 
   const geometry = new THREE.BoxGeometry(size, size, size);
   const material = new THREE.MeshLambertMaterial({ color: 0xFFFFFF * Math.random() });
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
 
   object.position.x = 100 * (Math.random() - 0.5);
   object.position.y = 100 * (Math.random() - 0.5);

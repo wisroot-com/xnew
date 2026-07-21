@@ -312,6 +312,8 @@ the rule, then one line of why.
   is `add`, which never changes the current parent; two `nest()` calls = a group inside a group (legit).
   A former `nest(new PIXI.Container({ position }))` becomes `xpixi.nest().position.set(x, y)`. (Audit
   found zero real "nest an existing object as parent" uses across all examples.)
+  **`xthree.nest()` / `xthree.add()` work identically** (nest() makes a `THREE.Group`); Three meshes /
+  lights are leaves → `add`, only `Object3D` / `Group` were the real groups (they keep `.add(child)`).
 
 - **`xpixi.nest()` makes only the child units created AFTER it (in the same body / later in the same
   unit's scope) nest into that group — call it FIRST, then spawn the actors.**

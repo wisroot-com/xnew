@@ -67,11 +67,11 @@ function Contents(unit) {
 }
 
 function AmbientLight(unit, { color = 0xffffff, intensity = 1.0 }) {
-  const object = xthree.nest(new THREE.AmbientLight(color, intensity));
+  const object = xthree.add(new THREE.AmbientLight(color, intensity));
 }
 
 function DirectionaLight(unit, { color = 0xffffff, intensity = 1.0, position }) {
-  const object = xthree.nest(new THREE.DirectionalLight(color, intensity));
+  const object = xthree.add(new THREE.DirectionalLight(color, intensity));
   object.position.set(position.x, position.y, position.z);
   object.castShadow = true;
   object.shadow.mapSize.width = 2048;
@@ -79,7 +79,7 @@ function DirectionaLight(unit, { color = 0xffffff, intensity = 1.0, position }) 
 }
 
 function SpotLight(unit, { color = 0xffffff, intensity = 1.0, position }) {
-  const object = xthree.nest(new THREE.SpotLight(color, intensity, 10, Math.PI / 16, 0.02, 2));
+  const object = xthree.add(new THREE.SpotLight(color, intensity, 10, Math.PI / 16, 0.02, 2));
   object.castShadow = true;
   object.target.position.set(0, 0, 0);
   object.position.set(position.x, position.y, position.z );
@@ -88,7 +88,7 @@ function SpotLight(unit, { color = 0xffffff, intensity = 1.0, position }) {
 function Box(unit, { size, position, rotation }) {
   const geometry = new THREE.BoxGeometry(size, size, size);
   const material = new THREE.MeshPhongMaterial({ map: chessboard(3, 3) });
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
 
   object.castShadow = true;
   object.receiveShadow = true;
@@ -99,7 +99,7 @@ function Box(unit, { size, position, rotation }) {
 function Plane(unit, { size, position, rotation }) {
   const geometry = new THREE.PlaneGeometry(size, size);
   const material = new THREE.MeshPhongMaterial( { map: chessboard(15, 15) } );
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
 
   object.castShadow = true;
   object.receiveShadow = true;
@@ -112,7 +112,7 @@ function Crystal(unit, { radius, position, rotation }) {
   const material = new THREE.MeshPhongMaterial(
     { color: 0x68b7e9, emissive: 0x4f7e8b, shininess: 10, specular: 0xffffff }
   );
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
   object.castShadow = true;
   object.receiveShadow = true;
   object.rotation.set(rotation.x, rotation.y, rotation.z);
@@ -129,7 +129,7 @@ function Crystal(unit, { radius, position, rotation }) {
 }
 
 function Model(unit, { mogPath, vrmaPath, position, rotation }) {
-  const object = xthree.nest(new THREE.Object3D());
+  const object = xthree.nest();
   object.rotation.set(rotation.x, rotation.y, rotation.z);
   object.position.set(position.x, position.y, position.z);
   object.scale.set(2, 2, 2);

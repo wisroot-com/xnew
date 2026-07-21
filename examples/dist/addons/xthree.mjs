@@ -5,7 +5,8 @@ const xthree = {
     initialize({ canvas, camera = null }) {
         return xnew.promise(xnew(Root, { canvas, camera }));
     },
-    nest(object) {
+    nest() {
+        const object = new THREE.Group();
         xnew(Nest, { object });
         xnew.extend(() => {
             return {

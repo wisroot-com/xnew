@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // xthree — Three.js integration: ties the Three scene graph to the xnew unit tree
-// Objects attached via nest / add are detached when the owning unit finalizes, but detach never
-// disposes GPU resources (they may be shared) — release them explicitly with dispose.
+// nest() makes a group Object3D and moves the current parent into it (stateful); add(obj) attaches a
+// leaf without moving. detach never disposes GPU resources (may be shared) — release with dispose.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '@mulsense/xnew';
@@ -14,7 +14,9 @@ export const xthree = {
     ) {
         return xnew.promise(xnew(Root, { canvas, camera }));
     },
-    nest(object: any) {
+    // create a group Object3D, attach it, and move the current parent into it (stateful)
+    nest(): THREE.Group {
+        const object = new THREE.Group();
         xnew(Nest, { object });
         xnew.extend(() => {
             return {
@@ -23,6 +25,7 @@ export const xthree = {
         });
         return object;
     },
+    // attach a display object to the current parent; the current parent stays unchanged
     add(object: any) {
         xnew(Add, { object });
         return object;

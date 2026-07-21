@@ -16,7 +16,7 @@ declare const xthree: {
         canvas: HTMLCanvasElement;
         camera?: THREE.Camera | null;
     }): UnitPromise;
-    nest(object: any): any;
+    nest(): THREE.Group;
     add(object: any): any;
     dispose(object: any): void;
     coord2dTo3d(x: number, y: number, z?: number): THREE.Vector3;

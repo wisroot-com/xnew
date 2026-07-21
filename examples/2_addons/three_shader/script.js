@@ -76,7 +76,7 @@ function Cube(unit, { x, y, z, size }) {
     depthWrite: false,
     side: THREE.FrontSide,
   });
-  const object = xthree.nest(new THREE.Mesh(geometry, material));
+  const object = xthree.add(new THREE.Mesh(geometry, material));
   object.position.set(x, y, z);
   object.rotation.x = Math.PI / 6;
   object.rotation.y = Math.PI / 6;
