@@ -590,6 +590,7 @@ type TextureComponent = ((unit: xnew.Unit, props?: any) => any) & {
 declare const xtextures: {
     Wood: TextureComponent;
     Concrete: TextureComponent;
+    Tatami: TextureComponent;
 };
 
 export { xaudio, xbasics, xicons, xnew, xsync, xtextures };

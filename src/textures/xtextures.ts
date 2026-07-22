@@ -8,6 +8,7 @@ import { xnew } from '../core/xnew';
 import { createTextureRenderer, type TextureChannel, type TextureDef } from './runtime';
 import { wood } from './wood';
 import { concrete } from './concrete';
+import { tatami } from './tatami';
 
 export type TextureComponent = ((unit: xnew.Unit, props?: any) => any) & {
     def: TextureDef;
@@ -60,4 +61,5 @@ function defineTexture(def: TextureDef): TextureComponent {
 export const xtextures = {
     Wood: defineTexture(wood),
     Concrete: defineTexture(concrete),
+    Tatami: defineTexture(tatami),
 };

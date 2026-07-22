@@ -1,10 +1,10 @@
 //----------------------------------------------------------------------------------------------------
 // three_chabudai — three.js で立体的に組んだ円形ちゃぶ台（木目つき）と、周りに並ぶ .mog ボクセルキャラ。
 //   木目は外部画像を使わず、canvas に描いた CanvasTexture で表現する（天面は横線ベースの木目、
-//   側面と脚は横木目）。テーブルは天板(円柱) + 縁(トーラス) + 脚(円柱)。
+//   側面と脚は横木目）。床の畳は xtextures.Tatami を焼いた map / normalMap。テーブルは天板(円柱) + 縁(トーラス) + 脚(円柱)。
 //----------------------------------------------------------------------------------------------------
 
-import { xnew, xbasics } from '@mulsense/xnew';
+import { xnew, xbasics, xtextures } from '@mulsense/xnew';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -81,66 +81,35 @@ function Lights(unit) {
 }
 
 //----------------------------------------------------------------------------------------------------
-// Ground — 影を受けるだけの床（畳っぽい色）
+// Ground — 影を受ける畳の床。xtextures.Tatami を隠し canvas に焼き、map / normalMap として使う。
+//   worldSize: 4 で畳(2x1)がタイルにちょうど収まるので、RepeatWrapping でシームレスに繰り返せる。
 //----------------------------------------------------------------------------------------------------
 
 function Ground(unit) {
     const ground = xthree.add(new THREE.Mesh(
         new THREE.PlaneGeometry(40, 40),
-        new THREE.MeshStandardMaterial({ map: makeTatamiTexture(), roughness: 1 }),
+        new THREE.MeshStandardMaterial({
+            map: bakeTatami('color', THREE.SRGBColorSpace),
+            normalMap: bakeTatami('normal', THREE.NoColorSpace),
+            roughness: 1,
+        }),
     ));
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
 }
 
-// 畳っぽいテクスチャ: い草色の半畳マスを市松に（隣り合うマスで織り方向を変える）並べ、縁(heri)の線を入れる。
-//   1 タイル = 2x2 マス。タイル境界にも縁を半分ずつ描いて、繰り返しても縁がつながるようにする（外部画像は不要）。
-function makeTatamiTexture(size = 512) {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    const cell = size / 2;
-    const greens = ['#b7b46a', '#adb062'];   // 市松に少し色味を変える
-
-    for (let r = 0; r < 2; r++) {
-        for (let c = 0; c < 2; c++) {
-            const x0 = c * cell, y0 = r * cell;
-            const horizontal = (r + c) % 2 === 0;   // 織り方向を市松で切り替え
-            ctx.fillStyle = greens[(r + c) % 2];
-            ctx.fillRect(x0, y0, cell, cell);
-
-            // い草の織り目（細い平行線）
-            ctx.strokeStyle = 'rgba(90, 90, 40, 0.18)';
-            ctx.lineWidth = 1;
-            for (let k = 2; k < cell; k += 4) {
-                ctx.beginPath();
-                if (horizontal) { ctx.moveTo(x0, y0 + k); ctx.lineTo(x0 + cell, y0 + k); }
-                else { ctx.moveTo(x0 + k, y0); ctx.lineTo(x0 + k, y0 + cell); }
-                ctx.stroke();
-            }
-
-            // 微妙なムラ
-            for (let i = 0; i < 400; i++) {
-                ctx.fillStyle = `rgba(70, 70, 30, ${Math.random() * 0.05})`;
-                ctx.fillRect(x0 + Math.random() * cell, y0 + Math.random() * cell, 1.5, 1.5);
-            }
-        }
-    }
-
-    // 縁(heri): マス境界 + タイル端に濃い線。端の 0 / size 側は半分ずつ描いて繰り返し時につながる。
-    ctx.strokeStyle = '#3a3524';
-    ctx.lineWidth = 6;
-    for (const p of [0, cell, size]) {
-        ctx.beginPath();
-        ctx.moveTo(p, 0); ctx.lineTo(p, size);
-        ctx.moveTo(0, p); ctx.lineTo(size, p);
-        ctx.stroke();
-    }
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
+// xtextures.Tatami の指定チャンネルを非表示 canvas に描き、床タイル用の CanvasTexture にする
+function bakeTatami(channel, colorSpace) {
+    const tatami = xnew(xtextures.Tatami, {
+        size: { width: 512, height: 512 },
+        worldSize: 4,
+        channel,
+        style: 'display: none;',
+    });
+    const texture = new THREE.CanvasTexture(tatami.canvas);
+    texture.colorSpace = colorSpace;
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(16, 16);   // 40x40 の床にタイル（半畳マス ≒ 1.25 単位）
+    texture.repeat.set(10, 10);   // 40x40 の床に 4 単位タイル → 畳(2x1) ≒ 2x1 単位
     texture.anisotropy = 8;
     return texture;
 }

@@ -10,6 +10,7 @@ import { xnew, xbasics, xtextures } from '@mulsense/xnew';
 const TEXTURES = {
   wood: xtextures.Wood,
   concrete: xtextures.Concrete,
+  tatami: xtextures.Tatami,
 };
 
 xnew(document.querySelector('#main'), Main);

@@ -13,6 +13,7 @@ import * as THREE from 'three';
 const TEXTURES = {
   wood: xtextures.Wood,
   concrete: xtextures.Concrete,
+  tatami: xtextures.Tatami,
 };
 
 xnew(document.querySelector('#main'), Main);
