@@ -534,7 +534,7 @@ the rule, then one line of why.
   `xbasics` (UI components) / `xicons` (heroicons-based icons, MIT — `src/icons/license.txt`) /
   `xtextures` (procedural textures), all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
   `xaudio` (src/audio/) is a facade like `xsync`: `load` / `synthesizer` return plain xnew-free
-  `AudioTrack` / `Synthesizer` class instances whose `release()` (load also registers
+  `AudioTrack` / `Synthesizer` class instances whose teardown `clear()` (load also registers
   `xnew.promise`) is wired to a unit under the current scope inside the facade; `volume` is a
   getter/setter on the shared master gain. There are no `xbasics.AudioTrack` / `Synthesizer` /
   `Volume` members anymore (moved 2026-07); the only basics → xaudio dependency is

@@ -93,7 +93,7 @@ export class AudioTrack {
     }
 
     // Release the Web Audio nodes; the track is unusable afterwards.
-    release(): void {
+    clear(): void {
         this.forceStop();
         this.amp.disconnect();
         this.fade.disconnect();

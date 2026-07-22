@@ -181,7 +181,7 @@ type Note = {
 export class Synthesizer {
     private readonly props: SynthesizerOptions;
 
-    // Notes still sounding or in their release tail; release() stops + disconnects any left over
+    // Notes still sounding or in their release tail; clear() stops + disconnects any left over
     // (a sustained note whose release was never called would otherwise play on after teardown).
     private readonly active = new Set<Note>();
 
@@ -281,7 +281,7 @@ export class Synthesizer {
             }
             note.stopped = true;
 
-            // The pending disconnect is cleared by release(), which then handles the nodes itself.
+            // The pending disconnect is cancelled by clear(), which then handles the nodes itself.
             note.cleanupTimer = setTimeout(cleanup, RELEASE_CLEANUP_DELAY_MS);
         };
 
@@ -294,7 +294,7 @@ export class Synthesizer {
     }
 
     // Stop every active note and release the Web Audio nodes; the synthesizer stays usable.
-    release(): void {
+    clear(): void {
         for (const note of this.active) {
             if (note.cleanupTimer !== null) {
                 clearTimeout(note.cleanupTimer);

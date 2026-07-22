@@ -235,7 +235,7 @@ declare class AudioTrack {
     get status(): 'loading' | 'loaded' | 'playing' | 'paused';
     get volume(): number;
     set volume(value: number);
-    release(): void;
+    clear(): void;
     private forceStop;
     private startSource;
     private stopSource;
@@ -280,7 +280,7 @@ declare class Synthesizer {
     press(frequency: number | string, duration?: number | string, wait?: number): {
         release: () => void;
     } | undefined;
-    release(): void;
+    clear(): void;
 }
 
 declare const xaudio: {

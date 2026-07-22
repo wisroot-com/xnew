@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // xaudio — audio layer facade: load audio files, create synthesizers, master volume
-// load / synthesizer return plain class instances and tie their release() to a unit under the current
+// load / synthesizer return plain class instances and tie their clear() to a unit under the current
 // scope, so sounds are disposed with the scene that created them; volume is the shared master gain.
 //----------------------------------------------------------------------------------------------------
 
@@ -14,14 +14,14 @@ export const xaudio = {
         const track = new AudioTrack(props);
         xnew((unit: xnew.Unit) => {
             xnew.promise(track.promise);
-            unit.on('finalize', () => track.release());
+            unit.on('finalize', () => track.clear());
         });
         return track;
     },
     synthesizer(props: SynthesizerOptions): Synthesizer {
         const synth = new Synthesizer(props);
         xnew((unit: xnew.Unit) => {
-            unit.on('finalize', () => synth.release());
+            unit.on('finalize', () => synth.clear());
         });
         return synth;
     },

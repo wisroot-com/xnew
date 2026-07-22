@@ -1420,7 +1420,7 @@ class AudioTrack {
     set volume(value) {
         this.amp.gain.value = value;
     }
-    release() {
+    clear() {
         this.forceStop();
         this.amp.disconnect();
         this.fade.disconnect();
@@ -1660,7 +1660,7 @@ class Synthesizer {
             return { release };
         }
     }
-    release() {
+    clear() {
         for (const note of this.active) {
             if (note.cleanupTimer !== null) {
                 clearTimeout(note.cleanupTimer);
@@ -1683,14 +1683,14 @@ const xaudio = {
         const track = new AudioTrack(props);
         xnew((unit) => {
             xnew.promise(track.promise);
-            unit.on('finalize', () => track.release());
+            unit.on('finalize', () => track.clear());
         });
         return track;
     },
     synthesizer(props) {
         const synth = new Synthesizer(props);
         xnew((unit) => {
-            unit.on('finalize', () => synth.release());
+            unit.on('finalize', () => synth.clear());
         });
         return synth;
     },
