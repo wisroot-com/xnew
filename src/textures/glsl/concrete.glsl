@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------
-// xtexConcrete* — bumpy concrete from one shared height field: Color tints crevices vs bumps,
-// Normal perturbs via finite differences (EPS = 0.001).
+// xtexConcrete* — bumpy concrete from one shared height field: Color tints along the relief
+// (scaled by `bump`, so its sign matches the geometry), Normal perturbs via finite differences.
 // Requires noise.glsl before it; uniform declarations are generated from the TS schema (concrete.ts).
 //----------------------------------------------------------------------------------------------------
 
@@ -17,13 +17,14 @@ vec3 xtexConcreteColor(vec3 position){
   vec3 p = position * exp(scale / 2.0 + 2.0) + seed3d;
   float xdensity = mix(10.0, 0.5, density);
 
-  // the same height field as the normal channel, so stains track the relief
+  // the same height field as the normal channel, scaled by bump so the tint follows the relief:
+  // raised pores (bump > 0) brighten, dents (bump < 0) darken, flat (bump = 0) stays untinted
   float k = xtex_concreteHeight(p, xdensity);
+  // mottle contrast scales with density: 0 = uniform clean surface, 1 = full stain range
   float mottle = xtex_noise(p * 0.35) * 0.5 + 0.5;
-  float grain = xtex_noise(p * 3.0) * 0.5 + 0.5;
 
-  vec3 base = mix(background, color, mottle * 0.7 + grain * 0.3);
-  return base * mix(0.8, 1.05, k);
+  vec3 base = mix(background, color, mix(1.0, mottle, density));
+  return base * (1.0 + 0.3 * bump * k);
 }
 
 vec3 xtexConcreteNormal(vec3 position, vec3 normal, vec3 tangent){
