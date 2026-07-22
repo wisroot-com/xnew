@@ -577,6 +577,7 @@ interface TextureUniform {
 interface TextureDef {
     name: string;
     fn: string;
+    kind?: 'color' | 'normal';
     glsl: string;
     uniforms: Record<string, TextureUniform>;
 }
@@ -589,6 +590,7 @@ type TextureComponent = ((unit: xnew.Unit, props?: any) => any) & {
 };
 declare const xtextures: {
     Wood: TextureComponent;
+    Concrete: TextureComponent;
 };
 
 export { xaudio, xbasics, xicons, xnew, xsync, xtextures };

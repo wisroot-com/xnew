@@ -14,7 +14,11 @@ export interface TextureUniform {
 export interface TextureDef {
     name: string;
     fn: string; // entry function name inside glsl, e.g. 'xtexWood'
-    glsl: string; // prelude + uniform declarations + `vec3 <fn>(vec3 pos)`
+    // 'color' (default): `vec3 <fn>(vec3 pos)` returns a color.
+    // 'normal': `vec3 <fn>(vec3 pos, vec3 normal, vec3 tangent)` returns a perturbed object-space normal;
+    // the canvas runtime encodes it as a normal-map image (n * 0.5 + 0.5), three lights with it.
+    kind?: 'color' | 'normal';
+    glsl: string; // prelude + uniform declarations + the entry function
     uniforms: Record<string, TextureUniform>;
 }
 
@@ -39,6 +43,12 @@ in vec2 aPos;
 out vec2 vUv;
 void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 
+    // color: paint the returned color; normal: encode the flat-slice normal as a bakeable normal map
+    const body = def.kind === 'normal'
+        ? `vec3 n = ${def.fn}(pos, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0));
+  fragColor = vec4(n * 0.5 + 0.5, 1.0);`
+        : `fragColor = vec4(${def.fn}(pos), 1.0);`;
+
     const fragmentSource = `#version 300 es
 precision highp float;
 in vec2 vUv;
@@ -47,7 +57,7 @@ uniform float uWorldSize;
 ${def.glsl}
 void main(){
   vec3 pos = vec3((vUv - 0.5) * uWorldSize, 0.0);
-  fragColor = vec4(${def.fn}(pos), 1.0);
+  ${body}
 }`;
 
     const program = linkProgram(gl, vertexSource, fragmentSource);
