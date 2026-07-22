@@ -576,8 +576,8 @@ interface TextureUniform {
 }
 interface TextureDef {
     name: string;
-    fn: string;
-    kind?: 'color' | 'normal';
+    color: string;
+    normal: string;
     glsl: string;
     uniforms: Record<string, TextureUniform>;
 }
@@ -585,7 +585,6 @@ interface TextureDef {
 type TextureComponent = ((unit: xnew.Unit, props?: any) => any) & {
     def: TextureDef;
     glsl: string;
-    fn: string;
     uniforms: TextureDef['uniforms'];
 };
 declare const xtextures: {

@@ -6,7 +6,8 @@ import * as THREE from 'three';
 // xtextures × three.js — one model, switchable texture. xthree.texture() injects the texture's GLSL
 // into a ShaderMaterial, evaluated per-fragment from object-space position (solid look, no canvas).
 // A Panel listbox swaps the material; the parameter rows are generated from the uniform schema, so
-// adding a texture is one TEXTURES entry. Normal-kind textures get an extra surface `color` row.
+// adding a texture is one TEXTURES entry. Textures with a normal channel are lit with it (albedo
+// comes from the color channel).
 //----------------------------------------------------------------------------------------------------
 
 const TEXTURES = {
@@ -48,15 +49,11 @@ function hex(rgbArray) {
   return '#' + rgbArray.map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
 }
 
-// initial params bag from the texture's uniform schema (vec3 defaults become hex strings);
-// normal-kind textures also carry the adapter-level surface color used for lighting
+// initial params bag from the texture's uniform schema (vec3 defaults become hex strings)
 function initParams(component) {
   const params = {};
   for (const [name, uniform] of Object.entries(component.uniforms)) {
     params[name] = Array.isArray(uniform.value) ? hex(uniform.value) : uniform.value;
-  }
-  if (component.def.kind === 'normal') {
-    params.color = params.color ?? '#bfbfbf';
   }
   return params;
 }

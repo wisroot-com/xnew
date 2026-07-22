@@ -43,69 +43,44 @@ const xthree = {
         disposeObject(object);
     },
     texture(texture, params = {}) {
-        var _a, _b, _c;
+        var _a, _b;
         const def = (_a = texture.def) !== null && _a !== void 0 ? _a : texture;
+        if (def.color === undefined || def.normal === undefined) {
+            throw new Error(`xthree.texture: texture "${def.name}" must carry color and normal channels`);
+        }
         const uniforms = {};
         for (const name in def.uniforms) {
             const value = (_b = params[name]) !== null && _b !== void 0 ? _b : def.uniforms[name].value;
             uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
         }
-        let vertexShader;
-        let fragmentShader;
-        if (def.kind === 'normal') {
-            const color = (_c = params.color) !== null && _c !== void 0 ? _c : [0.75, 0.75, 0.75];
-            uniforms.color = { value: new THREE.Vector3(color[0], color[1], color[2]) };
-            vertexShader = `
-                varying vec3 vXtexPos;
-                varying vec3 vXtexNormal;
-                varying vec3 vXtexLight;
-                void main() {
-                    vXtexPos = position;
-                    vXtexNormal = normal;
-                    // rotate the view-space light into object space: transpose(mat3(mv)) * light
-                    mat3 mv = mat3(modelViewMatrix);
-                    vec3 light = normalize(vec3(0.4, 0.7, 0.6));
-                    vXtexLight = vec3(dot(mv[0], light), dot(mv[1], light), dot(mv[2], light));
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `;
-            fragmentShader = `
-                varying vec3 vXtexPos;
-                varying vec3 vXtexNormal;
-                varying vec3 vXtexLight;
-                uniform vec3 color;
-                ${def.glsl}
-                void main() {
-                    vec3 nrm = normalize(vXtexNormal);
-                    vec3 tng = normalize(abs(nrm.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), nrm) : cross(vec3(1.0, 0.0, 0.0), nrm));
-                    vec3 n = ${def.fn}(vXtexPos, nrm, tng);
-                    float diff = 0.55 + 0.45 * max(dot(n, normalize(vXtexLight)), 0.0);
-                    gl_FragColor = vec4(color * diff, 1.0);
-                }
-            `;
-        }
-        else {
-            vertexShader = `
-                varying vec3 vXtexPos;
-                varying vec3 vXtexNormal;
-                void main() {
-                    vXtexPos = position;
-                    vXtexNormal = normalize(normalMatrix * normal);
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `;
-            fragmentShader = `
-                varying vec3 vXtexPos;
-                varying vec3 vXtexNormal;
-                ${def.glsl}
-                void main() {
-                    vec3 col = ${def.fn}(vXtexPos);
-                    vec3 light = normalize(vec3(0.4, 0.7, 0.6));
-                    float diff = 0.7 + 0.3 * max(dot(normalize(vXtexNormal), light), 0.0);
-                    gl_FragColor = vec4(col * diff, 1.0);
-                }
-            `;
-        }
+        const vertexShader = `
+            varying vec3 vXtexPos;
+            varying vec3 vXtexNormal;
+            varying vec3 vXtexLight;
+            void main() {
+                vXtexPos = position;
+                vXtexNormal = normal;
+                // rotate the view-space light into object space: transpose(mat3(mv)) * light
+                mat3 mv = mat3(modelViewMatrix);
+                vec3 light = normalize(vec3(0.4, 0.7, 0.6));
+                vXtexLight = vec3(dot(mv[0], light), dot(mv[1], light), dot(mv[2], light));
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+        const fragmentShader = `
+            varying vec3 vXtexPos;
+            varying vec3 vXtexNormal;
+            varying vec3 vXtexLight;
+            ${def.glsl}
+            void main() {
+                vec3 nrm = normalize(vXtexNormal);
+                vec3 tng = normalize(abs(nrm.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), nrm) : cross(vec3(1.0, 0.0, 0.0), nrm));
+                vec3 n = ${def.normal}(vXtexPos, nrm, tng);
+                vec3 albedo = ${def.color}(vXtexPos);
+                float diff = 0.55 + 0.45 * max(dot(n, normalize(vXtexLight)), 0.0);
+                gl_FragColor = vec4(albedo * diff, 1.0);
+            }
+        `;
         return new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });
     },
     coord2dTo3d(x, y, z = 0) {

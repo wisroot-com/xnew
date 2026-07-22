@@ -22,7 +22,8 @@ const uniforms: Record<string, TextureUniform> = {
 
 export const wood: TextureDef = {
     name: 'Wood',
-    fn: 'xtexWood',
+    color: 'xtexWoodColor',
+    normal: 'xtexWoodNormal',
     glsl: noiseGlsl + uniformDeclarations(uniforms) + woodGlsl,
     uniforms,
 };

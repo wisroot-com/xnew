@@ -2,8 +2,9 @@ import { xnew, xbasics, xtextures } from '@mulsense/xnew';
 
 //----------------------------------------------------------------------------------------------------
 // xtextures viewer — canvas / WebGL2 (no three). One page for every texture: a Panel listbox switches
-// the kind, and the parameter rows are generated from the texture's uniform schema (vec3 → color row,
-// float → range row). Color textures paint colors; normal textures show a bakeable normal-map image.
+// the texture, and the parameter rows are generated from the texture's uniform schema (vec3 → color
+// row, float → range row). Every channel gets its own canvas: color paints colors, normal shows a
+// bakeable normal-map image.
 //----------------------------------------------------------------------------------------------------
 
 const TEXTURES = {
@@ -56,21 +57,28 @@ function values(params) {
 }
 
 //----------------------------------------------------------------------------------------------------
-// view — the current texture's canvas; swapped out whenever the listbox changes the kind
+// view — one canvas per channel of the current texture; swapped out whenever the listbox changes it
 //----------------------------------------------------------------------------------------------------
 
 function ViewHost(unit, { state, bags }) {
-  xnew.nest('<div class="rounded-xl overflow-hidden shadow-2xl bg-black" style="width: 512px; max-width: 55vw;">');
+  xnew.nest('<div class="flex flex-col gap-4" style="width: 512px; max-width: 55vw;">');
 
-  let view = xnew(TextureView, { component: TEXTURES[state.texture], params: bags[state.texture] });
+  let views = build(state.texture);
   unit.on('+texture', ({ type }) => {
-    view.finalize();
-    view = xnew(TextureView, { component: TEXTURES[type], params: bags[type] });
+    views.forEach((view) => view.finalize());
+    views = build(type);
   });
+
+  function build(name) {
+    const component = TEXTURES[name];
+    const channels = ['color', 'normal'].filter((channel) => component.def[channel] !== undefined);
+    return channels.map((channel) => xnew(TextureView, { component, params: bags[name], channel }));
+  }
 }
 
-function TextureView(unit, { component, params }) {
-  const tex = xnew(component, { size: { width: 512, height: 512 } });
+function TextureView(unit, { component, params, channel }) {
+  xnew.nest('<div class="rounded-xl overflow-hidden shadow-2xl bg-black">');
+  const tex = xnew(component, { size: { width: 512, height: 512 }, channel });
   unit.on('update', () => tex.set(values(params)));
 }
 

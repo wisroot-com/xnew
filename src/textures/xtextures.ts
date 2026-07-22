@@ -5,14 +5,13 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../core/xnew';
-import { createTextureRenderer, type TextureDef } from './runtime';
+import { createTextureRenderer, type TextureChannel, type TextureDef } from './runtime';
 import { wood } from './wood';
 import { concrete } from './concrete';
 
 export type TextureComponent = ((unit: xnew.Unit, props?: any) => any) & {
     def: TextureDef;
     glsl: string;
-    fn: string;
     uniforms: TextureDef['uniforms'];
 };
 
@@ -22,6 +21,7 @@ function defineTexture(def: TextureDef): TextureComponent {
         const {
             size,
             worldSize,
+            channel,
             style = 'display: block; width: 100%; height: auto;',
             ...params
         } = props ?? {};
@@ -29,7 +29,7 @@ function defineTexture(def: TextureDef): TextureComponent {
         const height = size?.height ?? 512;
 
         const canvas = xnew(`<canvas width="${width}" height="${height}" style="${style}">`).element as HTMLCanvasElement;
-        const renderer = createTextureRenderer(canvas, def, { worldSize });
+        const renderer = createTextureRenderer(canvas, def, { worldSize, channel: channel as TextureChannel | undefined });
 
         const state: Record<string, number | number[]> = {};
         for (const key in def.uniforms) {
@@ -54,7 +54,7 @@ function defineTexture(def: TextureDef): TextureComponent {
         };
     }
 
-    return Object.assign(Texture, { def, glsl: def.glsl, fn: def.fn, uniforms: def.uniforms });
+    return Object.assign(Texture, { def, glsl: def.glsl, uniforms: def.uniforms });
 }
 
 export const xtextures = {

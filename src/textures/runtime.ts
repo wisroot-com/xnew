@@ -13,14 +13,18 @@ export interface TextureUniform {
 
 export interface TextureDef {
     name: string;
-    fn: string; // entry function name inside glsl, e.g. 'xtexWood'
-    // 'color' (default): `vec3 <fn>(vec3 pos)` returns a color.
-    // 'normal': `vec3 <fn>(vec3 pos, vec3 normal, vec3 tangent)` returns a perturbed object-space normal;
-    // the canvas runtime encodes it as a normal-map image (n * 0.5 + 0.5), three lights with it.
-    kind?: 'color' | 'normal';
-    glsl: string; // prelude + uniform declarations + the entry function
+    // channel entry function names inside glsl — every texture carries BOTH:
+    // color: `vec3 <fn>(vec3 pos)` returns a color.
+    // normal: `vec3 <fn>(vec3 pos, vec3 normal, vec3 tangent)` returns a perturbed object-space normal
+    // (flat surfaces just `return normalize(normal)`); the canvas runtime encodes it as a normal-map
+    // image (n * 0.5 + 0.5), three lights the color with it.
+    color: string;
+    normal: string;
+    glsl: string; // prelude + uniform declarations + the entry functions
     uniforms: Record<string, TextureUniform>;
 }
+
+export type TextureChannel = 'color' | 'normal';
 
 export interface TextureRenderer {
     render(params: Record<string, number | number[]>): void;
@@ -28,14 +32,22 @@ export interface TextureRenderer {
 }
 
 //----------------------------------------------------------------------------------------------------
-// uniform declarations — generated from the uniform schema so names live in one place
+// uniform declarations — generated from the uniform schema so names live in one place.
+// Keys become GLSL identifiers verbatim, so they are validated here (throws at def-assembly time,
+// long before a shader compile): identifier syntax, no gl_ / xtex namespaces, no host-owned names.
 //----------------------------------------------------------------------------------------------------
+
+const RESERVED_UNIFORMS = ['uWorldSize'];
 
 export function uniformDeclarations(uniforms: Record<string, TextureUniform>): string {
     const floats: string[] = [];
     const vec3s: string[] = [];
     for (const key in uniforms) {
-        if (Array.isArray(uniforms[key].value)) {
+        if (/^[A-Za-z][A-Za-z0-9_]*$/.test(key) === false) {
+            throw new Error(`xtextures: uniform key "${key}" is not a valid GLSL identifier`);
+        } else if (key.startsWith('gl_') || key.startsWith('xtex') || RESERVED_UNIFORMS.includes(key)) {
+            throw new Error(`xtextures: uniform key "${key}" is reserved`);
+        } else if (Array.isArray(uniforms[key].value)) {
             vec3s.push(key);
         } else {
             floats.push(key);
@@ -58,9 +70,13 @@ export function uniformDeclarations(uniforms: Record<string, TextureUniform>): s
 export function createTextureRenderer(
     canvas: HTMLCanvasElement,
     def: TextureDef,
-    options: { worldSize?: number } = {},
+    options: { worldSize?: number; channel?: TextureChannel } = {},
 ): TextureRenderer {
     const worldSize = options.worldSize ?? 3;
+    const channel = options.channel ?? (def.color !== undefined ? 'color' : 'normal');
+    if (def[channel] === undefined) {
+        throw new Error(`xtextures: texture "${def.name}" has no ${channel} channel`);
+    }
     const gl = canvas.getContext('webgl2');
     if (gl === null) {
         throw new Error('xtextures: WebGL2 is not available');
@@ -72,10 +88,10 @@ out vec2 vUv;
 void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 
     // color: paint the returned color; normal: encode the flat-slice normal as a bakeable normal map
-    const body = def.kind === 'normal'
-        ? `vec3 n = ${def.fn}(pos, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0));
+    const body = channel === 'normal'
+        ? `vec3 n = ${def.normal}(pos, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0));
   fragColor = vec4(n * 0.5 + 0.5, 1.0);`
-        : `fragColor = vec4(${def.fn}(pos), 1.0);`;
+        : `fragColor = vec4(${def.color}(pos), 1.0);`;
 
     const fragmentSource = `#version 300 es
 precision highp float;

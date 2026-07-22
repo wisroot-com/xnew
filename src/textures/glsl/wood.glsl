@@ -1,9 +1,10 @@
 //----------------------------------------------------------------------------------------------------
-// xtexWood — procedural wood (rings + fibers) as a function of object-space position.
+// xtexWood* — procedural wood (rings + fibers) as a function of object-space position.
+// The surface is flat, so the normal channel returns the geometric normal unperturbed.
 // Requires noise.glsl before it; uniform declarations are generated from the TS schema (wood.ts).
 //----------------------------------------------------------------------------------------------------
 
-vec3 xtexWood(vec3 position){
+vec3 xtexWoodColor(vec3 position){
   float ang = radians(angle);
   float ca = cos(ang), sa = sin(ang);
   vec3 posLocal = vec3(
@@ -29,4 +30,8 @@ vec3 xtexWood(vec3 position){
   kk = (sin(kk * 5.0 / sum * 10.0) + 1.0) / 2.0;
 
   return mix(color, background, mix(k, kk, fibers));
+}
+
+vec3 xtexWoodNormal(vec3 position, vec3 normal, vec3 tangent){
+  return normalize(normal);
 }
