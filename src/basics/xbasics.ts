@@ -5,9 +5,9 @@
 // (except VolumeController, which deliberately depends on the xaudio layer as its master-volume UI).
 //----------------------------------------------------------------------------------------------------
 
-import { Aspect } from './layout/Aspect';
-import { Screen } from './layout/Screen';
-import { Scene } from './layout/Scene';
+import { Aspect } from './stage/Aspect';
+import { Screen } from './stage/Screen';
+import { Scene } from './stage/Scene';
 import { Button } from './element/Button';
 import { Image } from './element/Image';
 import { GraphicText } from './element/GraphicText';

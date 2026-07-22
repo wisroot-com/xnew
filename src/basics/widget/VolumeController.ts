@@ -6,7 +6,7 @@
 
 import { xnew } from '../../core/xnew';
 import { xaudio } from '../../audio/xaudio';
-import { Aspect } from '../layout/Aspect';
+import { Aspect } from '../stage/Aspect';
 import { InputRange } from '../element/InputRange';
 import { Gate } from './Gate';
 import { xicons } from '../../icons/xicons';

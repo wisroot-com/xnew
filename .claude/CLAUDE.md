@@ -31,7 +31,7 @@ Integrations for games and interactive apps.
 - `src/core/` — `xnew` core: `unit`, event, time, map, env, dom
 - `src/sync/` — networking layer (exported as `xsync`): a single `xsync.ts` (shared state + boot + facade). Lobby/room "gathering place" wiring is not built in — callers assemble it from the facade (see `examples/*/server.js` + `index.js`).
 - `src/audio/` — audio layer (exported as `xaudio`): a facade `xaudio.ts` (`load` / `synthesizer` / `volume`) over the AudioTrack / Synthesizer components and the shared master bus (`master.ts`)
-- `src/basics/` — built-in basic components (exported as `xbasics`); one component per file, grouped by category: `layout/`, `element/`, `widget/`
+- `src/basics/` — built-in basic components (exported as `xbasics`); one component per file, grouped by category: `stage/`, `element/`, `widget/`
 - `src/icons/` — heroicons icon set (exported as `xicons`); path data lives in one generated `data.ts` table, `xicons.ts` builds a component per entry from it, and `Template.ts` is the shared `<svg>` shell; path data verbatim from heroicons (MIT — `license.txt`)
 - `src/textures/` — procedural textures (exported as `xtextures`); shader-first WebGL2 rendering, three-free core
 - `src/addons/` — third-party library integrations
