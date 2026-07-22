@@ -7,13 +7,20 @@ import * as THREE from 'three';
 // into a ShaderMaterial, evaluated per-fragment from object-space position (solid look, no canvas).
 // A Panel listbox swaps the material; the parameter rows are generated from the uniform schema, so
 // adding a texture is one TEXTURES entry. A display listbox switches both (lit albedo × perturbed
-// normal) / color (raw albedo) / normal (normal-map colors) for channel inspection.
+// normal) / color (raw albedo) / normal (normal-map colors), a model listbox swaps the geometry,
+// and "copy params" puts the current texture params on the clipboard as schema-shaped JSON.
 //----------------------------------------------------------------------------------------------------
 
 const TEXTURES = {
   wood: xtextures.Wood,
   concrete: xtextures.Concrete,
   tatami: xtextures.Tatami,
+};
+
+const GEOMETRIES = {
+  knot: () => new THREE.TorusKnotGeometry(1.0, 0.34, 220, 32),
+  cube: () => new THREE.BoxGeometry(1.7, 1.7, 1.7),
+  sphere: () => new THREE.SphereGeometry(1.3, 64, 32),
 };
 
 xnew(document.querySelector('#main'), Main);
@@ -25,7 +32,7 @@ function Main(unit) {
   xthree.initialize({ canvas: unit.canvas });
   xthree.camera.position.set(0, 0, 4.2);
 
-  const state = { texture: Object.keys(TEXTURES)[0], display: 'both' };
+  const state = { texture: Object.keys(TEXTURES)[0], display: 'both', model: Object.keys(GEOMETRIES)[0] };
   const bags = {};
   for (const name in TEXTURES) {
     bags[name] = initParams(TEXTURES[name]);
@@ -68,6 +75,16 @@ function values(params) {
   return out;
 }
 
+// bag → shareable JSON values: hex strings become schema-shaped 0..1 RGB arrays (rounded)
+function copyableParams(params) {
+  const out = {};
+  for (const name in params) {
+    const value = params[name];
+    out[name] = typeof value === 'string' ? rgb(value).map((v) => Math.round(v * 1000) / 1000) : value;
+  }
+  return out;
+}
+
 // write the panel's params bag into the material each frame (hex strings become vec3)
 function syncUniforms(material, params) {
   for (const name in params) {
@@ -88,7 +105,7 @@ function syncUniforms(material, params) {
 //----------------------------------------------------------------------------------------------------
 
 function Model(unit, { state, bags }) {
-  const geometry = new THREE.TorusKnotGeometry(1.0, 0.34, 220, 32);
+  let geometry = GEOMETRIES[state.model]();
   let material = buildMaterial(state, bags);
   const object = xthree.add(new THREE.Mesh(geometry, material));
 
@@ -96,6 +113,11 @@ function Model(unit, { state, bags }) {
     material.dispose();
     material = buildMaterial(state, bags);
     object.material = material;
+  });
+  unit.on('+model', () => {
+    geometry.dispose();
+    geometry = GEOMETRIES[state.model]();
+    object.geometry = geometry;
   });
   unit.on('update', () => {
     object.rotation.x += 0.006;
@@ -171,6 +193,18 @@ function ControlPanel(unit, { state, bags }) {
   panel.listbox({ name: 'display', value: state.display, items: ['both', 'color', 'normal'] }).on('-change', ({ value }) => {
     state.display = value;
     xnew.emit('+display', { type: value });
+  });
+  panel.listbox({ name: 'model', value: state.model, items: Object.keys(GEOMETRIES) }).on('-change', ({ value }) => {
+    state.model = value;
+    xnew.emit('+model', { type: value });
+  });
+  const copy = panel.button({ name: 'copy params' });
+  copy.on('click', () => {
+    const text = JSON.stringify({ texture: state.texture, params: copyableParams(bags[state.texture]) }, null, 2);
+    navigator.clipboard.writeText(text).then(() => {
+      copy.element.textContent = 'copied!';
+      xnew.timeout(() => { copy.element.textContent = 'copy params'; }, 1000);
+    });
   });
   panel.separator();
 

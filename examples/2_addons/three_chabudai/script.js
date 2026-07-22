@@ -121,18 +121,21 @@ function bakeTatami(channel) {
 // Chabudai — 円形ちゃぶ台（天板 + 脚）。木目は xtextures.Wood を檜風の淡い色で焼いた CanvasTexture。
 //----------------------------------------------------------------------------------------------------
 
-// 檜風の淡い木色（color = 地の色 / background = 木目の色）
-const HINOKI = { color: [0.91, 0.83, 0.66], background: [0.74, 0.60, 0.43] };
+// 檜風の淡い木目（three_textures の copy params で調整した値）
+const WOOD_PARAMS = {
+    scale: 2.9, rings: 4.5, lengths: 10, angle: 20, fibers: 0.3, fibersDensity: 10, seed: 0,
+    color: [0.792, 0.714, 0.635], background: [0.78, 0.616, 0.557],
+};
 
 function Chabudai(unit) {
     const group = xthree.nest();
 
-    // 天面: 年輪がそのまま出るデフォルト構成 / 側面: lengths で木目を横に引き伸ばす
+    // 天面・側面とも同じ木目パラメータで焼く（側面は横長 canvas で木目が横に流れる）
     const topTexture = bake(xtextures.Wood, 'color', {
-        size: { width: 512, height: 512 }, worldSize: 3, ...HINOKI,
+        size: { width: 512, height: 512 }, worldSize: 3, ...WOOD_PARAMS,
     });
     const sideTexture = bake(xtextures.Wood, 'color', {
-        size: { width: 512, height: 64 }, worldSize: 3, lengths: 6, ...HINOKI,
+        size: { width: 512, height: 64 }, worldSize: 3, ...WOOD_PARAMS,
     });
     sideTexture.wrapS = THREE.RepeatWrapping;
     sideTexture.repeat.set(3, 1);   // 周方向に 3 回タイルして木目を細かく
@@ -141,7 +144,7 @@ function Chabudai(unit) {
     const topMaterials = [
         new THREE.MeshStandardMaterial({ map: sideTexture, roughness: 0.65 }),                        // 側面
         new THREE.MeshStandardMaterial({ map: topTexture, roughness: 0.55, metalness: 0.0 }),         // 天面
-        new THREE.MeshStandardMaterial({ color: 0xd8c49c, roughness: 0.7 }),                          // 底面
+        new THREE.MeshStandardMaterial({ color: 0xcab6a2, roughness: 0.7 }),                          // 底面
     ];
     const top = new THREE.Mesh(new THREE.CylinderGeometry(TABLE_RADIUS, TABLE_RADIUS, TABLE_THICKNESS, 64, 1), topMaterials);
     top.position.y = TABLE_TOP_Y;
@@ -149,10 +152,9 @@ function Chabudai(unit) {
     top.receiveShadow = true;
     group.add(top);
 
-    // 脚: 天板の下、外向きに少し開いた 4 本。angle: 90 で木目を縦に走らせ、少し濃い檜色にする
+    // 脚: 天板の下、外向きに少し開いた 4 本。木目の傾きを保ったまま +90° して縦木目にする
     const legTexture = bake(xtextures.Wood, 'color', {
-        size: { width: 128, height: 256 }, worldSize: 2, lengths: 5, angle: 90,
-        color: [0.85, 0.74, 0.55], background: [0.64, 0.50, 0.34],
+        size: { width: 128, height: 256 }, worldSize: 2, ...WOOD_PARAMS, angle: WOOD_PARAMS.angle + 90,
     });
     const legHeight = TABLE_TOP_Y - TABLE_THICKNESS / 2;   // 床から天板の裏まで
     const legMaterial = new THREE.MeshStandardMaterial({ map: legTexture, roughness: 0.6 });
