@@ -69,8 +69,8 @@ The overall master volume is controlled with [`xaudio.volume`](./volume).
 
 A demo where you can tweak the synth parameters.
 
-<iframe style={{width:'100%',height:'640px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/basics/synthesizer/index.html" ></iframe>
+<iframe style={{width:'100%',height:'640px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/audio/synthesizer/index.html" ></iframe>
 
 Combining `press` calls lets you build game-style sound effects.
 
-<iframe style={{width:'100%',height:'260px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/basics/soundeffect/index.html" ></iframe>
+<iframe style={{width:'100%',height:'260px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/audio/soundeffect/index.html" ></iframe>

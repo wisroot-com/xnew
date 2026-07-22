@@ -1,7 +1,7 @@
 # 1_xnew — features of `@mulsense/xnew`
 
 Samples for everything importable from the `@mulsense/xnew` package itself
-(no addons). Grouped by the package's four exports plus applied showcases.
+(no addons). Grouped by the package's exports plus applied showcases.
 
 Serve the `examples/` parent directory with any static server and open each
 `index.html` (only `sync/multiplay` needs its own Node server — see below).
@@ -31,9 +31,14 @@ Recommended reading order.
 | [widget](basics/widget/) | `ColorPicker` / `Panel` / `Gate` + `Accordion` / `Overlay` (accordion, modal, menu) |
 | [controller](basics/controller/) | `VirtualPad` (`analog` / `8way` / `4way`) virtual game pad |
 | [svg](basics/svg/) | `SVG` icon base, `GraphicText` outlined labels |
-| [audiotrack](basics/audiotrack/) | `xaudio.load` music playback, `xaudio.volume` master gain |
-| [synthesizer](basics/synthesizer/) | `xaudio.synthesizer` interactive keyboard playground |
-| [soundeffect](basics/soundeffect/) | `xaudio.synthesizer` recipes for game sound effects |
+
+## audio/ — export `xaudio`
+
+| sample | shows |
+| --- | --- |
+| [audiotrack](audio/audiotrack/) | `xaudio.load` music playback, `xaudio.volume` master gain |
+| [synthesizer](audio/synthesizer/) | `xaudio.synthesizer` interactive keyboard playground |
+| [soundeffect](audio/soundeffect/) | `xaudio.synthesizer` recipes for game sound effects |
 
 ## icons/ — export `xicons`
 

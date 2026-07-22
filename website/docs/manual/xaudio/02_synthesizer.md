@@ -69,8 +69,8 @@ note.release();
 
 シンセサイザーのパラメーターを操作できるデモです。
 
-<iframe style={{width:'100%',height:'640px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/basics/synthesizer/index.html" ></iframe>
+<iframe style={{width:'100%',height:'640px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/audio/synthesizer/index.html" ></iframe>
 
 `press` を組み合わせるとゲーム風の効果音も作れます。
 
-<iframe style={{width:'100%',height:'260px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/basics/soundeffect/index.html" ></iframe>
+<iframe style={{width:'100%',height:'260px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/audio/soundeffect/index.html" ></iframe>

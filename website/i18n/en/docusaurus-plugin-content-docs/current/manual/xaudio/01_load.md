@@ -54,4 +54,4 @@ To control the overall master volume, read/write [`xaudio.volume`](./volume) —
 
 ## Demo
 
-<iframe style={{width:'100%',height:'400px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/basics/audiotrack/index.html" ></iframe>
+<iframe style={{width:'100%',height:'400px',border:'solid 1px #DDD',borderRadius:'6px'}} src="/xnew/1_xnew/audio/audiotrack/index.html" ></iframe>
