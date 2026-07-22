@@ -496,6 +496,12 @@ declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
         name?: string;
         value?: boolean;
     }): Unit;
+    color({ name, value }?: {
+        name?: string;
+        value?: string;
+    }): Unit & {
+        readonly value: string;
+    };
     separator(): void;
 };
 

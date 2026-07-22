@@ -12,6 +12,8 @@ import { InputCheckbox } from '../element/InputCheckbox';
 import { Listbox, ListboxButton, ListboxMenu, ListboxItem } from '../element/Listbox';
 import { Accordion } from './Accordion';
 import { Gate } from './Gate';
+import { Overlay } from './Overlay';
+import { ColorPicker } from './ColorPicker';
 
 // nested is internal: folder() marks its inner Panel so only the root creates the scroll container
 interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; nested?: boolean; }
@@ -59,6 +61,12 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
             checkbox.on('input', ({ value }: { value: boolean }) => object[name] = value);
             return checkbox;
         },
+        color({ name = '', value }: { name?: string, value?: string } = {}) {
+            object[name] = value ?? object[name] ?? '#ffffff';
+            const color = xnew(Color, { name, value: object[name] });
+            color.on('-change', ({ value }: { value: string }) => object[name] = value);
+            return color;
+        },
         separator() {
             xnew(Separator);
         }
@@ -97,6 +105,59 @@ function Checkbox(unit: xnew.Unit, { name = '', ...others }: { name?: string, [k
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
 
     xnew(InputCheckbox, { name, ...others, style: 'width: 1.25em; height: 1.25em;' });
+}
+
+function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: string, value?: string }) {
+    xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
+    xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
+
+    let current = value;
+    const swatch = xnew({ tag: 'button', type: 'button', style: 'height: 2em; flex: 1; max-width: 60%; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer;' });
+    swatch.element.style.background = current;
+
+    // '-change' must fire on this row unit, while commits arrive from the popup's scope
+    const notify = xnew.scope(() => xnew.emit('-change', { value: current }));
+
+    let popup: xnew.Unit | null = null;
+    swatch.on('click', ({ event }: { event: PointerEvent }) => {
+        event.stopPropagation();
+        if (popup === null) {
+            popup = xnew(ColorPopup, {
+                anchor: swatch.element as HTMLElement,
+                value: current,
+                commit(next: string) {
+                    current = next;
+                    swatch.element.style.background = next;
+                    notify();
+                },
+            });
+            popup.on('finalize', () => popup = null);
+        } else {
+            // a re-press lands outside the popup, so it is already closing; just make it explicit
+            popup.gate.close();
+        }
+    });
+
+    return {
+        get value() {
+            return current;
+        },
+    };
+}
+
+function ColorPopup(unit: xnew.Unit, { anchor, value, commit }: { anchor: HTMLElement, value: string, commit: (value: string) => void }) {
+    // Overlay backdrop blocks the page and tracks the swatch rect; close finalizes this unit
+    xnew.extend(Overlay, { gate: { open: false, duration: 100 }, anchor });
+    unit.gate.on('-closed', () => unit.finalize());
+
+    // the picker hangs just below the tracked swatch box, right-aligned
+    xnew.nest('<div style="position: absolute; top: 100%; right: 0; padding: 0.25em 0;">');
+    // close on a press outside (not click, so a drag released outside the picker cannot close it)
+    unit.on('pointerdown.outside', () => unit.gate.close());
+
+    xnew(ColorPicker, { value }).on('-change', ({ value }: { value: string }) => commit(value));
+
+    unit.gate.open();
 }
 
 function List(unit: xnew.Unit, { name = '', value, items = [], ...others }: { name?: string, value?: string, items?: string[], [key: string]: any }) {

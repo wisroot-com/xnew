@@ -3173,6 +3173,13 @@ function Panel(unit, { params, nested = false }) {
             checkbox.on('input', ({ value }) => object[name] = value);
             return checkbox;
         },
+        color({ name = '', value } = {}) {
+            var _a;
+            object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : '#ffffff';
+            const color = xnew(Color, { name, value: object[name] });
+            color.on('-change', ({ value }) => object[name] = value);
+            return color;
+        },
         separator() {
             xnew(Separator);
         }
@@ -3206,6 +3213,46 @@ function Checkbox(unit, _a) {
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
     xnew(InputCheckbox, Object.assign(Object.assign({ name }, others), { style: 'width: 1.25em; height: 1.25em;' }));
+}
+function Color(unit, { name = '', value = '#ffffff' }) {
+    xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
+    xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
+    let current = value;
+    const swatch = xnew({ tag: 'button', type: 'button', style: 'height: 2em; flex: 1; max-width: 60%; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer;' });
+    swatch.element.style.background = current;
+    const notify = xnew.scope(() => xnew.emit('-change', { value: current }));
+    let popup = null;
+    swatch.on('click', ({ event }) => {
+        event.stopPropagation();
+        if (popup === null) {
+            popup = xnew(ColorPopup, {
+                anchor: swatch.element,
+                value: current,
+                commit(next) {
+                    current = next;
+                    swatch.element.style.background = next;
+                    notify();
+                },
+            });
+            popup.on('finalize', () => popup = null);
+        }
+        else {
+            popup.gate.close();
+        }
+    });
+    return {
+        get value() {
+            return current;
+        },
+    };
+}
+function ColorPopup(unit, { anchor, value, commit }) {
+    xnew.extend(Overlay, { gate: { open: false, duration: 100 }, anchor });
+    unit.gate.on('-closed', () => unit.finalize());
+    xnew.nest('<div style="position: absolute; top: 100%; right: 0; padding: 0.25em 0;">');
+    unit.on('pointerdown.outside', () => unit.gate.close());
+    xnew(ColorPicker, { value }).on('-change', ({ value }) => commit(value));
+    unit.gate.open();
 }
 function List(unit, _a) {
     var { name = '', value, items = [] } = _a, others = __rest(_a, ["name", "value", "items"]);

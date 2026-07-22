@@ -141,6 +141,7 @@
         folder.range({ name: 'data', value: 20, min: 0, max: 60, step: 2 }).on('input', ({ value }) => xnew.emit('+console', { text: `data changed to ${value}` }));
         folder.checkbox({ name: 'flag' }).on('input', ({ value }) => xnew.emit('+console', { text: `flag changed to ${value}` }));
         folder.listbox({ name: 'color', items: ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta', 'brown', 'gray', 'black', 'white'] }).on('-change', ({ value }) => xnew.emit('+console', { text: `color changed to ${value}` }));
+        folder.color({ name: 'tint', value: '#4a90e2' }).on('-change', ({ value }) => xnew.emit('+console', { text: `tint changed to ${value}` }));
         folder.separator();
 
         const show = folder.checkbox({ name: 'show' });
