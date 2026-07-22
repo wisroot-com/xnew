@@ -35,6 +35,7 @@ declare const xthree: {
     }): THREE.Group;
     add(object: any): any;
     dispose(object: any): void;
+    texture(texture: any, params?: Record<string, any>): THREE.ShaderMaterial;
     coord2dTo3d(x: number, y: number, z?: number): THREE.Vector3;
     coord3dTo2d(x: number, y: number, z: number): THREE.Vector2;
     readonly renderer: any;

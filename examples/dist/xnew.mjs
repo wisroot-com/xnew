@@ -2992,4 +2992,242 @@ const xbasics = {
     VolumeController,
 };
 
-export { xbasics, xicons, xnew, xsync };
+function createTextureRenderer(canvas, def, options = {}) {
+    var _a;
+    const worldSize = (_a = options.worldSize) !== null && _a !== void 0 ? _a : 3;
+    const gl = canvas.getContext('webgl2');
+    if (gl === null) {
+        throw new Error('xtextures: WebGL2 is not available');
+    }
+    const vertexSource = `#version 300 es
+in vec2 aPos;
+out vec2 vUv;
+void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
+    const fragmentSource = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform float uWorldSize;
+${def.glsl}
+void main(){
+  vec3 pos = vec3((vUv - 0.5) * uWorldSize, 0.0);
+  fragColor = vec4(${def.fn}(pos), 1.0);
+}`;
+    const program = linkProgram(gl, vertexSource, fragmentSource);
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const aPos = gl.getAttribLocation(program, 'aPos');
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+    const locations = new Map();
+    function location(name) {
+        var _a;
+        if (locations.has(name) === false) {
+            locations.set(name, gl.getUniformLocation(program, name));
+        }
+        return (_a = locations.get(name)) !== null && _a !== void 0 ? _a : null;
+    }
+    function render(params) {
+        var _a;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.useProgram(program);
+        gl.bindVertexArray(vao);
+        gl.uniform1f(location('uWorldSize'), worldSize);
+        for (const name in def.uniforms) {
+            const value = (_a = params[name]) !== null && _a !== void 0 ? _a : def.uniforms[name].value;
+            if (Array.isArray(value)) {
+                gl.uniform3f(location(name), value[0], value[1], value[2]);
+            }
+            else {
+                gl.uniform1f(location(name), value);
+            }
+        }
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    function dispose() {
+        gl.deleteProgram(program);
+        gl.deleteBuffer(buffer);
+        gl.deleteVertexArray(vao);
+    }
+    return { render, dispose };
+}
+function linkProgram(gl, vertexSource, fragmentSource) {
+    const program = gl.createProgram();
+    gl.attachShader(program, compileShader(gl, gl.VERTEX_SHADER, vertexSource));
+    gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource));
+    gl.linkProgram(program);
+    if (gl.getProgramParameter(program, gl.LINK_STATUS) === false) {
+        const log = gl.getProgramInfoLog(program);
+        gl.deleteProgram(program);
+        throw new Error('xtextures: program link failed\n' + log);
+    }
+    return program;
+}
+function compileShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (gl.getShaderParameter(shader, gl.COMPILE_STATUS) === false) {
+        const log = gl.getShaderInfoLog(shader);
+        gl.deleteShader(shader);
+        throw new Error('xtextures: shader compile failed\n' + log + '\n' + source);
+    }
+    return shader;
+}
+
+const XTEX_NOISE = `
+vec3 xtex_mod289(vec3 x){ return x - floor(x*(1.0/289.0))*289.0; }
+vec4 xtex_mod289(vec4 x){ return x - floor(x*(1.0/289.0))*289.0; }
+vec4 xtex_permute(vec4 x){ return xtex_mod289(((x*34.0)+1.0)*x); }
+vec4 xtex_taylorInvSqrt(vec4 r){ return 1.79284291400159 - 0.85373472095314 * r; }
+vec3 xtex_fade(vec3 t){ return t*t*t*(t*(t*6.0-15.0)+10.0); }
+
+float xtex_noise(vec3 P){
+  vec3 Pi0 = floor(P);
+  vec3 Pi1 = Pi0 + vec3(1.0);
+  Pi0 = xtex_mod289(Pi0);
+  Pi1 = xtex_mod289(Pi1);
+  vec3 Pf0 = fract(P);
+  vec3 Pf1 = Pf0 - vec3(1.0);
+  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+  vec4 iy = vec4(Pi0.yy, Pi1.yy);
+  vec4 iz0 = Pi0.zzzz;
+  vec4 iz1 = Pi1.zzzz;
+
+  vec4 ixy = xtex_permute(xtex_permute(ix) + iy);
+  vec4 ixy0 = xtex_permute(ixy + iz0);
+  vec4 ixy1 = xtex_permute(ixy + iz1);
+
+  vec4 gx0 = ixy0 * (1.0 / 7.0);
+  vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
+  gx0 = fract(gx0);
+  vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
+  vec4 sz0 = step(gz0, vec4(0.0));
+  gx0 -= sz0 * (step(0.0, gx0) - 0.5);
+  gy0 -= sz0 * (step(0.0, gy0) - 0.5);
+
+  vec4 gx1 = ixy1 * (1.0 / 7.0);
+  vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
+  gx1 = fract(gx1);
+  vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
+  vec4 sz1 = step(gz1, vec4(0.0));
+  gx1 -= sz1 * (step(0.0, gx1) - 0.5);
+  gy1 -= sz1 * (step(0.0, gy1) - 0.5);
+
+  vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
+  vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
+  vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
+  vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
+  vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
+  vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
+  vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
+  vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
+
+  vec4 norm0 = xtex_taylorInvSqrt(vec4(dot(g000,g000), dot(g010,g010), dot(g100,g100), dot(g110,g110)));
+  g000 *= norm0.x; g010 *= norm0.y; g100 *= norm0.z; g110 *= norm0.w;
+  vec4 norm1 = xtex_taylorInvSqrt(vec4(dot(g001,g001), dot(g011,g011), dot(g101,g101), dot(g111,g111)));
+  g001 *= norm1.x; g011 *= norm1.y; g101 *= norm1.z; g111 *= norm1.w;
+
+  float n000 = dot(g000, Pf0);
+  float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
+  float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
+  float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
+  float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
+  float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
+  float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
+  float n111 = dot(g111, Pf1);
+
+  vec3 f = xtex_fade(Pf0);
+  vec4 n_z = mix(vec4(n000,n100,n010,n110), vec4(n001,n101,n011,n111), f.z);
+  vec2 n_yz = mix(n_z.xy, n_z.zw, f.y);
+  return 2.2 * mix(n_yz.x, n_yz.y, f.x);
+}
+`;
+
+const wood = {
+    name: 'Wood',
+    fn: 'xtexWood',
+    glsl: XTEX_NOISE +
+        `
+uniform float scale, rings, lengths, angle, fibers, fibersDensity, seed;
+uniform vec3 color, background;
+
+vec3 xtexWood(vec3 position){
+  float ang = radians(angle);
+  float ca = cos(ang), sa = sin(ang);
+  vec3 posLocal = vec3(
+    position.x*ca - position.y*sa,
+    position.x*sa + position.y*ca,
+    position.z
+  );
+
+  // main ring pattern
+  vec3 pos = posLocal * exp(scale - 3.0) * vec3(1.0/lengths, 4.0, 1.0/lengths) + seed;
+  float k = (xtex_noise(pos) + 1.0) * 10.0 * rings;
+  k = (cos(k + cos(k)) + 1.0) / 2.0;
+
+  // fibers: 10 octaves of turbulence, high-frequency along y
+  float kk = 0.0, sum = 0.0, power = 2.0;
+  vec3 sc = exp(scale - 2.0) * vec3(1.0, fibersDensity, 1.0);
+  for (int i = 0; i < 10; i++){
+    kk += power * xtex_noise(posLocal * sc + seed);
+    sum += power;
+    sc *= 1.8;
+    power *= 0.6;
+  }
+  kk = (sin(kk * 5.0 / sum * 10.0) + 1.0) / 2.0;
+
+  return mix(color, background, mix(k, kk, fibers));
+}
+`,
+    uniforms: {
+        scale: { value: 2.5, min: 0, max: 6, step: 0.1 },
+        rings: { value: 4.5, min: 0, max: 20, step: 0.1 },
+        lengths: { value: 1, min: 0.1, max: 10, step: 0.1 },
+        angle: { value: 0, min: 0, max: 360, step: 1 },
+        fibers: { value: 0.3, min: 0, max: 1, step: 0.01 },
+        fibersDensity: { value: 10, min: 0, max: 40, step: 0.5 },
+        seed: { value: 0, min: 0, max: 100, step: 1 },
+        color: { value: [0.8, 0.4, 0.0] },
+        background: { value: [0.4, 0.1, 0.0] },
+    },
+};
+
+function defineTexture(def) {
+    function Texture(unit, props = {}) {
+        var _a, _b;
+        const _c = props !== null && props !== void 0 ? props : {}, { size, worldSize, style = 'display: block; width: 100%; height: auto;' } = _c, params = __rest(_c, ["size", "worldSize", "style"]);
+        const width = (_a = size === null || size === void 0 ? void 0 : size.width) !== null && _a !== void 0 ? _a : 512;
+        const height = (_b = size === null || size === void 0 ? void 0 : size.height) !== null && _b !== void 0 ? _b : 512;
+        const canvas = xnew(`<canvas width="${width}" height="${height}" style="${style}">`).element;
+        const renderer = createTextureRenderer(canvas, def, { worldSize });
+        const state = {};
+        for (const key in def.uniforms) {
+            state[key] = def.uniforms[key].value;
+        }
+        Object.assign(state, params);
+        renderer.render(state);
+        unit.on('finalize', () => renderer.dispose());
+        return {
+            get canvas() {
+                return canvas;
+            },
+            set(next) {
+                Object.assign(state, next);
+                renderer.render(state);
+            },
+            render() {
+                renderer.render(state);
+            },
+        };
+    }
+    return Object.assign(Texture, { def, glsl: def.glsl, fn: def.fn, uniforms: def.uniforms });
+}
+const xtextures = {
+    Wood: defineTexture(wood),
+};
+
+export { xbasics, xicons, xnew, xsync, xtextures };

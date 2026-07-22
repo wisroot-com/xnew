@@ -42,6 +42,36 @@ const xthree = {
         (_a = object.parent) === null || _a === void 0 ? void 0 : _a.remove(object);
         disposeObject(object);
     },
+    texture(texture, params = {}) {
+        var _a, _b;
+        const def = (_a = texture.def) !== null && _a !== void 0 ? _a : texture;
+        const uniforms = {};
+        for (const name in def.uniforms) {
+            const value = (_b = params[name]) !== null && _b !== void 0 ? _b : def.uniforms[name].value;
+            uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
+        }
+        const vertexShader = `
+            varying vec3 vXtexPos;
+            varying vec3 vXtexNormal;
+            void main() {
+                vXtexPos = position;
+                vXtexNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+        const fragmentShader = `
+            varying vec3 vXtexPos;
+            varying vec3 vXtexNormal;
+            ${def.glsl}
+            void main() {
+                vec3 col = ${def.fn}(vXtexPos);
+                vec3 light = normalize(vec3(0.4, 0.7, 0.6));
+                float diff = 0.7 + 0.3 * max(dot(normalize(vXtexNormal), light), 0.0);
+                gl_FragColor = vec4(col * diff, 1.0);
+            }
+        `;
+        return new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });
+    },
     coord2dTo3d(x, y, z = 0) {
         const root = xnew.context(Root);
         const camera = root.camera;

@@ -58,6 +58,38 @@ export const xthree = {
         object.parent?.remove(object);
         disposeObject(object);
     },
+    // build a ShaderMaterial that injects an xtextures GLSL function; the texture runs in three's own
+    // context on the mesh surface (object-space position → solid look), so no canvas / image copy.
+    // `texture` is an xtextures component (or a raw def) carrying { glsl, fn, uniforms }.
+    texture(texture: any, params: Record<string, any> = {}): THREE.ShaderMaterial {
+        const def = texture.def ?? texture;
+        const uniforms: Record<string, { value: any }> = {};
+        for (const name in def.uniforms) {
+            const value = params[name] ?? def.uniforms[name].value;
+            uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
+        }
+        const vertexShader = `
+            varying vec3 vXtexPos;
+            varying vec3 vXtexNormal;
+            void main() {
+                vXtexPos = position;
+                vXtexNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+        const fragmentShader = `
+            varying vec3 vXtexPos;
+            varying vec3 vXtexNormal;
+            ${def.glsl}
+            void main() {
+                vec3 col = ${def.fn}(vXtexPos);
+                vec3 light = normalize(vec3(0.4, 0.7, 0.6));
+                float diff = 0.7 + 0.3 * max(dot(normalize(vXtexNormal), light), 0.0);
+                gl_FragColor = vec4(col * diff, 1.0);
+            }
+        `;
+        return new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });
+    },
     coord2dTo3d(x: number, y: number, z: number = 0): THREE.Vector3 {
         const root = xnew.context(Root);
         const camera = root.camera as THREE.Camera;
