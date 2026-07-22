@@ -209,6 +209,38 @@ declare const xsync: {
     boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
 };
 
+declare class AudioTrack {
+    readonly promise: Promise<void>;
+    private buffer;
+    private source;
+    private startedAt;
+    private paused;
+    private pausedOffsetMs;
+    private looping;
+    private readonly amp;
+    private readonly fade;
+    constructor({ url, volume, loop }: {
+        url: string;
+        volume?: number;
+        loop?: boolean;
+    });
+    play({ offset, fade: fadeMs, loop: loopArg }?: {
+        offset?: number;
+        fade?: number;
+        loop?: boolean;
+    }): void;
+    pause({ fade: fadeMs }?: {
+        fade?: number;
+    }): void;
+    get status(): 'loading' | 'loaded' | 'playing' | 'paused';
+    get volume(): number;
+    set volume(value: number);
+    release(): void;
+    private forceStop;
+    private startSource;
+    private stopSource;
+}
+
 type SynthesizerOptions = {
     oscillator: OscillatorOptions;
     amp: AmpOptions;
@@ -247,18 +279,7 @@ declare const xaudio: {
         url: string;
         volume?: number;
         loop?: boolean;
-    }): Unit & {
-        play: ({ offset, fade: fadeMs, loop: loopArg }?: {
-            offset?: number;
-            fade?: number;
-            loop?: boolean;
-        }) => void;
-        pause({ fade: fadeMs }?: {
-            fade?: number;
-        }): void;
-        readonly status: "loading" | "loaded" | "playing" | "paused";
-        volume: number;
-    };
+    }): AudioTrack;
     synthesizer(props: SynthesizerOptions): Unit & {
         press: (frequency: number | string, duration?: number | string, wait?: number) => {
             release: () => void;

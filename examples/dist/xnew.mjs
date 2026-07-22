@@ -1353,130 +1353,129 @@ function resume() {
     }
 }
 
-function AudioTrack(unit, { url, volume, loop = false }) {
-    let buffer;
-    let source = null;
-    let startedAt = null;
-    let paused = false;
-    let pausedOffsetMs = 0;
-    let looping = loop;
-    const amp = context.createGain();
-    amp.gain.value = volume !== null && volume !== void 0 ? volume : 1.0;
-    amp.connect(master);
-    const fade = context.createGain();
-    fade.gain.value = 1.0;
-    fade.connect(amp);
-    const promise = fetch(url)
-        .then((response) => response.arrayBuffer())
-        .then((response) => context.decodeAudioData(response))
-        .then((response) => { buffer = response; });
-    xnew.promise(promise);
-    function forceStop() {
-        if (source !== null) {
-            source.onended = null;
+class AudioTrack {
+    constructor({ url, volume, loop = false }) {
+        this.source = null;
+        this.startedAt = null;
+        this.paused = false;
+        this.pausedOffsetMs = 0;
+        this.looping = loop;
+        this.amp = context.createGain();
+        this.amp.gain.value = volume !== null && volume !== void 0 ? volume : 1.0;
+        this.amp.connect(master);
+        this.fade = context.createGain();
+        this.fade.gain.value = 1.0;
+        this.fade.connect(this.amp);
+        this.promise = fetch(url)
+            .then((response) => response.arrayBuffer())
+            .then((response) => context.decodeAudioData(response))
+            .then((response) => { this.buffer = response; });
+    }
+    play({ offset, fade: fadeMs = 0, loop: loopArg } = {}) {
+        resume();
+        if (this.buffer === undefined) {
+            this.promise.then(() => this.play({ offset, fade: fadeMs, loop: loopArg }));
+        }
+        else {
+            if (loopArg !== undefined) {
+                this.looping = loopArg;
+            }
+            if (this.startedAt !== null) {
+                this.forceStop();
+            }
+            this.paused = false;
+            this.startSource(offset !== null && offset !== void 0 ? offset : this.pausedOffsetMs, fadeMs);
+        }
+    }
+    pause({ fade: fadeMs = 0 } = {}) {
+        if (this.buffer === undefined || this.startedAt === null) ;
+        else {
+            const elapsedSec = context.currentTime - this.startedAt;
+            const positionSec = this.looping ? elapsedSec % this.buffer.duration : Math.min(elapsedSec, this.buffer.duration);
+            this.paused = true;
+            this.pausedOffsetMs = positionSec * 1000;
+            const node = this.source;
+            this.source = null;
+            this.startedAt = null;
+            this.stopSource(node, fadeMs);
+        }
+    }
+    get status() {
+        if (this.buffer === undefined) {
+            return 'loading';
+        }
+        else if (this.startedAt !== null) {
+            return 'playing';
+        }
+        else if (this.paused) {
+            return 'paused';
+        }
+        else {
+            return 'loaded';
+        }
+    }
+    get volume() {
+        return this.amp.gain.value;
+    }
+    set volume(value) {
+        this.amp.gain.value = value;
+    }
+    release() {
+        this.forceStop();
+        this.amp.disconnect();
+        this.fade.disconnect();
+        this.pausedOffsetMs = 0;
+    }
+    forceStop() {
+        if (this.source !== null) {
+            this.source.onended = null;
             try {
-                source.stop();
+                this.source.stop();
             }
             catch (_a) {
             }
-            source.disconnect();
-            source = null;
+            this.source.disconnect();
+            this.source = null;
         }
-        startedAt = null;
+        this.startedAt = null;
     }
-    function startSource(offsetMs, fadeMs) {
+    startSource(offsetMs, fadeMs) {
         const node = context.createBufferSource();
-        source = node;
-        node.buffer = buffer;
-        node.loop = looping;
-        node.connect(fade);
+        this.source = node;
+        node.buffer = this.buffer;
+        node.loop = this.looping;
+        node.connect(this.fade);
         const now = context.currentTime;
-        startedAt = now - offsetMs / 1000;
+        this.startedAt = now - offsetMs / 1000;
         node.start(now, offsetMs / 1000);
-        fade.gain.cancelScheduledValues(now);
+        this.fade.gain.cancelScheduledValues(now);
         if (fadeMs > 0) {
-            fade.gain.setValueAtTime(0, now);
-            fade.gain.linearRampToValueAtTime(1.0, now + fadeMs / 1000);
+            this.fade.gain.setValueAtTime(0, now);
+            this.fade.gain.linearRampToValueAtTime(1.0, now + fadeMs / 1000);
         }
         else {
-            fade.gain.setValueAtTime(1.0, now);
+            this.fade.gain.setValueAtTime(1.0, now);
         }
         node.onended = () => {
             node.disconnect();
-            if (source === node) {
-                source = null;
-                startedAt = null;
-                pausedOffsetMs = 0;
+            if (this.source === node) {
+                this.source = null;
+                this.startedAt = null;
+                this.pausedOffsetMs = 0;
             }
         };
     }
-    function stopSource(node, fadeMs) {
+    stopSource(node, fadeMs) {
         const now = context.currentTime;
         if (fadeMs > 0) {
-            fade.gain.setValueAtTime(1.0, now);
-            fade.gain.linearRampToValueAtTime(0, now + fadeMs / 1000);
+            this.fade.gain.setValueAtTime(1.0, now);
+            this.fade.gain.linearRampToValueAtTime(0, now + fadeMs / 1000);
             node.stop(now + fadeMs / 1000);
         }
         else {
             node.stop(now);
         }
     }
-    unit.on('finalize', () => {
-        forceStop();
-        amp.disconnect();
-        fade.disconnect();
-        pausedOffsetMs = 0;
-    });
-    return {
-        play: function play({ offset, fade: fadeMs = 0, loop: loopArg } = {}) {
-            resume();
-            if (buffer === undefined) {
-                promise.then(() => play({ offset, fade: fadeMs, loop: loopArg }));
-                return;
-            }
-            if (loopArg !== undefined) {
-                looping = loopArg;
-            }
-            if (startedAt !== null) {
-                forceStop();
-            }
-            paused = false;
-            startSource(offset !== null && offset !== void 0 ? offset : pausedOffsetMs, fadeMs);
-        },
-        pause({ fade: fadeMs = 0 } = {}) {
-            if (buffer === undefined || startedAt === null) {
-                return;
-            }
-            const elapsedSec = context.currentTime - startedAt;
-            const positionSec = looping ? elapsedSec % buffer.duration : Math.min(elapsedSec, buffer.duration);
-            paused = true;
-            pausedOffsetMs = positionSec * 1000;
-            const node = source;
-            source = null;
-            startedAt = null;
-            stopSource(node, fadeMs);
-        },
-        get status() {
-            if (buffer === undefined) {
-                return 'loading';
-            }
-            else if (startedAt !== null) {
-                return 'playing';
-            }
-            else if (paused) {
-                return 'paused';
-            }
-            else {
-                return 'loaded';
-            }
-        },
-        get volume() {
-            return amp.gain.value;
-        },
-        set volume(value) {
-            amp.gain.value = value;
-        },
-    };
 }
 
 const DEFAULT_BPM = 120;
@@ -1674,7 +1673,12 @@ function Synthesizer(unit, props) {
 
 const xaudio = {
     load(props) {
-        return xnew(AudioTrack, props);
+        const track = new AudioTrack(props);
+        xnew((unit) => {
+            xnew.promise(track.promise);
+            unit.on('finalize', () => track.release());
+        });
+        return track;
     },
     synthesizer(props) {
         return xnew(Synthesizer, props);

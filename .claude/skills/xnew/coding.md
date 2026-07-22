@@ -533,10 +533,12 @@ the rule, then one line of why.
 - **The public barrel exposes six tiers: `xnew` (core) / `xsync` (networking) / `xaudio` (audio) /
   `xbasics` (UI components) / `xicons` (heroicons-based icons, MIT — `src/icons/license.txt`) /
   `xtextures` (procedural textures), all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
-  `xaudio` (src/audio/) is a facade like `xsync`: `load` / `synthesizer` spawn AudioTrack / Synthesizer
-  units under the current scope; `volume` is a getter/setter on the shared master gain. There are no
-  `xbasics.AudioTrack` / `Synthesizer` / `Volume` members anymore (moved 2026-07); the only
-  basics → xaudio dependency is `VolumeController`, which reads/writes `xaudio.volume` directly.
+  `xaudio` (src/audio/) is a facade like `xsync`: `load` returns a plain xnew-free `AudioTrack` class
+  instance whose `release()` (plus `xnew.promise` load registration) is wired to a unit under the
+  current scope inside the facade; `synthesizer` spawns a Synthesizer unit; `volume` is a
+  getter/setter on the shared master gain. There are no `xbasics.AudioTrack` / `Synthesizer` /
+  `Volume` members anymore (moved 2026-07); the only basics → xaudio dependency is
+  `VolumeController`, which reads/writes `xaudio.volume` directly.
   The networking layer is a single file `src/sync/xsync.ts` (shared state + boot + facade). `xsync`
   **is** the facade object literal (`export const xsync = { … }`) — there is no Lobby / Room component
   built in; lobby / room lifecycle is assembled by callers from the facade (see `examples/*/server.js` +
