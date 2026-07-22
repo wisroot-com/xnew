@@ -1,6 +1,6 @@
 # mascot.gif — how it was generated
 
-Recipe used to produce `website/static/img/mascot.gif` from this sample
+Recipe used to produce `docusaurus/static/img/mascot.gif` from this sample
 (last run: 2026-07-07).
 
 ## Conditions
@@ -43,7 +43,7 @@ ffmpeg -y -framerate 20 -i frames/f%03d.png \
   mascot.gif
 ```
 
-4. Copy to `website/static/img/mascot.gif`.
+4. Copy to `docusaurus/static/img/mascot.gif`.
 
 Notes
 

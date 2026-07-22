@@ -23,7 +23,7 @@
 
     xnew(document.querySelector('#main'), Main);
 
-    // laid out after website/static/img/introduction.svg as three width-proportional
+    // laid out after docusaurus/static/img/introduction.svg as three width-proportional
     // blocks — ① blob 40% / ② arrow 20% / ③ mascots 40% — so the scene scales with
     // the container width
     function Main(unit) {
@@ -67,7 +67,7 @@
       xnew(`<path d="M 10,44 Q 80,16 138,38" fill="none" stroke="#002d12" stroke-width="14" stroke-linecap="round" marker-end="url(#${markerId})">`);
     }
 
-    // the xnew mascots (after website/static/img/introduction.svg): slime-like
+    // the xnew mascots (after docusaurus/static/img/introduction.svg): slime-like
     // shapes that idle with a squishy vertical wobble and jump (squash -> leap
     // -> land) on their own or on tap.
     function Mascot(unit, { size = 120, shape = 'circle' } = {}) {
@@ -180,7 +180,7 @@
       return gradientId;
     }
 
-    // green ball with two vertical-bar eyes, drawn after website/static/img/logo.png
+    // green ball with two vertical-bar eyes, drawn after docusaurus/static/img/logo.png
     function CircleFace(unit) {
       xnew.extend(xbasics.SVG, { viewBox: '0 0 100 100', style: 'display: block; width: 100%; height: 100%;' });
       const gradientId = bodyGradient(['#cdf3da', '#2aab5d', '#148c42']);

@@ -36,7 +36,7 @@ Integrations for games and interactive apps.
 - `src/textures/` — procedural textures (exported as `xtextures`); shader-first WebGL2 rendering, three-free core. GLSL bodies live in real `glsl/*.glsl` files (imported as strings — rollup inline plugin + `test/transform-glsl.cjs`; uniform declarations are generated from the TS schema); `preview/*.frag` are dev-only glsl-canvas harnesses, never bundled
 - `src/addons/` — third-party library integrations
 - `examples/` — runnable samples
-- `website/` — Docusaurus documentation site
+- `docusaurus/` — Docusaurus documentation site
 - `test/` — Jest tests
 
 ## Scripts

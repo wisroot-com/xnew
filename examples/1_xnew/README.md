@@ -61,4 +61,4 @@ Recommended reading order.
 
 ## manual/
 
-Minimal snippets embedded in the website documentation (`website/docs/manual/getstarted.md`).
+Minimal snippets embedded in the website documentation (`docusaurus/docs/manual/getstarted.md`).

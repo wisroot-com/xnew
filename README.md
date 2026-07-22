@@ -5,7 +5,7 @@ providing a flexible architecture well-suited for applications with dynamic scen
 [**Visit the xnew website**](https://mulsense.github.io/xnew)
 
 <div>
-    <img src="website/static/img/mascot.gif" width="500" alt="xnew introduction" />
+    <img src="docusaurus/static/img/mascot.gif" width="500" alt="xnew introduction" />
 </div>
 
 ## Setup
