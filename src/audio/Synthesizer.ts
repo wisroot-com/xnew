@@ -1,10 +1,9 @@
 //----------------------------------------------------------------------------------------------------
-// Synthesizer — oscillator + amp / filter / reverb + ADSR + LFO synth, driven by press
+// Synthesizer — oscillator + amp / filter / reverb + ADSR + LFO synth; a plain class, no xnew dependency
 // Each press builds a fresh node graph on the shared bus and schedules its envelopes up front, so
 // notes overlap freely; nodes are stopped and disconnected after release.
 //----------------------------------------------------------------------------------------------------
 
-import { xnew } from '../core/xnew';
 import { context, master, resume } from './master';
 
 const DEFAULT_BPM = 120;
@@ -169,20 +168,33 @@ function attachReverb(amp: GainNode, target: GainNode, reverb: ReverbOptions): R
 }
 
 //----------------------------------------------------------------------------------------------------
-// component
+// Synthesizer class
 //----------------------------------------------------------------------------------------------------
 
-export function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions) {
-    // Notes still sounding or in their release tail; finalize stops + disconnects any left over
+type Note = {
+    oscillators: OscillatorNode[];
+    nodesToDisconnect: AudioNode[];
+    stopped: boolean;
+    cleanupTimer: ReturnType<typeof setTimeout> | null;
+};
+
+export class Synthesizer {
+    private readonly props: SynthesizerOptions;
+
+    // Notes still sounding or in their release tail; release() stops + disconnects any left over
     // (a sustained note whose release was never called would otherwise play on after teardown).
-    interface Note { oscillators: OscillatorNode[]; nodesToDisconnect: AudioNode[]; stopped: boolean; }
-    const active = new Set<Note>();
+    private readonly active = new Set<Note>();
+
+    constructor(props: SynthesizerOptions) {
+        this.props = props;
+    }
 
     // Press a note. `frequency`: Hz or note name ('A4'). `duration`: ms or note length ('4n') — with
     // one the note auto-releases, without one it sustains and returns { release }. `wait` (ms) delays
     // the attack.
-    function press(frequency: number | string, duration?: number | string, wait?: number) {
+    press(frequency: number | string, duration?: number | string, wait?: number): { release: () => void } | undefined {
         resume();   // wake a suspended context (autoplay policy); no-op once running
+        const props = this.props;
         const freq = resolveFrequency(frequency);
         const dv = resolveDurationSeconds(duration, props.bpm ?? DEFAULT_BPM);
         const start = context.currentTime + (wait ?? 0) / 1000;
@@ -241,10 +253,10 @@ export function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions) {
             nodesToDisconnect.push(reverb.convolver, reverb.depth);
         }
 
-        const note: Note = { oscillators, nodesToDisconnect, stopped: false };
-        active.add(note);
+        const note: Note = { oscillators, nodesToDisconnect, stopped: false, cleanupTimer: null };
+        this.active.add(note);
         const cleanup = () => {
-            active.delete(note);
+            this.active.delete(note);
             for (const n of nodesToDisconnect) {
                 n.disconnect();
             }
@@ -269,20 +281,24 @@ export function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions) {
             }
             note.stopped = true;
 
-            // xnew.timeout follows the unit lifecycle: if the unit finalizes first, this pending
-            // disconnect is cancelled and finalize handles the nodes instead.
-            xnew.timeout(cleanup, RELEASE_CLEANUP_DELAY_MS);
+            // The pending disconnect is cleared by release(), which then handles the nodes itself.
+            note.cleanupTimer = setTimeout(cleanup, RELEASE_CLEANUP_DELAY_MS);
         };
 
         if (dv > 0) {
             release();
+            return undefined;
         } else {
             return { release };
         }
     }
 
-    unit.on('finalize', () => {
-        for (const note of active) {
+    // Stop every active note and release the Web Audio nodes; the synthesizer stays usable.
+    release(): void {
+        for (const note of this.active) {
+            if (note.cleanupTimer !== null) {
+                clearTimeout(note.cleanupTimer);
+            }
             if (note.stopped === false) {
                 for (const o of note.oscillators) {
                     o.stop();
@@ -292,8 +308,6 @@ export function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions) {
                 n.disconnect();
             }
         }
-        active.clear();
-    });
-
-    return { press };
+        this.active.clear();
+    }
 }

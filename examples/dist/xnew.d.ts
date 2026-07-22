@@ -273,6 +273,15 @@ type LFO = {
     type: OscillatorType;
     rate: number;
 };
+declare class Synthesizer {
+    private readonly props;
+    private readonly active;
+    constructor(props: SynthesizerOptions);
+    press(frequency: number | string, duration?: number | string, wait?: number): {
+        release: () => void;
+    } | undefined;
+    release(): void;
+}
 
 declare const xaudio: {
     load(props: {
@@ -280,11 +289,7 @@ declare const xaudio: {
         volume?: number;
         loop?: boolean;
     }): AudioTrack;
-    synthesizer(props: SynthesizerOptions): Unit & {
-        press: (frequency: number | string, duration?: number | string, wait?: number) => {
-            release: () => void;
-        } | undefined;
-    };
+    synthesizer(props: SynthesizerOptions): Synthesizer;
     volume: number;
 };
 

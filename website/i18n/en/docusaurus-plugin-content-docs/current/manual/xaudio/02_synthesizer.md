@@ -1,6 +1,6 @@
 # xaudio.synthesizer
 
-`xaudio.synthesizer` creates a synth combining an oscillator with amp / filter / reverb, ADSR envelopes, and an LFO. Trigger it with `press` to use it for sound effects or as a simple instrument. Internally the synthesizer is created as a unit under the current scope and is released together with the calling unit.
+`xaudio.synthesizer` creates a synth combining an oscillator with amp / filter / reverb, ADSR envelopes, and an LFO. Trigger it with `press` to use it for sound effects or as a simple instrument. The synthesizer's release is tied to a unit created under the current scope, so it is released together with the calling unit.
 
 ```js
 import { xnew, xaudio } from '@mulsense/xnew';

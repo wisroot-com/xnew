@@ -1572,11 +1572,15 @@ function attachReverb(amp, target, reverb) {
     depth.connect(master);
     return { convolver, depth };
 }
-function Synthesizer(unit, props) {
-    const active = new Set();
-    function press(frequency, duration, wait) {
+class Synthesizer {
+    constructor(props) {
+        this.active = new Set();
+        this.props = props;
+    }
+    press(frequency, duration, wait) {
         var _a;
         resume();
+        const props = this.props;
         const freq = resolveFrequency(frequency);
         const dv = resolveDurationSeconds(duration, (_a = props.bpm) !== null && _a !== void 0 ? _a : DEFAULT_BPM);
         const start = context.currentTime + (wait !== null && wait !== void 0 ? wait : 0) / 1000;
@@ -1622,10 +1626,10 @@ function Synthesizer(unit, props) {
         if (reverb) {
             nodesToDisconnect.push(reverb.convolver, reverb.depth);
         }
-        const note = { oscillators, nodesToDisconnect, stopped: false };
-        active.add(note);
+        const note = { oscillators, nodesToDisconnect, stopped: false, cleanupTimer: null };
+        this.active.add(note);
         const cleanup = () => {
-            active.delete(note);
+            this.active.delete(note);
             for (const n of nodesToDisconnect) {
                 n.disconnect();
             }
@@ -1646,17 +1650,21 @@ function Synthesizer(unit, props) {
                 o.stop(stop);
             }
             note.stopped = true;
-            xnew.timeout(cleanup, RELEASE_CLEANUP_DELAY_MS);
+            note.cleanupTimer = setTimeout(cleanup, RELEASE_CLEANUP_DELAY_MS);
         };
         if (dv > 0) {
             release();
+            return undefined;
         }
         else {
             return { release };
         }
     }
-    unit.on('finalize', () => {
-        for (const note of active) {
+    release() {
+        for (const note of this.active) {
+            if (note.cleanupTimer !== null) {
+                clearTimeout(note.cleanupTimer);
+            }
             if (note.stopped === false) {
                 for (const o of note.oscillators) {
                     o.stop();
@@ -1666,9 +1674,8 @@ function Synthesizer(unit, props) {
                 n.disconnect();
             }
         }
-        active.clear();
-    });
-    return { press };
+        this.active.clear();
+    }
 }
 
 const xaudio = {
@@ -1681,7 +1688,11 @@ const xaudio = {
         return track;
     },
     synthesizer(props) {
-        return xnew(Synthesizer, props);
+        const synth = new Synthesizer(props);
+        xnew((unit) => {
+            unit.on('finalize', () => synth.release());
+        });
+        return synth;
     },
     get volume() {
         return master.gain.value;

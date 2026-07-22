@@ -1,6 +1,6 @@
 # xaudio.synthesizer
 
-`xaudio.synthesizer` はオシレーターにアンプ / フィルター / リバーブ、ADSR エンベロープ、LFO を組み合わせたシンセサイザーを作成します。`press` で音を鳴らし、効果音や簡単な楽器として使えます。内部ではシンセサイザーが unit として現在のスコープに作られ、呼び出し元の unit の破棄とともに解放されます。
+`xaudio.synthesizer` はオシレーターにアンプ / フィルター / リバーブ、ADSR エンベロープ、LFO を組み合わせたシンセサイザーを作成します。`press` で音を鳴らし、効果音や簡単な楽器として使えます。シンセサイザーの解放は現在のスコープに作られる unit に紐づくため、呼び出し元の unit の破棄とともに解放されます。
 
 ```js
 import { xnew, xaudio } from '@mulsense/xnew';
