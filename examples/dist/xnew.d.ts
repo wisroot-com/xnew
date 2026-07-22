@@ -242,36 +242,31 @@ declare class AudioTrack {
 }
 
 type SynthesizerOptions = {
-    oscillator: OscillatorOptions;
-    amp: AmpOptions;
-    filter?: FilterOptions;
-    reverb?: ReverbOptions;
+    oscillator: {
+        type: OscillatorType;
+        envelope?: Envelope;
+        LFO?: {
+            amount: number;
+            type: OscillatorType;
+            rate: number;
+        };
+    };
+    amp: {
+        envelope: Envelope;
+    };
+    filter?: {
+        type: BiquadFilterType;
+        cutoff: number;
+    };
+    reverb?: {
+        time: number;
+        mix: number;
+    };
     bpm?: number;
-};
-type OscillatorOptions = {
-    type: OscillatorType;
-    envelope?: Envelope;
-    LFO?: LFO;
-};
-type FilterOptions = {
-    type: BiquadFilterType;
-    cutoff: number;
-};
-type AmpOptions = {
-    envelope: Envelope;
-};
-type ReverbOptions = {
-    time: number;
-    mix: number;
 };
 type Envelope = {
     amount: number;
     ADSR: [number, number, number, number];
-};
-type LFO = {
-    amount: number;
-    type: OscillatorType;
-    rate: number;
 };
 declare class Synthesizer {
     private readonly props;
