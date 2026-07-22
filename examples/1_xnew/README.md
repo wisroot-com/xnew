@@ -31,9 +31,9 @@ Recommended reading order.
 | [widget](basics/widget/) | `ColorPicker` / `Panel` / `Gate` + `Accordion` / `Overlay` (accordion, modal, menu) |
 | [controller](basics/controller/) | `VirtualPad` (`analog` / `8way` / `4way`) virtual game pad |
 | [svg](basics/svg/) | `SVG` icon base, `GraphicText` outlined labels |
-| [audiotrack](basics/audiotrack/) | `AudioTrack` music playback, `Volume` master gain |
-| [synthesizer](basics/synthesizer/) | `Synthesizer` interactive keyboard playground |
-| [soundeffect](basics/soundeffect/) | `Synthesizer` recipes for game sound effects |
+| [audiotrack](basics/audiotrack/) | `xaudio.load` music playback, `xaudio.volume` master gain |
+| [synthesizer](basics/synthesizer/) | `xaudio.synthesizer` interactive keyboard playground |
+| [soundeffect](basics/soundeffect/) | `xaudio.synthesizer` recipes for game sound effects |
 
 ## icons/ — export `xicons`
 

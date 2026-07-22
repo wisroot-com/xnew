@@ -463,7 +463,7 @@ the rule, then one line of why.
   wrapper swallowed the caller's `className`, so `absolute left/right` placement always
   rendered centered (bit AnalogStick / DPad).
 
-- **Round `xbasics.Volume`'s `volume` before showing it in UI (e.g. `Math.round(v * 100)` for a
+- **Round `xaudio.volume` before showing it in UI (e.g. `Math.round(v * 100)` for a
   0–100 InputRange).** The backing `AudioParam` stores float32, so a set of `0.1` reads back as
   `0.10000000149…` — feeding the raw read into InputRange's `value` displays a decimal-laden
   status until the first drag (bit the 3_games VolumeController).
@@ -530,9 +530,13 @@ the rule, then one line of why.
   `isContentEditable`), and send a stop on `window.focusin` into an editable element so a
   held key doesn't keep the player moving.
 
-- **The public barrel exposes four tiers: `xnew` (core) / `xsync` (networking) / `xbasics`
-  (networking-free components) / `xicons` (heroicons-based icons, MIT — `src/icons/license.txt`),
-  all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
+- **The public barrel exposes six tiers: `xnew` (core) / `xsync` (networking) / `xaudio` (audio) /
+  `xbasics` (UI components) / `xicons` (heroicons-based icons, MIT — `src/icons/license.txt`) /
+  `xtextures` (procedural textures), all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
+  `xaudio` (src/audio/) is a facade like `xsync`: `load` / `synthesizer` spawn AudioTrack / Synthesizer
+  units under the current scope; `volume` is a getter/setter on the shared master gain. There are no
+  `xbasics.AudioTrack` / `Synthesizer` / `Volume` members anymore (moved 2026-07); the only
+  basics → xaudio dependency is `VolumeController`, which reads/writes `xaudio.volume` directly.
   The networking layer is a single file `src/sync/xsync.ts` (shared state + boot + facade). `xsync`
   **is** the facade object literal (`export const xsync = { … }`) — there is no Lobby / Room component
   built in; lobby / room lifecycle is assembled by callers from the facade (see `examples/*/server.js` +

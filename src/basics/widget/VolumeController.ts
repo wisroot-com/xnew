@@ -1,11 +1,11 @@
 //----------------------------------------------------------------------------------------------------
 // VolumeController — speaker icon that reveals a master-volume slider on click
-// Extends xbasics.Volume for the master gain and slides an InputRange out toward `placement`
-// (top / bottom use the vertical InputRange); Aspect makes the icon square so cqw / cqh track its size.
+// Reads / writes the master gain via xaudio.volume (the one basics → xaudio dependency) and slides an
+// InputRange out toward `placement` (top / bottom vertical); Aspect keeps the icon square for cqw / cqh.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Volume } from '../audio/master';
+import { xaudio } from '../../audio/xaudio';
 import { Aspect } from '../layout/Aspect';
 import { InputRange } from '../element/InputRange';
 import { Gate } from './Gate';
@@ -45,7 +45,6 @@ export function VolumeController(unit: xnew.Unit,
     });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const volume = xnew.extend(Volume);
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     unit.on('pointerdown', ({ event }: { event: PointerEvent }) => event.stopPropagation());
 
@@ -54,11 +53,11 @@ export function VolumeController(unit: xnew.Unit,
     const button = xnew((unit: xnew.Unit) => {
         xnew.nest({ tag: 'div', className: css.button });
         unit.on('click', () => gate.toggle());
-        let icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
+        let icon = xnew(SpeakerIcon, { muted: xaudio.volume === 0 });
         return {
             update() {
                 icon?.finalize();
-                icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
+                icon = xnew(SpeakerIcon, { muted: xaudio.volume === 0 });
             },
         };
     });
@@ -68,10 +67,10 @@ export function VolumeController(unit: xnew.Unit,
 
         // AudioParam is float32, so round the read-back to a clean integer for the display
         xnew(InputRange, config.vertical
-            ? { value: Math.round(volume.volume * 100), vertical: true, style: 'height: 100%;' }
-            : { value: Math.round(volume.volume * 100), style: 'width: 100%;' }
+            ? { value: Math.round(xaudio.volume * 100), vertical: true, style: 'height: 100%;' }
+            : { value: Math.round(xaudio.volume * 100), style: 'width: 100%;' }
         ).on('input', ({ value }: { value: number }) => {
-            volume.volume = value / 100;
+            xaudio.volume = value / 100;
             button.update();
         });
 

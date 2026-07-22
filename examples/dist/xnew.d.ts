@@ -209,6 +209,64 @@ declare const xsync: {
     boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
 };
 
+type SynthesizerOptions = {
+    oscillator: OscillatorOptions;
+    amp: AmpOptions;
+    filter?: FilterOptions;
+    reverb?: ReverbOptions;
+    bpm?: number;
+};
+type OscillatorOptions = {
+    type: OscillatorType;
+    envelope?: Envelope;
+    LFO?: LFO;
+};
+type FilterOptions = {
+    type: BiquadFilterType;
+    cutoff: number;
+};
+type AmpOptions = {
+    envelope: Envelope;
+};
+type ReverbOptions = {
+    time: number;
+    mix: number;
+};
+type Envelope = {
+    amount: number;
+    ADSR: [number, number, number, number];
+};
+type LFO = {
+    amount: number;
+    type: OscillatorType;
+    rate: number;
+};
+
+declare const xaudio: {
+    load(props: {
+        url: string;
+        volume?: number;
+        loop?: boolean;
+    }): Unit & {
+        play: ({ offset, fade: fadeMs, loop: loopArg }?: {
+            offset?: number;
+            fade?: number;
+            loop?: boolean;
+        }) => void;
+        pause({ fade: fadeMs }?: {
+            fade?: number;
+        }): void;
+        readonly status: "loading" | "loaded" | "playing" | "paused";
+        volume: number;
+    };
+    synthesizer(props: SynthesizerOptions): Unit & {
+        press: (frequency: number | string, duration?: number | string, wait?: number) => {
+            release: () => void;
+        } | undefined;
+    };
+    volume: number;
+};
+
 declare function Aspect(unit: xnew.Unit, { aspect, fit }?: {
     aspect?: number;
     fit?: 'contain' | 'cover';
@@ -354,65 +412,6 @@ declare function ListboxItem(unit: xnew.Unit, { value, className, style, ...othe
     check(current: boolean): void;
 };
 
-declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
-    url: string;
-    volume?: number;
-    loop?: boolean;
-}): {
-    play: ({ offset, fade: fadeMs, loop: loopArg }?: {
-        offset?: number;
-        fade?: number;
-        loop?: boolean;
-    }) => void;
-    pause({ fade: fadeMs }?: {
-        fade?: number;
-    }): void;
-    readonly status: "loading" | "loaded" | "playing" | "paused";
-    volume: number;
-};
-
-type SynthesizerOptions = {
-    oscillator: OscillatorOptions;
-    amp: AmpOptions;
-    filter?: FilterOptions;
-    reverb?: ReverbOptions;
-    bpm?: number;
-};
-type OscillatorOptions = {
-    type: OscillatorType;
-    envelope?: Envelope;
-    LFO?: LFO;
-};
-type FilterOptions = {
-    type: BiquadFilterType;
-    cutoff: number;
-};
-type AmpOptions = {
-    envelope: Envelope;
-};
-type ReverbOptions = {
-    time: number;
-    mix: number;
-};
-type Envelope = {
-    amount: number;
-    ADSR: [number, number, number, number];
-};
-type LFO = {
-    amount: number;
-    type: OscillatorType;
-    rate: number;
-};
-declare function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions): {
-    press: (frequency: number | string, duration?: number | string, wait?: number) => {
-        release: () => void;
-    } | undefined;
-};
-
-declare function Volume(unit: xnew.Unit): {
-    volume: number;
-};
-
 declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
     open?: boolean;
     duration?: number;
@@ -529,9 +528,6 @@ declare const xbasics: {
     ListboxButton: typeof ListboxButton;
     ListboxMenu: typeof ListboxMenu;
     ListboxItem: typeof ListboxItem;
-    AudioTrack: typeof AudioTrack;
-    Synthesizer: typeof Synthesizer;
-    Volume: typeof Volume;
     Gate: typeof Gate;
     Accordion: typeof Accordion;
     ColorPicker: typeof ColorPicker;
@@ -574,4 +570,4 @@ declare const xtextures: {
     Wood: TextureComponent;
 };
 
-export { xbasics, xicons, xnew, xsync, xtextures };
+export { xaudio, xbasics, xicons, xnew, xsync, xtextures };

@@ -1,10 +1,8 @@
 //----------------------------------------------------------------------------------------------------
-// master — the package's single AudioContext + master GainNode, plus the Volume accessor component
+// master — the package's single AudioContext + master GainNode
 // Created at import so every audio component mixes through one bus. In a context-less environment
 // (Node/SSR/jsdom) context/master fall back to null so import never throws.
 //----------------------------------------------------------------------------------------------------
-
-import { xnew } from '../../core/xnew';
 
 const DEFAULT_MASTER_GAIN = 0.1;
 
@@ -25,19 +23,4 @@ export function resume(): void {
     if (context !== null && context.state === 'suspended') {
         context.resume();
     }
-}
-
-//----------------------------------------------------------------------------------------------------
-// Volume — master-gain accessor as a component, so UI code reads / writes global volume without the bus
-//----------------------------------------------------------------------------------------------------
-
-export function Volume(unit: xnew.Unit) {
-    return {
-        get volume(): number {
-            return master.gain.value;
-        },
-        set volume(value: number) {
-            master.gain.value = value;
-        },
-    };
 }

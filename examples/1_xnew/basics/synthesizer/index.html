@@ -16,7 +16,7 @@
 <body class="m-0 p-0 w-full h-screen overflow-hidden">
   <div id="main" class="relative w-full h-full"></div>
   <script type="module">
-    import { xnew, xbasics } from '@mulsense/xnew';
+    import { xnew, xaudio, xbasics } from '@mulsense/xnew';
 
     //----------------------------------------------------------------------------------------------------
     // note / keyboard constants
@@ -104,7 +104,7 @@
       xnew.nest('<div class="w-full h-full overflow-auto select-none bg-stone-100 text-stone-800 p-3">');
 
       applyOptions();
-      const synth = xnew(xbasics.Synthesizer, options);
+      const synth = xaudio.synthesizer(options);
       const held = new Map();
 
       xnew('<div class="flex items-center gap-2 mb-2">', () => {
@@ -478,7 +478,7 @@
     }
 
     function synthesizerCode() {
-      const lines = ['const synth = xnew(xbasics.Synthesizer, {'];
+      const lines = ['const synth = xaudio.synthesizer({'];
       if (state.pitch.enabled || state.lfo.enabled) {
         lines.push('  oscillator: {');
         lines.push(`    type: '${state.oscillator.type}',`);

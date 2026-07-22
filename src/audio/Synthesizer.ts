@@ -4,7 +4,7 @@
 // notes overlap freely; nodes are stopped and disconnected after release.
 //----------------------------------------------------------------------------------------------------
 
-import { xnew } from '../../core/xnew';
+import { xnew } from '../core/xnew';
 import { context, master, resume } from './master';
 
 const DEFAULT_BPM = 120;

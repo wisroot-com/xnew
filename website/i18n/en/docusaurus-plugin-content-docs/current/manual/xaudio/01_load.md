@@ -1,14 +1,14 @@
-# AudioTrack
+# xaudio.load
 
-`AudioTrack` is a built-in component that fetches and decodes an audio file and plays it back. It is driven by `play` / `pause` and mixes through the package's shared audio bus. When the unit is finalized, the Web Audio nodes it holds are released automatically.
+`xaudio.load` creates a track that fetches and decodes an audio file and plays it back. It is driven by `play` / `pause` and mixes through the package's shared audio bus. Internally the track is created as a unit under the current scope, so when the calling unit (e.g. a scene) is finalized, the Web Audio nodes it holds are released automatically.
 
 You don't have to worry about loading: calling `play()` before decoding finishes simply defers playback until the buffer is ready.
 
 ```js
-import { xnew, xbasics } from '@mulsense/xnew';
+import { xnew, xaudio } from '@mulsense/xnew';
 
 function Main(unit) {
-  const music = xnew(xbasics.AudioTrack, { url: 'bgm.mp3', loop: true });
+  const music = xaudio.load({ url: 'bgm.mp3', loop: true });
 
   xnew('<button>', 'play').on('click', () => music.play({ fade: 1000 }));
   xnew('<button>', 'pause').on('click', () => music.pause({ fade: 1000 }));
@@ -17,7 +17,7 @@ function Main(unit) {
 
 ## Props (on creation)
 
-Options passed to `xnew(xbasics.AudioTrack, props)`.
+Options passed to `xaudio.load(props)`.
 
 | Prop | Type | Description |
 | --- | --- | --- |
@@ -49,7 +49,7 @@ Pauses playback. The position is kept, and the next `play()` resumes from there.
 - `volume` — Volume of this track (`number`, read/write).
 
 :::note
-To control the overall master volume, use `xbasics.Volume`. Pull it in with `xnew.extend(xbasics.Volume)` and read/write its `volume` property to control the volume shared by every source.
+To control the overall master volume, read/write [`xaudio.volume`](./volume) — the volume shared by every source.
 :::
 
 ## Demo

@@ -1,14 +1,14 @@
-# AudioTrack
+# xaudio.load
 
-`AudioTrack` は音声ファイルを取得・デコードして再生する組み込みコンポーネントです。`play` / `pause` で駆動し、パッケージ共有のオーディオバスへミックスされます。unit が破棄されると、確保していた Web Audio ノードは自動的に解放されます。
+`xaudio.load` は音声ファイルを取得・デコードして再生するトラックを作成します。`play` / `pause` で駆動し、パッケージ共有のオーディオバスへミックスされます。内部ではトラックが unit として現在のスコープに作られるため、呼び出し元の unit（シーンなど）が破棄されると、確保していた Web Audio ノードも自動的に解放されます。
 
 読み込みを意識する必要はありません。デコードが終わる前に `play()` を呼んでも、ロード完了まで再生を自動的に遅延します。
 
 ```js
-import { xnew, xbasics } from '@mulsense/xnew';
+import { xnew, xaudio } from '@mulsense/xnew';
 
 function Main(unit) {
-  const music = xnew(xbasics.AudioTrack, { url: 'bgm.mp3', loop: true });
+  const music = xaudio.load({ url: 'bgm.mp3', loop: true });
 
   xnew('<button>', 'play').on('click', () => music.play({ fade: 1000 }));
   xnew('<button>', 'pause').on('click', () => music.pause({ fade: 1000 }));
@@ -17,7 +17,7 @@ function Main(unit) {
 
 ## プロパティ（生成時）
 
-`xnew(xbasics.AudioTrack, props)` に渡すオプションです。
+`xaudio.load(props)` に渡すオプションです。
 
 | プロパティ | 型 | 説明 |
 | --- | --- | --- |
@@ -49,7 +49,7 @@ function Main(unit) {
 - `volume` — このトラックの音量（`number`、読み書き可能）。
 
 :::note
-全体のマスター音量を扱いたい場合は `xbasics.Volume` を使います。`xnew.extend(xbasics.Volume)` で取り込み、その `volume` プロパティを読み書きすると、すべての音源に共通する音量を制御できます。
+全体のマスター音量を扱いたい場合は [`xaudio.volume`](./volume) を読み書きします。すべての音源に共通する音量を制御できます。
 :::
 
 ## デモ

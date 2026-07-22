@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import voxelkit from 'voxelkit';
-import { xnew, xbasics, xicons } from '@mulsense/xnew';
+import { xnew, xaudio, xbasics, xicons } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import { xmatter } from '@mulsense/xnew/addons/xmatter';
@@ -97,7 +97,7 @@ function GameScene(unit) {
 
   const playing = xnew((unit) => {
     xnew(Controller);
-    xnew(xbasics.AudioTrack, { url: '../../assets/y015.mp3' }).play({ fade: 1000, loop: true });
+    xaudio.load({ url: '../../assets/y015.mp3' }).play({ fade: 1000, loop: true });
   })
 
   // xnew.timeout(() => xnew.emit('+gameover'), 1100);
@@ -122,7 +122,7 @@ function GameScene(unit) {
 function ResultScene(unit, { image }) {
   xnew.extend(xbasics.Scene);
   
-  xnew(xbasics.AudioTrack, { url: '../../assets/st005.mp3' }).play({ fade: 1, loop: true });
+  xaudio.load({ url: '../../assets/st005.mp3' }).play({ fade: 1, loop: true });
 
   // popup
   xnew.nest(`<div class="absolute inset-0 size-full">`);
@@ -322,7 +322,7 @@ function ModelBall(ball, { x, y, id = 0 }) {
   const now = new Date().getTime();
   if (now - prev > 200) {
     prev = now;
-    const synth = xnew(xbasics.Synthesizer, { oscillator: { type: 'triangle', envelope: { amount: 8, ADSR: [0, 500, 1, 0], }, }, filter: { type: 'bandpass', cutoff: 1000}, amp: { envelope: { amount: 1, ADSR: [20, 100, 0, 0], }, }, reverb: { time: 1000, mix: 0.2, },  });
+    const synth = xaudio.synthesizer({ oscillator: { type: 'triangle', envelope: { amount: 8, ADSR: [0, 500, 1, 0], }, }, filter: { type: 'bandpass', cutoff: 1000}, amp: { envelope: { amount: 1, ADSR: [20, 100, 0, 0], }, }, reverb: { time: 1000, mix: 0.2, },  });
     synth.press(['C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', 'C6'][id], 100);
   }
 

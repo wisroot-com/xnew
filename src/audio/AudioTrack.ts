@@ -4,7 +4,7 @@
 // into `pausedOffsetMs`, which `play()` resumes from unless given an explicit offset.
 //----------------------------------------------------------------------------------------------------
 
-import { xnew } from '../../core/xnew';
+import { xnew } from '../core/xnew';
 import { context, master, resume } from './master';
 
 export function AudioTrack(unit: xnew.Unit, { url, volume, loop = false }: { url: string, volume?: number, loop?: boolean }) {

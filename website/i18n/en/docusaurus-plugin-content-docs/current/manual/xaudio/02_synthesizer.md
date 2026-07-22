@@ -1,12 +1,12 @@
-# Synthesizer
+# xaudio.synthesizer
 
-`Synthesizer` is a built-in synth combining an oscillator with amp / filter / reverb, ADSR envelopes, and an LFO. Trigger it with `press` to use it for sound effects or as a simple instrument.
+`xaudio.synthesizer` creates a synth combining an oscillator with amp / filter / reverb, ADSR envelopes, and an LFO. Trigger it with `press` to use it for sound effects or as a simple instrument. Internally the synthesizer is created as a unit under the current scope and is released together with the calling unit.
 
 ```js
-import { xnew, xbasics } from '@mulsense/xnew';
+import { xnew, xaudio } from '@mulsense/xnew';
 
 function Main(unit) {
-  const synth = xnew(xbasics.Synthesizer, {
+  const synth = xaudio.synthesizer({
     oscillator: { type: 'square' },
     amp: { envelope: { amount: 0.3, ADSR: [1, 80, 0.7, 120] } },
   });
@@ -17,7 +17,7 @@ function Main(unit) {
 
 ## Options (on creation)
 
-Settings passed to `xnew(xbasics.Synthesizer, options)`.
+Settings passed to `xaudio.synthesizer(options)`.
 
 | Option | Type | Description |
 | --- | --- | --- |
@@ -62,7 +62,7 @@ note.release();
 ```
 
 :::note
-The overall master volume is controlled with `xbasics.Volume` (see [AudioTrack](./AudioTrack)).
+The overall master volume is controlled with [`xaudio.volume`](./volume).
 :::
 
 ## Demo

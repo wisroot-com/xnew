@@ -1,12 +1,12 @@
-# Synthesizer
+# xaudio.synthesizer
 
-`Synthesizer` はオシレーターにアンプ / フィルター / リバーブ、ADSR エンベロープ、LFO を組み合わせた組み込みシンセサイザーです。`press` で音を鳴らし、効果音や簡単な楽器として使えます。
+`xaudio.synthesizer` はオシレーターにアンプ / フィルター / リバーブ、ADSR エンベロープ、LFO を組み合わせたシンセサイザーを作成します。`press` で音を鳴らし、効果音や簡単な楽器として使えます。内部ではシンセサイザーが unit として現在のスコープに作られ、呼び出し元の unit の破棄とともに解放されます。
 
 ```js
-import { xnew, xbasics } from '@mulsense/xnew';
+import { xnew, xaudio } from '@mulsense/xnew';
 
 function Main(unit) {
-  const synth = xnew(xbasics.Synthesizer, {
+  const synth = xaudio.synthesizer({
     oscillator: { type: 'square' },
     amp: { envelope: { amount: 0.3, ADSR: [1, 80, 0.7, 120] } },
   });
@@ -17,7 +17,7 @@ function Main(unit) {
 
 ## オプション（生成時）
 
-`xnew(xbasics.Synthesizer, options)` に渡す設定です。
+`xaudio.synthesizer(options)` に渡す設定です。
 
 | オプション | 型 | 説明 |
 | --- | --- | --- |
@@ -62,7 +62,7 @@ note.release();
 ```
 
 :::note
-全体のマスター音量は `xbasics.Volume` で制御できます（[AudioTrack](./AudioTrack) を参照）。
+全体のマスター音量は [`xaudio.volume`](./volume) で制御できます。
 :::
 
 ## デモ
