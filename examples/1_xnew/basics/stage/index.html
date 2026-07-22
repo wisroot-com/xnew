@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden">
+  <div id="main" class="relative w-full h-full"></div>
+  <script type="module">
+    import { xnew, xbasics } from '@mulsense/xnew';
+
+    // Each screen setting is a Scene: the Panel writes params and emits '+screen',
+    // and the current scene swaps itself (Scene.change) for the newly selected variant.
+    const params = { type: 'contain', resolution: '400 x 300', pixelated: false };
+    const screens = { normal: Normal, fit: Fit, contain: Contain, cover: Cover };
+
+    xnew(document.querySelector('#main'), (unit) => {
+      xnew(Stage);
+      xnew(ControlPanel);
+    });
+
+    function Stage(unit) {
+      // deliberately NOT 4:3 (unlike the default 400 x 300 buffer), so contain / cover / fit / normal all differ
+      xnew.nest('<div class="absolute w-96 h-80 inset-0 m-auto border rounded-lg overflow-hidden bg-slate-800 select-none">');
+      xnew(screens[params.type]);
+      // Scene.change swaps the current scene for the selected variant; a change to the same
+      // variant still remounts it, so resolution / pixelated edits also take effect
+      unit.on('+screen', () => xnew.find(xbasics.Scene)[0].change(screens[params.type]));
+    }
+
+    // normal: the canvas follows the box width only (height keeps the buffer's aspect)
+    function Normal(unit) {
+      xnew.extend(xbasics.Scene);
+      const [width, height] = resolution();
+      draw(xnew(`<canvas width="${width}" height="${height}" class="w-full align-bottom">`).element);
+    }
+
+    // fit: the canvas stretches to both box edges (distorts when the aspects differ)
+    function Fit(unit) {
+      xnew.extend(xbasics.Scene);
+      const [width, height] = resolution();
+      draw(xnew(`<canvas width="${width}" height="${height}" class="size-full align-bottom">`).element);
+    }
+
+    function Contain(unit) {
+      xnew.extend(xbasics.Scene);
+      const [width, height] = resolution();
+      const screen = xnew.extend(xbasics.Screen, { width, height, fit: 'contain' });
+      draw(screen.canvas);
+    }
+
+    function Cover(unit) {
+      xnew.extend(xbasics.Scene);
+      const [width, height] = resolution();
+      const screen = xnew.extend(xbasics.Screen, { width, height, fit: 'cover' });
+      draw(screen.canvas);
+    }
+
+    function resolution() {
+      return params.resolution.split(' x ').map(Number);
+    }
+
+    // three squares placed relative to the buffer size, so scaling and distortion stay visible
+    function draw(canvas) {
+      canvas.style.imageRendering = params.pixelated ? 'pixelated' : 'auto';
+      const context = canvas.getContext('2d');
+      const [cx, cy] = [canvas.width / 2, canvas.height / 2];
+      const size = canvas.width / 6;
+
+      context.fillStyle = 'rgb(0,0,0)';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = 'rgb(200,0,100)';
+      context.fillRect(cx - 0.6 * cx - size / 2, cy - size / 2, size, size);
+      context.fillStyle = 'rgb(100,200,0)';
+      context.fillRect(cx + 0.0 * cx - size / 2, cy - size / 2, size, size);
+      context.fillStyle = 'rgb(0,100,200)';
+      context.fillRect(cx + 0.6 * cx - size / 2, cy - size / 2, size, size);
+    }
+
+    function ControlPanel(unit) {
+      xnew.nest('<div class="absolute top-2 right-2 w-48 max-h-[calc(100vh-1rem)] text-sm border rounded-lg overflow-hidden shadow-lg bg-gray-100 text-green-900">');
+      const panel = xnew(xbasics.Panel, { params });
+
+      // rows write through to params; '+screen' then asks the current scene to rebuild
+      panel.folder({ name: 'screen', open: true }, (folder) => {
+        folder.listbox({ name: 'type', items: ['normal', 'fit', 'contain', 'cover'] }).on('-change', () => xnew.emit('+screen'));
+        folder.listbox({ name: 'resolution', items: ['400 x 300', '160 x 120', '600 x 240'] }).on('-change', () => xnew.emit('+screen'));
+        folder.checkbox({ name: 'pixelated' }).on('input', () => xnew.emit('+screen'));
+      });
+    }
+  </script>
+</body>
+
+</html>

@@ -303,6 +303,13 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **Never let a `+event` listener mount a unit that itself listens for that same `+event` (e.g.
+  `unit.on('+x', () => unit.change(Next))` where `Next` registers `'+x'` too) — put the ONE listener on a
+  stable ancestor instead.** `Unit.emit` iterates `type2units` live, so a unit added during the emit also
+  receives it: the freshly mounted scene changes again, mounting another, forever (page freeze, no error).
+  Pattern: the parent listens once and drives the swap via `xnew.find(xbasics.Scene)[0].change(...)`
+  (bit the stage example when every scene variant subscribed to `'+screen'`).
+
 - **`xpixi.nest()` never takes an EXISTING object — it always creates a fresh group Container and moves
   the current parent into it (stateful); `xpixi.add(obj)` attaches a leaf/display object without moving.
   Place leaves with `add`, never hand-`addChild`.** Its only argument is an optional transform config

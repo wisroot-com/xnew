@@ -25,8 +25,7 @@ Recommended reading order.
 
 | sample | shows |
 | --- | --- |
-| [screen](basics/screen/) | `Screen` (fixed-resolution canvas, `fit`), `Aspect` |
-| [scene](basics/scene/) | `Scene` navigation — `change` (swap sibling scenes) / `add` (overlay) |
+| [stage](basics/stage/) | `Screen` settings (normal / fit / contain / cover) swapped by `Scene.change`, driven from a `Panel` |
 | [element](basics/element/) | `Button` / `Input*` form elements — `@layer base` defaults, overridable via className / style |
 | [widget](basics/widget/) | `ColorPicker` / `Panel` / `Gate` + `Accordion` / `Overlay` (accordion, modal, menu) |
 | [controller](basics/controller/) | `VirtualPad` (`analog` / `8way` / `4way`) virtual game pad |
