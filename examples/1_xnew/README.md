@@ -27,8 +27,7 @@ Recommended reading order.
 | --- | --- |
 | [stage](basics/stage/) | `Screen` settings (normal / fit / contain / cover) swapped by `Scene.change`, driven from a `Panel` |
 | [element](basics/element/) | `Button` / `Input*` form elements — `@layer base` defaults, overridable via className / style |
-| [widget](basics/widget/) | `ColorPicker` / `Panel` / `Gate` + `Accordion` / `Overlay` (accordion, modal, menu) |
-| [controller](basics/controller/) | `VirtualPad` (`analog` / `8way` / `4way`) virtual game pad |
+| [widget](basics/widget/) | `ColorPicker` / `Panel` / `Gate` + `Accordion` / `Overlay` (accordion, modal, menu) / `VirtualPad` |
 | [svg](basics/svg/) | `SVG` icon base, `GraphicText` outlined labels |
 
 ## audio/ — export `xaudio`

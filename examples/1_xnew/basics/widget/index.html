@@ -36,8 +36,37 @@
 
       xnew(MyColorPicker);
 
+      xnew(MyVirtualPad);
+
       xnew(MyPanel);
     });
+
+    function MyVirtualPad(unit) {
+      // arena stays in the page flow; the pads drive the box via '+move'
+      xnew('<div class="relative w-48 h-24 border rounded-lg overflow-hidden">', (unit) => {
+        const box = xnew('<div class="absolute size-6 inset-0 m-auto bg-blue-500 rounded">');
+        const current = { x: 0, y: 0, r: 0 };
+        let move = { x: 0, y: 0 };
+        unit.on('+move', ({ vector }) => move = vector);
+
+        unit.on('update', () => {
+          current.x = Math.max(-84, Math.min(84, current.x + move.x * 2));
+          current.y = Math.max(-36, Math.min(36, current.y + move.y * 2));
+          current.r += 1;
+          box.element.style.transform = `translate(${current.x}px, ${current.y}px) rotate(${current.r}deg)`;
+        });
+      });
+
+      // pads pinned to the screen's bottom corners; the strip lets clicks through, only the pads take them
+      xnew('<div class="absolute left-0 right-0 bottom-0 h-[30%] pointer-events-none select-none" style="container-type: size;">', (unit) => {
+        // prevent touch scroll / long-press menu while operating the pads (their events bubble here)
+        unit.on('touchstart contextmenu', ({ event }) => event.preventDefault());
+
+        const dpad = xnew(xbasics.VirtualPad, { type: '8way', className: 'pointer-events-auto absolute left-[5cqh] bottom-[5cqh] w-[90cqh] h-[90cqh]' });
+        const stick = xnew(xbasics.VirtualPad, { type: 'analog', className: 'pointer-events-auto absolute right-[5cqh] bottom-[5cqh] w-[90cqh] h-[90cqh]' });
+        [dpad, stick].forEach((pad) => pad.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector })));
+      });
+    }
 
     function MyColorPicker(unit) {
       xnew.nest('<div class="flex items-start gap-x-2">');
