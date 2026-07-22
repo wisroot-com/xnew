@@ -22,6 +22,7 @@ import { Synthesizer } from './audio/Synthesizer';
 import { Volume } from './audio/master';
 import { Gate } from './widget/Gate';
 import { Accordion } from './widget/Accordion';
+import { ColorPicker } from './widget/ColorPicker';
 import { Overlay } from './widget/Overlay';
 import { VirtualPad } from './widget/VirtualPad';
 import { Panel } from './widget/Panel';
@@ -49,6 +50,7 @@ export const xbasics = {
     Volume,
     Gate,
     Accordion,
+    ColorPicker,
     Overlay,
     VirtualPad,
     Panel,

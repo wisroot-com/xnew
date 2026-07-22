@@ -438,6 +438,17 @@ declare function Accordion(unit: xnew.Unit, { gate, className, style, ...others 
     readonly gate: Unit;
 };
 
+declare function ColorPicker(unit: xnew.Unit, { value, presets, alpha, className, style, ...others }?: {
+    value?: string;
+    presets?: string[];
+    alpha?: boolean;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    value: string;
+};
+
 declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...others }?: {
     gate?: {
         open?: boolean;
@@ -517,6 +528,7 @@ declare const xbasics: {
     Volume: typeof Volume;
     Gate: typeof Gate;
     Accordion: typeof Accordion;
+    ColorPicker: typeof ColorPicker;
     Overlay: typeof Overlay;
     VirtualPad: typeof VirtualPad;
     Panel: typeof Panel;
