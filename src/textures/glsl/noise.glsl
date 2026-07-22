@@ -1,9 +1,8 @@
 //----------------------------------------------------------------------------------------------------
-// xtextures noise — shared GLSL prelude: classic 3D Perlin noise (Gustavson / Ashima, MIT), output ~[-1,1]
-// Version-agnostic (only function defs), so it injects into both WebGL2 (300 es) and three's ShaderMaterial (1.00).
+// xtex_noise — classic 3D Perlin noise (Gustavson / Ashima, MIT), output ~[-1,1]
+// Version-agnostic (only function defs), so it injects into WebGL2 (300 es), three (1.00), and previews.
 //----------------------------------------------------------------------------------------------------
 
-export const XTEX_NOISE = `
 vec3 xtex_mod289(vec3 x){ return x - floor(x*(1.0/289.0))*289.0; }
 vec4 xtex_mod289(vec4 x){ return x - floor(x*(1.0/289.0))*289.0; }
 vec4 xtex_permute(vec4 x){ return xtex_mod289(((x*34.0)+1.0)*x); }
@@ -70,4 +69,3 @@ float xtex_noise(vec3 P){
   vec2 n_yz = mix(n_z.xy, n_z.zw, f.y);
   return 2.2 * mix(n_yz.x, n_yz.y, f.x);
 }
-`;

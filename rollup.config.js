@@ -13,6 +13,18 @@ append('addons/', 'xrapier2d', 'xrapier2d', ['@mulsense/xnew', '@dimforge/rapier
 append('addons/', 'xrapier3d', 'xrapier3d', ['@mulsense/xnew', '@dimforge/rapier3d-compat']);
 append('addons/', 'xreact', 'xreact', ['@mulsense/xnew', 'react']);
 
+// import a .glsl file as its source string (see src/textures/glsl-modules.d.ts)
+function glsl() {
+    return {
+        name: 'glsl',
+        transform(code, id) {
+            if (id.endsWith('.glsl')) {
+                return { code: `export default ${JSON.stringify(code)};`, map: null };
+            }
+        },
+    };
+}
+
 function append(dir, src, name, external = []) {
     // ESM build — the only distribution format (`import { xnew } from '@mulsense/xnew'`).
     configs.push({
@@ -22,6 +34,7 @@ function append(dir, src, name, external = []) {
         ],
         external,
         plugins: [
+            glsl(),
             typescript({ removeComments: true }),
             copyto(`./dist/${dir}${name}.mjs`, `./examples/dist/${dir}${name}.mjs`),
         ],

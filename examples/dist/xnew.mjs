@@ -3360,6 +3360,26 @@ const xbasics = {
     VolumeController,
 };
 
+function uniformDeclarations(uniforms) {
+    const floats = [];
+    const vec3s = [];
+    for (const key in uniforms) {
+        if (Array.isArray(uniforms[key].value)) {
+            vec3s.push(key);
+        }
+        else {
+            floats.push(key);
+        }
+    }
+    let declarations = '';
+    if (floats.length > 0) {
+        declarations += `uniform float ${floats.join(', ')};\n`;
+    }
+    if (vec3s.length > 0) {
+        declarations += `uniform vec3 ${vec3s.join(', ')};\n`;
+    }
+    return declarations;
+}
 function createTextureRenderer(canvas, def, options = {}) {
     var _a;
     const worldSize = (_a = options.worldSize) !== null && _a !== void 0 ? _a : 3;
@@ -3450,161 +3470,42 @@ function compileShader(gl, type, source) {
     return shader;
 }
 
-const XTEX_NOISE = `
-vec3 xtex_mod289(vec3 x){ return x - floor(x*(1.0/289.0))*289.0; }
-vec4 xtex_mod289(vec4 x){ return x - floor(x*(1.0/289.0))*289.0; }
-vec4 xtex_permute(vec4 x){ return xtex_mod289(((x*34.0)+1.0)*x); }
-vec4 xtex_taylorInvSqrt(vec4 r){ return 1.79284291400159 - 0.85373472095314 * r; }
-vec3 xtex_fade(vec3 t){ return t*t*t*(t*(t*6.0-15.0)+10.0); }
+var noiseGlsl = "//----------------------------------------------------------------------------------------------------\n// xtex_noise — classic 3D Perlin noise (Gustavson / Ashima, MIT), output ~[-1,1]\n// Version-agnostic (only function defs), so it injects into WebGL2 (300 es), three (1.00), and previews.\n//----------------------------------------------------------------------------------------------------\n\nvec3 xtex_mod289(vec3 x){ return x - floor(x*(1.0/289.0))*289.0; }\nvec4 xtex_mod289(vec4 x){ return x - floor(x*(1.0/289.0))*289.0; }\nvec4 xtex_permute(vec4 x){ return xtex_mod289(((x*34.0)+1.0)*x); }\nvec4 xtex_taylorInvSqrt(vec4 r){ return 1.79284291400159 - 0.85373472095314 * r; }\nvec3 xtex_fade(vec3 t){ return t*t*t*(t*(t*6.0-15.0)+10.0); }\n\nfloat xtex_noise(vec3 P){\n  vec3 Pi0 = floor(P);\n  vec3 Pi1 = Pi0 + vec3(1.0);\n  Pi0 = xtex_mod289(Pi0);\n  Pi1 = xtex_mod289(Pi1);\n  vec3 Pf0 = fract(P);\n  vec3 Pf1 = Pf0 - vec3(1.0);\n  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);\n  vec4 iy = vec4(Pi0.yy, Pi1.yy);\n  vec4 iz0 = Pi0.zzzz;\n  vec4 iz1 = Pi1.zzzz;\n\n  vec4 ixy = xtex_permute(xtex_permute(ix) + iy);\n  vec4 ixy0 = xtex_permute(ixy + iz0);\n  vec4 ixy1 = xtex_permute(ixy + iz1);\n\n  vec4 gx0 = ixy0 * (1.0 / 7.0);\n  vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;\n  gx0 = fract(gx0);\n  vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);\n  vec4 sz0 = step(gz0, vec4(0.0));\n  gx0 -= sz0 * (step(0.0, gx0) - 0.5);\n  gy0 -= sz0 * (step(0.0, gy0) - 0.5);\n\n  vec4 gx1 = ixy1 * (1.0 / 7.0);\n  vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;\n  gx1 = fract(gx1);\n  vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);\n  vec4 sz1 = step(gz1, vec4(0.0));\n  gx1 -= sz1 * (step(0.0, gx1) - 0.5);\n  gy1 -= sz1 * (step(0.0, gy1) - 0.5);\n\n  vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);\n  vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);\n  vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);\n  vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);\n  vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);\n  vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);\n  vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);\n  vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);\n\n  vec4 norm0 = xtex_taylorInvSqrt(vec4(dot(g000,g000), dot(g010,g010), dot(g100,g100), dot(g110,g110)));\n  g000 *= norm0.x; g010 *= norm0.y; g100 *= norm0.z; g110 *= norm0.w;\n  vec4 norm1 = xtex_taylorInvSqrt(vec4(dot(g001,g001), dot(g011,g011), dot(g101,g101), dot(g111,g111)));\n  g001 *= norm1.x; g011 *= norm1.y; g101 *= norm1.z; g111 *= norm1.w;\n\n  float n000 = dot(g000, Pf0);\n  float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));\n  float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));\n  float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));\n  float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));\n  float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));\n  float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));\n  float n111 = dot(g111, Pf1);\n\n  vec3 f = xtex_fade(Pf0);\n  vec4 n_z = mix(vec4(n000,n100,n010,n110), vec4(n001,n101,n011,n111), f.z);\n  vec2 n_yz = mix(n_z.xy, n_z.zw, f.y);\n  return 2.2 * mix(n_yz.x, n_yz.y, f.x);\n}\n";
 
-float xtex_noise(vec3 P){
-  vec3 Pi0 = floor(P);
-  vec3 Pi1 = Pi0 + vec3(1.0);
-  Pi0 = xtex_mod289(Pi0);
-  Pi1 = xtex_mod289(Pi1);
-  vec3 Pf0 = fract(P);
-  vec3 Pf1 = Pf0 - vec3(1.0);
-  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
-  vec4 iy = vec4(Pi0.yy, Pi1.yy);
-  vec4 iz0 = Pi0.zzzz;
-  vec4 iz1 = Pi1.zzzz;
+var woodGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexWood — procedural wood (rings + fibers) as a function of object-space position.\n// Requires noise.glsl before it; uniform declarations are generated from the TS schema (wood.ts).\n//----------------------------------------------------------------------------------------------------\n\nvec3 xtexWood(vec3 position){\n  float ang = radians(angle);\n  float ca = cos(ang), sa = sin(ang);\n  vec3 posLocal = vec3(\n    position.x*ca - position.y*sa,\n    position.x*sa + position.y*ca,\n    position.z\n  );\n\n  // main ring pattern\n  vec3 pos = posLocal * exp(scale - 3.0) * vec3(1.0/lengths, 4.0, 1.0/lengths) + seed;\n  float k = (xtex_noise(pos) + 1.0) * 10.0 * rings;\n  k = (cos(k + cos(k)) + 1.0) / 2.0;\n\n  // fibers: 10 octaves of turbulence, high-frequency along y\n  float kk = 0.0, sum = 0.0, power = 2.0;\n  vec3 sc = exp(scale - 2.0) * vec3(1.0, fibersDensity, 1.0);\n  for (int i = 0; i < 10; i++){\n    kk += power * xtex_noise(posLocal * sc + seed);\n    sum += power;\n    sc *= 1.8;\n    power *= 0.6;\n  }\n  kk = (sin(kk * 5.0 / sum * 10.0) + 1.0) / 2.0;\n\n  return mix(color, background, mix(k, kk, fibers));\n}\n";
 
-  vec4 ixy = xtex_permute(xtex_permute(ix) + iy);
-  vec4 ixy0 = xtex_permute(ixy + iz0);
-  vec4 ixy1 = xtex_permute(ixy + iz1);
-
-  vec4 gx0 = ixy0 * (1.0 / 7.0);
-  vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
-  gx0 = fract(gx0);
-  vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
-  vec4 sz0 = step(gz0, vec4(0.0));
-  gx0 -= sz0 * (step(0.0, gx0) - 0.5);
-  gy0 -= sz0 * (step(0.0, gy0) - 0.5);
-
-  vec4 gx1 = ixy1 * (1.0 / 7.0);
-  vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
-  gx1 = fract(gx1);
-  vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
-  vec4 sz1 = step(gz1, vec4(0.0));
-  gx1 -= sz1 * (step(0.0, gx1) - 0.5);
-  gy1 -= sz1 * (step(0.0, gy1) - 0.5);
-
-  vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
-  vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
-  vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
-  vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
-  vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
-  vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
-  vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
-  vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
-
-  vec4 norm0 = xtex_taylorInvSqrt(vec4(dot(g000,g000), dot(g010,g010), dot(g100,g100), dot(g110,g110)));
-  g000 *= norm0.x; g010 *= norm0.y; g100 *= norm0.z; g110 *= norm0.w;
-  vec4 norm1 = xtex_taylorInvSqrt(vec4(dot(g001,g001), dot(g011,g011), dot(g101,g101), dot(g111,g111)));
-  g001 *= norm1.x; g011 *= norm1.y; g101 *= norm1.z; g111 *= norm1.w;
-
-  float n000 = dot(g000, Pf0);
-  float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
-  float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
-  float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
-  float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
-  float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
-  float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
-  float n111 = dot(g111, Pf1);
-
-  vec3 f = xtex_fade(Pf0);
-  vec4 n_z = mix(vec4(n000,n100,n010,n110), vec4(n001,n101,n011,n111), f.z);
-  vec2 n_yz = mix(n_z.xy, n_z.zw, f.y);
-  return 2.2 * mix(n_yz.x, n_yz.y, f.x);
-}
-`;
-
+const uniforms$1 = {
+    scale: { value: 2.5, min: 0, max: 6, step: 0.1 },
+    rings: { value: 4.5, min: 0, max: 20, step: 0.1 },
+    lengths: { value: 1, min: 0.1, max: 10, step: 0.1 },
+    angle: { value: 0, min: 0, max: 360, step: 1 },
+    fibers: { value: 0.3, min: 0, max: 1, step: 0.01 },
+    fibersDensity: { value: 10, min: 0, max: 40, step: 0.5 },
+    seed: { value: 0, min: 0, max: 100, step: 1 },
+    color: { value: [0.8, 0.4, 0.0] },
+    background: { value: [0.4, 0.1, 0.0] },
+};
 const wood = {
     name: 'Wood',
     fn: 'xtexWood',
-    glsl: XTEX_NOISE +
-        `
-uniform float scale, rings, lengths, angle, fibers, fibersDensity, seed;
-uniform vec3 color, background;
-
-vec3 xtexWood(vec3 position){
-  float ang = radians(angle);
-  float ca = cos(ang), sa = sin(ang);
-  vec3 posLocal = vec3(
-    position.x*ca - position.y*sa,
-    position.x*sa + position.y*ca,
-    position.z
-  );
-
-  // main ring pattern
-  vec3 pos = posLocal * exp(scale - 3.0) * vec3(1.0/lengths, 4.0, 1.0/lengths) + seed;
-  float k = (xtex_noise(pos) + 1.0) * 10.0 * rings;
-  k = (cos(k + cos(k)) + 1.0) / 2.0;
-
-  // fibers: 10 octaves of turbulence, high-frequency along y
-  float kk = 0.0, sum = 0.0, power = 2.0;
-  vec3 sc = exp(scale - 2.0) * vec3(1.0, fibersDensity, 1.0);
-  for (int i = 0; i < 10; i++){
-    kk += power * xtex_noise(posLocal * sc + seed);
-    sum += power;
-    sc *= 1.8;
-    power *= 0.6;
-  }
-  kk = (sin(kk * 5.0 / sum * 10.0) + 1.0) / 2.0;
-
-  return mix(color, background, mix(k, kk, fibers));
-}
-`,
-    uniforms: {
-        scale: { value: 2.5, min: 0, max: 6, step: 0.1 },
-        rings: { value: 4.5, min: 0, max: 20, step: 0.1 },
-        lengths: { value: 1, min: 0.1, max: 10, step: 0.1 },
-        angle: { value: 0, min: 0, max: 360, step: 1 },
-        fibers: { value: 0.3, min: 0, max: 1, step: 0.01 },
-        fibersDensity: { value: 10, min: 0, max: 40, step: 0.5 },
-        seed: { value: 0, min: 0, max: 100, step: 1 },
-        color: { value: [0.8, 0.4, 0.0] },
-        background: { value: [0.4, 0.1, 0.0] },
-    },
+    glsl: noiseGlsl + uniformDeclarations(uniforms$1) + woodGlsl,
+    uniforms: uniforms$1,
 };
 
+var concreteGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexConcrete — bumpy concrete as a perturbed object-space NORMAL (finite differences, EPS = 0.001).\n// Requires noise.glsl before it; uniform declarations are generated from the TS schema (concrete.ts).\n//----------------------------------------------------------------------------------------------------\n\nvec3 xtex_concreteSurface(vec3 p, vec3 n, float d){\n  float k = pow(abs(xtex_noise(p) * 0.5 + 0.5), d);\n  return p + n * k;\n}\n\nvec3 xtexConcrete(vec3 position, vec3 normal, vec3 tangent){\n  const float EPS = 0.001;\n  vec3 seed3d = sin(vec3(1.0, 2.0, 3.0) * seed) * 100.0;\n\n  vec3 xposition = position * exp(scale / 2.0 + 2.0) + seed3d;\n  vec3 xnormal = normalize(normal);\n  vec3 xtangent = normalize(tangent) * EPS;\n  vec3 xbitangent = normalize(cross(xnormal, xtangent)) * EPS;\n  float xdensity = mix(10.0, 0.5, density);\n\n  vec3 bumped = xnormal * bump;\n  vec3 pos  = xtex_concreteSurface(xposition, bumped, xdensity);\n  vec3 posU = xtex_concreteSurface(xposition + xtangent, bumped, xdensity);\n  vec3 posV = xtex_concreteSurface(xposition + xbitangent, bumped, xdensity);\n\n  return normalize(cross(posU - pos, posV - pos));\n}\n";
+
+const uniforms = {
+    scale: { value: 2, min: 0, max: 4, step: 0.1 },
+    density: { value: 0.5, min: 0, max: 1, step: 0.01 },
+    bump: { value: 0.5, min: -1, max: 1, step: 0.01 },
+    seed: { value: 0, min: 0, max: 100, step: 1 },
+};
 const concrete = {
     name: 'Concrete',
     fn: 'xtexConcrete',
     kind: 'normal',
-    glsl: XTEX_NOISE +
-        `
-uniform float scale, density, bump, seed;
-
-vec3 xtex_concreteSurface(vec3 p, vec3 n, float d){
-  float k = pow(abs(xtex_noise(p) * 0.5 + 0.5), d);
-  return p + n * k;
-}
-
-vec3 xtexConcrete(vec3 position, vec3 normal, vec3 tangent){
-  const float EPS = 0.001;
-  vec3 seed3d = sin(vec3(1.0, 2.0, 3.0) * seed) * 100.0;
-
-  vec3 xposition = position * exp(scale / 2.0 + 2.0) + seed3d;
-  vec3 xnormal = normalize(normal);
-  vec3 xtangent = normalize(tangent) * EPS;
-  vec3 xbitangent = normalize(cross(xnormal, xtangent)) * EPS;
-  float xdensity = mix(10.0, 0.5, density);
-
-  vec3 bumped = xnormal * bump;
-  vec3 pos  = xtex_concreteSurface(xposition, bumped, xdensity);
-  vec3 posU = xtex_concreteSurface(xposition + xtangent, bumped, xdensity);
-  vec3 posV = xtex_concreteSurface(xposition + xbitangent, bumped, xdensity);
-
-  return normalize(cross(posU - pos, posV - pos));
-}
-`,
-    uniforms: {
-        scale: { value: 2, min: 0, max: 4, step: 0.1 },
-        density: { value: 0.5, min: 0, max: 1, step: 0.01 },
-        bump: { value: 0.5, min: -1, max: 1, step: 0.01 },
-        seed: { value: 0, min: 0, max: 100, step: 1 },
-    },
+    glsl: noiseGlsl + uniformDeclarations(uniforms) + concreteGlsl,
+    uniforms,
 };
 
 function defineTexture(def) {

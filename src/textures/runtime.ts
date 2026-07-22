@@ -27,6 +27,34 @@ export interface TextureRenderer {
     dispose(): void;
 }
 
+//----------------------------------------------------------------------------------------------------
+// uniform declarations — generated from the uniform schema so names live in one place
+//----------------------------------------------------------------------------------------------------
+
+export function uniformDeclarations(uniforms: Record<string, TextureUniform>): string {
+    const floats: string[] = [];
+    const vec3s: string[] = [];
+    for (const key in uniforms) {
+        if (Array.isArray(uniforms[key].value)) {
+            vec3s.push(key);
+        } else {
+            floats.push(key);
+        }
+    }
+    let declarations = '';
+    if (floats.length > 0) {
+        declarations += `uniform float ${floats.join(', ')};\n`;
+    }
+    if (vec3s.length > 0) {
+        declarations += `uniform vec3 ${vec3s.join(', ')};\n`;
+    }
+    return declarations;
+}
+
+//----------------------------------------------------------------------------------------------------
+// renderer
+//----------------------------------------------------------------------------------------------------
+
 export function createTextureRenderer(
     canvas: HTMLCanvasElement,
     def: TextureDef,
