@@ -28,8 +28,7 @@ Recommended reading order.
 | [screen](basics/screen/) | `Screen` (fixed-resolution canvas, `fit`), `Aspect` |
 | [scene](basics/scene/) | `Scene` navigation — `change` (swap sibling scenes) / `add` (overlay) |
 | [element](basics/element/) | `Button` / `Input*` form elements — `@layer base` defaults, overridable via className / style |
-| [panel](basics/panel/) | `Panel` — groups, buttons, range / checkbox / select |
-| [gate](basics/gate/) | `Gate` + `Accordion` / `Overlay` (accordion, modal, menu) |
+| [widget](basics/widget/) | `ColorPicker` / `Panel` / `Gate` + `Accordion` / `Overlay` (accordion, modal, menu) |
 | [controller](basics/controller/) | `VirtualPad` (`analog` / `8way` / `4way`) virtual game pad |
 | [svg](basics/svg/) | `SVG` icon base, `GraphicText` outlined labels |
 | [audiotrack](basics/audiotrack/) | `AudioTrack` music playback, `Volume` master gain |
