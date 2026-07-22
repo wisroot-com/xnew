@@ -6,8 +6,8 @@ import * as THREE from 'three';
 // xtextures × three.js — one model, switchable texture. xthree.texture() injects the texture's GLSL
 // into a ShaderMaterial, evaluated per-fragment from object-space position (solid look, no canvas).
 // A Panel listbox swaps the material; the parameter rows are generated from the uniform schema, so
-// adding a texture is one TEXTURES entry. Textures with a normal channel are lit with it (albedo
-// comes from the color channel).
+// adding a texture is one TEXTURES entry. A display listbox switches both (lit albedo × perturbed
+// normal) / color (raw albedo) / normal (normal-map colors) for channel inspection.
 //----------------------------------------------------------------------------------------------------
 
 const TEXTURES = {
@@ -24,7 +24,7 @@ function Main(unit) {
   xthree.initialize({ canvas: unit.canvas });
   xthree.camera.position.set(0, 0, 4.2);
 
-  const state = { texture: Object.keys(TEXTURES)[0] };
+  const state = { texture: Object.keys(TEXTURES)[0], display: 'both' };
   const bags = {};
   for (const name in TEXTURES) {
     bags[name] = initParams(TEXTURES[name]);
@@ -83,17 +83,17 @@ function syncUniforms(material, params) {
 }
 
 //----------------------------------------------------------------------------------------------------
-// model — a single mesh; switching the texture just swaps the injected ShaderMaterial
+// model — a single mesh; switching the texture or the display mode just swaps the ShaderMaterial
 //----------------------------------------------------------------------------------------------------
 
 function Model(unit, { state, bags }) {
   const geometry = new THREE.TorusKnotGeometry(1.0, 0.34, 220, 32);
-  let material = xthree.texture(TEXTURES[state.texture], values(bags[state.texture]));
+  let material = buildMaterial(state, bags);
   const object = xthree.add(new THREE.Mesh(geometry, material));
 
-  unit.on('+texture', ({ type }) => {
+  unit.on('+texture +display', () => {
     material.dispose();
-    material = xthree.texture(TEXTURES[type], values(bags[type]));
+    material = buildMaterial(state, bags);
     object.material = material;
   });
   unit.on('update', () => {
@@ -107,6 +107,54 @@ function Model(unit, { state, bags }) {
   });
 }
 
+// 'both' is the library material; 'color' / 'normal' are inspection modes built from the def's
+// public contract: color = raw albedo (unlit), normal = normal-map colors (n * 0.5 + 0.5),
+// matching the canvas viewer's channel rendering
+function buildMaterial(state, bags) {
+  const component = TEXTURES[state.texture];
+  const params = values(bags[state.texture]);
+  if (state.display === 'both') {
+    return xthree.texture(component, params);
+  }
+
+  const def = component.def;
+  const uniforms = {};
+  for (const name in def.uniforms) {
+    const value = params[name] ?? def.uniforms[name].value;
+    uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
+  }
+  const vertexShader = `
+    varying vec3 vXtexPos;
+    varying vec3 vXtexNormal;
+    void main() {
+      vXtexPos = position;
+      vXtexNormal = normal;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+  const fragmentShader = state.display === 'color'
+    ? `
+      varying vec3 vXtexPos;
+      varying vec3 vXtexNormal;
+      ${def.glsl}
+      void main() {
+        gl_FragColor = vec4(${def.color}(vXtexPos), 1.0);
+      }
+    `
+    : `
+      varying vec3 vXtexPos;
+      varying vec3 vXtexNormal;
+      ${def.glsl}
+      void main() {
+        vec3 nrm = normalize(vXtexNormal);
+        vec3 tng = normalize(abs(nrm.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), nrm) : cross(vec3(1.0, 0.0, 0.0), nrm));
+        vec3 n = ${def.normal}(vXtexPos, nrm, tng);
+        gl_FragColor = vec4(n * 0.5 + 0.5, 1.0);
+      }
+    `;
+  return new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });
+}
+
 //----------------------------------------------------------------------------------------------------
 // panel — persistent texture listbox on top; below it, one folder rebuilt from the uniform schema
 //----------------------------------------------------------------------------------------------------
@@ -118,6 +166,10 @@ function ControlPanel(unit, { state, bags }) {
   panel.listbox({ name: 'texture', value: state.texture, items: Object.keys(TEXTURES) }).on('-change', ({ value }) => {
     state.texture = value;
     xnew.emit('+texture', { type: value });
+  });
+  panel.listbox({ name: 'display', value: state.display, items: ['both', 'color', 'normal'] }).on('-change', ({ value }) => {
+    state.display = value;
+    xnew.emit('+display', { type: value });
   });
   panel.separator();
 
