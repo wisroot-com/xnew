@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
-// three_chabudai — three.js で立体的に組んだ円形ちゃぶ台（木目つき）と、周りに並ぶ .mog ボクセルキャラ。
-//   木目は外部画像を使わず、canvas に描いた CanvasTexture で表現する（天面は横線ベースの木目、
-//   側面と脚は横木目）。床の畳は xtextures.Tatami を焼いた map / normalMap。テーブルは天板(円柱) + 縁(トーラス) + 脚(円柱)。
+// three_chabudai — three.js で立体的に組んだ円形ちゃぶ台（檜風の木目）と、周りに並ぶ .mog ボクセルキャラ。
+//   木目（天面の年輪 / 側面・脚の横木目）は xtextures.Wood、床の畳は xtextures.Tatami を
+//   非表示 canvas に焼いた CanvasTexture で表現する（手描き canvas はカードの数字面のみ）。
 //----------------------------------------------------------------------------------------------------
 
 import { xnew, xbasics, xtextures } from '@mulsense/xnew';
@@ -81,7 +81,19 @@ function Lights(unit) {
 }
 
 //----------------------------------------------------------------------------------------------------
-// Ground — 影を受ける畳の床。xtextures.Tatami を隠し canvas に焼き、map / normalMap として使う。
+// bake — xtextures の指定チャンネルを非表示 canvas に焼き、CanvasTexture にする共通ヘルパー
+//----------------------------------------------------------------------------------------------------
+
+function bake(component, channel, params) {
+    const baked = xnew(component, { channel, style: 'display: none;', ...params });
+    const texture = new THREE.CanvasTexture(baked.canvas);
+    texture.colorSpace = channel === 'color' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+    texture.anisotropy = 8;
+    return texture;
+}
+
+//----------------------------------------------------------------------------------------------------
+// Ground — 影を受ける畳の床。xtextures.Tatami を焼いて map / normalMap として使う。
 //   worldSize: 4 で畳(2x1)がタイルにちょうど収まるので、RepeatWrapping でシームレスに繰り返せる。
 //----------------------------------------------------------------------------------------------------
 
@@ -89,8 +101,8 @@ function Ground(unit) {
     const ground = xthree.add(new THREE.Mesh(
         new THREE.PlaneGeometry(40, 40),
         new THREE.MeshStandardMaterial({
-            map: bakeTatami('color', THREE.SRGBColorSpace),
-            normalMap: bakeTatami('normal', THREE.NoColorSpace),
+            map: bakeTatami('color'),
+            normalMap: bakeTatami('normal'),
             roughness: 1,
         }),
     ));
@@ -98,37 +110,38 @@ function Ground(unit) {
     ground.receiveShadow = true;
 }
 
-// xtextures.Tatami の指定チャンネルを非表示 canvas に描き、床タイル用の CanvasTexture にする
-function bakeTatami(channel, colorSpace) {
-    const tatami = xnew(xtextures.Tatami, {
-        size: { width: 512, height: 512 },
-        worldSize: 4,
-        channel,
-        style: 'display: none;',
-    });
-    const texture = new THREE.CanvasTexture(tatami.canvas);
-    texture.colorSpace = colorSpace;
+function bakeTatami(channel) {
+    const texture = bake(xtextures.Tatami, channel, { size: { width: 512, height: 512 }, worldSize: 4 });
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(10, 10);   // 40x40 の床に 4 単位タイル → 畳(2x1) ≒ 2x1 単位
-    texture.anisotropy = 8;
     return texture;
 }
 
 //----------------------------------------------------------------------------------------------------
-// Chabudai — 円形ちゃぶ台（天板 + 縁 + 折れ脚）。木目は canvas 生成の CanvasTexture。
+// Chabudai — 円形ちゃぶ台（天板 + 脚）。木目は xtextures.Wood を檜風の淡い色で焼いた CanvasTexture。
 //----------------------------------------------------------------------------------------------------
+
+// 檜風の淡い木色（color = 地の色 / background = 木目の色）
+const HINOKI = { color: [0.91, 0.83, 0.66], background: [0.74, 0.60, 0.43] };
 
 function Chabudai(unit) {
     const group = xthree.nest();
 
-    const topTexture = makeWoodTopTexture();
-    const sideTexture = makeWoodSideTexture();
+    // 天面: 年輪がそのまま出るデフォルト構成 / 側面: lengths で木目を横に引き伸ばす
+    const topTexture = bake(xtextures.Wood, 'color', {
+        size: { width: 512, height: 512 }, worldSize: 3, ...HINOKI,
+    });
+    const sideTexture = bake(xtextures.Wood, 'color', {
+        size: { width: 512, height: 64 }, worldSize: 3, lengths: 6, ...HINOKI,
+    });
+    sideTexture.wrapS = THREE.RepeatWrapping;
+    sideTexture.repeat.set(3, 1);   // 周方向に 3 回タイルして木目を細かく
 
     // 天板: 円柱（側面=横木目テクスチャ / 天面=年輪テクスチャ / 底面=無地）
     const topMaterials = [
         new THREE.MeshStandardMaterial({ map: sideTexture, roughness: 0.65 }),                        // 側面
         new THREE.MeshStandardMaterial({ map: topTexture, roughness: 0.55, metalness: 0.0 }),         // 天面
-        new THREE.MeshStandardMaterial({ color: 0x9c6b3f, roughness: 0.7 }),                          // 底面
+        new THREE.MeshStandardMaterial({ color: 0xd8c49c, roughness: 0.7 }),                          // 底面
     ];
     const top = new THREE.Mesh(new THREE.CylinderGeometry(TABLE_RADIUS, TABLE_RADIUS, TABLE_THICKNESS, 64, 1), topMaterials);
     top.position.y = TABLE_TOP_Y;
@@ -136,9 +149,13 @@ function Chabudai(unit) {
     top.receiveShadow = true;
     group.add(top);
 
-    // 脚: 天板の下、外向きに少し開いた 4 本
+    // 脚: 天板の下、外向きに少し開いた 4 本。angle: 90 で木目を縦に走らせ、少し濃い檜色にする
+    const legTexture = bake(xtextures.Wood, 'color', {
+        size: { width: 128, height: 256 }, worldSize: 2, lengths: 5, angle: 90,
+        color: [0.85, 0.74, 0.55], background: [0.64, 0.50, 0.34],
+    });
     const legHeight = TABLE_TOP_Y - TABLE_THICKNESS / 2;   // 床から天板の裏まで
-    const legMaterial = new THREE.MeshStandardMaterial({ map: makeWoodLegTexture(), roughness: 0.6 });
+    const legMaterial = new THREE.MeshStandardMaterial({ map: legTexture, roughness: 0.6 });
     for (let i = 0; i < 4; i++) {
         const angle = Math.PI / 4 + i * Math.PI / 2;
         const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, legHeight, 16), legMaterial);
@@ -149,154 +166,6 @@ function Chabudai(unit) {
         leg.castShadow = true;
         group.add(leg);
     }
-}
-
-// 横線だけのシンプルな木目テクスチャ。線の間隔・太さ・色を微妙に変えて canvas に描き CanvasTexture 化する
-function makeWoodTopTexture(size = 512) {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = size;
-    const ctx = canvas.getContext('2d');
-
-    // 下地（淡い木色）
-    ctx.fillStyle = '#d5c096';
-    ctx.fillRect(0, 0, size, size);
-
-    // 歪みの中心点（この点を中心に、平行線を垂直方向へ押し出して歪ませる）
-    const centers = [];
-    const centerCount = 5 + Math.floor(Math.random() * 4);
-    for (let i = 0; i < centerCount; i++) {
-        centers.push({
-            cx: size * (0.1 + Math.random() * 0.8),
-            cy: size * (0.1 + Math.random() * 0.8),
-            wx: size * (0.06 + Math.random() * 0.08),    // 横方向の影響範囲
-            wy: size * (0.05 + Math.random() * 0.06),    // 縦方向の影響範囲
-            ampU: size * (0.008 + Math.random() * 0.014),   // 上側の押し出し量
-            ampD: size * (0.008 + Math.random() * 0.014),   // 下側の押し出し量（上下で微妙に変える）
-        });
-    }
-
-    // 横線（間隔・太さ・色を微妙にばらつかせつつ、中心点付近で垂直方向に歪ませる）
-    for (let y = 3; y < size; y += 4 + Math.random() * 4) {
-        const tint = (Math.random() - 0.5) * 24;   // 線ごとの色味差
-        ctx.beginPath();
-        for (let x = 0; x <= size; x += 6) {
-            let dy = 0;
-            for (const c of centers) {
-                const ux = (x - c.cx) / c.wx;
-                const uy = (y - c.cy) / c.wy;
-                const amp = y < c.cy ? c.ampU : c.ampD;   // 上下で押し出し量を変える
-                dy += Math.exp(-ux * ux) * Math.exp(-uy * uy) * Math.sign(y - c.cy) * amp;
-            }
-            const yy = y + dy;
-            if (x === 0) { ctx.moveTo(x, yy); } else { ctx.lineTo(x, yy); }
-        }
-        ctx.strokeStyle = `rgba(${118 + tint}, ${86 + tint}, ${48 + tint}, ${0.1 + Math.random() * 0.18})`;
-        ctx.lineWidth = 0.6 + Math.random() * 1.4;
-        ctx.stroke();
-    }
-
-    // 歪みで開いた隙間を、その形状に合わせた入れ子の楕円状木目で埋める（線方向の細い端は埋めない）
-    for (const c of centers) {
-        const ringCount = 1 + Math.floor(Math.random() * 2);
-        for (let ri = 1; ri <= ringCount; ri++) {
-            const s = (ri / (ringCount + 1)) * 0.8;   // 内側ほど小さく（横も縦も）
-            const rx = c.wx * 1.4 * s;                // 横半径（細い端まで伸ばさない）
-            const tint = (Math.random() - 0.5) * 24;
-            const segs = 60;
-            ctx.beginPath();
-            for (let i = 0; i <= segs; i++) {
-                const t = (i / segs) * Math.PI * 2;
-                const st = Math.sin(t);
-                const ry = (st < 0 ? c.ampU : c.ampD) * s;   // 上下非対称（押し出しと同じ ampU/ampD）
-                const x = c.cx + Math.cos(t) * rx;
-                const y = c.cy + st * ry;
-                if (i === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
-            }
-            ctx.closePath();
-            ctx.strokeStyle = `rgba(${118 + tint}, ${86 + tint}, ${48 + tint}, ${0.05 + Math.random() * 0.1})`;
-            ctx.lineWidth = 0.6 + Math.random() * 1.4;
-            ctx.stroke();
-        }
-    }
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = 8;
-    return texture;
-}
-
-// 側面用: 高さ方向に積み重なる横木目（円柱側面 UV は u=周方向 / v=高さ）。周方向は RepeatWrapping でタイル。
-function makeWoodSideTexture(width = 512, height = 64) {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-
-    // 下地（上ふち明るめ → 下ふち暗め）
-    const base = ctx.createLinearGradient(0, 0, 0, height);
-    base.addColorStop(0, '#c69558');
-    base.addColorStop(1, '#9a683c');
-    ctx.fillStyle = base;
-    ctx.fillRect(0, 0, width, height);
-
-    // 横に走る木目（高さ方向に少しずつずらして重ねる）
-    for (let y = 2; y < height; y += 2 + Math.random() * 4) {
-        ctx.beginPath();
-        for (let x = 0; x <= width; x += 8) {
-            const yy = y + Math.sin(x * 0.03 + y) * 1.2 + (Math.random() - 0.5);
-            if (x === 0) { ctx.moveTo(x, yy); } else { ctx.lineTo(x, yy); }
-        }
-        ctx.strokeStyle = `rgba(80, 50, 22, ${0.08 + Math.random() * 0.16})`;
-        ctx.lineWidth = 0.8 + Math.random() * 1.2;
-        ctx.stroke();
-    }
-
-    // 細かいノイズ
-    for (let i = 0; i < 700; i++) {
-        ctx.fillStyle = `rgba(70, 45, 20, ${Math.random() * 0.06})`;
-        ctx.fillRect(Math.random() * width, Math.random() * height, 1.5, 1.5);
-    }
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.repeat.set(3, 1);   // 周方向に 3 回タイルして木目を細かく
-    texture.anisotropy = 8;
-    return texture;
-}
-
-// 脚用: 長さ方向（縦）に走る木目（円柱側面 UV は u=周方向 / v=高さ）。天板より暗めの木色。
-function makeWoodLegTexture(width = 128, height = 256) {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = '#6f4a29';
-    ctx.fillRect(0, 0, width, height);
-
-    // 縦に走る木目（横方向に少しずつずらして重ねる）
-    for (let x = 2; x < width; x += 2 + Math.random() * 4) {
-        ctx.beginPath();
-        for (let y = 0; y <= height; y += 8) {
-            const xx = x + Math.sin(y * 0.04 + x) * 1.5 + (Math.random() - 0.5);
-            if (y === 0) { ctx.moveTo(xx, y); } else { ctx.lineTo(xx, y); }
-        }
-        ctx.strokeStyle = `rgba(45, 28, 12, ${0.10 + Math.random() * 0.18})`;
-        ctx.lineWidth = 0.8 + Math.random() * 1.2;
-        ctx.stroke();
-    }
-
-    // 細かいノイズ
-    for (let i = 0; i < 500; i++) {
-        ctx.fillStyle = `rgba(40, 25, 10, ${Math.random() * 0.06})`;
-        ctx.fillRect(Math.random() * width, Math.random() * height, 1.5, 1.5);
-    }
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = 8;
-    return texture;
 }
 
 //----------------------------------------------------------------------------------------------------
