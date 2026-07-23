@@ -13,10 +13,7 @@ import { tatami } from './define/tatami';
 // shared shape — what a texture module authors and what the runtime consumes
 //----------------------------------------------------------------------------------------------------
 
-export interface TextureRange {
-    min: number;
-    max: number;
-}
+export interface TextureRange { min: number; max: number; }
 
 // a params bag: scalar → float uniform, [r, g, b] → vec3 uniform
 export type TexturePreset = Record<string, number | number[]>;
@@ -27,12 +24,7 @@ export type TexturePresets = { standard: TexturePreset } & Record<string, Textur
 // what a texture module authors — glsl is the body only (defineTexture prepends the noise prelude +
 // uniform declarations) and must define both channel entry functions derived from name:
 // vec3 xtex<Name>Color(vec3 pos) and vec3 xtex<Name>Normal(vec3 pos, vec3 normal, vec3 tangent)
-export interface TextureSource {
-    name: string; // lowercase-led identifier; also the xtextures member key
-    glsl: string;
-    ranges: Record<string, TextureRange>;
-    presets: TexturePresets;
-}
+export interface TextureSource { name: string; glsl: string; ranges: Record<string, TextureRange>; presets: TexturePresets; }
 
 export type TextureChannel = 'color' | 'normal';
 
@@ -155,12 +147,7 @@ void main(){
 // gl helpers — program compile (aPos pinned to attribute 0 so one VAO serves every program) and draw
 //----------------------------------------------------------------------------------------------------
 
-function compileTextureProgram(
-    gl: WebGL2RenderingContext,
-    def: TextureSource,
-    channel: TextureChannel,
-    tile: boolean,
-): WebGLProgram {
+function compileTextureProgram(gl: WebGL2RenderingContext, def: TextureSource, channel: TextureChannel, tile: boolean): WebGLProgram {
     const program = gl.createProgram();
     gl.attachShader(program, compileShader(gl, gl.VERTEX_SHADER, VERTEX_SOURCE));
     gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource(def, channel, tile)));
@@ -221,11 +208,7 @@ function uploadUniforms(
 // per-canvas renderer — owns its own context (live previews); dispose when the canvas goes away
 //----------------------------------------------------------------------------------------------------
 
-function createTextureRenderer(
-    canvas: HTMLCanvasElement,
-    def: TextureSource,
-    options: RendererOptions = {},
-): TextureRenderer {
+function createTextureRenderer(canvas: HTMLCanvasElement, def: TextureSource, options: RendererOptions = {}): TextureRenderer {
     const worldSize = options.worldSize ?? 3;
     const channel = options.channel ?? 'color';
     const tile = options.tile ?? false;
