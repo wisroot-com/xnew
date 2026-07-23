@@ -4,6 +4,8 @@
 // Requires noise.glsl before it; uniform declarations are generated from the TS schema (concrete.ts).
 //----------------------------------------------------------------------------------------------------
 
+float xtex_noise(vec3 P);  // defined in noise.glsl
+
 float xtex_concreteHeight(vec3 p, float d){
   return pow(abs(xtex_noise(p) * 0.5 + 0.5), d);
 }

@@ -4,6 +4,8 @@
 // Requires noise.glsl before it; uniform declarations are generated from the TS schema (wood.ts).
 //----------------------------------------------------------------------------------------------------
 
+float xtex_noise(vec3 P);  // defined in noise.glsl
+
 vec3 xtexWoodColor(vec3 position){
   float ang = radians(angle);
   float ca = cos(ang), sa = sin(ang);

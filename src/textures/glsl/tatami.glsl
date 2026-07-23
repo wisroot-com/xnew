@@ -4,6 +4,8 @@
 // Requires noise.glsl before it; uniform declarations are generated from the TS schema (tatami.ts).
 //----------------------------------------------------------------------------------------------------
 
+float xtex_noise(vec3 P);  // defined in noise.glsl
+
 const float XTEX_TATAMI_PI = 3.141592653589793;
 
 // 1 inside the heri cloth strips along the long edges (v near 0 / 1)
