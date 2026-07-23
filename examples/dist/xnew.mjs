@@ -1861,7 +1861,7 @@ function GraphicText(unit, _a = {}) {
 }
 
 function InputRange(unit, _a = {}) {
-    var { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "min", "max", "step", "vertical", "className", "style"]);
+    var { value, min = 0, max = 100, step, vertical = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "min", "max", "step", "vertical", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-block;
@@ -1886,10 +1886,30 @@ function InputRange(unit, _a = {}) {
     xnew.nest({ tag: 'div', className: `${css.container} ${vertical ? css.vertical : css.horizontal} ${className}`, style });
     const initial = value !== null && value !== void 0 ? value : min;
     const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
-    xnew(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: css.input, style: direction }, others));
+    xnew(Object.assign({ tag: 'input', type: 'range', min, max, step: step !== null && step !== void 0 ? step : autoStep(min, max), value: initial, className: css.input, style: direction }, others));
     if (xnew.standalone === true) {
         xnew(InputRangeMeter, { value: initial, min, max, vertical });
         xnew(InputRangeStatus, { value: initial, vertical });
+    }
+}
+function autoStep(min, max) {
+    const d = max - min;
+    if (d > 0) {
+        const target = d / 100;
+        const base = Math.pow(10, Math.floor(Math.log10(target)));
+        const ratio = target / base;
+        if (ratio < Math.sqrt(5)) {
+            return base;
+        }
+        else if (ratio < Math.sqrt(50)) {
+            return base * 5;
+        }
+        else {
+            return base * 10;
+        }
+    }
+    else {
+        return 1;
     }
 }
 function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false } = {}) {

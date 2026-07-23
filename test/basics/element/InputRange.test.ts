@@ -42,6 +42,20 @@ describe('basics InputRange', () => {
         expect(input.value).toBe('30');
     });
 
+    it('derives step from the range width when unspecified (~100 steps on the 1 / 5 scale)', () => {
+        expect(inputOf(xnew(InputRange)).step).toBe('1');                              // d = 100
+        expect(inputOf(xnew(InputRange, { min: 0, max: 10 })).step).toBe('0.1');       // d = 10
+        expect(inputOf(xnew(InputRange, { min: 0, max: 1 })).step).toBe('0.01');       // d = 1
+        expect(inputOf(xnew(InputRange, { min: 0, max: 40 })).step).toBe('0.5');       // d = 40 → 0.4 snaps up
+        expect(inputOf(xnew(InputRange, { min: 0, max: 500 })).step).toBe('5');        // d = 500
+        expect(inputOf(xnew(InputRange, { min: -1000, max: 1000 })).step).toBe('10');  // d = 2000 → 20 snaps down
+        expect(inputOf(xnew(InputRange, { min: 50, max: 50 })).step).toBe('1');        // degenerate range
+    });
+
+    it('keeps an explicit step over the derived one', () => {
+        expect(inputOf(xnew(InputRange, { min: 0, max: 1000, step: 1 })).step).toBe('1');
+    });
+
     it('sets the initial meter width from value / min / max', () => {
         const unit = xnew(InputRange, { value: 30, min: 10, max: 50 });
 

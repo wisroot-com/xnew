@@ -7,7 +7,7 @@
 import { xnew } from '../../core/xnew';
 
 export function InputRange(unit: xnew.Unit,
-    { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '', ...others }:
+    { value, min = 0, max = 100, step, vertical = false, className = '', style = '', ...others }:
     { value?: number, min?: number, max?: number, step?: number, vertical?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
@@ -38,11 +38,34 @@ export function InputRange(unit: xnew.Unit,
 
     // hidden native input for interaction (min / max / step before value, so value never clamps against defaults)
     const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
-    xnew({ tag: 'input', type: 'range', min, max, step, value: initial, className: css.input, style: direction, ...others });
+    xnew({ tag: 'input', type: 'range', min, max, step: step ?? autoStep(min, max), value: initial, className: css.input, style: direction, ...others });
 
     if (xnew.standalone === true) {
         xnew(InputRangeMeter, { value: initial, min, max, vertical });
         xnew(InputRangeStatus, { value: initial, vertical });
+    }
+}
+
+//----------------------------------------------------------------------------------------------------
+// autoStep — default step when unspecified: ~100 steps over d = max - min, snapped to …, 0.1, 0.5, 1, 5, 10, …
+//----------------------------------------------------------------------------------------------------
+
+function autoStep(min: number, max: number): number {
+    const d = max - min;
+    if (d > 0) {
+        const target = d / 100;
+        const base = Math.pow(10, Math.floor(Math.log10(target)));
+        const ratio = target / base;
+        // snap to the 1 / 5 sequence at the geometric midpoints (√5, √50)
+        if (ratio < Math.sqrt(5)) {
+            return base;
+        } else if (ratio < Math.sqrt(50)) {
+            return base * 5;
+        } else {
+            return base * 10;
+        }
+    } else {
+        return 1;
     }
 }
 
