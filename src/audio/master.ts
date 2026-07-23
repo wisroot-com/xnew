@@ -17,8 +17,7 @@ if (context !== null && master !== null) {
     master.connect(context.destination);
 }
 
-// Wake the context if the browser left it suspended (autoplay policy). Call from a sound entry point
-// (press / play), which runs inside a user gesture; a no-op once running or where there is no context.
+// Wake a suspended context (autoplay policy) from a sound entry point's user gesture; a no-op once running or without a context.
 export function resume(): void {
     if (context !== null && context.state === 'suspended') {
         context.resume();

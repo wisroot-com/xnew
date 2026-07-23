@@ -1,10 +1,7 @@
 //----------------------------------------------------------------------------------------------------
-// VirtualPad — on-screen virtual game-pad input
-// Converts a pointer drag into a direction vector and emits it as -down / -move / -up ({ vector });
-// `type` sets both the quantization and the default UI: 'analog' (continuous stick + knob),
-// '8way' / '4way' (quantized directional pad). The default UI is drawn only when standalone
-// (xnew.standalone) by VirtualPadAnalog / VirtualPadDPad, so a caller can compose its own instead.
-// The container is the <svg>; the UI sub-components resolve the pad via xnew.context(VirtualPad).
+// VirtualPad — on-screen game-pad input: a pointer drag becomes a direction vector emitted as -down / -move / -up ({ vector })
+// `type` sets the quantization and the default UI: 'analog' (stick + knob), '8way' / '4way' (d-pad).
+// The container is the <svg>; the default UI is drawn only when standalone, so a caller can compose its own.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';

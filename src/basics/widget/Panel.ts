@@ -22,8 +22,7 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
     const object = params ?? {} as Record<string, any>;
 
     if (nested === false) {
-        // own scroll container inheriting the mount element's max-height, so the panel scrolls once the host constrains it;
-        // the vertical padding sits outside the scrollport so the scrollbar stays clear of the host's rounded corners
+        // own scrollport inheriting the host's max-height; the vertical padding sits outside it so the scrollbar clears the host's rounded corners
         const css = xnew.css({
             // transparent track lets the surface behind show through, so the scrollbar blends into any background
             scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',

@@ -70,9 +70,7 @@ function autoStep(min: number, max: number): number {
 }
 
 //----------------------------------------------------------------------------------------------------
-// InputRangeMeter — the value-driven meter layer of an InputRange that grows with the value
-// Mounted on the InputRange container, it follows the bubbling `input` event (event.target is the range
-// input, so the numeric value arrives even though the listener is on the container).
+// InputRangeMeter — the meter layer that grows with the value, mounted on the InputRange container (follows the bubbling `input` event)
 //----------------------------------------------------------------------------------------------------
 
 function InputRangeMeter(unit: xnew.Unit,
@@ -115,9 +113,7 @@ function InputRangeMeter(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// InputRangeStatus — the value readout painted above an InputRange meter
-// Mounted on the InputRange container, it follows the bubbling `input` event and shows the raw value
-// (pointer-events: none keeps the drag on the hidden input).
+// InputRangeStatus — the value readout painted above the meter (pointer-events: none keeps the drag on the hidden input)
 //----------------------------------------------------------------------------------------------------
 
 function InputRangeStatus(unit: xnew.Unit,

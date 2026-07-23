@@ -15,10 +15,7 @@ export type TexturePreset = Record<string, number | number[]>;
 // standard is the complete authority on uniform keys and types; other presets partially override it
 export type TexturePresets = { standard: TexturePreset } & Record<string, TexturePreset>;
 
-// what a texture module authors: the entry-function names are NOT written here — they follow the
-// convention `xtex<Name>Color` / `xtex<Name>Normal` and are derived (and verified against glsl)
-// by defineTexture in xtextures.ts. presets.standard is the authority on uniform keys and types
-// (complete by contract); other presets may be partial overrides, ranges cover every scalar key.
+// what a texture module authors — the entry-function names are not written here but derived (and verified against glsl) by defineTexture
 export interface TextureSource {
     name: string; // lowercase-led identifier; also the xtextures member key
     glsl: string; // prelude + uniform declarations + the entry functions
@@ -27,13 +24,9 @@ export interface TextureSource {
 }
 
 export interface TextureDef extends TextureSource {
-    // derived channel entry function names inside glsl — every texture carries BOTH:
-    // color: `vec3 <fn>(vec3 pos)` returns a color.
-    // normal: `vec3 <fn>(vec3 pos, vec3 normal, vec3 tangent)` returns a perturbed object-space normal
-    // (flat surfaces just `return normalize(normal)`); the canvas runtime encodes it as a normal-map
-    // image (n * 0.5 + 0.5), three lights the color with it.
-    color: string;
-    normal: string;
+    // derived channel entry-function names inside glsl — every texture carries both
+    color: string;  // `vec3 <fn>(vec3 pos)` → color
+    normal: string; // `vec3 <fn>(vec3 pos, vec3 normal, vec3 tangent)` → perturbed object-space normal (flat: `return normalize(normal)`)
 }
 
 export type TextureChannel = 'color' | 'normal';
@@ -58,9 +51,7 @@ export interface BakeOptions {
 }
 
 //----------------------------------------------------------------------------------------------------
-// uniform declarations — generated from the standard preset so names and types live in one place.
-// Keys become GLSL identifiers verbatim, so they are validated here (throws at def-assembly time,
-// long before a shader compile): identifier syntax, no gl_ / xtex namespaces, no host-owned names.
+// uniform declarations — generated from the standard preset; keys become GLSL identifiers verbatim, so they are validated here (throws at assembly, long before a shader compile)
 //----------------------------------------------------------------------------------------------------
 
 const RESERVED_UNIFORMS = ['uWorldSize'];
@@ -90,8 +81,7 @@ export function uniformDeclarations(standard: TexturePreset): string {
 }
 
 //----------------------------------------------------------------------------------------------------
-// shader sources — the fragment main samples the channel entry function on the z=0 slice.
-// tile blends 4 wrapped samples in a border band (w → 1 at the far edges), making the image periodic.
+// shader sources — the fragment main samples the channel entry function on the z=0 slice; tile blends 4 wrapped samples in a border band, making the image periodic
 //----------------------------------------------------------------------------------------------------
 
 const VERTEX_SOURCE = `#version 300 es
@@ -245,9 +235,7 @@ export function createTextureRenderer(
 }
 
 //----------------------------------------------------------------------------------------------------
-// bake — render once on the shared OffscreenCanvas and hand the frame out as an ImageBitmap.
-// Programs are cached per (texture, channel, tile); transferToImageBitmap detaches the frame, so
-// consecutive bakes never share pixels.
+// bake — render once on the shared OffscreenCanvas and hand the frame out as an ImageBitmap (the transfer detaches it, so consecutive bakes never share pixels)
 //----------------------------------------------------------------------------------------------------
 
 interface BakeContext {

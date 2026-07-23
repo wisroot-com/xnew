@@ -13,8 +13,7 @@ import { xicons } from '../../icons/xicons';
 
 type Placement = 'left' | 'right' | 'top' | 'bottom';
 
-// per-placement geometry: the slider grows along `grow` from the icon edge; the cross axis is pinned
-// full-length by its two insets, so only the grow axis carries the initial 0 (setting both collapses it)
+// per-placement geometry: only the grow axis carries the initial 0 — the cross axis is pinned full-length by its two insets
 const placements: Record<Placement, { vertical: boolean, grow: 'width' | 'height', outer: string }> = {
     left: { vertical: false, grow: 'width', outer: 'top: 0; bottom: 0; right: calc(100% + 4cqw); width: 0;' },
     right: { vertical: false, grow: 'width', outer: 'top: 0; bottom: 0; left: calc(100% + 4cqw); width: 0;' },

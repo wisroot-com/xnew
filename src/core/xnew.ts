@@ -25,14 +25,12 @@ export interface XnewBase {
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
 
-    // True when the component whose body is currently running is used on its own — not composed by its caller:
-    // no trailing ExComponent (xnew(Base, props, fn)) and not extended onto another component (xnew.extend(Base)).
+    // True when the currently running component is used on its own — no trailing ExComponent and not extended onto another component.
     readonly standalone: boolean;
 }
 
 export const xnew = Object.assign(
-    // Creates a new Unit: xnew((target,) Component?, props?) — target is an element or a tag string like '<div>'.
-    // A trailing function after a Component is an extension component extended on top of it: xnew(Base, props?, (unit) => { … }).
+    // Creates a new Unit: xnew((target,) Component?, props?) — a trailing function/string after a Component is an extension extended on top of it.
     (function(...args: any[]): Unit {
         if (args[0] instanceof Unit) {
             const parent = args.shift() as Unit;
@@ -137,8 +135,7 @@ export const xnew = Object.assign(
             Unit.current._.protected = true;
         },
 
-        // Runtime type guard for a Unit — the discriminator for `props | Unit` params. The Unit class
-        // itself is not exposed as a value, so use this instead of `x instanceof xnew.Unit`.
+        // Runtime type guard for a Unit (the Unit class is not exposed as a value, so `instanceof xnew.Unit` is impossible).
         isUnit(value: any): value is Unit {
             return value instanceof Unit;
         },

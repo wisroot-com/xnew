@@ -35,9 +35,7 @@ export class AudioTrack {
             .then((response) => { this.buffer = response; });
     }
 
-    // Play from `offset` (ms); if omitted, resume from the last pause (0 on a fresh track).
-    // Called before decode finishes, it defers until the load resolves; called while playing, it
-    // restarts at the offset.
+    // Play from `offset` (ms), else resume from the last pause; defers until decode resolves, restarts if already playing.
     play({ offset, fade: fadeMs = 0, loop: loopArg }: { offset?: number, fade?: number, loop?: boolean } = {}): void {
         resume();   // wake a suspended context (autoplay policy); no-op once running
         if (this.buffer === undefined) {
@@ -63,8 +61,7 @@ export class AudioTrack {
             this.paused = true;
             this.pausedOffsetMs = positionSec * 1000;
 
-            // Detach before scheduling the stop, so its onended (guarded on `source === node`) skips
-            // cleanup and pausedOffsetMs survives.
+            // Detach before scheduling the stop, so its onended (guarded on `source === node`) skips cleanup and pausedOffsetMs survives.
             const node = this.source!;
             this.source = null;
             this.startedAt = null;
@@ -137,8 +134,7 @@ export class AudioTrack {
 
         node.onended = () => {
             node.disconnect();
-            // Clear state only if still the active source; pause / re-trigger null out `source` first
-            // so a stale onended must not clobber pausedOffsetMs.
+            // Clear state only if still the active source — a stale onended must not clobber pausedOffsetMs.
             if (this.source === node) {
                 this.source = null;
                 this.startedAt = null;

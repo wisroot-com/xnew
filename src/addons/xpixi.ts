@@ -1,8 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // xpixi — PixiJS 8 integration: ties the Pixi scene graph to the xnew unit tree
-// nest() makes a group Container and moves the current parent into it (stateful); add(obj) attaches a
-// leaf without moving — so a leaf can never become a parent. Objects are removed/destroyed on the
-// owning unit's finalize (textures kept — they may be shared).
+// nest() makes a group Container and moves the current parent into it (stateful); add(obj) attaches
+// a leaf without moving. Objects are removed/destroyed on finalize (textures kept — may be shared).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '@mulsense/xnew';
@@ -15,8 +14,7 @@ export const xpixi = {
     ) {
         return xnew.promise(xnew(Root, { canvas }));
     },
-    // create a group Container, attach it, and move the current parent into it (stateful).
-    // options set the new group's transform only — an existing object can never be nested.
+    // create a group Container and move the current parent into it (stateful); options set its transform only — never an existing object.
     nest(
         options?: {
             position?: { x: number, y: number },
@@ -69,8 +67,7 @@ function Root(unit: xnew.Unit, { canvas }: { canvas: HTMLCanvasElement }) {
     let renderer: PIXI.Renderer | null = null;
     let finalized = false;
 
-    // autoDetectRenderer resolves to an already-created WebGL renderer; watch the raw promise (not the
-    // scope-guarded xnew.promise chain, which is skipped after finalize) so a renderer that lands post-finalize is destroyed
+    // watch the raw promise (the scope-guarded xnew.promise chain is skipped after finalize) so a renderer landing post-finalize is destroyed
     const source = PIXI.autoDetectRenderer({
         width: canvas.width, height: canvas.height, view: canvas,
         antialias: true, backgroundAlpha: 0,
@@ -99,8 +96,7 @@ function Root(unit: xnew.Unit, { canvas }: { canvas: HTMLCanvasElement }) {
     }
 }
 
-// destroy the object and its children, but keep textures (default) since they may be shared;
-// the destroyed guard avoids double-destroy against a parent's destroy({ children: true })
+// destroy the object and its children but keep textures (may be shared); the destroyed guard avoids double-destroy via a parent
 function removeObject(object: any): void {
     if (object.destroyed === true) return;
     const parent = object.parent;
@@ -110,8 +106,7 @@ function removeObject(object: any): void {
     object.destroy({ children: true });
 }
 
-// shared by nest / add: attach to the current Pixi parent (root scene or nearest enclosing nest),
-// remove and destroy on finalize
+// shared by nest / add: attach to the current Pixi parent (root scene or nearest enclosing nest), remove and destroy on finalize
 function attach(unit: xnew.Unit, object: any): void {
     const root = xnew.context(Root);
     const parent = xnew.context(Nest)?.pixiObject ?? root.scene;

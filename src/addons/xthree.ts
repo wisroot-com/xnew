@@ -12,12 +12,7 @@ import * as THREE from 'three';
 //----------------------------------------------------------------------------------------------------
 
 const material = {
-    // ShaderMaterial injection: the texture's GLSL runs in three's own context on the mesh surface
-    // (object-space position → solid look, no canvas / image copy) with a material-local fixed
-    // light — scene lights / shadows do NOT apply. The color channel is the albedo, lit with the
-    // (possibly unperturbed) normal channel; everything stays in object space (the view-space
-    // light direction is rotated into object space per vertex), so the fragment stage needs no
-    // normalMatrix.
+    // ShaderMaterial injection: the texture's GLSL shades the mesh in object space with a material-local fixed light — scene lights / shadows do NOT apply.
     shader(texture: any, params: Record<string, any>): THREE.ShaderMaterial {
         const def = texture;
         if (def.color === undefined || def.normal === undefined) {
@@ -59,11 +54,7 @@ const material = {
         `;
         return new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });
     },
-    // PBR path: bake the color + normal channels into CanvasTextures (texture.bake on the shared
-    // bake context) and wrap them as map / normalMap in a MeshStandardMaterial, so scene lights /
-    // shadows / env maps apply. { params, size, worldSize, tile, repeat } drive the bake
-    // (repeat: { x, y } switches on RepeatWrapping); the rest ({ roughness, ... }) goes to the
-    // material.
+    // PBR path: bake color / normal into a MeshStandardMaterial's map / normalMap, so scene lights / shadows / env maps apply; bake options split off, the rest goes to the material.
     standard(texture: any, options: Record<string, any>): THREE.MeshStandardMaterial {
         const { params, size, worldSize, tile, repeat, ...materialParams } = options;
 
@@ -93,8 +84,7 @@ export const xthree = {
     ) {
         return xnew.promise(xnew(Root, { canvas, camera }));
     },
-    // create a group Object3D, attach it, and move the current parent into it (stateful).
-    // options set the new group's transform only — an existing object can never be nested.
+    // create a group Object3D and move the current parent into it (stateful); options set its transform only — never an existing object.
     nest(
         options?: {
             position?: { x: number, y: number, z?: number },
@@ -192,8 +182,7 @@ function disposeObject(object: any): void {
     });
 }
 
-// shared by nest / add: attach to the current Three parent (root scene or nearest enclosing nest),
-// detach (never dispose) on finalize
+// shared by nest / add: attach to the current Three parent (root scene or nearest enclosing nest), detach (never dispose) on finalize
 function attach(unit: xnew.Unit, object: any): void {
     const root = xnew.context(Root);
     const parent = xnew.context(Nest)?.threeObject ?? root.scene;

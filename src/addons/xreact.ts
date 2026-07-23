@@ -7,14 +7,10 @@ import { createElement, useEffect, useRef, type CSSProperties, type ReactElement
 import { xnew } from '@mulsense/xnew';
 
 export interface EmbedProps<P> {
-    /** xnew component function (unit, props) => defines */
-    Component: (unit: any, props: P) => any;
-    /** props passed to Component; live updates flow through setProps on re-render */
-    props?: P;
-    /** className for the host div */
-    className?: string;
-    /** style for the host div */
-    style?: CSSProperties;
+    Component: (unit: any, props: P) => any; // xnew component function (unit, props) => defines
+    props?: P;                               // props passed to Component; live updates flow through setProps on re-render
+    className?: string;                      // className for the host div
+    style?: CSSProperties;                   // style for the host div
 }
 
 function Embed<P>({ Component, props, className, style }: EmbedProps<P>): ReactElement {

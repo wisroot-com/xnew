@@ -147,17 +147,14 @@ type Note = {
 export class Synthesizer {
     private readonly props: SynthesizerOptions;
 
-    // Notes still sounding or in their release tail; clear() stops + disconnects any left over
-    // (a sustained note whose release was never called would otherwise play on after teardown).
+    // Notes still sounding or in their release tail; clear() stops + disconnects any left over after teardown.
     private readonly active = new Set<Note>();
 
     constructor(props: SynthesizerOptions) {
         this.props = props;
     }
 
-    // Press a note. `frequency`: Hz or note name ('A4'). `duration`: ms or note length ('4n') — with
-    // one the note auto-releases, without one it sustains and returns { release }. `wait` (ms) delays
-    // the attack.
+    // Press a note: `frequency` Hz or 'A4'; with `duration` (ms or '4n') it auto-releases, without it sustains and returns { release }; `wait` (ms) delays the attack.
     press(frequency: number | string, duration?: number | string, wait?: number): { release: () => void } | undefined {
         resume();   // wake a suspended context (autoplay policy); no-op once running
         const props = this.props;

@@ -1,7 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // css — pseudo-scoped CSS backing xnew.css (local names → unique generated names)
-// True local CSS is impossible in the light DOM, so scoping is emulated by renaming — and made
-// mandatory: every rule hangs off a renamed key (an at-rule value must stay nameless), so a
+// Scoping is emulated by renaming and made mandatory: every rule hangs off a renamed key, so a
 // definition cannot emit a global rule. An optional layer wraps the whole block in @layer.
 //----------------------------------------------------------------------------------------------------
 

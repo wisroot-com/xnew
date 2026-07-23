@@ -22,11 +22,7 @@ export function isElementDef(value: unknown): value is DomElementDef {
     return typeof value === 'object' && value !== null && isDomElement(value) === false && typeof (value as { tag?: unknown }).tag === 'string';
 }
 
-// creates a child element under parent from a tag string / definition and assigns its members,
-// then returns it. In the object form, className / style are embedded (escaped) in the tag text and
-// every other member is assigned after creation, so arbitrary text cannot break the tag string. SVG
-// DOM properties (viewBox, …) are read-only animated values, so SVG members always go through
-// setAttribute; HTML members prefer the property when it exists.
+// creates a child element under parent from a tag string / definition; object-form members are assigned after creation so arbitrary text cannot break the tag string (SVG always via setAttribute — its DOM properties are read-only).
 export function createElement(parent: DomElement, tag: string | DomElementDef): DomElement {
     let text: string;
     const members: [string, any][] = [];
@@ -152,7 +148,7 @@ export class EventBinder {
 // special-event dictionary
 //----------------------------------------------------------------------------------------------------
 
-/** Registers a custom event factory for one or more exact type strings (last registration wins). */
+// Registers a custom event factory for one or more exact type strings (last registration wins).
 function defineEvent(types: string[], factory: (props: EventProps) => Function): void {
     types.forEach((type) => factories.set(type, factory));
 }
@@ -263,9 +259,7 @@ defineEvent(['window.keydown.arrow', 'window.keyup.arrow', 'window.keydown.wasd'
 });
 
 //----------------------------------------------------------------------------------------------------
-// named-key filter — (window|document).(keydown|keyup).<key>
-//
-// <key>: space / enter / escape(esc) / tab / up|down|left|right / a–z / 0–9; others match by code|key name.
+// named-key filter — (window|document).(keydown|keyup).<key>: space / enter / escape(esc) / tab / up|down|left|right / a–z / 0–9; others match by code|key name
 //----------------------------------------------------------------------------------------------------
 
 // exact-match factories (.arrow / .wasd) resolve before this; repeat is always stripped

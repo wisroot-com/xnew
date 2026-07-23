@@ -52,13 +52,24 @@ Prefer function declarations over arrow-function expressions assigned to a
 Reserve arrow functions for inline callbacks and short expressions where a
 declaration doesn't fit.
 
+## Comment style (src/)
+
+A comment on a function (or any symbol, field, or statement) must fit on **one
+line** — multi-line comments don't get read. Keep only the single most
+load-bearing non-obvious point (why / invariant / caveat) and drop the rest;
+if nothing non-obvious remains, omit the comment. Never use one-line JSDoc
+(`/** … */`) — always `//`. The same one-line rule applies to the block
+headers between `//----` dividers inside a file. Only the file header (below)
+may use up to three lines.
+
 ## File header convention (src/)
 
 Every file under `src/` starts with a compact overview comment in the `//----` divider
 style, with **at most three comment lines** between the dividers: line 1 is the role
 (`<Name> — <responsibility>`); lines 2–3 are optional and carry only the most
 load-bearing non-obvious point (design intent, invariant, or caveat). No API
-inventories, usage examples, or change history — keep per-symbol detail in JSDoc.
+inventories, usage examples, or change history — per-symbol detail lives in the
+symbol's own one-line comment.
 
 ```ts
 //----------------------------------------------------------------------------------------------------

@@ -22,10 +22,7 @@ export interface Texture extends TextureDef {
     renderer(canvas: HTMLCanvasElement, options?: RendererOptions): TextureRenderer;
 }
 
-// derive the channel entry-function names (`xtex<Name>Color` / `xtex<Name>Normal`) from the source
-// name and verify them against the glsl, and enforce the schema contract — presets.standard is
-// complete, every scalar key has a range, other presets partially override it — so a mismatch
-// fails here, not at shader compile time (or silently in a UI)
+// derive the channel entry-function names, verify them against the glsl, and enforce the schema contract — a mismatch fails here, not at shader compile time (or silently in a UI)
 export function defineTexture(source: TextureSource): Texture {
     if (/^[a-z][A-Za-z0-9]*$/.test(source.name) === false) {
         throw new Error(`xtextures: texture name "${source.name}" must be a lowercase-led identifier`);

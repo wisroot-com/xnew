@@ -1,8 +1,6 @@
 //----------------------------------------------------------------------------------------------------
-// basics/xbasics — assembles the networking-free convenience components as the `xbasics` export
-// A flat registry of the built-in components so callers write `xnew(xbasics.Panel)` etc.
-// Networking lives under `xsync`, audio under `xaudio` — xbasics stays transport- and audio-free
-// (except VolumeController, which deliberately depends on the xaudio layer as its master-volume UI).
+// basics/xbasics — a flat registry of the built-in components as the `xbasics` export (`xnew(xbasics.Panel)` etc.)
+// Stays transport- and audio-free (except VolumeController, which deliberately reads the xaudio layer).
 //----------------------------------------------------------------------------------------------------
 
 import { Aspect } from './stage/Aspect';
