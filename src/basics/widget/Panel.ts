@@ -49,7 +49,7 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
             box.on('-change', ({ value }: { value: string }) => object[name] = value);
             return box;
         },
-        range({ name = '', value, min = 0, max = 100, step = 1 }: { name?: string, value?: number, min?: number, max?: number, step?: number } = {}) {
+        range({ name = '', value, min = 0, max = 100, step }: { name?: string, value?: number, min?: number, max?: number, step?: number } = {}) {
             object[name] = value ?? object[name] ?? min;
             const range = xnew(Range, { name, value: object[name], min, max, step });
             range.on('input', ({ value }: { value: number }) => object[name] = value);

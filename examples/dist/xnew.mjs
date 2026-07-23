@@ -3192,7 +3192,7 @@ function Panel(unit, { params, nested = false }) {
             box.on('-change', ({ value }) => object[name] = value);
             return box;
         },
-        range({ name = '', value, min = 0, max = 100, step = 1 } = {}) {
+        range({ name = '', value, min = 0, max = 100, step } = {}) {
             var _a;
             object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : min;
             const range = xnew(Range, { name, value: object[name], min, max, step });
