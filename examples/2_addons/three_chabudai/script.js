@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // three_chabudai — three.js で立体的に組んだ円形ちゃぶ台（檜風の木目）と、周りに並ぶ .mog ボクセルキャラ。
-//   木目（天面の年輪 / 側面・脚の横木目）は xtextures.Wood、床の畳は xtextures.Tatami を
-//   非表示 canvas に焼いた CanvasTexture で表現する（手描き canvas はカードの数字面のみ）。
+//   木目（天面の年輪 / 側面・脚の横木目）は xtextures.wood を xthree.bake() で、床の畳は
+//   xtextures.tatami を xthree.standard() で焼いて表現する（手描き canvas はカードの数字面のみ）。
 //----------------------------------------------------------------------------------------------------
 
 import { xnew, xbasics, xtextures } from '@mulsense/xnew';
@@ -81,44 +81,23 @@ function Lights(unit) {
 }
 
 //----------------------------------------------------------------------------------------------------
-// bake — xtextures の指定チャンネルを非表示 canvas に焼き、CanvasTexture にする共通ヘルパー
-//----------------------------------------------------------------------------------------------------
-
-function bake(component, channel, params) {
-    const baked = xnew(component, { channel, style: 'display: none;', ...params });
-    const texture = new THREE.CanvasTexture(baked.canvas);
-    texture.colorSpace = channel === 'color' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-    texture.anisotropy = 8;
-    return texture;
-}
-
-//----------------------------------------------------------------------------------------------------
-// Ground — 影を受ける畳の床。xtextures.Tatami を焼いて map / normalMap として使う。
-//   worldSize: 4 で畳(2x1)がタイルにちょうど収まるので、RepeatWrapping でシームレスに繰り返せる。
+// Ground — 影を受ける畳の床。xthree.standard() が xtextures.tatami の color / normal を焼いて
+//   map / normalMap に組む。worldSize: 4 で畳(2x1)がタイルにちょうど収まるので、repeat でシームレスに繰り返せる。
 //----------------------------------------------------------------------------------------------------
 
 function Ground(unit) {
-    const ground = xthree.add(new THREE.Mesh(
-        new THREE.PlaneGeometry(40, 40),
-        new THREE.MeshStandardMaterial({
-            map: bakeTatami('color'),
-            normalMap: bakeTatami('normal'),
-            roughness: 1,
-        }),
-    ));
+    const material = xthree.standard(xtextures.tatami, {
+        size: { width: 512, height: 512 }, worldSize: 4,
+        repeat: { x: 10, y: 10 },   // 40x40 の床に 4 単位タイル → 畳(2x1) ≒ 2x1 単位
+        roughness: 1,
+    });
+    const ground = xthree.add(new THREE.Mesh(new THREE.PlaneGeometry(40, 40), material));
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
 }
 
-function bakeTatami(channel) {
-    const texture = bake(xtextures.Tatami, channel, { size: { width: 512, height: 512 }, worldSize: 4 });
-    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(10, 10);   // 40x40 の床に 4 単位タイル → 畳(2x1) ≒ 2x1 単位
-    return texture;
-}
-
 //----------------------------------------------------------------------------------------------------
-// Chabudai — 円形ちゃぶ台（天板 + 脚）。木目は xtextures.Wood を檜風の淡い色で焼いた CanvasTexture。
+// Chabudai — 円形ちゃぶ台（天板 + 脚）。木目は xtextures.wood を檜風の淡い色で焼いた CanvasTexture。
 //----------------------------------------------------------------------------------------------------
 
 // 檜風の淡い木目（three_textures の copy params で調整した値）
@@ -131,14 +110,13 @@ function Chabudai(unit) {
     const group = xthree.nest();
 
     // 天面・側面とも同じ木目パラメータで焼く（側面は横長 canvas で木目が横に流れる）
-    const topTexture = bake(xtextures.Wood, 'color', {
-        size: { width: 512, height: 512 }, worldSize: 3, ...WOOD_PARAMS,
+    const topTexture = xthree.bake(xtextures.wood, {
+        size: { width: 512, height: 512 }, worldSize: 3, params: WOOD_PARAMS,
     });
-    const sideTexture = bake(xtextures.Wood, 'color', {
-        size: { width: 512, height: 64 }, worldSize: 3, ...WOOD_PARAMS,
+    const sideTexture = xthree.bake(xtextures.wood, {
+        size: { width: 512, height: 64 }, worldSize: 3, params: WOOD_PARAMS,
+        tile: true, repeat: { x: 3, y: 1 },   // 周方向に 3 回シームレスにタイルして木目を細かく
     });
-    sideTexture.wrapS = THREE.RepeatWrapping;
-    sideTexture.repeat.set(3, 1);   // 周方向に 3 回タイルして木目を細かく
 
     // 天板: 円柱（側面=横木目テクスチャ / 天面=年輪テクスチャ / 底面=無地）
     const topMaterials = [
@@ -153,8 +131,8 @@ function Chabudai(unit) {
     group.add(top);
 
     // 脚: 天板の下、外向きに少し開いた 4 本。木目の傾きを保ったまま +90° して縦木目にする
-    const legTexture = bake(xtextures.Wood, 'color', {
-        size: { width: 128, height: 256 }, worldSize: 2, ...WOOD_PARAMS, angle: WOOD_PARAMS.angle + 90,
+    const legTexture = xthree.bake(xtextures.wood, {
+        size: { width: 128, height: 256 }, worldSize: 2, params: { ...WOOD_PARAMS, angle: WOOD_PARAMS.angle + 90 },
     });
     const legHeight = TABLE_TOP_Y - TABLE_THICKNESS / 2;   // 床から天板の裏まで
     const legMaterial = new THREE.MeshStandardMaterial({ map: legTexture, roughness: 0.6 });

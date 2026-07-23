@@ -3387,26 +3387,28 @@ function uniformDeclarations(uniforms) {
     }
     return declarations;
 }
-function createTextureRenderer(canvas, def, options = {}) {
-    var _a, _b;
-    const worldSize = (_a = options.worldSize) !== null && _a !== void 0 ? _a : 3;
-    const channel = (_b = options.channel) !== null && _b !== void 0 ? _b : (def.color !== undefined ? 'color' : 'normal');
-    if (def[channel] === undefined) {
-        throw new Error(`xtextures: texture "${def.name}" has no ${channel} channel`);
-    }
-    const gl = canvas.getContext('webgl2');
-    if (gl === null) {
-        throw new Error('xtextures: WebGL2 is not available');
-    }
-    const vertexSource = `#version 300 es
+const VERTEX_SOURCE = `#version 300 es
 in vec2 aPos;
 out vec2 vUv;
 void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
-    const body = channel === 'normal'
-        ? `vec3 n = ${def.normal}(pos, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0));
-  fragColor = vec4(n * 0.5 + 0.5, 1.0);`
-        : `fragColor = vec4(${def.color}(pos), 1.0);`;
-    const fragmentSource = `#version 300 es
+function fragmentSource(def, channel, tile) {
+    const sample = channel === 'normal'
+        ? (pos) => `${def.normal}(${pos}, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0))`
+        : (pos) => `${def.color}(${pos})`;
+    const encode = channel === 'normal'
+        ? (value) => `vec4(normalize(${value}) * 0.5 + 0.5, 1.0)`
+        : (value) => `vec4(${value}, 1.0)`;
+    const body = tile
+        ? `vec2 w = smoothstep(1.0 - 0.2, 1.0, vUv);
+  vec3 sx = vec3(uWorldSize, 0.0, 0.0);
+  vec3 sy = vec3(0.0, uWorldSize, 0.0);
+  vec3 blended = mix(
+    mix(${sample('pos')}, ${sample('pos - sx')}, w.x),
+    mix(${sample('pos - sy')}, ${sample('pos - sx - sy')}, w.x),
+    w.y);
+  fragColor = ${encode('blended')};`
+        : `fragColor = ${encode(sample('pos'))};`;
+    return `#version 300 es
 precision highp float;
 in vec2 vUv;
 out vec4 fragColor;
@@ -3416,51 +3418,15 @@ void main(){
   vec3 pos = vec3((vUv - 0.5) * uWorldSize, 0.0);
   ${body}
 }`;
-    const program = linkProgram(gl, vertexSource, fragmentSource);
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-    const aPos = gl.getAttribLocation(program, 'aPos');
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-    const locations = new Map();
-    function location(name) {
-        var _a;
-        if (locations.has(name) === false) {
-            locations.set(name, gl.getUniformLocation(program, name));
-        }
-        return (_a = locations.get(name)) !== null && _a !== void 0 ? _a : null;
-    }
-    function render(params) {
-        var _a;
-        gl.viewport(0, 0, canvas.width, canvas.height);
-        gl.useProgram(program);
-        gl.bindVertexArray(vao);
-        gl.uniform1f(location('uWorldSize'), worldSize);
-        for (const name in def.uniforms) {
-            const value = (_a = params[name]) !== null && _a !== void 0 ? _a : def.uniforms[name].value;
-            if (Array.isArray(value)) {
-                gl.uniform3f(location(name), value[0], value[1], value[2]);
-            }
-            else {
-                gl.uniform1f(location(name), value);
-            }
-        }
-        gl.drawArrays(gl.TRIANGLES, 0, 3);
-    }
-    function dispose() {
-        gl.deleteProgram(program);
-        gl.deleteBuffer(buffer);
-        gl.deleteVertexArray(vao);
-    }
-    return { render, dispose };
 }
-function linkProgram(gl, vertexSource, fragmentSource) {
+function compileTextureProgram(gl, def, channel, tile) {
+    if (def[channel] === undefined) {
+        throw new Error(`xtextures: texture "${def.name}" has no ${channel} channel`);
+    }
     const program = gl.createProgram();
-    gl.attachShader(program, compileShader(gl, gl.VERTEX_SHADER, vertexSource));
-    gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource));
+    gl.attachShader(program, compileShader(gl, gl.VERTEX_SHADER, VERTEX_SOURCE));
+    gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource(def, channel, tile)));
+    gl.bindAttribLocation(program, 0, 'aPos');
     gl.linkProgram(program);
     if (gl.getProgramParameter(program, gl.LINK_STATUS) === false) {
         const log = gl.getProgramInfoLog(program);
@@ -3479,6 +3445,109 @@ function compileShader(gl, type, source) {
         throw new Error('xtextures: shader compile failed\n' + log + '\n' + source);
     }
     return shader;
+}
+function createFullscreenVao(gl) {
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    return { vao, buffer };
+}
+function uploadUniforms(gl, def, locate, worldSize, params) {
+    var _a;
+    gl.uniform1f(locate('uWorldSize'), worldSize);
+    for (const name in def.uniforms) {
+        const value = (_a = params[name]) !== null && _a !== void 0 ? _a : def.uniforms[name].value;
+        if (Array.isArray(value)) {
+            gl.uniform3f(locate(name), value[0], value[1], value[2]);
+        }
+        else {
+            gl.uniform1f(locate(name), value);
+        }
+    }
+}
+function createTextureRenderer(canvas, def, options = {}) {
+    var _a, _b, _c;
+    const worldSize = (_a = options.worldSize) !== null && _a !== void 0 ? _a : 3;
+    const channel = (_b = options.channel) !== null && _b !== void 0 ? _b : 'color';
+    const tile = (_c = options.tile) !== null && _c !== void 0 ? _c : false;
+    const gl = canvas.getContext('webgl2');
+    if (gl === null) {
+        throw new Error('xtextures: WebGL2 is not available');
+    }
+    const program = compileTextureProgram(gl, def, channel, tile);
+    const { vao, buffer } = createFullscreenVao(gl);
+    const locations = new Map();
+    function location(name) {
+        var _a;
+        if (locations.has(name) === false) {
+            locations.set(name, gl.getUniformLocation(program, name));
+        }
+        return (_a = locations.get(name)) !== null && _a !== void 0 ? _a : null;
+    }
+    function render(params = {}) {
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.useProgram(program);
+        gl.bindVertexArray(vao);
+        uploadUniforms(gl, def, location, worldSize, params);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    function dispose() {
+        gl.deleteProgram(program);
+        gl.deleteBuffer(buffer);
+        gl.deleteVertexArray(vao);
+    }
+    return { render, dispose };
+}
+let bakeContext = null;
+function sharedBakeContext() {
+    if (bakeContext === null) {
+        if (typeof OffscreenCanvas === 'undefined') {
+            throw new Error('xtextures: bake requires OffscreenCanvas support');
+        }
+        const canvas = new OffscreenCanvas(1, 1);
+        const gl = canvas.getContext('webgl2');
+        if (gl === null) {
+            throw new Error('xtextures: WebGL2 is not available');
+        }
+        const { vao } = createFullscreenVao(gl);
+        bakeContext = { canvas, gl, vao, programs: new Map() };
+    }
+    return bakeContext;
+}
+function bakeTexture(def, options = {}) {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    const width = (_b = (_a = options.size) === null || _a === void 0 ? void 0 : _a.width) !== null && _b !== void 0 ? _b : 512;
+    const height = (_d = (_c = options.size) === null || _c === void 0 ? void 0 : _c.height) !== null && _d !== void 0 ? _d : 512;
+    const worldSize = (_e = options.worldSize) !== null && _e !== void 0 ? _e : 3;
+    const channel = (_f = options.channel) !== null && _f !== void 0 ? _f : 'color';
+    const tile = (_g = options.tile) !== null && _g !== void 0 ? _g : false;
+    const { canvas, gl, vao, programs } = sharedBakeContext();
+    const key = `${def.name}:${channel}:${tile}`;
+    let entry = programs.get(key);
+    if (entry === undefined) {
+        entry = { program: compileTextureProgram(gl, def, channel, tile), locations: new Map() };
+        programs.set(key, entry);
+    }
+    const { program, locations } = entry;
+    function location(name) {
+        var _a;
+        if (locations.has(name) === false) {
+            locations.set(name, gl.getUniformLocation(program, name));
+        }
+        return (_a = locations.get(name)) !== null && _a !== void 0 ? _a : null;
+    }
+    canvas.width = width;
+    canvas.height = height;
+    gl.viewport(0, 0, width, height);
+    gl.useProgram(program);
+    gl.bindVertexArray(vao);
+    uploadUniforms(gl, def, location, worldSize, (_h = options.params) !== null && _h !== void 0 ? _h : {});
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    return canvas.transferToImageBitmap();
 }
 
 var noiseGlsl = "//----------------------------------------------------------------------------------------------------\n// xtex_noise — classic 3D Perlin noise (Gustavson / Ashima, MIT), output ~[-1,1]\n// Version-agnostic (only function defs), so it injects into WebGL2 (300 es), three (1.00), and previews.\n//----------------------------------------------------------------------------------------------------\n\nvec3 xtex_mod289(vec3 x){ return x - floor(x*(1.0/289.0))*289.0; }\nvec4 xtex_mod289(vec4 x){ return x - floor(x*(1.0/289.0))*289.0; }\nvec4 xtex_permute(vec4 x){ return xtex_mod289(((x*34.0)+1.0)*x); }\nvec4 xtex_taylorInvSqrt(vec4 r){ return 1.79284291400159 - 0.85373472095314 * r; }\nvec3 xtex_fade(vec3 t){ return t*t*t*(t*(t*6.0-15.0)+10.0); }\n\nfloat xtex_noise(vec3 P){\n  vec3 Pi0 = floor(P);\n  vec3 Pi1 = Pi0 + vec3(1.0);\n  Pi0 = xtex_mod289(Pi0);\n  Pi1 = xtex_mod289(Pi1);\n  vec3 Pf0 = fract(P);\n  vec3 Pf1 = Pf0 - vec3(1.0);\n  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);\n  vec4 iy = vec4(Pi0.yy, Pi1.yy);\n  vec4 iz0 = Pi0.zzzz;\n  vec4 iz1 = Pi1.zzzz;\n\n  vec4 ixy = xtex_permute(xtex_permute(ix) + iy);\n  vec4 ixy0 = xtex_permute(ixy + iz0);\n  vec4 ixy1 = xtex_permute(ixy + iz1);\n\n  vec4 gx0 = ixy0 * (1.0 / 7.0);\n  vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;\n  gx0 = fract(gx0);\n  vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);\n  vec4 sz0 = step(gz0, vec4(0.0));\n  gx0 -= sz0 * (step(0.0, gx0) - 0.5);\n  gy0 -= sz0 * (step(0.0, gy0) - 0.5);\n\n  vec4 gx1 = ixy1 * (1.0 / 7.0);\n  vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;\n  gx1 = fract(gx1);\n  vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);\n  vec4 sz1 = step(gz1, vec4(0.0));\n  gx1 -= sz1 * (step(0.0, gx1) - 0.5);\n  gy1 -= sz1 * (step(0.0, gy1) - 0.5);\n\n  vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);\n  vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);\n  vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);\n  vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);\n  vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);\n  vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);\n  vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);\n  vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);\n\n  vec4 norm0 = xtex_taylorInvSqrt(vec4(dot(g000,g000), dot(g010,g010), dot(g100,g100), dot(g110,g110)));\n  g000 *= norm0.x; g010 *= norm0.y; g100 *= norm0.z; g110 *= norm0.w;\n  vec4 norm1 = xtex_taylorInvSqrt(vec4(dot(g001,g001), dot(g011,g011), dot(g101,g101), dot(g111,g111)));\n  g001 *= norm1.x; g011 *= norm1.y; g101 *= norm1.z; g111 *= norm1.w;\n\n  float n000 = dot(g000, Pf0);\n  float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));\n  float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));\n  float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));\n  float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));\n  float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));\n  float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));\n  float n111 = dot(g111, Pf1);\n\n  vec3 f = xtex_fade(Pf0);\n  vec4 n_z = mix(vec4(n000,n100,n010,n110), vec4(n001,n101,n011,n111), f.z);\n  vec2 n_yz = mix(n_z.xy, n_z.zw, f.y);\n  return 2.2 * mix(n_yz.x, n_yz.y, f.x);\n}\n";
@@ -3543,39 +3612,17 @@ const tatami = {
 };
 
 function defineTexture(def) {
-    function Texture(unit, props = {}) {
-        var _a, _b;
-        const _c = props !== null && props !== void 0 ? props : {}, { size, worldSize, channel, style = 'display: block; width: 100%; height: auto;' } = _c, params = __rest(_c, ["size", "worldSize", "channel", "style"]);
-        const width = (_a = size === null || size === void 0 ? void 0 : size.width) !== null && _a !== void 0 ? _a : 512;
-        const height = (_b = size === null || size === void 0 ? void 0 : size.height) !== null && _b !== void 0 ? _b : 512;
-        const canvas = xnew(`<canvas width="${width}" height="${height}" style="${style}">`).element;
-        const renderer = createTextureRenderer(canvas, def, { worldSize, channel: channel });
-        const state = {};
-        for (const key in def.uniforms) {
-            state[key] = def.uniforms[key].value;
-        }
-        Object.assign(state, params);
-        renderer.render(state);
-        unit.on('finalize', () => renderer.dispose());
-        return {
-            get canvas() {
-                return canvas;
-            },
-            set(next) {
-                Object.assign(state, next);
-                renderer.render(state);
-            },
-            render() {
-                renderer.render(state);
-            },
-        };
-    }
-    return Object.assign(Texture, { def, glsl: def.glsl, uniforms: def.uniforms });
+    return Object.assign(Object.assign({}, def), { bake(options = {}) {
+            return bakeTexture(def, options);
+        },
+        renderer(canvas, options = {}) {
+            return createTextureRenderer(canvas, def, options);
+        } });
 }
 const xtextures = {
-    Wood: defineTexture(wood),
-    Concrete: defineTexture(concrete),
-    Tatami: defineTexture(tatami),
+    wood: defineTexture(wood),
+    concrete: defineTexture(concrete),
+    tatami: defineTexture(tatami),
 };
 
 export { xaudio, xbasics, xicons, xnew, xsync, xtextures };

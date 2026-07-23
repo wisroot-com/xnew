@@ -1,6 +1,40 @@
 import { xnew } from '@mulsense/xnew';
 import * as THREE from 'three';
 
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
+
+
+function __rest(s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+}
+
+typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    var e = new Error(message);
+    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
+
 const xthree = {
     initialize({ canvas, camera = null }) {
         return xnew.promise(xnew(Root, { canvas, camera }));
@@ -43,14 +77,14 @@ const xthree = {
         disposeObject(object);
     },
     texture(texture, params = {}) {
-        var _a, _b;
-        const def = (_a = texture.def) !== null && _a !== void 0 ? _a : texture;
+        var _a;
+        const def = texture;
         if (def.color === undefined || def.normal === undefined) {
             throw new Error(`xthree.texture: texture "${def.name}" must carry color and normal channels`);
         }
         const uniforms = {};
         for (const name in def.uniforms) {
-            const value = (_b = params[name]) !== null && _b !== void 0 ? _b : def.uniforms[name].value;
+            const value = (_a = params[name]) !== null && _a !== void 0 ? _a : def.uniforms[name].value;
             uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
         }
         const vertexShader = `
@@ -82,6 +116,23 @@ const xthree = {
             }
         `;
         return new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });
+    },
+    bake(texture, options = {}) {
+        var _a;
+        const { repeat } = options, bakeOptions = __rest(options, ["repeat"]);
+        const map = new THREE.CanvasTexture(texture.bake(bakeOptions));
+        map.colorSpace = ((_a = bakeOptions.channel) !== null && _a !== void 0 ? _a : 'color') === 'color' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+        map.anisotropy = 8;
+        if (repeat !== undefined) {
+            map.wrapS = map.wrapT = THREE.RepeatWrapping;
+            map.repeat.set(repeat.x, repeat.y);
+        }
+        return map;
+    },
+    standard(texture, options = {}) {
+        const { params, size, worldSize, tile, repeat } = options, materialParams = __rest(options, ["params", "size", "worldSize", "tile", "repeat"]);
+        const shared = { params, size, worldSize, tile, repeat };
+        return new THREE.MeshStandardMaterial(Object.assign({ map: xthree.bake(texture, Object.assign(Object.assign({}, shared), { channel: 'color' })), normalMap: xthree.bake(texture, Object.assign(Object.assign({}, shared), { channel: 'normal' })) }, materialParams));
     },
     coord2dTo3d(x, y, z = 0) {
         const root = xnew.context(Root);

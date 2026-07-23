@@ -1,17 +1,17 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { xtextures } from '@mulsense/xnew';
-import { uniformDeclarations } from '../../src/textures/runtime';
+import { fragmentSource, uniformDeclarations } from '../../src/textures/runtime';
 
 // jsdom has no WebGL2, so rendering is not tested here — these assert the def assembly:
-// .glsl file imports resolve, and def.glsl = noise + schema-generated uniform decls + entry functions.
-describe('xtextures defs', () => {
+// .glsl file imports resolve, and texture.glsl = noise + schema-generated uniform decls + entry functions.
+describe('xtextures textures', () => {
     test.each(Object.entries(xtextures))('%s carries a complete injectable glsl source', (name, texture) => {
         // every texture carries BOTH channels by design (flat surfaces return the geometric normal)
-        expect(texture.def.color).toBeDefined();
-        expect(texture.def.normal).toBeDefined();
+        expect(texture.color).toBeDefined();
+        expect(texture.normal).toBeDefined();
         expect(texture.glsl).toContain('float xtex_noise(vec3 P)');
-        for (const fn of [texture.def.color, texture.def.normal]) {
+        for (const fn of [texture.color, texture.normal]) {
             expect(texture.glsl).toContain(`vec3 ${fn}(`);
         }
         for (const key in texture.uniforms) {
@@ -24,10 +24,39 @@ describe('xtextures defs', () => {
         for (const texture of Object.values(xtextures)) {
             const noiseAt = texture.glsl.indexOf('float xtex_noise(vec3 P)');
             const uniformAt = texture.glsl.indexOf('uniform float');
-            const fnAt = texture.glsl.indexOf(`vec3 ${texture.def.color ?? texture.def.normal}(`);
+            const fnAt = texture.glsl.indexOf(`vec3 ${texture.color}(`);
             expect(noiseAt).toBeLessThan(uniformAt);
             expect(uniformAt).toBeLessThan(fnAt);
         }
+    });
+
+    test.each(Object.entries(xtextures))('%s exposes the bake / renderer flows', (name, texture) => {
+        expect(typeof texture.bake).toBe('function');
+        expect(typeof texture.renderer).toBe('function');
+    });
+});
+
+describe('fragmentSource', () => {
+    const texture = xtextures.wood;
+
+    // count entry-function call sites in the generated main (the def glsl above it holds the definition)
+    function samples(source: string, fn: string): number {
+        return source.slice(source.indexOf('void main()')).match(new RegExp(`${fn}\\(`, 'g'))!.length;
+    }
+
+    test('color samples the color entry once; normal encodes a normalized normal map', () => {
+        const color = fragmentSource(texture, 'color', false);
+        expect(samples(color, texture.color)).toBe(1);
+        const normal = fragmentSource(texture, 'normal', false);
+        expect(normal).toContain(`${texture.normal}(pos`);
+        expect(normal).toContain('* 0.5 + 0.5');
+    });
+
+    test('tile blends 4 wrapped samples with edge-band weights', () => {
+        const tiled = fragmentSource(texture, 'color', true);
+        expect(samples(tiled, texture.color)).toBe(4);
+        expect(tiled).toContain('smoothstep');
+        expect(tiled).toContain('pos - sx - sy');
     });
 });
 
@@ -54,7 +83,7 @@ describe('uniformDeclarations', () => {
 describe('preview harnesses', () => {
     const previewDir = path.join(__dirname, '../../src/textures/preview');
     const previews = fs.readdirSync(previewDir).filter((file) => file.endsWith('.frag'));
-    const defs = Object.values(xtextures).map((texture) => texture.def);
+    const defs = Object.values(xtextures);
 
     test.each(previews)('%s consts mirror the schema defaults', (file) => {
         const source = fs.readFileSync(path.join(previewDir, file), 'utf8');

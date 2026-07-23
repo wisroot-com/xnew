@@ -8,9 +8,9 @@ import { xnew, xbasics, xtextures } from '@mulsense/xnew';
 //----------------------------------------------------------------------------------------------------
 
 const TEXTURES = {
-  wood: xtextures.Wood,
-  concrete: xtextures.Concrete,
-  tatami: xtextures.Tatami,
+  wood: xtextures.wood,
+  concrete: xtextures.concrete,
+  tatami: xtextures.tatami,
 };
 
 xnew(document.querySelector('#main'), Main);
@@ -40,9 +40,9 @@ function hex(rgbArray) {
 }
 
 // initial params bag from the texture's uniform schema (vec3 defaults become hex strings)
-function initParams(component) {
+function initParams(texture) {
   const params = {};
-  for (const [name, uniform] of Object.entries(component.uniforms)) {
+  for (const [name, uniform] of Object.entries(texture.uniforms)) {
     params[name] = Array.isArray(uniform.value) ? hex(uniform.value) : uniform.value;
   }
   return params;
@@ -71,16 +71,18 @@ function ViewHost(unit, { state, bags }) {
   });
 
   function build(name) {
-    const component = TEXTURES[name];
-    const channels = ['color', 'normal'].filter((channel) => component.def[channel] !== undefined);
-    return channels.map((channel) => xnew(TextureView, { component, params: bags[name], channel }));
+    const texture = TEXTURES[name];
+    const channels = ['color', 'normal'].filter((channel) => texture[channel] !== undefined);
+    return channels.map((channel) => xnew(TextureView, { texture, params: bags[name], channel }));
   }
 }
 
-function TextureView(unit, { component, params, channel }) {
+function TextureView(unit, { texture, params, channel }) {
   xnew.nest('<div class="rounded-xl overflow-hidden shadow-2xl bg-black">');
-  const tex = xnew(component, { size: { width: 512, height: 512 }, channel });
-  unit.on('update', () => tex.set(values(params)));
+  const canvas = xnew('<canvas width="512" height="512" style="display: block; width: 100%; height: auto;">').element;
+  const renderer = texture.renderer(canvas, { channel });
+  unit.on('update', () => renderer.render(values(params)));
+  unit.on('finalize', () => renderer.dispose());
 }
 
 //----------------------------------------------------------------------------------------------------

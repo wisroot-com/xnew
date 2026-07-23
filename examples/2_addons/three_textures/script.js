@@ -12,9 +12,9 @@ import * as THREE from 'three';
 //----------------------------------------------------------------------------------------------------
 
 const TEXTURES = {
-  wood: xtextures.Wood,
-  concrete: xtextures.Concrete,
-  tatami: xtextures.Tatami,
+  wood: xtextures.wood,
+  concrete: xtextures.concrete,
+  tatami: xtextures.tatami,
 };
 
 const GEOMETRIES = {
@@ -58,9 +58,9 @@ function hex(rgbArray) {
 }
 
 // initial params bag from the texture's uniform schema (vec3 defaults become hex strings)
-function initParams(component) {
+function initParams(texture) {
   const params = {};
-  for (const [name, uniform] of Object.entries(component.uniforms)) {
+  for (const [name, uniform] of Object.entries(texture.uniforms)) {
     params[name] = Array.isArray(uniform.value) ? hex(uniform.value) : uniform.value;
   }
   return params;
@@ -134,13 +134,12 @@ function Model(unit, { state, bags }) {
 // public contract: color = raw albedo (unlit), normal = normal-map colors (n * 0.5 + 0.5),
 // matching the canvas viewer's channel rendering
 function buildMaterial(state, bags) {
-  const component = TEXTURES[state.texture];
+  const def = TEXTURES[state.texture];
   const params = values(bags[state.texture]);
   if (state.display === 'both') {
-    return xthree.texture(component, params);
+    return xthree.texture(def, params);
   }
 
-  const def = component.def;
   const uniforms = {};
   for (const name in def.uniforms) {
     const value = params[name] ?? def.uniforms[name].value;
@@ -216,14 +215,14 @@ function ControlPanel(unit, { state, bags }) {
 }
 
 function buildFolder(panel, state, bags) {
-  const component = TEXTURES[state.texture];
+  const texture = TEXTURES[state.texture];
   const params = bags[state.texture];
   return panel.folder({ name: state.texture, open: true, params }, (f) => {
     for (const [name, value] of Object.entries(params)) {
       if (typeof value === 'string') {
         f.color({ name, value });
       } else {
-        const uniform = component.uniforms[name] ?? {};
+        const uniform = texture.uniforms[name] ?? {};
         f.range({ name, value, min: uniform.min, max: uniform.max, step: uniform.step });
       }
     }

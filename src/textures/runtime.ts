@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------
-// xtextures runtime — the shared shape (TextureDef) + a minimal WebGL2 renderer that draws a texture
-// into a canvas via a fullscreen triangle. No three, no image copy: the GLSL runs on the GPU directly.
+// xtextures runtime — the shared shape (TextureDef) + WebGL2 rendering: a per-canvas renderer and a
+// bake path on one shared OffscreenCanvas (browser contexts are capped, so bakes must not own one each).
 // Uniform names in def.glsl equal the schema keys; unused ones resolve to null locations (silently skipped).
 //----------------------------------------------------------------------------------------------------
 
@@ -29,6 +29,20 @@ export type TextureChannel = 'color' | 'normal';
 export interface TextureRenderer {
     render(params: Record<string, number | number[]>): void;
     dispose(): void;
+}
+
+export interface RendererOptions {
+    worldSize?: number;
+    channel?: TextureChannel;
+    tile?: boolean;
+}
+
+export interface BakeOptions {
+    size?: { width: number; height: number };
+    worldSize?: number;
+    channel?: TextureChannel;
+    tile?: boolean;
+    params?: Record<string, number | number[]>;
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -64,36 +78,36 @@ export function uniformDeclarations(uniforms: Record<string, TextureUniform>): s
 }
 
 //----------------------------------------------------------------------------------------------------
-// renderer
+// shader sources — the fragment main samples the channel entry function on the z=0 slice.
+// tile blends 4 wrapped samples in a border band (w → 1 at the far edges), making the image periodic.
 //----------------------------------------------------------------------------------------------------
 
-export function createTextureRenderer(
-    canvas: HTMLCanvasElement,
-    def: TextureDef,
-    options: { worldSize?: number; channel?: TextureChannel } = {},
-): TextureRenderer {
-    const worldSize = options.worldSize ?? 3;
-    const channel = options.channel ?? (def.color !== undefined ? 'color' : 'normal');
-    if (def[channel] === undefined) {
-        throw new Error(`xtextures: texture "${def.name}" has no ${channel} channel`);
-    }
-    const gl = canvas.getContext('webgl2');
-    if (gl === null) {
-        throw new Error('xtextures: WebGL2 is not available');
-    }
-
-    const vertexSource = `#version 300 es
+const VERTEX_SOURCE = `#version 300 es
 in vec2 aPos;
 out vec2 vUv;
 void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 
+export function fragmentSource(def: TextureDef, channel: TextureChannel, tile: boolean): string {
     // color: paint the returned color; normal: encode the flat-slice normal as a bakeable normal map
-    const body = channel === 'normal'
-        ? `vec3 n = ${def.normal}(pos, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0));
-  fragColor = vec4(n * 0.5 + 0.5, 1.0);`
-        : `fragColor = vec4(${def.color}(pos), 1.0);`;
+    const sample = channel === 'normal'
+        ? (pos: string) => `${def.normal}(${pos}, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0))`
+        : (pos: string) => `${def.color}(${pos})`;
+    const encode = channel === 'normal'
+        ? (value: string) => `vec4(normalize(${value}) * 0.5 + 0.5, 1.0)`
+        : (value: string) => `vec4(${value}, 1.0)`;
 
-    const fragmentSource = `#version 300 es
+    const body = tile
+        ? `vec2 w = smoothstep(1.0 - 0.2, 1.0, vUv);
+  vec3 sx = vec3(uWorldSize, 0.0, 0.0);
+  vec3 sy = vec3(0.0, uWorldSize, 0.0);
+  vec3 blended = mix(
+    mix(${sample('pos')}, ${sample('pos - sx')}, w.x),
+    mix(${sample('pos - sy')}, ${sample('pos - sx - sy')}, w.x),
+    w.y);
+  fragColor = ${encode('blended')};`
+        : `fragColor = ${encode(sample('pos'))};`;
+
+    return `#version 300 es
 precision highp float;
 in vec2 vUv;
 out vec4 fragColor;
@@ -103,56 +117,25 @@ void main(){
   vec3 pos = vec3((vUv - 0.5) * uWorldSize, 0.0);
   ${body}
 }`;
-
-    const program = linkProgram(gl, vertexSource, fragmentSource);
-
-    // fullscreen triangle covering clip space
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-    const aPos = gl.getAttribLocation(program, 'aPos');
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-
-    const locations = new Map<string, WebGLUniformLocation | null>();
-    function location(name: string): WebGLUniformLocation | null {
-        if (locations.has(name) === false) {
-            locations.set(name, gl!.getUniformLocation(program, name));
-        }
-        return locations.get(name) ?? null;
-    }
-
-    function render(params: Record<string, number | number[]>): void {
-        gl!.viewport(0, 0, canvas.width, canvas.height);
-        gl!.useProgram(program);
-        gl!.bindVertexArray(vao);
-        gl!.uniform1f(location('uWorldSize'), worldSize);
-        for (const name in def.uniforms) {
-            const value = params[name] ?? def.uniforms[name].value;
-            if (Array.isArray(value)) {
-                gl!.uniform3f(location(name), value[0], value[1], value[2]);
-            } else {
-                gl!.uniform1f(location(name), value);
-            }
-        }
-        gl!.drawArrays(gl!.TRIANGLES, 0, 3);
-    }
-
-    function dispose(): void {
-        gl!.deleteProgram(program);
-        gl!.deleteBuffer(buffer);
-        gl!.deleteVertexArray(vao);
-    }
-
-    return { render, dispose };
 }
 
-function linkProgram(gl: WebGL2RenderingContext, vertexSource: string, fragmentSource: string): WebGLProgram {
+//----------------------------------------------------------------------------------------------------
+// gl helpers — program compile (aPos pinned to attribute 0 so one VAO serves every program) and draw
+//----------------------------------------------------------------------------------------------------
+
+function compileTextureProgram(
+    gl: WebGL2RenderingContext,
+    def: TextureDef,
+    channel: TextureChannel,
+    tile: boolean,
+): WebGLProgram {
+    if (def[channel] === undefined) {
+        throw new Error(`xtextures: texture "${def.name}" has no ${channel} channel`);
+    }
     const program = gl.createProgram();
-    gl.attachShader(program, compileShader(gl, gl.VERTEX_SHADER, vertexSource));
-    gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource));
+    gl.attachShader(program, compileShader(gl, gl.VERTEX_SHADER, VERTEX_SOURCE));
+    gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource(def, channel, tile)));
+    gl.bindAttribLocation(program, 0, 'aPos');
     gl.linkProgram(program);
     if (gl.getProgramParameter(program, gl.LINK_STATUS) === false) {
         const log = gl.getProgramInfoLog(program);
@@ -172,4 +155,142 @@ function compileShader(gl: WebGL2RenderingContext, type: number, source: string)
         throw new Error('xtextures: shader compile failed\n' + log + '\n' + source);
     }
     return shader;
+}
+
+// a fullscreen triangle covering clip space, bound to attribute 0
+function createFullscreenVao(gl: WebGL2RenderingContext): { vao: WebGLVertexArrayObject; buffer: WebGLBuffer } {
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    return { vao, buffer };
+}
+
+function uploadUniforms(
+    gl: WebGL2RenderingContext,
+    def: TextureDef,
+    locate: (name: string) => WebGLUniformLocation | null,
+    worldSize: number,
+    params: Record<string, number | number[]>,
+): void {
+    gl.uniform1f(locate('uWorldSize'), worldSize);
+    for (const name in def.uniforms) {
+        const value = params[name] ?? def.uniforms[name].value;
+        if (Array.isArray(value)) {
+            gl.uniform3f(locate(name), value[0], value[1], value[2]);
+        } else {
+            gl.uniform1f(locate(name), value);
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------------
+// per-canvas renderer — owns its own context (live previews); dispose when the canvas goes away
+//----------------------------------------------------------------------------------------------------
+
+export function createTextureRenderer(
+    canvas: HTMLCanvasElement,
+    def: TextureDef,
+    options: RendererOptions = {},
+): TextureRenderer {
+    const worldSize = options.worldSize ?? 3;
+    const channel = options.channel ?? 'color';
+    const tile = options.tile ?? false;
+    const gl = canvas.getContext('webgl2');
+    if (gl === null) {
+        throw new Error('xtextures: WebGL2 is not available');
+    }
+
+    const program = compileTextureProgram(gl, def, channel, tile);
+    const { vao, buffer } = createFullscreenVao(gl);
+
+    const locations = new Map<string, WebGLUniformLocation | null>();
+    function location(name: string): WebGLUniformLocation | null {
+        if (locations.has(name) === false) {
+            locations.set(name, gl!.getUniformLocation(program, name));
+        }
+        return locations.get(name) ?? null;
+    }
+
+    function render(params: Record<string, number | number[]> = {}): void {
+        gl!.viewport(0, 0, canvas.width, canvas.height);
+        gl!.useProgram(program);
+        gl!.bindVertexArray(vao);
+        uploadUniforms(gl!, def, location, worldSize, params);
+        gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+    }
+
+    function dispose(): void {
+        gl!.deleteProgram(program);
+        gl!.deleteBuffer(buffer);
+        gl!.deleteVertexArray(vao);
+    }
+
+    return { render, dispose };
+}
+
+//----------------------------------------------------------------------------------------------------
+// bake — render once on the shared OffscreenCanvas and hand the frame out as an ImageBitmap.
+// Programs are cached per (texture, channel, tile); transferToImageBitmap detaches the frame, so
+// consecutive bakes never share pixels.
+//----------------------------------------------------------------------------------------------------
+
+interface BakeContext {
+    canvas: OffscreenCanvas;
+    gl: WebGL2RenderingContext;
+    vao: WebGLVertexArrayObject;
+    programs: Map<string, { program: WebGLProgram; locations: Map<string, WebGLUniformLocation | null> }>;
+}
+
+let bakeContext: BakeContext | null = null;
+
+function sharedBakeContext(): BakeContext {
+    if (bakeContext === null) {
+        if (typeof OffscreenCanvas === 'undefined') {
+            throw new Error('xtextures: bake requires OffscreenCanvas support');
+        }
+        const canvas = new OffscreenCanvas(1, 1);
+        const gl = canvas.getContext('webgl2') as WebGL2RenderingContext | null;
+        if (gl === null) {
+            throw new Error('xtextures: WebGL2 is not available');
+        }
+        const { vao } = createFullscreenVao(gl);
+        bakeContext = { canvas, gl, vao, programs: new Map() };
+    }
+    return bakeContext;
+}
+
+export function bakeTexture(def: TextureDef, options: BakeOptions = {}): ImageBitmap {
+    const width = options.size?.width ?? 512;
+    const height = options.size?.height ?? 512;
+    const worldSize = options.worldSize ?? 3;
+    const channel = options.channel ?? 'color';
+    const tile = options.tile ?? false;
+
+    const { canvas, gl, vao, programs } = sharedBakeContext();
+    const key = `${def.name}:${channel}:${tile}`;
+    let entry = programs.get(key);
+    if (entry === undefined) {
+        entry = { program: compileTextureProgram(gl, def, channel, tile), locations: new Map() };
+        programs.set(key, entry);
+    }
+    const { program, locations } = entry;
+    function location(name: string): WebGLUniformLocation | null {
+        if (locations.has(name) === false) {
+            locations.set(name, gl.getUniformLocation(program, name));
+        }
+        return locations.get(name) ?? null;
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+    gl.viewport(0, 0, width, height);
+    gl.useProgram(program);
+    gl.bindVertexArray(vao);
+    uploadUniforms(gl, def, location, worldSize, options.params ?? {});
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    return canvas.transferToImageBitmap();
 }

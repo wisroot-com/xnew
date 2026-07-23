@@ -60,12 +60,12 @@ export const xthree = {
     },
     // build a ShaderMaterial that injects an xtextures GLSL definition; the texture runs in three's own
     // context on the mesh surface (object-space position → solid look), so no canvas / image copy.
-    // `texture` is an xtextures component (or a raw def) carrying { glsl, color, normal, uniforms }.
+    // `texture` is an xtextures texture object carrying { glsl, color, normal, uniforms }.
     // The color channel is the albedo, lit with the (possibly unperturbed) normal channel — everything
     // stays in object space (the view-space light direction is rotated into object space per vertex),
     // so the fragment stage needs no normalMatrix.
     texture(texture: any, params: Record<string, any> = {}): THREE.ShaderMaterial {
-        const def = texture.def ?? texture;
+        const def = texture;
         if (def.color === undefined || def.normal === undefined) {
             throw new Error(`xthree.texture: texture "${def.name}" must carry color and normal channels`);
         }
@@ -104,6 +104,32 @@ export const xthree = {
             }
         `;
         return new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });
+    },
+    // bake an xtextures texture into a THREE.CanvasTexture (image copy on the shared bake context).
+    // Options pass through to texture.bake() — { size, worldSize, channel, tile, params } — plus
+    // `repeat: { x, y }` which switches on RepeatWrapping; colorSpace follows the channel.
+    bake(texture: any, options: Record<string, any> = {}): THREE.CanvasTexture {
+        const { repeat, ...bakeOptions } = options;
+        const map = new THREE.CanvasTexture(texture.bake(bakeOptions));
+        map.colorSpace = (bakeOptions.channel ?? 'color') === 'color' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+        map.anisotropy = 8;
+        if (repeat !== undefined) {
+            map.wrapS = map.wrapT = THREE.RepeatWrapping;
+            map.repeat.set(repeat.x, repeat.y);
+        }
+        return map;
+    },
+    // PBR path: bake the color + normal channels once and wrap them in a MeshStandardMaterial, so
+    // scene lights / shadows / env maps apply. Bake options are shared; the rest ({ roughness, ... })
+    // goes to the material.
+    standard(texture: any, options: Record<string, any> = {}): THREE.MeshStandardMaterial {
+        const { params, size, worldSize, tile, repeat, ...materialParams } = options;
+        const shared = { params, size, worldSize, tile, repeat };
+        return new THREE.MeshStandardMaterial({
+            map: xthree.bake(texture, { ...shared, channel: 'color' }),
+            normalMap: xthree.bake(texture, { ...shared, channel: 'normal' }),
+            ...materialParams,
+        });
     },
     coord2dTo3d(x: number, y: number, z: number = 0): THREE.Vector3 {
         const root = xnew.context(Root);

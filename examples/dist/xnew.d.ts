@@ -581,16 +581,35 @@ interface TextureDef {
     glsl: string;
     uniforms: Record<string, TextureUniform>;
 }
+type TextureChannel = 'color' | 'normal';
+interface TextureRenderer {
+    render(params: Record<string, number | number[]>): void;
+    dispose(): void;
+}
+interface RendererOptions {
+    worldSize?: number;
+    channel?: TextureChannel;
+    tile?: boolean;
+}
+interface BakeOptions {
+    size?: {
+        width: number;
+        height: number;
+    };
+    worldSize?: number;
+    channel?: TextureChannel;
+    tile?: boolean;
+    params?: Record<string, number | number[]>;
+}
 
-type TextureComponent = ((unit: xnew.Unit, props?: any) => any) & {
-    def: TextureDef;
-    glsl: string;
-    uniforms: TextureDef['uniforms'];
-};
+interface Texture extends TextureDef {
+    bake(options?: BakeOptions): ImageBitmap;
+    renderer(canvas: HTMLCanvasElement, options?: RendererOptions): TextureRenderer;
+}
 declare const xtextures: {
-    Wood: TextureComponent;
-    Concrete: TextureComponent;
-    Tatami: TextureComponent;
+    wood: Texture;
+    concrete: Texture;
+    tatami: Texture;
 };
 
 export { xaudio, xbasics, xicons, xnew, xsync, xtextures };

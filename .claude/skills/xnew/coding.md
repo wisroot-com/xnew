@@ -546,6 +546,12 @@ the rule, then one line of why.
   getter/setter on the shared master gain. There are no `xbasics.AudioTrack` / `Synthesizer` /
   `Volume` members anymore (moved 2026-07); the only basics → xaudio dependency is
   `VolumeController`, which reads/writes `xaudio.volume` directly.
+  **`xtextures` entries are plain texture objects, NOT component functions** (lowercase members:
+  `xtextures.wood`): the TextureDef fields (`glsl`/`color`/`normal`/`uniforms`) plus the three flows —
+  `bake(options)` → ImageBitmap on ONE shared OffscreenCanvas (never one WebGL context per texture:
+  browsers cap contexts), `renderer(canvas, options)` for a caller-owned live-preview canvas (caller
+  wires `unit.on('finalize', () => renderer.dispose())`), and passing the object to `xthree.texture()` /
+  `xthree.bake()` / `xthree.standard()`. Don't re-wrap them as xnew components.
   The networking layer is a single file `src/sync/xsync.ts` (shared state + boot + facade). `xsync`
   **is** the facade object literal (`export const xsync = { … }`) — there is no Lobby / Room component
   built in; lobby / room lifecycle is assembled by callers from the facade (see `examples/*/server.js` +
