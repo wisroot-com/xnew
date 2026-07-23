@@ -4,9 +4,9 @@
 // glsl = noise + generated uniform decls + bodies; colors are 0..1 RGB vec3.
 //----------------------------------------------------------------------------------------------------
 
-import noiseGlsl from './glsl/noise.glsl';
-import tatamiGlsl from './glsl/tatami.glsl';
-import { uniformDeclarations, type TexturePresets, type TextureRange, type TextureSource } from './runtime';
+import noiseGlsl from '../glsl/noise.glsl';
+import tatamiGlsl from '../glsl/tatami.glsl';
+import { uniformDeclarations, type TexturePresets, type TextureRange, type TextureSource } from '../runtime';
 
 const ranges: Record<string, TextureRange> = {
     scale: { min: 0, max: 4 },

@@ -4,9 +4,9 @@
 // Ported from boytchev/tsl-textures "Concrete". glsl = noise + generated uniform decls + bodies.
 //----------------------------------------------------------------------------------------------------
 
-import noiseGlsl from './glsl/noise.glsl';
-import concreteGlsl from './glsl/concrete.glsl';
-import { uniformDeclarations, type TexturePresets, type TextureRange, type TextureSource } from './runtime';
+import noiseGlsl from '../glsl/noise.glsl';
+import concreteGlsl from '../glsl/concrete.glsl';
+import { uniformDeclarations, type TexturePresets, type TextureRange, type TextureSource } from '../runtime';
 
 const ranges: Record<string, TextureRange> = {
     scale: { min: 0, max: 4 },

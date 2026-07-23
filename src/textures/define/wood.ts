@@ -4,9 +4,9 @@
 // so hosts (canvas runtime / xthree) inject one complete source; colors are 0..1 RGB vec3.
 //----------------------------------------------------------------------------------------------------
 
-import noiseGlsl from './glsl/noise.glsl';
-import woodGlsl from './glsl/wood.glsl';
-import { uniformDeclarations, type TexturePresets, type TextureRange, type TextureSource } from './runtime';
+import noiseGlsl from '../glsl/noise.glsl';
+import woodGlsl from '../glsl/wood.glsl';
+import { uniformDeclarations, type TexturePresets, type TextureRange, type TextureSource } from '../runtime';
 
 const ranges: Record<string, TextureRange> = {
     scale: { min: 0, max: 6 },

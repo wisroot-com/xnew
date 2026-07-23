@@ -13,9 +13,9 @@ import {
     type TextureRenderer,
     type TextureSource,
 } from './runtime';
-import { wood } from './wood';
-import { concrete } from './concrete';
-import { tatami } from './tatami';
+import { wood } from './define/wood';
+import { concrete } from './define/concrete';
+import { tatami } from './define/tatami';
 
 export interface Texture extends TextureDef {
     bake(options?: BakeOptions): ImageBitmap;
