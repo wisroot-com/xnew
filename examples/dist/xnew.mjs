@@ -3412,9 +3412,10 @@ in vec2 aPos;
 out vec2 vUv;
 void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 function fragmentSource(def, channel, tile) {
+    const entry = 'xtex' + def.name.charAt(0).toUpperCase() + def.name.slice(1);
     const sample = channel === 'normal'
-        ? (pos) => `${def.normal}(${pos}, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0))`
-        : (pos) => `${def.color}(${pos})`;
+        ? (pos) => `${entry}Normal(${pos}, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0))`
+        : (pos) => `${entry}Color(${pos})`;
     const encode = channel === 'normal'
         ? (value) => `vec4(normalize(${value}) * 0.5 + 0.5, 1.0)`
         : (value) => `vec4(${value}, 1.0)`;
@@ -3440,9 +3441,6 @@ void main(){
 }`;
 }
 function compileTextureProgram(gl, def, channel, tile) {
-    if (def[channel] === undefined) {
-        throw new Error(`xtextures: texture "${def.name}" has no ${channel} channel`);
-    }
     const program = gl.createProgram();
     gl.attachShader(program, compileShader(gl, gl.VERTEX_SHADER, VERTEX_SOURCE));
     gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource(def, channel, tile)));
@@ -3649,49 +3647,11 @@ const tatami = {
 };
 
 function defineTexture(source) {
-    var _a;
-    if (/^[a-z][A-Za-z0-9]*$/.test(source.name) === false) {
-        throw new Error(`xtextures: texture name "${source.name}" must be a lowercase-led identifier`);
-    }
-    const entry = 'xtex' + source.name.charAt(0).toUpperCase() + source.name.slice(1);
-    const def = Object.assign(Object.assign({}, source), { color: `${entry}Color`, normal: `${entry}Normal` });
-    for (const channel of ['color', 'normal']) {
-        if (source.glsl.includes(`vec3 ${def[channel]}(`) === false) {
-            throw new Error(`xtextures: texture "${source.name}" glsl does not define vec3 ${def[channel]}(...)`);
-        }
-    }
-    const standard = (_a = source.presets) === null || _a === void 0 ? void 0 : _a.standard;
-    if (standard === undefined) {
-        throw new Error(`xtextures: texture "${source.name}" must carry presets.standard`);
-    }
-    for (const key in standard) {
-        if (Array.isArray(standard[key]) === false && source.ranges[key] === undefined) {
-            throw new Error(`xtextures: texture "${source.name}" scalar uniform "${key}" has no range`);
-        }
-    }
-    for (const key in source.ranges) {
-        if (standard[key] === undefined) {
-            throw new Error(`xtextures: texture "${source.name}" range key "${key}" is not in presets.standard`);
-        }
-        else if (Array.isArray(standard[key])) {
-            throw new Error(`xtextures: texture "${source.name}" range key "${key}" is a vec3`);
-        }
-    }
-    for (const [presetName, preset] of Object.entries(source.presets)) {
-        for (const key in preset) {
-            if (standard[key] === undefined) {
-                throw new Error(`xtextures: texture "${source.name}" preset "${presetName}" key "${key}" is not in presets.standard`);
-            }
-            else if (Array.isArray(preset[key]) !== Array.isArray(standard[key])) {
-                throw new Error(`xtextures: texture "${source.name}" preset "${presetName}" key "${key}" does not match the standard type`);
-            }
-        }
-    }
-    return Object.assign(Object.assign({}, def), { bake(options = {}) {
-            return bakeTexture(def, options);
+    return Object.assign(Object.assign({}, source), { bake(options = {}) {
+            return bakeTexture(source, options);
         },
         renderer(canvas, options = {}) {
-            return createTextureRenderer(canvas, def, options);
+            return createTextureRenderer(canvas, source, options);
         } });
 }
 const xtextures = {

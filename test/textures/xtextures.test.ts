@@ -1,18 +1,23 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { xtextures } from '@mulsense/xnew';
-import { defineTexture } from '../../src/textures/xtextures';
 import { fragmentSource, uniformDeclarations } from '../../src/textures/runtime';
+
+// the channel entry-function naming contract: name "wood" → xtexWoodColor / xtexWoodNormal
+function entry(name: string): string {
+    return 'xtex' + name.charAt(0).toUpperCase() + name.slice(1);
+}
 
 // jsdom has no WebGL2, so rendering is not tested here — these assert the def assembly:
 // .glsl file imports resolve, and texture.glsl = noise + schema-generated uniform decls + entry functions.
+// defineTexture itself is check-free, so schema / glsl consistency is asserted here instead.
 describe('xtextures textures', () => {
     test.each(Object.entries(xtextures))('%s carries a complete injectable glsl source', (name, texture) => {
-        // every texture carries BOTH channels by design (flat surfaces return the geometric normal)
-        expect(texture.color).toBeDefined();
-        expect(texture.normal).toBeDefined();
+        expect(texture.name).toBe(name);
+        expect(/^[a-z][A-Za-z0-9]*$/.test(name)).toBe(true);
         expect(texture.glsl).toContain('float xtex_noise(vec3 P)');
-        for (const fn of [texture.color, texture.normal]) {
+        // every texture defines BOTH channels by design (flat surfaces return the geometric normal)
+        for (const fn of [`${entry(name)}Color`, `${entry(name)}Normal`]) {
             expect(texture.glsl).toContain(`vec3 ${fn}(`);
         }
         for (const key in texture.presets.standard) {
@@ -21,11 +26,31 @@ describe('xtextures textures', () => {
         }
     });
 
+    test.each(Object.entries(xtextures))('%s schema is consistent', (name, texture) => {
+        const standard = texture.presets.standard;
+        for (const key in standard) {
+            if (Array.isArray(standard[key]) === false) {
+                // every scalar uniform needs a range (UI sliders); vec3s need none
+                expect(texture.ranges[key]).toBeDefined();
+            }
+        }
+        for (const key in texture.ranges) {
+            expect(Array.isArray(standard[key])).toBe(false);
+        }
+        for (const preset of Object.values(texture.presets)) {
+            for (const key in preset) {
+                // standard is the complete authority on uniform keys and types
+                expect(standard[key]).toBeDefined();
+                expect(Array.isArray(preset[key])).toBe(Array.isArray(standard[key]));
+            }
+        }
+    });
+
     test('uniform declarations come after the noise prelude and before the entry functions', () => {
         for (const texture of Object.values(xtextures)) {
             const noiseAt = texture.glsl.indexOf('float xtex_noise(vec3 P)');
             const uniformAt = texture.glsl.indexOf('uniform float');
-            const fnAt = texture.glsl.indexOf(`vec3 ${texture.color}(`);
+            const fnAt = texture.glsl.indexOf(`vec3 ${entry(texture.name)}Color(`);
             expect(noiseAt).toBeLessThan(uniformAt);
             expect(uniformAt).toBeLessThan(fnAt);
         }
@@ -34,60 +59,6 @@ describe('xtextures textures', () => {
     test.each(Object.entries(xtextures))('%s exposes the bake / renderer flows', (name, texture) => {
         expect(typeof texture.bake).toBe('function');
         expect(typeof texture.renderer).toBe('function');
-    });
-
-    test.each(Object.entries(xtextures))('%s derives its entry names from its member key', (name, texture) => {
-        expect(texture.name).toBe(name);
-        const entry = 'xtex' + name.charAt(0).toUpperCase() + name.slice(1);
-        expect(texture.color).toBe(`${entry}Color`);
-        expect(texture.normal).toBe(`${entry}Normal`);
-    });
-});
-
-describe('defineTexture', () => {
-    const glsl = 'vec3 xtexFooColor(vec3 pos){ return vec3(0.0); }\nvec3 xtexFooNormal(vec3 pos, vec3 normal, vec3 tangent){ return normalize(normal); }';
-    const empty = { ranges: {}, presets: { standard: {} } };
-
-    test('rejects names that are not lowercase-led identifiers', () => {
-        expect(() => defineTexture({ name: 'Foo', glsl, ...empty })).toThrow('lowercase-led identifier');
-        expect(() => defineTexture({ name: 'foo-bar', glsl, ...empty })).toThrow('lowercase-led identifier');
-    });
-
-    test('rejects glsl that lacks a derived entry function', () => {
-        expect(() => defineTexture({ name: 'foo', glsl: 'vec3 xtexFooColor(vec3 pos){ return vec3(0.0); }', ...empty }))
-            .toThrow('does not define vec3 xtexFooNormal(');
-        expect(defineTexture({ name: 'foo', glsl, ...empty }).color).toBe('xtexFooColor');
-    });
-
-    test('rejects a missing standard preset', () => {
-        expect(() => defineTexture({ name: 'foo', glsl, ranges: {}, presets: {} } as any))
-            .toThrow('must carry presets.standard');
-    });
-
-    test('rejects a scalar standard key without a range', () => {
-        expect(() => defineTexture({ name: 'foo', glsl, ranges: {}, presets: { standard: { scale: 1 } } }))
-            .toThrow('scalar uniform "scale" has no range');
-        // vec3 keys need no range
-        expect(() => defineTexture({ name: 'foo', glsl, ranges: {}, presets: { standard: { tint: [1, 0, 0] } } }))
-            .not.toThrow();
-    });
-
-    test('rejects ranges that do not match presets.standard', () => {
-        expect(() => defineTexture({ name: 'foo', glsl, ranges: { scale: { min: 0, max: 1 } }, presets: { standard: {} } }))
-            .toThrow('range key "scale" is not in presets.standard');
-        expect(() => defineTexture({ name: 'foo', glsl, ranges: { tint: { min: 0, max: 1 } }, presets: { standard: { tint: [1, 0, 0] } } }))
-            .toThrow('range key "tint" is a vec3');
-    });
-
-    test('accepts partial presets but rejects unknown keys and type mismatches', () => {
-        const base = { name: 'foo', glsl, ranges: { scale: { min: 0, max: 1 } } };
-        const standard = { scale: 1, tint: [1, 0, 0] };
-        expect(defineTexture({ ...base, presets: { standard, pale: { tint: [1, 1, 1] } } }).presets.pale)
-            .toEqual({ tint: [1, 1, 1] });
-        expect(() => defineTexture({ ...base, presets: { standard, pale: { extra: 1 } } }))
-            .toThrow('preset "pale" key "extra" is not in presets.standard');
-        expect(() => defineTexture({ ...base, presets: { standard, pale: { tint: 1 } } }))
-            .toThrow('preset "pale" key "tint" does not match the standard type');
     });
 });
 
@@ -101,15 +72,15 @@ describe('fragmentSource', () => {
 
     test('color samples the color entry once; normal encodes a normalized normal map', () => {
         const color = fragmentSource(texture, 'color', false);
-        expect(samples(color, texture.color)).toBe(1);
+        expect(samples(color, 'xtexWoodColor')).toBe(1);
         const normal = fragmentSource(texture, 'normal', false);
-        expect(normal).toContain(`${texture.normal}(pos`);
+        expect(normal).toContain('xtexWoodNormal(pos');
         expect(normal).toContain('* 0.5 + 0.5');
     });
 
     test('tile blends 4 wrapped samples with edge-band weights', () => {
         const tiled = fragmentSource(texture, 'color', true);
-        expect(samples(tiled, texture.color)).toBe(4);
+        expect(samples(tiled, 'xtexWoodColor')).toBe(4);
         expect(tiled).toContain('smoothstep');
         expect(tiled).toContain('pos - sx - sy');
     });

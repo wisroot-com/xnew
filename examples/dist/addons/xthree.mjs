@@ -38,13 +38,10 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
 const material = {
     shader(texture, params) {
         var _a;
-        const def = texture;
-        if (def.color === undefined || def.normal === undefined) {
-            throw new Error(`xthree.material.shader: texture "${def.name}" must carry color and normal channels`);
-        }
+        const entry = 'xtex' + texture.name.charAt(0).toUpperCase() + texture.name.slice(1);
         const uniforms = {};
-        for (const name in def.presets.standard) {
-            const value = (_a = params[name]) !== null && _a !== void 0 ? _a : def.presets.standard[name];
+        for (const name in texture.presets.standard) {
+            const value = (_a = params[name]) !== null && _a !== void 0 ? _a : texture.presets.standard[name];
             uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
         }
         const vertexShader = `
@@ -65,12 +62,12 @@ const material = {
             varying vec3 vXtexPos;
             varying vec3 vXtexNormal;
             varying vec3 vXtexLight;
-            ${def.glsl}
+            ${texture.glsl}
             void main() {
                 vec3 nrm = normalize(vXtexNormal);
                 vec3 tng = normalize(abs(nrm.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), nrm) : cross(vec3(1.0, 0.0, 0.0), nrm));
-                vec3 n = ${def.normal}(vXtexPos, nrm, tng);
-                vec3 albedo = ${def.color}(vXtexPos);
+                vec3 n = ${entry}Normal(vXtexPos, nrm, tng);
+                vec3 albedo = ${entry}Color(vXtexPos);
                 float diff = 0.55 + 0.45 * max(dot(n, normalize(vXtexLight)), 0.0);
                 gl_FragColor = vec4(albedo * diff, 1.0);
             }

@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------
-// xtextures runtime — the shared shape (TextureDef) + WebGL2 rendering: a per-canvas renderer and a
+// xtextures runtime — the shared shape (TextureSource) + WebGL2 rendering: a per-canvas renderer and a
 // bake path on one shared OffscreenCanvas (browser contexts are capped, so bakes must not own one each).
 // Uniform names in def.glsl equal the schema keys; unused ones resolve to null locations (silently skipped).
 //----------------------------------------------------------------------------------------------------
@@ -15,7 +15,8 @@ export type TexturePreset = Record<string, number | number[]>;
 // standard is the complete authority on uniform keys and types; other presets partially override it
 export type TexturePresets = { standard: TexturePreset } & Record<string, TexturePreset>;
 
-// what a texture module authors — the entry-function names are not written here but derived (and verified against glsl) by defineTexture
+// what a texture module authors — glsl must define both channel entry functions derived from name:
+// vec3 xtex<Name>Color(vec3 pos) and vec3 xtex<Name>Normal(vec3 pos, vec3 normal, vec3 tangent)
 export interface TextureSource {
     name: string; // lowercase-led identifier; also the xtextures member key
     glsl: string; // prelude + uniform declarations + the entry functions
@@ -23,11 +24,6 @@ export interface TextureSource {
     presets: TexturePresets;
 }
 
-export interface TextureDef extends TextureSource {
-    // derived channel entry-function names inside glsl — every texture carries both
-    color: string;  // `vec3 <fn>(vec3 pos)` → color
-    normal: string; // `vec3 <fn>(vec3 pos, vec3 normal, vec3 tangent)` → perturbed object-space normal (flat: `return normalize(normal)`)
-}
 
 export type TextureChannel = 'color' | 'normal';
 
@@ -89,11 +85,13 @@ in vec2 aPos;
 out vec2 vUv;
 void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 
-export function fragmentSource(def: TextureDef, channel: TextureChannel, tile: boolean): string {
+export function fragmentSource(def: TextureSource, channel: TextureChannel, tile: boolean): string {
+    // channel entry-function names inside the glsl are derived from the texture name: "wood" → xtexWoodColor / xtexWoodNormal
+    const entry = 'xtex' + def.name.charAt(0).toUpperCase() + def.name.slice(1);
     // color: paint the returned color; normal: encode the flat-slice normal as a bakeable normal map
     const sample = channel === 'normal'
-        ? (pos: string) => `${def.normal}(${pos}, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0))`
-        : (pos: string) => `${def.color}(${pos})`;
+        ? (pos: string) => `${entry}Normal(${pos}, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0))`
+        : (pos: string) => `${entry}Color(${pos})`;
     const encode = channel === 'normal'
         ? (value: string) => `vec4(normalize(${value}) * 0.5 + 0.5, 1.0)`
         : (value: string) => `vec4(${value}, 1.0)`;
@@ -127,13 +125,10 @@ void main(){
 
 function compileTextureProgram(
     gl: WebGL2RenderingContext,
-    def: TextureDef,
+    def: TextureSource,
     channel: TextureChannel,
     tile: boolean,
 ): WebGLProgram {
-    if (def[channel] === undefined) {
-        throw new Error(`xtextures: texture "${def.name}" has no ${channel} channel`);
-    }
     const program = gl.createProgram();
     gl.attachShader(program, compileShader(gl, gl.VERTEX_SHADER, VERTEX_SOURCE));
     gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource(def, channel, tile)));
@@ -173,7 +168,7 @@ function createFullscreenVao(gl: WebGL2RenderingContext): { vao: WebGLVertexArra
 
 function uploadUniforms(
     gl: WebGL2RenderingContext,
-    def: TextureDef,
+    def: TextureSource,
     locate: (name: string) => WebGLUniformLocation | null,
     worldSize: number,
     params: Record<string, number | number[]>,
@@ -195,7 +190,7 @@ function uploadUniforms(
 
 export function createTextureRenderer(
     canvas: HTMLCanvasElement,
-    def: TextureDef,
+    def: TextureSource,
     options: RendererOptions = {},
 ): TextureRenderer {
     const worldSize = options.worldSize ?? 3;
@@ -263,7 +258,7 @@ function sharedBakeContext(): BakeContext {
     return bakeContext;
 }
 
-export function bakeTexture(def: TextureDef, options: BakeOptions = {}): ImageBitmap {
+export function bakeTexture(def: TextureSource, options: BakeOptions = {}): ImageBitmap {
     const width = options.size?.width ?? 512;
     const height = options.size?.height ?? 512;
     const worldSize = options.worldSize ?? 3;

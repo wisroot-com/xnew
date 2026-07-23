@@ -8,19 +8,17 @@ import { xnew } from '@mulsense/xnew';
 import * as THREE from 'three';
 
 //----------------------------------------------------------------------------------------------------
-// material — build a three material from an xtextures texture object ({ glsl, color, normal, presets })
+// material — build a three material from an xtextures texture object ({ name, glsl, presets })
 //----------------------------------------------------------------------------------------------------
 
 const material = {
     // ShaderMaterial injection: the texture's GLSL shades the mesh in object space with a material-local fixed light — scene lights / shadows do NOT apply.
     shader(texture: any, params: Record<string, any>): THREE.ShaderMaterial {
-        const def = texture;
-        if (def.color === undefined || def.normal === undefined) {
-            throw new Error(`xthree.material.shader: texture "${def.name}" must carry color and normal channels`);
-        }
+        // channel entry-function names inside the glsl are derived from the texture name: "wood" → xtexWoodColor / xtexWoodNormal
+        const entry = 'xtex' + texture.name.charAt(0).toUpperCase() + texture.name.slice(1);
         const uniforms: Record<string, { value: any }> = {};
-        for (const name in def.presets.standard) {
-            const value = params[name] ?? def.presets.standard[name];
+        for (const name in texture.presets.standard) {
+            const value = params[name] ?? texture.presets.standard[name];
             uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
         }
 
@@ -42,12 +40,12 @@ const material = {
             varying vec3 vXtexPos;
             varying vec3 vXtexNormal;
             varying vec3 vXtexLight;
-            ${def.glsl}
+            ${texture.glsl}
             void main() {
                 vec3 nrm = normalize(vXtexNormal);
                 vec3 tng = normalize(abs(nrm.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), nrm) : cross(vec3(1.0, 0.0, 0.0), nrm));
-                vec3 n = ${def.normal}(vXtexPos, nrm, tng);
-                vec3 albedo = ${def.color}(vXtexPos);
+                vec3 n = ${entry}Normal(vXtexPos, nrm, tng);
+                vec3 albedo = ${entry}Color(vXtexPos);
                 float diff = 0.55 + 0.45 * max(dot(n, normalize(vXtexLight)), 0.0);
                 gl_FragColor = vec4(albedo * diff, 1.0);
             }

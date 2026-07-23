@@ -582,10 +582,6 @@ interface TextureSource {
     ranges: Record<string, TextureRange>;
     presets: TexturePresets;
 }
-interface TextureDef extends TextureSource {
-    color: string;
-    normal: string;
-}
 type TextureChannel = 'color' | 'normal';
 interface TextureRenderer {
     render(params: Record<string, number | number[]>): void;
@@ -607,7 +603,7 @@ interface BakeOptions {
     params?: Record<string, number | number[]>;
 }
 
-interface Texture extends TextureDef {
+interface Texture extends TextureSource {
     bake(options?: BakeOptions): ImageBitmap;
     renderer(canvas: HTMLCanvasElement, options?: RendererOptions): TextureRenderer;
 }
