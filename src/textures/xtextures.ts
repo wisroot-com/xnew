@@ -23,7 +23,9 @@ export interface Texture extends TextureDef {
 }
 
 // derive the channel entry-function names (`xtex<Name>Color` / `xtex<Name>Normal`) from the source
-// name and verify they exist in the glsl, so a mismatch fails here — not at shader compile time
+// name and verify them against the glsl, and enforce the schema contract — presets.standard is
+// complete, every scalar key has a range, other presets partially override it — so a mismatch
+// fails here, not at shader compile time (or silently in a UI)
 export function defineTexture(source: TextureSource): Texture {
     if (/^[a-z][A-Za-z0-9]*$/.test(source.name) === false) {
         throw new Error(`xtextures: texture name "${source.name}" must be a lowercase-led identifier`);
@@ -33,6 +35,32 @@ export function defineTexture(source: TextureSource): Texture {
     for (const channel of ['color', 'normal'] as const) {
         if (source.glsl.includes(`vec3 ${def[channel]}(`) === false) {
             throw new Error(`xtextures: texture "${source.name}" glsl does not define vec3 ${def[channel]}(...)`);
+        }
+    }
+
+    const standard = source.presets?.standard;
+    if (standard === undefined) {
+        throw new Error(`xtextures: texture "${source.name}" must carry presets.standard`);
+    }
+    for (const key in standard) {
+        if (Array.isArray(standard[key]) === false && source.ranges[key] === undefined) {
+            throw new Error(`xtextures: texture "${source.name}" scalar uniform "${key}" has no range`);
+        }
+    }
+    for (const key in source.ranges) {
+        if (standard[key] === undefined) {
+            throw new Error(`xtextures: texture "${source.name}" range key "${key}" is not in presets.standard`);
+        } else if (Array.isArray(standard[key])) {
+            throw new Error(`xtextures: texture "${source.name}" range key "${key}" is a vec3`);
+        }
+    }
+    for (const [presetName, preset] of Object.entries(source.presets)) {
+        for (const key in preset) {
+            if (standard[key] === undefined) {
+                throw new Error(`xtextures: texture "${source.name}" preset "${presetName}" key "${key}" is not in presets.standard`);
+            } else if (Array.isArray(preset[key]) !== Array.isArray(standard[key])) {
+                throw new Error(`xtextures: texture "${source.name}" preset "${presetName}" key "${key}" does not match the standard type`);
+            }
         }
     }
     return {

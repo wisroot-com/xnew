@@ -100,11 +100,8 @@ function Ground(unit) {
 // Chabudai — 円形ちゃぶ台（天板 + 脚）。木目は xtextures.wood を檜風の淡い色で焼いたマテリアル。
 //----------------------------------------------------------------------------------------------------
 
-// 檜風の淡い木目（three_textures の copy params で調整した値）
-const WOOD_PARAMS = {
-    scale: 2.9, rings: 4.5, lengths: 10, angle: 20, fibers: 0.3, fibersDensity: 10, seed: 0,
-    color: [0.792, 0.714, 0.635], background: [0.78, 0.616, 0.557],
-};
+// 檜風の淡い木目 = wood の hinoki プリセット
+const WOOD_PARAMS = xtextures.wood.presets.hinoki;
 
 function Chabudai(unit) {
     const group = xthree.nest();

@@ -72,8 +72,8 @@ export const xthree = {
                 throw new Error(`xthree.material.shader: texture "${def.name}" must carry color and normal channels`);
             }
             const uniforms: Record<string, { value: any }> = {};
-            for (const name in def.uniforms) {
-                const value = params[name] ?? def.uniforms[name].value;
+            for (const name in def.presets.standard) {
+                const value = params[name] ?? def.presets.standard[name];
                 uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
             }
 

@@ -57,11 +57,11 @@ function hex(rgbArray) {
   return '#' + rgbArray.map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
 }
 
-// initial params bag from the texture's uniform schema (vec3 defaults become hex strings)
+// initial params bag from the texture's standard preset (vec3 defaults become hex strings)
 function initParams(texture) {
   const params = {};
-  for (const [name, uniform] of Object.entries(texture.uniforms)) {
-    params[name] = Array.isArray(uniform.value) ? hex(uniform.value) : uniform.value;
+  for (const [name, value] of Object.entries(texture.presets.standard)) {
+    params[name] = Array.isArray(value) ? hex(value) : value;
   }
   return params;
 }
@@ -222,8 +222,8 @@ function buildFolder(panel, state, bags) {
       if (typeof value === 'string') {
         f.color({ name, value });
       } else {
-        const uniform = texture.uniforms[name] ?? {};
-        f.range({ name, value, min: uniform.min, max: uniform.max, step: uniform.step });
+        const { min, max } = texture.ranges[name] ?? {};
+        f.range({ name, value, min, max });
       }
     }
   });

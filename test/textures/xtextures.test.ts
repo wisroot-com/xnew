@@ -15,8 +15,8 @@ describe('xtextures textures', () => {
         for (const fn of [texture.color, texture.normal]) {
             expect(texture.glsl).toContain(`vec3 ${fn}(`);
         }
-        for (const key in texture.uniforms) {
-            const type = Array.isArray(texture.uniforms[key].value) ? 'vec3' : 'float';
+        for (const key in texture.presets.standard) {
+            const type = Array.isArray(texture.presets.standard[key]) ? 'vec3' : 'float';
             expect(texture.glsl).toMatch(new RegExp(`uniform ${type}[^;]*\\b${key}\\b`));
         }
     });
@@ -46,16 +46,48 @@ describe('xtextures textures', () => {
 
 describe('defineTexture', () => {
     const glsl = 'vec3 xtexFooColor(vec3 pos){ return vec3(0.0); }\nvec3 xtexFooNormal(vec3 pos, vec3 normal, vec3 tangent){ return normalize(normal); }';
+    const empty = { ranges: {}, presets: { standard: {} } };
 
     test('rejects names that are not lowercase-led identifiers', () => {
-        expect(() => defineTexture({ name: 'Foo', glsl, uniforms: {} })).toThrow('lowercase-led identifier');
-        expect(() => defineTexture({ name: 'foo-bar', glsl, uniforms: {} })).toThrow('lowercase-led identifier');
+        expect(() => defineTexture({ name: 'Foo', glsl, ...empty })).toThrow('lowercase-led identifier');
+        expect(() => defineTexture({ name: 'foo-bar', glsl, ...empty })).toThrow('lowercase-led identifier');
     });
 
     test('rejects glsl that lacks a derived entry function', () => {
-        expect(() => defineTexture({ name: 'foo', glsl: 'vec3 xtexFooColor(vec3 pos){ return vec3(0.0); }', uniforms: {} }))
+        expect(() => defineTexture({ name: 'foo', glsl: 'vec3 xtexFooColor(vec3 pos){ return vec3(0.0); }', ...empty }))
             .toThrow('does not define vec3 xtexFooNormal(');
-        expect(defineTexture({ name: 'foo', glsl, uniforms: {} }).color).toBe('xtexFooColor');
+        expect(defineTexture({ name: 'foo', glsl, ...empty }).color).toBe('xtexFooColor');
+    });
+
+    test('rejects a missing standard preset', () => {
+        expect(() => defineTexture({ name: 'foo', glsl, ranges: {}, presets: {} } as any))
+            .toThrow('must carry presets.standard');
+    });
+
+    test('rejects a scalar standard key without a range', () => {
+        expect(() => defineTexture({ name: 'foo', glsl, ranges: {}, presets: { standard: { scale: 1 } } }))
+            .toThrow('scalar uniform "scale" has no range');
+        // vec3 keys need no range
+        expect(() => defineTexture({ name: 'foo', glsl, ranges: {}, presets: { standard: { tint: [1, 0, 0] } } }))
+            .not.toThrow();
+    });
+
+    test('rejects ranges that do not match presets.standard', () => {
+        expect(() => defineTexture({ name: 'foo', glsl, ranges: { scale: { min: 0, max: 1 } }, presets: { standard: {} } }))
+            .toThrow('range key "scale" is not in presets.standard');
+        expect(() => defineTexture({ name: 'foo', glsl, ranges: { tint: { min: 0, max: 1 } }, presets: { standard: { tint: [1, 0, 0] } } }))
+            .toThrow('range key "tint" is a vec3');
+    });
+
+    test('accepts partial presets but rejects unknown keys and type mismatches', () => {
+        const base = { name: 'foo', glsl, ranges: { scale: { min: 0, max: 1 } } };
+        const standard = { scale: 1, tint: [1, 0, 0] };
+        expect(defineTexture({ ...base, presets: { standard, pale: { tint: [1, 1, 1] } } }).presets.pale)
+            .toEqual({ tint: [1, 1, 1] });
+        expect(() => defineTexture({ ...base, presets: { standard, pale: { extra: 1 } } }))
+            .toThrow('preset "pale" key "extra" is not in presets.standard');
+        expect(() => defineTexture({ ...base, presets: { standard, pale: { tint: 1 } } }))
+            .toThrow('preset "pale" key "tint" does not match the standard type');
     });
 });
 
@@ -84,20 +116,20 @@ describe('fragmentSource', () => {
 });
 
 describe('uniformDeclarations', () => {
-    test('splits floats and vec3s by schema value shape', () => {
-        const decls = uniformDeclarations({ a: { value: 1 }, b: { value: [1, 0, 0] }, c: { value: 2 } });
+    test('splits floats and vec3s by the standard preset value shape', () => {
+        const decls = uniformDeclarations({ a: 1, b: [1, 0, 0], c: 2 });
         expect(decls).toBe('uniform float a, c;\nuniform vec3 b;\n');
     });
 
     test('rejects keys that are not valid GLSL identifiers', () => {
-        expect(() => uniformDeclarations({ 'fiber-density': { value: 1 } })).toThrow('not a valid GLSL identifier');
-        expect(() => uniformDeclarations({ '2scale': { value: 1 } })).toThrow('not a valid GLSL identifier');
+        expect(() => uniformDeclarations({ 'fiber-density': 1 })).toThrow('not a valid GLSL identifier');
+        expect(() => uniformDeclarations({ '2scale': 1 })).toThrow('not a valid GLSL identifier');
     });
 
     test('rejects reserved keys (host-owned names and gl_ / xtex namespaces)', () => {
-        expect(() => uniformDeclarations({ uWorldSize: { value: 1 } })).toThrow('reserved');
-        expect(() => uniformDeclarations({ gl_scale: { value: 1 } })).toThrow('reserved');
-        expect(() => uniformDeclarations({ xtexFoo: { value: 1 } })).toThrow('reserved');
+        expect(() => uniformDeclarations({ uWorldSize: 1 })).toThrow('reserved');
+        expect(() => uniformDeclarations({ gl_scale: 1 })).toThrow('reserved');
+        expect(() => uniformDeclarations({ xtexFoo: 1 })).toThrow('reserved');
     });
 });
 
@@ -122,9 +154,7 @@ describe('preview harnesses', () => {
         for (const m of head.matchAll(/const vec3 ([A-Za-z_][A-Za-z0-9_]*) = vec3\(([^)]+)\);/g)) {
             consts[m[1]] = m[2].split(',').map(Number);
         }
-        expect(consts).toEqual(Object.fromEntries(
-            Object.entries(def!.uniforms).map(([key, uniform]) => [key, uniform.value]),
-        ));
+        expect(consts).toEqual(def!.presets.standard);
     });
 
     test.each(previews)('%s #include paths exist', (file) => {

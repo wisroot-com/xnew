@@ -4,20 +4,26 @@
 // Uniform names in def.glsl equal the schema keys; unused ones resolve to null locations (silently skipped).
 //----------------------------------------------------------------------------------------------------
 
-export interface TextureUniform {
-    value: number | number[];
-    min?: number;
-    max?: number;
-    step?: number;
+export interface TextureRange {
+    min: number;
+    max: number;
 }
+
+// a params bag: scalar → float uniform, [r, g, b] → vec3 uniform
+export type TexturePreset = Record<string, number | number[]>;
+
+// standard is the complete authority on uniform keys and types; other presets partially override it
+export type TexturePresets = { standard: TexturePreset } & Record<string, TexturePreset>;
 
 // what a texture module authors: the entry-function names are NOT written here — they follow the
 // convention `xtex<Name>Color` / `xtex<Name>Normal` and are derived (and verified against glsl)
-// by defineTexture in xtextures.ts.
+// by defineTexture in xtextures.ts. presets.standard is the authority on uniform keys and types
+// (complete by contract); other presets may be partial overrides, ranges cover every scalar key.
 export interface TextureSource {
     name: string; // lowercase-led identifier; also the xtextures member key
     glsl: string; // prelude + uniform declarations + the entry functions
-    uniforms: Record<string, TextureUniform>;
+    ranges: Record<string, TextureRange>;
+    presets: TexturePresets;
 }
 
 export interface TextureDef extends TextureSource {
@@ -52,22 +58,22 @@ export interface BakeOptions {
 }
 
 //----------------------------------------------------------------------------------------------------
-// uniform declarations — generated from the uniform schema so names live in one place.
+// uniform declarations — generated from the standard preset so names and types live in one place.
 // Keys become GLSL identifiers verbatim, so they are validated here (throws at def-assembly time,
 // long before a shader compile): identifier syntax, no gl_ / xtex namespaces, no host-owned names.
 //----------------------------------------------------------------------------------------------------
 
 const RESERVED_UNIFORMS = ['uWorldSize'];
 
-export function uniformDeclarations(uniforms: Record<string, TextureUniform>): string {
+export function uniformDeclarations(standard: TexturePreset): string {
     const floats: string[] = [];
     const vec3s: string[] = [];
-    for (const key in uniforms) {
+    for (const key in standard) {
         if (/^[A-Za-z][A-Za-z0-9_]*$/.test(key) === false) {
             throw new Error(`xtextures: uniform key "${key}" is not a valid GLSL identifier`);
         } else if (key.startsWith('gl_') || key.startsWith('xtex') || RESERVED_UNIFORMS.includes(key)) {
             throw new Error(`xtextures: uniform key "${key}" is reserved`);
-        } else if (Array.isArray(uniforms[key].value)) {
+        } else if (Array.isArray(standard[key])) {
             vec3s.push(key);
         } else {
             floats.push(key);
@@ -183,8 +189,8 @@ function uploadUniforms(
     params: Record<string, number | number[]>,
 ): void {
     gl.uniform1f(locate('uWorldSize'), worldSize);
-    for (const name in def.uniforms) {
-        const value = params[name] ?? def.uniforms[name].value;
+    for (const name in def.presets.standard) {
+        const value = params[name] ?? def.presets.standard[name];
         if (Array.isArray(value)) {
             gl.uniform3f(locate(name), value[0], value[1], value[2]);
         } else {

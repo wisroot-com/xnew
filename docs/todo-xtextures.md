@@ -8,7 +8,7 @@
 `xtextures.Wood` のようなコンポーネント関数をやめ、`xtextures.wood` を
 def + メソッドのプレーンなオブジェクトにした。
 
-- メンバ: `glsl` / `color` / `normal` / `uniforms` （= TextureDef）+ `bake()` / `renderer()`
+- メンバ: `glsl` / `color` / `normal` / `ranges` / `presets` （= TextureDef）+ `bake()` / `renderer()`
 - 基本フローは 3 パターン:
   1. `bake()` — 画像（ImageBitmap）に焼き出す
   2. three.js にシェーダーを渡す（`xthree.material.shader(xtextures.wood, params)`）
@@ -47,11 +47,13 @@ def + メソッドのプレーンなオブジェクトにした。
 
 ## 優先度中
 
-### 4. プリセット
+### 4. プリセット — ✅ スキーマとして完了（2026-07-24）
 
-- テクスチャごとに名前付きパラメータセット（wood: oak / walnut / pine、
-  concrete: smooth / rough など）。`uniforms` スキーマはただの JSON なので直列化も容易。
-- examples の copy-params ボタン（調整値の固定）ワークフローの受け皿。
+- TextureSource が `uniforms` に代わり `ranges`（スカラーキーごとの `{ min, max }`、step は
+  InputRange 側で自動計算）+ `presets` を持つ。**`presets.standard` がキーと型
+  （スカラー=float / 配列=vec3）の正**で、他プリセットは部分上書き（`defineTexture` が検証）。
+- wood に `hinoki`（旧 chabudai の copy-params 値）を収録。copy-params → presets 昇格が
+  定番ワークフロー。テクスチャ追加時にプリセットも増やしていく。
 
 ### 5. パラメータ調整ウィジェット（Tuner）
 

@@ -84,8 +84,8 @@ const xthree = {
                 throw new Error(`xthree.material.shader: texture "${def.name}" must carry color and normal channels`);
             }
             const uniforms = {};
-            for (const name in def.uniforms) {
-                const value = (_a = params[name]) !== null && _a !== void 0 ? _a : def.uniforms[name].value;
+            for (const name in def.presets.standard) {
+                const value = (_a = params[name]) !== null && _a !== void 0 ? _a : def.presets.standard[name];
                 uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
             }
             const vertexShader = `

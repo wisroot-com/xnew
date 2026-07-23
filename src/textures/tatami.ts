@@ -1,26 +1,33 @@
 //----------------------------------------------------------------------------------------------------
-// xtextures / Tatami — uniform schema in TS; the GLSL bodies live in glsl/tatami.glsl.
+// xtextures / Tatami — ranges + presets in TS; the GLSL bodies live in glsl/tatami.glsl.
 // A 2x1 mat is the base unit: heri cloth along the long edges, weave grooves along the long axis.
-// def.glsl = noise + generated uniform decls + bodies; colors are 0..1 RGB vec3.
+// glsl = noise + generated uniform decls + bodies; colors are 0..1 RGB vec3.
 //----------------------------------------------------------------------------------------------------
 
 import noiseGlsl from './glsl/noise.glsl';
 import tatamiGlsl from './glsl/tatami.glsl';
-import { uniformDeclarations, type TextureSource, type TextureUniform } from './runtime';
+import { uniformDeclarations, type TexturePresets, type TextureRange, type TextureSource } from './runtime';
 
-const uniforms: Record<string, TextureUniform> = {
-    scale: { value: 2, min: 0, max: 4, step: 0.1 },
-    weave: { value: 30, min: 8, max: 60, step: 1 },
-    heri: { value: 0.04, min: 0, max: 0.2, step: 0.005 },
-    bump: { value: 0.5, min: 0, max: 1, step: 0.01 },
-    seed: { value: 0, min: 0, max: 100, step: 1 },
-    color: { value: [0.72, 0.71, 0.42] },
-    background: { value: [0.66, 0.68, 0.38] },
-    border: { value: [0.23, 0.21, 0.14] },
+const ranges: Record<string, TextureRange> = {
+    scale: { min: 0, max: 4 },
+    weave: { min: 8, max: 60 },
+    heri: { min: 0, max: 0.2 },
+    bump: { min: 0, max: 1 },
+    seed: { min: 0, max: 100 },
+};
+
+const presets: TexturePresets = {
+    standard: {
+        scale: 2, weave: 30, heri: 0.04, bump: 0.5, seed: 0,
+        color: [0.72, 0.71, 0.42],
+        background: [0.66, 0.68, 0.38],
+        border: [0.23, 0.21, 0.14],
+    },
 };
 
 export const tatami: TextureSource = {
     name: 'tatami',
-    glsl: noiseGlsl + uniformDeclarations(uniforms) + tatamiGlsl,
-    uniforms,
+    glsl: noiseGlsl + uniformDeclarations(presets.standard) + tatamiGlsl,
+    ranges,
+    presets,
 };
