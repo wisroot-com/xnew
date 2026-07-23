@@ -21,15 +21,15 @@ function makeIcon(paths: IconPaths): IconComponent {
     ) {
         const css = xnew.css('base', {
             outline: `
-                    width: 1em; height: 1em;
-                    stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round;
-                    fill: none;
-                `,
+                width: 1em; height: 1em;
+                stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round;
+                fill: none;
+            `,
             solid: `
-                    width: 1em; height: 1em;
-                    stroke: none;
-                    fill: currentColor;
-                `,
+                width: 1em; height: 1em;
+                stroke: none;
+                fill: currentColor;
+            `,
         });
 
         xnew.nest({ tag: 'svg', viewBox: '0 0 24 24', className: `${css[mode]} ${className}`, style, ...others });
