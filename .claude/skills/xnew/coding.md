@@ -547,11 +547,17 @@ the rule, then one line of why.
   `Volume` members anymore (moved 2026-07); the only basics → xaudio dependency is
   `VolumeController`, which reads/writes `xaudio.volume` directly.
   **`xtextures` entries are plain texture objects, NOT component functions** (lowercase members:
-  `xtextures.wood`): the TextureDef fields (`glsl`/`color`/`normal`/`uniforms`) plus the three flows —
+  `xtextures.wood`): the TextureDef fields (`glsl`/`color`/`normal`/`uniforms`) plus the three flows.
+  A texture module authors only `{ name, glsl, uniforms }` (TextureSource; `name` = lowercase member
+  key) — the entry-fn names `xtex<Name>Color` / `xtex<Name>Normal` are derived and verified against
+  the glsl by `defineTexture` (throws at assembly, not shader compile). Flows —
   `bake(options)` → ImageBitmap on ONE shared OffscreenCanvas (never one WebGL context per texture:
   browsers cap contexts), `renderer(canvas, options)` for a caller-owned live-preview canvas (caller
-  wires `unit.on('finalize', () => renderer.dispose())`), and passing the object to `xthree.texture()` /
-  `xthree.bake()` / `xthree.standard()`. Don't re-wrap them as xnew components.
+  wires `unit.on('finalize', () => renderer.dispose())`), and passing the object to
+  `xthree.material.shader(texture, params)` (ShaderMaterial injection, fake fixed light) or
+  `xthree.material.standard(texture, options)` (bakes internally → MeshStandardMaterial; there is NO
+  separate `xthree.bake` — removed 2026-07-24). Both material fns take a REQUIRED second argument.
+  Don't re-wrap textures as xnew components.
   The networking layer is a single file `src/sync/xsync.ts` (shared state + boot + facade). `xsync`
   **is** the facade object literal (`export const xsync = { … }`) — there is no Lobby / Room component
   built in; lobby / room lifecycle is assembled by callers from the facade (see `examples/*/server.js` +

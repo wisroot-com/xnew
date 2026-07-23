@@ -6,7 +6,7 @@
 
 import noiseGlsl from './glsl/noise.glsl';
 import woodGlsl from './glsl/wood.glsl';
-import { uniformDeclarations, type TextureDef, type TextureUniform } from './runtime';
+import { uniformDeclarations, type TextureSource, type TextureUniform } from './runtime';
 
 const uniforms: Record<string, TextureUniform> = {
     scale: { value: 2.5, min: 0, max: 6, step: 0.1 },
@@ -20,10 +20,8 @@ const uniforms: Record<string, TextureUniform> = {
     background: { value: [0.4, 0.1, 0.0] },
 };
 
-export const wood: TextureDef = {
-    name: 'Wood',
-    color: 'xtexWoodColor',
-    normal: 'xtexWoodNormal',
+export const wood: TextureSource = {
+    name: 'wood',
     glsl: noiseGlsl + uniformDeclarations(uniforms) + woodGlsl,
     uniforms,
 };

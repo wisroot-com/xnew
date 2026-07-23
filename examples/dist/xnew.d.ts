@@ -574,12 +574,14 @@ interface TextureUniform {
     max?: number;
     step?: number;
 }
-interface TextureDef {
+interface TextureSource {
     name: string;
-    color: string;
-    normal: string;
     glsl: string;
     uniforms: Record<string, TextureUniform>;
+}
+interface TextureDef extends TextureSource {
+    color: string;
+    normal: string;
 }
 type TextureChannel = 'color' | 'normal';
 interface TextureRenderer {

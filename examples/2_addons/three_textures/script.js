@@ -3,7 +3,7 @@ import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as THREE from 'three';
 
 //----------------------------------------------------------------------------------------------------
-// xtextures × three.js — one model, switchable texture. xthree.texture() injects the texture's GLSL
+// xtextures × three.js — one model, switchable texture. xthree.material.shader() injects the texture's GLSL
 // into a ShaderMaterial, evaluated per-fragment from object-space position (solid look, no canvas).
 // A Panel listbox swaps the material; the parameter rows are generated from the uniform schema, so
 // adding a texture is one TEXTURES entry. A display listbox switches both (lit albedo × perturbed
@@ -137,7 +137,7 @@ function buildMaterial(state, bags) {
   const def = TEXTURES[state.texture];
   const params = values(bags[state.texture]);
   if (state.display === 'both') {
-    return xthree.texture(def, params);
+    return xthree.material.shader(def, params);
   }
 
   const uniforms = {};

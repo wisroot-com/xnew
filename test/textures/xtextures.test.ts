@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { xtextures } from '@mulsense/xnew';
+import { defineTexture } from '../../src/textures/xtextures';
 import { fragmentSource, uniformDeclarations } from '../../src/textures/runtime';
 
 // jsdom has no WebGL2, so rendering is not tested here — these assert the def assembly:
@@ -33,6 +34,28 @@ describe('xtextures textures', () => {
     test.each(Object.entries(xtextures))('%s exposes the bake / renderer flows', (name, texture) => {
         expect(typeof texture.bake).toBe('function');
         expect(typeof texture.renderer).toBe('function');
+    });
+
+    test.each(Object.entries(xtextures))('%s derives its entry names from its member key', (name, texture) => {
+        expect(texture.name).toBe(name);
+        const entry = 'xtex' + name.charAt(0).toUpperCase() + name.slice(1);
+        expect(texture.color).toBe(`${entry}Color`);
+        expect(texture.normal).toBe(`${entry}Normal`);
+    });
+});
+
+describe('defineTexture', () => {
+    const glsl = 'vec3 xtexFooColor(vec3 pos){ return vec3(0.0); }\nvec3 xtexFooNormal(vec3 pos, vec3 normal, vec3 tangent){ return normalize(normal); }';
+
+    test('rejects names that are not lowercase-led identifiers', () => {
+        expect(() => defineTexture({ name: 'Foo', glsl, uniforms: {} })).toThrow('lowercase-led identifier');
+        expect(() => defineTexture({ name: 'foo-bar', glsl, uniforms: {} })).toThrow('lowercase-led identifier');
+    });
+
+    test('rejects glsl that lacks a derived entry function', () => {
+        expect(() => defineTexture({ name: 'foo', glsl: 'vec3 xtexFooColor(vec3 pos){ return vec3(0.0); }', uniforms: {} }))
+            .toThrow('does not define vec3 xtexFooNormal(');
+        expect(defineTexture({ name: 'foo', glsl, uniforms: {} }).color).toBe('xtexFooColor');
     });
 });
 
@@ -87,7 +110,7 @@ describe('preview harnesses', () => {
 
     test.each(previews)('%s consts mirror the schema defaults', (file) => {
         const source = fs.readFileSync(path.join(previewDir, file), 'utf8');
-        const def = defs.find((d) => file.split(/[-.]/)[0] === d.name.toLowerCase());
+        const def = defs.find((d) => file.split(/[-.]/)[0] === d.name);
         expect(def).toBeDefined();
 
         // only the consts above the first #include mirror the schema; later ones are harness-local

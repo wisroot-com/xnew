@@ -6,7 +6,7 @@
 
 import noiseGlsl from './glsl/noise.glsl';
 import concreteGlsl from './glsl/concrete.glsl';
-import { uniformDeclarations, type TextureDef, type TextureUniform } from './runtime';
+import { uniformDeclarations, type TextureSource, type TextureUniform } from './runtime';
 
 const uniforms: Record<string, TextureUniform> = {
     scale: { value: 2, min: 0, max: 4, step: 0.1 },
@@ -17,10 +17,8 @@ const uniforms: Record<string, TextureUniform> = {
     background: { value: [0.55, 0.55, 0.55] },
 };
 
-export const concrete: TextureDef = {
-    name: 'Concrete',
-    color: 'xtexConcreteColor',
-    normal: 'xtexConcreteNormal',
+export const concrete: TextureSource = {
+    name: 'concrete',
     glsl: noiseGlsl + uniformDeclarations(uniforms) + concreteGlsl,
     uniforms,
 };

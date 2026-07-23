@@ -6,7 +6,7 @@
 
 import noiseGlsl from './glsl/noise.glsl';
 import tatamiGlsl from './glsl/tatami.glsl';
-import { uniformDeclarations, type TextureDef, type TextureUniform } from './runtime';
+import { uniformDeclarations, type TextureSource, type TextureUniform } from './runtime';
 
 const uniforms: Record<string, TextureUniform> = {
     scale: { value: 2, min: 0, max: 4, step: 0.1 },
@@ -19,10 +19,8 @@ const uniforms: Record<string, TextureUniform> = {
     border: { value: [0.23, 0.21, 0.14] },
 };
 
-export const tatami: TextureDef = {
-    name: 'Tatami',
-    color: 'xtexTatamiColor',
-    normal: 'xtexTatamiNormal',
+export const tatami: TextureSource = {
+    name: 'tatami',
     glsl: noiseGlsl + uniformDeclarations(uniforms) + tatamiGlsl,
     uniforms,
 };

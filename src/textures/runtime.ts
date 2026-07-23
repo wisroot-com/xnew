@@ -11,17 +11,23 @@ export interface TextureUniform {
     step?: number;
 }
 
-export interface TextureDef {
-    name: string;
-    // channel entry function names inside glsl — every texture carries BOTH:
+// what a texture module authors: the entry-function names are NOT written here — they follow the
+// convention `xtex<Name>Color` / `xtex<Name>Normal` and are derived (and verified against glsl)
+// by defineTexture in xtextures.ts.
+export interface TextureSource {
+    name: string; // lowercase-led identifier; also the xtextures member key
+    glsl: string; // prelude + uniform declarations + the entry functions
+    uniforms: Record<string, TextureUniform>;
+}
+
+export interface TextureDef extends TextureSource {
+    // derived channel entry function names inside glsl — every texture carries BOTH:
     // color: `vec3 <fn>(vec3 pos)` returns a color.
     // normal: `vec3 <fn>(vec3 pos, vec3 normal, vec3 tangent)` returns a perturbed object-space normal
     // (flat surfaces just `return normalize(normal)`); the canvas runtime encodes it as a normal-map
     // image (n * 0.5 + 0.5), three lights the color with it.
     color: string;
     normal: string;
-    glsl: string; // prelude + uniform declarations + the entry functions
-    uniforms: Record<string, TextureUniform>;
 }
 
 export type TextureChannel = 'color' | 'normal';

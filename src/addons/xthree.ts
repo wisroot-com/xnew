@@ -58,78 +58,80 @@ export const xthree = {
         object.parent?.remove(object);
         disposeObject(object);
     },
-    // build a ShaderMaterial that injects an xtextures GLSL definition; the texture runs in three's own
-    // context on the mesh surface (object-space position → solid look), so no canvas / image copy.
-    // `texture` is an xtextures texture object carrying { glsl, color, normal, uniforms }.
-    // The color channel is the albedo, lit with the (possibly unperturbed) normal channel — everything
-    // stays in object space (the view-space light direction is rotated into object space per vertex),
-    // so the fragment stage needs no normalMatrix.
-    texture(texture: any, params: Record<string, any> = {}): THREE.ShaderMaterial {
-        const def = texture;
-        if (def.color === undefined || def.normal === undefined) {
-            throw new Error(`xthree.texture: texture "${def.name}" must carry color and normal channels`);
-        }
-        const uniforms: Record<string, { value: any }> = {};
-        for (const name in def.uniforms) {
-            const value = params[name] ?? def.uniforms[name].value;
-            uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
-        }
+    // build a three material from an xtextures texture object ({ glsl, color, normal, uniforms })
+    material: {
+        // ShaderMaterial injection: the texture's GLSL runs in three's own context on the mesh surface
+        // (object-space position → solid look, no canvas / image copy) with a material-local fixed
+        // light — scene lights / shadows do NOT apply. The color channel is the albedo, lit with the
+        // (possibly unperturbed) normal channel; everything stays in object space (the view-space
+        // light direction is rotated into object space per vertex), so the fragment stage needs no
+        // normalMatrix.
+        shader(texture: any, params: Record<string, any>): THREE.ShaderMaterial {
+            const def = texture;
+            if (def.color === undefined || def.normal === undefined) {
+                throw new Error(`xthree.material.shader: texture "${def.name}" must carry color and normal channels`);
+            }
+            const uniforms: Record<string, { value: any }> = {};
+            for (const name in def.uniforms) {
+                const value = params[name] ?? def.uniforms[name].value;
+                uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
+            }
 
-        const vertexShader = `
-            varying vec3 vXtexPos;
-            varying vec3 vXtexNormal;
-            varying vec3 vXtexLight;
-            void main() {
-                vXtexPos = position;
-                vXtexNormal = normal;
-                // rotate the view-space light into object space: transpose(mat3(mv)) * light
-                mat3 mv = mat3(modelViewMatrix);
-                vec3 light = normalize(vec3(0.4, 0.7, 0.6));
-                vXtexLight = vec3(dot(mv[0], light), dot(mv[1], light), dot(mv[2], light));
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            const vertexShader = `
+                varying vec3 vXtexPos;
+                varying vec3 vXtexNormal;
+                varying vec3 vXtexLight;
+                void main() {
+                    vXtexPos = position;
+                    vXtexNormal = normal;
+                    // rotate the view-space light into object space: transpose(mat3(mv)) * light
+                    mat3 mv = mat3(modelViewMatrix);
+                    vec3 light = normalize(vec3(0.4, 0.7, 0.6));
+                    vXtexLight = vec3(dot(mv[0], light), dot(mv[1], light), dot(mv[2], light));
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
+            const fragmentShader = `
+                varying vec3 vXtexPos;
+                varying vec3 vXtexNormal;
+                varying vec3 vXtexLight;
+                ${def.glsl}
+                void main() {
+                    vec3 nrm = normalize(vXtexNormal);
+                    vec3 tng = normalize(abs(nrm.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), nrm) : cross(vec3(1.0, 0.0, 0.0), nrm));
+                    vec3 n = ${def.normal}(vXtexPos, nrm, tng);
+                    vec3 albedo = ${def.color}(vXtexPos);
+                    float diff = 0.55 + 0.45 * max(dot(n, normalize(vXtexLight)), 0.0);
+                    gl_FragColor = vec4(albedo * diff, 1.0);
+                }
+            `;
+            return new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });
+        },
+        // PBR path: bake the color + normal channels into CanvasTextures (texture.bake on the shared
+        // bake context) and wrap them as map / normalMap in a MeshStandardMaterial, so scene lights /
+        // shadows / env maps apply. { params, size, worldSize, tile, repeat } drive the bake
+        // (repeat: { x, y } switches on RepeatWrapping); the rest ({ roughness, ... }) goes to the
+        // material.
+        standard(texture: any, options: Record<string, any>): THREE.MeshStandardMaterial {
+            const { params, size, worldSize, tile, repeat, ...materialParams } = options;
+
+            function bake(channel: 'color' | 'normal'): THREE.CanvasTexture {
+                const map = new THREE.CanvasTexture(texture.bake({ params, size, worldSize, tile, channel }));
+                map.colorSpace = channel === 'color' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+                map.anisotropy = 8;
+                if (repeat !== undefined) {
+                    map.wrapS = map.wrapT = THREE.RepeatWrapping;
+                    map.repeat.set(repeat.x, repeat.y);
+                }
+                return map;
             }
-        `;
-        const fragmentShader = `
-            varying vec3 vXtexPos;
-            varying vec3 vXtexNormal;
-            varying vec3 vXtexLight;
-            ${def.glsl}
-            void main() {
-                vec3 nrm = normalize(vXtexNormal);
-                vec3 tng = normalize(abs(nrm.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), nrm) : cross(vec3(1.0, 0.0, 0.0), nrm));
-                vec3 n = ${def.normal}(vXtexPos, nrm, tng);
-                vec3 albedo = ${def.color}(vXtexPos);
-                float diff = 0.55 + 0.45 * max(dot(n, normalize(vXtexLight)), 0.0);
-                gl_FragColor = vec4(albedo * diff, 1.0);
-            }
-        `;
-        return new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });
-    },
-    // bake an xtextures texture into a THREE.CanvasTexture (image copy on the shared bake context).
-    // Options pass through to texture.bake() — { size, worldSize, channel, tile, params } — plus
-    // `repeat: { x, y }` which switches on RepeatWrapping; colorSpace follows the channel.
-    bake(texture: any, options: Record<string, any> = {}): THREE.CanvasTexture {
-        const { repeat, ...bakeOptions } = options;
-        const map = new THREE.CanvasTexture(texture.bake(bakeOptions));
-        map.colorSpace = (bakeOptions.channel ?? 'color') === 'color' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-        map.anisotropy = 8;
-        if (repeat !== undefined) {
-            map.wrapS = map.wrapT = THREE.RepeatWrapping;
-            map.repeat.set(repeat.x, repeat.y);
-        }
-        return map;
-    },
-    // PBR path: bake the color + normal channels once and wrap them in a MeshStandardMaterial, so
-    // scene lights / shadows / env maps apply. Bake options are shared; the rest ({ roughness, ... })
-    // goes to the material.
-    standard(texture: any, options: Record<string, any> = {}): THREE.MeshStandardMaterial {
-        const { params, size, worldSize, tile, repeat, ...materialParams } = options;
-        const shared = { params, size, worldSize, tile, repeat };
-        return new THREE.MeshStandardMaterial({
-            map: xthree.bake(texture, { ...shared, channel: 'color' }),
-            normalMap: xthree.bake(texture, { ...shared, channel: 'normal' }),
-            ...materialParams,
-        });
+
+            return new THREE.MeshStandardMaterial({
+                map: bake('color'),
+                normalMap: bake('normal'),
+                ...materialParams,
+            });
+        },
     },
     coord2dTo3d(x: number, y: number, z: number = 0): THREE.Vector3 {
         const root = xnew.context(Root);

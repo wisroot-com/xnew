@@ -11,7 +11,7 @@ def + メソッドのプレーンなオブジェクトにした。
 - メンバ: `glsl` / `color` / `normal` / `uniforms` （= TextureDef）+ `bake()` / `renderer()`
 - 基本フローは 3 パターン:
   1. `bake()` — 画像（ImageBitmap）に焼き出す
-  2. three.js にシェーダーを渡す（`xthree.texture(xtextures.wood, params)`）
+  2. three.js にシェーダーを渡す（`xthree.material.shader(xtextures.wood, params)`）
   3. canvas にレンダリングする renderer を返す（`texture.renderer(canvas, options)`）
 
 ## 優先度高（着手順: 1 → 2 → 3）
@@ -25,11 +25,15 @@ def + メソッドのプレーンなオブジェクトにした。
 
 ### 2. three 標準マテリアルへの統合（PBR パス）— 🔶 ベイク経路は完了（2026-07-23）
 
-- ✅ `xthree.bake(texture, { ...bakeOptions, repeat })` → THREE.CanvasTexture
-  （channel に応じた colorSpace、anisotropy、repeat 指定で RepeatWrapping）。
-- ✅ `xthree.standard(texture, { params, size, worldSize, tile, repeat, ...materialParams })`
-  → color / normal を焼いて map / normalMap に組んだ MeshStandardMaterial。
+- ✅ `xthree.material.standard(texture, { params, size, worldSize, tile, repeat, ...materialParams })`
+  → color / normal を焼いて（channel に応じた colorSpace、anisotropy、repeat 指定で
+  RepeatWrapping）map / normalMap に組んだ MeshStandardMaterial。ベイクは内部化
+  （旧 `xthree.bake` は削除、2026-07-24。シェーダー注入版は `xthree.material.shader`、
+  第二引数はどちらも必須）。
 - ⬜ `onBeforeCompile` で GLSL を standard マテリアルに注入する版（無限解像度のまま PBR）。
+  ベイク版よりピクセルあたり GPU コスト大・mipmap なし（遠景エイリアシング）・three 内部
+  チャンク依存という代償があるので、少数のヒーローオブジェクト向けの補完という位置づけ。
+  `material.standard(texture, { inject: true })` のようなオプションとして統合できる。
 - ⬜ roughness / metalness / height をチャンネルとして TextureDef に追加できる設計
   （現状の color / normal の延長）。
 

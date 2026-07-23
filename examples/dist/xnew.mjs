@@ -3566,9 +3566,7 @@ const uniforms$2 = {
     background: { value: [0.4, 0.1, 0.0] },
 };
 const wood = {
-    name: 'Wood',
-    color: 'xtexWoodColor',
-    normal: 'xtexWoodNormal',
+    name: 'wood',
     glsl: noiseGlsl + uniformDeclarations(uniforms$2) + woodGlsl,
     uniforms: uniforms$2,
 };
@@ -3584,9 +3582,7 @@ const uniforms$1 = {
     background: { value: [0.55, 0.55, 0.55] },
 };
 const concrete = {
-    name: 'Concrete',
-    color: 'xtexConcreteColor',
-    normal: 'xtexConcreteNormal',
+    name: 'concrete',
     glsl: noiseGlsl + uniformDeclarations(uniforms$1) + concreteGlsl,
     uniforms: uniforms$1,
 };
@@ -3604,14 +3600,22 @@ const uniforms = {
     border: { value: [0.23, 0.21, 0.14] },
 };
 const tatami = {
-    name: 'Tatami',
-    color: 'xtexTatamiColor',
-    normal: 'xtexTatamiNormal',
+    name: 'tatami',
     glsl: noiseGlsl + uniformDeclarations(uniforms) + tatamiGlsl,
     uniforms,
 };
 
-function defineTexture(def) {
+function defineTexture(source) {
+    if (/^[a-z][A-Za-z0-9]*$/.test(source.name) === false) {
+        throw new Error(`xtextures: texture name "${source.name}" must be a lowercase-led identifier`);
+    }
+    const entry = 'xtex' + source.name.charAt(0).toUpperCase() + source.name.slice(1);
+    const def = Object.assign(Object.assign({}, source), { color: `${entry}Color`, normal: `${entry}Normal` });
+    for (const channel of ['color', 'normal']) {
+        if (source.glsl.includes(`vec3 ${def[channel]}(`) === false) {
+            throw new Error(`xtextures: texture "${source.name}" glsl does not define vec3 ${def[channel]}(...)`);
+        }
+    }
     return Object.assign(Object.assign({}, def), { bake(options = {}) {
             return bakeTexture(def, options);
         },

@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // three_chabudai — three.js で立体的に組んだ円形ちゃぶ台（檜風の木目）と、周りに並ぶ .mog ボクセルキャラ。
-//   木目（天面の年輪 / 側面・脚の横木目）は xtextures.wood を xthree.bake() で、床の畳は
-//   xtextures.tatami を xthree.standard() で焼いて表現する（手描き canvas はカードの数字面のみ）。
+//   木目（天面の年輪 / 側面・脚の横木目）も床の畳も xthree.material.standard() が xtextures を
+//   焼いた MeshStandardMaterial で表現する（手描き canvas はカードの数字面のみ）。
 //----------------------------------------------------------------------------------------------------
 
 import { xnew, xbasics, xtextures } from '@mulsense/xnew';
@@ -81,12 +81,12 @@ function Lights(unit) {
 }
 
 //----------------------------------------------------------------------------------------------------
-// Ground — 影を受ける畳の床。xthree.standard() が xtextures.tatami の color / normal を焼いて
+// Ground — 影を受ける畳の床。xthree.material.standard() が xtextures.tatami の color / normal を焼いて
 //   map / normalMap に組む。worldSize: 4 で畳(2x1)がタイルにちょうど収まるので、repeat でシームレスに繰り返せる。
 //----------------------------------------------------------------------------------------------------
 
 function Ground(unit) {
-    const material = xthree.standard(xtextures.tatami, {
+    const material = xthree.material.standard(xtextures.tatami, {
         size: { width: 512, height: 512 }, worldSize: 4,
         repeat: { x: 10, y: 10 },   // 40x40 の床に 4 単位タイル → 畳(2x1) ≒ 2x1 単位
         roughness: 1,
@@ -97,7 +97,7 @@ function Ground(unit) {
 }
 
 //----------------------------------------------------------------------------------------------------
-// Chabudai — 円形ちゃぶ台（天板 + 脚）。木目は xtextures.wood を檜風の淡い色で焼いた CanvasTexture。
+// Chabudai — 円形ちゃぶ台（天板 + 脚）。木目は xtextures.wood を檜風の淡い色で焼いたマテリアル。
 //----------------------------------------------------------------------------------------------------
 
 // 檜風の淡い木目（three_textures の copy params で調整した値）
@@ -109,20 +109,18 @@ const WOOD_PARAMS = {
 function Chabudai(unit) {
     const group = xthree.nest();
 
-    // 天面・側面とも同じ木目パラメータで焼く（側面は横長 canvas で木目が横に流れる）
-    const topTexture = xthree.bake(xtextures.wood, {
-        size: { width: 512, height: 512 }, worldSize: 3, params: WOOD_PARAMS,
-    });
-    const sideTexture = xthree.bake(xtextures.wood, {
-        size: { width: 512, height: 64 }, worldSize: 3, params: WOOD_PARAMS,
-        tile: true, repeat: { x: 3, y: 1 },   // 周方向に 3 回シームレスにタイルして木目を細かく
-    });
-
-    // 天板: 円柱（側面=横木目テクスチャ / 天面=年輪テクスチャ / 底面=無地）
+    // 天板: 円柱（側面=横木目 / 天面=年輪 / 底面=無地）。天面・側面とも同じ木目パラメータで焼く
     const topMaterials = [
-        new THREE.MeshStandardMaterial({ map: sideTexture, roughness: 0.65 }),                        // 側面
-        new THREE.MeshStandardMaterial({ map: topTexture, roughness: 0.55, metalness: 0.0 }),         // 天面
-        new THREE.MeshStandardMaterial({ color: 0xcab6a2, roughness: 0.7 }),                          // 底面
+        xthree.material.standard(xtextures.wood, {                          // 側面（横長 canvas で木目が横に流れる）
+            size: { width: 512, height: 64 }, worldSize: 3, params: WOOD_PARAMS,
+            tile: true, repeat: { x: 3, y: 1 },   // 周方向に 3 回シームレスにタイルして木目を細かく
+            roughness: 0.65,
+        }),
+        xthree.material.standard(xtextures.wood, {                          // 天面
+            size: { width: 512, height: 512 }, worldSize: 3, params: WOOD_PARAMS,
+            roughness: 0.55, metalness: 0.0,
+        }),
+        new THREE.MeshStandardMaterial({ color: 0xcab6a2, roughness: 0.7 }),   // 底面
     ];
     const top = new THREE.Mesh(new THREE.CylinderGeometry(TABLE_RADIUS, TABLE_RADIUS, TABLE_THICKNESS, 64, 1), topMaterials);
     top.position.y = TABLE_TOP_Y;
@@ -131,11 +129,11 @@ function Chabudai(unit) {
     group.add(top);
 
     // 脚: 天板の下、外向きに少し開いた 4 本。木目の傾きを保ったまま +90° して縦木目にする
-    const legTexture = xthree.bake(xtextures.wood, {
+    const legMaterial = xthree.material.standard(xtextures.wood, {
         size: { width: 128, height: 256 }, worldSize: 2, params: { ...WOOD_PARAMS, angle: WOOD_PARAMS.angle + 90 },
+        roughness: 0.6,
     });
     const legHeight = TABLE_TOP_Y - TABLE_THICKNESS / 2;   // 床から天板の裏まで
-    const legMaterial = new THREE.MeshStandardMaterial({ map: legTexture, roughness: 0.6 });
     for (let i = 0; i < 4; i++) {
         const angle = Math.PI / 4 + i * Math.PI / 2;
         const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, legHeight, 16), legMaterial);
