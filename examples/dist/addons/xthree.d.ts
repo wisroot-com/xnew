@@ -39,8 +39,6 @@ declare const xthree: {
         shader(texture: any, params: Record<string, any>): THREE.ShaderMaterial;
         standard(texture: any, options: Record<string, any>): THREE.MeshStandardMaterial;
     };
-    coord2dTo3d(x: number, y: number, z?: number): THREE.Vector3;
-    coord3dTo2d(x: number, y: number, z: number): THREE.Vector2;
     readonly renderer: any;
     readonly camera: THREE.Camera;
     readonly scene: THREE.Scene;

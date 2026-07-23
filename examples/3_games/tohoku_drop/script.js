@@ -12,6 +12,17 @@ import html2canvas from 'html2canvas-pro';
 
 xnew(document.querySelector('#main'), Main);
 
+// canvas 2D 座標をワールドの z 平面上の 3D 座標へ写す（near/far を unproject して視線と z 平面の交点を取る）
+function coord2dTo3d(x, y, z = 0) {
+  const camera = xthree.camera;
+  camera.updateMatrixWorld();
+  const nx = (x / xthree.canvas.width) * 2 - 1;
+  const ny = -(y / xthree.canvas.height) * 2 + 1;
+  const near = new THREE.Vector3(nx, ny, -1).unproject(camera);
+  const direction = new THREE.Vector3(nx, ny, +1).unproject(camera).sub(near);
+  return near.add(direction.multiplyScalar((z - near.z) / direction.z));
+}
+
 function Main(unit) {
   const [width, height] = [800, 600];
   xnew.extend(xbasics.Screen, { width, height });
@@ -63,7 +74,7 @@ function TitleScene(unit) {
   xnew(AmbientLight);
 
   for (let id = 0; id < 7; id++) {
-    const position = xthree.coord2dTo3d(140 + id * 90, 450);
+    const position = coord2dTo3d(140 + id * 90, 450);
     const rotation = { x: 10 / 180 * Math.PI, y: (-10 - 3 * id) / 180 * Math.PI, z: 0 };
     xnew(Model, { position, rotation, id, scale: 0.8 });
   }
@@ -214,19 +225,19 @@ function Queue(unit) {
   const balls = [...Array(4)].map(() => Math.floor(Math.random() * 3));
   xnew.emit('+relode:done', { id: 0 });
 
-  const position = xthree.coord2dTo3d(10 + 70, 70);
+  const position = coord2dTo3d(10 + 70, 70);
   const rotation = { x: 30 / 180 * Math.PI, y: 60 / 180 * Math.PI, z: 0 };
   let model = xnew(Model, { position, rotation, id: balls[0], scale: 0.6 });
 
   unit.on('+reload', () => {
-    const position = xthree.coord2dTo3d(10, 70);
+    const position = coord2dTo3d(10, 70);
     const rotation = { x: 30 / 180 * Math.PI, y: 60 / 180 * Math.PI, z: 0 };
     model.finalize();
     model = xnew(Model, { position, rotation, id: balls[1], scale: 0.6 });
 
     balls.push(Math.floor(Math.random() * 3));
     xnew.transition(({ value }) => {
-      const position = xthree.coord2dTo3d(10 + value * 70, 70);
+      const position = coord2dTo3d(10 + value * 70, 70);
       model.threeObject.position.set(position.x, position.y, position.z);
     }, 500).timeout(() => xnew.emit('+relode:done', { id: balls.shift() }));
   });
@@ -295,7 +306,7 @@ function Cursor(unit) {
   const offset = 50;
   let model = null
   unit.on('+relode:done', ({ id }) => {
-    const position = xthree.coord2dTo3d(object.x, object.y + offset);
+    const position = coord2dTo3d(object.x, object.y + offset);
     model = xnew(Model, { position, id, scale: 0.5 });
   });
   unit.on('+drop', () => {
@@ -308,7 +319,7 @@ function Cursor(unit) {
   });
   unit.on('update', () => {
     object.rotation += 0.02;
-    const position = xthree.coord2dTo3d(object.x, object.y + offset);
+    const position = coord2dTo3d(object.x, object.y + offset);
     model?.threeObject.position.set(position.x, position.y, position.z);
   });
 }
@@ -332,7 +343,7 @@ function ModelBall(ball, { x, y, id = 0 }) {
   xnew.context(xbasics.Scene).add(StarParticles, { x, y });
   
   ball.on('update', () => {
-    const position = xthree.coord2dTo3d(ball.pixiObject.x, ball.pixiObject.y);
+    const position = coord2dTo3d(ball.pixiObject.x, ball.pixiObject.y);
     model.threeObject.position.set(position.x, position.y, position.z);
     model.threeObject.rotation.z = -ball.pixiObject.rotation;
     if (ball.pixiObject.y > xpixi.canvas.height) {

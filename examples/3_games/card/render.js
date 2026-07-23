@@ -24,6 +24,14 @@ const CARD = { w: 0.17, length: 0.25, thickness: 0.006 };
 export const Screen = xbasics.Screen;
 export { xpixi, xthree, PIXI, THREE, TABLE };
 
+// ワールド 3D 座標を canvas 2D 座標へ写す（名札など 2D オーバーレイの位置合わせ用）
+export function coord3dTo2d(x, y, z) {
+    const camera = xthree.camera;
+    camera.updateMatrixWorld();
+    const projected = new THREE.Vector3(x, y, z).project(camera);
+    return new THREE.Vector2((projected.x + 1) / 2 * xthree.canvas.width, (1 - projected.y) / 2 * xthree.canvas.height);
+}
+
 //----------------------------------------------------------------------------------------------------
 // Lights — 斜め上からの主光源（影を落とす）と、全体を持ち上げる環境光
 //----------------------------------------------------------------------------------------------------

@@ -163,62 +163,6 @@ test('finalize: ユニット破棄では dispose しない（共有リソース�
     expect(matSpy).not.toHaveBeenCalled();
 });
 
-test('coord2dTo3d: perspective カメラで canvas 中心が z 平面の原点に写る', () => {
-    const canvas = setup();
-    [canvas.width, canvas.height] = [800, 600];
-    const camera = new THREE.PerspectiveCamera(45, 800 / 600);
-    camera.position.set(0, 0, 10);
-
-    xnew(() => {
-        xthree.initialize({ canvas, camera });
-
-        const center = xthree.coord2dTo3d(400, 300, 0);
-        expect(center.x).toBeCloseTo(0);
-        expect(center.y).toBeCloseTo(0);
-        expect(center.z).toBeCloseTo(0);
-
-        // 右端 x = 距離10 × tan(fov/2) × アスペクト。上下反転（canvas 下 → ワールド -y）も確認。
-        const right = xthree.coord2dTo3d(800, 300, 0);
-        expect(right.x).toBeCloseTo(10 * Math.tan(Math.PI * 22.5 / 180) * (800 / 600));
-        const bottom = xthree.coord2dTo3d(400, 600, 0);
-        expect(bottom.y).toBeCloseTo(-10 * Math.tan(Math.PI * 22.5 / 180));
-    });
-});
-
-test('coord2dTo3d: orthographic カメラでは視錐台の端がそのまま写る', () => {
-    const canvas = setup();
-    [canvas.width, canvas.height] = [800, 600];
-    const camera = new THREE.OrthographicCamera(-4, +4, +3, -3, 0.1, 10);
-    camera.position.set(0, 0, 5);
-
-    xnew(() => {
-        xthree.initialize({ canvas, camera });
-
-        const topLeft = xthree.coord2dTo3d(0, 0, 0);
-        expect(topLeft.x).toBeCloseTo(-4);
-        expect(topLeft.y).toBeCloseTo(+3);
-        const bottomRight = xthree.coord2dTo3d(800, 600, 0);
-        expect(bottomRight.x).toBeCloseTo(+4);
-        expect(bottomRight.y).toBeCloseTo(-3);
-    });
-});
-
-test('coord3dTo2d: coord2dTo3d と往復して元の canvas 座標に戻る', () => {
-    const canvas = setup();
-    [canvas.width, canvas.height] = [800, 600];
-    const camera = new THREE.PerspectiveCamera(45, 800 / 600);
-    camera.position.set(1, 2, 10);
-
-    xnew(() => {
-        xthree.initialize({ canvas, camera });
-
-        const world = xthree.coord2dTo3d(123, 456, 0);
-        const screen = xthree.coord3dTo2d(world.x, world.y, world.z);
-        expect(screen.x).toBeCloseTo(123);
-        expect(screen.y).toBeCloseTo(456);
-    });
-});
-
 test('dispose: 親から外して配下の geometry/material/texture を全解放する', () => {
     const canvas = setup();
     const texture = new THREE.Texture();

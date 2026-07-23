@@ -264,7 +264,7 @@ export function Player(unit, { seat = 0, clientId = '', name = '', mog = '' } = 
     }));
 
     xsync.client(() => {
-        const { xpixi, xthree, PIXI, Character, Card3D, TABLE } = window.gfx;
+        const { xpixi, PIXI, Character, Card3D, TABLE, coord3dTo2d } = window.gfx;
         const angle = SEAT_ANGLE[state.seat];
         const R = TABLE.RADIUS + 0.2;                              // キャラはテーブル外周のすぐ外
         const px = Math.sin(angle) * R, pz = Math.cos(angle) * R;
@@ -282,7 +282,7 @@ export function Player(unit, { seat = 0, clientId = '', name = '', mog = '' } = 
         let cardUnit = null;
 
         unit.on('update', () => {
-            const head = xthree.coord3dTo2d(px, 1.9, pz);           // 頭上の 2D 位置に名札を置く
+            const head = coord3dTo2d(px, 1.9, pz);                  // 頭上の 2D 位置に名札を置く
             label.position.set(head.x, head.y);
 
             const table = xnew.find(Table)[0];

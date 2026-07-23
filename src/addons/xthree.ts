@@ -139,24 +139,6 @@ export const xthree = {
     },
     // build a three material from an xtextures texture object (see the material block below)
     material,
-    coord2dTo3d(x: number, y: number, z: number = 0): THREE.Vector3 {
-        const root = xnew.context(Root);
-        const camera = root.camera as THREE.Camera;
-        camera.updateMatrixWorld();
-        const nx = (x / root.canvas.width) * 2 - 1;
-        const ny = -(y / root.canvas.height) * 2 + 1;
-        // unproject near / far to build the view ray, then intersect the world z plane (works for perspective / orthographic)
-        const near = new THREE.Vector3(nx, ny, -1).unproject(camera);
-        const direction = new THREE.Vector3(nx, ny, +1).unproject(camera).sub(near);
-        return near.add(direction.multiplyScalar((z - near.z) / direction.z));
-    },
-    coord3dTo2d(x: number, y: number, z: number): THREE.Vector2 {
-        const root = xnew.context(Root);
-        const camera = root.camera as THREE.Camera;
-        camera.updateMatrixWorld();
-        const projected = new THREE.Vector3(x, y, z).project(camera);
-        return new THREE.Vector2((projected.x + 1) / 2 * root.canvas.width, (1 - projected.y) / 2 * root.canvas.height);
-    },
     get renderer() {
         return xnew.context(Root)?.renderer;
     },
