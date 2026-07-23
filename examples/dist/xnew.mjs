@@ -3376,6 +3376,93 @@ const xbasics = {
     VolumeController,
 };
 
+var noiseGlsl = "//----------------------------------------------------------------------------------------------------\n// xtex_noise — classic 3D Perlin noise (Gustavson / Ashima, MIT), output ~[-1,1]\n// Version-agnostic (only function defs), so it injects into WebGL2 (300 es), three (1.00), and previews.\n//----------------------------------------------------------------------------------------------------\n\nvec3 xtex_mod289(vec3 x){ return x - floor(x*(1.0/289.0))*289.0; }\nvec4 xtex_mod289(vec4 x){ return x - floor(x*(1.0/289.0))*289.0; }\nvec4 xtex_permute(vec4 x){ return xtex_mod289(((x*34.0)+1.0)*x); }\nvec4 xtex_taylorInvSqrt(vec4 r){ return 1.79284291400159 - 0.85373472095314 * r; }\nvec3 xtex_fade(vec3 t){ return t*t*t*(t*(t*6.0-15.0)+10.0); }\n\nfloat xtex_noise(vec3 P){\n  vec3 Pi0 = floor(P);\n  vec3 Pi1 = Pi0 + vec3(1.0);\n  Pi0 = xtex_mod289(Pi0);\n  Pi1 = xtex_mod289(Pi1);\n  vec3 Pf0 = fract(P);\n  vec3 Pf1 = Pf0 - vec3(1.0);\n  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);\n  vec4 iy = vec4(Pi0.yy, Pi1.yy);\n  vec4 iz0 = Pi0.zzzz;\n  vec4 iz1 = Pi1.zzzz;\n\n  vec4 ixy = xtex_permute(xtex_permute(ix) + iy);\n  vec4 ixy0 = xtex_permute(ixy + iz0);\n  vec4 ixy1 = xtex_permute(ixy + iz1);\n\n  vec4 gx0 = ixy0 * (1.0 / 7.0);\n  vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;\n  gx0 = fract(gx0);\n  vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);\n  vec4 sz0 = step(gz0, vec4(0.0));\n  gx0 -= sz0 * (step(0.0, gx0) - 0.5);\n  gy0 -= sz0 * (step(0.0, gy0) - 0.5);\n\n  vec4 gx1 = ixy1 * (1.0 / 7.0);\n  vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;\n  gx1 = fract(gx1);\n  vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);\n  vec4 sz1 = step(gz1, vec4(0.0));\n  gx1 -= sz1 * (step(0.0, gx1) - 0.5);\n  gy1 -= sz1 * (step(0.0, gy1) - 0.5);\n\n  vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);\n  vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);\n  vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);\n  vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);\n  vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);\n  vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);\n  vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);\n  vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);\n\n  vec4 norm0 = xtex_taylorInvSqrt(vec4(dot(g000,g000), dot(g010,g010), dot(g100,g100), dot(g110,g110)));\n  g000 *= norm0.x; g010 *= norm0.y; g100 *= norm0.z; g110 *= norm0.w;\n  vec4 norm1 = xtex_taylorInvSqrt(vec4(dot(g001,g001), dot(g011,g011), dot(g101,g101), dot(g111,g111)));\n  g001 *= norm1.x; g011 *= norm1.y; g101 *= norm1.z; g111 *= norm1.w;\n\n  float n000 = dot(g000, Pf0);\n  float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));\n  float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));\n  float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));\n  float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));\n  float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));\n  float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));\n  float n111 = dot(g111, Pf1);\n\n  vec3 f = xtex_fade(Pf0);\n  vec4 n_z = mix(vec4(n000,n100,n010,n110), vec4(n001,n101,n011,n111), f.z);\n  vec2 n_yz = mix(n_z.xy, n_z.zw, f.y);\n  return 2.2 * mix(n_yz.x, n_yz.y, f.x);\n}\n";
+
+var woodGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexWood* — procedural wood (rings + fibers) as a function of object-space position.\n// The surface is flat, so the normal channel returns the geometric normal unperturbed.\n// Requires noise.glsl before it; uniform declarations are generated from the TS schema (wood.ts).\n//----------------------------------------------------------------------------------------------------\n\nvec3 xtexWoodColor(vec3 position){\n  float ang = radians(angle);\n  float ca = cos(ang), sa = sin(ang);\n  vec3 posLocal = vec3(\n    position.x*ca - position.y*sa,\n    position.x*sa + position.y*ca,\n    position.z\n  );\n\n  // main ring pattern\n  vec3 pos = posLocal * exp(scale - 3.0) * vec3(1.0/lengths, 4.0, 1.0/lengths) + seed;\n  float k = (xtex_noise(pos) + 1.0) * 10.0 * rings;\n  k = (cos(k + cos(k)) + 1.0) / 2.0;\n\n  // fibers: 10 octaves of turbulence, high-frequency along y\n  float kk = 0.0, sum = 0.0, power = 2.0;\n  vec3 sc = exp(scale - 2.0) * vec3(1.0, fibersDensity, 1.0);\n  for (int i = 0; i < 10; i++){\n    kk += power * xtex_noise(posLocal * sc + seed);\n    sum += power;\n    sc *= 1.8;\n    power *= 0.6;\n  }\n  kk = (sin(kk * 5.0 / sum * 10.0) + 1.0) / 2.0;\n\n  return mix(color, background, mix(k, kk, fibers));\n}\n\nvec3 xtexWoodNormal(vec3 position, vec3 normal, vec3 tangent){\n  return normalize(normal);\n}\n";
+
+const ranges$2 = {
+    scale: { min: 0, max: 6 },
+    rings: { min: 0, max: 20 },
+    lengths: { min: 0.1, max: 10 },
+    angle: { min: 0, max: 360 },
+    fibers: { min: 0, max: 1 },
+    fibersDensity: { min: 0, max: 40 },
+    seed: { min: 0, max: 100 },
+};
+const presets$2 = {
+    standard: {
+        scale: 2.5, rings: 4.5, lengths: 1, angle: 0, fibers: 0.3, fibersDensity: 10, seed: 0,
+        color: [0.8, 0.4, 0.0],
+        background: [0.4, 0.1, 0.0],
+    },
+    hinoki: {
+        scale: 2.9, lengths: 10, angle: 20,
+        color: [0.792, 0.714, 0.635],
+        background: [0.78, 0.616, 0.557],
+    },
+};
+const wood = {
+    name: 'wood',
+    glsl: woodGlsl,
+    ranges: ranges$2,
+    presets: presets$2,
+};
+
+var concreteGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexConcrete* — bumpy concrete from one shared height field: Color tints along the relief\n// (scaled by `bump`, so its sign matches the geometry), Normal perturbs via finite differences.\n// Requires noise.glsl before it; uniform declarations are generated from the TS schema (concrete.ts).\n//----------------------------------------------------------------------------------------------------\n\nfloat xtex_concreteHeight(vec3 p, float d){\n  return pow(abs(xtex_noise(p) * 0.5 + 0.5), d);\n}\n\nvec3 xtex_concreteSurface(vec3 p, vec3 n, float d){\n  return p + n * xtex_concreteHeight(p, d);\n}\n\nvec3 xtexConcreteColor(vec3 position){\n  vec3 seed3d = sin(vec3(1.0, 2.0, 3.0) * seed) * 100.0;\n  vec3 p = position * exp(scale / 2.0 + 2.0) + seed3d;\n  float xdensity = mix(10.0, 0.5, density);\n\n  // the same height field as the normal channel, scaled by bump so the tint follows the relief:\n  // raised pores (bump > 0) brighten, dents (bump < 0) darken, flat (bump = 0) stays untinted\n  float k = xtex_concreteHeight(p, xdensity);\n  // mottle contrast scales with density: 0 = uniform clean surface, 1 = full stain range\n  float mottle = xtex_noise(p * 0.35) * 0.5 + 0.5;\n\n  vec3 base = mix(background, color, mix(1.0, mottle, density));\n  return base * (1.0 + 0.3 * bump * k);\n}\n\nvec3 xtexConcreteNormal(vec3 position, vec3 normal, vec3 tangent){\n  const float EPS = 0.001;\n  vec3 seed3d = sin(vec3(1.0, 2.0, 3.0) * seed) * 100.0;\n\n  vec3 xposition = position * exp(scale / 2.0 + 2.0) + seed3d;\n  vec3 xnormal = normalize(normal);\n  vec3 xtangent = normalize(tangent) * EPS;\n  vec3 xbitangent = normalize(cross(xnormal, xtangent)) * EPS;\n  float xdensity = mix(10.0, 0.5, density);\n\n  vec3 bumped = xnormal * bump;\n  vec3 pos  = xtex_concreteSurface(xposition, bumped, xdensity);\n  vec3 posU = xtex_concreteSurface(xposition + xtangent, bumped, xdensity);\n  vec3 posV = xtex_concreteSurface(xposition + xbitangent, bumped, xdensity);\n\n  return normalize(cross(posU - pos, posV - pos));\n}\n";
+
+const ranges$1 = {
+    scale: { min: 0, max: 4 },
+    density: { min: 0, max: 1 },
+    bump: { min: -1, max: 1 },
+    seed: { min: 0, max: 100 },
+};
+const presets$1 = {
+    standard: {
+        scale: 2, density: 0.5, bump: 0.5, seed: 0,
+        color: [0.75, 0.75, 0.75],
+        background: [0.55, 0.55, 0.55],
+    },
+};
+const concrete = {
+    name: 'concrete',
+    glsl: concreteGlsl,
+    ranges: ranges$1,
+    presets: presets$1,
+};
+
+var tatamiGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexTatami* — tatami mats: a 2x1 mat is the base unit, heri (cloth border) runs along the long\n// edges, igusa weave grooves run along the long axis; color and normal share the same masks.\n// Requires noise.glsl before it; uniform declarations are generated from the TS schema (tatami.ts).\n//----------------------------------------------------------------------------------------------------\n\nconst float XTEX_TATAMI_PI = 3.141592653589793;\n\n// 1 inside the heri cloth strips along the long edges (v near 0 / 1)\nfloat xtex_tatamiHeri(float v){\n  return 1.0 - smoothstep(heri - 0.008, heri + 0.008, min(v, 1.0 - v));\n}\n\n// 1 at the butt joint of neighboring mats (short edges); u spans the 2-unit long side as [0,1)\nfloat xtex_tatamiSeam(float u){\n  return 1.0 - smoothstep(0.0, 0.01, min(u, 1.0 - u) * 2.0);\n}\n\nfloat xtex_tatamiHeight(vec3 q){\n  vec2 cell = vec2(fract(q.x * 0.5), fract(q.y));\n  float ridge = abs(sin(XTEX_TATAMI_PI * cell.y * weave));\n  float h = mix(ridge, 0.9, xtex_tatamiHeri(cell.y));\n  return h * (1.0 - 0.6 * xtex_tatamiSeam(cell.x));\n}\n\nvec3 xtexTatamiColor(vec3 position){\n  vec3 p = position * exp(scale - 2.0);\n  vec2 mat = vec2(p.x * 0.5, p.y);\n  vec2 matIndex = floor(mat);\n  vec2 cell = fract(mat);\n\n  // per-mat tone: checkered pair + a small per-mat hash so mats do not look identical\n  float checker = mod(matIndex.x + matIndex.y, 2.0);\n  float hash = xtex_noise(vec3(matIndex.x * 1.7 + 0.37, matIndex.y * 2.3 + 0.58, seed)) * 0.5 + 0.5;\n  vec3 base = mix(color, background, clamp(0.7 * checker + 0.3 * hash, 0.0, 1.0));\n\n  // weave: faint ridges along the long axis, each strand row gets a slight tint, plus sun-fade mottling\n  float ridge = abs(sin(XTEX_TATAMI_PI * cell.y * weave));\n  float strand = xtex_noise(vec3(p.x * 8.0, floor(cell.y * weave) * 0.53, seed + 5.0));\n  float mottle = xtex_noise(vec3(p.x * 0.6, p.y * 0.6, seed + 9.0));\n  vec3 igusa = base * (0.88 + 0.07 * ridge + 0.06 * strand + 0.08 * mottle);\n  // fine faint weft lines parallel to the short edges (integer weave keeps them tiling-safe)\n  float weft = abs(sin(XTEX_TATAMI_PI * p.x * weave * 1.5));\n  igusa *= 0.95 + 0.05 * weft;\n  igusa *= 1.0 - 0.35 * xtex_tatamiSeam(cell.x);\n\n  // heri: flat cloth color, shaded only across v so baked tiles stay seamless along the long axis\n  vec3 cloth = border * (0.85 + 0.3 * smoothstep(0.0, heri, min(cell.y, 1.0 - cell.y)));\n  return mix(igusa, cloth, xtex_tatamiHeri(cell.y));\n}\n\nvec3 xtexTatamiNormal(vec3 position, vec3 normal, vec3 tangent){\n  const float EPS = 0.002;\n  vec3 p = position * exp(scale - 2.0);\n  vec3 xnormal = normalize(normal);\n  vec3 xtangent = normalize(tangent) * EPS;\n  vec3 xbitangent = normalize(cross(xnormal, xtangent)) * EPS;\n  vec3 bumped = xnormal * (0.02 * bump);\n\n  vec3 pos  = p + bumped * xtex_tatamiHeight(p);\n  vec3 posU = (p + xtangent) + bumped * xtex_tatamiHeight(p + xtangent);\n  vec3 posV = (p + xbitangent) + bumped * xtex_tatamiHeight(p + xbitangent);\n  return normalize(cross(posU - pos, posV - pos));\n}\n";
+
+const ranges = {
+    scale: { min: 0, max: 4 },
+    weave: { min: 8, max: 60 },
+    heri: { min: 0, max: 0.2 },
+    bump: { min: 0, max: 1 },
+    seed: { min: 0, max: 100 },
+};
+const presets = {
+    standard: {
+        scale: 2, weave: 30, heri: 0.04, bump: 0.5, seed: 0,
+        color: [0.72, 0.71, 0.42],
+        background: [0.66, 0.68, 0.38],
+        border: [0.23, 0.21, 0.14],
+    },
+};
+const tatami = {
+    name: 'tatami',
+    glsl: tatamiGlsl,
+    ranges,
+    presets,
+};
+
+function defineTexture(source) {
+    const texture = Object.assign(Object.assign({}, source), { glsl: noiseGlsl + uniformDeclarations(source.presets.standard) + source.glsl, bake(options = {}) {
+            return bakeTexture(texture, options);
+        },
+        renderer(canvas, options = {}) {
+            return createTextureRenderer(canvas, texture, options);
+        } });
+    return texture;
+}
 const RESERVED_UNIFORMS = ['uWorldSize'];
 function uniformDeclarations(standard) {
     const floats = [];
@@ -3562,93 +3649,6 @@ function bakeTexture(def, options = {}) {
     uploadUniforms(gl, def, location, worldSize, (_h = options.params) !== null && _h !== void 0 ? _h : {});
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     return canvas.transferToImageBitmap();
-}
-
-var noiseGlsl = "//----------------------------------------------------------------------------------------------------\n// xtex_noise — classic 3D Perlin noise (Gustavson / Ashima, MIT), output ~[-1,1]\n// Version-agnostic (only function defs), so it injects into WebGL2 (300 es), three (1.00), and previews.\n//----------------------------------------------------------------------------------------------------\n\nvec3 xtex_mod289(vec3 x){ return x - floor(x*(1.0/289.0))*289.0; }\nvec4 xtex_mod289(vec4 x){ return x - floor(x*(1.0/289.0))*289.0; }\nvec4 xtex_permute(vec4 x){ return xtex_mod289(((x*34.0)+1.0)*x); }\nvec4 xtex_taylorInvSqrt(vec4 r){ return 1.79284291400159 - 0.85373472095314 * r; }\nvec3 xtex_fade(vec3 t){ return t*t*t*(t*(t*6.0-15.0)+10.0); }\n\nfloat xtex_noise(vec3 P){\n  vec3 Pi0 = floor(P);\n  vec3 Pi1 = Pi0 + vec3(1.0);\n  Pi0 = xtex_mod289(Pi0);\n  Pi1 = xtex_mod289(Pi1);\n  vec3 Pf0 = fract(P);\n  vec3 Pf1 = Pf0 - vec3(1.0);\n  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);\n  vec4 iy = vec4(Pi0.yy, Pi1.yy);\n  vec4 iz0 = Pi0.zzzz;\n  vec4 iz1 = Pi1.zzzz;\n\n  vec4 ixy = xtex_permute(xtex_permute(ix) + iy);\n  vec4 ixy0 = xtex_permute(ixy + iz0);\n  vec4 ixy1 = xtex_permute(ixy + iz1);\n\n  vec4 gx0 = ixy0 * (1.0 / 7.0);\n  vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;\n  gx0 = fract(gx0);\n  vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);\n  vec4 sz0 = step(gz0, vec4(0.0));\n  gx0 -= sz0 * (step(0.0, gx0) - 0.5);\n  gy0 -= sz0 * (step(0.0, gy0) - 0.5);\n\n  vec4 gx1 = ixy1 * (1.0 / 7.0);\n  vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;\n  gx1 = fract(gx1);\n  vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);\n  vec4 sz1 = step(gz1, vec4(0.0));\n  gx1 -= sz1 * (step(0.0, gx1) - 0.5);\n  gy1 -= sz1 * (step(0.0, gy1) - 0.5);\n\n  vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);\n  vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);\n  vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);\n  vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);\n  vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);\n  vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);\n  vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);\n  vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);\n\n  vec4 norm0 = xtex_taylorInvSqrt(vec4(dot(g000,g000), dot(g010,g010), dot(g100,g100), dot(g110,g110)));\n  g000 *= norm0.x; g010 *= norm0.y; g100 *= norm0.z; g110 *= norm0.w;\n  vec4 norm1 = xtex_taylorInvSqrt(vec4(dot(g001,g001), dot(g011,g011), dot(g101,g101), dot(g111,g111)));\n  g001 *= norm1.x; g011 *= norm1.y; g101 *= norm1.z; g111 *= norm1.w;\n\n  float n000 = dot(g000, Pf0);\n  float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));\n  float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));\n  float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));\n  float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));\n  float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));\n  float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));\n  float n111 = dot(g111, Pf1);\n\n  vec3 f = xtex_fade(Pf0);\n  vec4 n_z = mix(vec4(n000,n100,n010,n110), vec4(n001,n101,n011,n111), f.z);\n  vec2 n_yz = mix(n_z.xy, n_z.zw, f.y);\n  return 2.2 * mix(n_yz.x, n_yz.y, f.x);\n}\n";
-
-var woodGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexWood* — procedural wood (rings + fibers) as a function of object-space position.\n// The surface is flat, so the normal channel returns the geometric normal unperturbed.\n// Requires noise.glsl before it; uniform declarations are generated from the TS schema (wood.ts).\n//----------------------------------------------------------------------------------------------------\n\nvec3 xtexWoodColor(vec3 position){\n  float ang = radians(angle);\n  float ca = cos(ang), sa = sin(ang);\n  vec3 posLocal = vec3(\n    position.x*ca - position.y*sa,\n    position.x*sa + position.y*ca,\n    position.z\n  );\n\n  // main ring pattern\n  vec3 pos = posLocal * exp(scale - 3.0) * vec3(1.0/lengths, 4.0, 1.0/lengths) + seed;\n  float k = (xtex_noise(pos) + 1.0) * 10.0 * rings;\n  k = (cos(k + cos(k)) + 1.0) / 2.0;\n\n  // fibers: 10 octaves of turbulence, high-frequency along y\n  float kk = 0.0, sum = 0.0, power = 2.0;\n  vec3 sc = exp(scale - 2.0) * vec3(1.0, fibersDensity, 1.0);\n  for (int i = 0; i < 10; i++){\n    kk += power * xtex_noise(posLocal * sc + seed);\n    sum += power;\n    sc *= 1.8;\n    power *= 0.6;\n  }\n  kk = (sin(kk * 5.0 / sum * 10.0) + 1.0) / 2.0;\n\n  return mix(color, background, mix(k, kk, fibers));\n}\n\nvec3 xtexWoodNormal(vec3 position, vec3 normal, vec3 tangent){\n  return normalize(normal);\n}\n";
-
-const ranges$2 = {
-    scale: { min: 0, max: 6 },
-    rings: { min: 0, max: 20 },
-    lengths: { min: 0.1, max: 10 },
-    angle: { min: 0, max: 360 },
-    fibers: { min: 0, max: 1 },
-    fibersDensity: { min: 0, max: 40 },
-    seed: { min: 0, max: 100 },
-};
-const presets$2 = {
-    standard: {
-        scale: 2.5, rings: 4.5, lengths: 1, angle: 0, fibers: 0.3, fibersDensity: 10, seed: 0,
-        color: [0.8, 0.4, 0.0],
-        background: [0.4, 0.1, 0.0],
-    },
-    hinoki: {
-        scale: 2.9, lengths: 10, angle: 20,
-        color: [0.792, 0.714, 0.635],
-        background: [0.78, 0.616, 0.557],
-    },
-};
-const wood = {
-    name: 'wood',
-    glsl: noiseGlsl + uniformDeclarations(presets$2.standard) + woodGlsl,
-    ranges: ranges$2,
-    presets: presets$2,
-};
-
-var concreteGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexConcrete* — bumpy concrete from one shared height field: Color tints along the relief\n// (scaled by `bump`, so its sign matches the geometry), Normal perturbs via finite differences.\n// Requires noise.glsl before it; uniform declarations are generated from the TS schema (concrete.ts).\n//----------------------------------------------------------------------------------------------------\n\nfloat xtex_concreteHeight(vec3 p, float d){\n  return pow(abs(xtex_noise(p) * 0.5 + 0.5), d);\n}\n\nvec3 xtex_concreteSurface(vec3 p, vec3 n, float d){\n  return p + n * xtex_concreteHeight(p, d);\n}\n\nvec3 xtexConcreteColor(vec3 position){\n  vec3 seed3d = sin(vec3(1.0, 2.0, 3.0) * seed) * 100.0;\n  vec3 p = position * exp(scale / 2.0 + 2.0) + seed3d;\n  float xdensity = mix(10.0, 0.5, density);\n\n  // the same height field as the normal channel, scaled by bump so the tint follows the relief:\n  // raised pores (bump > 0) brighten, dents (bump < 0) darken, flat (bump = 0) stays untinted\n  float k = xtex_concreteHeight(p, xdensity);\n  // mottle contrast scales with density: 0 = uniform clean surface, 1 = full stain range\n  float mottle = xtex_noise(p * 0.35) * 0.5 + 0.5;\n\n  vec3 base = mix(background, color, mix(1.0, mottle, density));\n  return base * (1.0 + 0.3 * bump * k);\n}\n\nvec3 xtexConcreteNormal(vec3 position, vec3 normal, vec3 tangent){\n  const float EPS = 0.001;\n  vec3 seed3d = sin(vec3(1.0, 2.0, 3.0) * seed) * 100.0;\n\n  vec3 xposition = position * exp(scale / 2.0 + 2.0) + seed3d;\n  vec3 xnormal = normalize(normal);\n  vec3 xtangent = normalize(tangent) * EPS;\n  vec3 xbitangent = normalize(cross(xnormal, xtangent)) * EPS;\n  float xdensity = mix(10.0, 0.5, density);\n\n  vec3 bumped = xnormal * bump;\n  vec3 pos  = xtex_concreteSurface(xposition, bumped, xdensity);\n  vec3 posU = xtex_concreteSurface(xposition + xtangent, bumped, xdensity);\n  vec3 posV = xtex_concreteSurface(xposition + xbitangent, bumped, xdensity);\n\n  return normalize(cross(posU - pos, posV - pos));\n}\n";
-
-const ranges$1 = {
-    scale: { min: 0, max: 4 },
-    density: { min: 0, max: 1 },
-    bump: { min: -1, max: 1 },
-    seed: { min: 0, max: 100 },
-};
-const presets$1 = {
-    standard: {
-        scale: 2, density: 0.5, bump: 0.5, seed: 0,
-        color: [0.75, 0.75, 0.75],
-        background: [0.55, 0.55, 0.55],
-    },
-};
-const concrete = {
-    name: 'concrete',
-    glsl: noiseGlsl + uniformDeclarations(presets$1.standard) + concreteGlsl,
-    ranges: ranges$1,
-    presets: presets$1,
-};
-
-var tatamiGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexTatami* — tatami mats: a 2x1 mat is the base unit, heri (cloth border) runs along the long\n// edges, igusa weave grooves run along the long axis; color and normal share the same masks.\n// Requires noise.glsl before it; uniform declarations are generated from the TS schema (tatami.ts).\n//----------------------------------------------------------------------------------------------------\n\nconst float XTEX_TATAMI_PI = 3.141592653589793;\n\n// 1 inside the heri cloth strips along the long edges (v near 0 / 1)\nfloat xtex_tatamiHeri(float v){\n  return 1.0 - smoothstep(heri - 0.008, heri + 0.008, min(v, 1.0 - v));\n}\n\n// 1 at the butt joint of neighboring mats (short edges); u spans the 2-unit long side as [0,1)\nfloat xtex_tatamiSeam(float u){\n  return 1.0 - smoothstep(0.0, 0.01, min(u, 1.0 - u) * 2.0);\n}\n\nfloat xtex_tatamiHeight(vec3 q){\n  vec2 cell = vec2(fract(q.x * 0.5), fract(q.y));\n  float ridge = abs(sin(XTEX_TATAMI_PI * cell.y * weave));\n  float h = mix(ridge, 0.9, xtex_tatamiHeri(cell.y));\n  return h * (1.0 - 0.6 * xtex_tatamiSeam(cell.x));\n}\n\nvec3 xtexTatamiColor(vec3 position){\n  vec3 p = position * exp(scale - 2.0);\n  vec2 mat = vec2(p.x * 0.5, p.y);\n  vec2 matIndex = floor(mat);\n  vec2 cell = fract(mat);\n\n  // per-mat tone: checkered pair + a small per-mat hash so mats do not look identical\n  float checker = mod(matIndex.x + matIndex.y, 2.0);\n  float hash = xtex_noise(vec3(matIndex.x * 1.7 + 0.37, matIndex.y * 2.3 + 0.58, seed)) * 0.5 + 0.5;\n  vec3 base = mix(color, background, clamp(0.7 * checker + 0.3 * hash, 0.0, 1.0));\n\n  // weave: faint ridges along the long axis, each strand row gets a slight tint, plus sun-fade mottling\n  float ridge = abs(sin(XTEX_TATAMI_PI * cell.y * weave));\n  float strand = xtex_noise(vec3(p.x * 8.0, floor(cell.y * weave) * 0.53, seed + 5.0));\n  float mottle = xtex_noise(vec3(p.x * 0.6, p.y * 0.6, seed + 9.0));\n  vec3 igusa = base * (0.88 + 0.07 * ridge + 0.06 * strand + 0.08 * mottle);\n  // fine faint weft lines parallel to the short edges (integer weave keeps them tiling-safe)\n  float weft = abs(sin(XTEX_TATAMI_PI * p.x * weave * 1.5));\n  igusa *= 0.95 + 0.05 * weft;\n  igusa *= 1.0 - 0.35 * xtex_tatamiSeam(cell.x);\n\n  // heri: flat cloth color, shaded only across v so baked tiles stay seamless along the long axis\n  vec3 cloth = border * (0.85 + 0.3 * smoothstep(0.0, heri, min(cell.y, 1.0 - cell.y)));\n  return mix(igusa, cloth, xtex_tatamiHeri(cell.y));\n}\n\nvec3 xtexTatamiNormal(vec3 position, vec3 normal, vec3 tangent){\n  const float EPS = 0.002;\n  vec3 p = position * exp(scale - 2.0);\n  vec3 xnormal = normalize(normal);\n  vec3 xtangent = normalize(tangent) * EPS;\n  vec3 xbitangent = normalize(cross(xnormal, xtangent)) * EPS;\n  vec3 bumped = xnormal * (0.02 * bump);\n\n  vec3 pos  = p + bumped * xtex_tatamiHeight(p);\n  vec3 posU = (p + xtangent) + bumped * xtex_tatamiHeight(p + xtangent);\n  vec3 posV = (p + xbitangent) + bumped * xtex_tatamiHeight(p + xbitangent);\n  return normalize(cross(posU - pos, posV - pos));\n}\n";
-
-const ranges = {
-    scale: { min: 0, max: 4 },
-    weave: { min: 8, max: 60 },
-    heri: { min: 0, max: 0.2 },
-    bump: { min: 0, max: 1 },
-    seed: { min: 0, max: 100 },
-};
-const presets = {
-    standard: {
-        scale: 2, weave: 30, heri: 0.04, bump: 0.5, seed: 0,
-        color: [0.72, 0.71, 0.42],
-        background: [0.66, 0.68, 0.38],
-        border: [0.23, 0.21, 0.14],
-    },
-};
-const tatami = {
-    name: 'tatami',
-    glsl: noiseGlsl + uniformDeclarations(presets.standard) + tatamiGlsl,
-    ranges,
-    presets,
-};
-
-function defineTexture(source) {
-    return Object.assign(Object.assign({}, source), { bake(options = {}) {
-            return bakeTexture(source, options);
-        },
-        renderer(canvas, options = {}) {
-            return createTextureRenderer(canvas, source, options);
-        } });
 }
 const xtextures = {
     wood: defineTexture(wood),

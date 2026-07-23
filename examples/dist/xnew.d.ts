@@ -601,7 +601,6 @@ interface BakeOptions {
     tile?: boolean;
     params?: Record<string, number | number[]>;
 }
-
 interface Texture extends TextureSource {
     bake(options?: BakeOptions): ImageBitmap;
     renderer(canvas: HTMLCanvasElement, options?: RendererOptions): TextureRenderer;

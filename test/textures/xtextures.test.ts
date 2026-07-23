@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { xtextures } from '@mulsense/xnew';
-import { fragmentSource, uniformDeclarations } from '../../src/textures/runtime';
+import { fragmentSource, uniformDeclarations } from '../../src/textures/xtextures';
 
 // the channel entry-function naming contract: name "wood" → xtexWoodColor / xtexWoodNormal
 function entry(name: string): string {

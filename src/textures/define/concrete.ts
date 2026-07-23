@@ -1,12 +1,11 @@
 //----------------------------------------------------------------------------------------------------
 // xtextures / Concrete — ranges + presets in TS; the GLSL bodies live in glsl/concrete.glsl.
 // Two channels off one height field: color (tinted crevices/stains) + normal (perturbed relief).
-// Ported from boytchev/tsl-textures "Concrete". glsl = noise + generated uniform decls + bodies.
+// Ported from boytchev/tsl-textures "Concrete". glsl carries the bodies only (assembled by defineTexture).
 //----------------------------------------------------------------------------------------------------
 
-import noiseGlsl from '../glsl/noise.glsl';
 import concreteGlsl from '../glsl/concrete.glsl';
-import { uniformDeclarations, type TexturePresets, type TextureRange, type TextureSource } from '../runtime';
+import type { TexturePresets, TextureRange, TextureSource } from '../xtextures';
 
 const ranges: Record<string, TextureRange> = {
     scale: { min: 0, max: 4 },
@@ -25,7 +24,7 @@ const presets: TexturePresets = {
 
 export const concrete: TextureSource = {
     name: 'concrete',
-    glsl: noiseGlsl + uniformDeclarations(presets.standard) + concreteGlsl,
+    glsl: concreteGlsl,
     ranges,
     presets,
 };

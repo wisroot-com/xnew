@@ -1,12 +1,11 @@
 //----------------------------------------------------------------------------------------------------
 // xtextures / Wood — ranges + presets in TS; the GLSL body lives in glsl/wood.glsl (preview: preview/).
-// Ported from boytchev/tsl-textures "Wood". glsl = noise + generated uniform decls + body,
-// so hosts (canvas runtime / xthree) inject one complete source; colors are 0..1 RGB vec3.
+// Ported from boytchev/tsl-textures "Wood". glsl carries the body only — defineTexture prepends
+// the noise prelude + generated uniform declarations; colors are 0..1 RGB vec3.
 //----------------------------------------------------------------------------------------------------
 
-import noiseGlsl from '../glsl/noise.glsl';
 import woodGlsl from '../glsl/wood.glsl';
-import { uniformDeclarations, type TexturePresets, type TextureRange, type TextureSource } from '../runtime';
+import type { TexturePresets, TextureRange, TextureSource } from '../xtextures';
 
 const ranges: Record<string, TextureRange> = {
     scale: { min: 0, max: 6 },
@@ -34,7 +33,7 @@ const presets: TexturePresets = {
 
 export const wood: TextureSource = {
     name: 'wood',
-    glsl: noiseGlsl + uniformDeclarations(presets.standard) + woodGlsl,
+    glsl: woodGlsl,
     ranges,
     presets,
 };

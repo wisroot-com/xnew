@@ -1,12 +1,11 @@
 //----------------------------------------------------------------------------------------------------
 // xtextures / Tatami — ranges + presets in TS; the GLSL bodies live in glsl/tatami.glsl.
 // A 2x1 mat is the base unit: heri cloth along the long edges, weave grooves along the long axis.
-// glsl = noise + generated uniform decls + bodies; colors are 0..1 RGB vec3.
+// glsl carries the bodies only (assembled by defineTexture); colors are 0..1 RGB vec3.
 //----------------------------------------------------------------------------------------------------
 
-import noiseGlsl from '../glsl/noise.glsl';
 import tatamiGlsl from '../glsl/tatami.glsl';
-import { uniformDeclarations, type TexturePresets, type TextureRange, type TextureSource } from '../runtime';
+import type { TexturePresets, TextureRange, TextureSource } from '../xtextures';
 
 const ranges: Record<string, TextureRange> = {
     scale: { min: 0, max: 4 },
@@ -27,7 +26,7 @@ const presets: TexturePresets = {
 
 export const tatami: TextureSource = {
     name: 'tatami',
-    glsl: noiseGlsl + uniformDeclarations(presets.standard) + tatamiGlsl,
+    glsl: tatamiGlsl,
     ranges,
     presets,
 };
