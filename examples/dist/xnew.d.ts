@@ -130,6 +130,14 @@ declare class UnitTimer {
     private start;
 }
 
+type CssDef = string | {
+    rule: '@keyframes' | '@property' | '@counter-style';
+    body: string;
+} | {
+    rule: '@font-face';
+    body: string | string[];
+};
+
 interface XnewBase {
     <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(Base: C, props: PropsOf<C>, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
     <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(Base: C, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
@@ -151,8 +159,8 @@ declare const xnew: XnewBase & {
     nest(tag: string | DomElementDef, textContent?: string): HTMLElement | SVGElement;
     extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
     css: {
-        <T extends Record<string, string>>(defs: T): Record<keyof T, string>;
-        <T extends Record<string, string>>(layer: string, defs: T): Record<keyof T, string>;
+        <T extends Record<string, CssDef>>(defs: T): Record<keyof T, string>;
+        <T extends Record<string, CssDef>>(layer: string, defs: T): Record<keyof T, string>;
     };
     context(key: any): any;
     promise: {

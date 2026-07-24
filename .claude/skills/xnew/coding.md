@@ -61,17 +61,24 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
 ## 4. DOM: element, nest, events
 
 - `unit.element` is the unit's current DOM element.
-- `xnew.css((layer,) { name: 'decls…' })` registers pseudo-scoped CSS with **mandatory
+- `xnew.css((layer,) { name: def… })` registers pseudo-scoped CSS with **mandatory
   scoping**: every key is a local name, always renamed to a page-unique one, and keys must
   match `[A-Za-z][A-Za-z0-9_-]*` (anything else throws) — there is no way to emit a global
-  rule. A value is always a **CSS fragment string**: a **declaration block**, wrapped as
-  `.xnewN-key { … }` (native CSS nesting works inside: `&:hover`, `&[data-checked]`, `@media`,
-  descendant selectors), or a **nameless at-rule** `@type { … }` that hangs the generated name
-  on it — `turn: '@keyframes { from {…} to {…} }'` emits a **scoped animation**
-  `@keyframes xnewN-turn { … }`. A name inside the at-rule (`@keyframes spin { … }`) throws, so
-  scoping always holds. `$key` inside a value references another entry's generated name —
+  rule (a body whose braces escape or don't balance throws). A **string** value is a class
+  **declaration body**, wrapped as `.xnewN-key { … }` (native CSS nesting works inside:
+  `&:hover`, `&[data-checked]`, descendant selectors — and `@media` / `@supports` /
+  `@container` nest here, which is THE way to write responsive rules). An **at-rule** value
+  declares its kind as `{ rule, body }` with
+  `rule: '@keyframes' | '@property' | '@counter-style' | '@font-face'`, hanging the generated
+  name on it — `turn: { rule: '@keyframes', body: 'from {…} to {…}' }` emits
+  `@keyframes xnewN-turn { … }`; `'@property'` names become `--xnewN-key` (so `var($key)` is
+  correct as-is); `'@font-face'` injects the name as the `font-family` descriptor and its
+  `body` may be an **array** of faces (weights / unicode-ranges) — an array anywhere else
+  throws, and a string body starting with a definition at-rule throws (write it as
+  `{ rule, body }`). `$key` inside a body references another entry's generated name —
   `animation: $turn 0.8s linear infinite;` — and an unknown `$key` throws (a letter must
-  follow `$`, so `[href$=".png"]` is untouched). An **optional `layer` string first argument**
+  follow `$`, so `[href$=".png"]` is untouched; `$words` inside strings / comments pass
+  through unrenamed). An **optional `layer` string first argument**
   wraps the whole block in `@layer` (invalid layer throws). The return value maps each key to
   its generated name (typed via `keyof`) to embed in tag strings
   (`xnew.nest(`<div class="${css.name}">`)`). Identical definitions share one ref-counted

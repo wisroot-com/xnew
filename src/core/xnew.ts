@@ -6,7 +6,7 @@
 
 import { Unit, UnitPromise, UnitTimer, ComponentFn, DefinesOf, PropsOf } from './unit';
 import { DomElement, DomElementDef } from './dom';
-import { applyCss } from './css';
+import { applyCss, CssDef } from './css';
 
 // Call signatures of xnew(...); passing a Component merges its defines into the return type.
 export interface XnewBase {
@@ -60,14 +60,14 @@ export const xnew = Object.assign(
             return Unit.extend(Unit.current, Component, props) as DefinesOf<C>;
         },
 
-        // Registers pseudo-scoped CSS: each key is a local name, always renamed to a page-unique one (scoping is mandatory — invalid keys throw). A value is a CSS fragment string: a declaration body, wrapped as .xnewN-key { … } (native nesting works inside, e.g. &:hover / &[data-checked]), or a nameless at-rule "@type { … }" that hangs the generated name on it (@keyframes { … } → @keyframes xnewN-key; a name inside throws, so scoping holds). $key inside a body references another entry's generated name (unknown references throw). An optional layer (first arg) wraps the whole block in @layer (xbasics passes 'base'). Returns { key: generatedName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it finalizes.
-        css: (function(layerOrDefs: string | Record<string, string>, maybeDefs?: Record<string, string>): Record<string, string> {
+        // Registers pseudo-scoped CSS: each key is a local name, always renamed to a page-unique one (scoping is mandatory — invalid keys throw). A string value is a class declaration body wrapped as .xnewN-key { … } (native nesting works inside: &:hover, &[data-checked], @media, …); an at-rule value declares its kind as { rule: '@keyframes' | '@property' | '@counter-style' | '@font-face', body } and hangs the generated name on it ('@property' names become --xnewN-key; '@font-face' injects the name as font-family and body may be an array of faces). $key inside a body references another entry's generated name (unknown references throw; strings / comments pass through untouched, and a body cannot escape its braces). An optional layer (first arg) wraps the whole block in @layer (xbasics passes 'base'). Returns { key: generatedName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it finalizes.
+        css: (function(layerOrDefs: string | Record<string, CssDef>, maybeDefs?: Record<string, CssDef>): Record<string, string> {
             const layer = typeof layerOrDefs === 'string' ? layerOrDefs : undefined;
             const defs = typeof layerOrDefs === 'string' ? maybeDefs! : layerOrDefs;
             return applyCss(Unit.current, layer, defs);
         }) as {
-            <T extends Record<string, string>>(defs: T): Record<keyof T, string>;
-            <T extends Record<string, string>>(layer: string, defs: T): Record<keyof T, string>;
+            <T extends Record<string, CssDef>>(defs: T): Record<keyof T, string>;
+            <T extends Record<string, CssDef>>(layer: string, defs: T): Record<keyof T, string>;
         },
 
         // Returns the nearest unit associated with the given component in the ancestor context chain.

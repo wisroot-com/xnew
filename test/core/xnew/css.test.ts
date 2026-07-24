@@ -55,11 +55,11 @@ describe('xnew.css', () => {
         expect(text).toContain(`.${css.plain} {`);
     });
 
-    it('emits a nameless "@keyframes { … }" value as a scoped keyframes rule', () => {
+    it('emits a { rule, body } value as a scoped at-rule', () => {
         let css!: Record<string, string>;
         xnew(() => {
             css = xnew.css({
-                turn: '@keyframes { to { transform: rotate(1turn); } }',
+                turn: { rule: '@keyframes', body: 'to { transform: rotate(1turn); }' },
             });
         });
         const text = styleElements()[0].textContent!;
@@ -72,12 +72,85 @@ describe('xnew.css', () => {
         let css!: Record<string, string>;
         xnew(() => {
             css = xnew.css({
-                turn: '@keyframes { to { transform: rotate(1turn); } }',
+                turn: { rule: '@keyframes', body: 'to { transform: rotate(1turn); }' },
                 box: 'animation: $turn 1s linear infinite;',
             });
         });
         const text = styleElements()[0].textContent!;
         expect(text).toContain(`animation: ${css.turn} 1s linear infinite;`);
+    });
+
+    it('generates a dashed name for @property, so var($key) resolves correctly', () => {
+        let css!: Record<string, string>;
+        xnew(() => {
+            css = xnew.css({
+                accent: { rule: '@property', body: "syntax: '<color>'; inherits: false; initial-value: red;" },
+                box: 'color: var($accent);',
+            });
+        });
+        const text = styleElements()[0].textContent!;
+        expect(css.accent).toMatch(/^--xnew\d+-accent$/);
+        expect(text).toContain(`@property ${css.accent} {`);
+        expect(text).toContain(`color: var(${css.accent});`);
+    });
+
+    it('injects the generated name as font-family into each @font-face body', () => {
+        let css!: Record<string, string>;
+        xnew(() => {
+            css = xnew.css({
+                pixel: { rule: '@font-face', body: [
+                    'src: url(pixel.woff2); font-weight: 400;',
+                    'src: url(pixel-bold.woff2); font-weight: 700;',
+                ] },
+                label: 'font-family: $pixel;',
+            });
+        });
+        const text = styleElements()[0].textContent!;
+        expect(css.pixel).toMatch(/^xnew\d+-pixel$/);
+        expect(text.match(/@font-face \{/g)).toHaveLength(2);
+        expect(text.match(new RegExp(`font-family: ${css.pixel};`, 'g'))).toHaveLength(3);
+        expect(text).toContain('src: url(pixel-bold.woff2);');
+    });
+
+    it('emits a scoped @counter-style rule', () => {
+        let css!: Record<string, string>;
+        xnew(() => {
+            css = xnew.css({
+                marker: { rule: '@counter-style', body: 'system: cyclic; symbols: "▸"; suffix: " ";' },
+                list: 'list-style: $marker;',
+            });
+        });
+        const text = styleElements()[0].textContent!;
+        expect(text).toContain(`@counter-style ${css.marker} {`);
+        expect(text).toContain(`list-style: ${css.marker};`);
+    });
+
+    it('wraps a string body starting with a nested conditional at-rule as a class rule', () => {
+        let css!: Record<string, string>;
+        xnew(() => {
+            css = xnew.css({
+                frame: '@media (max-width: 600px) { color: blue; } color: red;',
+            });
+        });
+        const text = styleElements()[0].textContent!;
+        expect(text).toContain(`.${css.frame} {`);
+        expect(text).toContain('@media (max-width: 600px) { color: blue; }');
+    });
+
+    it('throws on an unsupported rule', () => {
+        expect(() => {
+            xnew(() => {
+                xnew.css({ box: { rule: '@media', body: 'color: red;' } as any });
+            });
+        }).toThrow('unsupported rule "@media"');
+    });
+
+    it('throws on multiple bodies outside @font-face', () => {
+        expect(() => {
+            xnew(() => {
+                xnew.css({ turn: { rule: '@keyframes', body: ['to { top: 0; }', 'to { top: 1px; }'] } as any });
+            });
+        }).toThrow('only @font-face may take multiple bodies');
     });
 
     it('throws on an unknown $key reference', () => {
@@ -98,12 +171,42 @@ describe('xnew.css', () => {
         }
     });
 
-    it('throws on an at-rule value that carries a name (scoping must hold)', () => {
+    it('throws on a string body written as a definition at-rule (scoping must hold)', () => {
         expect(() => {
             xnew(() => {
                 xnew.css({ turn: '@keyframes spin { to { transform: rotate(1turn); } }' });
             });
-        }).toThrow('must be nameless');
+        }).toThrow(`write "turn" as { rule: '@…', body: '…' }`);
+    });
+
+    it('throws when a body escapes its braces (no global rule can be emitted)', () => {
+        for (const body of ['} body { background: red; } .x {', 'color: red; }', '@media (x) { color: red;']) {
+            expect(() => {
+                xnew(() => {
+                    xnew.css({ evil: body });
+                });
+            }).toThrow('unbalanced braces');
+        }
+    });
+
+    it('throws on a $reference to an inherited object property', () => {
+        expect(() => {
+            xnew(() => {
+                xnew.css({ box: 'width: $constructor;' });
+            });
+        }).toThrow('unknown reference "$constructor"');
+    });
+
+    it('leaves $words inside strings and comments untouched', () => {
+        let css!: Record<string, string>;
+        xnew(() => {
+            css = xnew.css({
+                frame: 'color: red;',
+                label: 'content: "$frame"; /* see $frame */',
+            });
+        });
+        const text = styleElements()[0].textContent!;
+        expect(text).toContain('content: "$frame"; /* see $frame */');
     });
 
     it('throws on an invalid layer (injection is rejected)', () => {
