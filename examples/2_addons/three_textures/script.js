@@ -3,12 +3,12 @@ import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as THREE from 'three';
 
 //----------------------------------------------------------------------------------------------------
-// xtextures × three.js — one model, switchable texture. xthree.material.shader() injects the texture's GLSL
-// into a ShaderMaterial, evaluated per-fragment from object-space position (solid look, no canvas).
-// A Panel listbox swaps the material; the parameter rows are generated from the uniform schema, so
-// adding a texture is one TEXTURES entry. A display listbox switches both (lit albedo × perturbed
-// normal) / color (raw albedo) / normal (normal-map colors), a model listbox swaps the geometry,
-// and "copy params" puts the current texture params on the clipboard as schema-shaped JSON.
+// xtextures × three.js — one model, switchable texture, and a display listbox comparing the material
+// methods side by side: shader (ShaderMaterial injection, fixed light) / baked (standard material
+// with baked map+normalMap, static params) / inject (standard material with the GLSL injected via
+// onBeforeCompile — PBR lighting AND live params) / color / normal (inspection modes).
+// The parameter rows are generated from the schema, so adding a texture is one TEXTURES entry;
+// "copy params" puts the current params on the clipboard as schema-shaped JSON.
 //----------------------------------------------------------------------------------------------------
 
 const TEXTURES = {
@@ -32,7 +32,7 @@ function Main(unit) {
   xthree.initialize({ canvas: unit.canvas });
   xthree.camera.position.set(0, 0, 4.2);
 
-  const state = { texture: Object.keys(TEXTURES)[0], display: 'both', model: Object.keys(GEOMETRIES)[0] };
+  const state = { texture: Object.keys(TEXTURES)[0], display: 'shader', model: Object.keys(GEOMETRIES)[0] };
   const bags = {};
   for (const name in TEXTURES) {
     bags[name] = initParams(TEXTURES[name]);
@@ -40,6 +40,10 @@ function Main(unit) {
 
   xnew.promise(unit).then(() => {
     unit.on('update', () => xthree.renderer.render(xthree.scene, xthree.camera));
+    // scene lights: only the standard-material modes (baked / inject) react to them
+    const light = xthree.add(new THREE.DirectionalLight(0xffffff, 2.2));
+    light.position.set(3, 4, 5);
+    xthree.add(new THREE.AmbientLight(0xffffff, 0.5));
     xnew(Model, { state, bags });
     xnew(document.body, ControlPanel, { state, bags });
   });
@@ -85,8 +89,12 @@ function copyableParams(params) {
   return out;
 }
 
-// write the panel's params bag into the material each frame (hex strings become vec3)
+// write the panel's params bag into the material each frame (hex strings become vec3);
+// baked materials carry no uniforms — their params are fixed at bake time
 function syncUniforms(material, params) {
+  if (material.uniforms === undefined) {
+    return;
+  }
   for (const name in params) {
     const uniform = material.uniforms[name];
     if (uniform === undefined) {
@@ -130,19 +138,24 @@ function Model(unit, { state, bags }) {
   });
 }
 
-// 'both' is the library material; 'color' / 'normal' are inspection modes built from the def's
-// public contract: color = raw albedo (unlit), normal = normal-map colors (n * 0.5 + 0.5),
-// matching the canvas viewer's channel rendering
+// 'shader' / 'baked' / 'inject' are the library materials; 'color' / 'normal' are inspection modes:
+// color = raw albedo (unlit), normal = normal-map colors (n * 0.5 + 0.5), matching the canvas viewer
 function buildMaterial(state, bags) {
-  const def = TEXTURES[state.texture];
+  const texture = TEXTURES[state.texture];
   const params = values(bags[state.texture]);
-  if (state.display === 'both') {
-    return xthree.material.shader(def, params);
+  if (state.display === 'shader') {
+    return xthree.material.shader(texture, params);
+  } else if (state.display === 'baked') {
+    return xthree.material.standard(texture, { params, size: { width: 1024, height: 1024 }, roughness: 0.6 });
+  } else if (state.display === 'inject') {
+    return xthree.material.standard(texture, { inject: true, params, roughness: 0.6 });
   }
 
+  // channel entry-function names inside the glsl are derived from the texture name
+  const entry = 'xtex' + texture.name.charAt(0).toUpperCase() + texture.name.slice(1);
   const uniforms = {};
-  for (const name in def.uniforms) {
-    const value = params[name] ?? def.uniforms[name].value;
+  for (const name in texture.presets.standard) {
+    const value = params[name] ?? texture.presets.standard[name];
     uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
   }
   const vertexShader = `
@@ -158,19 +171,19 @@ function buildMaterial(state, bags) {
     ? `
       varying vec3 vXtexPos;
       varying vec3 vXtexNormal;
-      ${def.glsl}
+      ${texture.glsl}
       void main() {
-        gl_FragColor = vec4(${def.color}(vXtexPos), 1.0);
+        gl_FragColor = vec4(${entry}Color(vXtexPos), 1.0);
       }
     `
     : `
       varying vec3 vXtexPos;
       varying vec3 vXtexNormal;
-      ${def.glsl}
+      ${texture.glsl}
       void main() {
         vec3 nrm = normalize(vXtexNormal);
         vec3 tng = normalize(abs(nrm.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), nrm) : cross(vec3(1.0, 0.0, 0.0), nrm));
-        vec3 n = ${def.normal}(vXtexPos, nrm, tng);
+        vec3 n = ${entry}Normal(vXtexPos, nrm, tng);
         gl_FragColor = vec4(n * 0.5 + 0.5, 1.0);
       }
     `;
@@ -189,7 +202,7 @@ function ControlPanel(unit, { state, bags }) {
     state.texture = value;
     xnew.emit('+texture', { type: value });
   });
-  panel.listbox({ name: 'display', value: state.display, items: ['both', 'color', 'normal'] }).on('-change', ({ value }) => {
+  panel.listbox({ name: 'display', value: state.display, items: ['shader', 'baked', 'inject', 'color', 'normal'] }).on('-change', ({ value }) => {
     state.display = value;
     xnew.emit('+display', { type: value });
   });

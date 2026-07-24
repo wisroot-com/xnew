@@ -75,7 +75,10 @@ const material = {
         return new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });
     },
     standard(texture, options) {
-        const { params, size, worldSize, tile, repeat } = options, materialParams = __rest(options, ["params", "size", "worldSize", "tile", "repeat"]);
+        const { params, size, worldSize, tile, repeat, inject } = options, materialParams = __rest(options, ["params", "size", "worldSize", "tile", "repeat", "inject"]);
+        if (inject === true) {
+            return injectStandard(texture, params !== null && params !== void 0 ? params : {}, materialParams);
+        }
         function bake(channel) {
             const map = new THREE.CanvasTexture(texture.bake({ params, size, worldSize, tile, channel }));
             map.colorSpace = channel === 'color' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
@@ -89,6 +92,43 @@ const material = {
         return new THREE.MeshStandardMaterial(Object.assign({ map: bake('color'), normalMap: bake('normal') }, materialParams));
     },
 };
+function injectStandard(texture, params, materialParams) {
+    var _a;
+    const entry = 'xtex' + texture.name.charAt(0).toUpperCase() + texture.name.slice(1);
+    const uniforms = {};
+    for (const name in texture.presets.standard) {
+        const value = (_a = params[name]) !== null && _a !== void 0 ? _a : texture.presets.standard[name];
+        uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
+    }
+    const material = new THREE.MeshStandardMaterial(materialParams);
+    material.onBeforeCompile = (shader) => {
+        Object.assign(shader.uniforms, uniforms);
+        shader.vertexShader = shader.vertexShader
+            .replace('#include <common>', `#include <common>
+varying vec3 vXtexPos;
+varying vec3 vXtexNormal;`)
+            .replace('#include <begin_vertex>', `#include <begin_vertex>
+vXtexPos = position;
+vXtexNormal = normal;`);
+        shader.fragmentShader = shader.fragmentShader
+            .replace('#include <common>', `#include <common>
+uniform mat3 normalMatrix;
+varying vec3 vXtexPos;
+varying vec3 vXtexNormal;
+vec3 xtexSrgbToLinear(vec3 c){ return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c)); }
+${texture.glsl}`)
+            .replace('#include <map_fragment>', `#include <map_fragment>
+diffuseColor.rgb = xtexSrgbToLinear(${entry}Color(vXtexPos));`)
+            .replace('#include <normal_fragment_maps>', `{
+vec3 xtexN = normalize(vXtexNormal);
+vec3 xtexT = normalize(abs(xtexN.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), xtexN) : cross(vec3(1.0, 0.0, 0.0), xtexN));
+normal = normalize(normalMatrix * ${entry}Normal(vXtexPos, xtexN, xtexT)) * faceDirection;
+}`);
+    };
+    material.customProgramCacheKey = () => `xtextures:${texture.name}`;
+    material.uniforms = uniforms;
+    return material;
+}
 const xthree = {
     initialize({ canvas, camera = null }) {
         return xnew.promise(xnew(Root, { canvas, camera }));

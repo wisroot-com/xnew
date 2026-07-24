@@ -30,10 +30,10 @@ def + メソッドのプレーンなオブジェクトにした。
   RepeatWrapping）map / normalMap に組んだ MeshStandardMaterial。ベイクは内部化
   （旧 `xthree.bake` は削除、2026-07-24。シェーダー注入版は `xthree.material.shader`、
   第二引数はどちらも必須）。
-- ⬜ `onBeforeCompile` で GLSL を standard マテリアルに注入する版（無限解像度のまま PBR）。
-  ベイク版よりピクセルあたり GPU コスト大・mipmap なし（遠景エイリアシング）・three 内部
-  チャンク依存という代償があるので、少数のヒーローオブジェクト向けの補完という位置づけ。
-  `material.standard(texture, { inject: true })` のようなオプションとして統合できる。
+- ✅ `onBeforeCompile` 注入版 = `material.standard(texture, { inject: true, params, ... })`
+  （2026-07-25。無限解像度のまま PBR、ライブパラメータは `material.uniforms`）。
+  3 方式の比較・使い分け・実装メモは **[xtextures-three-materials.md](./xtextures-three-materials.md)**。
+  遠景エイリアシング対策（fwidth ベースのフィルタリング）は未実装。
 - ⬜ roughness / metalness / height をチャンネルとして TextureDef に追加できる設計
   （現状の color / normal の延長）。
 

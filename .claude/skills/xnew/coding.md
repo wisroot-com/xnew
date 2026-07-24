@@ -560,8 +560,10 @@ the rule, then one line of why.
   wires `unit.on('finalize', () => renderer.dispose())`), and passing the object to
   `xthree.material.shader(texture, params)` (ShaderMaterial injection, fake fixed light) or
   `xthree.material.standard(texture, options)` (bakes internally → MeshStandardMaterial; there is NO
-  separate `xthree.bake` — removed 2026-07-24). Both material fns take a REQUIRED second argument.
-  Don't re-wrap textures as xnew components.
+  separate `xthree.bake` — removed 2026-07-24; `inject: true` skips baking and patches the GLSL into
+  the standard shader via onBeforeCompile — full PBR + live `material.uniforms`, but the one
+  three-chunk-dependent spot; method comparison lives in docs/xtextures-three-materials.md). Both
+  material fns take a REQUIRED second argument. Don't re-wrap textures as xnew components.
   The networking layer is a single file `src/sync/xsync.ts` (shared state + boot + facade). `xsync`
   **is** the facade object literal (`export const xsync = { … }`) — there is no Lobby / Room component
   built in; lobby / room lifecycle is assembled by callers from the facade (see `examples/*/server.js` +
