@@ -473,8 +473,8 @@ function textComponent(content) {
     return (unit) => { unit.element.textContent = content.toString(); };
 }
 class Unit {
-    constructor(parent = null) {
-        var _a, _b;
+    constructor({ parent, inherited }) {
+        var _a, _b, _c;
         parent === null || parent === void 0 ? void 0 : parent._.children.push(this);
         const baseContext = (_a = parent === null || parent === void 0 ? void 0 : parent._.currentContext) !== null && _a !== void 0 ? _a : { previous: null };
         let baseElement;
@@ -489,6 +489,7 @@ class Unit {
         }
         this._ = {
             parent,
+            inherited: (_c = inherited !== null && inherited !== void 0 ? inherited : parent === null || parent === void 0 ? void 0 : parent._.inherited) !== null && _c !== void 0 ? _c : null,
             phase: 'invoked',
             protected: false,
             standalone: true,
@@ -508,7 +509,7 @@ class Unit {
         };
     }
     static create(parent, ...args) {
-        const unit = new Unit(parent);
+        const unit = new Unit({ parent });
         Unit.initialize(unit, ...args);
         return unit;
     }
@@ -1179,7 +1180,7 @@ function dispatch(info, event, id, payload) {
 function bootServer(opts, parent, args) {
     const { io, room } = opts;
     const info = { io, room, clients: [] };
-    const root = new Unit(parent);
+    const root = new Unit({ parent });
     rootInfos.set(root, info);
     Unit.initialize(root, ...args);
     let nextId = 1;
@@ -1244,7 +1245,7 @@ function bootClient(opts, parent, args) {
     const { io, room, client } = opts;
     const socket = io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true });
     const info = { socket, room, clients: [] };
-    const root = new Unit(parent);
+    const root = new Unit({ parent });
     rootInfos.set(root, info);
     Unit.initialize(root, ...args);
     const reconcileMap = new Map();
@@ -1267,7 +1268,7 @@ function bootClient(opts, parent, args) {
             if (!Component) {
                 continue;
             }
-            const unit = new Unit(nodeParent);
+            const unit = new Unit({ parent: nodeParent });
             syncData.set(unit, { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null });
             Unit.initialize(unit, Component);
             reconcileMap.set(node.id, unit);

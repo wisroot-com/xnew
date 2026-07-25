@@ -52,6 +52,7 @@ declare class Unit {
     _: {
         parent: Unit | null;
         children: Unit[];
+        inherited: any;
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
         standalone: boolean;
@@ -76,7 +77,10 @@ declare class Unit {
         events: EventBinder;
         key: any;
     };
-    constructor(parent?: Unit | null);
+    constructor({ parent, inherited }: {
+        parent: Unit | null;
+        inherited?: any;
+    });
     static create(parent: Unit | null, ...args: any[]): Unit;
     static initialize(unit: Unit, ...args: any[]): void;
     get parent(): Unit | null;

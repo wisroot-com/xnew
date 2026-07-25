@@ -40,6 +40,7 @@ export class Unit {
     public _: {
         parent: Unit | null;
         children: Unit[];
+        inherited: any;   // library-internal shared value, propagated to descendants (not a user-facing API)
 
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
@@ -62,7 +63,7 @@ export class Unit {
         key: any;   // reserved prop for find(key) (global unique assumed)
     };
 
-    constructor(parent: Unit | null = null) {
+    constructor({ parent, inherited }: { parent: Unit | null; inherited?: any }) {
         parent?._.children.push(this);
 
         const baseContext = parent?._.currentContext ?? { previous: null };
@@ -78,6 +79,7 @@ export class Unit {
 
         this._ = {
             parent,
+            inherited: inherited ?? parent?._.inherited ?? null,
             phase: 'invoked',
             protected: false,
             standalone: true,
@@ -98,7 +100,7 @@ export class Unit {
     }
 
     static create(parent: Unit | null, ...args: any[]): Unit {
-        const unit = new Unit(parent);
+        const unit = new Unit({ parent });
         Unit.initialize(unit, ...args);
         return unit;
     }

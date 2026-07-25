@@ -17,7 +17,7 @@ describe('xnew() creation', () => {
     });
 
     it('hosts created units under the root unit established by reset()', () => {
-        // Unit.reset() eagerly creates the root unit (Unit.engineRoot = new Unit(null)),
+        // Unit.reset() eagerly creates the root unit (Unit.engineRoot = Unit.create(null)),
         // so the root already exists before the first xnew() call rather than being
         // initialized lazily on first use.
         expect(Unit.engineRoot).not.toBeNull();

@@ -82,7 +82,7 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
     const info: ServerInfo = { io, room, clients: [] };
 
     // register info before init so the body (and descendants) resolve it via findRootInfo.
-    const root = new Unit(parent);
+    const root = new Unit({ parent });
     rootInfos.set(root, info);
     Unit.initialize(root, ...args);
 
@@ -153,7 +153,7 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
     const socket = io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
     const info: ClientInfo = { socket, room, clients: [] };
 
-    const root = new Unit(parent);
+    const root = new Unit({ parent });
     rootInfos.set(root, info);
     Unit.initialize(root, ...args);
 
@@ -176,7 +176,7 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
             const Component = nodeParent && syncOf(nodeParent).registry[node.name];
             if (!Component) { continue; }
             // seed SyncData before initialize so the body's xsync.state sees the server state and fixed id
-            const unit = new Unit(nodeParent);
+            const unit = new Unit({ parent: nodeParent });
             syncData.set(unit, { id: node.id, state: { ...node.state }, registry: {}, visibility: null });
             Unit.initialize(unit, Component);
             reconcileMap.set(node.id, unit);
