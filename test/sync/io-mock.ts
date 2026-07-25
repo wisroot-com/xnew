@@ -14,7 +14,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew, xsync } from '../../src/index';
-import { setEnvironment } from '../../src/sync/xsync';
+import { setEnvironment } from '../../src/sync/environment';
 
 type Handler = (...args: any[]) => void;
 type AnyHandler = (event: string, payload: any) => void;

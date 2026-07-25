@@ -5,16 +5,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';
-
-let environment: 'server' | 'client' | null = null;
-
-export function setEnvironment(env: 'server' | 'client' | null): void {
-    environment = env;
-}
-
-export function getEnvironment(): 'server' | 'client' {
-    return environment ?? ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
-}
+import { getEnvironment } from './environment';
 
 //----------------------------------------------------------------------------------------------------
 // shared state
@@ -82,16 +73,6 @@ function dispatch(info: ServerInfo | ClientInfo, event: string, id: string | und
     });
 }
 
-// server→clients only; the envelope id stays undefined (server-originated), so a relay names the original sender inside data.
-function relayToClients(info: ServerInfo, type: string, syncId: number | null, data: any, ids?: string[]): void {
-    const envelope = { type, syncId, id: undefined, data };
-    if (Array.isArray(ids) && ids.length > 0) {
-        ids.forEach((cid) => info.io.to(cid).emit(WIRE_DELIVER, envelope));   // each socket is in a room named by its id
-    } else {
-        info.io.to(info.room.id).emit(WIRE_DELIVER, envelope);
-    }
-}
-
 //----------------------------------------------------------------------------------------------------
 // boot
 //----------------------------------------------------------------------------------------------------
@@ -115,9 +96,8 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
             let name: string | undefined = undefined;
             const registry = unit._.parent ? syncData.get(unit._.parent)?.registry : undefined;
             if (registry !== undefined) {
-                const names = new Map(Object.entries(registry).map(([key, Component]) => [Component, key]));
                 for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
-                    name = names.get(unit._.Components[i]);
+                    name = Object.keys(registry).find((key) => registry[key] === unit._.Components[i]);
                 }
             }
             return name;
@@ -258,15 +238,11 @@ export const xsync = {
     // Restrict this sync node (and its subtree) to the given client(s): an id, a list, or a predicate re-evaluated per capture (the way to reveal dynamically); null ⇒ public again.
     visibleTo(target: string | string[] | ((clientId: string) => boolean) | null): void {
         const data = syncOf(Unit.current);
-        if (target === null) {
-            data.visibility = null;
-        } else if (typeof target === 'function') {
+        if (target === null || typeof target === 'function') {
             data.visibility = target;
-        } else if (Array.isArray(target)) {
-            const allowed = new Set(target);
-            data.visibility = (clientId) => allowed.has(clientId);
         } else {
-            data.visibility = (clientId) => clientId === target;
+            const allowed = new Set([target].flat());
+            data.visibility = (clientId) => allowed.has(clientId);
         }
     },
     get session(): { room: RoomStatus; clients: ClientStatus[]; myself: ClientStatus } {
@@ -297,9 +273,14 @@ export const xsync = {
         if (getEnvironment() !== 'server') {
             throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
         }
-        const info = rootInfoOf(Unit.current);
-        const syncId = syncOf(Unit.current).id;
-        relayToClients(info as ServerInfo, type, syncId, props, ids);
+        const info = rootInfoOf(Unit.current) as ServerInfo;
+        // the envelope id stays undefined (server-originated), so a relay names the original sender inside data.
+        const envelope = { type, syncId: syncOf(Unit.current).id, id: undefined, data: props };
+        if (Array.isArray(ids) && ids.length > 0) {
+            ids.forEach((cid) => info.io.to(cid).emit(WIRE_DELIVER, envelope));   // each socket is in a room named by its id
+        } else {
+            info.io.to(info.room.id).emit(WIRE_DELIVER, envelope);
+        }
     },
     boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit {
         if (getEnvironment() === 'server') {

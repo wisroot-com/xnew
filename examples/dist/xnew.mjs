@@ -1135,6 +1135,7 @@ Object.defineProperty(xnew, 'standalone', {
 function getEnvironment() {
     return ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
 }
+
 const syncData = new WeakMap();
 function syncOf(unit) {
     if (syncData.has(unit) === false) {
@@ -1175,15 +1176,6 @@ function dispatch(info, event, id, payload) {
         (_a = unit._.listeners.get(event)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
     });
 }
-function relayToClients(info, type, syncId, data, ids) {
-    const envelope = { type, syncId, id: undefined, data };
-    if (Array.isArray(ids) && ids.length > 0) {
-        ids.forEach((cid) => info.io.to(cid).emit(WIRE_DELIVER, envelope));
-    }
-    else {
-        info.io.to(info.room.id).emit(WIRE_DELIVER, envelope);
-    }
-}
 function bootServer(opts, parent, args) {
     const { io, room } = opts;
     const info = { io, room, clients: [] };
@@ -1198,9 +1190,8 @@ function bootServer(opts, parent, args) {
             let name = undefined;
             const registry = unit._.parent ? (_a = syncData.get(unit._.parent)) === null || _a === void 0 ? void 0 : _a.registry : undefined;
             if (registry !== undefined) {
-                const names = new Map(Object.entries(registry).map(([key, Component]) => [Component, key]));
                 for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
-                    name = names.get(unit._.Components[i]);
+                    name = Object.keys(registry).find((key) => registry[key] === unit._.Components[i]);
                 }
             }
             return name;
@@ -1340,18 +1331,12 @@ const xsync = {
     },
     visibleTo(target) {
         const data = syncOf(Unit.current);
-        if (target === null) {
-            data.visibility = null;
-        }
-        else if (typeof target === 'function') {
+        if (target === null || typeof target === 'function') {
             data.visibility = target;
         }
-        else if (Array.isArray(target)) {
-            const allowed = new Set(target);
-            data.visibility = (clientId) => allowed.has(clientId);
-        }
         else {
-            data.visibility = (clientId) => clientId === target;
+            const allowed = new Set([target].flat());
+            data.visibility = (clientId) => allowed.has(clientId);
         }
     },
     get session() {
@@ -1384,8 +1369,13 @@ const xsync = {
             throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
         }
         const info = rootInfoOf(Unit.current);
-        const syncId = syncOf(Unit.current).id;
-        relayToClients(info, type, syncId, props, ids);
+        const envelope = { type, syncId: syncOf(Unit.current).id, id: undefined, data: props };
+        if (Array.isArray(ids) && ids.length > 0) {
+            ids.forEach((cid) => info.io.to(cid).emit(WIRE_DELIVER, envelope));
+        }
+        else {
+            info.io.to(info.room.id).emit(WIRE_DELIVER, envelope);
+        }
     },
     boot(opts, ...args) {
         if (getEnvironment() === 'server') {
