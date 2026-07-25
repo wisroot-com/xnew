@@ -1,4 +1,5 @@
 import { Unit } from '../../src/core/unit';
+import { syncData } from '../../src/sync/xsync';
 import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, bootClient, asServer } from './io-mock';
 
@@ -41,8 +42,8 @@ describe('scoped registry isolation', () => {
         const replicaB = client._.children.find(c => c._.Components.includes(ParentB))!;
         expect(replicaA._.children[0]._.Components.includes(ChildA)).toBe(true);
         expect(replicaB._.children[0]._.Components.includes(ChildB)).toBe(true);
-        expect(Unit.syncData(replicaA._.children[0]).state).toEqual({ kind: 'A' });
-        expect(Unit.syncData(replicaB._.children[0]).state).toEqual({ kind: 'B' });
+        expect(syncData(replicaA._.children[0]).state).toEqual({ kind: 'A' });
+        expect(syncData(replicaB._.children[0]).state).toEqual({ kind: 'B' });
     });
 
     it('a child not registered by its parent is omitted from capture', () => {

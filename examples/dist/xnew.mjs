@@ -473,7 +473,7 @@ function textComponent(content) {
     return (unit) => { unit.element.textContent = content.toString(); };
 }
 class Unit {
-    constructor({ parent, syncRoot, syncData }, ...args) {
+    constructor({ parent, inherited, own }, ...args) {
         var _a, _b, _c;
         parent === null || parent === void 0 ? void 0 : parent._.children.push(this);
         const baseContext = (_a = parent === null || parent === void 0 ? void 0 : parent._.currentContext) !== null && _a !== void 0 ? _a : { previous: null };
@@ -489,8 +489,8 @@ class Unit {
         }
         this._ = {
             parent,
-            syncRoot: (_c = syncRoot !== null && syncRoot !== void 0 ? syncRoot : parent === null || parent === void 0 ? void 0 : parent._.syncRoot) !== null && _c !== void 0 ? _c : null,
-            syncData: syncData !== null && syncData !== void 0 ? syncData : null,
+            inherited: inherited === undefined ? ((_c = parent === null || parent === void 0 ? void 0 : parent._.inherited) !== null && _c !== void 0 ? _c : {}) : Object.assign(Object.assign({}, parent === null || parent === void 0 ? void 0 : parent._.inherited), inherited),
+            own: own !== null && own !== void 0 ? own : {},
             phase: 'invoked',
             protected: false,
             standalone: true,
@@ -558,14 +558,6 @@ class Unit {
         }
         unit._.lastSnapshot = Unit.snapshot(unit);
         Unit.currentUnit = backup;
-    }
-    static syncRoot(unit) {
-        return unit._.syncRoot;
-    }
-    static syncData(unit) {
-        var _a;
-        var _b;
-        return (_a = (_b = unit._).syncData) !== null && _a !== void 0 ? _a : (_b.syncData = { id: null, state: {}, registry: {}, visibility: null });
     }
     get parent() {
         return this._.parent;
@@ -1142,6 +1134,15 @@ function getEnvironment() {
     return ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
 }
 
+function syncRoot(unit) {
+    var _a;
+    return (_a = unit._.inherited.syncRoot) !== null && _a !== void 0 ? _a : null;
+}
+function syncData(unit) {
+    var _a;
+    var _b;
+    return (_a = (_b = unit._.own).syncData) !== null && _a !== void 0 ? _a : (_b.syncData = { id: null, state: {}, registry: {}, visibility: null });
+}
 const WIRE_TO_SERVER = 'sync:toServer';
 const WIRE_DELIVER = 'sync:deliver';
 function dispatch(info, event, id, payload) {
@@ -1152,9 +1153,9 @@ function dispatch(info, event, id, payload) {
         var _a;
         if (unit._.phase === 'finalized' || unit._.phase === 'finalizing')
             return;
-        if (Unit.syncRoot(unit) !== info)
+        if (syncRoot(unit) !== info)
             return;
-        if (event[0] === '-' && Unit.syncData(unit).id !== syncId)
+        if (event[0] === '-' && syncData(unit).id !== syncId)
             return;
         (_a = unit._.listeners.get(event)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
     });
@@ -1162,14 +1163,14 @@ function dispatch(info, event, id, payload) {
 function bootServer(opts, parent, args) {
     const { io, room } = opts;
     const info = { io, room, clients: [] };
-    const root = new Unit({ parent, syncRoot: info }, ...args);
+    const root = new Unit({ parent, inherited: { syncRoot: info } }, ...args);
     let nextId = 1;
     const captureStateTree = (clientId) => {
         const nodes = [];
         const walk = (unit, parent) => {
             var _a, _b, _c;
             let name = undefined;
-            const registry = (_b = (_a = unit._.parent) === null || _a === void 0 ? void 0 : _a._.syncData) === null || _b === void 0 ? void 0 : _b.registry;
+            const registry = (_b = (_a = unit._.parent) === null || _a === void 0 ? void 0 : _a._.own.syncData) === null || _b === void 0 ? void 0 : _b.registry;
             if (registry !== undefined) {
                 for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
                     name = Object.keys(registry).find((key) => registry[key] === unit._.Components[i]);
@@ -1179,7 +1180,7 @@ function bootServer(opts, parent, args) {
                 unit._.children.forEach((child) => walk(child, parent));
             }
             else {
-                const data = Unit.syncData(unit);
+                const data = syncData(unit);
                 const visible = data.visibility === null || data.visibility(clientId) === true;
                 if (visible === true) {
                     (_c = data.id) !== null && _c !== void 0 ? _c : (data.id = nextId++);
@@ -1225,14 +1226,14 @@ function bootClient(opts, parent, args) {
     const { io, room, client } = opts;
     const socket = io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true });
     const info = { socket, room, clients: [] };
-    const root = new Unit({ parent, syncRoot: info }, ...args);
+    const root = new Unit({ parent, inherited: { syncRoot: info } }, ...args);
     const reconcileMap = new Map();
     socket.on('sync', (tree) => {
         const incoming = new Set(tree.map((node) => node.id));
         for (const node of tree) {
             const existing = reconcileMap.get(node.id);
             if (existing !== undefined) {
-                const state = Unit.syncData(existing).state;
+                const state = syncData(existing).state;
                 for (const key of Object.keys(state)) {
                     if ((key in node.state) === false) {
                         delete state[key];
@@ -1242,11 +1243,11 @@ function bootClient(opts, parent, args) {
                 continue;
             }
             const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
-            const Component = nodeParent && Unit.syncData(nodeParent).registry[node.name];
+            const Component = nodeParent && syncData(nodeParent).registry[node.name];
             if (!Component) {
                 continue;
             }
-            const unit = new Unit({ parent: nodeParent, syncData: { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null } }, Component);
+            const unit = new Unit({ parent: nodeParent, own: { syncData: { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null } } }, Component);
             reconcileMap.set(node.id, unit);
         }
         for (const [id, unit] of [...reconcileMap.entries()]) {
@@ -1280,7 +1281,7 @@ const xsync = {
         return getEnvironment() === 'client' ? Unit.extend(Unit.current, callback, props) : {};
     },
     state(initial = {}) {
-        const data = Unit.syncData(Unit.current);
+        const data = syncData(Unit.current);
         for (const key of Object.keys(initial)) {
             if (!(key in data.state)) {
                 data.state[key] = initial[key];
@@ -1293,10 +1294,10 @@ const xsync = {
         if (unit._.phase !== 'invoked') {
             throw new Error('xsync.register must be called during component initialization.');
         }
-        Object.assign(Unit.syncData(unit).registry, Components);
+        Object.assign(syncData(unit).registry, Components);
     },
     visibleTo(target) {
-        const data = Unit.syncData(Unit.current);
+        const data = syncData(Unit.current);
         if (target === null || typeof target === 'function') {
             data.visibility = target;
         }
@@ -1306,7 +1307,7 @@ const xsync = {
         }
     },
     get session() {
-        const info = Unit.syncRoot(Unit.current);
+        const info = syncRoot(Unit.current);
         if (info === null) {
             throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
         }
@@ -1324,7 +1325,7 @@ const xsync = {
         };
     },
     emitToServer(type, props = {}) {
-        const info = Unit.syncRoot(Unit.current);
+        const info = syncRoot(Unit.current);
         if (info === null) {
             throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
         }
@@ -1332,19 +1333,19 @@ const xsync = {
             Unit.emit(Unit.current, type, props);
         }
         else {
-            info.socket.emit(WIRE_TO_SERVER, { type, syncId: Unit.syncData(Unit.current).id, data: props });
+            info.socket.emit(WIRE_TO_SERVER, { type, syncId: syncData(Unit.current).id, data: props });
         }
     },
     emitToClients(type, props = {}, ids) {
         if (getEnvironment() !== 'server') {
             throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
         }
-        const info = Unit.syncRoot(Unit.current);
+        const info = syncRoot(Unit.current);
         if (info === null) {
             throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
         }
         const { io, room } = info;
-        const envelope = { type, syncId: Unit.syncData(Unit.current).id, id: undefined, data: props };
+        const envelope = { type, syncId: syncData(Unit.current).id, id: undefined, data: props };
         if (Array.isArray(ids) && ids.length > 0) {
             ids.forEach((cid) => io.to(cid).emit(WIRE_DELIVER, envelope));
         }
