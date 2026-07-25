@@ -15,13 +15,9 @@ export interface SyncNode { id: number; name: string; parent: number | null; sta
 // visibility === null → public; otherwise a predicate re-evaluated per capture, so a closure over dynamic state can widen private → public.
 interface SyncData { id: number | null; state: Record<string, any>; registry: Record<string, Function>; visibility: ((clientId: string) => boolean) | null; }
 
-const syncData: WeakMap<Unit, SyncData> = new WeakMap();
-
+// sync data rides unit._.meta (per-unit, not propagated), created lazily on first access.
 export function syncOf(unit: Unit): SyncData {
-    if (syncData.has(unit) === false) {
-        syncData.set(unit, { id: null, state: {}, registry: {}, visibility: null });
-    }
-    return syncData.get(unit)!;
+    return unit._.meta ??= { id: null, state: {}, registry: {}, visibility: null };
 }
 
 interface ClientStatus { id: string; name: string; }
@@ -33,24 +29,12 @@ interface ClientInfo { socket: any; room: RoomStatus; clients: ClientStatus[]; }
 interface BootServerOptions { io: any; room: RoomStatus; }
 interface BootClientOptions { io: any; room: RoomStatus; client: any; }
 
-// boot root → its info; descendants resolve the nearest root by walking their ancestor chain.
-const rootInfos: WeakMap<Unit, ServerInfo | ClientInfo> = new WeakMap();
-
-function findRootInfo(unit: Unit): ServerInfo | ClientInfo | undefined {
-    for (let u: Unit | null = unit; u !== null; u = u._.parent) {
-        if (rootInfos.has(u) === true) {
-            return rootInfos.get(u);
-        }
-    }
-    return undefined;
-}
-
+// boot puts its info on the root's _.inherited, so every descendant carries it from construction.
 function rootInfoOf(unit: Unit): ServerInfo | ClientInfo {
-    const info = findRootInfo(unit);
-    if (info === undefined) {
+    if (unit._.inherited === null) {
         throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
     }
-    return info;
+    return unit._.inherited;
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -67,7 +51,7 @@ function dispatch(info: ServerInfo | ClientInfo, event: string, id: string | und
     (Unit.type2units.get(event) ?? []).forEach((unit) => {
         // socket callbacks run outside the scope machinery: a message landing after / mid-finalize must not fire a dying unit's handler.
         if (unit._.phase === 'finalized' || unit._.phase === 'finalizing') return;
-        if (findRootInfo(unit) !== info) return; // skip units of another root
+        if (unit._.inherited !== info) return; // skip units of another root
         if (event[0] === '-' && syncOf(unit).id !== syncId) return; // skip units of another sync node
         unit._.listeners.get(event)?.forEach((item) => item.execute({ id, ...data }));
     });
@@ -81,10 +65,7 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
     const { io, room } = opts;
     const info: ServerInfo = { io, room, clients: [] };
 
-    // register info before init so the body (and descendants) resolve it via findRootInfo.
-    const root = new Unit({ parent });
-    rootInfos.set(root, info);
-    Unit.initialize(root, ...args);
+    const root = Unit.create({ parent, inherited: info }, ...args);
 
     // a sync target is a unit registered in its direct parent's registry; nextId is monotonic so a unit keeps its id for life.
     let nextId = 1;
@@ -94,7 +75,7 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
         const walk = (unit: Unit, parent: number | null): void => {
             // _.Components is [base..., most-derived]; match the registered name from the tail.
             let name: string | undefined = undefined;
-            const registry = unit._.parent ? syncData.get(unit._.parent)?.registry : undefined;
+            const registry = unit._.parent?._.meta?.registry;
             if (registry !== undefined) {
                 for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
                     name = Object.keys(registry).find((key) => registry[key] === unit._.Components[i]);
@@ -153,9 +134,7 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
     const socket = io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
     const info: ClientInfo = { socket, room, clients: [] };
 
-    const root = new Unit({ parent });
-    rootInfos.set(root, info);
-    Unit.initialize(root, ...args);
+    const root = Unit.create({ parent, inherited: info }, ...args);
 
     // diff-apply each captured tree onto this root; reconcileMap tracks node id → replica unit.
     const reconcileMap = new Map<number, Unit>();
@@ -175,10 +154,9 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
             const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
             const Component = nodeParent && syncOf(nodeParent).registry[node.name];
             if (!Component) { continue; }
-            // seed SyncData before initialize so the body's xsync.state sees the server state and fixed id
-            const unit = new Unit({ parent: nodeParent });
-            syncData.set(unit, { id: node.id, state: { ...node.state }, registry: {}, visibility: null });
-            Unit.initialize(unit, Component);
+            // seed the sync meta at construction so the body's xsync.state sees the server state and fixed id
+            const meta: SyncData = { id: node.id, state: { ...node.state }, registry: {}, visibility: null };
+            const unit = Unit.create({ parent: nodeParent, meta }, Component);
             reconcileMap.set(node.id, unit);
         }
         for (const [id, unit] of [...reconcileMap.entries()]) {
