@@ -1134,9 +1134,13 @@ function getEnvironment() {
     return ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
 }
 
-function syncRoot(unit) {
+function syncRoot(unit, required) {
     var _a;
-    return (_a = unit._.inherited.syncRoot) !== null && _a !== void 0 ? _a : null;
+    const root = (_a = unit._.inherited.syncRoot) !== null && _a !== void 0 ? _a : null;
+    if (required === true && root === null) {
+        throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
+    }
+    return root;
 }
 function syncData(unit) {
     var _a;
@@ -1308,10 +1312,7 @@ const xsync = {
         }
     },
     get session() {
-        const info = syncRoot(Unit.current);
-        if (info === null) {
-            throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
-        }
+        const info = syncRoot(Unit.current, true);
         return {
             get room() { return info.room; },
             get clients() { return info.clients; },
@@ -1326,10 +1327,7 @@ const xsync = {
         };
     },
     emitToServer(type, props = {}) {
-        const info = syncRoot(Unit.current);
-        if (info === null) {
-            throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
-        }
+        const info = syncRoot(Unit.current, true);
         if (getEnvironment() === 'server') {
             Unit.emit(Unit.current, type, props);
         }
@@ -1341,11 +1339,7 @@ const xsync = {
         if (getEnvironment() !== 'server') {
             throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
         }
-        const info = syncRoot(Unit.current);
-        if (info === null) {
-            throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
-        }
-        const { io, room } = info;
+        const { io, room } = syncRoot(Unit.current, true);
         const envelope = { type, syncId: syncData(Unit.current).id, id: undefined, data: props };
         if (Array.isArray(ids) && ids.length > 0) {
             ids.forEach((cid) => io.to(cid).emit(WIRE_DELIVER, envelope));

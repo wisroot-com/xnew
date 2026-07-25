@@ -24,9 +24,13 @@ interface ClientRoot { socket: any; room: RoomStatus; clients: ClientStatus[]; }
 interface BootServerOptions { io: any; room: RoomStatus; }
 interface BootClientOptions { io: any; room: RoomStatus; client: any; }
 
-// boot puts its root object on inherited.syncRoot, so every descendant carries it from construction.
-function syncRoot(unit: Unit): ServerRoot | ClientRoot | null {
-    return unit._.inherited.syncRoot ?? null;
+// boot puts its root object on inherited.syncRoot, so every descendant carries it from construction; required ⇒ throw instead of null.
+function syncRoot(unit: Unit, required?: true): ServerRoot | ClientRoot | null {
+    const root = unit._.inherited.syncRoot ?? null;
+    if (required === true && root === null) {
+        throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
+    }
+    return root;
 }
 
 // per-unit sync node data on own.syncData, created lazily so every caller (reader or writer) shares the one object.
@@ -212,10 +216,7 @@ export const xsync = {
         }
     },
     get session(): { room: RoomStatus; clients: ClientStatus[]; myself: ClientStatus } {
-        const info = syncRoot(Unit.current);
-        if (info === null) {
-            throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
-        }
+        const info = syncRoot(Unit.current, true) as ServerRoot | ClientRoot;
         return {
             get room(): RoomStatus { return info.room; },
             get clients(): ClientStatus[] { return info.clients; },
@@ -229,10 +230,7 @@ export const xsync = {
         };
     },
     emitToServer(type: string, props: Record<string, any> = {}): void {
-        const info = syncRoot(Unit.current);
-        if (info === null) {
-            throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
-        }
+        const info = syncRoot(Unit.current, true) as ServerRoot | ClientRoot;
         if (getEnvironment() === 'server') {
             Unit.emit(Unit.current, type, props);
         } else {
@@ -244,11 +242,7 @@ export const xsync = {
         if (getEnvironment() !== 'server') {
             throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
         }
-        const info = syncRoot(Unit.current);
-        if (info === null) {
-            throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
-        }
-        const { io, room } = info as ServerRoot;
+        const { io, room } = syncRoot(Unit.current, true) as ServerRoot;
         // the envelope id stays undefined (server-originated), so a relay names the original sender inside data.
         const envelope = { type, syncId: syncData(Unit.current).id, id: undefined, data: props };
         if (Array.isArray(ids) && ids.length > 0) {
