@@ -1253,7 +1253,7 @@ function bootClient(opts, parent, args) {
     rootInfos.set(root, info);
     Unit.initialize(root, ...args);
     const reconcileMap = new Map();
-    const applyStateTree = (tree) => {
+    socket.on('sync', (tree) => {
         const incoming = new Set(tree.map((node) => node.id));
         for (const node of tree) {
             const existing = reconcileMap.get(node.id);
@@ -1283,14 +1283,12 @@ function bootClient(opts, parent, args) {
                 reconcileMap.delete(id);
             }
         }
-    };
-    socket.on('sync', applyStateTree);
-    const onStatus = (status) => {
+    });
+    socket.on('status', (status) => {
         var _a;
         info.clients = (_a = status === null || status === void 0 ? void 0 : status.clients) !== null && _a !== void 0 ? _a : [];
         dispatch(info, 'sync.statusupdate', undefined, undefined);
-    };
-    socket.on('status', onStatus);
+    });
     socket.onAny((event, payload) => {
         if (event === WIRE_DELIVER) {
             dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, payload === null || payload === void 0 ? void 0 : payload.id, payload);
@@ -1299,11 +1297,7 @@ function bootClient(opts, parent, args) {
     socket.on('connect', () => Unit.emit(parent, '-connect', { id: socket.id }));
     socket.on('disconnect', () => Unit.emit(parent, '-disconnect', {}));
     socket.on('notfound', (payload) => Unit.emit(parent, '-notfound', payload !== null && payload !== void 0 ? payload : {}));
-    root.on('finalize', () => {
-        socket.off('sync', applyStateTree);
-        socket.off('status', onStatus);
-        socket.disconnect();
-    });
+    root.on('finalize', () => socket.disconnect());
     return root;
 }
 const xsync = {
@@ -1341,13 +1335,12 @@ const xsync = {
     },
     get session() {
         const info = rootInfoOf(Unit.current);
-        const isServer = getEnvironment() === 'server';
         return {
             get room() { return info.room; },
             get clients() { return info.clients; },
             get myself() {
                 var _a;
-                if (isServer) {
+                if (getEnvironment() === 'server') {
                     throw new Error('xsync.session.myself is only available on the client side.');
                 }
                 const client = info;

@@ -161,9 +161,9 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
     rootInfos.set(root, info);
     Unit.initialize(root, ...args);
 
-    // diff-apply a captured tree onto this root; reconcileMap tracks node id → replica unit.
+    // diff-apply each captured tree onto this root; reconcileMap tracks node id → replica unit.
     const reconcileMap = new Map<number, Unit>();
-    const applyStateTree = (tree: SyncNode[]): void => {
+    socket.on('sync', (tree: SyncNode[]) => {
         const incoming = new Set<number>(tree.map((node) => node.id));
         for (const node of tree) {
             const existing = reconcileMap.get(node.id);
@@ -188,14 +188,11 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
         for (const [id, unit] of [...reconcileMap.entries()]) {
             if (!incoming.has(id)) { unit.finalize(); reconcileMap.delete(id); }
         }
-    };
-
-    socket.on('sync', applyStateTree);
-    const onStatus = (status: { clients?: ClientStatus[] }) => {
+    });
+    socket.on('status', (status: { clients?: ClientStatus[] }) => {
         info.clients = status?.clients ?? [];
         dispatch(info, 'sync.statusupdate', undefined, undefined);
-    };
-    socket.on('status', onStatus);
+    });
     socket.onAny((event: string, payload: any) => {
         if (event === WIRE_DELIVER) { dispatch(info, payload?.type, payload?.id, payload); }
     });
@@ -204,9 +201,8 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
     socket.on('connect', () => Unit.emit(parent, '-connect', { id: socket.id }));
     socket.on('disconnect', () => Unit.emit(parent, '-disconnect', {}));
     socket.on('notfound', (payload: any) => Unit.emit(parent, '-notfound', payload ?? {}));
-    root.on('finalize', () => {
-        socket.off('sync', applyStateTree); socket.off('status', onStatus); socket.disconnect();
-    });
+    // boot owns the socket (forceNew, never reused): disconnecting stops all delivery, so no listener off needed.
+    root.on('finalize', () => socket.disconnect());
     return root;
 }
 
@@ -247,12 +243,11 @@ export const xsync = {
     },
     get session(): { room: RoomStatus; clients: ClientStatus[]; myself: ClientStatus } {
         const info = rootInfoOf(Unit.current);
-        const isServer = getEnvironment() === 'server';
         return {
             get room(): RoomStatus { return info.room; },
             get clients(): ClientStatus[] { return info.clients; },
             get myself(): ClientStatus {
-                if (isServer) {
+                if (getEnvironment() === 'server') {
                     throw new Error('xsync.session.myself is only available on the client side.');
                 }
                 const client = info as ClientInfo;

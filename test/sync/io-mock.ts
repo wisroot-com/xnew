@@ -49,7 +49,6 @@ export interface MockClientSocket {
     id: string;
     emit(event: string, payload?: any): void;
     on(event: string, handler: Handler): void;
-    off(event: string, handler: Handler): void;
     onAny(handler: AnyHandler): void;
     disconnect(): void;
     fire(event: string, payload?: any): void;   // server→client 受信を擬似発火（自分の on(event) を client 環境で呼ぶ）
@@ -132,7 +131,6 @@ export function ioMock(): IoMock {
                 if (set === undefined) { set = new Set(); conn.clientHandlers.set(event, set); }
                 set.add(handler);
             },
-            off(event: string, handler: Handler): void { conn.clientHandlers.get(event)?.delete(handler); },
             onAny(handler: AnyHandler): void { conn.clientAny.add(handler); },
             disconnect(): void { conns.delete(clientId); conn.serverDisconnect.forEach((h) => h()); },
             // server→client 受信を擬似発火: 自分の on(event) ハンドラ（boot の on('sync')→apply 等）を client 環境で呼ぶ。
