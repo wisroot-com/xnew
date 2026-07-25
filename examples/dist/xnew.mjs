@@ -3616,51 +3616,53 @@ function createFullscreenVao(gl) {
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     return { vao, buffer };
 }
-function uploadUniforms(gl, def, locate, worldSize, params) {
-    var _a;
-    gl.uniform1f(locate('uWorldSize'), worldSize);
-    for (const name in def.presets.standard) {
-        const value = (_a = params[name]) !== null && _a !== void 0 ? _a : def.presets.standard[name];
-        if (Array.isArray(value)) {
-            gl.uniform3f(locate(name), value[0], value[1], value[2]);
-        }
-        else {
-            gl.uniform1f(locate(name), value);
-        }
-    }
-}
-function createTextureRenderer(canvas, def, options = {}) {
-    var _a, _b, _c;
-    const worldSize = (_a = options.worldSize) !== null && _a !== void 0 ? _a : 3;
-    const channel = (_b = options.channel) !== null && _b !== void 0 ? _b : 'color';
-    const tile = (_c = options.tile) !== null && _c !== void 0 ? _c : false;
-    const gl = canvas.getContext('webgl2');
-    if (gl === null) {
-        throw new Error('xtextures: WebGL2 is not available');
-    }
+function createPipeline(gl, def, channel, tile, vao) {
     const program = compileTextureProgram(gl, def, channel, tile);
-    const { vao, buffer } = createFullscreenVao(gl);
     const locations = new Map();
-    function location(name) {
+    function locate(name) {
         var _a;
         if (locations.has(name) === false) {
             locations.set(name, gl.getUniformLocation(program, name));
         }
         return (_a = locations.get(name)) !== null && _a !== void 0 ? _a : null;
     }
-    function render(params = {}) {
-        gl.viewport(0, 0, canvas.width, canvas.height);
+    function draw(width, height, worldSize, params) {
+        var _a;
+        gl.viewport(0, 0, width, height);
         gl.useProgram(program);
         gl.bindVertexArray(vao);
-        uploadUniforms(gl, def, location, worldSize, params);
+        gl.uniform1f(locate('uWorldSize'), worldSize);
+        for (const name in def.presets.standard) {
+            const value = (_a = params[name]) !== null && _a !== void 0 ? _a : def.presets.standard[name];
+            if (Array.isArray(value)) {
+                gl.uniform3f(locate(name), value[0], value[1], value[2]);
+            }
+            else {
+                gl.uniform1f(locate(name), value);
+            }
+        }
         gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
-    function dispose() {
-        gl.deleteProgram(program);
-        gl.deleteBuffer(buffer);
-        gl.deleteVertexArray(vao);
+    return { program, draw };
+}
+function createTextureRenderer(canvas, def, options = {}) {
+    const { worldSize = 3, channel = 'color', tile = false } = options;
+    const gl = canvas.getContext('webgl2');
+    if (gl === null) {
+        throw new Error('xtextures: WebGL2 is not available');
     }
-    return { render, dispose };
+    const { vao, buffer } = createFullscreenVao(gl);
+    const pipeline = createPipeline(gl, def, channel, tile, vao);
+    return {
+        render(params = {}) {
+            pipeline.draw(canvas.width, canvas.height, worldSize, params);
+        },
+        dispose() {
+            gl.deleteProgram(pipeline.program);
+            gl.deleteBuffer(buffer);
+            gl.deleteVertexArray(vao);
+        },
+    };
 }
 let bakeContext = null;
 function sharedBakeContext() {
@@ -3674,39 +3676,24 @@ function sharedBakeContext() {
             throw new Error('xtextures: WebGL2 is not available');
         }
         const { vao } = createFullscreenVao(gl);
-        bakeContext = { canvas, gl, vao, programs: new Map() };
+        bakeContext = { canvas, gl, vao, pipelines: new Map() };
     }
     return bakeContext;
 }
 function bakeTexture(def, options = {}) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
-    const width = (_b = (_a = options.size) === null || _a === void 0 ? void 0 : _a.width) !== null && _b !== void 0 ? _b : 512;
-    const height = (_d = (_c = options.size) === null || _c === void 0 ? void 0 : _c.height) !== null && _d !== void 0 ? _d : 512;
-    const worldSize = (_e = options.worldSize) !== null && _e !== void 0 ? _e : 3;
-    const channel = (_f = options.channel) !== null && _f !== void 0 ? _f : 'color';
-    const tile = (_g = options.tile) !== null && _g !== void 0 ? _g : false;
-    const { canvas, gl, vao, programs } = sharedBakeContext();
+    var _a;
+    const { worldSize = 3, channel = 'color', tile = false, params = {} } = options;
+    const { width = 512, height = 512 } = (_a = options.size) !== null && _a !== void 0 ? _a : {};
+    const { canvas, gl, vao, pipelines } = sharedBakeContext();
     const key = `${def.name}:${channel}:${tile}`;
-    let entry = programs.get(key);
-    if (entry === undefined) {
-        entry = { program: compileTextureProgram(gl, def, channel, tile), locations: new Map() };
-        programs.set(key, entry);
-    }
-    const { program, locations } = entry;
-    function location(name) {
-        var _a;
-        if (locations.has(name) === false) {
-            locations.set(name, gl.getUniformLocation(program, name));
-        }
-        return (_a = locations.get(name)) !== null && _a !== void 0 ? _a : null;
+    let pipeline = pipelines.get(key);
+    if (pipeline === undefined) {
+        pipeline = createPipeline(gl, def, channel, tile, vao);
+        pipelines.set(key, pipeline);
     }
     canvas.width = width;
     canvas.height = height;
-    gl.viewport(0, 0, width, height);
-    gl.useProgram(program);
-    gl.bindVertexArray(vao);
-    uploadUniforms(gl, def, location, worldSize, (_h = options.params) !== null && _h !== void 0 ? _h : {});
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    pipeline.draw(width, height, worldSize, params);
     return canvas.transferToImageBitmap();
 }
 const xtextures = {

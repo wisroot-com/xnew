@@ -591,7 +591,7 @@ interface TextureSource {
 }
 type TextureChannel = 'color' | 'normal';
 interface TextureRenderer {
-    render(params: Record<string, number | number[]>): void;
+    render(params?: TexturePreset): void;
     dispose(): void;
 }
 interface RendererOptions {
@@ -599,15 +599,12 @@ interface RendererOptions {
     channel?: TextureChannel;
     tile?: boolean;
 }
-interface BakeOptions {
+interface BakeOptions extends RendererOptions {
     size?: {
         width: number;
         height: number;
     };
-    worldSize?: number;
-    channel?: TextureChannel;
-    tile?: boolean;
-    params?: Record<string, number | number[]>;
+    params?: TexturePreset;
 }
 interface Texture extends TextureSource {
     bake(options?: BakeOptions): ImageBitmap;

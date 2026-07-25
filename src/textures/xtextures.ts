@@ -29,7 +29,7 @@ export interface TextureSource { name: string; glsl: string; ranges: Record<stri
 export type TextureChannel = 'color' | 'normal';
 
 export interface TextureRenderer {
-    render(params: Record<string, number | number[]>): void;
+    render(params?: TexturePreset): void;
     dispose(): void;
 }
 
@@ -39,12 +39,9 @@ export interface RendererOptions {
     tile?: boolean;
 }
 
-export interface BakeOptions {
+export interface BakeOptions extends RendererOptions {
     size?: { width: number; height: number };
-    worldSize?: number;
-    channel?: TextureChannel;
-    tile?: boolean;
-    params?: Record<string, number | number[]>;
+    params?: TexturePreset;
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -185,23 +182,38 @@ function createFullscreenVao(gl: WebGL2RenderingContext): { vao: WebGLVertexArra
     return { vao, buffer };
 }
 
-// uniform names in the glsl equal the schema keys; unused ones resolve to null locations (silently skipped)
-function uploadUniforms(
-    gl: WebGL2RenderingContext,
-    def: TextureSource,
-    locate: (name: string) => WebGLUniformLocation | null,
-    worldSize: number,
-    params: Record<string, number | number[]>,
-): void {
-    gl.uniform1f(locate('uWorldSize'), worldSize);
-    for (const name in def.presets.standard) {
-        const value = params[name] ?? def.presets.standard[name];
-        if (Array.isArray(value)) {
-            gl.uniform3f(locate(name), value[0], value[1], value[2]);
-        } else {
-            gl.uniform1f(locate(name), value);
+interface TexturePipeline {
+    program: WebGLProgram;
+    draw(width: number, height: number, worldSize: number, params: TexturePreset): void;
+}
+
+// one compiled program plus its uniform-location cache and draw call — the unit renderer and bake share
+function createPipeline(gl: WebGL2RenderingContext, def: TextureSource, channel: TextureChannel, tile: boolean, vao: WebGLVertexArrayObject): TexturePipeline {
+    const program = compileTextureProgram(gl, def, channel, tile);
+    const locations = new Map<string, WebGLUniformLocation | null>();
+    // uniform names in the glsl equal the schema keys; unused ones resolve to null locations (silently skipped)
+    function locate(name: string): WebGLUniformLocation | null {
+        if (locations.has(name) === false) {
+            locations.set(name, gl.getUniformLocation(program, name));
         }
+        return locations.get(name) ?? null;
     }
+    function draw(width: number, height: number, worldSize: number, params: TexturePreset): void {
+        gl.viewport(0, 0, width, height);
+        gl.useProgram(program);
+        gl.bindVertexArray(vao);
+        gl.uniform1f(locate('uWorldSize'), worldSize);
+        for (const name in def.presets.standard) {
+            const value = params[name] ?? def.presets.standard[name];
+            if (Array.isArray(value)) {
+                gl.uniform3f(locate(name), value[0], value[1], value[2]);
+            } else {
+                gl.uniform1f(locate(name), value);
+            }
+        }
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    return { program, draw };
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -209,40 +221,23 @@ function uploadUniforms(
 //----------------------------------------------------------------------------------------------------
 
 function createTextureRenderer(canvas: HTMLCanvasElement, def: TextureSource, options: RendererOptions = {}): TextureRenderer {
-    const worldSize = options.worldSize ?? 3;
-    const channel = options.channel ?? 'color';
-    const tile = options.tile ?? false;
+    const { worldSize = 3, channel = 'color', tile = false } = options;
     const gl = canvas.getContext('webgl2');
     if (gl === null) {
         throw new Error('xtextures: WebGL2 is not available');
     }
-
-    const program = compileTextureProgram(gl, def, channel, tile);
     const { vao, buffer } = createFullscreenVao(gl);
-
-    const locations = new Map<string, WebGLUniformLocation | null>();
-    function location(name: string): WebGLUniformLocation | null {
-        if (locations.has(name) === false) {
-            locations.set(name, gl!.getUniformLocation(program, name));
-        }
-        return locations.get(name) ?? null;
-    }
-
-    function render(params: Record<string, number | number[]> = {}): void {
-        gl!.viewport(0, 0, canvas.width, canvas.height);
-        gl!.useProgram(program);
-        gl!.bindVertexArray(vao);
-        uploadUniforms(gl!, def, location, worldSize, params);
-        gl!.drawArrays(gl!.TRIANGLES, 0, 3);
-    }
-
-    function dispose(): void {
-        gl!.deleteProgram(program);
-        gl!.deleteBuffer(buffer);
-        gl!.deleteVertexArray(vao);
-    }
-
-    return { render, dispose };
+    const pipeline = createPipeline(gl, def, channel, tile, vao);
+    return {
+        render(params: TexturePreset = {}) {
+            pipeline.draw(canvas.width, canvas.height, worldSize, params);
+        },
+        dispose() {
+            gl.deleteProgram(pipeline.program);
+            gl.deleteBuffer(buffer);
+            gl.deleteVertexArray(vao);
+        },
+    };
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -253,7 +248,7 @@ interface BakeContext {
     canvas: OffscreenCanvas;
     gl: WebGL2RenderingContext;
     vao: WebGLVertexArrayObject;
-    programs: Map<string, { program: WebGLProgram; locations: Map<string, WebGLUniformLocation | null> }>;
+    pipelines: Map<string, TexturePipeline>;
 }
 
 let bakeContext: BakeContext | null = null;
@@ -269,40 +264,25 @@ function sharedBakeContext(): BakeContext {
             throw new Error('xtextures: WebGL2 is not available');
         }
         const { vao } = createFullscreenVao(gl);
-        bakeContext = { canvas, gl, vao, programs: new Map() };
+        bakeContext = { canvas, gl, vao, pipelines: new Map() };
     }
     return bakeContext;
 }
 
 function bakeTexture(def: TextureSource, options: BakeOptions = {}): ImageBitmap {
-    const width = options.size?.width ?? 512;
-    const height = options.size?.height ?? 512;
-    const worldSize = options.worldSize ?? 3;
-    const channel = options.channel ?? 'color';
-    const tile = options.tile ?? false;
+    const { worldSize = 3, channel = 'color', tile = false, params = {} } = options;
+    const { width = 512, height = 512 } = options.size ?? {};
 
-    const { canvas, gl, vao, programs } = sharedBakeContext();
+    const { canvas, gl, vao, pipelines } = sharedBakeContext();
     const key = `${def.name}:${channel}:${tile}`;
-    let entry = programs.get(key);
-    if (entry === undefined) {
-        entry = { program: compileTextureProgram(gl, def, channel, tile), locations: new Map() };
-        programs.set(key, entry);
+    let pipeline = pipelines.get(key);
+    if (pipeline === undefined) {
+        pipeline = createPipeline(gl, def, channel, tile, vao);
+        pipelines.set(key, pipeline);
     }
-    const { program, locations } = entry;
-    function location(name: string): WebGLUniformLocation | null {
-        if (locations.has(name) === false) {
-            locations.set(name, gl.getUniformLocation(program, name));
-        }
-        return locations.get(name) ?? null;
-    }
-
     canvas.width = width;
     canvas.height = height;
-    gl.viewport(0, 0, width, height);
-    gl.useProgram(program);
-    gl.bindVertexArray(vao);
-    uploadUniforms(gl, def, location, worldSize, options.params ?? {});
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    pipeline.draw(width, height, worldSize, params);
     return canvas.transferToImageBitmap();
 }
 

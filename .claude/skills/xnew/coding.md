@@ -554,14 +554,16 @@ the rule, then one line of why.
   `Volume` members anymore (moved 2026-07); the only basics → xaudio dependency is
   `VolumeController`, which reads/writes `xaudio.volume` directly.
   **`xtextures` entries are plain texture objects, NOT component functions** (lowercase members:
-  `xtextures.wood`): the TextureDef fields (`glsl`/`color`/`normal`/`ranges`/`presets`) plus the three
-  flows. A texture module authors only `{ name, glsl, ranges, presets }` (TextureSource; `name` =
+  `xtextures.wood`): the fields `name`/`glsl`/`ranges`/`presets` plus the flows. There are **NO
+  `.color`/`.normal` members** — both channels live as entry functions inside `glsl`, so a stale
+  `texture[channel] !== undefined` check silently yields zero views (bit the 1_xnew/textures viewer).
+  A texture module authors only `{ name, glsl, ranges, presets }` (TextureSource; `name` =
   lowercase member key). **`presets.standard` is the authority on uniform keys and types** (scalar →
   float, `[r,g,b]` → vec3; it feeds `uniformDeclarations`); other presets partially override it;
   `ranges` holds `{ min, max }` for every scalar key (no `step` — InputRange auto-computes it). The
-  entry-fn names `xtex<Name>Color` / `xtex<Name>Normal` are derived and verified against the glsl by
-  `defineTexture`, which also enforces the whole schema contract (throws at assembly, not shader
-  compile / silently in a UI). Flows —
+  entry-fn names `xtex<Name>Color` / `xtex<Name>Normal` are derived from `name`; `defineTexture` is
+  check-free — schema / glsl consistency is asserted by the tests, and only invalid uniform keys
+  throw at assembly (`uniformDeclarations`). Flows —
   `bake(options)` → ImageBitmap on ONE shared OffscreenCanvas (never one WebGL context per texture:
   browsers cap contexts), `renderer(canvas, options)` for a caller-owned live-preview canvas (caller
   wires `unit.on('finalize', () => renderer.dispose())`), and passing the object to

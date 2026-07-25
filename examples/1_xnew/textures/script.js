@@ -72,8 +72,8 @@ function ViewHost(unit, { state, bags }) {
 
   function build(name) {
     const texture = TEXTURES[name];
-    const channels = ['color', 'normal'].filter((channel) => texture[channel] !== undefined);
-    return channels.map((channel) => xnew(TextureView, { texture, params: bags[name], channel }));
+    // every texture defines both channels by design (asserted by the tests)
+    return ['color', 'normal'].map((channel) => xnew(TextureView, { texture, params: bags[name], channel }));
   }
 }
 
