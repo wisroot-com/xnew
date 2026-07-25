@@ -91,8 +91,8 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
     // project the registered unit tree for one client: a node hidden from it (visibleTo) is skipped together with its whole subtree, so private state never reaches that client's wire.
     const captureStateTree = (clientId: string): SyncNode[] => {
         const nodes: SyncNode[] = [];
-        // _.Components is [base..., most-derived]; match the registered name from the tail.
-        const syncName = (unit: Unit): string | undefined => {
+        const walk = (unit: Unit, parent: number | null): void => {
+            // _.Components is [base..., most-derived]; match the registered name from the tail.
             let name: string | undefined = undefined;
             const registry = unit._.parent ? syncData.get(unit._.parent)?.registry : undefined;
             if (registry !== undefined) {
@@ -100,10 +100,6 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
                     name = Object.keys(registry).find((key) => registry[key] === unit._.Components[i]);
                 }
             }
-            return name;
-        };
-        const walk = (unit: Unit, parent: number | null): void => {
-            const name = syncName(unit);
             if (name === undefined) {
                 unit._.children.forEach((child) => walk(child, parent));   // pass-through: keep the same parent id
             } else {
@@ -201,7 +197,6 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
     socket.on('connect', () => Unit.emit(parent, '-connect', { id: socket.id }));
     socket.on('disconnect', () => Unit.emit(parent, '-disconnect', {}));
     socket.on('notfound', (payload: any) => Unit.emit(parent, '-notfound', payload ?? {}));
-    // boot owns the socket (forceNew, never reused): disconnecting stops all delivery, so no listener off needed.
     root.on('finalize', () => socket.disconnect());
     return root;
 }

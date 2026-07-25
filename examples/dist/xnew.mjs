@@ -1185,8 +1185,8 @@ function bootServer(opts, parent, args) {
     let nextId = 1;
     const captureStateTree = (clientId) => {
         const nodes = [];
-        const syncName = (unit) => {
-            var _a;
+        const walk = (unit, parent) => {
+            var _a, _b;
             let name = undefined;
             const registry = unit._.parent ? (_a = syncData.get(unit._.parent)) === null || _a === void 0 ? void 0 : _a.registry : undefined;
             if (registry !== undefined) {
@@ -1194,11 +1194,6 @@ function bootServer(opts, parent, args) {
                     name = Object.keys(registry).find((key) => registry[key] === unit._.Components[i]);
                 }
             }
-            return name;
-        };
-        const walk = (unit, parent) => {
-            var _a;
-            const name = syncName(unit);
             if (name === undefined) {
                 unit._.children.forEach((child) => walk(child, parent));
             }
@@ -1206,7 +1201,7 @@ function bootServer(opts, parent, args) {
                 const data = syncOf(unit);
                 const visible = data.visibility === null || data.visibility(clientId) === true;
                 if (visible === true) {
-                    (_a = data.id) !== null && _a !== void 0 ? _a : (data.id = nextId++);
+                    (_b = data.id) !== null && _b !== void 0 ? _b : (data.id = nextId++);
                     nodes.push({ id: data.id, name, parent, state: Object.assign({}, data.state) });
                     unit._.children.forEach((child) => walk(child, data.id));
                 }
