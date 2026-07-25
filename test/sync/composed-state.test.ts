@@ -1,5 +1,4 @@
 import { Unit } from '../../src/core/unit';
-import { syncOf } from '../../src/sync/xsync';
 import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
@@ -43,7 +42,7 @@ describe('composed synced state (base + extend)', () => {
         const replica = client._.children[0];
         // Base(hp) と Enemy(x) の両宣言が、構築時点でサーバー値として読めている
         expect(clientReadAtConstruction).toEqual({ hp: 101, x: 3 });
-        expect(syncOf(replica).state).toEqual({ hp: 101, x: 3 });
+        expect(Unit.syncData(replica).state).toEqual({ hp: 101, x: 3 });
     });
 
     it('keeps the first value when keys collide across declarations (existing-wins)', () => {
@@ -51,14 +50,14 @@ describe('composed synced state (base + extend)', () => {
             xsync.state({ pos: 1 });
             xsync.state({ pos: 2 });   // 同名キー: 既存（先勝ち）を尊重
         });
-        expect(syncOf(unit).state).toEqual({ pos: 1 });   // existing-wins（プリシード/先行宣言を優先する規則と一貫）
+        expect(Unit.syncData(unit).state).toEqual({ pos: 1 });   // existing-wins（プリシード/先行宣言を優先する規則と一貫）
     });
 
     it('does not leak injected state into a non-synced child built during the body', () => {
         let childState: Record<string, any> = {};
         function Host(unit: Unit) {
             xsync.state({ value: 0 });
-            xsync.server(() => { unit.on('update', () => { (syncOf(unit).state as any).value += 5; }); });
+            xsync.server(() => { unit.on('update', () => { (Unit.syncData(unit).state as any).value += 5; }); });
             // 本体内でインライン生成する非 synced 子（apply ではなく親本体が生成する）
             xsync.client(() => {
                 xnew(function Child() { childState = xsync.state({ value: -1 }); });
@@ -70,7 +69,7 @@ describe('composed synced state (base + extend)', () => {
         asServer(() => Unit.update(server));   // server Host: value=5 → 'sync' → client が replica Host + inline Child を生成
 
         const replicaHost = client._.children[0];
-        expect(syncOf(replicaHost).state!.value).toBe(5);             // Host は注入値
+        expect(Unit.syncData(replicaHost).state!.value).toBe(5);             // Host は注入値
         expect(childState.value).toBe(-1);                      // 子は自分の initial（親の注入が漏れない）
     });
 

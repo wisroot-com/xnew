@@ -31,6 +31,19 @@ function textComponent(content: string | number): (unit: Unit) => void {
 }
 
 //----------------------------------------------------------------------------------------------------
+// sync (xsync) — sync slots live on Unit itself (_.syncRoot / _.syncData) so xsync needs no side maps
+//----------------------------------------------------------------------------------------------------
+
+export interface ClientStatus { id: string; name: string; }
+export interface RoomStatus { id: string; name: string; count: number; }
+
+export interface ServerRoot { io: any; room: RoomStatus; clients: ClientStatus[]; }
+export interface ClientRoot { socket: any; room: RoomStatus; clients: ClientStatus[]; }
+
+// visibility === null → public; otherwise a predicate re-evaluated per capture, so a closure over dynamic state can widen private → public.
+export interface SyncData { id: number | null; state: Record<string, any>; registry: Record<string, Function>; visibility: ((clientId: string) => boolean) | null; }
+
+//----------------------------------------------------------------------------------------------------
 // unit
 //----------------------------------------------------------------------------------------------------
 
@@ -40,8 +53,8 @@ export class Unit {
     public _: {
         parent: Unit | null;
         children: Unit[];
-        inherited: any;   // library-internal shared value, propagated to descendants (not a user-facing API)
-        meta: any;        // library-internal per-unit value, NOT propagated (not a user-facing API)
+        syncRoot: ServerRoot | ClientRoot | null;   // xsync boot root info, propagated to descendants (not a user-facing API)
+        syncData: SyncData | null;                  // xsync per-unit node data, NOT propagated (not a user-facing API)
 
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
@@ -64,7 +77,7 @@ export class Unit {
         key: any;   // reserved prop for find(key) (global unique assumed)
     };
 
-    constructor({ parent, inherited, meta }: { parent: Unit | null; inherited?: any; meta?: any }, ...args: any[]) {
+    constructor({ parent, syncRoot, syncData }: { parent: Unit | null; syncRoot?: ServerRoot | ClientRoot; syncData?: SyncData }, ...args: any[]) {
         parent?._.children.push(this);
 
         const baseContext = parent?._.currentContext ?? { previous: null };
@@ -80,8 +93,8 @@ export class Unit {
 
         this._ = {
             parent,
-            inherited: inherited ?? parent?._.inherited ?? null,
-            meta: meta ?? null,
+            syncRoot: syncRoot ?? parent?._.syncRoot ?? null,
+            syncData: syncData ?? null,
             phase: 'invoked',
             protected: false,
             standalone: true,
@@ -156,6 +169,15 @@ export class Unit {
         }
         unit._.lastSnapshot = Unit.snapshot(unit);
         Unit.currentUnit = backup;
+    }
+
+    static syncRoot(unit: Unit): ServerRoot | ClientRoot | null {
+        return unit._.syncRoot;
+    }
+
+    // lazily creates the default so every caller (reader or writer) shares the one object
+    static syncData(unit: Unit): SyncData {
+        return unit._.syncData ??= { id: null, state: {}, registry: {}, visibility: null };
     }
 
     public get parent(): Unit | null {

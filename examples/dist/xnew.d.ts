@@ -47,13 +47,38 @@ interface Snapshot {
 type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends [void] ? {} : Exclude<R, void | undefined>) : {};
 type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
+interface ClientStatus {
+    id: string;
+    name: string;
+}
+interface RoomStatus {
+    id: string;
+    name: string;
+    count: number;
+}
+interface ServerRoot {
+    io: any;
+    room: RoomStatus;
+    clients: ClientStatus[];
+}
+interface ClientRoot {
+    socket: any;
+    room: RoomStatus;
+    clients: ClientStatus[];
+}
+interface SyncData {
+    id: number | null;
+    state: Record<string, any>;
+    registry: Record<string, Function>;
+    visibility: ((clientId: string) => boolean) | null;
+}
 declare class Unit {
     [key: string]: any;
     _: {
         parent: Unit | null;
         children: Unit[];
-        inherited: any;
-        meta: any;
+        syncRoot: ServerRoot | ClientRoot | null;
+        syncData: SyncData | null;
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
         standalone: boolean;
@@ -78,12 +103,14 @@ declare class Unit {
         events: EventBinder;
         key: any;
     };
-    constructor({ parent, inherited, meta }: {
+    constructor({ parent, syncRoot, syncData }: {
         parent: Unit | null;
-        inherited?: any;
-        meta?: any;
+        syncRoot?: ServerRoot | ClientRoot;
+        syncData?: SyncData;
     }, ...args: any[]);
     static initialize(unit: Unit, ...args: any[]): void;
+    static syncRoot(unit: Unit): ServerRoot | ClientRoot | null;
+    static syncData(unit: Unit): SyncData;
     get parent(): Unit | null;
     get element(): DomElement;
     finalize(): void;
@@ -188,15 +215,6 @@ declare namespace xnew {
     type Timer = InstanceType<typeof UnitTimer>;
 }
 
-interface ClientStatus {
-    id: string;
-    name: string;
-}
-interface RoomStatus {
-    id: string;
-    name: string;
-    count: number;
-}
 interface BootServerOptions {
     io: any;
     room: RoomStatus;
