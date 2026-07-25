@@ -1151,8 +1151,8 @@ const WIRE_TO_SERVER = 'sync:toServer';
 const WIRE_DELIVER = 'sync:deliver';
 function dispatch(info, event, id, payload) {
     var _a;
-    const data = payload && payload.data !== null && typeof payload.data === 'object' ? payload.data : {};
-    const syncId = payload ? payload.syncId : undefined;
+    const data = typeof (payload === null || payload === void 0 ? void 0 : payload.data) === 'object' && payload.data !== null ? payload.data : {};
+    const syncId = payload === null || payload === void 0 ? void 0 : payload.syncId;
     ((_a = Unit.type2units.get(event)) !== null && _a !== void 0 ? _a : []).forEach((unit) => {
         var _a;
         if (unit._.phase === 'finalized' || unit._.phase === 'finalizing')
@@ -1255,7 +1255,7 @@ function bootClient(opts, args) {
             const unit = new Unit({ parent: nodeParent, own: { syncData: { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null } } }, Component);
             reconcileMap.set(node.id, unit);
         }
-        for (const [id, unit] of [...reconcileMap.entries()]) {
+        for (const [id, unit] of reconcileMap) {
             if (!incoming.has(id)) {
                 unit.finalize();
                 reconcileMap.delete(id);
@@ -1341,20 +1341,10 @@ const xsync = {
         }
         const { io, room } = syncRoot(Unit.current, true);
         const envelope = { type, syncId: syncData(Unit.current).id, id: undefined, data: props };
-        if (Array.isArray(ids) && ids.length > 0) {
-            ids.forEach((cid) => io.to(cid).emit(WIRE_DELIVER, envelope));
-        }
-        else {
-            io.to(room.id).emit(WIRE_DELIVER, envelope);
-        }
+        ((ids === null || ids === void 0 ? void 0 : ids.length) ? ids : [room.id]).forEach((target) => io.to(target).emit(WIRE_DELIVER, envelope));
     },
     boot(opts, ...args) {
-        if (getEnvironment() === 'server') {
-            return bootServer(opts, args);
-        }
-        else {
-            return bootClient(opts, args);
-        }
+        return getEnvironment() === 'server' ? bootServer(opts, args) : bootClient(opts, args);
     },
 };
 

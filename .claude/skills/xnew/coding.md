@@ -622,8 +622,8 @@ the rule, then one line of why.
   **and** the test mocks (`io-mock.ts`).
   The forward reaches up to the parent (the boot root is a *child* of the host), so it
   bypasses the root-scoped `dispatch` on purpose — host listeners live above the root.
-- **When changing `BootServerOptions`/`BootClientOptions`, update the test `bootClient`
-  adapter in `test/core/sync/io-mock.ts` too.** It wraps a pre-made mock socket as
+- **When changing `BootOptions` (the one shared server/client boot options bag), update the test
+  `bootClient` adapter in `test/sync/io-mock.ts` too.** It wraps a pre-made mock socket as
   `io: () => socket` so the ~25 call sites stay unchanged; miss it and every sync test
   throws `io is not a function`. Tests in `boot-api`/`channel` also *document* the
   boot contract — update those assertions when the contract changes.

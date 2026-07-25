@@ -197,14 +197,10 @@ interface RoomStatus {
     name: string;
     count: number;
 }
-interface BootServerOptions {
+interface BootOptions {
     io: any;
     room: RoomStatus;
-}
-interface BootClientOptions {
-    io: any;
-    room: RoomStatus;
-    client: any;
+    client?: any;
 }
 declare const xsync: {
     server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
@@ -219,7 +215,7 @@ declare const xsync: {
     };
     emitToServer(type: string, props?: Record<string, any>): void;
     emitToClients(type: string, props?: Record<string, any>, ids?: string[]): void;
-    boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
+    boot(opts: BootOptions, ...args: any[]): Unit;
 };
 
 declare class AudioTrack {

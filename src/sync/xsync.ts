@@ -21,8 +21,7 @@ interface RoomStatus { id: string; name: string; count: number; }
 interface ServerRoot { io: any; room: RoomStatus; clients: ClientStatus[]; }
 interface ClientRoot { socket: any; room: RoomStatus; clients: ClientStatus[]; }
 
-interface BootServerOptions { io: any; room: RoomStatus; }
-interface BootClientOptions { io: any; room: RoomStatus; client: any; }
+interface BootOptions { io: any; room: RoomStatus; client?: any; }   // client is client-boot only; a server boot ignores it
 
 // boot puts its root object on inherited.syncRoot, so every descendant carries it from construction; required ⇒ throw instead of null.
 function syncRoot(unit: Unit, required?: true): ServerRoot | ClientRoot | null {
@@ -47,8 +46,8 @@ const WIRE_TO_SERVER = 'sync:toServer';   // client→server: { type, syncId, da
 const WIRE_DELIVER = 'sync:deliver';      // server→client: { type, syncId, id, data }   → dispatch `type` on the client
 
 function dispatch(info: ServerRoot | ClientRoot, event: string, id: string | undefined, payload: any): void {
-    const data = payload && payload.data !== null && typeof payload.data === 'object' ? payload.data : {};
-    const syncId = payload ? payload.syncId : undefined;
+    const data = typeof payload?.data === 'object' && payload.data !== null ? payload.data : {};
+    const syncId = payload?.syncId;
     (Unit.type2units.get(event) ?? []).forEach((unit) => {
         // socket callbacks run outside the scope machinery: a message landing after / mid-finalize must not fire a dying unit's handler.
         if (unit._.phase === 'finalized' || unit._.phase === 'finalizing') return;
@@ -62,7 +61,7 @@ function dispatch(info: ServerRoot | ClientRoot, event: string, id: string | und
 // boot
 //----------------------------------------------------------------------------------------------------
 
-function bootServer(opts: BootServerOptions, args: any[]): Unit {
+function bootServer(opts: BootOptions, args: any[]): Unit {
     const { io, room } = opts;
     const info: ServerRoot = { io, room, clients: [] };
 
@@ -129,7 +128,7 @@ function bootServer(opts: BootServerOptions, args: any[]): Unit {
     return root;
 }
 
-function bootClient(opts: BootClientOptions, args: any[]): Unit {
+function bootClient(opts: BootOptions, args: any[]): Unit {
     const parent = Unit.current;   // captured once: the socket lifecycle forwards below must reach the boot-time host
     const { io, room, client } = opts;
     // boot owns the socket; the handshake query must stay flat strings (socket.io stringifies values).
@@ -160,7 +159,7 @@ function bootClient(opts: BootClientOptions, args: any[]): Unit {
             const unit = new Unit({ parent: nodeParent, own: { syncData: { id: node.id, state: { ...node.state }, registry: {}, visibility: null } } }, Component);
             reconcileMap.set(node.id, unit);
         }
-        for (const [id, unit] of [...reconcileMap.entries()]) {
+        for (const [id, unit] of reconcileMap) {   // deleting the visited entry mid-iteration is spec-safe for Map
             if (!incoming.has(id)) { unit.finalize(); reconcileMap.delete(id); }
         }
     });
@@ -245,17 +244,10 @@ export const xsync = {
         const { io, room } = syncRoot(Unit.current, true) as ServerRoot;
         // the envelope id stays undefined (server-originated), so a relay names the original sender inside data.
         const envelope = { type, syncId: syncData(Unit.current).id, id: undefined, data: props };
-        if (Array.isArray(ids) && ids.length > 0) {
-            ids.forEach((cid) => io.to(cid).emit(WIRE_DELIVER, envelope));   // each socket is in a room named by its id
-        } else {
-            io.to(room.id).emit(WIRE_DELIVER, envelope);
-        }
+        // each socket is in a room named by its id, so individual and room-wide delivery share io.to()
+        (ids?.length ? ids : [room.id]).forEach((target) => io.to(target).emit(WIRE_DELIVER, envelope));
     },
-    boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit {
-        if (getEnvironment() === 'server') {
-            return bootServer(opts as BootServerOptions, args);
-        } else {
-            return bootClient(opts as BootClientOptions, args);
-        }
+    boot(opts: BootOptions, ...args: any[]): Unit {
+        return getEnvironment() === 'server' ? bootServer(opts, args) : bootClient(opts, args);
     },
 };
