@@ -65,7 +65,7 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
     const { io, room } = opts;
     const info: ServerInfo = { io, room, clients: [] };
 
-    const root = Unit.create({ parent, inherited: info }, ...args);
+    const root = new Unit({ parent, inherited: info }, ...args);
 
     // a sync target is a unit registered in its direct parent's registry; nextId is monotonic so a unit keeps its id for life.
     let nextId = 1;
@@ -134,7 +134,7 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
     const socket = io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
     const info: ClientInfo = { socket, room, clients: [] };
 
-    const root = Unit.create({ parent, inherited: info }, ...args);
+    const root = new Unit({ parent, inherited: info }, ...args);
 
     // diff-apply each captured tree onto this root; reconcileMap tracks node id → replica unit.
     const reconcileMap = new Map<number, Unit>();
@@ -156,7 +156,7 @@ function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
             if (!Component) { continue; }
             // seed the sync meta at construction so the body's xsync.state sees the server state and fixed id
             const meta: SyncData = { id: node.id, state: { ...node.state }, registry: {}, visibility: null };
-            const unit = Unit.create({ parent: nodeParent, meta }, Component);
+            const unit = new Unit({ parent: nodeParent, meta }, Component);
             reconcileMap.set(node.id, unit);
         }
         for (const [id, unit] of [...reconcileMap.entries()]) {

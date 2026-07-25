@@ -473,7 +473,7 @@ function textComponent(content) {
     return (unit) => { unit.element.textContent = content.toString(); };
 }
 class Unit {
-    constructor({ parent, inherited, meta }) {
+    constructor({ parent, inherited, meta }, ...args) {
         var _a, _b, _c;
         parent === null || parent === void 0 ? void 0 : parent._.children.push(this);
         const baseContext = (_a = parent === null || parent === void 0 ? void 0 : parent._.currentContext) !== null && _a !== void 0 ? _a : { previous: null };
@@ -508,11 +508,7 @@ class Unit {
             events: new EventBinder(),
             key: null,
         };
-    }
-    static create({ parent, inherited, meta }, ...args) {
-        const unit = new Unit({ parent, inherited, meta });
-        Unit.initialize(unit, ...args);
-        return unit;
+        Unit.initialize(this, ...args);
     }
     static initialize(unit, ...args) {
         var _a;
@@ -670,7 +666,7 @@ class Unit {
     static reset() {
         var _a;
         (_a = Unit.engineRoot) === null || _a === void 0 ? void 0 : _a.finalize();
-        Unit.currentUnit = Unit.engineRoot = Unit.create({ parent: null });
+        Unit.currentUnit = Unit.engineRoot = new Unit({ parent: null });
         const ticker = new Ticker((delta) => {
             Unit.update(Unit.engineRoot, delta);
         });
@@ -910,7 +906,7 @@ class UnitTimer {
         return this;
     }
     start(Component) {
-        this.unit = Unit.create({ parent: Unit.currentUnit }, Component);
+        this.unit = new Unit({ parent: Unit.currentUnit }, Component);
         this.unit.on('finalize', () => {
             const owner = Unit.currentUnit;
             if (this.queue.length > 0 && owner._.phase !== 'finalizing' && owner._.phase !== 'finalized') {
@@ -1053,10 +1049,10 @@ const xnew = Object.assign((function (...args) {
     if (args[0] instanceof Unit) {
         const parent = args.shift();
         const snapshot = (_a = parent._.lastSnapshot) !== null && _a !== void 0 ? _a : Unit.snapshot(parent);
-        return Unit.scope(snapshot, () => Unit.create({ parent }, ...args));
+        return Unit.scope(snapshot, () => new Unit({ parent }, ...args));
     }
     else {
-        return Unit.create({ parent: Unit.current }, ...args);
+        return new Unit({ parent: Unit.current }, ...args);
     }
 }), {
     nest(tag, textContent) {
@@ -1169,7 +1165,7 @@ function dispatch(info, event, id, payload) {
 function bootServer(opts, parent, args) {
     const { io, room } = opts;
     const info = { io, room, clients: [] };
-    const root = Unit.create({ parent, inherited: info }, ...args);
+    const root = new Unit({ parent, inherited: info }, ...args);
     let nextId = 1;
     const captureStateTree = (clientId) => {
         const nodes = [];
@@ -1232,7 +1228,7 @@ function bootClient(opts, parent, args) {
     const { io, room, client } = opts;
     const socket = io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true });
     const info = { socket, room, clients: [] };
-    const root = Unit.create({ parent, inherited: info }, ...args);
+    const root = new Unit({ parent, inherited: info }, ...args);
     const reconcileMap = new Map();
     socket.on('sync', (tree) => {
         const incoming = new Set(tree.map((node) => node.id));
@@ -1254,7 +1250,7 @@ function bootClient(opts, parent, args) {
                 continue;
             }
             const meta = { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null };
-            const unit = Unit.create({ parent: nodeParent, meta }, Component);
+            const unit = new Unit({ parent: nodeParent, meta }, Component);
             reconcileMap.set(node.id, unit);
         }
         for (const [id, unit] of [...reconcileMap.entries()]) {

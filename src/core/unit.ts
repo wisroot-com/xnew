@@ -64,7 +64,7 @@ export class Unit {
         key: any;   // reserved prop for find(key) (global unique assumed)
     };
 
-    constructor({ parent, inherited, meta }: { parent: Unit | null; inherited?: any; meta?: any }) {
+    constructor({ parent, inherited, meta }: { parent: Unit | null; inherited?: any; meta?: any }, ...args: any[]) {
         parent?._.children.push(this);
 
         const baseContext = parent?._.currentContext ?? { previous: null };
@@ -99,12 +99,8 @@ export class Unit {
             events: new EventBinder(),
             key: null,
         };
-    }
 
-    static create({ parent, inherited, meta }: { parent: Unit | null; inherited?: any; meta?: any }, ...args: any[]): Unit {
-        const unit = new Unit({ parent, inherited, meta });
-        Unit.initialize(unit, ...args);
-        return unit;
+        Unit.initialize(this, ...args);
     }
 
     static initialize(unit: Unit, ...args: any[]): void {
@@ -293,7 +289,7 @@ export class Unit {
 
     static reset(): void {
         Unit.engineRoot?.finalize();
-        Unit.currentUnit = Unit.engineRoot = Unit.create({ parent: null });
+        Unit.currentUnit = Unit.engineRoot = new Unit({ parent: null });
         const ticker = new Ticker((delta: number) => {
             Unit.update(Unit.engineRoot, delta);
         });
@@ -553,7 +549,7 @@ export class UnitTimer {
     }
 
     private start(Component: Function) {
-        this.unit = Unit.create({ parent: Unit.currentUnit }, Component);
+        this.unit = new Unit({ parent: Unit.currentUnit }, Component);
         this.unit.on('finalize', () => {
             // While the owner unit is finalizing, the next task would escape its child-finalize loop — drop the queue instead.
             const owner = Unit.currentUnit;

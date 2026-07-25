@@ -82,12 +82,7 @@ declare class Unit {
         parent: Unit | null;
         inherited?: any;
         meta?: any;
-    });
-    static create({ parent, inherited, meta }: {
-        parent: Unit | null;
-        inherited?: any;
-        meta?: any;
-    }, ...args: any[]): Unit;
+    }, ...args: any[]);
     static initialize(unit: Unit, ...args: any[]): void;
     get parent(): Unit | null;
     get element(): DomElement;
