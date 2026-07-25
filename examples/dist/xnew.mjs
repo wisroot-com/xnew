@@ -508,8 +508,8 @@ class Unit {
             key: null,
         };
     }
-    static create(parent, ...args) {
-        const unit = new Unit({ parent });
+    static create({ parent, inherited }, ...args) {
+        const unit = new Unit({ parent, inherited });
         Unit.initialize(unit, ...args);
         return unit;
     }
@@ -669,7 +669,7 @@ class Unit {
     static reset() {
         var _a;
         (_a = Unit.engineRoot) === null || _a === void 0 ? void 0 : _a.finalize();
-        Unit.currentUnit = Unit.engineRoot = Unit.create(null);
+        Unit.currentUnit = Unit.engineRoot = Unit.create({ parent: null });
         const ticker = new Ticker((delta) => {
             Unit.update(Unit.engineRoot, delta);
         });
@@ -909,7 +909,7 @@ class UnitTimer {
         return this;
     }
     start(Component) {
-        this.unit = Unit.create(Unit.currentUnit, Component);
+        this.unit = Unit.create({ parent: Unit.currentUnit }, Component);
         this.unit.on('finalize', () => {
             const owner = Unit.currentUnit;
             if (this.queue.length > 0 && owner._.phase !== 'finalizing' && owner._.phase !== 'finalized') {
@@ -1052,10 +1052,10 @@ const xnew = Object.assign((function (...args) {
     if (args[0] instanceof Unit) {
         const parent = args.shift();
         const snapshot = (_a = parent._.lastSnapshot) !== null && _a !== void 0 ? _a : Unit.snapshot(parent);
-        return Unit.scope(snapshot, () => Unit.create(parent, ...args));
+        return Unit.scope(snapshot, () => Unit.create({ parent }, ...args));
     }
     else {
-        return Unit.create(Unit.current, ...args);
+        return Unit.create({ parent: Unit.current }, ...args);
     }
 }), {
     nest(tag, textContent) {

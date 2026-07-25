@@ -81,7 +81,10 @@ declare class Unit {
         parent: Unit | null;
         inherited?: any;
     });
-    static create(parent: Unit | null, ...args: any[]): Unit;
+    static create({ parent, inherited }: {
+        parent: Unit | null;
+        inherited?: any;
+    }, ...args: any[]): Unit;
     static initialize(unit: Unit, ...args: any[]): void;
     get parent(): Unit | null;
     get element(): DomElement;

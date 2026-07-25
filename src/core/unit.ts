@@ -99,8 +99,8 @@ export class Unit {
         };
     }
 
-    static create(parent: Unit | null, ...args: any[]): Unit {
-        const unit = new Unit({ parent });
+    static create({ parent, inherited }: { parent: Unit | null; inherited?: any }, ...args: any[]): Unit {
+        const unit = new Unit({ parent, inherited });
         Unit.initialize(unit, ...args);
         return unit;
     }
@@ -291,7 +291,7 @@ export class Unit {
 
     static reset(): void {
         Unit.engineRoot?.finalize();
-        Unit.currentUnit = Unit.engineRoot = Unit.create(null);
+        Unit.currentUnit = Unit.engineRoot = Unit.create({ parent: null });
         const ticker = new Ticker((delta: number) => {
             Unit.update(Unit.engineRoot, delta);
         });
@@ -551,7 +551,7 @@ export class UnitTimer {
     }
 
     private start(Component: Function) {
-        this.unit = Unit.create(Unit.currentUnit, Component);
+        this.unit = Unit.create({ parent: Unit.currentUnit }, Component);
         this.unit.on('finalize', () => {
             // While the owner unit is finalizing, the next task would escape its child-finalize loop — drop the queue instead.
             const owner = Unit.currentUnit;
