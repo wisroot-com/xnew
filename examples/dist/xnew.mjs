@@ -1160,10 +1160,10 @@ function dispatch(info, event, id, payload) {
         (_a = unit._.listeners.get(event)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
     });
 }
-function bootServer(opts, parent, args) {
+function bootServer(opts, args) {
     const { io, room } = opts;
     const info = { io, room, clients: [] };
-    const root = new Unit({ parent, inherited: { syncRoot: info } }, ...args);
+    const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
     let nextId = 1;
     const captureStateTree = (clientId) => {
         const nodes = [];
@@ -1221,8 +1221,9 @@ function bootServer(opts, parent, args) {
     }
     return root;
 }
-function bootClient(opts, parent, args) {
+function bootClient(opts, args) {
     var _a;
+    const parent = Unit.current;
     const { io, room, client } = opts;
     const socket = io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true });
     const info = { socket, room, clients: [] };
@@ -1355,10 +1356,10 @@ const xsync = {
     },
     boot(opts, ...args) {
         if (getEnvironment() === 'server') {
-            return bootServer(opts, Unit.current, args);
+            return bootServer(opts, args);
         }
         else {
-            return bootClient(opts, Unit.current, args);
+            return bootClient(opts, args);
         }
     },
 };

@@ -58,11 +58,11 @@ function dispatch(info: ServerRoot | ClientRoot, event: string, id: string | und
 // boot
 //----------------------------------------------------------------------------------------------------
 
-function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
+function bootServer(opts: BootServerOptions, args: any[]): Unit {
     const { io, room } = opts;
     const info: ServerRoot = { io, room, clients: [] };
 
-    const root = new Unit({ parent, inherited: { syncRoot: info } }, ...args);
+    const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
 
     // a sync target is a unit registered in its direct parent's registry; nextId is monotonic so a unit keeps its id for life.
     let nextId = 1;
@@ -125,7 +125,8 @@ function bootServer(opts: BootServerOptions, parent: Unit, args: any[]): Unit {
     return root;
 }
 
-function bootClient(opts: BootClientOptions, parent: Unit, args: any[]): Unit {
+function bootClient(opts: BootClientOptions, args: any[]): Unit {
+    const parent = Unit.current;   // captured once: the socket lifecycle forwards below must reach the boot-time host
     const { io, room, client } = opts;
     // boot owns the socket; the handshake query must stay flat strings (socket.io stringifies values).
     const socket = io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
@@ -258,9 +259,9 @@ export const xsync = {
     },
     boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit {
         if (getEnvironment() === 'server') {
-            return bootServer(opts as BootServerOptions, Unit.current, args);
+            return bootServer(opts as BootServerOptions, args);
         } else {
-            return bootClient(opts as BootClientOptions, Unit.current, args);
+            return bootClient(opts as BootClientOptions, args);
         }
     },
 };
