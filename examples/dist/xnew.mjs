@@ -1204,21 +1204,19 @@ function bootServer(opts, args) {
         info.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
         dispatch(info, 'sync.connect', socket.id, undefined);
         socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
-        statusUpdate();
+        io.to(room.id).emit('status', { clients: info.clients });
+        dispatch(info, 'sync.statusupdate', undefined, undefined);
         socket.on('emitToServer', (payload) => dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, payload));
         socket.on('disconnect', () => {
             info.clients = info.clients.filter((c) => c.id !== socket.id);
             dispatch(info, 'sync.disconnect', socket.id, undefined);
             socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
-            statusUpdate();
+            io.to(room.id).emit('status', { clients: info.clients });
+            dispatch(info, 'sync.statusupdate', undefined, undefined);
         });
     };
     io.on('connection', connection);
     root.on('finalize', () => io.off('connection', connection));
-    function statusUpdate() {
-        io.to(room.id).emit('status', { clients: info.clients });
-        dispatch(info, 'sync.statusupdate', undefined, undefined);
-    }
     return root;
 }
 function bootClient(opts, args) {

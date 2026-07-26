@@ -108,21 +108,19 @@ function bootServer(opts: BootOptions, args: any[]): Unit {
         dispatch(info, 'sync.connect', socket.id, undefined);
         // relay to the other members (socket.to excludes the sender); the client itself dispatches from its own socket events.
         socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
-        statusUpdate();
+        io.to(room.id).emit('status', { clients: info.clients });
+        dispatch(info, 'sync.statusupdate', undefined, undefined);
         socket.on('emitToServer', (payload: any) => dispatch(info, payload?.type, socket.id, payload));
         socket.on('disconnect', () => {
             info.clients = info.clients.filter((c) => c.id !== socket.id);
             dispatch(info, 'sync.disconnect', socket.id, undefined);
             socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
-            statusUpdate();
+            io.to(room.id).emit('status', { clients: info.clients });
+            dispatch(info, 'sync.statusupdate', undefined, undefined);
         });
     };
     io.on('connection', connection);
     root.on('finalize', () => io.off('connection', connection));
-    function statusUpdate() {
-        io.to(room.id).emit('status', { clients: info.clients });
-        dispatch(info, 'sync.statusupdate', undefined, undefined);
-    }
     return root;
 }
 
