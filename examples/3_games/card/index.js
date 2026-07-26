@@ -14,9 +14,14 @@ const room = { id: 'main', name: 'カードルーム', count: 0 };
 
 function App(unit) {
     const statusEl = document.getElementById('status');
-    xsync.boot({ io: window.io, client: { name: '' }, room }, Game);
-    unit.on('-connect', ({ id }) => { statusEl.textContent = `接続 (${id.slice(0, 4)})`; statusEl.className = 'text-green-600'; });
-    unit.on('-disconnect', () => { statusEl.textContent = '切断'; statusEl.className = 'text-red-500'; });
+    xsync.boot({ io: window.io, client: { name: '' }, room }, Game, (u) => {
+        u.on('sync.connect', ({ id }) => {
+            if (id === xsync.session.myself.id) { statusEl.textContent = `接続 (${id.slice(0, 4)})`; statusEl.className = 'text-green-600'; }
+        });
+        u.on('sync.disconnect', ({ id }) => {
+            if (id === xsync.session.myself.id) { statusEl.textContent = '切断'; statusEl.className = 'text-red-500'; }
+        });
+    });
 }
 
 xnew(document.getElementById('app'), App);

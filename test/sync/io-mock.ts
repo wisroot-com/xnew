@@ -119,6 +119,14 @@ export function ioMock(): IoMock {
             join(room: string): void { conn.rooms.add(room); },
             onAny(handler: AnyHandler): void { conn.serverAny.add(handler); },
             on(event: string, handler: Handler): void { if (event === 'disconnect') { conn.serverDisconnect.add(handler); } },
+            // socket.io の socket.to(room) 相当：本人を除く room メンバーへ配信（boot の connect/disconnect relay が使う）
+            to(room: string) {
+                return { emit(event: string, payload?: any): void {
+                    for (const c of conns.values()) {
+                        if (c !== conn && c.rooms.has(room)) { deliverToClient(c, event, payload); }
+                    }
+                } };
+            },
         });
 
         return {

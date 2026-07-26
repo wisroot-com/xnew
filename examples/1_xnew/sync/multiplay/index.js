@@ -112,8 +112,8 @@ function Lobby(unit, { io }) {
 //----------------------------------------------------------------------------------------------------
 // Room — 渡された io / client / room でそのルームへ接続し、client ツリー(Game) を mount してプレイ
 //   呼び出し側が io（socket.io factory）・client（表示名）・room({id,name}）を渡す。HTML（戻るボタン・
-//   シーンの mount 先）だけを持ち、room 関連の配線（socket 生成・所有 / 基本イベント connect・disconnect・
-//   notfound の '-event' 転送）は xsync.boot に委ねる（browser 実行なので client 分岐が動く）。
+//   シーンの mount 先）だけを持ち、room 関連の配線（socket 生成・所有 / sync.connect・sync.disconnect・
+//   sync.notfound の root 配下への dispatch）は xsync.boot に委ねる（browser 実行なので client 分岐が動く）。
 //----------------------------------------------------------------------------------------------------
 
 function Room(unit, { io, client, room }) {
@@ -124,12 +124,12 @@ function Room(unit, { io, client, room }) {
     xnew.nest('<div class="flex gap-4">');   // シーンの mount 先（Game の client が Title/Setup/World を nest する）
 
     // xsync.boot が socket を io から生成・所有し（query に roomId/clientName を載せる）、finalize で切断する。
-    // socket の connect/disconnect/notfound は boot がこの Room の unit.on('-event') へ転送する。
+    // sync.connect/sync.disconnect/sync.notfound は root 配下へ届くので、末尾関数で root に listener を置く。
     // シーン遷移（change）は呼び出し側の責務なので Scene をここで extend する。
     xnew.extend(xbasics.Scene);
-    xsync.boot({ io, client, room }, Game);
-
-    unit.on('-connect', ({ id }) => app.setStatus(`ルーム ${room.id}: ${id}`, true));
-    unit.on('-disconnect', () => app.setStatus('切断', false));
-    unit.on('-notfound', () => unit.change(Lobby, { io: window.io }));   // 消滅ルームへ来たらロビーへ
+    xsync.boot({ io, client, room }, Game, (u) => {
+        u.on('sync.connect', ({ id }) => { if (id === xsync.session.myself.id) { app.setStatus(`ルーム ${room.id}: ${id}`, true); } });
+        u.on('sync.disconnect', ({ id }) => { if (id === xsync.session.myself.id) { app.setStatus('切断', false); } });
+        u.on('sync.notfound', () => unit.change(Lobby, { io: window.io }));   // 消滅ルームへ来たらロビーへ
+    });
 }

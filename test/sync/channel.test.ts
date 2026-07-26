@@ -206,31 +206,29 @@ describe('event channel (socket.io transport)', () => {
         expect(hits.sort()).toEqual(['A:1', 'B:1']);
     });
 
-    it('client boot forwards the socket lifecycle to the boot parent as local -events', () => {
-        // boot が socket の connect/disconnect/notfound を host(=boot 親) の '-event' へ転送する。
+    it('client boot dispatches the socket lifecycle into the root as sync.* events with the own id', () => {
+        // boot は socket の connect/disconnect/notfound を root 配下へ sync.* として配る（id = 自分の socket id）。
         const handlers = new Map<string, Set<Function>>();
         const socket: any = {
             id: 'c1',
             emit: () => {},
             on: (event: string, h: Function) => { if (!handlers.has(event)) { handlers.set(event, new Set()); } handlers.get(event)!.add(h); },
-            off: (event: string, h: Function) => { handlers.get(event)?.delete(h); },
             onAny: () => {},
             disconnect: () => {},
         };
         const fire = (event: string, payload?: any) => handlers.get(event)?.forEach((h) => (h as Function)(payload));
 
-        const parentLog: string[] = [];
-        xnew(function Parent(unit: Unit) {
-            bootClient({ socket }, function Client() {});
-            unit.on('-connect', ({ id }: any) => parentLog.push(`connect:${id}`));
-            unit.on('-disconnect', () => parentLog.push('disconnect'));
-            unit.on('-notfound', ({ roomId }: any) => parentLog.push(`notfound:${roomId}`));
+        const log: string[] = [];
+        bootClient({ socket }, function Client(unit: Unit) {
+            unit.on('sync.connect', ({ id }: any) => log.push(`connect:${id}`));
+            unit.on('sync.disconnect', ({ id }: any) => log.push(`disconnect:${id}`));
+            unit.on('sync.notfound', ({ id, roomId }: any) => log.push(`notfound:${id}:${roomId}`));
         });
 
         fire('connect');
         fire('notfound', { roomId: 'r1' });
         fire('disconnect');
 
-        expect(parentLog).toEqual(['connect:c1', 'notfound:r1', 'disconnect']);
+        expect(log).toEqual(['connect:c1', 'notfound:c1:r1', 'disconnect:c1']);
     });
 });

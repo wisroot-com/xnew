@@ -18,7 +18,7 @@ describe('xsync.boot({ socket, room }) — in-memory socket.io', () => {
     });
 
     it('delivers sync.connect to a unit inside the booted root with the clientId', () => {
-        // boot は sync.connect/sync.disconnect を root 配下の unit.on へ配る（socket の connect/disconnect は別途 host へ '-event' 転送）。
+        // boot は sync.connect/sync.disconnect を両サイドとも root 配下の unit.on へ配る（id で誰のイベントか判別する）。
         const seen: string[] = [];
         bootServer({ io: hub.io }, function Server(unit: Unit) {
             unit.on('sync.connect', ({ id }: any) => seen.push(id));
@@ -39,6 +39,19 @@ describe('xsync.boot({ socket, room }) — in-memory socket.io', () => {
         root.finalize();
         hub.connect('cY');   // finalize 後の接続はもう届かない
         expect(seen).toEqual(['cX']);
+    });
+
+    it('relays other members\' connect/disconnect to client roots as sync.* with their id', () => {
+        // 他メンバーの connect/disconnect はサーバが relay する（自分のぶんは自分の socket イベントから届く）。
+        bootServer({ io: hub.io }, function Server() {});
+        const log: string[] = [];
+        bootClient({ socket: hub.connect('c1') }, function Client(unit: Unit) {
+            unit.on('sync.connect', ({ id }: any) => log.push(`connect:${id}`));
+            unit.on('sync.disconnect', ({ id }: any) => log.push(`disconnect:${id}`));
+        });
+        const c2 = hub.connect('c2');
+        c2.disconnect();
+        expect(log).toEqual(['connect:c2', 'disconnect:c2']);
     });
 
     it('environment selects which block runs at the root', () => {

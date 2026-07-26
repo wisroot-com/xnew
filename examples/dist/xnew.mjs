@@ -1203,6 +1203,7 @@ function bootServer(opts, args) {
         socket.join(room.id);
         info.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
         dispatch(info, 'sync.connect', socket.id, undefined);
+        socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
         statusUpdate();
         socket.onAny((event, payload) => {
             if (event === 'emitToServer') {
@@ -1212,6 +1213,7 @@ function bootServer(opts, args) {
         socket.on('disconnect', () => {
             info.clients = info.clients.filter((c) => c.id !== socket.id);
             dispatch(info, 'sync.disconnect', socket.id, undefined);
+            socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
             statusUpdate();
         });
     };
@@ -1225,11 +1227,10 @@ function bootServer(opts, args) {
 }
 function bootClient(opts, args) {
     var _a;
-    const parent = Unit.current;
     const { io, room, client } = opts;
     const socket = io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true });
     const info = { socket, room, clients: [] };
-    const root = new Unit({ parent, inherited: { syncRoot: info } }, ...args);
+    const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
     const reconcileMap = new Map();
     socket.on('sync', (tree) => {
         const incoming = new Set(tree.map((node) => node.id));
@@ -1270,9 +1271,9 @@ function bootClient(opts, args) {
             dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, payload === null || payload === void 0 ? void 0 : payload.id, payload);
         }
     });
-    socket.on('connect', () => Unit.emit(parent, '-connect', { id: socket.id }));
-    socket.on('disconnect', () => Unit.emit(parent, '-disconnect', {}));
-    socket.on('notfound', (payload) => Unit.emit(parent, '-notfound', payload !== null && payload !== void 0 ? payload : {}));
+    socket.on('connect', () => dispatch(info, 'sync.connect', socket.id, undefined));
+    socket.on('disconnect', () => dispatch(info, 'sync.disconnect', socket.id, undefined));
+    socket.on('notfound', (payload) => dispatch(info, 'sync.notfound', socket.id, { data: payload !== null && payload !== void 0 ? payload : {} }));
     root.on('finalize', () => socket.disconnect());
     return root;
 }

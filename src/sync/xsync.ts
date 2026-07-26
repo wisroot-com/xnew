@@ -106,6 +106,8 @@ function bootServer(opts: BootOptions, args: any[]): Unit {
         socket.join(room.id);
         info.clients.push({ id: socket.id, name: query?.clientName ?? '' });
         dispatch(info, 'sync.connect', socket.id, undefined);
+        // relay to the other members (socket.to excludes the sender); the client itself dispatches from its own socket events.
+        socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
         statusUpdate();
         socket.onAny((event: string, payload: any) => {
             if (event === 'emitToServer') {
@@ -116,6 +118,7 @@ function bootServer(opts: BootOptions, args: any[]): Unit {
         socket.on('disconnect', () => {
             info.clients = info.clients.filter((c) => c.id !== socket.id);
             dispatch(info, 'sync.disconnect', socket.id, undefined);
+            socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
             statusUpdate();
         });
     };
@@ -129,13 +132,12 @@ function bootServer(opts: BootOptions, args: any[]): Unit {
 }
 
 function bootClient(opts: BootOptions, args: any[]): Unit {
-    const parent = Unit.current;   // captured once: the socket lifecycle forwards below must reach the boot-time host
     const { io, room, client } = opts;
     // boot owns the socket; the handshake query must stay flat strings (socket.io stringifies values).
     const socket = io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
     const info: ClientRoot = { socket, room, clients: [] };
 
-    const root = new Unit({ parent, inherited: { syncRoot: info } }, ...args);
+    const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
 
     // diff-apply each captured tree onto this root; reconcileMap tracks node id → replica unit.
     const reconcileMap = new Map<number, Unit>();
@@ -171,10 +173,10 @@ function bootClient(opts: BootOptions, args: any[]): Unit {
         if (event === 'emitToClients') { dispatch(info, payload?.type, payload?.id, payload); }
     });
 
-    // forward the socket's own lifecycle to the host unit (boot parent) as local '-events'.
-    socket.on('connect', () => Unit.emit(parent, '-connect', { id: socket.id }));
-    socket.on('disconnect', () => Unit.emit(parent, '-disconnect', {}));
-    socket.on('notfound', (payload: any) => Unit.emit(parent, '-notfound', payload ?? {}));
+    // the socket's own lifecycle dispatches into this root as sync.* with the own socket id; other members' events arrive via the server relay.
+    socket.on('connect', () => dispatch(info, 'sync.connect', socket.id, undefined));
+    socket.on('disconnect', () => dispatch(info, 'sync.disconnect', socket.id, undefined));
+    socket.on('notfound', (payload: any) => dispatch(info, 'sync.notfound', socket.id, { data: payload ?? {} }));
     root.on('finalize', () => socket.disconnect());
     return root;
 }

@@ -243,10 +243,16 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   (client) creates a synced root. On the **client** side boot calls `io(...)` to
   create **and own** the socket, with a **flat string** handshake query
   (`io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true })`),
-  forwards the socket's `connect`/`disconnect`/`notfound` to the boot **parent** (host)
-  unit as `-connect`/`-disconnect`/`-notfound`, and disconnects it on finalize. Callers
-  (e.g. an example's `Room` component) just boot — they no longer touch the socket. `sync.state`,
-  `sync.register`, `sync.emitToServer`, `sync.emitToClients` operate on the current sync root.
+  and disconnects it on finalize. Callers (e.g. an example's `Room` component) just boot —
+  they no longer touch the socket. `sync.state`, `sync.register`, `sync.emitToServer`,
+  `sync.emitToClients` operate on the current sync root.
+- **Lifecycle events are `sync.connect` / `sync.disconnect` / `sync.notfound`, dispatched into
+  the root on BOTH sides** (the `-connect`-style boot-parent forwards were removed 2026-07). Every
+  handler gets `{ id }` = the affected client's socket id; compare with `xsync.session.myself.id`
+  to tell self from others. Self events come from the own socket; other members' connect/disconnect
+  are relayed by the server (`socket.to(room)`, sender excluded — no double fire). `sync.notfound`
+  is own-boot-failure only. Listeners must live **inside** the boot root — the host can use boot's
+  trailing ExComponent: `xsync.boot(opts, Game, (u) => { u.on('sync.connect', …); })`.
 - Socket handlers run outside the tick → wrap them in `xnew.scope` (§7).
 - **Wire event names vs host event names are independent.** A socket/wire event
   (`'roomcreated'`) and the host-facing unit event it is forwarded to
@@ -616,12 +622,12 @@ the rule, then one line of why.
   `io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true })`
   and the server reads `query.roomId` / `query.clientName`. Keep the query **flat
   strings** (socket.io stringifies query values, so a nested object would arrive as
-  `[object Object]`). boot also forwards `connect`/`disconnect`/`notfound` to the boot
-  **parent** as `-events`. When you change a query key, update every reader in one pass:
+  `[object Object]`). boot dispatches `sync.connect`/`sync.disconnect`/`sync.notfound` into the
+  root (see §11) — there is no boot-parent `-event` forward anymore, so host-side listeners go in
+  boot's trailing ExComponent. When you change a query key, update every reader in one pass:
   boot's connection handler **and** the examples' Lobby/Room server blocks (`examples/*/server.js`)
-  **and** the test mocks (`io-mock.ts`).
-  The forward reaches up to the parent (the boot root is a *child* of the host), so it
-  bypasses the root-scoped `dispatch` on purpose — host listeners live above the root.
+  **and** the test mocks (`io-mock.ts` — its server-side socket also implements `to(room)` for the
+  connect/disconnect relay).
 - **When changing `BootOptions` (the one shared server/client boot options bag), update the test
   `bootClient` adapter in `test/sync/io-mock.ts` too.** It wraps a pre-made mock socket as
   `io: () => socket` so the ~25 call sites stay unchanged; miss it and every sync test
