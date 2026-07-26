@@ -272,16 +272,18 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   - There is **no** `sync.emit`/`sync.message` anymore. The wire events
     `emitToServer` / `emitToClients` (same names as the facade methods, written inline —
     no WIRE_* consts) are reserved — don't use them as app `type`s.
-- **Per-client state projection — `sync.visibleTo(target)`.** The server captures the sync tree
+- **Per-client state projection — `sync.visibility(predicate)`.** The server captures the sync tree
   **once per connected client** and emits each socket its own projection. By default a node is
-  **public** (reaches every client). `sync.visibleTo(clientId | clientId[] | (clientId) => boolean | null)`
-  restricts the **current** sync node — **and its whole subtree**, since hidden children would lose
-  their parent link — to the clients it names; `null` makes it public again. Declare it in the
+  **public** (reaches every client). `sync.visibility((clientId) => boolean | null)` (predicate or
+  null ONLY — the old id/list forms were removed with the `visibleTo` rename, 2026-07) restricts the
+  **current** sync node — **and its whole subtree**, since hidden children would lose their parent
+  link — to the clients the predicate accepts; `null` makes it public again. Declare it in the
   component's `sync.server` block so private state (hands, roles) **never reaches the wire** for
   excluded clients — hiding on the client is not secure (DevTools sees the payload). The predicate is
   **re-evaluated every capture**, so close over a flag (`revealed`) and flip it for a dynamic reveal —
-  no re-call needed. Typical shape: one `PlayerView` per client, `sync.visibleTo(ownerId)`, spawned on
-  `sync.connect` and removed on `sync.disconnect` (see `examples/1_xnew/sync/hidden-info/`).
+  no re-call needed. Typical shape: one `PlayerView` per client,
+  `sync.visibility((clientId) => clientId === ownerId)`, spawned on `sync.connect` and removed on
+  `sync.disconnect` (see `examples/1_xnew/sync/hidden-info/`).
 
 ## 12. TypeScript notes
 

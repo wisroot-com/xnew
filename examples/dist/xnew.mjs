@@ -1205,11 +1205,7 @@ function bootServer(opts, args) {
         dispatch(info, 'sync.connect', socket.id, undefined);
         socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
         statusUpdate();
-        socket.onAny((event, payload) => {
-            if (event === 'emitToServer') {
-                dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, payload);
-            }
-        });
+        socket.on('emitToServer', (payload) => dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, payload));
         socket.on('disconnect', () => {
             info.clients = info.clients.filter((c) => c.id !== socket.id);
             dispatch(info, 'sync.disconnect', socket.id, undefined);
@@ -1266,11 +1262,7 @@ function bootClient(opts, args) {
         info.clients = (_a = status === null || status === void 0 ? void 0 : status.clients) !== null && _a !== void 0 ? _a : [];
         dispatch(info, 'sync.statusupdate', undefined, undefined);
     });
-    socket.onAny((event, payload) => {
-        if (event === 'emitToClients') {
-            dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, payload === null || payload === void 0 ? void 0 : payload.id, payload);
-        }
-    });
+    socket.on('emitToClients', (payload) => dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, payload === null || payload === void 0 ? void 0 : payload.id, payload));
     socket.on('connect', () => dispatch(info, 'sync.connect', socket.id, undefined));
     socket.on('disconnect', () => dispatch(info, 'sync.disconnect', socket.id, undefined));
     socket.on('notfound', (payload) => dispatch(info, 'sync.notfound', socket.id, { data: payload !== null && payload !== void 0 ? payload : {} }));
@@ -1300,15 +1292,8 @@ const xsync = {
         }
         Object.assign(syncData(unit).registry, Components);
     },
-    visibleTo(target) {
-        const data = syncData(Unit.current);
-        if (target === null || typeof target === 'function') {
-            data.visibility = target;
-        }
-        else {
-            const allowed = new Set([target].flat());
-            data.visibility = (clientId) => allowed.has(clientId);
-        }
+    visibility(target) {
+        syncData(Unit.current).visibility = target;
     },
     get session() {
         const info = syncRoot(Unit.current, true);

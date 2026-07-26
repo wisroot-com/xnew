@@ -2,12 +2,12 @@ import { Unit } from '../../src/core/unit';
 import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, asServer } from './io-mock';
 
-// xsync.visibleTo — per-client projection. Each connected socket receives a tree captured for its own
-// id, so a node restricted with visibleTo reaches only the clients it names (and its subtree with it).
+// xsync.visibility — per-client projection. Each connected socket receives a tree captured for its own
+// id, so a node restricted with visibility reaches only the clients it names (and its subtree with it).
 // io-mock records every emitted 'sync' with the socket it went to (via to(clientId)); syncFor(id) reads
 // the last tree delivered to that client.
 
-describe('xsync.visibleTo (per-client projection)', () => {
+describe('xsync.visibility (per-client projection)', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
@@ -19,7 +19,7 @@ describe('xsync.visibleTo (per-client projection)', () => {
     function PlayerView(unit: Unit, { ownerId = '', secret = 0 }: any = {}) {
         const state = xsync.state({ ownerId, secret, revealed: false });
         asServer(() => {
-            xsync.visibleTo((clientId) => state.revealed || clientId === state.ownerId);
+            xsync.visibility((clientId) => state.revealed || clientId === state.ownerId);
             unit.on('reveal', () => { state.revealed = true; });
         });
         return {};
@@ -33,7 +33,7 @@ describe('xsync.visibleTo (per-client projection)', () => {
         return {};
     }
 
-    it('delivers each client only its own visibleTo node', () => {
+    it('delivers each client only its own visibility node', () => {
         bootServer({ io: hub.io }, Game);
         hub.connect('c1');
         hub.connect('c2');
@@ -48,7 +48,7 @@ describe('xsync.visibleTo (per-client projection)', () => {
     });
 
     it('a public node reaches every client; a private node does not', () => {
-        function Board(unit: Unit) { xsync.state({ turn: 3 }); return {}; }   // no visibleTo → public
+        function Board(unit: Unit) { xsync.state({ turn: 3 }); return {}; }   // no visibility → public
         bootServer({ io: hub.io }, function Root(unit: Unit) {
             xsync.register({ Board, PlayerView });
             xnew(Board);
@@ -85,7 +85,7 @@ describe('xsync.visibleTo (per-client projection)', () => {
         function Hand(unit: Unit, { ownerId = '' }: any = {}) {
             xsync.state({ ownerId });
             xsync.register({ Secret });
-            asServer(() => xsync.visibleTo(ownerId));
+            asServer(() => xsync.visibility((clientId) => clientId === ownerId));
             xnew(Secret);
             return {};
         }

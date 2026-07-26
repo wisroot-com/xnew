@@ -17,7 +17,6 @@ import { xnew, xsync } from '../../src/index';
 import { setEnvironment } from '../../src/sync/environment';
 
 type Handler = (...args: any[]) => void;
-type AnyHandler = (event: string, payload: any) => void;
 
 //---- environment override（テスト専用の人間工学） --------------------------------------------------
 // src は setEnvironment（書き）/ getEnvironment（読み・内部）だけを持つ。ネスト対応の一時上書きは
@@ -49,7 +48,6 @@ export interface MockClientSocket {
     id: string;
     emit(event: string, payload?: any): void;
     on(event: string, handler: Handler): void;
-    onAny(handler: AnyHandler): void;
     disconnect(): void;
     fire(event: string, payload?: any): void;   // server→client 受信を擬似発火（自分の on(event) を client 環境で呼ぶ）
 }
@@ -70,19 +68,16 @@ export function ioMock(): IoMock {
 
     interface Conn {
         clientHandlers: Map<string, Set<Handler>>;   // client.on(event)
-        clientAny: Set<AnyHandler>;                   // client.onAny
-        serverAny: Set<AnyHandler>;                   // server 側 socket.onAny（bootServer が張る）
-        serverDisconnect: Set<Handler>;              // server 側 socket.on('disconnect')
+        serverHandlers: Map<string, Set<Handler>>;   // server 側 socket.on(event)（bootServer が 'emitToServer' / 'disconnect' を張る）
         rooms: Set<string>;                           // 所属 room 群（自分の id room + socket.join(room) ぶん）
     }
     const conns = new Map<string, Conn>();
 
-    // server→client: 該当 client の on(event) と onAny を発火する。client プロセスが受信する状況なので、
+    // server→client: 該当 client の on(event) を発火する。client プロセスが受信する状況なので、
     // ハンドラ（boot の on('sync')→apply など）は client 環境で走らせる（server 環境のテスト中に server の
     // 自動 broadcast が同期的に client へ届くケースで、replica が client として構築されるように）。
     const deliverToClient = (conn: Conn, event: string, payload: any): void => withEnvironment('client', () => {
         conn.clientHandlers.get(event)?.forEach((h) => h(payload));
-        conn.clientAny.forEach((h) => h(event, payload));
     });
 
     const io = {
@@ -109,16 +104,19 @@ export function ioMock(): IoMock {
     function connect(id?: string, roomId: string = ROOM.id): MockClientSocket {
         const clientId = id ?? 'c' + (++seq);
         // socket.io と同様、各 socket は自分の id の room に自動 join 済み（io.to(clientId) で個別宛が届く）。
-        const conn: Conn = { clientHandlers: new Map(), clientAny: new Set(), serverAny: new Set(), serverDisconnect: new Set(), rooms: new Set([clientId]) };
+        const conn: Conn = { clientHandlers: new Map(), serverHandlers: new Map(), rooms: new Set([clientId]) };
         conns.set(clientId, conn);
 
-        // server 側 socket（bootServer が onAny / on('disconnect') を張る）。query.roomId で入室先を伝える。
+        // server 側 socket（bootServer が on('emitToServer') / on('disconnect') を張る）。query.roomId で入室先を伝える。
         connectionCb?.({
             id: clientId,
             handshake: { query: { roomId } },
             join(room: string): void { conn.rooms.add(room); },
-            onAny(handler: AnyHandler): void { conn.serverAny.add(handler); },
-            on(event: string, handler: Handler): void { if (event === 'disconnect') { conn.serverDisconnect.add(handler); } },
+            on(event: string, handler: Handler): void {
+                let set = conn.serverHandlers.get(event);
+                if (set === undefined) { set = new Set(); conn.serverHandlers.set(event, set); }
+                set.add(handler);
+            },
             // socket.io の socket.to(room) 相当：本人を除く room メンバーへ配信（boot の connect/disconnect relay が使う）
             to(room: string) {
                 return { emit(event: string, payload?: any): void {
@@ -133,14 +131,13 @@ export function ioMock(): IoMock {
             id: clientId,
             // client→server: the server processes inbound wire events under the server env (a relay
             // handler may call emitToClients, which is server-only), mirroring deliverToClient's client wrap.
-            emit(event: string, payload?: any): void { withEnvironment('server', () => conn.serverAny.forEach((h) => h(event, payload))); },
+            emit(event: string, payload?: any): void { withEnvironment('server', () => conn.serverHandlers.get(event)?.forEach((h) => h(payload))); },
             on(event: string, handler: Handler): void {
                 let set = conn.clientHandlers.get(event);
                 if (set === undefined) { set = new Set(); conn.clientHandlers.set(event, set); }
                 set.add(handler);
             },
-            onAny(handler: AnyHandler): void { conn.clientAny.add(handler); },
-            disconnect(): void { conns.delete(clientId); conn.serverDisconnect.forEach((h) => h()); },
+            disconnect(): void { conns.delete(clientId); conn.serverHandlers.get('disconnect')?.forEach((h) => h()); },
             // server→client 受信を擬似発火: 自分の on(event) ハンドラ（boot の on('sync')→apply 等）を client 環境で呼ぶ。
             fire(event: string, payload?: any): void { deliverToClient(conn, event, payload); },
         };

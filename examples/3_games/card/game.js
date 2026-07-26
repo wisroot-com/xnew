@@ -5,7 +5,7 @@
 //   モデル（すべて server 権威・xsync で同期）:
 //     - Table  : 公開状態 { deckCount, turnSeat }。山札の残り枚数と、現在どの席の手番かを全員へ配る。
 //     - Player : 席ごとの公開状態 { seat, clientId, name, mog, played, handCount }。出したカード・名前・手札枚数。
-//     - Hand   : 手札 { ownerId, cards[] }。xsync.visibleTo(ownerId) で本人にだけ届く（他人の手札はワイヤに載らない）。
+//     - Hand   : 手札 { ownerId, cards[] }。xsync.visibility の述語で本人にだけ届く（他人の手札はワイヤに載らない）。
 //
 //   進行: 接続順に席 0..3 を割り当て、各自 3 枚配る。自分の手番になったら手札を 1 枚出して山札から 1 枚引く。
 //         出したら次の席へ手番が移り、自分の番まで待つ、の繰り返し。5 人目以降は席が無く観戦になる。
@@ -309,14 +309,14 @@ export function Player(unit, { seat = 0, clientId = '', name = '', mog = '' } = 
 }
 
 //----------------------------------------------------------------------------------------------------
-// Hand — 手札。xsync.visibleTo(ownerId) で本人にだけ届く。client は下部に手札 UI を描き、手番なら出せる。
+// Hand — 手札。xsync.visibility の述語で本人にだけ届く。client は下部に手札 UI を描き、手番なら出せる。
 //----------------------------------------------------------------------------------------------------
 
 export function Hand(unit, { ownerId = '' } = {}) {
     const state = xsync.state({ ownerId, cards: [] });
 
     xsync.server(() => {
-        xsync.visibleTo(ownerId);                                   // このノードと配下は owner にだけ届く
+        xsync.visibility((clientId) => clientId === ownerId);        // このノードと配下は owner にだけ届く
         return {
             deal(cards) { state.cards = cards; },
             play(index) { if (index < 0 || index >= state.cards.length) { return null; } const [card] = state.cards.splice(index, 1); return card; },

@@ -207,7 +207,7 @@ declare const xsync: {
     client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
     state(initial?: Record<string, any>): Record<string, any>;
     register(Components: Record<string, Function>): void;
-    visibleTo(target: string | string[] | ((clientId: string) => boolean) | null): void;
+    visibility(target: ((clientId: string) => boolean) | null): void;
     readonly session: {
         room: RoomStatus;
         clients: ClientStatus[];

@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // xsync — networking layer: shared state + boot + facade (exported as `xsync`)
 // The server root is the source of truth: each update it projects its registered units per connected
-// client (respecting visibleTo) and emits that node list ('sync'); client roots only diff-apply it.
+// client (respecting visibility) and emits that node list ('sync'); client roots only diff-apply it.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';
@@ -69,7 +69,7 @@ function bootServer(opts: BootOptions, args: any[]): Unit {
 
     // a sync target is a unit registered in its direct parent's registry; nextId is monotonic so a unit keeps its id for life.
     let nextId = 1;
-    // project the registered unit tree for one client: a node hidden from it (visibleTo) is skipped together with its whole subtree, so private state never reaches that client's wire.
+    // project the registered unit tree for one client: a node hidden from it (visibility) is skipped together with its whole subtree, so private state never reaches that client's wire.
     const captureStateTree = (clientId: string): SyncNode[] => {
         const nodes: SyncNode[] = [];
         const walk = (unit: Unit, parent: number | null): void => {
@@ -109,12 +109,7 @@ function bootServer(opts: BootOptions, args: any[]): Unit {
         // relay to the other members (socket.to excludes the sender); the client itself dispatches from its own socket events.
         socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
         statusUpdate();
-        socket.onAny((event: string, payload: any) => {
-            if (event === 'emitToServer') {
-                dispatch(info, payload?.type, socket.id, payload);
-            }
-            // no client→client relay: a client can only reach the server ('emitToServer').
-        });
+        socket.on('emitToServer', (payload: any) => dispatch(info, payload?.type, socket.id, payload));
         socket.on('disconnect', () => {
             info.clients = info.clients.filter((c) => c.id !== socket.id);
             dispatch(info, 'sync.disconnect', socket.id, undefined);
@@ -169,9 +164,7 @@ function bootClient(opts: BootOptions, args: any[]): Unit {
         info.clients = status?.clients ?? [];
         dispatch(info, 'sync.statusupdate', undefined, undefined);
     });
-    socket.onAny((event: string, payload: any) => {
-        if (event === 'emitToClients') { dispatch(info, payload?.type, payload?.id, payload); }
-    });
+    socket.on('emitToClients', (payload: any) => dispatch(info, payload?.type, payload?.id, payload));
 
     // the socket's own lifecycle dispatches into this root as sync.* with the own socket id; other members' events arrive via the server relay.
     socket.on('connect', () => dispatch(info, 'sync.connect', socket.id, undefined));
@@ -206,15 +199,9 @@ export const xsync = {
         }
         Object.assign(syncData(unit).registry, Components);
     },
-    // Restrict this sync node (and its subtree) to the given client(s): an id, a list, or a predicate re-evaluated per capture (the way to reveal dynamically); null ⇒ public again.
-    visibleTo(target: string | string[] | ((clientId: string) => boolean) | null): void {
-        const data = syncData(Unit.current);
-        if (target === null || typeof target === 'function') {
-            data.visibility = target;
-        } else {
-            const allowed = new Set([target].flat());
-            data.visibility = (clientId) => allowed.has(clientId);
-        }
+    // Restrict this sync node (and its subtree) with a predicate re-evaluated per capture (the way to reveal dynamically); null ⇒ public again.
+    visibility(target: ((clientId: string) => boolean) | null): void {
+        syncData(Unit.current).visibility = target;
     },
     get session(): { room: RoomStatus; clients: ClientStatus[]; myself: ClientStatus } {
         const info = syncRoot(Unit.current, true) as ServerRoot | ClientRoot;
