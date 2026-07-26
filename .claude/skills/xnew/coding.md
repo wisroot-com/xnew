@@ -264,8 +264,8 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
     limits delivery to those client ids (default: the whole room). This is the
     built-in room broadcast — don't hand-roll a relay component.
   - There is **no** `sync.emit`/`sync.message` anymore. The wire events
-    `sync:toServer` / `sync:toClient` / `sync:deliver` are reserved — don't use them
-    as app `type`s.
+    `emitToServer` / `emitToClients` (same names as the facade methods, written inline —
+    no WIRE_* consts) are reserved — don't use them as app `type`s.
 - **Per-client state projection — `sync.visibleTo(target)`.** The server captures the sync tree
   **once per connected client** and emits each socket its own projection. By default a node is
   **public** (reaches every client). `sync.visibleTo(clientId | clientId[] | (clientId) => boolean | null)`

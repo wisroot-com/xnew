@@ -72,7 +72,7 @@ describe('xsync.visibleTo (per-client projection)', () => {
         asServer(() => Unit.update(Unit.engineRoot));
         expect(syncFor('c2').map((n: any) => n.state.ownerId)).toEqual(['c2']);   // c2 cannot see c1's node yet
 
-        s1.emit('sync:toServer', { type: 'reveal', data: {} });   // any client triggers the shared reveal
+        s1.emit('emitToServer', { type: 'reveal', data: {} });   // any client triggers the shared reveal
         asServer(() => Unit.update(Unit.engineRoot));
 
         // now c2 sees both players' nodes (predicate re-read state.revealed === true)

@@ -1147,8 +1147,6 @@ function syncData(unit) {
     var _b;
     return (_a = (_b = unit._.own).syncData) !== null && _a !== void 0 ? _a : (_b.syncData = { id: null, state: {}, registry: {}, visibility: null });
 }
-const WIRE_TO_SERVER = 'sync:toServer';
-const WIRE_DELIVER = 'sync:deliver';
 function dispatch(info, event, id, payload) {
     var _a;
     const data = typeof (payload === null || payload === void 0 ? void 0 : payload.data) === 'object' && payload.data !== null ? payload.data : {};
@@ -1207,7 +1205,7 @@ function bootServer(opts, args) {
         dispatch(info, 'sync.connect', socket.id, undefined);
         statusUpdate();
         socket.onAny((event, payload) => {
-            if (event === WIRE_TO_SERVER) {
+            if (event === 'emitToServer') {
                 dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, payload);
             }
         });
@@ -1268,7 +1266,7 @@ function bootClient(opts, args) {
         dispatch(info, 'sync.statusupdate', undefined, undefined);
     });
     socket.onAny((event, payload) => {
-        if (event === WIRE_DELIVER) {
+        if (event === 'emitToClients') {
             dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, payload === null || payload === void 0 ? void 0 : payload.id, payload);
         }
     });
@@ -1332,7 +1330,7 @@ const xsync = {
             Unit.emit(Unit.current, type, props);
         }
         else {
-            info.socket.emit(WIRE_TO_SERVER, { type, syncId: syncData(Unit.current).id, data: props });
+            info.socket.emit('emitToServer', { type, syncId: syncData(Unit.current).id, data: props });
         }
     },
     emitToClients(type, props = {}, ids) {
@@ -1341,7 +1339,7 @@ const xsync = {
         }
         const { io, room } = syncRoot(Unit.current, true);
         const envelope = { type, syncId: syncData(Unit.current).id, id: undefined, data: props };
-        ((ids === null || ids === void 0 ? void 0 : ids.length) ? ids : [room.id]).forEach((target) => io.to(target).emit(WIRE_DELIVER, envelope));
+        ((ids === null || ids === void 0 ? void 0 : ids.length) ? ids : [room.id]).forEach((target) => io.to(target).emit('emitToClients', envelope));
     },
     boot(opts, ...args) {
         return getEnvironment() === 'server' ? bootServer(opts, args) : bootClient(opts, args);

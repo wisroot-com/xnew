@@ -51,9 +51,9 @@ describe('event channel (socket.io transport)', () => {
         });
 
         const socket = hub.connect();   // 同じ hub の生 client
-        // 生 socket から送るときも xsync.emitToServer と同じ封筒（予約 wire 'sync:toServer' + { type, data }）で送る。
-        socket.emit('sync:toServer', { type: 'move', data: { dx: 5 } });
-        socket.emit('sync:toServer', { type: 'move', data: { dx: 2 } });
+        // 生 socket から送るときも xsync.emitToServer と同じ封筒（予約 wire 'emitToServer' + { type, data }）で送る。
+        socket.emit('emitToServer', { type: 'move', data: { dx: 5 } });
+        socket.emit('emitToServer', { type: 'move', data: { dx: 2 } });
         expect(state.x).toBe(7);
     });
 
@@ -160,7 +160,7 @@ describe('event channel (socket.io transport)', () => {
         bootServer({ io: hub.io }, World);
 
         // 同じ hub の生 client が join を送ると server の on('join') が発火する（id=clientId）。
-        hub.connect('c1').emit('sync:toServer', { type: 'join' });
+        hub.connect('c1').emit('emitToServer', { type: 'join' });
 
         const child = xnew.find(Child, { key: 'c1' })[0];
         expect(child).toBeDefined();
