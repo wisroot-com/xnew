@@ -1147,19 +1147,17 @@ function syncData(unit) {
     var _b;
     return (_a = (_b = unit._.own).syncData) !== null && _a !== void 0 ? _a : (_b.syncData = { id: null, state: {}, registry: {}, visibility: null });
 }
-function dispatch(info, event, id, payload) {
+function dispatch(info, type, id, data = {}, syncId) {
     var _a;
-    const data = typeof (payload === null || payload === void 0 ? void 0 : payload.data) === 'object' && payload.data !== null ? payload.data : {};
-    const syncId = payload === null || payload === void 0 ? void 0 : payload.syncId;
-    ((_a = Unit.type2units.get(event)) !== null && _a !== void 0 ? _a : []).forEach((unit) => {
+    ((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : []).forEach((unit) => {
         var _a;
         if (unit._.phase === 'finalized' || unit._.phase === 'finalizing')
             return;
         if (syncRoot(unit) !== info)
             return;
-        if (event[0] === '-' && syncData(unit).id !== syncId)
+        if (type[0] === '-' && syncData(unit).id !== syncId)
             return;
-        (_a = unit._.listeners.get(event)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
+        (_a = unit._.listeners.get(type)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
     });
 }
 function bootServer(opts, args) {
@@ -1202,17 +1200,19 @@ function bootServer(opts, args) {
             return;
         socket.join(room.id);
         info.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
-        dispatch(info, 'sync.connect', socket.id, undefined);
+        dispatch(info, 'sync.connect', socket.id);
         socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
         io.to(room.id).emit('status', { clients: info.clients });
-        dispatch(info, 'sync.statusupdate', undefined, undefined);
-        socket.on('emitToServer', (payload) => dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, payload));
+        dispatch(info, 'sync.statusupdate', undefined);
+        socket.on('emitToServer', (p) => {
+            dispatch(info, p === null || p === void 0 ? void 0 : p.type, socket.id, typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {}, p === null || p === void 0 ? void 0 : p.syncId);
+        });
         socket.on('disconnect', () => {
             info.clients = info.clients.filter((c) => c.id !== socket.id);
-            dispatch(info, 'sync.disconnect', socket.id, undefined);
+            dispatch(info, 'sync.disconnect', socket.id);
             socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
             io.to(room.id).emit('status', { clients: info.clients });
-            dispatch(info, 'sync.statusupdate', undefined, undefined);
+            dispatch(info, 'sync.statusupdate', undefined);
         });
     };
     io.on('connection', connection);
@@ -1258,12 +1258,14 @@ function bootClient(opts, args) {
     socket.on('status', (status) => {
         var _a;
         info.clients = (_a = status === null || status === void 0 ? void 0 : status.clients) !== null && _a !== void 0 ? _a : [];
-        dispatch(info, 'sync.statusupdate', undefined, undefined);
+        dispatch(info, 'sync.statusupdate', undefined);
     });
-    socket.on('emitToClients', (payload) => dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, payload === null || payload === void 0 ? void 0 : payload.id, payload));
-    socket.on('connect', () => dispatch(info, 'sync.connect', socket.id, undefined));
-    socket.on('disconnect', () => dispatch(info, 'sync.disconnect', socket.id, undefined));
-    socket.on('notfound', (payload) => dispatch(info, 'sync.notfound', socket.id, { data: payload !== null && payload !== void 0 ? payload : {} }));
+    socket.on('emitToClients', (p) => {
+        dispatch(info, p === null || p === void 0 ? void 0 : p.type, p === null || p === void 0 ? void 0 : p.id, typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {}, p === null || p === void 0 ? void 0 : p.syncId);
+    });
+    socket.on('connect', () => dispatch(info, 'sync.connect', socket.id));
+    socket.on('disconnect', () => dispatch(info, 'sync.disconnect', socket.id));
+    socket.on('notfound', (payload) => dispatch(info, 'sync.notfound', socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
     root.on('finalize', () => socket.disconnect());
     return root;
 }

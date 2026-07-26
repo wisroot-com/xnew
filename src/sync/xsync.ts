@@ -21,9 +21,9 @@ interface RoomStatus { id: string; name: string; count: number; }
 interface ServerRoot { io: any; room: RoomStatus; clients: ClientStatus[]; }
 interface ClientRoot { socket: any; room: RoomStatus; clients: ClientStatus[]; }
 
-interface BootOptions { io: any; room: RoomStatus; client?: any; }   // client is client-boot only; a server boot ignores it
+interface BootOptions { io: any; room: RoomStatus; client?: any; }   // client is client-boot only
 
-// boot puts its root object on inherited.syncRoot, so every descendant carries it from construction; required ⇒ throw instead of null.
+// boot puts its root object on inherited.syncRoot, so every descendant carries it from construction.
 function syncRoot(unit: Unit, required?: true): ServerRoot | ClientRoot | null {
     const root = unit._.inherited.syncRoot ?? null;
     if (required === true && root === null) {
@@ -32,7 +32,7 @@ function syncRoot(unit: Unit, required?: true): ServerRoot | ClientRoot | null {
     return root;
 }
 
-// per-unit sync node data on own.syncData, created lazily so every caller (reader or writer) shares the one object.
+// lazily created; every caller (reader or writer) shares the one object.
 export function syncData(unit: Unit): SyncData {
     return unit._.own.syncData ??= { id: null, state: {}, registry: {}, visibility: null };
 }
@@ -41,19 +41,20 @@ export function syncData(unit: Unit): SyncData {
 // transport
 //----------------------------------------------------------------------------------------------------
 
-// Reserved wire events (never used as app `type`s); direction is fixed: clients reach only the server, fan-out is server-authoritative — no client→client relay.
-// 'emitToServer'  client→server: { type, syncId, data }     → dispatch `type` on the server
-// 'emitToClients' server→client: { type, syncId, id, data } → dispatch `type` on the client
+// The whole wire protocol (reserved names — never use them as app `type`s); fan-out is server-authoritative, no client→client relay:
+//   'sync'          server→client  SyncNode[]              state channel — per-client projection, diff-applied by reconcile
+//   'status'        server→client  { clients }             roster channel — room membership snapshot
+//   'emitToServer'  client→server  { type, syncId, data }  message channel — dispatch `type` on the server
+//   'emitToClients' server→client  { type, syncId, id, data }  message channel — dispatch `type` on the clients (also carries the lifecycle relay)
+//   connect / disconnect / notfound (socket-native)        lifecycle channel — dispatched as 'sync.connect' / 'sync.disconnect' / 'sync.notfound'
 
-function dispatch(info: ServerRoot | ClientRoot, event: string, id: string | undefined, payload: any): void {
-    const data = typeof payload?.data === 'object' && payload.data !== null ? payload.data : {};
-    const syncId = payload?.syncId;
-    (Unit.type2units.get(event) ?? []).forEach((unit) => {
+function dispatch(info: ServerRoot | ClientRoot, type: string, id: string | undefined, data: Record<string, any> = {}, syncId?: number | null): void {
+    (Unit.type2units.get(type) ?? []).forEach((unit) => {
         // socket callbacks run outside the scope machinery: a message landing after / mid-finalize must not fire a dying unit's handler.
         if (unit._.phase === 'finalized' || unit._.phase === 'finalizing') return;
         if (syncRoot(unit) !== info) return; // skip units of another root
-        if (event[0] === '-' && syncData(unit).id !== syncId) return; // skip units of another sync node
-        unit._.listeners.get(event)?.forEach((item) => item.execute({ id, ...data }));
+        if (type[0] === '-' && syncData(unit).id !== syncId) return; // skip units of another sync node
+        unit._.listeners.get(type)?.forEach((item) => item.execute({ id, ...data }));
     });
 }
 
@@ -67,9 +68,11 @@ function bootServer(opts: BootOptions, args: any[]): Unit {
 
     const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
 
+    //---- state channel
+
     // a sync target is a unit registered in its direct parent's registry; nextId is monotonic so a unit keeps its id for life.
     let nextId = 1;
-    // project the registered unit tree for one client: a node hidden from it (visibility) is skipped together with its whole subtree, so private state never reaches that client's wire.
+    // a node hidden from the client (visibility) is skipped with its whole subtree, so private state never reaches that client's wire.
     const captureStateTree = (clientId: string): SyncNode[] => {
         const nodes: SyncNode[] = [];
         const walk = (unit: Unit, parent: number | null): void => {
@@ -91,7 +94,6 @@ function bootServer(opts: BootOptions, args: any[]): Unit {
                     nodes.push({ id: data.id, name, parent, state: { ...data.state } });
                     unit._.children.forEach((child) => walk(child, data.id));
                 }
-                // else: a hidden sync node — skip it and its whole subtree for this client
             }
         };
         walk(root, null);
@@ -99,24 +101,30 @@ function bootServer(opts: BootOptions, args: any[]): Unit {
     };
 
     root.on('update', () => info.clients.forEach((client) => io.to(client.id).emit('sync', captureStateTree(client.id))));
+
+    //---- roster / lifecycle / message channels (per connected socket)
+
     // keep the handler so finalize can detach it — a dead room must not leave a listener on io (its count would grow without bound).
     const connection = (socket: any) => {
         const query = socket.handshake?.query;
-        if (query?.roomId !== room.id) return; // ignore other rooms
+        if (query?.roomId !== room.id) return;
         socket.join(room.id);
+        // lifecycle relay: socket.to excludes the sender — each client dispatches its own from its local socket events
         info.clients.push({ id: socket.id, name: query?.clientName ?? '' });
-        dispatch(info, 'sync.connect', socket.id, undefined);
-        // relay to the other members (socket.to excludes the sender); the client itself dispatches from its own socket events.
+        dispatch(info, 'sync.connect', socket.id);
         socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
         io.to(room.id).emit('status', { clients: info.clients });
-        dispatch(info, 'sync.statusupdate', undefined, undefined);
-        socket.on('emitToServer', (payload: any) => dispatch(info, payload?.type, socket.id, payload));
-        socket.on('disconnect', () => {
+        dispatch(info, 'sync.statusupdate', undefined);
+        // normalize the untrusted envelope at the wire boundary
+        socket.on('emitToServer', (p: any) => {
+            dispatch(info, p?.type, socket.id, typeof p?.data === 'object' && p.data !== null ? p.data : {}, p?.syncId);
+        });
+        socket.on('disconnect', () => {   // mirror of connect
             info.clients = info.clients.filter((c) => c.id !== socket.id);
-            dispatch(info, 'sync.disconnect', socket.id, undefined);
+            dispatch(info, 'sync.disconnect', socket.id);
             socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
             io.to(room.id).emit('status', { clients: info.clients });
-            dispatch(info, 'sync.statusupdate', undefined, undefined);
+            dispatch(info, 'sync.statusupdate', undefined);
         });
     };
     io.on('connection', connection);
@@ -132,8 +140,9 @@ function bootClient(opts: BootOptions, args: any[]): Unit {
 
     const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
 
-    // diff-apply each captured tree onto this root; reconcileMap tracks node id → replica unit.
-    const reconcileMap = new Map<number, Unit>();
+    //---- state channel
+
+    const reconcileMap = new Map<number, Unit>();   // node id → replica unit
     socket.on('sync', (tree: SyncNode[]) => {
         const incoming = new Set<number>(tree.map((node) => node.id));
         for (const node of tree) {
@@ -158,16 +167,22 @@ function bootClient(opts: BootOptions, args: any[]): Unit {
             if (!incoming.has(id)) { unit.finalize(); reconcileMap.delete(id); }
         }
     });
+    //---- roster channel
     socket.on('status', (status: { clients?: ClientStatus[] }) => {
         info.clients = status?.clients ?? [];
-        dispatch(info, 'sync.statusupdate', undefined, undefined);
+        dispatch(info, 'sync.statusupdate', undefined);
     });
-    socket.on('emitToClients', (payload: any) => dispatch(info, payload?.type, payload?.id, payload));
 
-    // the socket's own lifecycle dispatches into this root as sync.* with the own socket id; other members' events arrive via the server relay.
-    socket.on('connect', () => dispatch(info, 'sync.connect', socket.id, undefined));
-    socket.on('disconnect', () => dispatch(info, 'sync.disconnect', socket.id, undefined));
-    socket.on('notfound', (payload: any) => dispatch(info, 'sync.notfound', socket.id, { data: payload ?? {} }));
+    //---- message channel (normalize the untrusted envelope at the wire boundary)
+    socket.on('emitToClients', (p: any) => {
+        dispatch(info, p?.type, p?.id, typeof p?.data === 'object' && p.data !== null ? p.data : {}, p?.syncId);
+    });
+
+    //---- lifecycle channel: own events dispatch from the own socket; other members' arrive via the server relay
+    socket.on('connect', () => dispatch(info, 'sync.connect', socket.id));
+    socket.on('disconnect', () => dispatch(info, 'sync.disconnect', socket.id));
+    socket.on('notfound', (payload: any) => dispatch(info, 'sync.notfound', socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
+
     root.on('finalize', () => socket.disconnect());
     return root;
 }
@@ -223,7 +238,6 @@ export const xsync = {
             (info as ClientRoot).socket.emit('emitToServer', { type, syncId: syncData(Unit.current).id, data: props });
         }
     },
-    // server→clients only; from a client, emitToServer and let a server handler relay via emitToClients.
     emitToClients(type: string, props: Record<string, any> = {}, ids?: string[]): void {
         if (getEnvironment() !== 'server') {
             throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
