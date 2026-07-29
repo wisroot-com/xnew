@@ -12,11 +12,15 @@ import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import * as PIXI from 'pixi.js';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin } from '@pixiv/three-vrm';
+import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
+import voxelkit from 'voxelkit';
 
 // テーブル寸法と盤のマス寸法（トークンやピンの配置に使うので game.js からも参照する）
 const TABLE = { RADIUS: 1.2, THICKNESS: 0.07, TOP_Y: 0.25 };
 const SURFACE_Y = TABLE.TOP_Y + TABLE.THICKNESS / 2;   // 天面の高さ
-const CELL = 0.3;                                      // 盤のマス一辺（world）
+const CELL = 0.42;                                     // 盤のマス一辺（world）
 const BOARD_TOP = SURFACE_Y + 0.012;                   // 盤の板の上面（トークンの足元）
 
 export const Screen = xbasics.Screen;
@@ -168,7 +172,8 @@ export function BoardPlate(unit) {
 // トークン移動アニメーション — group を現在位置から目標へなめらかに動かす（連続移動は前の移動を打ち切る）
 //----------------------------------------------------------------------------------------------------
 
-const LYING_Y = SURFACE_Y + 0.045;                     // 横倒し（捕獲済み）の高さ
+const TOKEN_SCALE = 1.35;                              // トークンの拡大率（盤の拡大に合わせる）
+const LYING_Y = SURFACE_Y + 0.055;                     // 横倒し（捕獲済み）の高さ
 
 function makeGlide(group) {
     let anim = null;
@@ -201,6 +206,7 @@ export function CatToken(unit, { color, x = 0, z = 0, lying = false }) {
         group.add(ear);
     }
     if (lying) { group.rotation.z = Math.PI / 2; }
+    group.scale.setScalar(TOKEN_SCALE);
     group.traverse((obj) => { if (obj.isMesh) { obj.castShadow = true; } });
 
     const glide = makeGlide(group);
@@ -229,6 +235,7 @@ export function DetectiveToken(unit, { x = 0, z = 0 }) {
     const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.03, 0.04, 24), hat);
     crown.position.y = 0.175;
     group.add(crown);
+    group.scale.setScalar(TOKEN_SCALE);
     group.traverse((obj) => { if (obj.isMesh) { obj.castShadow = true; } });
 
     const glide = makeGlide(group);
@@ -251,6 +258,7 @@ export function SanmaToken(unit, { x = 0, z = 0 }) {
     tail.rotation.z = -Math.PI / 2;
     tail.position.set(-0.095, 0, 0);
     group.add(tail);
+    group.scale.setScalar(TOKEN_SCALE);
     group.traverse((obj) => { if (obj.isMesh) { obj.castShadow = true; } });
 
     const glide = makeGlide(group);
@@ -260,11 +268,62 @@ export function SanmaToken(unit, { x = 0, z = 0 }) {
 }
 
 //----------------------------------------------------------------------------------------------------
+// Character — .mog を VRM に変換して読み込み、歩きモーション（VRMA）をその場でループ。
+//   rotY 省略時はテーブル中央を向く（自分のキャラは rotY: 0 で手前=カメラ側を向かせる）。
+//----------------------------------------------------------------------------------------------------
+
+export function Character(unit, { mogPath, vrmaPath, x = 0, z = 0, rotX = 0, rotY = null, scale = 1.0 }) {
+    const object = xthree.nest({ position: { x, y: 0, z }, scale, rotation: { x: rotX, y: rotY ?? Math.atan2(-x, -z) } });
+
+    function applyLook({ rotX = 0, rotY = null }) {
+        object.rotation.x = rotX;
+        object.rotation.y = rotY ?? Math.atan2(-x, -z);     // rotY 省略時はテーブル中央向き
+    }
+
+    xnew.promise('vrm', voxelkit.load(mogPath)
+        .then((composits) => voxelkit.convertVRM(composits[0]))
+        .then((arrayBuffer) => new Promise((resolve, reject) => {
+            const loader = new GLTFLoader();
+            loader.register((parser) => new VRMLoaderPlugin(parser));
+            loader.parse(arrayBuffer.buffer, '', (gltf) => resolve(gltf.userData.vrm), reject);
+        })));
+
+    xnew.promise('vrma', new Promise((resolve) => {
+        const loader = new GLTFLoader();
+        loader.register((parser) => new VRMAnimationLoaderPlugin(parser));
+        loader.load(vrmaPath, (gltf) => resolve(gltf.userData.vrmAnimations[0]));
+    }));
+
+    xnew.promise(unit).then(({ vrm, vrma }) => {
+        vrm.scene.traverse((obj) => { if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = true; } });
+        object.add(vrm.scene);
+
+        const mixer = new THREE.AnimationMixer(vrm.scene);
+        const action = mixer.clipAction(createVRMAnimationClip(vrma, vrm));
+        action.setLoop(THREE.LoopRepeat, Infinity);
+        action.play();
+
+        const clock = new THREE.Clock();
+        unit.on('update', () => {
+            const delta = clock.getDelta();
+            mixer.update(delta);
+            vrm.update(delta);
+            object.position.y = Math.abs(Math.sin(clock.elapsedTime * 5)) * 0.03;   // その場足踏み
+        });
+    });
+
+    return {
+        // 向きの切り替え（例: 対象選択中だけマップの方を向かせる）
+        look(rotation) { applyLook(rotation); },
+    };
+}
+
+//----------------------------------------------------------------------------------------------------
 // Pin3D — 選択対象の上に浮かべるマップピン（逆さ円錐 + 球）。注目を引くよう上下にフロートする。
 //----------------------------------------------------------------------------------------------------
 
 export function Pin3D(unit, { x = 0, z = 0, color = 0xfcd34d }) {
-    const baseY = BOARD_TOP + 0.24;
+    const baseY = BOARD_TOP + 0.3;                      // 拡大したトークンの頭上に浮かせる
     const group = xthree.nest({ position: { x, y: baseY, z } });
     const material = new THREE.MeshStandardMaterial({ color, roughness: 0.35, emissive: color, emissiveIntensity: 0.35 });
     const tip = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.1, 20), material);

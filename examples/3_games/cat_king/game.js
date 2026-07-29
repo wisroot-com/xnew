@@ -36,6 +36,7 @@ const DIR_LABELS = { N: '北', S: '南', E: '東', W: '西' };
 const AXIS_DIRS = { v: ['N', 'S'], h: ['E', 'W'] };                     // カードの軸 → 選べる方向
 const AXIS_ARROWS = { v: '↕', h: '↔' };
 const TEAM_LABELS = { cat: '猫', det: '探偵' };
+const MOGS = ['zundamon', 'zunko', 'itako', 'metan', 'sora', 'miku', 'teto', 'usagi'];  // assets/*.mog（重複なしで割当）
 
 // 初期配置ルール: 猫は探偵ともサンマとも「同マス・縦横隣接」にならない（1 手で決着・捕獲される配置を避ける）。
 // 猫同士の重なりと、探偵とサンマの重なりは許可。
@@ -223,8 +224,17 @@ export function Game(unit) {
 
         unit.on('sync.connect', ({ id }) => {
             joinCounter++;
-            xnew(Player, { key: id, clientId: id, name: `プレイヤー${joinCounter}`, joinIndex: joinCounter });
+            // キャラモデルは未使用の mog からランダムに割当（全クライアントで同じ見た目になるよう server が決める）
+            const used = new Set(xnew.find(Player).map((p) => p.shared.mog));
+            const available = MOGS.filter((mog) => used.has(mog) === false);
+            const mog = available.length > 0 ? available[Math.floor(Math.random() * available.length)] : MOGS[joinCounter % MOGS.length];
+            xnew(Player, { key: id, clientId: id, name: `プレイヤー${joinCounter}`, joinIndex: joinCounter, mog });
             xnew(Secret, { key: id, ownerId: id });         // ラウンド中の途中参加は role='' のまま観戦
+        });
+
+        // 待機画面の名前入力。未入力（空文字）は Player 側でデフォルト名に戻る
+        unit.on('rename', ({ id, name }) => {
+            xnew.find(Player, { key: id })[0]?.setName(name);
         });
 
         unit.on('sync.disconnect', ({ id }) => {
@@ -352,10 +362,10 @@ export function Game(unit) {
         const { Screen, xpixi, xthree, PIXI, THREE } = window.gfx;
         xnew.extend(Screen, { width: W, height: H });
 
-        // three: OffscreenCanvas に描く。少し上から見下ろして 3x3 の盤が読めるようにする（奥=北）
-        const camera = new THREE.PerspectiveCamera(34, W / H, 0.1, 100);
-        camera.position.set(0, 3.6, 2.7);
-        camera.lookAt(0, 0.1, 0);
+        // three: OffscreenCanvas に描く。盤が読める程度に見下ろしつつ、テーブルを囲むキャラも映る角度（奥=北）
+        const camera = new THREE.PerspectiveCamera(36, W / H, 0.1, 100);
+        camera.position.set(0, 2.9, 3.2);
+        camera.lookAt(0, 0.45, 0);
         xthree.initialize({ canvas: new OffscreenCanvas(W, H), camera });
 
         // pixi: 画面 canvas（背景は透過）。この上に HUD と手札 UI を重ねる
@@ -406,33 +416,78 @@ function Tokens3D(unit, { catCells, detCell, sanmaCell }) {
 
     function catPlacement(cells, catIndex) {
         if (cells[catIndex] >= 0) {
-            return { ...cellToWorld(cells[catIndex], (catIndex - 1) * 0.08, -0.07), lying: false };     // マス上段に色順で並べる
+            return { ...cellToWorld(cells[catIndex], (catIndex - 1) * 0.12, -0.1), lying: false };      // マス上段に色順で並べる
         }
         const slot = cells.slice(0, catIndex).filter((cell) => cell < 0).length;
-        return { x: TABLE.RADIUS * 0.62, z: -0.15 + slot * 0.18, lying: true };
+        return { x: TABLE.RADIUS * 0.68, z: -0.18 + slot * 0.22, lying: true };
     }
 
     const cats = catCells.map((cell, catIndex) => xnew(CatToken, { color: CAT_FILLS[catIndex], ...catPlacement(catCells, catIndex) }));
-    const det = xnew(DetectiveToken, cellToWorld(detCell, -0.07, 0.08));
-    const sanma = xnew(SanmaToken, cellToWorld(sanmaCell, 0.07, 0.08));
+    const det = xnew(DetectiveToken, cellToWorld(detCell, -0.11, 0.12));
+    const sanma = xnew(SanmaToken, cellToWorld(sanmaCell, 0.11, 0.12));
 
     return {
         apply({ catCells, detCell, sanmaCell }) {
             cats.forEach((cat, catIndex) => cat.place(catPlacement(catCells, catIndex)));
-            det.place(cellToWorld(detCell, -0.07, 0.08));
-            sanma.place(cellToWorld(sanmaCell, 0.07, 0.08));
+            det.place(cellToWorld(detCell, -0.11, 0.12));
+            sanma.place(cellToWorld(sanmaCell, 0.11, 0.12));
         },
     };
 }
 
 //----------------------------------------------------------------------------------------------------
-// Board — 3D トークン / HUD / 参加者リスト / 待機・結果オーバーレイ（client 専用。Table / Player を find で読む）
+// Characters3D — プレイヤーのキャラモデル一式（.mog + 歩きモーション）。席替えやモデル変更時に作り直す。
+//----------------------------------------------------------------------------------------------------
+
+function Characters3D(unit, { seats }) {
+    const { Character } = window.gfx;
+    let selfChar = null, selfSeat = null;
+    seats.forEach((seat) => {
+        const character = xnew(Character, { mogPath: `/assets/${seat.mog}.mog`, vrmaPath: '/assets/walk.vrma', x: seat.x, z: seat.z, rotX: seat.rotX ?? 0, rotY: seat.rotY, scale: seat.scale });
+        if (seat.self) { selfChar = character; selfSeat = seat; }
+    });
+    return {
+        // 自キャラの向き: 盤上の対象選択中はマップ（テーブル中央）へ、終わったら定位置の向きへ戻す
+        faceMap(towardMap) {
+            selfChar?.look(towardMap ? { rotX: 0, rotY: null } : { rotX: selfSeat.rotX, rotY: selfSeat.rotY });
+        },
+    };
+}
+
+// 座席: ちゃぶ台をプレイヤー数で等分割し、自分の席（手前）を基準に参加順で埋める（4 人なら他は右・奥・左）。
+// 自分のモデルはテーブルの席とは独立に、左下へ正面やや右向きで置く（手前の席は空けたまま）。
+function seatPositions(players, myselfId) {
+    const seats = {};
+    const myIndex = players.findIndex((p) => p.clientId === myselfId);
+    players.forEach((p, i) => {
+        if (p.clientId === myselfId) {
+            seats[p.clientId] = { x: -0.8, z: 1.28, rotX: -0.5, rotY: 0.45, scale: 1.2, self: true };   // 手札のすぐ左・ちゃぶ台より手前
+        } else {
+            const slot = (i - myIndex + players.length) % players.length;
+            const a = -slot * (Math.PI * 2 / players.length);           // 0=手前（自分の席）から手番順に時計回り（次の手番は左隣）
+            seats[p.clientId] = { x: Math.sin(a) * 1.35, z: Math.cos(a) * 1.32, rotY: null, scale: 1.3 };
+        }
+    });
+    return seats;
+}
+
+//----------------------------------------------------------------------------------------------------
+// Board — 3D トークン / キャラ / 名札 / 待機・結果オーバーレイ（client 専用。Table / Player を find で読む）
 //----------------------------------------------------------------------------------------------------
 
 function Board(unit) {
-    const { xpixi, PIXI } = window.gfx;
+    const { xpixi, PIXI, coord3dTo2d } = window.gfx;
     const group = xpixi.nest();
     group.zIndex = 10;
+
+    // 名前入力（待機画面のみ表示）。IME 入力が必要なので HTML input を Screen のアスペクトボックスへ重ねる
+    const nameInput = xnew({
+        tag: 'input', type: 'text', maxLength: 12, placeholder: 'プレイヤー名（未入力なら自動）',
+        style: 'position: absolute; left: 50%; top: 53%; transform: translate(-50%, -50%); width: 250px; max-width: 44%;'
+            + 'padding: 6px 10px; font-size: 14px; text-align: center; border-radius: 8px; border: 1px solid #64748b;'
+            + 'background: #0b1220; color: #fff; outline: none; display: none; z-index: 5;',
+    });
+    nameInput.on('change', ({ value }) => xsync.emitToServer('rename', { name: value }));
 
     function addText(text, x, y, { size = 14, color = 0xffffff, bold = false, center = false } = {}) {
         const label = new PIXI.Text({ text, style: { fontFamily: 'sans-serif', fontSize: size, fontWeight: bold ? 'bold' : 'normal', fill: color, stroke: { color: 0x0f172a, width: 3 } } });
@@ -444,17 +499,24 @@ function Board(unit) {
 
     let tokensUnit = null;   // 3D の駒一式（常駐。配置が変わったら apply でなめらかに移動）
     let shown3d = null;
+    let charactersUnit = null;   // プレイヤーのキャラ一式（顔ぶれが変わったときだけ作り直す）
+    let shownChars = null;
     let shown = null;        // 2D は表示に関わる同期 state が変わったときだけ作り直す
-    let cursor = null;       // 手番カーソル { text, x }（毎 tick 横に揺らして注目させる）
+    let cursor = null;       // 手番カーソル { text, y }（毎 tick 上下に揺らして注目させる）
+    let coinSpins = [];      // 名札のコイン（画面の縦方向を軸に回転して見えるよう横スケールを振動させる）
+    const COIN_SCALE = 1.4;
     let animT = 0;
     unit.on('update', ({ delta }) => {
         animT += delta / 1000;
-        if (cursor) { cursor.text.position.x = cursor.x + Math.sin(animT * 6) * 5; }
+        if (cursor) { cursor.text.position.y = cursor.y + Math.sin(animT * 6) * 5; }
+        coinSpins.forEach((coin, i) => { coin.scale.x = COIN_SCALE * Math.cos(animT * 4 + i * 0.6); });
 
         const table = xnew.find(Table)[0];
         if (!table) { return; }
         const s = table.shared;
         const players = xnew.find(Player).map((p) => p.shared).sort((a, b) => a.joinIndex - b.joinIndex);
+        const myself = xsync.session.myself.id;
+        const seatMap = seatPositions(players, myself);
 
         const key3d = JSON.stringify([s.catCells, s.detCell, s.sanmaCell]);
         if (key3d !== shown3d) {
@@ -466,34 +528,84 @@ function Board(unit) {
             }
         }
 
+        const keyChars = JSON.stringify(players.map((p) => p.clientId + p.mog));
+        if (keyChars !== shownChars) {
+            shownChars = keyChars;
+            charactersUnit?.finalize();
+            charactersUnit = xnew(Characters3D, { seats: players.map((p) => ({ mog: p.mog, ...seatMap[p.clientId] })) });
+        }
+
         const key = JSON.stringify([s, players]);
         if (key === shown) { return; }
         shown = key;
         cursor = null;
+        coinSpins = [];
         for (const child of group.removeChildren()) { child.destroy({ children: true }); }
+        nameInput.element.style.display = s.phase === 'waiting' ? '' : 'none';
+
+        // ---- プレイヤーの名札（キャラの頭上に投影。名前・コイン・ラベル・手番カーソル） ----
+        players.forEach((p) => {
+            const seat = seatMap[p.clientId];
+            const isTurn = s.phase === 'playing' && s.turnId === p.clientId;
+            const spectating = s.phase === 'playing' && !p.inRound;
+            // mog はチビキャラ（頭上すれすれに置く）。カメラに近い自キャラは高さ分の投影が横へ流れるので、
+            // 足元の投影位置から画面上へ固定オフセットして頭の真上に出す。
+            let head;
+            if (p.clientId === myself) {
+                const base = coord3dTo2d(seat.x, 0, seat.z);
+                head = { x: base.x, y: base.y - 150 };
+            } else {
+                head = coord3dTo2d(seat.x, seat.scale * 0.63, seat.z);
+            }
+            addText(p.name, head.x, head.y, { size: 16, bold: true, center: true, color: isTurn ? 0xfcd34d : (spectating ? 0x94a3b8 : 0xffffff) });
+            const coinCount = p.catCoins + p.detCoins;
+            if (coinCount > 0) {
+                let cx = head.x - coinCount * 16 + 16;
+                for (let k = 0; k < coinCount; k++) {
+                    const coin = new PIXI.Graphics();
+                    drawCoin(coin, k < p.catCoins ? 'cat' : 'det', 0, 0);
+                    coin.position.set(cx, head.y + 28);
+                    coin.scale.set(COIN_SCALE);
+                    group.addChild(coin);
+                    coinSpins.push(coin);
+                    cx += 32;
+                }
+            }
+            if (p.label) {                                              // ラベル状態は紫のバッジで明示する
+                const badgeText = new PIXI.Text({ text: `${TEAM_LABELS[p.label]}ラベル`, style: { fontFamily: 'sans-serif', fontSize: 12, fontWeight: 'bold', fill: 0xffffff } });
+                const badgeW = badgeText.width + 14;
+                const badgeY = head.y + (coinCount > 0 ? 48 : 18);
+                group.addChild(new PIXI.Graphics().roundRect(head.x - badgeW / 2, badgeY, badgeW, 21, 7).fill(0x7c3aed).stroke({ width: 1.5, color: 0xffffff, alpha: 0.7 }));
+                badgeText.position.set(head.x - badgeW / 2 + 7, badgeY + 3);
+                group.addChild(badgeText);
+            }
+            if (spectating) { addText('（観戦）', head.x, head.y + 26, { size: 13, color: 0x94a3b8, center: true }); }
+            if (isTurn) {
+                const mark = addText('▼', head.x, head.y - 30, { size: 22, bold: true, color: 0xfcd34d, center: true });
+                cursor = { text: mark, y: head.y - 30 };
+            }
+        });
 
         // ---- 待機オーバーレイ（ルール要約と開始ボタン） ----
         if (s.phase === 'waiting') {
-            const panel = new PIXI.Graphics().roundRect(W / 2 - 310, 120, 620, 350, 16).fill(0x0f172a).stroke({ width: 2, color: 0x475569 });
+            const panel = new PIXI.Graphics().roundRect(W / 2 - 310, 145, 620, 300, 16).fill(0x0f172a).stroke({ width: 2, color: 0x475569 });
             group.addChild(panel);
-            addText('🐟 シャーロックホームズと猫王', W / 2, 150, { size: 20, bold: true, center: true });
+            addText('🐟 シャーロックホームズと猫王', W / 2, 175, { size: 20, bold: true, center: true });
             const rules = [
-                '・猫は 3 匹いるが「猫王」は 1 匹だけ。どの色かは色付き猫カードを引いた 1 人しか知らない',
-                '・猫王がサンマのマスに着けば猫チームの勝ち。探偵が猫王のマスに乗れば探偵チームの勝ち',
-                '・探偵が猫のマスに乗るとその猫を捕獲して盤から取り除く（猫王なら探偵チームの勝ち）',
-                '・手番では手札 2 枚から 1 枚出して 1 枚引く。移動カードは軸（↕/↔）のどちらか向きへ 1 マス',
-                '・勝ったチームは全員 1 コイン。先に 3 コインで優勝',
+                '・各ラウンドで勝利条件を満たすとコインゲット！（３コインで優勝）',
+                '・猫チームはサンマの入手、探偵チームは猫王の捕獲が勝利条件',
+                '・どのコマが猫王か？誰がどのチームか？　正体隠匿の推理ゲーム！',
             ];
-            rules.forEach((line, i) => { addText(line, W / 2 - 280, 180 + i * 26, { size: 14, color: 0xcbd5e1 }); });
-            if (s.message) { addText(s.message, W / 2, 316, { size: 14, color: 0xf87171, center: true }); }
-            addText(`参加者 ${players.length} 人（${MIN_PLAYERS}〜${MAX_PLAYERS} 人で開始できます）`, W / 2, 342, { size: 14, center: true });
+            rules.forEach((line, i) => { addText(line, W / 2 - 280, 215 + i * 30, { size: 15, color: 0xcbd5e1 }); });
+            if (s.message) { addText(s.message, W / 2, 296, { size: 14, color: 0xf87171, center: true }); }
+            addText(`参加者 ${players.length} 人（${MIN_PLAYERS}〜${MAX_PLAYERS} 人で開始できます）`, W / 2, 358, { size: 14, center: true });
             if (players.length >= MIN_PLAYERS) {
                 group.addChild(Object.assign(makeButton(PIXI, {
                     label: 'ラウンド開始', w: 180, h: 40, fontSize: 16,
                     onTap: xnew.scope(() => xsync.emitToServer('start', {})),
-                }), { position: { x: W / 2, y: 400 } }));
+                }), { position: { x: W / 2, y: 404 } }));
             } else {
-                addText(`あと ${MIN_PLAYERS - players.length} 人参加すると開始できます`, W / 2, 400, { size: 14, color: 0x94a3b8, center: true });
+                addText(`あと ${MIN_PLAYERS - players.length} 人参加すると開始できます`, W / 2, 404, { size: 14, color: 0x94a3b8, center: true });
             }
         }
 
@@ -515,26 +627,6 @@ function Board(unit) {
             }
         }
 
-        // ---- プレイヤーリスト（右上・常設の文字情報はこれだけ。手番カーソル + 得点コイン） ----
-        //   オーバーレイより後に描いて常に最前面へ。カーソルは上の毎 tick 処理で左右に揺れる。
-        players.forEach((p, i) => {
-            const rowY = 18 + i * 40;
-            const isTurn = s.phase === 'playing' && s.turnId === p.clientId;
-            const spectating = s.phase === 'playing' && !p.inRound;
-            const name = addText(p.name, 600, rowY,
-                { size: 20, bold: true, color: isTurn ? 0xfcd34d : (spectating ? 0x64748b : 0xffffff) });
-            let x = 600 + name.width + 16;
-            const coins = new PIXI.Graphics();
-            group.addChild(coins);
-            for (let k = 0; k < p.catCoins; k++) { drawCoin(coins, 'cat', x + 9, rowY + 13); x += 26; }
-            for (let k = 0; k < p.detCoins; k++) { drawCoin(coins, 'det', x + 9, rowY + 13); x += 26; }
-            if (p.label) { const tag = addText(`🏷${TEAM_LABELS[p.label]}`, x + 4, rowY + 4, { size: 14, color: 0xc4b5fd }); x += tag.width + 10; }
-            if (spectating) { addText('（観戦）', x + 4, rowY + 4, { size: 14, color: 0x64748b }); }
-            if (isTurn) {
-                const mark = addText('▶', 570, rowY + 1, { size: 20, bold: true, color: 0xfcd34d });
-                cursor = { text: mark, x: 570 };
-            }
-        });
     });
 }
 
@@ -557,10 +649,12 @@ function Table(unit) {
 // Player — 公開プロフィール（コインは猫 / 探偵の 2 種別。優勝時の称号は多い方で決まる）
 //----------------------------------------------------------------------------------------------------
 
-export function Player(unit, { clientId = '', name = '', joinIndex = 0 } = {}) {
-    const state = xsync.state({ clientId, name, joinIndex, catCoins: 0, detCoins: 0, label: '', handCount: 0, inRound: false });
+export function Player(unit, { clientId = '', name = '', joinIndex = 0, mog = '' } = {}) {
+    const state = xsync.state({ clientId, name, joinIndex, mog, catCoins: 0, detCoins: 0, label: '', handCount: 0, inRound: false });
 
     xsync.server(() => ({
+        // 空や空白だけの名前は生成時のデフォルト名（プレイヤーN）に戻す
+        setName(next) { state.name = (typeof next === 'string' && next.trim() !== '') ? next.trim().slice(0, 12) : name; },
         setLabel(label) { state.label = label; },
         setHandCount(count) { state.handCount = count; },
         setInRound(inRound) { state.inRound = inRound; },
@@ -601,8 +695,10 @@ export function Secret(unit, { ownerId = '' } = {}) {
         const group = xpixi.nest();
         group.zIndex = 40;
 
-        function addText(text, x, y, { size = 14, color = 0xffffff, bold = false, center = false } = {}) {
-            const label = new PIXI.Text({ text, style: { fontFamily: 'sans-serif', fontSize: size, fontWeight: bold ? 'bold' : 'normal', fill: color } });
+        function addText(text, x, y, { size = 14, color = 0xffffff, bold = false, center = false, wrap = 0 } = {}) {
+            const style = { fontFamily: 'sans-serif', fontSize: size, fontWeight: bold ? 'bold' : 'normal', fill: color };
+            if (wrap > 0) { Object.assign(style, { wordWrap: true, wordWrapWidth: wrap, breakWords: true }); }
+            const label = new PIXI.Text({ text, style });
             if (center) { label.anchor.set(0.5); }
             label.position.set(x, y);
             group.addChild(label);
@@ -630,33 +726,45 @@ export function Secret(unit, { ownerId = '' } = {}) {
             pinUnits.forEach((pin) => pin.finalize());
             pinUnits = [];
 
-            // ---- 正体パネル（左下・本人にだけ見える） ----
-            const role = state.role;
-            group.addChild(new PIXI.Graphics().roundRect(24, 484, 190, 100, 12).fill({ color: 0x1e293b, alpha: 0.95 }).stroke({ width: 2, color: 0x475569 }));
-            addText('あなたの正体', 40, 496, { size: 12, color: 0x94a3b8 });
-            if (role.startsWith('cat:')) {
-                const catIndex = CAT_COLORS.indexOf(role.split(':')[1]);
-                addText(`${CAT_LABELS[catIndex]}猫`, 40, 516, { size: 20, bold: true, color: CAT_FILLS[catIndex] });
-                addText(`猫王は【${CAT_LABELS[catIndex]}】だ！`, 40, 546, { size: 13, color: 0xfcd34d });
-            } else if (role === 'cat') {
-                addText('猫チーム', 40, 516, { size: 20, bold: true, color: 0xd97706 });
-            } else if (role === 'det') {
-                addText('探偵チーム', 40, 516, { size: 20, bold: true, color: 0x60a5fa });
-            } else if (s.phase === 'playing') {
-                addText('観戦中', 40, 516, { size: 18, bold: true, color: 0x94a3b8 });
-            } else {
-                addText('配役待ち…', 40, 516, { size: 18, bold: true, color: 0x94a3b8 });
-            }
-            if (myLabel && role) { addText(`ラベルで${TEAM_LABELS[myLabel]}チームに変更中`, 40, role.startsWith('cat:') ? 564 : 546, { size: 12, color: 0xc4b5fd }); }
+            // 盤上のピンを選ぶ段階（猫・移動先の選択）では、自キャラをマップの方へ向ける
+            xnew.find(Characters3D)[0]?.faceMap(mode != null && mode.kind !== 'label');
 
-            // ---- 手札（中央下・2 枚から 1 枚選んで出す） ----
+            // ---- 正体パネル（左上・本人にだけ見える）: チーム名 +（猫王の色は知っている人だけ） ----
+            //   ラベルで変更された場合は、元のチーム名に訂正線を引き、横にラベルのチーム名を出す。
+            //   左下は自分のキャラモデルの表示エリアなので、ここは左上に置く。
+            const role = state.role;
+            const TEAM_COLORS = { cat: 0xd97706, det: 0x60a5fa };
+            group.addChild(new PIXI.Graphics().roundRect(14, 26, 220, 100, 12).fill({ color: 0x1e293b, alpha: 0.95 }).stroke({ width: 2, color: 0x475569 }));
+            addText('あなたの正体', 30, 38, { size: 12, color: 0x94a3b8 });
+            if (role) {
+                const baseTeam = role.startsWith('cat') ? 'cat' : 'det';
+                if (myLabel && myLabel !== baseTeam) {
+                    const original = addText(`${TEAM_LABELS[baseTeam]}チーム`, 30, 62, { size: 16, bold: true, color: 0x94a3b8 });
+                    group.addChild(new PIXI.Graphics().rect(28, 62 + original.height / 2 - 1, original.width + 4, 2.5).fill(0xef4444));
+                    addText(`→ ${TEAM_LABELS[myLabel]}チーム`, 30 + original.width + 8, 62, { size: 16, bold: true, color: TEAM_COLORS[myLabel] });
+                } else {
+                    addText(`${TEAM_LABELS[baseTeam]}チーム`, 30, 58, { size: 20, bold: true, color: TEAM_COLORS[baseTeam] });
+                }
+                if (role.startsWith('cat:')) {
+                    const catIndex = CAT_COLORS.indexOf(role.split(':')[1]);
+                    addText(`（猫王は【${CAT_LABELS[catIndex]}】）`, 30, 92, { size: 14, bold: true, color: CAT_FILLS[catIndex] });
+                }
+            } else if (s.phase === 'playing') {
+                addText('観戦中', 30, 58, { size: 18, bold: true, color: 0x94a3b8 });
+            } else {
+                addText('配役待ち…', 30, 58, { size: 18, bold: true, color: 0x94a3b8 });
+            }
+
+            // ---- 手札（中央下・2 枚から 1 枚選んで出す。手札らしくやや扇状に並べる） ----
             if (s.phase === 'playing' && state.cards.length > 0) {
-                const cardW = 88, cardH = 124, gap = 14;    // 5:7（生成イラストと同じ比率）
+                const cardW = 88, cardH = 124, gap = 10;    // 5:7（生成イラストと同じ比率）
                 const total = state.cards.length * cardW + (state.cards.length - 1) * gap;
                 state.cards.forEach((card, index) => {
                     const selected = mode != null && mode.cardIndex === index;
                     const sprite = makeHandCard(PIXI, { card, w: cardW, h: cardH, highlight: (myTurn && mode == null) || selected });
-                    sprite.position.set(W / 2 - total / 2 + cardW / 2 + index * (cardW + gap), H - cardH / 2 - 6);
+                    const lean = index - (state.cards.length - 1) / 2;      // 扇の傾き（中央 0・外側ほど倒す）
+                    sprite.position.set(W / 2 - total / 2 + cardW / 2 + index * (cardW + gap), H - cardH / 2 - 6 + Math.abs(lean) * 8);
+                    sprite.rotation = lean * 0.18;
                     if (myTurn && mode == null) {
                         sprite.eventMode = 'static';
                         sprite.cursor = 'pointer';
@@ -702,28 +810,34 @@ export function Secret(unit, { ownerId = '' } = {}) {
                     }
                 }
 
-                const buttons = [];
+                const card = state.cards[mode.cardIndex];
+                const [, cardArg] = card.split(':');                    // 移動カードは軸、ラベルは対象チーム
+                let title = '', desc = '';
+                const choices = [];                                     // ラベルカードの相手選択肢（右下パネルに並べる）
                 if (mode.kind === 'cat') {
-                    addText(`ピンの立った猫をクリックして選ぶ（このカードは${AXIS_ARROWS[mode.axis]}方向）`, W / 2, 424, { size: 14, bold: true, color: 0xfcd34d, center: true });
+                    title = `ネコ移動カード ${AXIS_ARROWS[mode.axis]}`;
+                    desc = '猫を 1 匹選んで、カードの軸方向へ 1 マス動かす。盤上のピンが立った猫をクリック。';
                     for (let catIndex = 0; catIndex < 3; catIndex++) {
                         if (s.catCells[catIndex] >= 0 && catMovable(s.catCells[catIndex], s.detCell, mode.axis)) {   // 軸方向に動けない猫は出さない
                             const cat = catIndex;                       // Tokens3D と同じ配置にピンを立てる
-                            addCandidate(s.catCells[cat], (cat - 1) * 0.08, -0.07, () => { mode = { kind: 'cat-dir', cardIndex: mode.cardIndex, catIndex: cat, axis: mode.axis }; });
+                            addCandidate(s.catCells[cat], (cat - 1) * 0.12, -0.1, () => { mode = { kind: 'cat-dir', cardIndex: mode.cardIndex, catIndex: cat, axis: mode.axis }; });
                         }
                     }
                 } else if (mode.kind === 'cat-dir') {
-                    addText(`${CAT_LABELS[mode.catIndex]}猫をどのマスへ動かす？（ピンをクリック）`, W / 2, 424, { size: 14, bold: true, color: 0xfcd34d, center: true });
+                    title = `ネコ移動カード ${AXIS_ARROWS[mode.axis]}`;
+                    desc = `${CAT_LABELS[mode.catIndex]}猫の移動先を選ぶ。ピンの立ったマスをクリック。`;
                     addDestinationCandidates(s.catCells[mode.catIndex], s.detCell, { target: mode.catIndex });
                 } else if (mode.kind === 'dir') {
-                    addText(`${KIND_STYLES[mode.token].label}をどのマスへ動かす？（ピンをクリック）`, W / 2, 424, { size: 14, bold: true, color: 0xfcd34d, center: true });
+                    title = `${KIND_STYLES[mode.token].label}移動カード ${AXIS_ARROWS[mode.axis]}`;
+                    desc = mode.token === 'det'
+                        ? '探偵を軸方向へ 1 マス動かす。ピンの立ったマスをクリック。猫のいるマスに乗るとその猫を捕獲する（猫王なら勝利）。'
+                        : 'サンマを軸方向へ 1 マス動かす。ピンの立ったマスをクリック。';
                     addDestinationCandidates(mode.token === 'det' ? s.detCell : s.sanmaCell, null, {});
                 } else {
-                    addText('誰にラベルを貼る？', W / 2, 424, { size: 14, bold: true, color: 0xfcd34d, center: true });
+                    title = `ラベルカード（${TEAM_LABELS[cardArg]}）`;
+                    desc = `選んだ相手のチームを「${TEAM_LABELS[cardArg]}」に変える。相手を選んでください。`;
                     others.forEach((p) => {
-                        buttons.push(makeButton(PIXI, {
-                            label: p.name, w: 108, color: 0x7c3aed,
-                            onTap: xnew.scope(() => { const cardIndex = mode.cardIndex; mode = null; xsync.emitToServer('play', { cardIndex, target: p.clientId }); }),
-                        }));
+                        choices.push({ label: p.name, onTap: xnew.scope(() => { const cardIndex = mode.cardIndex; mode = null; xsync.emitToServer('play', { cardIndex, target: p.clientId }); }) });
                     });
                 }
                 // ---- 最寄りピッキング: カーソルに最も近い候補を強調表示し、クリックでそれを選ぶ ----
@@ -762,15 +876,21 @@ export function Secret(unit, { ownerId = '' } = {}) {
                     }));
                 }
 
-                buttons.push(makeButton(PIXI, { label: 'キャンセル', w: 96, color: 0x475569, onTap: xnew.scope(() => { mode = null; }) }));
-                const totalW = buttons.reduce((sum, b) => sum + b.children[0].width, 0) + (buttons.length - 1) * 10;
-                let x = W / 2 - totalW / 2;
-                for (const button of buttons) {
-                    const w = button.children[0].width;
-                    button.position.set(x + w / 2, 452);
-                    x += w + 10;
+                // ---- 右下の説明パネル（カードの説明・選択肢・大きめのキャンセル） ----
+                const rows = Math.ceil(choices.length / 2);
+                const panelW = 296, panelH = 150 + rows * 36;
+                const panelX = W - panelW - 14, panelY = H - 8 - panelH;
+                group.addChild(new PIXI.Graphics().roundRect(panelX, panelY, panelW, panelH, 12).fill({ color: 0x0f172a, alpha: 0.94 }).stroke({ width: 2, color: 0xfcd34d }));
+                addText(title, panelX + 16, panelY + 12, { size: 16, bold: true, color: 0xfcd34d });
+                addText(desc, panelX + 16, panelY + 38, { size: 13, color: 0xcbd5e1, wrap: panelW - 32 });
+                choices.forEach((choice, i) => {
+                    const button = makeButton(PIXI, { label: choice.label, w: 132, h: 30, color: 0x7c3aed, onTap: choice.onTap });
+                    button.position.set(panelX + 16 + (i % 2) * 140 + 66, panelY + 96 + Math.floor(i / 2) * 36 + 15);
                     group.addChild(button);
-                }
+                });
+                const cancel = makeButton(PIXI, { label: 'キャンセル', w: 220, h: 42, color: 0x475569, fontSize: 16, onTap: xnew.scope(() => { mode = null; }) });
+                cancel.position.set(panelX + panelW / 2, panelY + panelH - 30);
+                group.addChild(cancel);
             }
         });
     });
