@@ -708,6 +708,8 @@ export function Secret(unit, { ownerId = '' } = {}) {
         // カード選択後の対象選択。cat（どの猫か）→ cat-dir（どのマスへ）、dir（探偵/サンマをどのマスへ）、label（誰に貼るか）
         let mode = null;     // { kind: 'cat'|'cat-dir'|'dir'|'label', cardIndex, catIndex?, token? }
         let pinUnits = [];   // 対象選択中に 3D トークン / 移動先マスの上へ立てるピン
+        let lastPhase = '';
+        let roleNotice = false;  // ラウンド開始時の陣営ポップアップ（OK で閉じる）
         let shown = null;
         unit.on('update', () => {
             const table = xnew.find(Table)[0];
@@ -719,7 +721,13 @@ export function Secret(unit, { ownerId = '' } = {}) {
                 .filter((p) => p.inRound && p.clientId !== state.ownerId)
                 .sort((a, b) => a.joinIndex - b.joinIndex);
             const myLabel = xnew.find(Player).map((p) => p.shared).find((p) => p.clientId === state.ownerId)?.label ?? '';
-            const key = JSON.stringify([state, s.phase, myTurn, mode, myLabel, others.map((p) => p.clientId + p.name)]);
+
+            // ラウンド開始（→ playing 遷移）で陣営ポップアップを開く。観戦（role 空）には出さない
+            if (s.phase === 'playing' && lastPhase !== 'playing' && state.role) { roleNotice = true; }
+            if (s.phase !== 'playing') { roleNotice = false; }
+            lastPhase = s.phase;
+
+            const key = JSON.stringify([state, s.phase, myTurn, mode, myLabel, roleNotice, others.map((p) => p.clientId + p.name)]);
             if (key === shown) { return; }
             shown = key;
             for (const child of group.removeChildren()) { child.destroy({ children: true }); }
@@ -891,6 +899,28 @@ export function Secret(unit, { ownerId = '' } = {}) {
                 const cancel = makeButton(PIXI, { label: 'キャンセル', w: 220, h: 42, color: 0x475569, fontSize: 16, onTap: xnew.scope(() => { mode = null; }) });
                 cancel.position.set(panelX + panelW / 2, panelY + panelH - 30);
                 group.addChild(cancel);
+            }
+
+            // ---- ラウンド開始ポップアップ（陣営・猫王の色・勝利条件。OK で閉じる） ----
+            if (roleNotice) {
+                const backdrop = new PIXI.Container();              // 背面のクリックを吸って誤操作を防ぐ
+                backdrop.eventMode = 'static';
+                backdrop.hitArea = new PIXI.Rectangle(0, 0, W, H);
+                backdrop.addChild(new PIXI.Graphics().rect(0, 0, W, H).fill({ color: 0x000000, alpha: 0.45 }));
+                group.addChild(backdrop);
+                group.addChild(new PIXI.Graphics().roundRect(W / 2 - 300, 170, 600, 250, 16).fill(0x0f172a).stroke({ width: 2, color: 0xfcd34d }));
+                const baseTeam = state.role.startsWith('cat') ? 'cat' : 'det';
+                addText(`あなたは ${TEAM_LABELS[baseTeam]}チーム です。`, W / 2, 212, { size: 20, bold: true, color: TEAM_COLORS[baseTeam], center: true });
+                if (state.role.startsWith('cat:')) {
+                    const catIndex = CAT_COLORS.indexOf(state.role.split(':')[1]);
+                    addText(`猫王は【${CAT_LABELS[catIndex]}】です（知り得るのはあなただけ）`, W / 2, 256, { size: 16, bold: true, color: CAT_FILLS[catIndex], center: true });
+                } else {
+                    addText('猫王の色はあなたには非公開です（知り得るのは１名のみ）', W / 2, 256, { size: 16, color: 0xcbd5e1, center: true });
+                }
+                addText(`勝利条件は、${baseTeam === 'cat' ? 'サンマのあるマスに猫王の到達' : '猫王のあるマスに探偵の到達'}`, W / 2, 296, { size: 16, color: 0xcbd5e1, center: true });
+                const ok = makeButton(PIXI, { label: 'OK', w: 160, h: 44, fontSize: 16, onTap: xnew.scope(() => { roleNotice = false; }) });
+                ok.position.set(W / 2, 376);
+                group.addChild(ok);
             }
         });
     });
