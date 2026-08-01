@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- token_base: 共通土台. 単位mm想定 / 押し出し厚3mm. 直径40の円盤に中央スロット1個 (16.4x3.2).
+     キャラ側の突起 (16x3) がクリアランス 0.4/0.2 で刺さる. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <path fill="#a08a6f" fill-rule="evenodd" d="
+    M 0 20
+    A 20 20 0 1 1 40 20
+    A 20 20 0 1 1 0 20
+    Z
+    M 11.8 18.4 H 28.2 V 21.6 H 11.8 Z
+  "/>
+</svg>
