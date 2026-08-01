@@ -58,6 +58,7 @@ export interface IoMock {
     captured: any[];                          // server boot が emit した 'sync' ツリーの記録（capture-only テスト用）
     lastSync(): any;                          // 直近に emit された 'sync' ツリー（capture は root.on('update') で走る）
     lastSyncFor(clientId: string): any;       // その client 宛て（io.to(clientId)）に直近 emit された 'sync' ツリー
+    syncCountFor(clientId: string): number;   // その client 宛てに emit された 'sync' の回数（無変化スキップの検証用）
 }
 
 export function ioMock(): IoMock {
@@ -150,7 +151,10 @@ export function ioMock(): IoMock {
         return undefined;
     }
 
-    return { io, connect, captured, lastSync: () => captured[captured.length - 1], lastSyncFor };
+    return {
+        io, connect, captured, lastSync: () => captured[captured.length - 1], lastSyncFor,
+        syncCountFor: (clientId: string) => syncLog.filter((entry) => entry.to === clientId).length,
+    };
 }
 
 // 実行環境（server/client）を固定して同期的な処理を走らせる。1 プロセスで両側を模すテスト用。

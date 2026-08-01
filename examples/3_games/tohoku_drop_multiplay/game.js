@@ -100,7 +100,7 @@ export function Game(unit) {
 }
 
 //----------------------------------------------------------------------------------------------------
-// Status — 共有状態。server=入力/ターン/スコア/収束判定、client=毎フレーム '+status' を盤面へ配る
+// Status — 共有状態。server=入力/ターン/スコア/収束判定、client=変更時（sync.update）に '+status' を盤面へ配る
 //----------------------------------------------------------------------------------------------------
 
 function Status(unit) {
@@ -195,10 +195,10 @@ function Status(unit) {
         return { addScore };
     });
 
-    // client: 同期 state を毎フレーム '+status' として盤面（Cursor / QueuePreview / HUD）へ配る。
+    // client: 同期 state が変わったとき（sync.update）だけ '+status' として盤面（Cursor / QueuePreview / HUD）へ配る。
     xsync.client(() => {
         const myId = xsync.session.myself.id;
-        unit.on('update', () => {
+        unit.on('sync.update', () => {
             const myNo = myId === state.p1 ? 1 : myId === state.p2 ? 2 : 0;
             xnew.emit('+status', {
                 phase: state.phase, myNo, turn: state.turn, dropping: state.dropping,

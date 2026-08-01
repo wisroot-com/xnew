@@ -1192,7 +1192,15 @@ function bootServer(opts, args) {
         walk(root, null);
         return nodes;
     };
-    root.on('update', () => info.clients.forEach((client) => io.to(client.id).emit('sync', captureStateTree(client.id))));
+    const lastEmits = new Map();
+    root.on('update', () => info.clients.forEach((client) => {
+        const tree = captureStateTree(client.id);
+        const json = JSON.stringify(tree);
+        if (lastEmits.get(client.id) !== json) {
+            lastEmits.set(client.id, json);
+            io.to(client.id).emit('sync', tree);
+        }
+    }));
     const connection = (socket) => {
         var _a, _b;
         const query = (_a = socket.handshake) === null || _a === void 0 ? void 0 : _a.query;
@@ -1209,6 +1217,7 @@ function bootServer(opts, args) {
         });
         socket.on('disconnect', () => {
             info.clients = info.clients.filter((c) => c.id !== socket.id);
+            lastEmits.delete(socket.id);
             dispatch(info, 'sync.disconnect', socket.id);
             socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
             io.to(room.id).emit('status', { clients: info.clients });
@@ -1226,33 +1235,39 @@ function bootClient(opts, args) {
     const info = { socket, room, clients: [] };
     const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
     const reconcileMap = new Map();
+    let lastTree = '';
     socket.on('sync', (tree) => {
-        const incoming = new Set(tree.map((node) => node.id));
-        for (const node of tree) {
-            const existing = reconcileMap.get(node.id);
-            if (existing !== undefined) {
-                const state = syncData(existing).state;
-                for (const key of Object.keys(state)) {
-                    if ((key in node.state) === false) {
-                        delete state[key];
+        const json = JSON.stringify(tree);
+        if (json !== lastTree) {
+            lastTree = json;
+            const incoming = new Set(tree.map((node) => node.id));
+            for (const node of tree) {
+                const existing = reconcileMap.get(node.id);
+                if (existing !== undefined) {
+                    const state = syncData(existing).state;
+                    for (const key of Object.keys(state)) {
+                        if ((key in node.state) === false) {
+                            delete state[key];
+                        }
                     }
+                    Object.assign(state, node.state);
+                    continue;
                 }
-                Object.assign(state, node.state);
-                continue;
+                const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
+                const Component = nodeParent && syncData(nodeParent).registry[node.name];
+                if (!Component) {
+                    continue;
+                }
+                const unit = new Unit({ parent: nodeParent, own: { syncData: { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null } } }, Component);
+                reconcileMap.set(node.id, unit);
             }
-            const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
-            const Component = nodeParent && syncData(nodeParent).registry[node.name];
-            if (!Component) {
-                continue;
+            for (const [id, unit] of reconcileMap) {
+                if (!incoming.has(id)) {
+                    unit.finalize();
+                    reconcileMap.delete(id);
+                }
             }
-            const unit = new Unit({ parent: nodeParent, own: { syncData: { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null } } }, Component);
-            reconcileMap.set(node.id, unit);
-        }
-        for (const [id, unit] of reconcileMap) {
-            if (!incoming.has(id)) {
-                unit.finalize();
-                reconcileMap.delete(id);
-            }
+            dispatch(info, 'sync.update', undefined);
         }
     });
     socket.on('status', (status) => {

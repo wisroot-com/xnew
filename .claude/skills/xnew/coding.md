@@ -284,6 +284,16 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   no re-call needed. Typical shape: one `PlayerView` per client,
   `sync.visibility((clientId) => clientId === ownerId)`, spawned on `sync.connect` and removed on
   `sync.disconnect` (see `examples/1_xnew/sync/hidden-info/`).
+- **Change signal — `'sync.update'` (client-side, 2026-08).** The server emits `'sync'` to a client
+  only when that client's projection actually changed (per-client JSON cache, cleared on disconnect);
+  the client boot dispatches `'sync.update'` into the root after reconciling an arriving tree — so it
+  fires exactly once per applied change, with the state already applied, and reaches replicas created
+  by that same frame. Use it for redraw-on-change instead of per-tick `JSON.stringify` key diffing:
+  set a `dirty` flag in `unit.on('sync.update', …)` (and at local UI-state mutations) and rebuild in
+  `unit.on('update')` when dirty — rebuilding inside the tick avoids destroying pixi objects
+  mid-event-dispatch (see `examples/3_games/cat_king/`). Server side has no such event (its state
+  changes are its own writes). Per-frame streaming state (physics positions) still reads the state
+  object in `on('update')` — `sync.update` is for rebuild-style UI, not per-frame follow.
 
 ## 12. TypeScript notes
 
@@ -608,7 +618,9 @@ the rule, then one line of why.
   `io.to(client.id).emit('sync', captureStateTree(client.id))`. Consequence for tests: a capture-only
   test that boots the server and reads `hub.lastSync()` must **connect a client first** (`hub.connect()`),
   or nothing is emitted (empty `info.clients` → no `'sync'`). `io-mock` records the target of each
-  `'sync'` — use `hub.lastSyncFor(clientId)` to read one client's projection.
+  `'sync'` — use `hub.lastSyncFor(clientId)` to read one client's projection. Since 2026-08 the server
+  also **skips emitting when a client's projection is unchanged**, so a test that updates twice without
+  mutating state records ONE `'sync'` (count with `hub.syncCountFor(clientId)`).
 - **`captureStateTree` / `applyStateTree` are boot-internal (not exported).** Capture lives
   in boot's server branch (closes over `root` + a local `nextId`), apply in the client branch
   (closes over `root` + a local `reconcileMap`). The only seams are: server emits `'sync'` on

@@ -42,7 +42,7 @@ export function syncData(unit: Unit): SyncData {
 //----------------------------------------------------------------------------------------------------
 
 // The whole wire protocol (reserved names — never use them as app `type`s); fan-out is server-authoritative, no client→client relay:
-//   'sync'          server→client  SyncNode[]              state channel — per-client projection, diff-applied by reconcile
+//   'sync'          server→client  SyncNode[]              state channel — per-client projection, emitted only when changed; the client diff-applies it, then dispatches 'sync.update'
 //   'status'        server→client  { clients }             roster channel — room membership snapshot
 //   'emitToServer'  client→server  { type, syncId, data }  message channel — dispatch `type` on the server
 //   'emitToClients' server→client  { type, syncId, id, data }  message channel — dispatch `type` on the clients (also carries the lifecycle relay)
@@ -100,7 +100,16 @@ function bootServer(opts: BootOptions, args: any[]): Unit {
         return nodes;
     };
 
-    root.on('update', () => info.clients.forEach((client) => io.to(client.id).emit('sync', captureStateTree(client.id))));
+    // emit only when the client's projection changed — the wire goes quiet between changes, so each delivery means "changed" on the client.
+    const lastEmits = new Map<string, string>();
+    root.on('update', () => info.clients.forEach((client) => {
+        const tree = captureStateTree(client.id);
+        const json = JSON.stringify(tree);
+        if (lastEmits.get(client.id) !== json) {
+            lastEmits.set(client.id, json);
+            io.to(client.id).emit('sync', tree);
+        }
+    }));
 
     //---- roster / lifecycle / message channels (per connected socket)
 
@@ -121,6 +130,7 @@ function bootServer(opts: BootOptions, args: any[]): Unit {
         });
         socket.on('disconnect', () => {   // mirror of connect
             info.clients = info.clients.filter((c) => c.id !== socket.id);
+            lastEmits.delete(socket.id);
             dispatch(info, 'sync.disconnect', socket.id);
             socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
             io.to(room.id).emit('status', { clients: info.clients });
@@ -143,28 +153,35 @@ function bootClient(opts: BootOptions, args: any[]): Unit {
     //---- state channel
 
     const reconcileMap = new Map<number, Unit>();   // node id → replica unit
+    // duplicate-frame guard: 'sync.update' must mean an actual change, even against a server that re-emits an unchanged tree
+    let lastTree = '';
     socket.on('sync', (tree: SyncNode[]) => {
-        const incoming = new Set<number>(tree.map((node) => node.id));
-        for (const node of tree) {
-            const existing = reconcileMap.get(node.id);
-            if (existing !== undefined) {
-                // reconcile in place (keep the identity bodies captured via xsync.state): drop stale keys, then assign the incoming ones.
-                const state = syncData(existing).state;
-                for (const key of Object.keys(state)) {
-                    if ((key in node.state) === false) { delete state[key]; }
+        const json = JSON.stringify(tree);
+        if (json !== lastTree) {
+            lastTree = json;
+            const incoming = new Set<number>(tree.map((node) => node.id));
+            for (const node of tree) {
+                const existing = reconcileMap.get(node.id);
+                if (existing !== undefined) {
+                    // reconcile in place (keep the identity bodies captured via xsync.state): drop stale keys, then assign the incoming ones.
+                    const state = syncData(existing).state;
+                    for (const key of Object.keys(state)) {
+                        if ((key in node.state) === false) { delete state[key]; }
+                    }
+                    Object.assign(state, node.state);
+                    continue;
                 }
-                Object.assign(state, node.state);
-                continue;
+                const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
+                const Component = nodeParent && syncData(nodeParent).registry[node.name];
+                if (!Component) { continue; }
+                // seed syncData at construction so the body's xsync.state sees the server state and fixed id
+                const unit = new Unit({ parent: nodeParent, own: { syncData: { id: node.id, state: { ...node.state }, registry: {}, visibility: null } } }, Component);
+                reconcileMap.set(node.id, unit);
             }
-            const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
-            const Component = nodeParent && syncData(nodeParent).registry[node.name];
-            if (!Component) { continue; }
-            // seed syncData at construction so the body's xsync.state sees the server state and fixed id
-            const unit = new Unit({ parent: nodeParent, own: { syncData: { id: node.id, state: { ...node.state }, registry: {}, visibility: null } } }, Component);
-            reconcileMap.set(node.id, unit);
-        }
-        for (const [id, unit] of reconcileMap) {   // deleting the visited entry mid-iteration is spec-safe for Map
-            if (!incoming.has(id)) { unit.finalize(); reconcileMap.delete(id); }
+            for (const [id, unit] of reconcileMap) {   // deleting the visited entry mid-iteration is spec-safe for Map
+                if (!incoming.has(id)) { unit.finalize(); reconcileMap.delete(id); }
+            }
+            dispatch(info, 'sync.update', undefined);   // after reconcile, so handlers read the applied state (fresh replicas included)
         }
     });
     //---- roster channel

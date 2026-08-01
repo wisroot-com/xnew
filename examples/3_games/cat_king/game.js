@@ -501,16 +501,22 @@ function Board(unit) {
     let shown3d = null;
     let charactersUnit = null;   // プレイヤーのキャラ一式（顔ぶれが変わったときだけ作り直す）
     let shownChars = null;
-    let shown = null;        // 2D は表示に関わる同期 state が変わったときだけ作り直す
     let cursor = null;       // 手番カーソル { text, y }（毎 tick 上下に揺らして注目させる）
     let coinSpins = [];      // 名札のコイン（画面の縦方向を軸に回転して見えるよう横スケールを振動させる）
     const COIN_SCALE = 1.4;
     let animT = 0;
+
+    // 再構築は同期 state が実際に変わったとき（sync.update）だけ予約し、次の tick で描く
+    let dirty = true;
+    unit.on('sync.update', () => { dirty = true; });
     unit.on('update', ({ delta }) => {
         animT += delta / 1000;
         if (cursor) { cursor.text.position.y = cursor.y + Math.sin(animT * 6) * 5; }
         coinSpins.forEach((coin, i) => { coin.scale.x = COIN_SCALE * Math.cos(animT * 4 + i * 0.6); });
+        if (dirty) { dirty = false; redraw(); }
+    });
 
+    function redraw() {
         const table = xnew.find(Table)[0];
         if (!table) { return; }
         const s = table.shared;
@@ -518,7 +524,7 @@ function Board(unit) {
         const myself = xsync.session.myself.id;
         const seatMap = seatPositions(players, myself);
 
-        const key3d = JSON.stringify([s.catCells, s.detCell, s.sanmaCell]);
+        const key3d = [s.catCells, s.detCell, s.sanmaCell].join();   // 配置が同じなら glide を触らない（進行中の移動を守る）
         if (key3d !== shown3d) {
             shown3d = key3d;
             if (tokensUnit == null) {
@@ -528,16 +534,13 @@ function Board(unit) {
             }
         }
 
-        const keyChars = JSON.stringify(players.map((p) => p.clientId + p.mog));
+        const keyChars = players.map((p) => p.clientId + p.mog).join();
         if (keyChars !== shownChars) {
             shownChars = keyChars;
             charactersUnit?.finalize();
             charactersUnit = xnew(Characters3D, { seats: players.map((p) => ({ mog: p.mog, ...seatMap[p.clientId] })) });
         }
 
-        const key = JSON.stringify([s, players]);
-        if (key === shown) { return; }
-        shown = key;
         cursor = null;
         coinSpins = [];
         for (const child of group.removeChildren()) { child.destroy({ children: true }); }
@@ -626,8 +629,7 @@ function Board(unit) {
                 }), { position: { x: W / 2, y: 396 } }));
             }
         }
-
-    });
+    }
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -710,8 +712,13 @@ export function Secret(unit, { ownerId = '' } = {}) {
         let pinUnits = [];   // 対象選択中に 3D トークン / 移動先マスの上へ立てるピン
         let lastPhase = '';
         let roleNotice = false;  // ラウンド開始時の陣営ポップアップ（OK で閉じる）
-        let shown = null;
-        unit.on('update', () => {
+
+        // 再構築は sync.update とローカル UI 操作（mode / roleNotice の変更）が予約し、次の tick で描く
+        let dirty = true;
+        unit.on('sync.update', () => { dirty = true; });
+        unit.on('update', () => { if (dirty) { dirty = false; redraw(); } });
+
+        function redraw() {
             const table = xnew.find(Table)[0];
             if (!table) { return; }
             const s = table.shared;
@@ -727,9 +734,6 @@ export function Secret(unit, { ownerId = '' } = {}) {
             if (s.phase !== 'playing') { roleNotice = false; }
             lastPhase = s.phase;
 
-            const key = JSON.stringify([state, s.phase, myTurn, mode, myLabel, roleNotice, others.map((p) => p.clientId + p.name)]);
-            if (key === shown) { return; }
-            shown = key;
             for (const child of group.removeChildren()) { child.destroy({ children: true }); }
             pinUnits.forEach((pin) => pin.finalize());
             pinUnits = [];
@@ -790,6 +794,7 @@ export function Secret(unit, { ownerId = '' } = {}) {
                             } else {
                                 mode = { kind: 'dir', cardIndex: index, token: kind, axis };    // 移動先選択へ
                             }
+                            dirty = true;
                         }));
                     }
                     group.addChild(sprite);
@@ -813,7 +818,7 @@ export function Secret(unit, { ownerId = '' } = {}) {
                     for (const dir of AXIS_DIRS[mode.axis]) {
                         const next = moveCell(fromCell, dir);
                         if (next != null && next !== excludeCell) {
-                            addCandidate(next, 0, 0, () => { const cardIndex = mode.cardIndex; mode = null; xsync.emitToServer('play', { cardIndex, ...targetProps, dir }); });
+                            addCandidate(next, 0, 0, () => { const cardIndex = mode.cardIndex; mode = null; dirty = true; xsync.emitToServer('play', { cardIndex, ...targetProps, dir }); });
                         }
                     }
                 }
@@ -828,7 +833,7 @@ export function Secret(unit, { ownerId = '' } = {}) {
                     for (let catIndex = 0; catIndex < 3; catIndex++) {
                         if (s.catCells[catIndex] >= 0 && catMovable(s.catCells[catIndex], s.detCell, mode.axis)) {   // 軸方向に動けない猫は出さない
                             const cat = catIndex;                       // Tokens3D と同じ配置にピンを立てる
-                            addCandidate(s.catCells[cat], (cat - 1) * 0.12, -0.1, () => { mode = { kind: 'cat-dir', cardIndex: mode.cardIndex, catIndex: cat, axis: mode.axis }; });
+                            addCandidate(s.catCells[cat], (cat - 1) * 0.12, -0.1, () => { mode = { kind: 'cat-dir', cardIndex: mode.cardIndex, catIndex: cat, axis: mode.axis }; dirty = true; });
                         }
                     }
                 } else if (mode.kind === 'cat-dir') {
@@ -845,7 +850,7 @@ export function Secret(unit, { ownerId = '' } = {}) {
                     title = `ラベルカード（${TEAM_LABELS[cardArg]}）`;
                     desc = `選んだ相手のチームを「${TEAM_LABELS[cardArg]}」に変える。相手を選んでください。`;
                     others.forEach((p) => {
-                        choices.push({ label: p.name, onTap: xnew.scope(() => { const cardIndex = mode.cardIndex; mode = null; xsync.emitToServer('play', { cardIndex, target: p.clientId }); }) });
+                        choices.push({ label: p.name, onTap: xnew.scope(() => { const cardIndex = mode.cardIndex; mode = null; dirty = true; xsync.emitToServer('play', { cardIndex, target: p.clientId }); }) });
                     });
                 }
                 // ---- 最寄りピッキング: カーソルに最も近い候補を強調表示し、クリックでそれを選ぶ ----
@@ -896,7 +901,7 @@ export function Secret(unit, { ownerId = '' } = {}) {
                     button.position.set(panelX + 16 + (i % 2) * 140 + 66, panelY + 96 + Math.floor(i / 2) * 36 + 15);
                     group.addChild(button);
                 });
-                const cancel = makeButton(PIXI, { label: 'キャンセル', w: 220, h: 42, color: 0x475569, fontSize: 16, onTap: xnew.scope(() => { mode = null; }) });
+                const cancel = makeButton(PIXI, { label: 'キャンセル', w: 220, h: 42, color: 0x475569, fontSize: 16, onTap: xnew.scope(() => { mode = null; dirty = true; }) });
                 cancel.position.set(panelX + panelW / 2, panelY + panelH - 30);
                 group.addChild(cancel);
             }
@@ -918,10 +923,10 @@ export function Secret(unit, { ownerId = '' } = {}) {
                     addText('猫王の色はあなたには非公開です（知り得るのは１名のみ）', W / 2, 256, { size: 16, color: 0xcbd5e1, center: true });
                 }
                 addText(`勝利条件は、${baseTeam === 'cat' ? 'サンマのあるマスに猫王の到達' : '猫王のあるマスに探偵の到達'}`, W / 2, 296, { size: 16, color: 0xcbd5e1, center: true });
-                const ok = makeButton(PIXI, { label: 'OK', w: 160, h: 44, fontSize: 16, onTap: xnew.scope(() => { roleNotice = false; }) });
+                const ok = makeButton(PIXI, { label: 'OK', w: 160, h: 44, fontSize: 16, onTap: xnew.scope(() => { roleNotice = false; dirty = true; }) });
                 ok.position.set(W / 2, 376);
                 group.addChild(ok);
             }
-        });
+        }
     });
 }
