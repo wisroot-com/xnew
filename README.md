@@ -38,3 +38,17 @@ Then import it in your JavaScript file:
 ```js
 import { xnew } from '@mulsense/xnew';
 ```
+
+## Building a game
+
+[**xnew-gamelab**](https://github.com/mulsense/xnew-gamelab) is a template repository for
+making games with `xnew`. It ships a small but complete game (title / play / game over,
+with input, collision, effects and sound) together with the documentation an AI coding
+agent needs to extend it — supported by Claude Code, GitHub Copilot and Codex.
+
+```bash
+git clone https://github.com/mulsense/xnew-gamelab
+cd xnew-gamelab
+npm install
+npm run dev
+```
