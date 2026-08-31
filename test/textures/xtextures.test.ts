@@ -46,6 +46,30 @@ describe('xtextures textures', () => {
         }
     });
 
+    // the common parameter vocabulary — definitions list it first so the schema-generated UI rows line up across textures
+    const COMMON = ['scale', 'angle', 'bump', 'seed', 'color', 'background'];
+    const REQUIRED = ['scale', 'seed', 'color', 'background'];
+
+    test.each(Object.entries(xtextures))('%s lists the common parameters first', (name, texture) => {
+        const standard = texture.presets.standard;
+        for (const key of REQUIRED) {
+            expect(standard[key]).toBeDefined();
+        }
+        // color / background are the two base colors; angle / bump are reserved scalar names
+        expect(Array.isArray(standard.color)).toBe(true);
+        expect(Array.isArray(standard.background)).toBe(true);
+        for (const key of ['angle', 'bump']) {
+            if (standard[key] !== undefined) {
+                expect(Array.isArray(standard[key])).toBe(false);
+            }
+        }
+        for (const keys of [Object.keys(standard), Object.keys(texture.ranges)]) {
+            const common = keys.map((key, index) => (COMMON.includes(key) ? index : -1)).filter((index) => index >= 0);
+            const individual = keys.map((key, index) => (COMMON.includes(key) ? -1 : index)).filter((index) => index >= 0);
+            expect(Math.max(...common)).toBeLessThan(Math.min(...individual, Infinity));
+        }
+    });
+
     test('uniform declarations come after the noise prelude and before the entry functions', () => {
         for (const texture of Object.values(xtextures)) {
             const noiseAt = texture.glsl.indexOf('float xtex_noise(vec3 P)');

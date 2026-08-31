@@ -8,24 +8,29 @@ import woodGlsl from '../glsl/wood.glsl';
 import type { TexturePresets, TextureRange, TextureSource } from '../xtextures';
 
 const ranges: Record<string, TextureRange> = {
-    scale: { min: 0, max: 6 },
+    // common
+    scale: { min: 0.1, max: 6 },
+    angle: { min: 0, max: 360 },
+    seed: { min: 0, max: 100 },
+    // wood
     rings: { min: 0, max: 20 },
     lengths: { min: 0.1, max: 10 },
-    angle: { min: 0, max: 360 },
     fibers: { min: 0, max: 1 },
     fibersDensity: { min: 0, max: 40 },
-    seed: { min: 0, max: 100 },
 };
 
 const presets: TexturePresets = {
     standard: {
-        scale: 2.5, rings: 4.5, lengths: 1, angle: 0, fibers: 0.3, fibersDensity: 10, seed: 0,
+        // common
+        scale: 1.65, angle: 0, seed: 0,
         color: [0.8, 0.4, 0.0],
         background: [0.4, 0.1, 0.0],
+        // wood
+        rings: 4.5, lengths: 1, fibers: 0.3, fibersDensity: 10,
     },
     // 檜風の淡い木目
     hinoki: {
-        scale: 2.9, lengths: 10, angle: 20,
+        scale: 1.1, angle: 20, lengths: 10,
         color: [0.792, 0.714, 0.635],
         background: [0.78, 0.616, 0.557],
     },

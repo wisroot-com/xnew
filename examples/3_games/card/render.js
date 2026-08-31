@@ -3,7 +3,7 @@
 //   game.js は server(Node) と client(browser) の両方で評価されるため Pixi/Three を静的 import できない。
 //   そこで browser 専用のこのファイルへ集約し、index.js が window.gfx に載せて game.js の client 分岐へ渡す
 //   （io を window.io で渡すのと同じ流儀）。Node はこのファイルを一切読み込まない。
-//   3D の見た目（畳の床・円形ちゃぶ台・3D カード・ボクセルキャラ）は 2_addons/three_chabudai を移植したもので、
+//   3D の見た目（畳の床・円形ちゃぶ台・3D カード・ボクセルキャラ）は 2_addons/three_table を移植したもので、
 //   畳・木目は同じく xthree.material.standard() が xtextures を焼いた MeshStandardMaterial で表現する。
 //----------------------------------------------------------------------------------------------------
 
@@ -52,13 +52,13 @@ export function Lights(unit) {
 
 //----------------------------------------------------------------------------------------------------
 // Ground — 影を受ける畳の床。xthree.material.standard() が xtextures.tatami の color / normal を焼いて
-//   map / normalMap に組む。worldSize: 4 で畳(2x1)がタイルにちょうど収まるので、repeat でシームレスに繰り返せる。
+//   map / normalMap に組む。worldSize = scale で畳ちょうど 1 枚を焼き、repeat の縦横比で 2x1 に伸ばす。
 //----------------------------------------------------------------------------------------------------
 
 export function Ground(unit) {
     const material = xthree.material.standard(xtextures.tatami, {
-        size: { width: 512, height: 512 }, worldSize: 4,
-        repeat: { x: 10, y: 10 },   // 40x40 の床に 4 単位タイル → 畳(2x1) ≒ 2x1 単位
+        size: { width: 1024, height: 512 }, worldSize: 1,
+        repeat: { x: 20, y: 40 },   // 40x40 の床に 20x40 枚 → 畳 1 枚 = 2x1 単位
         roughness: 1,
     });
     const ground = xthree.add(new THREE.Mesh(new THREE.PlaneGeometry(40, 40), material));

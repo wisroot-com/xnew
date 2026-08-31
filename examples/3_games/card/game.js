@@ -11,7 +11,7 @@
 //         出したら次の席へ手番が移り、自分の番まで待つ、の繰り返し。5 人目以降は席が無く観戦になる。
 //
 //   描画（browser 専用ライブラリは window.gfx 経由。index.js が render.js を載せる。3D の見た目は
-//   2_addons/three_chabudai を移植）:
+//   2_addons/three_table を移植）:
 //     - Three : 畳の床・円形ちゃぶ台・囲む 4 体のボクセルキャラ・山札(3D)・各自の出したカード(3D)。
 //               OffscreenCanvas に描いて…
 //     - Pixi  : …その canvas を最背面スプライトに、その上に名札・HUD・自分の手札 UI(2D) を重ねる。

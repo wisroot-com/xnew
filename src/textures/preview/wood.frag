@@ -15,15 +15,17 @@ uniform mat4 u_projectionMatrix;
 uniform mat4 u_modelViewMatrix;
 uniform mat4 u_normalMatrix;
 
-const float scale = 2.5;
-const float rings = 4.5;
-const float lengths = 1.0;
+// common
+const float scale = 1.65;
 const float angle = 0.0;
-const float fibers = 0.3;
-const float fibersDensity = 10.0;
 const float seed = 0.0;
 const vec3 color = vec3(0.8, 0.4, 0.0);
 const vec3 background = vec3(0.4, 0.1, 0.0);
+// wood
+const float rings = 4.5;
+const float lengths = 1.0;
+const float fibers = 0.3;
+const float fibersDensity = 10.0;
 
 #ifdef VERTEX
 
@@ -41,9 +43,12 @@ void main(void) {
 #include "../glsl/noise.glsl"
 #include "../glsl/wood.glsl"
 
+// the extension's meshes span 2 object units; 1.5 makes a face cover the 3-unit region the canvas viewer samples, so the schema defaults frame the same way in both
+const float PREVIEW_WORLD = 1.5;
+
 void main() {
   // object-space evaluation + view-space lighting, same shading as xthree.texture
-  vec3 pos = v_position.xyz;
+  vec3 pos = v_position.xyz * PREVIEW_WORLD;
   vec3 nrm = normalize(v_normal.xyz);
   vec3 tng = normalize(abs(nrm.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), nrm) : cross(vec3(1.0, 0.0, 0.0), nrm));
   vec3 perturbed = xtexWoodNormal(pos, nrm, tng);

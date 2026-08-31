@@ -9,9 +9,11 @@ import { xnew, xbasics, xtextures } from '@mulsense/xnew';
 
 const TEXTURES = {
   wood: xtextures.wood,
-  concrete: xtextures.concrete,
   tatami: xtextures.tatami,
 };
+
+// how much world each canvas samples (xtextures defaults to 3): tatami is framed on one mat, a touch wider so its heri stays inside
+const WORLD_SIZES = { tatami: 1.1 };
 
 xnew(document.querySelector('#main'), Main);
 
@@ -80,7 +82,7 @@ function ViewHost(unit, { state, bags }) {
 function TextureView(unit, { texture, params, channel }) {
   xnew.nest('<div class="rounded-xl overflow-hidden shadow-2xl bg-black">');
   const canvas = xnew('<canvas width="512" height="512" style="display: block; width: 100%; height: auto;">').element;
-  const renderer = texture.renderer(canvas, { channel });
+  const renderer = texture.renderer(canvas, { channel, worldSize: WORLD_SIZES[texture.name] });
   unit.on('update', () => renderer.render(values(params)));
   unit.on('finalize', () => renderer.dispose());
 }

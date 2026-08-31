@@ -15,14 +15,15 @@ vec3 xtexWoodColor(vec3 position){
     position.z
   );
 
-  // main ring pattern
-  vec3 pos = posLocal * exp(scale - 3.0) * vec3(1.0/lengths, 4.0, 1.0/lengths) + seed;
+  // main ring pattern; one ring cell is scale world units across
+  float s = 1.0 / scale;
+  vec3 pos = posLocal * s * vec3(1.0/lengths, 4.0, 1.0/lengths) + seed;
   float k = (xtex_noise(pos) + 1.0) * 10.0 * rings;
   k = (cos(k + cos(k)) + 1.0) / 2.0;
 
-  // fibers: 10 octaves of turbulence, high-frequency along y
+  // fibers: 10 octaves of turbulence, high-frequency along y, 2.7x finer than the rings
   float kk = 0.0, sum = 0.0, power = 2.0;
-  vec3 sc = exp(scale - 2.0) * vec3(1.0, fibersDensity, 1.0);
+  vec3 sc = s * 2.7 * vec3(1.0, fibersDensity, 1.0);
   for (int i = 0; i < 10; i++){
     kk += power * xtex_noise(posLocal * sc + seed);
     sum += power;

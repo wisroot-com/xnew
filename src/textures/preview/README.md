@@ -69,13 +69,16 @@ color and a normal channel, so every harness shades albedo × perturbed-normal l
   Harness-local constants go below the includes (inside `main` or after them).
 - Every `#include` path must exist on disk.
 - The filename prefix before the first `-` or `.` must match a def name
-  (`concrete.frag` → the `Concrete` def).
+  (`wood.frag` → the `Wood` def).
 
 Shading in the lit harnesses intentionally matches `xthree.texture` (object-space evaluation,
 the same tangent heuristic and `0.55 + 0.45 * diff` lambert), so what you see here is what the
-three.js material will look like.
+three.js material will look like. The extension's meshes span only 2 object units, so each harness
+multiplies `v_position` by its own `PREVIEW_WORLD` (a harness-local const, hence below the includes)
+to frame the texture at the schema defaults: `1.5` covers the same 3-unit region the canvas viewer
+samples (wood), `0.5` = `scale * 0.5` puts exactly one cell on a face (tatami: one mat).
 
 ## Files
 
 - `wood.frag` — Wood (color + geometric normal).
-- `concrete.frag` — Concrete (color + perturbed normal).
+- `tatami.frag` — Tatami (color + perturbed normal).

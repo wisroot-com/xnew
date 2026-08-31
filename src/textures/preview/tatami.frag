@@ -15,13 +15,16 @@ uniform mat4 u_projectionMatrix;
 uniform mat4 u_modelViewMatrix;
 uniform mat4 u_normalMatrix;
 
-const float scale = 2.0;
-const float weave = 30.0;
-const float heri = 0.04;
-const float bump = 0.5;
+// common
+const float scale = 1.0;
+const float bump = 0.2;
 const float seed = 0.0;
 const vec3 color = vec3(0.72, 0.71, 0.42);
-const vec3 background = vec3(0.66, 0.68, 0.38);
+const vec3 background = vec3(0.6, 0.68, 0.38);
+// tatami
+const float aspect = 2.0;
+const float weave = 30.0;
+const float heri = 0.04;
 const vec3 border = vec3(0.23, 0.21, 0.14);
 
 #ifdef VERTEX
@@ -40,9 +43,12 @@ void main(void) {
 #include "../glsl/noise.glsl"
 #include "../glsl/tatami.glsl"
 
+// the extension's meshes span 2 object units and a mat is scale units across, so scale * 0.5 puts exactly one mat on a face (raising scale still zooms out from there)
+const float PREVIEW_WORLD = 0.5;
+
 void main() {
   // object-space evaluation + view-space lighting, same shading as xthree.texture
-  vec3 pos = v_position.xyz;
+  vec3 pos = v_position.xyz * PREVIEW_WORLD;
   vec3 nrm = normalize(v_normal.xyz);
   vec3 tng = normalize(abs(nrm.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), nrm) : cross(vec3(1.0, 0.0, 0.0), nrm));
   vec3 perturbed = xtexTatamiNormal(pos, nrm, tng);

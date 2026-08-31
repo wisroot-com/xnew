@@ -6,7 +6,6 @@
 
 import noiseGlsl from './glsl/noise.glsl';
 import { wood } from './define/wood';
-import { concrete } from './define/concrete';
 import { tatami } from './define/tatami';
 
 //----------------------------------------------------------------------------------------------------
@@ -21,6 +20,7 @@ export type TexturePreset = Record<string, number | number[]>;
 // standard is the complete authority on uniform keys and types; other presets partially override it
 export type TexturePresets = { standard: TexturePreset } & Record<string, TexturePreset>;
 
+// ranges / presets list the common parameters first, individual ones after: every texture defines scale (the size of one feature cell in world units, so the glsl divides position by it) / seed / color / background, and the names angle (rotation in the texture plane, Z axis) and bump (normal perturbation strength) are reserved for the textures that have them
 // what a texture module authors — glsl is the body only (defineTexture prepends the noise prelude +
 // uniform declarations) and must define both channel entry functions derived from name:
 // vec3 xtex<Name>Color(vec3 pos) and vec3 xtex<Name>Normal(vec3 pos, vec3 normal, vec3 tangent)
@@ -292,6 +292,5 @@ function bakeTexture(def: TextureSource, options: BakeOptions = {}): ImageBitmap
 
 export const xtextures = {
     wood: defineTexture(wood),
-    concrete: defineTexture(concrete),
     tatami: defineTexture(tatami),
 };

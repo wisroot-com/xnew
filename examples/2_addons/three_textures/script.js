@@ -13,7 +13,6 @@ import * as THREE from 'three';
 
 const TEXTURES = {
   wood: xtextures.wood,
-  concrete: xtextures.concrete,
   tatami: xtextures.tatami,
 };
 
@@ -21,6 +20,8 @@ const GEOMETRIES = {
   knot: () => new THREE.TorusKnotGeometry(1.0, 0.34, 220, 32),
   cube: () => new THREE.BoxGeometry(1.7, 1.7, 1.7),
   sphere: () => new THREE.SphereGeometry(1.3, 64, 32),
+  // a flat quad the size of exactly one texture cell — for tatami that is one mat (2x1 or hanjo 1x1); resized in Model as scale / aspect move
+  mat: () => new THREE.PlaneGeometry(1, 1),
 };
 
 xnew(document.querySelector('#main'), Main);
@@ -116,8 +117,11 @@ function Model(unit, { state, bags }) {
   let geometry = GEOMETRIES[state.model]();
   let material = buildMaterial(state, bags);
   const object = xthree.add(new THREE.Mesh(geometry, material));
+  // the mat model must match the texture cell in OBJECT space (that is where xtextures is evaluated), so the quad itself is resized; the mesh scale only keeps it a constant size on screen
+  let matSize = 0;
+  let matAspect = 0;
 
-  unit.on('+texture +display', () => {
+  unit.on('+texture +display +model', () => {
     material.dispose();
     material = buildMaterial(state, bags);
     object.material = material;
@@ -126,10 +130,28 @@ function Model(unit, { state, bags }) {
     geometry.dispose();
     geometry = GEOMETRIES[state.model]();
     object.geometry = geometry;
+    [matSize, matAspect] = [0, 0];
   });
   unit.on('update', () => {
-    object.rotation.x += 0.006;
-    object.rotation.y += 0.009;
+    if (state.model === 'mat') {
+      // scale is the cell size in world units, so the quad is exactly that big
+      const bag = bags[state.texture];
+      const size = bag.scale;
+      const aspect = bag.aspect ?? 1;
+      // one cell is a SQUARE in object space whatever the aspect is, so the quad is square too and aspect only stretches it on screen
+      if (size !== matSize || aspect !== matAspect) {
+        [matSize, matAspect] = [size, aspect];
+        geometry.dispose();
+        geometry = new THREE.PlaneGeometry(size, size);
+        object.geometry = geometry;
+      }
+      object.rotation.set(-0.4, 0, 0);
+      object.scale.set(1.7 * aspect / size, 1.7 / size, 1);
+    } else {
+      object.rotation.x += 0.006;
+      object.rotation.y += 0.009;
+      object.scale.setScalar(1);
+    }
     syncUniforms(material, bags[state.texture]);
   });
   unit.on('finalize', () => {
@@ -146,7 +168,9 @@ function buildMaterial(state, bags) {
   if (state.display === 'shader') {
     return xthree.material.shader(texture, params);
   } else if (state.display === 'baked') {
-    return xthree.material.standard(texture, { params, size: { width: 1024, height: 1024 }, roughness: 0.6 });
+    // the mat quad is one cell of object space, so its baked map has to cover exactly one cell too
+    const worldSize = state.model === 'mat' ? params.scale : undefined;
+    return xthree.material.standard(texture, { params, worldSize, size: { width: 1024, height: 1024 }, roughness: 0.6 });
   } else if (state.display === 'inject') {
     return xthree.material.standard(texture, { inject: true, params, roughness: 0.6 });
   }

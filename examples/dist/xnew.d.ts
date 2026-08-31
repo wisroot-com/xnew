@@ -605,7 +605,6 @@ interface Texture extends TextureSource {
 }
 declare const xtextures: {
     wood: Texture;
-    concrete: Texture;
     tatami: Texture;
 };
 
