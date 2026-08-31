@@ -86,10 +86,12 @@ function Lights(unit) {
     const dir = xthree.add(new THREE.DirectionalLight(0xfff2e0, 2.0));
     dir.position.set(2, 4, 3);
     dir.castShadow = true;
-    dir.shadow.mapSize.set(2048, 2048);
-    Object.assign(dir.shadow.camera, { left: -2.5, right: 2.5, top: 2.5, bottom: -2.5, near: 0.5, far: 12 });
+    dir.shadow.mapSize.set(4096, 4096);
+    // 視錐台は四畳半＋キャラがぎりぎり入る範囲まで絞る（1 テクセル ≒ 1mm、深度も near/far で詰めて精度を稼ぐ）
+    Object.assign(dir.shadow.camera, { left: -2, right: 2, top: 2, bottom: -2, near: 3, far: 9 });
     dir.shadow.camera.updateProjectionMatrix();
-    dir.shadow.bias = -0.0005;
+    // bias はごく小さく: 大きいとボクセルの凹み（数 cm）の自己影まで消える（normalBias も同じ理由で使わない）
+    dir.shadow.bias = -0.0001;
 
     xthree.add(new THREE.AmbientLight(0xffffff, 0.55));
     xthree.add(new THREE.HemisphereLight(0xffffff, 0x6b5a44, 0.45));
