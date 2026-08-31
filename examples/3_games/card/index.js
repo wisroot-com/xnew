@@ -14,7 +14,8 @@ const room = { id: 'main', name: 'カードルーム', count: 0 };
 
 function App(unit) {
     const statusEl = document.getElementById('status');
-    xsync.boot({ io: window.io, client: { name: '' }, room }, Game, (u) => {
+    xsync.boot({ io: window.io, client: { name: '' }, room }, (u) => {
+        xnew.extend(Game);
         u.on('sync.connect', ({ id }) => {
             if (id === xsync.session.myself.id) { statusEl.textContent = `接続 (${id.slice(0, 4)})`; statusEl.className = 'text-green-600'; }
         });

@@ -14,15 +14,17 @@ describe('basics Listbox', () => {
     });
 
     // Listbox holds the state; a ListboxButton draws the framed trigger + label, and a ListboxMenu nests
-    // the option rows. The trailing function is the ExComponent form: xnew(Base, props, inline).
+    // the option rows. Each is put on its own unit with xnew.extend, so the body composes into it.
     function build(props: any, values: string[]): { box: xnew.Unit, button: xnew.Unit, menu: HTMLElement } {
         let box!: xnew.Unit;
         let button!: xnew.Unit;
         let menu!: HTMLElement;
         xnew(() => {
-            box = xnew(Listbox, props, () => {
+            box = xnew(() => {
+                xnew.extend(Listbox, props);
                 button = xnew(ListboxButton);
-                xnew(ListboxMenu, (m: xnew.Unit) => {
+                xnew((m: xnew.Unit) => {
+                    xnew.extend(ListboxMenu);
                     menu = m.element as HTMLElement;
                     for (const value of values) {
                         xnew(ListboxItem, { value });
@@ -155,12 +157,15 @@ describe('basics Listbox', () => {
         let button!: xnew.Unit;
         let menu!: HTMLElement;
         xnew(() => {
-            xnew(Listbox, () => {
+            xnew(() => {
+                xnew.extend(Listbox);
                 button = xnew(ListboxButton);
-                xnew(ListboxMenu, (m: xnew.Unit) => {
+                xnew((m: xnew.Unit) => {
+                    xnew.extend(ListboxMenu);
                     menu = m.element as HTMLElement;
                     xnew(ListboxItem, { value: 'plain' });
-                    xnew(ListboxItem, { value: 'rich' }, () => {
+                    xnew(() => {
+                        xnew.extend(ListboxItem, { value: 'rich' });
                         xnew('<span class="tag">', 'RICH');
                     });
                 });
@@ -175,23 +180,28 @@ describe('basics Listbox', () => {
         expect(rows[1].textContent).toBe('RICH');
     });
 
-    it('lets an item set its row text via a trailing string, decoupled from the value', () => {
+    it('lets an item nest its row text, decoupled from the value', () => {
         let box!: xnew.Unit;
         let button!: xnew.Unit;
         let menu!: HTMLElement;
         xnew(() => {
-            box = xnew(Listbox, () => {
+            box = xnew(() => {
+                xnew.extend(Listbox);
                 button = xnew(ListboxButton);
-                xnew(ListboxMenu, (m: xnew.Unit) => {
+                xnew((m: xnew.Unit) => {
+                    xnew.extend(ListboxMenu);
                     menu = m.element as HTMLElement;
-                    xnew(ListboxItem, { value: 'apple' }, 'りんご');
+                    xnew(() => {
+                        xnew.extend(ListboxItem, { value: 'apple' });
+                        xnew('<span>', 'りんご');
+                    });
                 });
             });
         });
 
         open(button);
         const rows = rowsOf(menu);
-        // the trailing text sets the row label; the value stays 'apple'
+        // the nested text sets the row label; the value stays 'apple'
         expect(rows[0].textContent).toBe('りんご');
         rows[0].dispatchEvent(new Event('click', { bubbles: true }));
         expect(box.value).toBe('apple');
@@ -200,9 +210,11 @@ describe('basics Listbox', () => {
     it('applies the ListboxItem className to the rows', () => {
         let menu!: HTMLElement;
         xnew(() => {
-            xnew(Listbox, () => {
+            xnew(() => {
+                xnew.extend(Listbox);
                 xnew(ListboxButton);
-                xnew(ListboxMenu, (m: xnew.Unit) => {
+                xnew((m: xnew.Unit) => {
+                    xnew.extend(ListboxMenu);
                     menu = m.element as HTMLElement;
                     xnew(ListboxItem, { value: 'low', className: 'row' });
                     xnew(ListboxItem, { value: 'mid', className: 'row' });
@@ -216,9 +228,11 @@ describe('basics Listbox', () => {
     it('applies className and style to the ListboxMenu element', () => {
         let menu!: HTMLElement;
         xnew(() => {
-            xnew(Listbox, () => {
+            xnew(() => {
+                xnew.extend(Listbox);
                 xnew(ListboxButton);
-                xnew(ListboxMenu, { className: 'panel', style: 'border-radius: 0.5em;' }, (m: xnew.Unit) => {
+                xnew((m: xnew.Unit) => {
+                    xnew.extend(ListboxMenu, { className: 'panel', style: 'border-radius: 0.5em;' });
                     menu = m.element as HTMLElement;
                     xnew(ListboxItem, { value: 'low' });
                 });
@@ -239,9 +253,11 @@ describe('basics Listbox', () => {
     it('applies className and style to the ListboxButton trigger', () => {
         let button!: xnew.Unit;
         xnew(() => {
-            xnew(Listbox, () => {
+            xnew(() => {
+                xnew.extend(Listbox);
                 button = xnew(ListboxButton, { className: 'trigger', style: 'border-radius: 9999px;' });
-                xnew(ListboxMenu, () => {
+                xnew(() => {
+                    xnew.extend(ListboxMenu);
                     xnew(ListboxItem, { value: 'low' });
                 });
             });
@@ -258,9 +274,11 @@ describe('basics Listbox', () => {
         let button!: xnew.Unit;
         let menu!: HTMLElement;
         xnew(host, () => {
-            xnew(Listbox, () => {
+            xnew(() => {
+                xnew.extend(Listbox);
                 button = xnew(ListboxButton);
-                xnew(ListboxMenu, (m: xnew.Unit) => {
+                xnew((m: xnew.Unit) => {
+                    xnew.extend(ListboxMenu);
                     menu = m.element as HTMLElement;
                     xnew(ListboxItem, { value: 'low' });
                     xnew(ListboxItem, { value: 'mid' });
@@ -297,9 +315,11 @@ describe('basics Listbox', () => {
         let accordion!: HTMLElement;
         xnew(() => {
             // the Listbox owns the Gate: the button opens / closes it, the Accordion (after the menu) rides box.gate
-            const box = xnew(Listbox, { gate: { open: false, duration: 200 } }, (b: xnew.Unit) => {
+            const box = xnew((b: xnew.Unit) => {
+                xnew.extend(Listbox, { gate: { open: false, duration: 200 } });
                 button = xnew(ListboxButton);
-                xnew(ListboxMenu, (m: xnew.Unit) => {
+                xnew((m: xnew.Unit) => {
+                    xnew.extend(ListboxMenu);
                     xnew.extend(Accordion, { gate: b.gate });
                     accordion = m.element as HTMLElement;
                     xnew(ListboxItem, { value: 'low' });

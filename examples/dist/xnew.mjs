@@ -523,13 +523,6 @@ class Unit {
         if (typeof args[0] === 'object') {
             props = args.shift();
         }
-        let ExComponent;
-        if (typeof args[0] === 'function') {
-            ExComponent = args.shift();
-        }
-        else if (typeof args[0] === 'string' || typeof args[0] === 'number') {
-            ExComponent = textComponent(args.shift());
-        }
         let baseComponent;
         if (typeof Component === 'function') {
             baseComponent = Component;
@@ -543,16 +536,7 @@ class Unit {
         unit._.key = (_a = props === null || props === void 0 ? void 0 : props.key) !== null && _a !== void 0 ? _a : null;
         const backup = Unit.currentUnit;
         Unit.currentUnit = unit;
-        if (ExComponent !== undefined) {
-            const Ex = ExComponent;
-            Unit.extend(unit, (unit, props) => {
-                Unit.extend(unit, baseComponent, props);
-                Unit.extend(unit, Ex, props);
-            }, props);
-        }
-        else {
-            Unit.extend(unit, baseComponent, props);
-        }
+        Unit.extend(unit, baseComponent, props);
         if (unit._.phase === 'invoked') {
             unit._.phase = 'initialized';
         }
@@ -3297,10 +3281,12 @@ function List(unit, _a) {
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
     xnew.extend(Listbox, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%;' }));
-    xnew(ListboxButton, { style: 'height: 2em;' }, () => {
+    xnew(() => {
+        xnew.extend(ListboxButton, { style: 'height: 2em;' });
         xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em;' });
     });
-    xnew(ListboxMenu, () => {
+    xnew(() => {
+        xnew.extend(ListboxMenu);
         items.forEach((item) => xnew(ListboxItem, { value: item }));
     });
 }

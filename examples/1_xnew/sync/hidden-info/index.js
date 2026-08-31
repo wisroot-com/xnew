@@ -12,7 +12,8 @@ const room = { id: 'main', name: 'メインルーム', count: 0 };
 function App(unit) {
     const statusEl = document.getElementById('status');
     // boot は socket を作り、sync.connect / sync.disconnect を root 配下へ配る（表示は id が自分のぶんだけ反映）。
-    xsync.boot({ io: window.io, client: { name: '' }, room }, Game, (u) => {
+    xsync.boot({ io: window.io, client: { name: '' }, room }, (u) => {
+        xnew.extend(Game);
         u.on('sync.connect', ({ id }) => {
             if (id === xsync.session.myself.id) { statusEl.textContent = `接続 (${id.slice(0, 4)})`; statusEl.className = 'text-green-600'; }
         });

@@ -45,15 +45,10 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   that DOM target. A tag string creates and nests the element.
 - `xnew(target, 'text')` / `xnew('text')` — sets `textContent` (safe for user input).
 - `xnew(target, (unit) => { … })` — an inline component function.
-- `xnew(Base, props?, (unit, props) => { … })` — a **trailing function after a component**
-  is an **extension component** (`ExComponent`) extended on top of `Base` (props optional).
-  Equivalent to `xnew((unit) => { xnew.extend(Base, props); … })`: `Base` is extended first,
-  then the `ExComponent` runs on the same unit; both receive `props`. Defines from both merge
-  onto the unit.
-- `xnew(Base, props?, 'text')` — a **trailing string/number after a component** is an
-  `ExComponent` too: it becomes a component that sets the unit's current element `textContent`
-  (same wrapper as the base-position `xnew(target, 'text')` form). Runs after `Base`, so it
-  writes into whatever element `Base`'s body ended on (e.g. `ListboxItem`'s row).
+- There is **no trailing extension component** (`xnew(Base, props, fn)` was removed 2026-08):
+  the third argument is ignored. To compose onto a component, wrap it —
+  `xnew((unit) => { xnew.extend(Base, props); … })`: `Base` is extended first, then the body
+  runs on the same unit, and defines from both merge onto it.
 - **Init-only helpers** (throw if called after `invoked`, i.e. outside the
   synchronous body or in a later callback): `xnew.nest`, `xnew.extend`,
   `sync.server`, `sync.client`, `sync.register`, `sync.state`.
@@ -116,9 +111,10 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   removed 2026-07). A caller restyles only via `className` / `style` on the container, which reaches
   inner parts through inheritance — the frame border, the knob / meter background, and the state tint
   all key on `currentColor`, so a single `className: 'text-indigo-600'` recolors the whole control
-  cohesively. For structural change, InputCheckbox / InputRange / InputSwitch accept a **trailing
-  compose function** that replaces their default inner content — the mark, the meter + status, the
-  knob respectively (`xnew.standalone === true` gate). Generated
+  cohesively. For structural change, InputCheckbox / InputRange / InputSwitch let a caller replace
+  their default inner content — the mark, the meter + status, the knob respectively — by extending
+  them onto an outer component (`xnew(() => { xnew.extend(InputRange, props); … })`, gated on
+  `xnew.standalone === true`). Generated
   class names are page-unique, so page CSS cannot target inner parts directly by design.
 - `xnew.nest(tagOrDef, textContent?)` creates a child element from a **tag string**
   (`'<div …>'`) or an **element definition object** — an existing element is rejected
@@ -251,8 +247,8 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   handler gets `{ id }` = the affected client's socket id; compare with `xsync.session.myself.id`
   to tell self from others. Self events come from the own socket; other members' connect/disconnect
   are relayed by the server (`socket.to(room)`, sender excluded — no double fire). `sync.notfound`
-  is own-boot-failure only. Listeners must live **inside** the boot root — the host can use boot's
-  trailing ExComponent: `xsync.boot(opts, Game, (u) => { u.on('sync.connect', …); })`.
+  is own-boot-failure only. Listeners must live **inside** the boot root — pass a component that
+  extends the game onto it: `xsync.boot(opts, (u) => { xnew.extend(Game); u.on('sync.connect', …); })`.
 - Socket handlers run outside the tick → wrap them in `xnew.scope` (§7).
 - **Wire event names vs host event names are independent.** A socket/wire event
   (`'roomcreated'`) and the host-facing unit event it is forwarded to
@@ -399,8 +395,8 @@ the rule, then one line of why.
 
 - **InputCheckbox holds a Gate for its checked state and its `unit.element` is the CONTAINER, not the
   hidden input (modeled on Listbox, 2026-07).** The `<input>` is nested as a *child unit*
-  (`xnew({ tag: 'input', … })`, no `xnew.nest`) so the container stays current — a trailing function
-  then composes the mark INTO the box (`xnew(InputCheckbox, {}, (unit) => { … unit.gate … xnew(xicons.Check) })`);
+  (`xnew({ tag: 'input', … })`, no `xnew.nest`) so the container stays current — an outer component
+  then composes the mark INTO the box (`xnew((unit) => { xnew.extend(InputCheckbox); … unit.gate … xnew(xicons.Check) })`);
   left empty, a one-tick `xnew.timeout` fallback draws a default check svg (detect "caller composed
   something" by any container child that is not the input). The hidden input gets `z-index: 1` so composed
   marks never steal its clicks. Native `input` bubbles up to the container where `unit.on('input', …)`
@@ -409,8 +405,8 @@ the rule, then one line of why.
   before you subscribe). Do NOT assume `unit.element` is the input here — that still holds for InputSwitch,
   but InputCheckbox and InputRange diverged (their `unit.element` is the container; the input is a
   `xnew({ tag: 'input', … })` child, not an `xnew.nest`). InputRange follows the same compose gate:
-  its default `InputRangeMeter` + `InputRangeStatus` are drawn only when `xnew.standalone === true`, so a
-  trailing compose function replaces them with caller content.
+  its default `InputRangeMeter` + `InputRangeStatus` are drawn only when `xnew.standalone === true`, so
+  extending it onto an outer component replaces them with caller content.
 
 - **A basics component's `frame` ring may be merged INTO the `container` (user decision, 2026-07) —
   the container then carries the border / radius / state tint directly, and there is no separate frame
@@ -638,7 +634,8 @@ the rule, then one line of why.
   strings** (socket.io stringifies query values, so a nested object would arrive as
   `[object Object]`). boot dispatches `sync.connect`/`sync.disconnect`/`sync.notfound` into the
   root (see §11) — there is no boot-parent `-event` forward anymore, so host-side listeners go in
-  boot's trailing ExComponent. When you change a query key, update every reader in one pass:
+  boot's root component (`xsync.boot(opts, (u) => { xnew.extend(Game); … })`). When you change a
+  query key, update every reader in one pass:
   boot's connection handler **and** the examples' Lobby/Room server blocks (`examples/*/server.js`)
   **and** the test mocks (`io-mock.ts` — its server-side socket also implements `to(room)` for the
   connect/disconnect relay).

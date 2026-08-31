@@ -117,8 +117,9 @@ describe('basics InputCheckbox', () => {
         expect(unit.element.querySelector('svg path')?.getAttribute('d')).toBe('M2 6 5 9 10 3');
     });
 
-    it('lets a trailing function compose the mark and suppresses the default', () => {
-        const unit = xnew(InputCheckbox, {}, (unit: xnew.Unit) => {
+    it('lets an outer component compose the mark and suppresses the default', () => {
+        const unit = xnew(() => {
+            xnew.extend(InputCheckbox);
             xnew('<span class="my-mark">');
         });
         jest.advanceTimersByTime(0);

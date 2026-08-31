@@ -157,7 +157,9 @@ describe('basics InputRange', () => {
     });
 
     it('omits the default meter and status when composed by the caller', () => {
-        const unit = xnew(InputRange, { value: 30 }, () => {});
+        const unit = xnew(() => {
+            xnew.extend(InputRange, { value: 30 });
+        });
 
         expect(containerOf(unit).querySelectorAll('div')).toHaveLength(0);
         expect(inputOf(unit).tagName).toBe('INPUT');

@@ -25,7 +25,7 @@ export type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends 
 // Extract the props type of a Component ({} if absent).
 export type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
 
-// Component that writes a text/number literal into the current element (base and trailing-ExComponent forms).
+// Component that writes a text/number literal into the current element.
 function textComponent(content: string | number): (unit: Unit) => void {
     return (unit: Unit) => { unit.element.textContent = content.toString(); };
 }
@@ -111,20 +111,12 @@ export class Unit {
             Unit.nest(unit, args.shift() as string | DomElementDef);
         }
 
-        // xnew(Base, props?, ExComponent?): pull off the component, optional props, then a trailing extension component.
+        // xnew(Component, props?): pull off the component, then optional props.
         const Component = args.shift() as Function | string | number | undefined;
 
         let props: Object | undefined;
         if (typeof args[0] === 'object') {
             props = args.shift() as Object | undefined;
-        }
-
-        // a trailing function extends on top of Base; a trailing string/number sets the element's text
-        let ExComponent: Function | undefined;
-        if (typeof args[0] === 'function') {
-            ExComponent = args.shift() as Function;
-        } else if (typeof args[0] === 'string' || typeof args[0] === 'number') {
-            ExComponent = textComponent(args.shift() as string | number);
         }
 
         let baseComponent: Function;
@@ -141,16 +133,7 @@ export class Unit {
         const backup = Unit.currentUnit;
         Unit.currentUnit = unit;
 
-        // a trailing ExComponent composes with the base inside one synthetic component, so neither sees itself as standalone
-        if (ExComponent !== undefined) {
-            const Ex = ExComponent;
-            Unit.extend(unit, (unit: Unit, props: Object) => {
-                Unit.extend(unit, baseComponent, props);
-                Unit.extend(unit, Ex, props);
-            }, props);
-        } else {
-            Unit.extend(unit, baseComponent, props);
-        }
+        Unit.extend(unit, baseComponent, props);
 
         if (unit._.phase === 'invoked') {
             unit._.phase = 'initialized';

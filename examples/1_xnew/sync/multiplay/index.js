@@ -124,10 +124,11 @@ function Room(unit, { io, client, room }) {
     xnew.nest('<div class="flex gap-4">');   // シーンの mount 先（Game の client が Title/Setup/World を nest する）
 
     // xsync.boot が socket を io から生成・所有し（query に roomId/clientName を載せる）、finalize で切断する。
-    // sync.connect/sync.disconnect/sync.notfound は root 配下へ届くので、末尾関数で root に listener を置く。
+    // sync.connect/sync.disconnect/sync.notfound は root 配下へ届くので、root コンポーネントの中に listener を置く。
     // シーン遷移（change）は呼び出し側の責務なので Scene をここで extend する。
     xnew.extend(xbasics.Scene);
-    xsync.boot({ io, client, room }, Game, (u) => {
+    xsync.boot({ io, client, room }, (u) => {
+        xnew.extend(Game);
         u.on('sync.connect', ({ id }) => { if (id === xsync.session.myself.id) { app.setStatus(`ルーム ${room.id}: ${id}`, true); } });
         u.on('sync.disconnect', ({ id }) => { if (id === xsync.session.myself.id) { app.setStatus('切断', false); } });
         u.on('sync.notfound', () => unit.change(Lobby, { io: window.io }));   // 消滅ルームへ来たらロビーへ

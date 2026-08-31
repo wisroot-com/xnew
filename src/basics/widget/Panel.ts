@@ -165,10 +165,12 @@ function List(unit: xnew.Unit, { name = '', value, items = [], ...others }: { na
 
     // Listbox extends onto this unit (so its '-change' fires here); the button draws the trigger, the floating list nests in
     xnew.extend(Listbox, { value, ...others, style: 'max-width: 60%;' });
-    xnew(ListboxButton, { style: 'height: 2em;' }, () => {
+    xnew(() => {
+        xnew.extend(ListboxButton, { style: 'height: 2em;' });
         xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em;' });
     });
-    xnew(ListboxMenu, () => {
+    xnew(() => {
+        xnew.extend(ListboxMenu);
         items.forEach((item: string) => xnew(ListboxItem, { value: item }));
     });
 }

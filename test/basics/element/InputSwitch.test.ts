@@ -72,7 +72,9 @@ describe('basics InputSwitch', () => {
     });
 
     it('omits the default knob when composed by the caller', () => {
-        const unit = xnew(InputSwitch, { value: true }, () => {});
+        const unit = xnew(() => {
+            xnew.extend(InputSwitch, { value: true });
+        });
 
         expect(unit.element.querySelectorAll('div')).toHaveLength(0);
         expect(inputOf(unit).tagName).toBe('INPUT');
