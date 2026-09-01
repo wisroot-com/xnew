@@ -39,8 +39,8 @@ export function InputNumber(unit: xnew.Unit,
     unit.on('click', () => input.element.focus());
 
     return {
-        get value() {
-            return parseFloat((input.element as HTMLInputElement).value);
-        }
+        get input() {
+            return input.element as HTMLInputElement;
+        },
     };
 }

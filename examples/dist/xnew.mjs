@@ -1879,11 +1879,16 @@ function InputRange(unit, _a = {}) {
     xnew.nest({ tag: 'div', className: `${css.container} ${vertical ? css.vertical : css.horizontal} ${className}`, style });
     const initial = value !== null && value !== void 0 ? value : min;
     const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
-    xnew(Object.assign({ tag: 'input', type: 'range', min, max, step: step !== null && step !== void 0 ? step : autoStep(min, max), value: initial, className: css.input, style: direction }, others));
+    const input = xnew(Object.assign({ tag: 'input', type: 'range', min, max, step: step !== null && step !== void 0 ? step : autoStep(min, max), value: initial, className: css.input, style: direction }, others));
     if (xnew.standalone === true) {
         xnew(InputRangeMeter, { value: initial, min, max, vertical });
         xnew(InputRangeStatus, { value: initial, vertical });
     }
+    return {
+        get input() {
+            return input.element;
+        },
+    };
 }
 function autoStep(min, max) {
     const d = max - min;
@@ -2034,18 +2039,22 @@ function InputCheckbox(unit, _a = {}) {
         `,
     });
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
-    xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
+    const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
-    gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
-    gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
-    unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
+    function apply(checked) {
+        input.element.checked = checked;
+        unit.element.toggleAttribute('data-checked', checked);
+    }
+    gate.on('-open', () => apply(true));
+    gate.on('-closed', () => apply(false));
+    apply(gate.state === 'opened' || gate.state === 'opening');
     unit.on('input', ({ value }) => value ? gate.open() : gate.close());
     if (xnew.standalone === true) {
         xnew(CheckMark);
     }
     return {
-        get value() {
-            return gate.state === 'opened' || gate.state === 'opening';
+        get input() {
+            return input.element;
         },
         get gate() {
             return gate;
@@ -2089,9 +2098,9 @@ function InputText(unit, _a = {}) {
     const input = xnew(Object.assign({ tag: 'input', type: 'text', value, className: css.input }, others));
     unit.on('click', () => input.element.focus());
     return {
-        get value() {
-            return input.element.value;
-        }
+        get input() {
+            return input.element;
+        },
     };
 }
 
@@ -2121,9 +2130,9 @@ function InputNumber(unit, _a = {}) {
     const input = xnew(Object.assign({ tag: 'input', type: 'number', value, className: css.input }, others));
     unit.on('click', () => input.element.focus());
     return {
-        get value() {
-            return parseFloat(input.element.value);
-        }
+        get input() {
+            return input.element;
+        },
     };
 }
 
@@ -2143,18 +2152,22 @@ function InputSwitch(unit, _a = {}) {
         `,
     });
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
-    xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
+    const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
-    gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
-    gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
-    unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
+    function apply(checked) {
+        input.element.checked = checked;
+        unit.element.toggleAttribute('data-checked', checked);
+    }
+    gate.on('-open', () => apply(true));
+    gate.on('-closed', () => apply(false));
+    apply(gate.state === 'opened' || gate.state === 'opening');
     unit.on('input', ({ value }) => value ? gate.open() : gate.close());
     if (xnew.standalone === true) {
         xnew(Knob);
     }
     return {
-        get value() {
-            return gate.state === 'opened' || gate.state === 'opening';
+        get input() {
+            return input.element;
         },
         get gate() {
             return gate;
@@ -2192,7 +2205,12 @@ function InputRadio(unit, _a = {}) {
         `,
     });
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style }, value);
-    xnew(Object.assign({ tag: 'input', type: 'radio', name, value, checked, className: css.input }, others));
+    const input = xnew(Object.assign({ tag: 'input', type: 'radio', name, value, checked, className: css.input }, others));
+    return {
+        get input() {
+            return input.element;
+        },
+    };
 }
 
 function Overlay(unit, _a = {}) {

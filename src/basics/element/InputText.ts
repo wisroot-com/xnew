@@ -35,8 +35,8 @@ export function InputText(unit: xnew.Unit,
     unit.on('click', () => input.element.focus());
 
     return {
-        get value() {
-            return (input.element as HTMLInputElement).value;
-        }
+        get input() {
+            return input.element as HTMLInputElement;
+        },
     };
 }

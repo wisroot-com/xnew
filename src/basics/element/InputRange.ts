@@ -38,12 +38,18 @@ export function InputRange(unit: xnew.Unit,
 
     // hidden native input for interaction (min / max / step before value, so value never clamps against defaults)
     const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
-    xnew({ tag: 'input', type: 'range', min, max, step: step ?? autoStep(min, max), value: initial, className: css.input, style: direction, ...others });
+    const input = xnew({ tag: 'input', type: 'range', min, max, step: step ?? autoStep(min, max), value: initial, className: css.input, style: direction, ...others });
 
     if (xnew.standalone === true) {
         xnew(InputRangeMeter, { value: initial, min, max, vertical });
         xnew(InputRangeStatus, { value: initial, vertical });
     }
+
+    return {
+        get input() {
+            return input.element as HTMLInputElement;
+        },
+    };
 }
 
 //----------------------------------------------------------------------------------------------------

@@ -31,12 +31,14 @@ describe('basics InputText', () => {
         expect(input.value).toBe('<b>"a" & \'b\'</b>');
     });
 
-    it('reads the current value through the .value getter', () => {
+    it('exposes the inner input element through .input', () => {
         const unit = xnew(InputText, { value: 'hello' });
         const input = unit.element.querySelector('input') as HTMLInputElement;
 
+        expect(unit.input).toBe(input);
+
         input.value = 'world';
-        expect(unit.value).toBe('world');
+        expect(unit.input.value).toBe('world');
     });
 
     it('sets the name attribute only when given', () => {

@@ -27,12 +27,19 @@ export function InputSwitch(unit: xnew.Unit,
 
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
 
-    xnew({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
+    const input = xnew({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
 
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate ?? { open: value, duration: 0 });
-    gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
-    gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
-    unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
+
+    // the hidden input holds the state (read through `input`); the container attribute only drives the look
+    function apply(checked: boolean) {
+        (input.element as HTMLInputElement).checked = checked;
+        unit.element.toggleAttribute('data-checked', checked);
+    }
+
+    gate.on('-open', () => apply(true));
+    gate.on('-closed', () => apply(false));
+    apply(gate.state === 'opened' || gate.state === 'opening');
 
     unit.on('input', ({ value }: { value: boolean }) => value ? gate.open() : gate.close());
 
@@ -41,8 +48,8 @@ export function InputSwitch(unit: xnew.Unit,
     }
 
     return {
-        get value() {
-            return gate.state === 'opened' || gate.state === 'opening';
+        get input() {
+            return input.element as HTMLInputElement;
         },
         get gate() {
             return gate;

@@ -28,4 +28,10 @@ export function InputRadio(unit: xnew.Unit,
 
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style }, value);
     const input = xnew({ tag: 'input', type: 'radio', name, value, checked, className: css.input, ...others });
+
+    return {
+        get input() {
+            return input.element as HTMLInputElement;
+        },
+    };
 }

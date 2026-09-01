@@ -164,4 +164,11 @@ describe('basics InputRange', () => {
         expect(containerOf(unit).querySelectorAll('div')).toHaveLength(0);
         expect(inputOf(unit).tagName).toBe('INPUT');
     });
+
+    it('exposes the hidden native range through .input', () => {
+        const unit = xnew(InputRange, { value: 30 });
+
+        expect(unit.input).toBe(inputOf(unit));
+        expect(unit.input.value).toBe('30');
+    });
 });

@@ -32,14 +32,14 @@ describe('basics InputCheckbox', () => {
 
         expect(inputOf(unit).checked).toBe(false);
         expect(unit.element.hasAttribute('data-checked')).toBe(false);
-        expect(unit.value).toBe(false);
+        expect(unit.input.checked).toBe(false);
     });
 
     it('marks the box as checked when initially checked', () => {
         const unit = xnew(InputCheckbox, { value: true });
 
         expect(unit.element.hasAttribute('data-checked')).toBe(true);
-        expect(unit.value).toBe(true);
+        expect(unit.input.checked).toBe(true);
     });
 
     it('carries the checked look in a data-checked css rule (check mark + tint)', () => {
@@ -59,13 +59,13 @@ describe('basics InputCheckbox', () => {
         input.dispatchEvent(new Event('input', { bubbles: true }));
         jest.advanceTimersByTime(0);
         expect(unit.element.hasAttribute('data-checked')).toBe(true);
-        expect(unit.value).toBe(true);
+        expect(unit.input.checked).toBe(true);
 
         input.checked = false;
         input.dispatchEvent(new Event('input', { bubbles: true }));
         jest.advanceTimersByTime(1);
         expect(unit.element.hasAttribute('data-checked')).toBe(false);
-        expect(unit.value).toBe(false);
+        expect(unit.input.checked).toBe(false);
     });
 
     it('delivers a boolean value to input listeners', () => {
@@ -97,7 +97,7 @@ describe('basics InputCheckbox', () => {
         expect(unit.element.getAttribute('style')).toContain('border-radius: 50%;');
     });
 
-    it('exposes the checked-state gate, reflecting it in .value', () => {
+    it('exposes the checked-state gate, reflecting it in the native input', () => {
         const unit = xnew(InputCheckbox, { value: true });
 
         expect(xnew.isUnit(unit.gate)).toBe(true);
@@ -106,7 +106,7 @@ describe('basics InputCheckbox', () => {
         unit.gate.close();
         jest.advanceTimersByTime(1);
         expect(unit.gate.state).toBe('closed');
-        expect(unit.value).toBe(false);
+        expect(unit.input.checked).toBe(false);
         expect(unit.element.hasAttribute('data-checked')).toBe(false);
     });
 
@@ -135,5 +135,12 @@ describe('basics InputCheckbox', () => {
         jest.advanceTimersByTime(0);
 
         expect(unit.element.querySelector('svg')).toBeNull();
+    });
+
+    it('exposes the hidden native checkbox through .input', () => {
+        const unit = xnew(InputCheckbox, { value: true });
+
+        expect(unit.input).toBe(inputOf(unit));
+        expect(unit.input.checked).toBe(true);
     });
 });

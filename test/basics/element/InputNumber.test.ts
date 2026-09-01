@@ -38,12 +38,14 @@ describe('basics InputNumber', () => {
         expect(input.hasAttribute('name')).toBe(false);
     });
 
-    it('reads the current value through the .value getter', () => {
+    it('exposes the inner input element through .input', () => {
         const unit = xnew(InputNumber, { value: 30 });
         const input = unit.element.querySelector('input') as HTMLInputElement;
 
+        expect(unit.input).toBe(input);
+
         input.value = '42';
-        expect(unit.value).toBe(42);
+        expect(unit.input.valueAsNumber).toBe(42);
     });
 
     it('routes a click on the container to focus the inner input', () => {

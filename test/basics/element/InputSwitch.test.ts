@@ -32,14 +32,14 @@ describe('basics InputSwitch', () => {
 
         expect(inputOf(unit).checked).toBe(false);
         expect(unit.element.hasAttribute('data-checked')).toBe(false);
-        expect(unit.value).toBe(false);
+        expect(unit.input.checked).toBe(false);
     });
 
     it('marks the container as checked while on', () => {
         const unit = xnew(InputSwitch, { value: true });
 
         expect(unit.element.hasAttribute('data-checked')).toBe(true);
-        expect(unit.value).toBe(true);
+        expect(unit.input.checked).toBe(true);
     });
 
     it('carries the on look in data-checked css rules (tint + knob slide)', () => {
@@ -78,5 +78,12 @@ describe('basics InputSwitch', () => {
 
         expect(unit.element.querySelectorAll('div')).toHaveLength(0);
         expect(inputOf(unit).tagName).toBe('INPUT');
+    });
+
+    it('exposes the hidden native checkbox through .input', () => {
+        const unit = xnew(InputSwitch, { value: true });
+
+        expect(unit.input).toBe(inputOf(unit));
+        expect(unit.input.checked).toBe(true);
     });
 });

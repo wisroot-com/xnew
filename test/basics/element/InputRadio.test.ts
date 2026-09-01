@@ -67,4 +67,11 @@ describe('basics InputRadio', () => {
         expect(label.getAttribute('style')).toContain('font-weight: bold;');
         expect(input.disabled).toBe(true);
     });
+
+    it('exposes the hidden native radio through .input', () => {
+        const unit = xnew(InputRadio, { value: 'low', name: 'level', checked: true });
+
+        expect(unit.input).toBe(partsOf(unit).input);
+        expect(unit.input.checked).toBe(true);
+    });
 });
