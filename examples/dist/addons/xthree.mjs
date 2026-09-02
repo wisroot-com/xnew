@@ -165,11 +165,6 @@ const xthree = {
         xnew(Add, { object });
         return object;
     },
-    dispose(object) {
-        var _a;
-        (_a = object.parent) === null || _a === void 0 ? void 0 : _a.remove(object);
-        disposeObject(object);
-    },
     material,
     get renderer() {
         var _a;
@@ -204,25 +199,6 @@ function Root(unit, { canvas, camera }) {
         get renderer() { return renderer; },
         get scene() { return scene; },
     };
-}
-function disposeObject(object) {
-    object.traverse((obj) => {
-        var _a;
-        if (!obj.isMesh)
-            return;
-        (_a = obj.geometry) === null || _a === void 0 ? void 0 : _a.dispose();
-        const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
-        for (const material of materials) {
-            if (!material)
-                continue;
-            for (const key in material) {
-                const value = material[key];
-                if (value && value.isTexture)
-                    value.dispose();
-            }
-            material.dispose();
-        }
-    });
 }
 function attach(unit, object) {
     var _a, _b;

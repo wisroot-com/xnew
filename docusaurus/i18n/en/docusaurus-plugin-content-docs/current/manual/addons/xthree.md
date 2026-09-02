@@ -98,15 +98,6 @@ function Lights(unit) {
 }
 ```
 
-### `xthree.dispose(threeObject)`
-
-Detaches `threeObject` from its parent and traverses its descendants, calling `dispose()` on geometry / material / texture to **explicitly free all GPU resources**. Assumes the textures and other resources are not shared with other objects — calling it on shared resources can break the rendering of other live models.
-
-```js
-// when you know the resources belong to this model alone
-xthree.dispose(model); // detach and free geometry/material/texture
-```
-
 :::note
 When a unit that called `nest` / `add` is destroyed, the object is only **detached** — GPU resources are not disposed. To just detach an object yourself, use Three.js's own `object.removeFromParent()`.
 :::

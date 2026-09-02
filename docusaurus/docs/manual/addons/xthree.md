@@ -98,15 +98,6 @@ function Lights(unit) {
 }
 ```
 
-### `xthree.dispose(threeObject)`
-
-`threeObject` を親から外したうえで、配下の geometry / material / texture を辿って `dispose()` し、GPU リソースを**明示的に全解放**します。テクスチャ等を他のオブジェクトと共有していないことが前提です。共有リソースに対して呼ぶと、まだ生きている他のモデルの描画を壊すおそれがあります。
-
-```js
-// このモデル専用のリソースだと分かっているとき
-xthree.dispose(model); // 親から外し、geometry/material/texture を解放
-```
-
 :::note
 `nest` / `add` した unit の破棄時は **detach のみ** で、GPU リソースは dispose されません。detach だけしたいときは Three.js 標準の `object.removeFromParent()` を使ってください。
 :::

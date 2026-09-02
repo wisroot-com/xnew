@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // xthree — Three.js integration: ties the Three scene graph to the xnew unit tree
 // nest() makes a group Object3D and moves the current parent into it (stateful); add(obj) attaches a
-// leaf without moving. detach never disposes GPU resources (may be shared) — release with dispose.
+// leaf without moving. detach never disposes GPU resources — they may be shared, so freeing is up to the caller.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '@mulsense/xnew';
@@ -173,11 +173,6 @@ export const xthree = {
         xnew(Add, { object });
         return object;
     },
-    // detach and release all GPU resources; assumes they are not shared elsewhere
-    dispose(object: any) {
-        object.parent?.remove(object);
-        disposeObject(object);
-    },
     // build a three material from an xtextures texture object (see the material block below)
     material,
     get renderer() {
@@ -213,24 +208,6 @@ function Root(unit: xnew.Unit, { canvas, camera }: any) {
         get renderer() { return renderer; },
         get scene() { return scene; },
     }
-}
-
-// traverse the object and dispose geometry / material / texture
-function disposeObject(object: any): void {
-    object.traverse((obj: any) => {
-        if (!obj.isMesh) return;
-        obj.geometry?.dispose();
-        const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
-        for (const material of materials) {
-            if (!material) continue;
-            // dispose textures referenced by the material
-            for (const key in material) {
-                const value = material[key];
-                if (value && value.isTexture) value.dispose();
-            }
-            material.dispose();
-        }
-    });
 }
 
 // shared by nest / add: attach to the current Three parent (root scene or nearest enclosing nest), detach (never dispose) on finalize

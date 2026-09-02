@@ -179,6 +179,23 @@ function VRMLoader(unit, { url }) {
   });
 }
 
+// 焼き終えた VRM を親から外し、配下の geometry / material / texture を解放する（このモデル専用リソース前提）。
+function disposeObject(object) {
+  object.parent?.remove(object);
+  object.traverse((obj) => {
+    if (obj.isMesh) {
+      obj.geometry?.dispose();
+      for (const material of [obj.material].flat().filter(Boolean)) {
+        // material が参照しているテクスチャ（map / normalMap …）も一緒に解放する
+        for (const key in material) {
+          if (material[key]?.isTexture) material[key].dispose();
+        }
+        material.dispose();
+      }
+    }
+  });
+}
+
 function BakedCharacters(unit) {
   const camera = new THREE.OrthographicCamera(-1, +1, +1, -1, 0.1, 10);
   xthree.initialize({ camera, canvas: new OffscreenCanvas(BAKE_FRAME_SIZE, BAKE_FRAME_SIZE) });
@@ -276,7 +293,7 @@ function BakedCharacters(unit) {
       if (f === BAKE_FRAMES - 1) {
         // endJob 相当: アトラスを GPU へ確定アップロードし、wrapper から外して GPU を解放。
         source.update();
-        xthree.dispose(vrm.scene);
+        disposeObject(vrm.scene);
       }
     };
     // 時間予算（8ms）で毎フレーム分散し GPU スパイクを抑える。完了時 resolve するネイティブ

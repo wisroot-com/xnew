@@ -162,25 +162,3 @@ test('finalize: ユニット破棄では dispose しない（共有リソース�
     expect(geoSpy).not.toHaveBeenCalled();
     expect(matSpy).not.toHaveBeenCalled();
 });
-
-test('dispose: 親から外して配下の geometry/material/texture を全解放する', () => {
-    const canvas = setup();
-    const texture = new THREE.Texture();
-    const material = new THREE.MeshBasicMaterial({ map: texture });
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(), material);
-
-    const geoSpy = jest.spyOn(mesh.geometry, 'dispose');
-    const matSpy = jest.spyOn(material, 'dispose');
-    const texSpy = jest.spyOn(texture, 'dispose');
-
-    xnew(() => {
-        xthree.initialize({ canvas });
-        xthree.add(mesh);
-        xthree.dispose(mesh); // 親から外して geometry/material/texture を dispose
-    });
-
-    expect(mesh.parent).toBe(null);
-    expect(geoSpy).toHaveBeenCalled();
-    expect(matSpy).toHaveBeenCalled();
-    expect(texSpy).toHaveBeenCalled();
-});

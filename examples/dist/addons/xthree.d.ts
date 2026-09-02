@@ -34,7 +34,6 @@ declare const xthree: {
         };
     }): THREE.Group;
     add(object: any): any;
-    dispose(object: any): void;
     material: {
         shader(texture: any, params: Record<string, any>): THREE.ShaderMaterial;
         standard(texture: any, options: Record<string, any>): THREE.MeshStandardMaterial;
