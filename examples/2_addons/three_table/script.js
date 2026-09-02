@@ -130,24 +130,53 @@ function Mat(unit, { x, z, aspect, turned, seed }) {
 function Chabudai(unit) {
     const group = xthree.nest();
 
-    // 天板: 円柱（側面=横木目 / 天面=年輪 / 底面=無地）。天面・側面とも同じ木目パラメータで焼く
-    const topMaterials = [
-        xthree.material.standard(xtextures.wood, {                          // 側面（横長 canvas で木目が横に流れる）
-            size: { width: 512, height: 64 }, worldSize: 1.5, params: WOOD_PARAMS,
-            tile: true, repeat: { x: 3, y: 1 },   // 周方向に 3 回シームレスにタイルして木目を細かく
-            roughness: 0.65,
-        }),
-        xthree.material.standard(xtextures.wood, {                          // 天面
-            size: { width: 512, height: 512 }, worldSize: 1.5, params: WOOD_PARAMS,
-            roughness: 0.55,
-        }),
-        new THREE.MeshStandardMaterial({ color: 0xcab6a2, roughness: 0.7 }),   // 底面
-    ];
-    const top = new THREE.Mesh(new THREE.CylinderGeometry(TABLE_RADIUS, TABLE_RADIUS, TABLE_THICKNESS, 64, 1), topMaterials);
+    // 天板: 縁を丸めた円盤（側面=横木目 / 天面=年輪 / 底面=無地）。天面・側面とも同じ木目パラメータで焼く
+    const sideMaterial = xthree.material.standard(xtextures.wood, {          // 側面（横長 canvas で木目が横に流れる）
+        size: { width: 512, height: 64 }, worldSize: 1.5, params: WOOD_PARAMS,
+        tile: true, repeat: { x: 3, y: 1 },   // 周方向に 3 回シームレスにタイルして木目を細かく
+        roughness: 0.65,
+    });
+    const faceMaterial = xthree.material.standard(xtextures.wood, {          // 天面
+        size: { width: 512, height: 512 }, worldSize: 1.5, params: WOOD_PARAMS,
+        roughness: 0.55,
+    });
+    const backMaterial = new THREE.MeshStandardMaterial({ color: 0xcab6a2, roughness: 0.7 });   // 底面
+
+    // 天面・底面は平面 UV（年輪）を保ちたいので円柱ひとつにせず、丸めた側面 + 円盤 2 枚に分ける
+    const top = new THREE.Group();
     top.position.y = TABLE_TOP_Y;
-    top.castShadow = true;
-    top.receiveShadow = true;
     group.add(top);
+
+    // 側面: 上下の縁を 1/4 円で丸めた輪郭を回す。Lathe の v は点の index 割りなので直線部も分割して木目の伸びを揃える
+    const EDGE = TABLE_THICKNESS * 0.35;             // 縁の丸みの半径
+    const capRadius = TABLE_RADIUS - EDGE;
+    const profile = [];
+    for (let i = 0; i <= 4; i++) {                   // 下の縁（-90°→0°）
+        const t = -Math.PI / 2 + Math.PI / 2 * (i / 4);
+        profile.push(new THREE.Vector2(capRadius + EDGE * Math.cos(t), -TABLE_THICKNESS / 2 + EDGE + EDGE * Math.sin(t)));
+    }
+    profile.push(new THREE.Vector2(TABLE_RADIUS, 0));
+    for (let i = 0; i <= 4; i++) {                   // 上の縁（0°→90°）
+        const t = Math.PI / 2 * (i / 4);
+        profile.push(new THREE.Vector2(capRadius + EDGE * Math.cos(t), TABLE_THICKNESS / 2 - EDGE + EDGE * Math.sin(t)));
+    }
+    const side = new THREE.Mesh(new THREE.LatheGeometry(profile, 64), sideMaterial);
+    side.castShadow = true;
+    side.receiveShadow = true;
+    top.add(side);
+
+    const face = new THREE.Mesh(new THREE.CircleGeometry(capRadius, 64), faceMaterial);
+    face.rotation.x = -Math.PI / 2;
+    face.position.y = TABLE_THICKNESS / 2;
+    face.castShadow = true;
+    face.receiveShadow = true;
+    top.add(face);
+
+    const back = new THREE.Mesh(new THREE.CircleGeometry(capRadius, 64), backMaterial);
+    back.rotation.x = Math.PI / 2;
+    back.position.y = -TABLE_THICKNESS / 2;
+    back.castShadow = true;
+    top.add(back);
 
     // 脚: 天板の下、外向きに少し開いた 4 本。木目の傾きを保ったまま +90° して縦木目にする
     const legMaterial = xthree.material.standard(xtextures.wood, {
@@ -157,7 +186,7 @@ function Chabudai(unit) {
     const legHeight = TABLE_TOP_Y - TABLE_THICKNESS / 2;   // 床から天板の裏まで
     for (let i = 0; i < 4; i++) {
         const angle = Math.PI / 4 + i * Math.PI / 2;
-        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05 * MAT, 0.06 * MAT, legHeight, 16), legMaterial);
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.032 * MAT, 0.039 * MAT, legHeight, 16), legMaterial);
         const r = TABLE_RADIUS * 0.85;   // 円の外側寄りに配置
         leg.position.set(Math.cos(angle) * r, legHeight / 2, Math.sin(angle) * r);
         leg.rotation.z = -Math.cos(angle) * 0.14;    // 外向きに開く
