@@ -26,7 +26,7 @@ const presets: TexturePresets = {
         background: [0.66, 0.68, 0.38],
         // tatami
         aspect: 2, weave: 30, heri: 0.04,
-        border: [0.23, 0.21, 0.14],
+        border: [0.33, 0.36, 0.24],
     },
     // 半畳: the square mat a 4.5-mat room puts at its center
     hanjo: {

@@ -102,15 +102,39 @@ export function Floor(unit) {
 }
 
 //----------------------------------------------------------------------------------------------------
-// Mat — 畳 1 枚。tatami のセルは正方形なので、1 セルだけ焼いた map を実寸 (aspect x 1) の板へ貼る
+// Mat — 畳 1 枚。tatami のセルは正方形なので、1 セルだけ焼いた map を実寸 (aspect x 1) の箱の天面へ貼る
 //----------------------------------------------------------------------------------------------------
 
+const MAT_THICKNESS = 0.06 * MAT;   // 畳の厚み（実寸 55mm 相当）。天面を y=0 に保ちたいので下へ伸ばす
+
 function Mat(unit, { x, z, aspect, turned, material }) {
-    const mesh = xthree.add(new THREE.Mesh(new THREE.PlaneGeometry(MAT * aspect, MAT), material));
-    // Euler XYZ は z（面内の回転 = 畳の向き）が先に効き、そのあと x で床に寝かせる
-    mesh.rotation.set(-Math.PI / 2, 0, turned ? Math.PI / 2 : 0);
-    mesh.position.set(x * MAT, 0, z * MAT);
+    const geometry = new THREE.BoxGeometry(MAT * aspect, MAT_THICKNESS, MAT);
+    wrapSideUv(geometry, MAT * aspect);
+    const mesh = xthree.add(new THREE.Mesh(geometry, material));
+    mesh.rotation.y = turned ? Math.PI / 2 : 0;
+    mesh.position.set(x * MAT, -MAT_THICKNESS / 2, z * MAT);
     mesh.receiveShadow = true;
+}
+
+// 側面の UV を貼り替えて、天面と同じ畳テクスチャを断面へ回り込ませる（側面用の単色マテリアルを持たない
+// ので、ヘリの色や幅を変えると側面もそのまま追従する）。BoxGeometry の頂点順は px,nx,py,ny,pz,nz。
+function wrapSideUv(geometry, length) {
+    const position = geometry.attributes.position;
+    const uv = geometry.attributes.uv;
+    // 短辺(±x): テクスチャの v 軸（＝短辺方向）をなぞるので、両端にヘリが乗る
+    for (let i = 0; i < 8; i++) {
+        const depth = 0.5 - position.getY(i) / MAT_THICKNESS;        // 0 = 天面側 / 1 = 裏側
+        // u は継ぎ目の陰を避けて端の少し内側。厚み方向へわずかに振るのは normalMap の接空間を潰さないため
+        const u = i < 4 ? 0.97 - 0.02 * depth : 0.03 + 0.02 * depth;
+        uv.setXY(i, u, 0.5 - position.getZ(i) / MAT);                // BoxGeometry の天面 UV は -z 側が v=1
+    }
+    // 長辺(±z): ヘリの帯（v が 0 / 1 の側）の中を長辺方向へなぞる
+    for (let i = 16; i < 24; i++) {
+        const depth = 0.5 - position.getY(i) / MAT_THICKNESS;
+        const v = i < 20 ? 0.006 + 0.01 * depth : 0.994 - 0.01 * depth;
+        uv.setXY(i, 0.5 + position.getX(i) / length, v);
+    }
+    uv.needsUpdate = true;
 }
 
 //----------------------------------------------------------------------------------------------------

@@ -3438,7 +3438,7 @@ const presets = {
         color: [0.72, 0.71, 0.42],
         background: [0.66, 0.68, 0.38],
         aspect: 2, weave: 30, heri: 0.04,
-        border: [0.23, 0.21, 0.14],
+        border: [0.33, 0.36, 0.24],
     },
     hanjo: {
         aspect: 1,

@@ -20,12 +20,12 @@ const float scale = 1.0;
 const float bump = 0.2;
 const float seed = 0.0;
 const vec3 color = vec3(0.72, 0.71, 0.42);
-const vec3 background = vec3(0.6, 0.68, 0.38);
+const vec3 background = vec3(0.66, 0.68, 0.38);
 // tatami
 const float aspect = 2.0;
 const float weave = 30.0;
 const float heri = 0.04;
-const vec3 border = vec3(0.23, 0.21, 0.14);
+const vec3 border = vec3(0.33, 0.36, 0.24);
 
 #ifdef VERTEX
 
