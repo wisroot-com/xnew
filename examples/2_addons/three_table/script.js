@@ -202,7 +202,7 @@ function Chabudai(unit) {
     back.castShadow = true;
     top.add(back);
 
-    // 脚: 天板の下、外向きに少し開いた 4 本。木目の傾きを保ったまま +90° して縦木目にする
+    // 脚: 天板の下に垂直に立てた 4 本。木目の傾きを保ったまま +90° して縦木目にする
     const legMaterial = xthree.material.standard(xtextures.wood, {
         size: { width: 128, height: 256 }, worldSize: 1, params: { ...WOOD_PARAMS, angle: WOOD_PARAMS.angle + 90 },
         roughness: 0.6,
@@ -213,8 +213,6 @@ function Chabudai(unit) {
         const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.032 * MAT, 0.039 * MAT, legHeight, 16), legMaterial);
         const r = TABLE_RADIUS * 0.85;   // 円の外側寄りに配置
         leg.position.set(Math.cos(angle) * r, legHeight / 2, Math.sin(angle) * r);
-        leg.rotation.z = -Math.cos(angle) * 0.14;    // 外向きに開く
-        leg.rotation.x = Math.sin(angle) * 0.14;
         leg.castShadow = true;
         group.add(leg);
     }
