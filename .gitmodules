@@ -1,4 +1,0 @@
-[submodule "gamelab"]
-	path = gamelab
-	url = https://github.com/mulsense/xnew-gamelab
-	branch = main
