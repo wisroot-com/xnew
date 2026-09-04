@@ -66,7 +66,9 @@ function Main(unit, { size = 1024 } = {}) {
         xnew(Chabudai);
         CHARACTERS.forEach(({ mog, angle }) => {
             const radius = TABLE_RADIUS + 0.12;
-            xnew(Character, { mogPath: `../../assets/${mog}.mog`, x: Math.sin(angle) * radius, z: Math.cos(angle) * radius });
+            const x = Math.sin(angle) * radius, z = Math.cos(angle) * radius;
+            xnew(Zabuton, { x, z, angle });
+            xnew(Character, { mogPath: `../../assets/${mog}.mog`, x, z, y: ZABUTON_THICKNESS });
         });
     });
 
@@ -85,7 +87,7 @@ function Main(unit, { size = 1024 } = {}) {
 
 function Lights(unit) {
     const dir = xthree.add(new THREE.DirectionalLight(0xfff2e0, 1.1));
-    dir.position.set(2, 4, 3);
+    dir.position.set(1.5, 6, 2.2);
     dir.castShadow = true;
     dir.shadow.mapSize.set(4096, 4096);
     // 視錐台は四畳半＋キャラがぎりぎり入る範囲まで絞る（1 テクセル ≒ 1mm、深度も near/far で詰めて精度を稼ぐ）
@@ -281,11 +283,48 @@ function Chabudai(unit) {
 }
 
 //----------------------------------------------------------------------------------------------------
+// Zabuton — キャラが乗るグレーの座布団。角と上下の縁を丸めた箱で、綿の入ったふくらみを出す
+//----------------------------------------------------------------------------------------------------
+
+const ZABUTON_SIZE = 0.35 * MAT;                // 一辺（畳の短辺の 0.35 倍 = 31cm 相当）
+const ZABUTON_THICKNESS = 0.055 * MAT;          // 厚み（48mm）。この高さぶんキャラを持ち上げる
+const ZABUTON_CORNER = ZABUTON_SIZE * 0.2;      // 角の丸み
+const ZABUTON_BEVEL = ZABUTON_THICKNESS * 0.3;  // 上下の縁の丸み。取りすぎると座布団というより丸クッションになる
+
+function Zabuton(unit, { x, z, angle }) {
+    const material = new THREE.MeshStandardMaterial({ color: 0x495266, roughness: 0.95 });
+    const mesh = xthree.add(new THREE.Mesh(makeZabutonGeometry(), material));
+    mesh.rotation.y = angle;
+    mesh.position.set(x, ZABUTON_THICKNESS / 2, z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+}
+
+// 輪郭は面取りぶん内側に取り、ベベルで最大幅が一辺ちょうどになるようにする（Mat と同じ作り）
+function makeZabutonGeometry() {
+    const h = ZABUTON_SIZE / 2 - ZABUTON_BEVEL, r = ZABUTON_CORNER;
+    const shape = new THREE.Shape()
+        .moveTo(-h + r, -h)
+        .lineTo(h - r, -h).absarc(h - r, -h + r, r, -Math.PI / 2, 0, false)
+        .lineTo(h, h - r).absarc(h - r, h - r, r, 0, Math.PI / 2, false)
+        .lineTo(-h + r, h).absarc(-h + r, h - r, r, Math.PI / 2, Math.PI, false)
+        .lineTo(-h, -h + r).absarc(-h + r, -h + r, r, Math.PI, Math.PI * 1.5, false);
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+        curveSegments: 8, depth: ZABUTON_THICKNESS - 2 * ZABUTON_BEVEL,
+        bevelEnabled: true, bevelSegments: 4, bevelOffset: 0,
+        bevelSize: ZABUTON_BEVEL, bevelThickness: ZABUTON_BEVEL,
+    });
+    geometry.rotateX(-Math.PI / 2);   // 押し出し方向(+z) を上(+y) へ倒す
+    geometry.center();
+    return geometry;
+}
+
+//----------------------------------------------------------------------------------------------------
 // Character — .mog を VRM に変換して読み込み、歩きモーション（VRMA）をループ。ちゃぶ台の中央を向いて立つ
 //----------------------------------------------------------------------------------------------------
 
-function Character(unit, { mogPath, x = 0, z = 0, scale = 0.85 }) {
-    const object = xthree.nest({ position: { x, y: 0, z }, scale, rotation: { x: 0, y: Math.atan2(-x, -z) } });   // ちゃぶ台の中央を向く
+function Character(unit, { mogPath, x = 0, z = 0, y = 0, scale = 0.85 }) {
+    const object = xthree.nest({ position: { x, y, z }, scale, rotation: { x: 0, y: Math.atan2(-x, -z) } });   // ちゃぶ台の中央を向く
 
     xnew.promise('vrm', voxelkit.load(mogPath)
         .then((composits) => voxelkit.convertVRM(composits[0]))
@@ -315,7 +354,7 @@ function Character(unit, { mogPath, x = 0, z = 0, scale = 0.85 }) {
             const delta = clock.getDelta();
             mixer.update(delta);
             vrm.update(delta);
-            object.position.y = Math.abs(Math.sin(clock.elapsedTime * 5)) * 0.03;   // その場足踏み
+            object.position.y = y + Math.abs(Math.sin(clock.elapsedTime * 5)) * 0.03;   // その場足踏み
         });
     });
 }
