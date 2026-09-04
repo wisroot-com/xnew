@@ -65,7 +65,7 @@ function Main(unit, { size = 1024 } = {}) {
         xnew(Floor);
         xnew(Chabudai);
         CHARACTERS.forEach(({ mog, angle }) => {
-            const radius = TABLE_RADIUS + 0.25;
+            const radius = TABLE_RADIUS + 0.12;
             xnew(Character, { mogPath: `../../assets/${mog}.mog`, x: Math.sin(angle) * radius, z: Math.cos(angle) * radius });
         });
     });
@@ -284,7 +284,7 @@ function Chabudai(unit) {
 // Character — .mog を VRM に変換して読み込み、歩きモーション（VRMA）をループ。ちゃぶ台の中央を向いて立つ
 //----------------------------------------------------------------------------------------------------
 
-function Character(unit, { mogPath, x = 0, z = 0, scale = 0.95 }) {
+function Character(unit, { mogPath, x = 0, z = 0, scale = 0.85 }) {
     const object = xthree.nest({ position: { x, y: 0, z }, scale, rotation: { x: 0, y: Math.atan2(-x, -z) } });   // ちゃぶ台の中央を向く
 
     xnew.promise('vrm', voxelkit.load(mogPath)
