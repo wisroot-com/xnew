@@ -3487,7 +3487,7 @@ const carpet = {
 };
 
 function defineTexture(source) {
-    const texture = Object.assign(Object.assign({}, source), { glsl: noiseGlsl + uniformDeclarations(source.presets.standard) + source.glsl, bake(options = {}) {
+    const texture = Object.assign(Object.assign({}, source), { entry: 'xtex' + source.name.charAt(0).toUpperCase() + source.name.slice(1), glsl: noiseGlsl + uniformDeclarations(source.presets.standard) + source.glsl, bake(options = {}) {
             return bakeTexture(texture, options);
         },
         renderer(canvas, options = {}) {
@@ -3527,10 +3527,9 @@ in vec2 aPos;
 out vec2 vUv;
 void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 function fragmentSource(def, channel, tile) {
-    const entry = 'xtex' + def.name.charAt(0).toUpperCase() + def.name.slice(1);
     const sample = channel === 'normal'
-        ? (pos) => `${entry}Normal(${pos}, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0))`
-        : (pos) => `${entry}Color(${pos})`;
+        ? (pos) => `${def.entry}Normal(${pos}, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0))`
+        : (pos) => `${def.entry}Color(${pos})`;
     const encode = channel === 'normal'
         ? (value) => `vec4(normalize(${value}) * 0.5 + 0.5, 1.0)`
         : (value) => `vec4(${value}, 1.0)`;

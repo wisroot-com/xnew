@@ -50,6 +50,8 @@ export interface BakeOptions extends RendererOptions {
 //----------------------------------------------------------------------------------------------------
 
 export interface Texture extends TextureSource {
+    // the channel entry-function prefix derived from name: "wood" → xtexWood (+ Color / Normal)
+    entry: string;
     bake(options?: BakeOptions): ImageBitmap;
     renderer(canvas: HTMLCanvasElement, options?: RendererOptions): TextureRenderer;
 }
@@ -57,6 +59,7 @@ export interface Texture extends TextureSource {
 export function defineTexture(source: TextureSource): Texture {
     const texture: Texture = {
         ...source,
+        entry: 'xtex' + source.name.charAt(0).toUpperCase() + source.name.slice(1),
         glsl: noiseGlsl + uniformDeclarations(source.presets.standard) + source.glsl,
         bake(options: BakeOptions = {}) {
             return bakeTexture(texture, options);
@@ -107,13 +110,11 @@ in vec2 aPos;
 out vec2 vUv;
 void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 
-export function fragmentSource(def: TextureSource, channel: TextureChannel, tile: boolean): string {
-    // channel entry-function names inside the glsl are derived from the texture name: "wood" → xtexWoodColor / xtexWoodNormal
-    const entry = 'xtex' + def.name.charAt(0).toUpperCase() + def.name.slice(1);
+export function fragmentSource(def: Texture, channel: TextureChannel, tile: boolean): string {
     // color: paint the returned color; normal: encode the flat-slice normal as a bakeable normal map
     const sample = channel === 'normal'
-        ? (pos: string) => `${entry}Normal(${pos}, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0))`
-        : (pos: string) => `${entry}Color(${pos})`;
+        ? (pos: string) => `${def.entry}Normal(${pos}, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0))`
+        : (pos: string) => `${def.entry}Color(${pos})`;
     const encode = channel === 'normal'
         ? (value: string) => `vec4(normalize(${value}) * 0.5 + 0.5, 1.0)`
         : (value: string) => `vec4(${value}, 1.0)`;
@@ -145,7 +146,7 @@ void main(){
 // gl helpers — program compile (aPos pinned to attribute 0 so one VAO serves every program) and draw
 //----------------------------------------------------------------------------------------------------
 
-function compileTextureProgram(gl: WebGL2RenderingContext, def: TextureSource, channel: TextureChannel, tile: boolean): WebGLProgram {
+function compileTextureProgram(gl: WebGL2RenderingContext, def: Texture, channel: TextureChannel, tile: boolean): WebGLProgram {
     const program = gl.createProgram();
     gl.attachShader(program, compileShader(gl, gl.VERTEX_SHADER, VERTEX_SOURCE));
     gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource(def, channel, tile)));
@@ -189,7 +190,7 @@ interface TexturePipeline {
 }
 
 // one compiled program plus its uniform-location cache and draw call — the unit renderer and bake share
-function createPipeline(gl: WebGL2RenderingContext, def: TextureSource, channel: TextureChannel, tile: boolean, vao: WebGLVertexArrayObject): TexturePipeline {
+function createPipeline(gl: WebGL2RenderingContext, def: Texture, channel: TextureChannel, tile: boolean, vao: WebGLVertexArrayObject): TexturePipeline {
     const program = compileTextureProgram(gl, def, channel, tile);
     const locations = new Map<string, WebGLUniformLocation | null>();
     // uniform names in the glsl equal the schema keys; unused ones resolve to null locations (silently skipped)
@@ -221,7 +222,7 @@ function createPipeline(gl: WebGL2RenderingContext, def: TextureSource, channel:
 // per-canvas renderer — owns its own context (live previews); dispose when the canvas goes away
 //----------------------------------------------------------------------------------------------------
 
-function createTextureRenderer(canvas: HTMLCanvasElement, def: TextureSource, options: RendererOptions = {}): TextureRenderer {
+function createTextureRenderer(canvas: HTMLCanvasElement, def: Texture, options: RendererOptions = {}): TextureRenderer {
     const { worldSize = 3, channel = 'color', tile = false } = options;
     const gl = canvas.getContext('webgl2');
     if (gl === null) {
@@ -270,7 +271,7 @@ function sharedBakeContext(): BakeContext {
     return bakeContext;
 }
 
-function bakeTexture(def: TextureSource, options: BakeOptions = {}): ImageBitmap {
+function bakeTexture(def: Texture, options: BakeOptions = {}): ImageBitmap {
     const { worldSize = 3, channel = 'color', tile = false, params = {} } = options;
     const { width = 512, height = 512 } = options.size ?? {};
 

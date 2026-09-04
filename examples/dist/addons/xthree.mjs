@@ -35,99 +35,93 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
     return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
 };
 
-const material = {
-    shader(texture, params) {
-        var _a;
-        const entry = 'xtex' + texture.name.charAt(0).toUpperCase() + texture.name.slice(1);
-        const uniforms = {};
-        for (const name in texture.presets.standard) {
-            const value = (_a = params[name]) !== null && _a !== void 0 ? _a : texture.presets.standard[name];
-            uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
-        }
-        const vertexShader = `
-            varying vec3 vXtexPos;
-            varying vec3 vXtexNormal;
-            varying vec3 vXtexLight;
-            void main() {
-                vXtexPos = position;
-                vXtexNormal = normal;
-                // rotate the view-space light into object space: transpose(mat3(mv)) * light
-                mat3 mv = mat3(modelViewMatrix);
-                vec3 light = normalize(vec3(0.4, 0.7, 0.6));
-                vXtexLight = vec3(dot(mv[0], light), dot(mv[1], light), dot(mv[2], light));
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
-        const fragmentShader = `
-            varying vec3 vXtexPos;
-            varying vec3 vXtexNormal;
-            varying vec3 vXtexLight;
-            ${texture.glsl}
-            void main() {
-                vec3 nrm = normalize(vXtexNormal);
-                vec3 tng = normalize(abs(nrm.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), nrm) : cross(vec3(1.0, 0.0, 0.0), nrm));
-                vec3 n = ${entry}Normal(vXtexPos, nrm, tng);
-                vec3 albedo = ${entry}Color(vXtexPos);
-                float diff = 0.55 + 0.45 * max(dot(n, normalize(vXtexLight)), 0.0);
-                gl_FragColor = vec4(albedo * diff, 1.0);
-            }
-        `;
-        return new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });
-    },
-    standard(texture, options) {
-        const { params, size, worldSize, tile, repeat, inject } = options, materialParams = __rest(options, ["params", "size", "worldSize", "tile", "repeat", "inject"]);
-        if (inject === true) {
-            return injectStandard(texture, params !== null && params !== void 0 ? params : {}, materialParams);
-        }
-        function bake(channel) {
-            const map = new THREE.CanvasTexture(texture.bake({ params, size, worldSize, tile, channel }));
-            map.colorSpace = channel === 'color' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-            map.anisotropy = 8;
-            if (repeat !== undefined) {
-                map.wrapS = map.wrapT = THREE.RepeatWrapping;
-                map.repeat.set(repeat.x, repeat.y);
-            }
-            return map;
-        }
-        return new THREE.MeshStandardMaterial(Object.assign({ map: bake('color'), normalMap: bake('normal') }, materialParams));
-    },
-};
-function injectStandard(texture, params, materialParams) {
+var frameGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexTangent — a stable tangent for object-space texturing: any vector perpendicular to the normal.\n// Both material paths must build the frame the same way, or the same texture shades differently in each.\n//----------------------------------------------------------------------------------------------------\n\nvec3 xtexTangent(vec3 n) {\n  return normalize(abs(n.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), n) : cross(vec3(1.0, 0.0, 0.0), n));\n}\n";
+
+var shaderVertexGlsl = "//----------------------------------------------------------------------------------------------------\n// xthree shader material — vertex stage: hand the object-space position / normal to the fragment stage.\n// This path has no scene lights, so it also carries one fixed light direction, rotated into object space.\n//----------------------------------------------------------------------------------------------------\n\nvarying vec3 vXtexPos;\nvarying vec3 vXtexNormal;\nvarying vec3 vXtexLight;\n\nvoid main() {\n  vXtexPos = position;\n  vXtexNormal = normal;\n\n  // rotate the view-space light into object space: transpose(mat3(mv)) * light\n  mat3 mv = mat3(modelViewMatrix);\n  vec3 light = normalize(vec3(0.4, 0.7, 0.6));\n  vXtexLight = vec3(dot(mv[0], light), dot(mv[1], light), dot(mv[2], light));\n\n  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n}\n";
+
+var shaderFragmentGlsl = "//----------------------------------------------------------------------------------------------------\n// xthree shader material — fragment stage: shade in object space with the material-local light.\n// The texture's own glsl and its entry-function prefix are spliced in by resolveGlsl (material.ts).\n//----------------------------------------------------------------------------------------------------\n\nvarying vec3 vXtexPos;\nvarying vec3 vXtexNormal;\nvarying vec3 vXtexLight;\n\n//#include <frame>\n//#include <texture>\n\nvoid main() {\n  vec3 nrm = normalize(vXtexNormal);\n  vec3 n = XTEX_Normal(vXtexPos, nrm, xtexTangent(nrm));\n  vec3 albedo = XTEX_Color(vXtexPos);\n  float diff = 0.55 + 0.45 * max(dot(n, normalize(vXtexLight)), 0.0);\n  gl_FragColor = vec4(albedo * diff, 1.0);\n}\n";
+
+function resolveGlsl(texture, source) {
+    return source
+        .replace(/XTEX_/g, texture.entry)
+        .replace('//#include <frame>', () => frameGlsl)
+        .replace('//#include <texture>', () => texture.glsl);
+}
+function resolveUniforms(texture, params) {
     var _a;
-    const entry = 'xtex' + texture.name.charAt(0).toUpperCase() + texture.name.slice(1);
     const uniforms = {};
     for (const name in texture.presets.standard) {
         const value = (_a = params[name]) !== null && _a !== void 0 ? _a : texture.presets.standard[name];
         uniforms[name] = { value: Array.isArray(value) ? new THREE.Vector3(value[0], value[1], value[2]) : value };
     }
-    const material = new THREE.MeshStandardMaterial(materialParams);
-    material.onBeforeCompile = (shader) => {
-        Object.assign(shader.uniforms, uniforms);
-        shader.vertexShader = shader.vertexShader
-            .replace('#include <common>', `#include <common>
+    return uniforms;
+}
+const material = { shader, standard };
+function shader(texture, params = {}) {
+    return new THREE.ShaderMaterial({
+        uniforms: resolveUniforms(texture, params),
+        vertexShader: shaderVertexGlsl,
+        fragmentShader: resolveGlsl(texture, shaderFragmentGlsl),
+    });
+}
+function standard(texture, options = {}) {
+    const { params = {}, size, worldSize, tile, repeat, inject } = options, materialParams = __rest(options, ["params", "size", "worldSize", "tile", "repeat", "inject"]);
+    if (inject === true) {
+        return injectStandard(texture, params, materialParams);
+    }
+    else {
+        return bakeStandard(texture, { params, size, worldSize, tile, repeat }, materialParams);
+    }
+}
+function bakeStandard(texture, bakeOptions, materialParams) {
+    const { params, size, worldSize, tile, repeat } = bakeOptions;
+    function bake(channel) {
+        const map = new THREE.CanvasTexture(texture.bake({ params, size, worldSize, tile, channel }));
+        map.colorSpace = channel === 'color' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+        map.anisotropy = 8;
+        if (repeat !== undefined) {
+            map.wrapS = map.wrapT = THREE.RepeatWrapping;
+            map.repeat.set(repeat.x, repeat.y);
+        }
+        return map;
+    }
+    return new THREE.MeshStandardMaterial(Object.assign({ map: bake('color'), normalMap: bake('normal') }, materialParams));
+}
+const INJECT_VERTEX_VARYINGS = `
 varying vec3 vXtexPos;
-varying vec3 vXtexNormal;`)
-            .replace('#include <begin_vertex>', `#include <begin_vertex>
+varying vec3 vXtexNormal;`;
+const INJECT_VERTEX_ASSIGN = `
 vXtexPos = position;
-vXtexNormal = normal;`);
-        shader.fragmentShader = shader.fragmentShader
-            .replace('#include <common>', `#include <common>
+vXtexNormal = normal;`;
+const INJECT_FRAGMENT_DECLS = `
 uniform mat3 normalMatrix;
 varying vec3 vXtexPos;
 varying vec3 vXtexNormal;
 vec3 xtexSrgbToLinear(vec3 c){ return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c)); }
-${texture.glsl}`)
-            .replace('#include <map_fragment>', `#include <map_fragment>
-diffuseColor.rgb = xtexSrgbToLinear(${entry}Color(vXtexPos));`)
-            .replace('#include <normal_fragment_maps>', `{
+//#include <frame>
+//#include <texture>`;
+const INJECT_FRAGMENT_ALBEDO = `
+diffuseColor.rgb = xtexSrgbToLinear(XTEX_Color(vXtexPos));`;
+const INJECT_FRAGMENT_NORMAL = `{
 vec3 xtexN = normalize(vXtexNormal);
-vec3 xtexT = normalize(abs(xtexN.y) < 0.99 ? cross(vec3(0.0, 1.0, 0.0), xtexN) : cross(vec3(1.0, 0.0, 0.0), xtexN));
-normal = normalize(normalMatrix * ${entry}Normal(vXtexPos, xtexN, xtexT)) * faceDirection;
-}`);
+normal = normalize(normalMatrix * XTEX_Normal(vXtexPos, xtexN, xtexTangent(xtexN))) * faceDirection;
+}`;
+function injectStandard(texture, params, materialParams) {
+    const uniforms = resolveUniforms(texture, params);
+    const standardMaterial = new THREE.MeshStandardMaterial(materialParams);
+    standardMaterial.onBeforeCompile = (shader) => {
+        Object.assign(shader.uniforms, uniforms);
+        shader.vertexShader = shader.vertexShader
+            .replace('#include <common>', '#include <common>' + INJECT_VERTEX_VARYINGS)
+            .replace('#include <begin_vertex>', '#include <begin_vertex>' + INJECT_VERTEX_ASSIGN);
+        shader.fragmentShader = shader.fragmentShader
+            .replace('#include <common>', '#include <common>' + resolveGlsl(texture, INJECT_FRAGMENT_DECLS))
+            .replace('#include <map_fragment>', '#include <map_fragment>' + resolveGlsl(texture, INJECT_FRAGMENT_ALBEDO))
+            .replace('#include <normal_fragment_maps>', resolveGlsl(texture, INJECT_FRAGMENT_NORMAL));
     };
-    material.customProgramCacheKey = () => `xtextures:${texture.name}`;
-    material.uniforms = uniforms;
-    return material;
+    standardMaterial.customProgramCacheKey = () => `xtextures:${texture.name}`;
+    standardMaterial.uniforms = uniforms;
+    return standardMaterial;
 }
 
 const xthree = {

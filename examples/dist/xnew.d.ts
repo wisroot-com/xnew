@@ -604,6 +604,7 @@ interface BakeOptions extends RendererOptions {
     params?: TexturePreset;
 }
 interface Texture extends TextureSource {
+    entry: string;
     bake(options?: BakeOptions): ImageBitmap;
     renderer(canvas: HTMLCanvasElement, options?: RendererOptions): TextureRenderer;
 }

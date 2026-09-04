@@ -12,6 +12,7 @@ jest.spyOn(THREE, 'WebGLRenderer').mockImplementation(() => ({
 
 import { xnew } from '../../src/index';
 import { xthree } from '../../src/addons/three/xthree';
+import { xtextures } from '../../src/textures/xtextures';
 
 function setup() {
     const canvas = document.createElement('canvas');
@@ -161,4 +162,37 @@ test('finalize: ユニット破棄では dispose しない（共有リソース�
     expect(mesh.parent).toBe(null);
     expect(geoSpy).not.toHaveBeenCalled();
     expect(matSpy).not.toHaveBeenCalled();
+});
+
+// glsl テンプレートのトークン（XTEX_ / //#include <...>）が解決されずに残るとコンパイルが落ちる。
+// ヘッダーコメント内にトークンを書いて誤置換した実績があるので固定する。
+test('material.shader: glsl テンプレートのトークンが解決される', () => {
+    const material = xthree.material.shader(xtextures.wood, { scale: 5 });
+
+    expect(material.fragmentShader).not.toContain('XTEX_');
+    expect(material.fragmentShader).not.toContain('#include <');
+    expect(material.fragmentShader).toContain(xtextures.wood.glsl);
+    expect(material.fragmentShader).toContain('vec3 xtexTangent(vec3 n)');
+    expect(material.fragmentShader).toContain('xtexWoodNormal(vXtexPos, nrm, xtexTangent(nrm))');
+    expect(material.fragmentShader).toContain('xtexWoodColor(vXtexPos)');
+    expect(material.uniforms.scale.value).toBe(5);
+    expect(material.uniforms.color.value).toBeInstanceOf(THREE.Vector3);
+});
+
+// 接線フレームは両経路で同一でなければならない（frame.glsl に一本化した不変条件）。
+test('material.standard({ inject: true }): frame / texture glsl が standard シェーダーに注入される', () => {
+    const material = xthree.material.standard(xtextures.wood, { inject: true, params: { scale: 5 } });
+    const shader = {
+        vertexShader: '#include <common>\n#include <begin_vertex>\n',
+        fragmentShader: '#include <common>\n#include <map_fragment>\n#include <normal_fragment_maps>\n',
+        uniforms: {},
+    };
+    material.onBeforeCompile(shader);
+
+    expect(shader.fragmentShader).not.toContain('XTEX_');
+    expect(shader.fragmentShader).toContain('vec3 xtexTangent(vec3 n)');
+    expect(shader.fragmentShader).toContain('xtexWoodNormal(vXtexPos, xtexN, xtexTangent(xtexN))');
+    expect(shader.vertexShader).toContain('vXtexPos = position;');
+    expect(material.customProgramCacheKey()).toBe('xtextures:wood');
+    expect(material.uniforms.scale.value).toBe(5);
 });

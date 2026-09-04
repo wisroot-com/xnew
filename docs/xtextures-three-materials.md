@@ -43,7 +43,8 @@ inject の代償は 3 つ:
 - **vertex**: `#include <common>` の後に varying（`vXtexPos` / `vXtexNormal` = オブジェクト空間の
   position / normal）を宣言し、`#include <begin_vertex>` の後で代入。
 - **fragment**:
-  - `#include <common>` の後にテクスチャ GLSL 一式 + varying + `uniform mat3 normalMatrix;` を注入。
+  - `#include <common>` の後にテクスチャ GLSL 一式 + 共有の接線フレーム（`glsl/frame.glsl` の
+    `xtexTangent`。`shader()` 経路と同じものを使う）+ varying + `uniform mat3 normalMatrix;` を注入。
     normalMatrix は three の vertex プレフィックスにしか宣言されないが、renderer は uniform を
     名前でアップロードするので fragment 側の宣言でも同じ値が届く。
   - `#include <map_fragment>` の後で `diffuseColor.rgb = sRGB→linear(xtex<Name>Color(vXtexPos))`。
