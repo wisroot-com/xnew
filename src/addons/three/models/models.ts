@@ -6,9 +6,11 @@
 import { Chabudai } from './Chabudai';
 import { Tatami } from './Tatami';
 import { Carpet } from './Carpet';
+import { Zabuton } from './Zabuton';
 
 export const models = {
     Chabudai,
     Tatami,
     Carpet,
+    Zabuton,
 };

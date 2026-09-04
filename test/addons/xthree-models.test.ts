@@ -145,6 +145,30 @@ test('Tatami: position / rotation はモデルのグループに乗る', () => {
     expect(group.rotation.y).toBeCloseTo(Math.PI / 2);
 });
 
+test('Zabuton: 座面 / 縁取り / 中綴じの 3 パーツが載り、top はくぼんだ天面の高さを返す', () => {
+    const canvas = document.createElement('canvas');
+    let zabuton;
+    xnew(() => {
+        xthree.initialize({ canvas });
+        zabuton = xnew(xthree.models.Zabuton, { size: 0.4, thickness: 0.06 });
+    });
+
+    const group = zabuton.threeObject;
+    expect(group.children.length).toBe(3);
+    const [cushion, piping, knot] = group.children;
+
+    const cushionSize = boundingSize(cushion);
+    expect(cushionSize.x).toBeCloseTo(0.4);
+    expect(cushionSize.z).toBeCloseTo(0.4);
+    expect(cushionSize.y).toBeGreaterThan(0.055);        // 縁は薄いが、いちばん厚い部分は厚みどおり
+    expect(cushionSize.y).toBeLessThan(0.06);            // 中央は中綴じでくぼむ
+    expect(cushion.position.y).toBeCloseTo(0.03);        // 裏面が y=0
+
+    expect(zabuton.top).toBeCloseTo(0.051);              // 厚み x (1 - dimple / 2)
+    expect(piping.position.y).toBeCloseTo(0.03);         // 縁取りはいちばん広い縫い目の高さ
+    expect(knot.position.y).toBeLessThan(zabuton.top);   // 房はくぼみに沈む
+});
+
 test('Carpet: size の正方形が xz 平面に寝る', () => {
     const group = build(xthree.models.Carpet, { size: 20, tile: 2 });
 

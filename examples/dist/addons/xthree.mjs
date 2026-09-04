@@ -427,10 +427,77 @@ function makeFadeAlpha(size, { solid, clear }, resolution = 512) {
     return new THREE.CanvasTexture(canvas);
 }
 
+const CLOTH = {
+    density: 60, fluff: 0.95, swirl: 0.15, shade: 0.12, bump: 0.25,
+    color: [0.30, 0.34, 0.46],
+    background: [0.20, 0.23, 0.33],
+};
+const DIMPLE = 0.3;
+function Zabuton(unit, { size = 0.4, thickness = 0.06, texture = {}, piping = 0xd8cbb0, knot = 0x232a3d, position, rotation, scale, } = {}) {
+    nest({ position, rotation, scale });
+    const cushion = add(new THREE.Mesh(makeCushionGeometry(size, thickness), standard(xtextures.carpet, {
+        size: { width: 512, height: 512 }, worldSize: size * 0.2, tile: true, repeat: { x: 3, y: 3 },
+        params: Object.assign(Object.assign(Object.assign({}, CLOTH), { scale: size * 0.05 }), texture),
+        roughness: 0.95,
+    })));
+    cushion.position.y = thickness / 2;
+    cushion.castShadow = true;
+    cushion.receiveShadow = true;
+    const outline = [];
+    for (let i = 0; i < 96; i++) {
+        const omega = 2 * Math.PI * (i / 96);
+        outline.push(new THREE.Vector3(size / 2 * spow(Math.cos(omega), 0.25), 0, size / 2 * spow(Math.sin(omega), 0.25)));
+    }
+    const seam = add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(outline, true), 192, size * 0.016, 8, true), new THREE.MeshStandardMaterial({ color: piping, roughness: 0.85 })));
+    seam.position.y = thickness / 2;
+    seam.castShadow = true;
+    const tuft = add(new THREE.Mesh(new THREE.SphereGeometry(size * 0.045, 16, 12), new THREE.MeshStandardMaterial({ color: knot, roughness: 0.9 })));
+    tuft.scale.y = 0.55;
+    tuft.position.y = thickness * (1 - DIMPLE / 2) - size * 0.01;
+    tuft.castShadow = true;
+    return {
+        get top() { return thickness * (1 - DIMPLE / 2); },
+    };
+}
+function makeCushionGeometry(size, thickness, segments = 64) {
+    const half = size / 2, halfThickness = thickness / 2;
+    const rows = segments / 2;
+    const positions = [], uvs = [], indices = [];
+    for (let i = 0; i <= rows; i++) {
+        const eta = -Math.PI / 2 + Math.PI * (i / rows);
+        const ce = spow(Math.cos(eta), 0.6), se = spow(Math.sin(eta), 0.6);
+        for (let j = 0; j <= segments; j++) {
+            const omega = -Math.PI + 2 * Math.PI * (j / segments);
+            const x = half * ce * spow(Math.cos(omega), 0.25);
+            const z = half * ce * spow(Math.sin(omega), 0.25);
+            const distance = Math.hypot(x, z) / half;
+            const y = halfThickness * (se - Math.sign(se) * DIMPLE * Math.exp(-distance * distance / 0.02));
+            positions.push(x, y, z);
+            uvs.push(0.5 + x / size, 0.5 + z / size);
+        }
+    }
+    for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < segments; j++) {
+            const a = i * (segments + 1) + j, b = a + segments + 1;
+            indices.push(a, b, a + 1, a + 1, b, b + 1);
+        }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+}
+function spow(value, exponent) {
+    return Math.sign(value) * Math.pow(Math.abs(value), exponent);
+}
+
 const models = {
     Chabudai,
     Tatami,
     Carpet,
+    Zabuton,
 };
 
 const xthree = {

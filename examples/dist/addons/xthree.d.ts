@@ -73,6 +73,17 @@ interface Texture extends TextureSource {
     renderer(canvas: HTMLCanvasElement, options?: RendererOptions): TextureRenderer;
 }
 
+interface ZabutonProps extends Transform {
+    size?: number;
+    thickness?: number;
+    texture?: TexturePreset;
+    piping?: THREE.ColorRepresentation;
+    knot?: THREE.ColorRepresentation;
+}
+declare function Zabuton(unit: xnew.Unit, { size, thickness, texture, piping, knot, position, rotation, scale, }?: ZabutonProps): {
+    readonly top: number;
+};
+
 interface CarpetProps extends Transform {
     size?: number;
     tile?: number;
@@ -136,6 +147,7 @@ declare const xthree: {
         Chabudai: typeof Chabudai;
         Tatami: typeof Tatami;
         Carpet: typeof Carpet;
+        Zabuton: typeof Zabuton;
     };
     readonly renderer: any;
     readonly camera: THREE.Camera;

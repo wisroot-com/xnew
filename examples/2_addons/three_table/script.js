@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // three_table — 四畳半（半畳を中心に置いた風車敷き）の畳と、その上のちゃぶ台。
-//   畳・ちゃぶ台・カーペットは xthree.models の基本モデル（引数なしなら既定値）。畳は grid: [3, 3]（半畳単位）
-//   を渡すだけで四畳半に敷かれる。座布団とキャラ（wip/cat_king の移植）はこの例のローカル。
+//   畳・ちゃぶ台・カーペット・座布団は xthree.models の基本モデル（引数なしなら既定値）。畳は
+//   grid: [3, 3]（半畳単位）を渡すだけで四畳半に敷かれる。キャラ（wip/cat_king の移植）はこの例のローカル。
 //----------------------------------------------------------------------------------------------------
 
 import { xnew, xbasics } from '@mulsense/xnew';
@@ -21,6 +21,8 @@ const TABLE_RADIUS = 0.7;       // 天板の半径
 const TABLE_THICKNESS = 0.07;   // 天板の厚み（側面の高さ）
 const TABLE_TOP_Y = 0.25;       // 天面の高さ（座卓）
 const TABLE_LEG_RADIUS = 0.03;  // 脚の半径（上端。下端はモデル側で少し太くなる）
+
+const ZABUTON_SIZE = 0.4;       // 座布団の一辺
 
 // カーペット: 畳の下に敷く一枚もの。ドラッグ回転でもホイールで引いても縁が入らないよう、四畳半より広く取る
 const CARPET_SIZE = 30;         // 四畳半（3 x 3）に対して十分広い。引き切って 45° 回しても角が画面に入らない幅
@@ -73,8 +75,10 @@ function Main(unit, { size = 1024 } = {}) {
         CHARACTERS.forEach(({ mog, angle }) => {
             const radius = TABLE_RADIUS + 0.15;   // 天板の縁のすぐ外側
             const x = Math.sin(angle) * radius, z = Math.cos(angle) * radius;
-            xnew(Zabuton, { x, z, angle });
-            xnew(Character, { mogPath: `../../assets/${mog}.mog`, x, z, y: MAT_THICKNESS + ZABUTON_THICKNESS });
+            const zabuton = xnew(xthree.models.Zabuton, {
+                size: ZABUTON_SIZE, position: { x, y: MAT_THICKNESS, z }, rotation: { x: 0, y: angle },
+            });
+            xnew(Character, { mogPath: `../../assets/${mog}.mog`, x, z, y: MAT_THICKNESS + zabuton.top });
         });
     });
 
@@ -104,43 +108,6 @@ function Lights(unit) {
 
     xthree.add(new THREE.AmbientLight(0xffffff, 0.95));
     xthree.add(new THREE.HemisphereLight(0xffffff, 0x6b5a44, 0.75));
-}
-
-//----------------------------------------------------------------------------------------------------
-// Zabuton — キャラが乗るグレーの座布団。角と上下の縁を丸めた箱で、綿の入ったふくらみを出す
-//----------------------------------------------------------------------------------------------------
-
-const ZABUTON_SIZE = 0.4;                       // 一辺（畳の短辺の 0.4 倍）
-const ZABUTON_THICKNESS = 0.05;                 // 厚み。この高さぶんキャラを持ち上げる
-const ZABUTON_CORNER = ZABUTON_SIZE * 0.2;      // 角の丸み
-const ZABUTON_BEVEL = ZABUTON_THICKNESS * 0.3;  // 上下の縁の丸み。取りすぎると座布団というより丸クッションになる
-
-function Zabuton(unit, { x, z, angle }) {
-    const material = new THREE.MeshStandardMaterial({ color: 0x495266, roughness: 0.95 });
-    const mesh = xthree.add(new THREE.Mesh(makeZabutonGeometry(), material));
-    mesh.rotation.y = angle;
-    mesh.position.set(x, MAT_THICKNESS + ZABUTON_THICKNESS / 2, z);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-}
-
-// 輪郭は面取りぶん内側に取り、ベベルで最大幅が一辺ちょうどになるようにする（Tatami と同じ作り）
-function makeZabutonGeometry() {
-    const h = ZABUTON_SIZE / 2 - ZABUTON_BEVEL, r = ZABUTON_CORNER;
-    const shape = new THREE.Shape()
-        .moveTo(-h + r, -h)
-        .lineTo(h - r, -h).absarc(h - r, -h + r, r, -Math.PI / 2, 0, false)
-        .lineTo(h, h - r).absarc(h - r, h - r, r, 0, Math.PI / 2, false)
-        .lineTo(-h + r, h).absarc(-h + r, h - r, r, Math.PI / 2, Math.PI, false)
-        .lineTo(-h, -h + r).absarc(-h + r, -h + r, r, Math.PI, Math.PI * 1.5, false);
-    const geometry = new THREE.ExtrudeGeometry(shape, {
-        curveSegments: 8, depth: ZABUTON_THICKNESS - 2 * ZABUTON_BEVEL,
-        bevelEnabled: true, bevelSegments: 4, bevelOffset: 0,
-        bevelSize: ZABUTON_BEVEL, bevelThickness: ZABUTON_BEVEL,
-    });
-    geometry.rotateX(-Math.PI / 2);   // 押し出し方向(+z) を上(+y) へ倒す
-    geometry.center();
-    return geometry;
 }
 
 //----------------------------------------------------------------------------------------------------
