@@ -3468,7 +3468,7 @@ const presets = {
         scale: 1, angle: 0, bump: 0.6, seed: 0,
         color: [1.0, 1.0, 1.0],
         background: [1.0, 1.0, 1.0],
-        fluff: 0.5, density: 25, swirl: 0.5, shade: 0.2,
+        fluff: 0.5, density: 25, swirl: 0.5, shade: 0.1,
     },
     plush: {
         bump: 0.4, fluff: 0.85, shade: 0.25,

@@ -27,7 +27,7 @@ const presets: TexturePresets = {
         color: [1.0, 1.0, 1.0],
         background: [1.0, 1.0, 1.0],
         // carpet — fluff: 0 = sparse crisp hairs, 1 = dense soft plush; shade is the depth between them
-        fluff: 0.5, density: 25, swirl: 0.5, shade: 0.2,
+        fluff: 0.5, density: 25, swirl: 0.5, shade: 0.1,
     },
     // 起毛の浅い、ごく柔らかいプラッシュ
     plush: {

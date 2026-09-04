@@ -26,7 +26,7 @@ const vec3 background = vec3(1.0, 1.0, 1.0);
 const float fluff = 0.5;
 const float density = 25.0;
 const float swirl = 0.5;
-const float shade = 0.2;
+const float shade = 0.1;
 
 #ifdef VERTEX
 
