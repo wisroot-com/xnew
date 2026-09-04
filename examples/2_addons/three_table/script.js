@@ -13,8 +13,8 @@ import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-v
 import voxelkit from 'voxelkit';
 
 const MAT = 0.88;              // 畳の短辺（m）。長辺は 2 倍、半畳は正方形
-// ちゃぶ台は wip/cat_king と同じ「畳の短辺 = 1」基準の比率。半径だけは四畳半が隠れないよう 1.2 → 0.6 に詰めた
-const TABLE_RADIUS = 0.6 * MAT;      // 天板の半径（直径 1.06m）
+// ちゃぶ台は wip/cat_king と同じ「畳の短辺 = 1」基準の比率。半径だけは四畳半が隠れないよう 1.2 から詰めた
+const TABLE_RADIUS = 0.72 * MAT;     // 天板の半径（直径 1.27m）
 const TABLE_THICKNESS = 0.07 * MAT;  // 天板の厚み（側面の高さ）
 const TABLE_TOP_Y = 0.25 * MAT;      // 天面の高さ（22cm の座卓）
 
@@ -284,7 +284,7 @@ function Chabudai(unit) {
 // Character — .mog を VRM に変換して読み込み、歩きモーション（VRMA）をループ。ちゃぶ台の中央を向いて立つ
 //----------------------------------------------------------------------------------------------------
 
-function Character(unit, { mogPath, x = 0, z = 0, scale = 1.1 }) {
+function Character(unit, { mogPath, x = 0, z = 0, scale = 0.95 }) {
     const object = xthree.nest({ position: { x, y: 0, z }, scale, rotation: { x: 0, y: Math.atan2(-x, -z) } });   // ちゃぶ台の中央を向く
 
     xnew.promise('vrm', voxelkit.load(mogPath)
