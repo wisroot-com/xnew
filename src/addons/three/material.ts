@@ -61,7 +61,7 @@ function resolveUniforms(texture: Texture, params: TexturePreset): Record<string
 export const material = { shader, standard };
 
 // the texture's GLSL shades the mesh in object space with a material-local fixed light — scene lights / shadows do NOT apply
-function shader(texture: Texture, params: TexturePreset = {}): THREE.ShaderMaterial {
+export function shader(texture: Texture, params: TexturePreset = {}): THREE.ShaderMaterial {
     return new THREE.ShaderMaterial({
         uniforms: resolveUniforms(texture, params),
         vertexShader: shaderVertexGlsl,
@@ -69,7 +69,7 @@ function shader(texture: Texture, params: TexturePreset = {}): THREE.ShaderMater
     });
 }
 
-function standard(texture: Texture, options: StandardOptions = {}): StandardMaterial {
+export function standard(texture: Texture, options: StandardOptions = {}): StandardMaterial {
     const { params = {}, size, worldSize, tile, repeat, inject, ...materialParams } = options;
     if (inject === true) {
         return injectStandard(texture, params, materialParams);
