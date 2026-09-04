@@ -150,7 +150,8 @@ function Floor(unit) {
 // Mat — 畳 1 枚。tatami のセルは正方形なので、1 セルだけ焼いた map を実寸 (aspect x 1) の箱の天面へ貼る
 //----------------------------------------------------------------------------------------------------
 
-const MAT_THICKNESS = 0.06 * MAT;   // 畳の厚み（実寸 53mm 相当）。天面を y=0 に保ちたいので下へ伸ばす
+const MAT_THICKNESS = 0.06 * MAT;           // 畳の厚み（実寸 53mm 相当）。天面を y=0 に保ちたいので下へ伸ばす
+const MAT_CHAMFER = MAT_THICKNESS * 0.15;   // 天面と側面の境の面取り。直角のままだと縁が刃物のように立つ
 
 function Mat(unit, { x, z, aspect, turned, seed }) {
     const material = xthree.material.standard(xtextures.tatami, {
@@ -159,32 +160,51 @@ function Mat(unit, { x, z, aspect, turned, seed }) {
         size: { width: 512 * aspect, height: 512 },      // 長辺ぶん横に伸ばして解像度を合わせる
         roughness: 1,
     });
-    const geometry = new THREE.BoxGeometry(MAT * aspect, MAT_THICKNESS, MAT);
-    wrapSideUv(geometry, MAT * aspect);
-    const mesh = xthree.add(new THREE.Mesh(geometry, material));
+    const mesh = xthree.add(new THREE.Mesh(makeMatGeometry(MAT * aspect), material));
     mesh.rotation.y = turned ? Math.PI / 2 : 0;
     mesh.position.set(x * MAT, -MAT_THICKNESS / 2, z * MAT);
     mesh.receiveShadow = true;
     mesh.castShadow = true;   // 四畳半の外周の厚みがカーペットへ落ちる
 }
 
-// 側面の UV を貼り替えて、天面と同じ畳テクスチャを断面へ回り込ませる（側面用の単色マテリアルを持たない
-// ので、ヘリの色や幅を変えると側面もそのまま追従する）。BoxGeometry の頂点順は px,nx,py,ny,pz,nz。
-function wrapSideUv(geometry, length) {
+// 上下の縁を面取りした箱。輪郭は面取りぶん内側に取り、ベベルで最大幅が実寸ちょうどになるようにする
+function makeMatGeometry(length) {
+    const hx = length / 2 - MAT_CHAMFER, hz = MAT / 2 - MAT_CHAMFER;
+    const shape = new THREE.Shape()
+        .moveTo(-hx, -hz).lineTo(hx, -hz).lineTo(hx, hz).lineTo(-hx, hz).lineTo(-hx, -hz);
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+        depth: MAT_THICKNESS - 2 * MAT_CHAMFER,
+        bevelEnabled: true, bevelSegments: 1, bevelOffset: 0,
+        bevelSize: MAT_CHAMFER, bevelThickness: MAT_CHAMFER,
+    });
+    geometry.rotateX(-Math.PI / 2);   // 押し出し方向(+z) を上(+y) へ倒す
+    geometry.center();
+    applyMatUv(geometry, length);
+    return geometry;
+}
+
+// 天面と同じ畳テクスチャを面ごとに貼り分ける（側面用の単色マテリアルを持たないので、ヘリの色や幅を
+// 変えると側面もそのまま追従する）。ExtrudeGeometry は非インデックスなので法線で面を判別できる。
+function applyMatUv(geometry, length) {
     const position = geometry.attributes.position;
+    const normal = geometry.attributes.normal;
     const uv = geometry.attributes.uv;
-    // 短辺(±x): テクスチャの v 軸（＝短辺方向）をなぞるので、両端にヘリが乗る
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < position.count; i++) {
+        const x = position.getX(i), z = position.getZ(i);
         const depth = 0.5 - position.getY(i) / MAT_THICKNESS;        // 0 = 天面側 / 1 = 裏側
-        // u は継ぎ目の陰を避けて端の少し内側。厚み方向へわずかに振るのは normalMap の接空間を潰さないため
-        const u = i < 4 ? 0.97 - 0.02 * depth : 0.03 + 0.02 * depth;
-        uv.setXY(i, u, 0.5 - position.getZ(i) / MAT);                // BoxGeometry の天面 UV は -z 側が v=1
-    }
-    // 長辺(±z): ヘリの帯（v が 0 / 1 の側）の中を長辺方向へなぞる
-    for (let i = 16; i < 24; i++) {
-        const depth = 0.5 - position.getY(i) / MAT_THICKNESS;
-        const v = i < 20 ? 0.006 + 0.01 * depth : 0.994 - 0.01 * depth;
-        uv.setXY(i, 0.5 + position.getX(i) / length, v);
+        if (Math.abs(normal.getY(i)) > 0.3) {
+            // 天面・裏面と面取り: 平面投影。畳表がそのまま面取りへ回り込み、ヘリも縁を巻いて続く
+            uv.setXY(i, 0.5 + x / length, 0.5 - z / MAT);
+        } else if (Math.abs(normal.getX(i)) > Math.abs(normal.getZ(i))) {
+            // 短辺: テクスチャの v 軸（＝短辺方向）をなぞるので、両端にヘリが乗る。
+            // u は継ぎ目の陰を避けて端の少し内側。厚み方向へわずかに振るのは normalMap の接空間を潰さないため
+            const u = normal.getX(i) > 0 ? 0.97 - 0.02 * depth : 0.03 + 0.02 * depth;
+            uv.setXY(i, u, 0.5 - z / MAT);
+        } else {
+            // 長辺: ヘリの帯（v が 0 / 1 の側）の中を長辺方向へなぞる
+            const v = normal.getZ(i) > 0 ? 0.006 + 0.01 * depth : 0.994 - 0.01 * depth;
+            uv.setXY(i, 0.5 + x / length, v);
+        }
     }
     uv.needsUpdate = true;
 }
