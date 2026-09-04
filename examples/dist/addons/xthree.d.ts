@@ -1,40 +1,5 @@
-import { xnew } from '@mulsense/xnew';
 import * as THREE from 'three';
-
-declare class UnitPromise {
-    private promise;
-    key?: string | undefined;
-    constructor(promise: Promise<any>, key?: string | undefined);
-    private chain;
-    then(callback: Function): UnitPromise;
-    catch(callback: Function): UnitPromise;
-    finally(callback: Function): UnitPromise;
-    static collect(promises: UnitPromise[]): Promise<Record<string, any>>;
-}
-
-interface Transform {
-    position?: {
-        x: number;
-        y: number;
-        z?: number;
-    };
-    scale?: number | {
-        x: number;
-        y: number;
-        z?: number;
-    };
-    rotation?: {
-        x: number;
-        y: number;
-        z?: number;
-    };
-}
-declare function initialize({ canvas, camera }: {
-    canvas: HTMLCanvasElement;
-    camera?: THREE.Camera | null;
-}): UnitPromise;
-declare function nest(options?: Transform): THREE.Group;
-declare function add(object: any): any;
+import { xnew } from '@mulsense/xnew';
 
 interface TextureRange {
     min: number;
@@ -73,46 +38,6 @@ interface Texture extends TextureSource {
     renderer(canvas: HTMLCanvasElement, options?: RendererOptions): TextureRenderer;
 }
 
-interface ZabutonProps extends Transform {
-    size?: number;
-    thickness?: number;
-    texture?: TexturePreset;
-    piping?: THREE.ColorRepresentation;
-    knot?: THREE.ColorRepresentation;
-}
-declare function Zabuton(unit: xnew.Unit, { size, thickness, texture, piping, knot, position, rotation, scale, }?: ZabutonProps): {
-    readonly top: number;
-};
-
-interface CarpetProps extends Transform {
-    size?: number;
-    tile?: number;
-    fade?: {
-        solid: number;
-        clear: number;
-    };
-    texture?: TexturePreset;
-}
-declare function Carpet(unit: xnew.Unit, { size, tile, fade, texture, position, rotation, scale, }?: CarpetProps): void;
-
-interface TatamiProps extends Transform {
-    size?: number;
-    grid?: [number, number];
-    thickness?: number;
-    texture?: TexturePreset;
-}
-declare function Tatami(unit: xnew.Unit, { size, grid, thickness, texture, position, rotation, scale, }?: TatamiProps): void;
-
-interface ChabudaiProps extends Transform {
-    radius?: number;
-    thickness?: number;
-    height?: number;
-    legs?: number;
-    legRadius?: number;
-    texture?: TexturePreset;
-}
-declare function Chabudai(unit: xnew.Unit, { radius, thickness, height, legs, legRadius, texture, position, rotation, scale, }?: ChabudaiProps): void;
-
 interface StandardBakeOptions {
     params?: TexturePreset;
     size?: {
@@ -135,6 +60,47 @@ type StandardMaterial = THREE.MeshStandardMaterial & {
 declare function shader(texture: Texture, params?: TexturePreset): THREE.ShaderMaterial;
 declare function standard(texture: Texture, options?: StandardOptions): StandardMaterial;
 
+declare class UnitPromise {
+    private promise;
+    key?: string | undefined;
+    constructor(promise: Promise<any>, key?: string | undefined);
+    private chain;
+    then(callback: Function): UnitPromise;
+    catch(callback: Function): UnitPromise;
+    finally(callback: Function): UnitPromise;
+    static collect(promises: UnitPromise[]): Promise<Record<string, any>>;
+}
+
+interface Transform {
+    position?: {
+        x: number;
+        y: number;
+        z?: number;
+    };
+    scale?: number | {
+        x: number;
+        y: number;
+        z?: number;
+    };
+    rotation?: {
+        x: number;
+        y: number;
+        z?: number;
+    };
+}
+declare function initialize({ canvas, camera }: {
+    canvas: HTMLCanvasElement;
+    camera?: THREE.Camera | null;
+}): UnitPromise;
+declare function nest(options?: Transform): THREE.Group;
+declare function add(object: any): any;
+declare function applyTransform(object: THREE.Object3D, { position, scale, rotation }: Transform): void;
+declare function Root(unit: xnew.Unit, { canvas, camera }: any): {
+    readonly canvas: any;
+    readonly camera: any;
+    readonly renderer: THREE.WebGLRenderer;
+    readonly scene: THREE.Scene;
+};
 declare const xthree: {
     initialize: typeof initialize;
     nest: typeof nest;
@@ -143,16 +109,11 @@ declare const xthree: {
         shader: typeof shader;
         standard: typeof standard;
     };
-    models: {
-        Chabudai: typeof Chabudai;
-        Tatami: typeof Tatami;
-        Carpet: typeof Carpet;
-        Zabuton: typeof Zabuton;
-    };
     readonly renderer: any;
     readonly camera: THREE.Camera;
     readonly scene: THREE.Scene;
     readonly canvas: HTMLCanvasElement;
 };
 
-export { xthree };
+export { Root, applyTransform, xthree };
+export type { Transform };

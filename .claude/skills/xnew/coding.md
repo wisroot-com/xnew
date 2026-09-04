@@ -391,7 +391,7 @@ the rule, then one line of why.
   add-order can't be relied on for layering. Addon event callbacks (`pixiObject.on('pointertap', …)`,
   a Three raycast handler, etc.) fire OUTSIDE the tick/scope, so any `xsync.emitToServer` / `xnew.emit` /
   `xnew(...)` inside them must be wrapped in `xnew.scope(...)` (§7) — otherwise `emitToServer` throws
-  `no socket bound to this root` (Unit.current isn't the sync node). (See `examples/3_games/card/`.)
+  `no socket bound to this root` (Unit.current isn't the sync node).
 
 - **InputCheckbox holds a Gate for its checked state and its `unit.element` is the CONTAINER, not the
   hidden input (modeled on Listbox, 2026-07).** The `<input>` is nested as a *child unit*

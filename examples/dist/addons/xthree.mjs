@@ -1,78 +1,5 @@
-import { xnew, xtextures } from '@mulsense/xnew';
+import { xnew } from '@mulsense/xnew';
 import * as THREE from 'three';
-
-function initialize({ canvas, camera = null }) {
-    return xnew.promise(xnew(Root, { canvas, camera }));
-}
-function nest(options) {
-    const object = new THREE.Group();
-    if (options !== undefined) {
-        applyTransform(object, options);
-    }
-    xnew(Nest, { object });
-    xnew.extend(() => {
-        return {
-            get threeObject() { return object; }
-        };
-    });
-    return object;
-}
-function add(object) {
-    xnew(Add, { object });
-    return object;
-}
-function applyTransform(object, { position, scale, rotation }) {
-    var _a, _b, _c;
-    if (position !== undefined) {
-        object.position.set(position.x, position.y, (_a = position.z) !== null && _a !== void 0 ? _a : 0);
-    }
-    if (scale !== undefined) {
-        if (typeof scale === 'number') {
-            object.scale.set(scale, scale, scale);
-        }
-        else {
-            object.scale.set(scale.x, scale.y, (_b = scale.z) !== null && _b !== void 0 ? _b : 1);
-        }
-    }
-    if (rotation !== undefined) {
-        object.rotation.set(rotation.x, rotation.y, (_c = rotation.z) !== null && _c !== void 0 ? _c : 0);
-    }
-}
-function Root(unit, { canvas, camera }) {
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
-    renderer.setClearColor(0x000000, 0);
-    camera = camera !== null && camera !== void 0 ? camera : new THREE.PerspectiveCamera(45, renderer.domElement.width / renderer.domElement.height);
-    const scene = new THREE.Scene();
-    unit.on('finalize', () => {
-        var _a;
-        renderer.dispose();
-        (_a = renderer.forceContextLoss) === null || _a === void 0 ? void 0 : _a.call(renderer);
-    });
-    return {
-        get canvas() { return canvas; },
-        get camera() { return camera; },
-        get renderer() { return renderer; },
-        get scene() { return scene; },
-    };
-}
-function attach(unit, object) {
-    var _a, _b;
-    const root = xnew.context(Root);
-    const parent = (_b = (_a = xnew.context(Nest)) === null || _a === void 0 ? void 0 : _a.threeObject) !== null && _b !== void 0 ? _b : root.scene;
-    parent.add(object);
-    unit.on('finalize', () => {
-        parent.remove(object);
-    });
-}
-function Nest(unit, { object }) {
-    attach(unit, object);
-    return {
-        get threeObject() { return object; }
-    };
-}
-function Add(unit, { object }) {
-    attach(unit, object);
-}
 
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
@@ -197,315 +124,83 @@ function injectStandard(texture, params, materialParams) {
     return standardMaterial;
 }
 
-function Chabudai(unit, { radius = 0.7, thickness = 0.07, height = 0.25, legs = 4, legRadius = 0.03, texture = {}, position, rotation, scale, } = {}) {
-    nest({ position, rotation, scale });
-    const wood = Object.assign(Object.assign({}, xtextures.wood.presets.hinoki), texture);
-    const edge = thickness * 0.35;
-    const capRadius = radius - edge;
-    const side = add(new THREE.Mesh(makeSideGeometry(radius, thickness, edge), standard(xtextures.wood, {
-        size: { width: 512, height: 64 }, worldSize: 1.5, params: wood,
-        tile: true, repeat: { x: 3, y: 1 }, roughness: 0.65,
-    })));
-    side.position.y = height;
-    side.castShadow = true;
-    side.receiveShadow = true;
-    const top = add(new THREE.Mesh(new THREE.CircleGeometry(capRadius, 64), standard(xtextures.wood, {
-        size: { width: 512, height: 512 }, worldSize: 1.5, params: wood, roughness: 0.55,
-    })));
-    top.rotation.x = -Math.PI / 2;
-    top.position.y = height + thickness / 2;
-    top.castShadow = true;
-    top.receiveShadow = true;
-    const bottom = add(new THREE.Mesh(new THREE.CircleGeometry(capRadius, 64), new THREE.MeshStandardMaterial({ color: 0xcab6a2, roughness: 0.7 })));
-    bottom.rotation.x = Math.PI / 2;
-    bottom.position.y = height - thickness / 2;
-    bottom.castShadow = true;
-    const legMaterial = standard(xtextures.wood, {
-        size: { width: 128, height: 256 }, worldSize: 1, params: Object.assign(Object.assign({}, wood), { angle: wood.angle + 90 }), roughness: 0.6,
+function initialize({ canvas, camera = null }) {
+    return xnew.promise(xnew(Root, { canvas, camera }));
+}
+function nest(options) {
+    const object = new THREE.Group();
+    if (options !== undefined) {
+        applyTransform(object, options);
+    }
+    xnew(Nest, { object });
+    xnew.extend(() => {
+        return {
+            get threeObject() { return object; }
+        };
     });
-    const legHeight = height - thickness / 2;
-    for (let i = 0; i < legs; i++) {
-        const angle = Math.PI / legs + i * 2 * Math.PI / legs;
-        const leg = add(new THREE.Mesh(makeLegGeometry(legRadius, legRadius * 1.2, legHeight), legMaterial));
-        const r = radius * 0.85;
-        leg.position.set(Math.cos(angle) * r, legHeight / 2, Math.sin(angle) * r);
-        leg.castShadow = true;
-    }
+    return object;
 }
-function makeSideGeometry(radius, thickness, edge) {
-    const capRadius = radius - edge;
-    const profile = [];
-    for (let i = 0; i <= 4; i++) {
-        const t = -Math.PI / 2 + Math.PI / 2 * (i / 4);
-        profile.push(new THREE.Vector2(capRadius + edge * Math.cos(t), -thickness / 2 + edge + edge * Math.sin(t)));
-    }
-    profile.push(new THREE.Vector2(radius, 0));
-    for (let i = 0; i <= 4; i++) {
-        const t = Math.PI / 2 * (i / 4);
-        profile.push(new THREE.Vector2(capRadius + edge * Math.cos(t), thickness / 2 - edge + edge * Math.sin(t)));
-    }
-    return new THREE.LatheGeometry(profile, 64);
+function add(object) {
+    xnew(Add, { object });
+    return object;
 }
-function makeLegGeometry(radiusTop, radiusBottom, height, segments = 8) {
-    const chamfer = Math.min(radiusTop, radiusBottom) * 0.25;
-    const half = height / 2;
-    const profile = [new THREE.Vector2(0, -half), new THREE.Vector2(radiusBottom - chamfer, -half)];
-    for (let i = 0; i <= segments; i++) {
-        const t = i / segments;
-        profile.push(new THREE.Vector2(radiusBottom + (radiusTop - radiusBottom) * t, -half + chamfer + (height - 2 * chamfer) * t));
+function applyTransform(object, { position, scale, rotation }) {
+    var _a, _b, _c;
+    if (position !== undefined) {
+        object.position.set(position.x, position.y, (_a = position.z) !== null && _a !== void 0 ? _a : 0);
     }
-    profile.push(new THREE.Vector2(radiusTop - chamfer, half), new THREE.Vector2(0, half));
-    return new THREE.LatheGeometry(profile, 16);
-}
-
-function Tatami(unit, { size = 1, grid = [2, 1], thickness = 0.06, texture = {}, position, rotation, scale, } = {}) {
-    nest({ position, rotation, scale });
-    const [cols, rows] = grid;
-    const geometries = {};
-    layout(cols, rows).forEach(({ x, z, aspect, turned }, index) => {
-        var _a, _b;
-        const geometry = (_a = geometries[aspect]) !== null && _a !== void 0 ? _a : (geometries[aspect] = makeGeometry(size, aspect, thickness));
-        const mesh = add(new THREE.Mesh(geometry, standard(xtextures.tatami, {
-            params: Object.assign(Object.assign({}, texture), { scale: size, aspect, seed: ((_b = texture.seed) !== null && _b !== void 0 ? _b : 0) + index * 13 }),
-            worldSize: size,
-            size: { width: Math.round(512 * aspect), height: 512 },
-            roughness: 1,
-        })));
-        mesh.rotation.y = turned ? Math.PI / 2 : 0;
-        mesh.position.set((x - cols / 2) * size, thickness / 2, (z - rows / 2) * size);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-    });
-}
-const OPTIONS = [
-    { aspect: 2, turned: false },
-    { aspect: 2, turned: true },
-    { aspect: 1, turned: false },
-];
-const STEP_LIMIT = 20000;
-function layout(cols, rows) {
-    var _a, _b;
-    const odd = (cols * rows) % 2 === 1;
-    return (_b = (_a = solve(cols, rows, true)) !== null && _a !== void 0 ? _a : (odd ? solve(cols, rows, false) : null)) !== null && _b !== void 0 ? _b : straight(cols, rows);
-}
-function solve(cols, rows, centered) {
-    const owner = new Int32Array(cols * rows).fill(-1);
-    const placements = [];
-    let halves = (cols * rows) % 2;
-    let steps = 0;
-    function put(x, z, aspect, turned) {
-        for (let i = 0; i < aspect; i++) {
-            owner[(z + (turned ? i : 0)) * cols + x + (turned ? 0 : i)] = placements.length;
-        }
-        placements.push({ x: x + (turned ? 0.5 : aspect / 2), z: z + (turned ? aspect / 2 : 0.5), aspect, turned });
-    }
-    function undo(x, z, aspect, turned) {
-        for (let i = 0; i < aspect; i++) {
-            owner[(z + (turned ? i : 0)) * cols + x + (turned ? 0 : i)] = -1;
-        }
-        placements.pop();
-    }
-    function free(x, z, aspect, turned) {
-        const ex = x + (turned ? 0 : aspect - 1), ez = z + (turned ? aspect - 1 : 0);
-        return ex < cols && ez < rows && owner[ez * cols + ex] === -1;
-    }
-    function corner(vx, vz) {
-        let fine = true;
-        if (vx > 0 && vz > 0 && vx < cols && vz < rows) {
-            const ids = [owner[(vz - 1) * cols + vx - 1], owner[(vz - 1) * cols + vx], owner[vz * cols + vx - 1], owner[vz * cols + vx]];
-            fine = ids.includes(-1) || new Set(ids).size < 4;
-        }
-        return fine;
-    }
-    function valid(x, z, aspect, turned) {
-        let ok = true;
-        for (let i = 0; i < aspect; i++) {
-            const cx = x + (turned ? 0 : i), cz = z + (turned ? i : 0);
-            ok = ok && corner(cx, cz) && corner(cx + 1, cz) && corner(cx, cz + 1) && corner(cx + 1, cz + 1);
-        }
-        return ok;
-    }
-    function fill(from) {
-        let index = from;
-        while (index < owner.length && owner[index] !== -1) {
-            index++;
-        }
-        let done = index === owner.length;
-        if (done === false && ++steps < STEP_LIMIT) {
-            const x = index % cols, z = Math.floor(index / cols);
-            for (const { aspect, turned } of OPTIONS) {
-                if ((aspect === 2 || halves > 0) && free(x, z, aspect, turned)) {
-                    halves -= aspect === 1 ? 1 : 0;
-                    put(x, z, aspect, turned);
-                    done = valid(x, z, aspect, turned) && fill(index + 1);
-                    if (done === false) {
-                        undo(x, z, aspect, turned);
-                        halves += aspect === 1 ? 1 : 0;
-                    }
-                }
-                if (done) {
-                    break;
-                }
-            }
-        }
-        return done;
-    }
-    if (centered && halves === 1) {
-        put((cols - 1) / 2, (rows - 1) / 2, 1, false);
-        halves = 0;
-    }
-    return fill(0) ? placements : null;
-}
-function straight(cols, rows) {
-    const placements = [];
-    for (let z = 0; z < rows; z++) {
-        for (let x = 0; x < cols; x++) {
-            const aspect = x + 1 < cols ? 2 : 1;
-            placements.push({ x: x + aspect / 2, z: z + 0.5, aspect, turned: false });
-            x += aspect - 1;
-        }
-    }
-    return placements;
-}
-function makeGeometry(size, aspect, thickness) {
-    const chamfer = thickness * 0.15;
-    const length = size * aspect;
-    const hx = length / 2 - chamfer, hz = size / 2 - chamfer;
-    const shape = new THREE.Shape()
-        .moveTo(-hx, -hz).lineTo(hx, -hz).lineTo(hx, hz).lineTo(-hx, hz).lineTo(-hx, -hz);
-    const geometry = new THREE.ExtrudeGeometry(shape, {
-        depth: thickness - 2 * chamfer,
-        bevelEnabled: true, bevelSegments: 1, bevelOffset: 0,
-        bevelSize: chamfer, bevelThickness: chamfer,
-    });
-    geometry.rotateX(-Math.PI / 2);
-    geometry.center();
-    applyUv(geometry, size, aspect, thickness);
-    return geometry;
-}
-function applyUv(geometry, size, aspect, thickness) {
-    const length = size * aspect;
-    const position = geometry.attributes.position;
-    const normal = geometry.attributes.normal;
-    const uv = geometry.attributes.uv;
-    for (let i = 0; i < position.count; i++) {
-        const x = position.getX(i), z = position.getZ(i);
-        const depth = 0.5 - position.getY(i) / thickness;
-        if (Math.abs(normal.getY(i)) > 0.3) {
-            uv.setXY(i, 0.5 + x / length, 0.5 - z / size);
-        }
-        else if (Math.abs(normal.getX(i)) > Math.abs(normal.getZ(i))) {
-            const u = normal.getX(i) > 0 ? 0.97 - 0.02 * depth : 0.03 + 0.02 * depth;
-            uv.setXY(i, u, 0.5 - z / size);
+    if (scale !== undefined) {
+        if (typeof scale === 'number') {
+            object.scale.set(scale, scale, scale);
         }
         else {
-            const v = normal.getZ(i) > 0 ? 0.006 + 0.01 * depth : 0.994 - 0.01 * depth;
-            uv.setXY(i, 0.5 + x / length, v);
+            object.scale.set(scale.x, scale.y, (_b = scale.z) !== null && _b !== void 0 ? _b : 1);
         }
     }
-    uv.needsUpdate = true;
-}
-
-function Carpet(unit, { size = 12, tile = 2, fade, texture = {}, position, rotation, scale, } = {}) {
-    nest({ position, rotation, scale });
-    const mesh = add(new THREE.Mesh(new THREE.PlaneGeometry(size, size), standard(xtextures.carpet, Object.assign({ size: { width: 1024, height: 1024 }, worldSize: tile, params: texture, tile: true, repeat: { x: size / tile, y: size / tile }, roughness: 1 }, (fade === undefined ? {} : { transparent: true, alphaMap: makeFadeAlpha(size, fade) })))));
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.receiveShadow = true;
-}
-function makeFadeAlpha(size, { solid, clear }, resolution = 512) {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = resolution;
-    const context = canvas.getContext('2d');
-    const half = size / 2;
-    const gradient = context.createRadialGradient(resolution / 2, resolution / 2, 0, resolution / 2, resolution / 2, resolution / 2);
-    gradient.addColorStop(0, '#fff');
-    gradient.addColorStop(Math.min(solid / half, 1), '#fff');
-    gradient.addColorStop(Math.min(clear / half, 1), '#000');
-    gradient.addColorStop(1, '#000');
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, resolution, resolution);
-    return new THREE.CanvasTexture(canvas);
-}
-
-const CLOTH = {
-    density: 60, fluff: 0.95, swirl: 0.15, shade: 0.12, bump: 0.25,
-    color: [0.30, 0.34, 0.46],
-    background: [0.20, 0.23, 0.33],
-};
-const DIMPLE = 0.3;
-function Zabuton(unit, { size = 0.4, thickness = 0.06, texture = {}, piping = 0xd8cbb0, knot = 0x232a3d, position, rotation, scale, } = {}) {
-    nest({ position, rotation, scale });
-    const cushion = add(new THREE.Mesh(makeCushionGeometry(size, thickness), standard(xtextures.carpet, {
-        size: { width: 512, height: 512 }, worldSize: size * 0.2, tile: true, repeat: { x: 3, y: 3 },
-        params: Object.assign(Object.assign(Object.assign({}, CLOTH), { scale: size * 0.05 }), texture),
-        roughness: 0.95,
-    })));
-    cushion.position.y = thickness / 2;
-    cushion.castShadow = true;
-    cushion.receiveShadow = true;
-    const outline = [];
-    for (let i = 0; i < 96; i++) {
-        const omega = 2 * Math.PI * (i / 96);
-        outline.push(new THREE.Vector3(size / 2 * spow(Math.cos(omega), 0.25), 0, size / 2 * spow(Math.sin(omega), 0.25)));
+    if (rotation !== undefined) {
+        object.rotation.set(rotation.x, rotation.y, (_c = rotation.z) !== null && _c !== void 0 ? _c : 0);
     }
-    const seam = add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(outline, true), 192, size * 0.016, 8, true), new THREE.MeshStandardMaterial({ color: piping, roughness: 0.85 })));
-    seam.position.y = thickness / 2;
-    seam.castShadow = true;
-    const tuft = add(new THREE.Mesh(new THREE.SphereGeometry(size * 0.045, 16, 12), new THREE.MeshStandardMaterial({ color: knot, roughness: 0.9 })));
-    tuft.scale.y = 0.55;
-    tuft.position.y = thickness * (1 - DIMPLE / 2) - size * 0.01;
-    tuft.castShadow = true;
+}
+function Root(unit, { canvas, camera }) {
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    renderer.setClearColor(0x000000, 0);
+    camera = camera !== null && camera !== void 0 ? camera : new THREE.PerspectiveCamera(45, renderer.domElement.width / renderer.domElement.height);
+    const scene = new THREE.Scene();
+    unit.on('finalize', () => {
+        var _a;
+        renderer.dispose();
+        (_a = renderer.forceContextLoss) === null || _a === void 0 ? void 0 : _a.call(renderer);
+    });
     return {
-        get top() { return thickness * (1 - DIMPLE / 2); },
+        get canvas() { return canvas; },
+        get camera() { return camera; },
+        get renderer() { return renderer; },
+        get scene() { return scene; },
     };
 }
-function makeCushionGeometry(size, thickness, segments = 64) {
-    const half = size / 2, halfThickness = thickness / 2;
-    const rows = segments / 2;
-    const positions = [], uvs = [], indices = [];
-    for (let i = 0; i <= rows; i++) {
-        const eta = -Math.PI / 2 + Math.PI * (i / rows);
-        const ce = spow(Math.cos(eta), 0.6), se = spow(Math.sin(eta), 0.6);
-        for (let j = 0; j <= segments; j++) {
-            const omega = -Math.PI + 2 * Math.PI * (j / segments);
-            const x = half * ce * spow(Math.cos(omega), 0.25);
-            const z = half * ce * spow(Math.sin(omega), 0.25);
-            const distance = Math.hypot(x, z) / half;
-            const y = halfThickness * (se - Math.sign(se) * DIMPLE * Math.exp(-distance * distance / 0.02));
-            positions.push(x, y, z);
-            uvs.push(0.5 + x / size, 0.5 + z / size);
-        }
-    }
-    for (let i = 0; i < rows; i++) {
-        for (let j = 0; j < segments; j++) {
-            const a = i * (segments + 1) + j, b = a + segments + 1;
-            indices.push(a, b, a + 1, a + 1, b, b + 1);
-        }
-    }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    geometry.setIndex(indices);
-    geometry.computeVertexNormals();
-    return geometry;
+function attach(unit, object) {
+    var _a, _b;
+    const root = xnew.context(Root);
+    const parent = (_b = (_a = xnew.context(Nest)) === null || _a === void 0 ? void 0 : _a.threeObject) !== null && _b !== void 0 ? _b : root.scene;
+    parent.add(object);
+    unit.on('finalize', () => {
+        parent.remove(object);
+    });
 }
-function spow(value, exponent) {
-    return Math.sign(value) * Math.pow(Math.abs(value), exponent);
+function Nest(unit, { object }) {
+    attach(unit, object);
+    return {
+        get threeObject() { return object; }
+    };
 }
-
-const models = {
-    Chabudai,
-    Tatami,
-    Carpet,
-    Zabuton,
-};
-
+function Add(unit, { object }) {
+    attach(unit, object);
+}
 const xthree = {
     initialize,
     nest,
     add,
     material,
-    models,
     get renderer() {
         var _a;
         return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.renderer;
@@ -524,4 +219,4 @@ const xthree = {
     },
 };
 
-export { xthree };
+export { Root, applyTransform, xthree };
