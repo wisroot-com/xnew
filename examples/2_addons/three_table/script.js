@@ -84,7 +84,7 @@ function Main(unit, { size = 1024 } = {}) {
 //----------------------------------------------------------------------------------------------------
 
 function Lights(unit) {
-    const dir = xthree.add(new THREE.DirectionalLight(0xfff2e0, 1.5));
+    const dir = xthree.add(new THREE.DirectionalLight(0xfff2e0, 1.1));
     dir.position.set(2, 4, 3);
     dir.castShadow = true;
     dir.shadow.mapSize.set(4096, 4096);
@@ -94,8 +94,8 @@ function Lights(unit) {
     // bias はごく小さく: 大きいとボクセルの凹み（数 cm）の自己影まで消える（normalBias も同じ理由で使わない）
     dir.shadow.bias = -0.0001;
 
-    xthree.add(new THREE.AmbientLight(0xffffff, 0.75));
-    xthree.add(new THREE.HemisphereLight(0xffffff, 0x6b5a44, 0.6));
+    xthree.add(new THREE.AmbientLight(0xffffff, 0.95));
+    xthree.add(new THREE.HemisphereLight(0xffffff, 0x6b5a44, 0.75));
 }
 
 //----------------------------------------------------------------------------------------------------
