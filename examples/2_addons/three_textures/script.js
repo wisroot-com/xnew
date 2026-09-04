@@ -14,6 +14,7 @@ import * as THREE from 'three';
 const TEXTURES = {
   wood: xtextures.wood,
   tatami: xtextures.tatami,
+  carpet: xtextures.carpet,
 };
 
 const GEOMETRIES = {

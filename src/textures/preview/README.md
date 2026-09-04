@@ -82,3 +82,4 @@ samples (wood), `0.5` = `scale * 0.5` puts exactly one cell on a face (tatami: o
 
 - `wood.frag` — Wood (color + geometric normal).
 - `tatami.frag` — Tatami (color + perturbed normal).
+- `carpet.frag` — Carpet (color + perturbed normal).

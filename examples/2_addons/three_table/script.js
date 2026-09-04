@@ -61,6 +61,7 @@ function Main(unit, { size = 1024 } = {}) {
         unit.on('update', () => xthree.renderer.render(xthree.scene, xthree.camera));
 
         xnew(Lights);
+        xnew(Carpet);
         xnew(Floor);
         xnew(Chabudai);
         CHARACTERS.forEach(({ mog, angle }) => {
@@ -98,6 +99,46 @@ function Lights(unit) {
 }
 
 //----------------------------------------------------------------------------------------------------
+// Carpet — 畳の下に敷く一枚もの。ドラッグ回転でもホイールで引いても縁が入らないよう、四畳半より広く取る
+//----------------------------------------------------------------------------------------------------
+
+const CARPET_SIZE = 30 * MAT;   // 四畳半（3x3 畳）に対して十分広い。引き切って 45° 回しても角が画面に入らない幅
+const CARPET_TILE = 2 * MAT;    // 焼くタイル 1 枚ぶんの実寸。これを繰り返して敷き詰める
+
+const CARPET_SOLID = 2.0;       // ここまでは不透明。四畳半（対角 1.9）とキャラがちょうど収まる半径
+const CARPET_FADE = 4.4;        // ここで透明になり切る。既定のカメラだと画面の外周が淡く白へ抜ける
+
+function Carpet(unit) {
+    const material = xthree.material.standard(xtextures.carpet, {
+        size: { width: 1024, height: 1024 }, worldSize: CARPET_TILE, params: xtextures.carpet.presets.standard,
+        tile: true, repeat: { x: CARPET_SIZE / CARPET_TILE, y: CARPET_SIZE / CARPET_TILE },
+        roughness: 1,
+        // 外周を透明へ落として、canvas 越しにページの白へ溶かす（canvas は透過なので背景の白がそのまま出る）
+        transparent: true, alphaMap: makeFadeAlpha(),
+    });
+    const mesh = xthree.add(new THREE.Mesh(new THREE.PlaneGeometry(CARPET_SIZE, CARPET_SIZE), material));
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.y = -MAT_THICKNESS;   // 畳の裏と同じ高さ = 畳がそのまま上に載る
+    mesh.receiveShadow = true;
+}
+
+// 中心が不透明・外周が透明の放射グラデーション。敷き詰める map と違い、alphaMap は板 1 枚へ 1 回だけ貼る
+function makeFadeAlpha(size = 512) {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const half = CARPET_SIZE / 2;
+    const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    gradient.addColorStop(0, '#fff');
+    gradient.addColorStop(CARPET_SOLID / half, '#fff');
+    gradient.addColorStop(CARPET_FADE / half, '#000');
+    gradient.addColorStop(1, '#000');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+    return new THREE.CanvasTexture(canvas);
+}
+
+//----------------------------------------------------------------------------------------------------
 // Floor — 四畳半ぶんの畳を LAYOUT どおりに敷く。畳ごとに seed を変えて、同じ模様が並ばないようにする
 //----------------------------------------------------------------------------------------------------
 
@@ -124,6 +165,7 @@ function Mat(unit, { x, z, aspect, turned, seed }) {
     mesh.rotation.y = turned ? Math.PI / 2 : 0;
     mesh.position.set(x * MAT, -MAT_THICKNESS / 2, z * MAT);
     mesh.receiveShadow = true;
+    mesh.castShadow = true;   // 四畳半の外周の厚みがカーペットへ落ちる
 }
 
 // 側面の UV を貼り替えて、天面と同じ畳テクスチャを断面へ回り込ませる（側面用の単色マテリアルを持たない

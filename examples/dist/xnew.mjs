@@ -3393,7 +3393,7 @@ var noiseGlsl = "//-------------------------------------------------------------
 
 var woodGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexWood* — procedural wood (rings + fibers) as a function of object-space position.\n// The surface is flat, so the normal channel returns the geometric normal unperturbed.\n// Requires noise.glsl before it; uniform declarations are generated from the TS schema (wood.ts).\n//----------------------------------------------------------------------------------------------------\n\nfloat xtex_noise(vec3 P);  // defined in noise.glsl\n\nvec3 xtexWoodColor(vec3 position){\n  float ang = radians(angle);\n  float ca = cos(ang), sa = sin(ang);\n  vec3 posLocal = vec3(\n    position.x*ca - position.y*sa,\n    position.x*sa + position.y*ca,\n    position.z\n  );\n\n  // main ring pattern; one ring cell is scale world units across\n  float s = 1.0 / scale;\n  vec3 pos = posLocal * s * vec3(1.0/lengths, 4.0, 1.0/lengths) + seed;\n  float k = (xtex_noise(pos) + 1.0) * 10.0 * rings;\n  k = (cos(k + cos(k)) + 1.0) / 2.0;\n\n  // fibers: 10 octaves of turbulence, high-frequency along y, 2.7x finer than the rings\n  float kk = 0.0, sum = 0.0, power = 2.0;\n  vec3 sc = s * 2.7 * vec3(1.0, fibersDensity, 1.0);\n  for (int i = 0; i < 10; i++){\n    kk += power * xtex_noise(posLocal * sc + seed);\n    sum += power;\n    sc *= 1.8;\n    power *= 0.6;\n  }\n  kk = (sin(kk * 5.0 / sum * 10.0) + 1.0) / 2.0;\n\n  return mix(color, background, mix(k, kk, fibers));\n}\n\nvec3 xtexWoodNormal(vec3 position, vec3 normal, vec3 tangent){\n  return normalize(normal);\n}\n";
 
-const ranges$1 = {
+const ranges$2 = {
     scale: { min: 0.1, max: 6 },
     angle: { min: 0, max: 360 },
     seed: { min: 0, max: 100 },
@@ -3402,7 +3402,7 @@ const ranges$1 = {
     fibers: { min: 0, max: 1 },
     fibersDensity: { min: 0, max: 40 },
 };
-const presets$1 = {
+const presets$2 = {
     standard: {
         scale: 1.65, angle: 0, seed: 0,
         color: [0.8, 0.4, 0.0],
@@ -3418,13 +3418,13 @@ const presets$1 = {
 const wood = {
     name: 'wood',
     glsl: woodGlsl,
-    ranges: ranges$1,
-    presets: presets$1,
+    ranges: ranges$2,
+    presets: presets$2,
 };
 
 var tatamiGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexTatami* — tatami mats: one mat is a scale-wide cell, centered on the origin so a single mat\n// frames on its own; aspect is the mat's real long/short ratio and only sets the pattern's\n// proportions, so a 2:1 mat is authored in a square cell and stretched by the mesh itself.\n//----------------------------------------------------------------------------------------------------\n\nfloat xtex_noise(vec3 P);  // defined in noise.glsl\n\nconst float XTEX_TATAMI_PI = 3.141592653589793;\n\n// mat space: one mat per unit cell, the origin at a mat's center (so position 0 sits inside one mat, not on a joint)\nvec2 xtex_tatamiMat(vec3 p){\n  return p.xy + 0.5;\n}\n\n// 1 inside the heri cloth strips along the long edges (v near 0 / 1); heri is a fraction of the short side\nfloat xtex_tatamiHeri(float v){\n  return 1.0 - smoothstep(heri - 0.008, heri + 0.008, min(v, 1.0 - v));\n}\n\n// 1 at the butt joint of neighboring mats (short edges); aspect converts u into short-side units so the joint keeps its width\nfloat xtex_tatamiSeam(float u){\n  return 1.0 - smoothstep(0.0, 0.01, min(u, 1.0 - u) * aspect);\n}\n\nfloat xtex_tatamiHeight(vec3 q){\n  vec2 cell = fract(xtex_tatamiMat(q));\n  float ridge = abs(sin(XTEX_TATAMI_PI * cell.y * weave));\n  float h = mix(ridge, 0.9, xtex_tatamiHeri(cell.y));\n  return h * (1.0 - 0.6 * xtex_tatamiSeam(cell.x));\n}\n\nvec3 xtexTatamiColor(vec3 position){\n  vec3 p = position / scale;\n  vec2 mat = xtex_tatamiMat(p);\n  vec2 matIndex = floor(mat);\n  vec2 cell = fract(mat);\n  // the long axis in short-side units, so features keep their real pitch whatever the aspect is\n  float u = mat.x * aspect;\n\n  // per-mat tone: checkered pair + a small per-mat hash so mats do not look identical\n  float checker = mod(matIndex.x + matIndex.y, 2.0);\n  float hash = xtex_noise(vec3(matIndex.x * 1.7 + 0.37, matIndex.y * 2.3 + 0.58, seed)) * 0.5 + 0.5;\n  vec3 base = mix(color, background, clamp(0.7 * checker + 0.3 * hash, 0.0, 1.0));\n\n  // weave: faint ridges along the long axis, each strand row gets a slight tint, plus sun-fade mottling\n  float ridge = abs(sin(XTEX_TATAMI_PI * cell.y * weave));\n  float strand = xtex_noise(vec3(u * 8.0, floor(cell.y * weave) * 0.53, seed + 5.0));\n  float mottle = xtex_noise(vec3(u * 0.6, mat.y * 0.6, seed + 9.0));\n  vec3 igusa = base * (0.88 + 0.07 * ridge + 0.06 * strand + 0.08 * mottle);\n  // fine faint weft lines parallel to the short edges; a whole number of periods per mat keeps them tiling-safe\n  float weft = abs(sin(2.0 * XTEX_TATAMI_PI * mat.x * floor(aspect * weave * 0.75 + 0.5)));\n  igusa *= 0.95 + 0.05 * weft;\n  igusa *= 1.0 - 0.35 * xtex_tatamiSeam(cell.x);\n\n  // heri: flat cloth color, shaded only across v so baked tiles stay seamless along the long axis\n  vec3 cloth = border * (0.85 + 0.3 * smoothstep(0.0, heri, min(cell.y, 1.0 - cell.y)));\n  return mix(igusa, cloth, xtex_tatamiHeri(cell.y));\n}\n\nvec3 xtexTatamiNormal(vec3 position, vec3 normal, vec3 tangent){\n  const float EPS = 0.002;\n  vec3 p = position / scale;\n  vec3 xnormal = normalize(normal);\n  vec3 xtangent = normalize(tangent) * EPS;\n  vec3 xbitangent = normalize(cross(xnormal, xtangent)) * EPS;\n  vec3 bumped = xnormal * (0.02 * bump);\n\n  vec3 pos  = p + bumped * xtex_tatamiHeight(p);\n  vec3 posU = (p + xtangent) + bumped * xtex_tatamiHeight(p + xtangent);\n  vec3 posV = (p + xbitangent) + bumped * xtex_tatamiHeight(p + xbitangent);\n  return normalize(cross(posU - pos, posV - pos));\n}\n";
 
-const ranges = {
+const ranges$1 = {
     scale: { min: 0.1, max: 4 },
     bump: { min: 0, max: 1 },
     seed: { min: 0, max: 100 },
@@ -3432,7 +3432,7 @@ const ranges = {
     weave: { min: 8, max: 60 },
     heri: { min: 0, max: 0.2 },
 };
-const presets = {
+const presets$1 = {
     standard: {
         scale: 1, bump: 0.2, seed: 0,
         color: [0.72, 0.71, 0.42],
@@ -3447,6 +3447,41 @@ const presets = {
 const tatami = {
     name: 'tatami',
     glsl: tatamiGlsl,
+    ranges: ranges$1,
+    presets: presets$1,
+};
+
+var carpetGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexCarpet* — a fluffy pile carpet: a dense field of fine fibers under a soft cloudy drift.\n// The look lives in low contrast — plush shows no deep gaps, only faint hairs and gentle shading.\n// Requires noise.glsl before it; uniform declarations are generated from the TS schema (carpet.ts).\n//----------------------------------------------------------------------------------------------------\n\nfloat xtex_noise(vec3 P);  // defined in noise.glsl\n\nconst float XTEX_CARPET_PI = 3.141592653589793;\n\n// nap space: the plane turned by angle, so the fibers can be aimed without turning the mesh\nvec3 xtex_carpetSpace(vec3 position){\n  float a = radians(angle);\n  vec3 p = position / scale;\n  return vec3(p.x * cos(a) - p.y * sin(a), p.x * sin(a) + p.y * cos(a), p.z);\n}\n\n// one fiber layer, 0 between the hairs to 1 on a lit one; the lean is fixed per layer because a rotating direction field twists the ridges into marble swirls when magnified\nfloat xtex_carpetFibers(vec2 uv, float freq, float lean, float ofs){\n  vec2 dir = vec2(cos(lean), sin(lean));\n  vec2 r = vec2(dot(uv, dir), dot(uv, vec2(-dir.y, dir.x))) * freq;\n  // a wobble the width of a hair: it makes them waver without the large-scale flow a rotation would add\n  r += 0.6 * vec2(xtex_noise(vec3(r.yx * 0.5, seed + ofs)), xtex_noise(vec3(r * 0.5, seed + ofs + 2.0)));\n  float ridge = 1.0 - abs(xtex_noise(vec3(r * vec2(0.35, 1.0), seed + ofs + 3.0)));\n  // a second field along the lean chops each ridge into separate hairs\n  float cut = 0.5 + 0.5 * xtex_noise(vec3(r * vec2(4.0, 0.35), seed + ofs + 11.0));\n  // only the top of the ridge is a visible hair; fluff lowers that cut, blending the hairs into plush\n  return smoothstep(mix(0.85, 0.55, fluff), 1.0, ridge * (0.6 + 0.6 * cut));\n}\n\n// the broad drift of light across the pile — plush is never evenly lit\nfloat xtex_carpetCloud(vec2 uv){\n  return 0.75 + 0.5 * (xtex_noise(vec3(uv * 1.3, seed + 21.0)) * 0.5 + 0.5);\n}\n\n// pile height: three layers crossing at their own leans, combined brightest-wins because hairs overlap rather than average; swirl spreads the leans apart, 0 combing them all along the nap\nfloat xtex_carpetHeight(vec3 q){\n  vec2 uv = q.xy;\n  float spread = swirl * XTEX_CARPET_PI;\n  float fibers = xtex_carpetFibers(uv, density, 0.0, 1.0);\n  fibers = max(fibers, 0.9 * xtex_carpetFibers(uv, density * 1.7, spread / 3.0, 7.0));\n  fibers = max(fibers, 0.8 * xtex_carpetFibers(uv, density * 2.6, 2.0 * spread / 3.0, 13.0));\n  return clamp((0.3 + 0.7 * fibers) * xtex_carpetCloud(uv), 0.0, 1.0);\n}\n\n// relief for the normal channel: a soft isotropic swell, not the color field — its leaning ridges would light up as grooves, and its hairs sit below a texel and would difference into static\nfloat xtex_carpetRelief(vec3 q){\n  float grain = xtex_noise(vec3(q.xy * density * 0.8, seed + 51.0)) * 0.5 + 0.5;\n  float lump = xtex_noise(vec3(q.xy * density * 0.25, seed + 57.0)) * 0.5 + 0.5;\n  return clamp(xtex_carpetCloud(q.xy) * (0.45 + 0.3 * lump + 0.25 * grain), 0.0, 1.0);\n}\n\nvec3 xtexCarpetColor(vec3 position){\n  vec3 q = xtex_carpetSpace(position);\n  float h = xtex_carpetHeight(q);\n  // dye blotches: the two yarn tones drift slowly across the rug, the lit hairs catching the lighter one\n  float dye = xtex_noise(vec3(q.xy * 0.8, seed + 31.0)) * 0.5 + 0.5;\n  vec3 yarn = mix(background, color, clamp(0.45 + 0.35 * dye + 0.3 * h, 0.0, 1.0));\n  return yarn * mix(1.0 - shade, 1.0, h);\n}\n\nvec3 xtexCarpetNormal(vec3 position, vec3 normal, vec3 tangent){\n  // the step follows the fiber size: a fixed one would fall inside the grain and difference into noise\n  float EPS = 0.5 / density;\n  vec3 q = xtex_carpetSpace(position);\n  vec3 xnormal = normalize(normal);\n  vec3 xtangent = normalize(tangent) * EPS;\n  vec3 xbitangent = normalize(cross(xnormal, xtangent)) * EPS;\n  vec3 bumped = xnormal * (0.02 * bump);\n\n  vec3 pos  = q + bumped * xtex_carpetRelief(q);\n  vec3 posU = (q + xtangent) + bumped * xtex_carpetRelief(q + xtangent);\n  vec3 posV = (q + xbitangent) + bumped * xtex_carpetRelief(q + xbitangent);\n  return normalize(cross(posU - pos, posV - pos));\n}\n";
+
+const ranges = {
+    scale: { min: 0.1, max: 2 },
+    angle: { min: 0, max: 360 },
+    bump: { min: 0, max: 1 },
+    seed: { min: 0, max: 100 },
+    fluff: { min: 0, max: 1 },
+    density: { min: 5, max: 60 },
+    swirl: { min: 0, max: 1 },
+    shade: { min: 0, max: 1 },
+};
+const presets = {
+    standard: {
+        scale: 1, angle: 0, bump: 0.6, seed: 0,
+        color: [1.0, 1.0, 1.0],
+        background: [1.0, 1.0, 1.0],
+        fluff: 0.5, density: 25, swirl: 0.5, shade: 0.2,
+    },
+    plush: {
+        bump: 0.4, fluff: 0.85, shade: 0.25,
+    },
+    moss: {
+        fluff: 0.7, density: 40, swirl: 0.3, shade: 0.5,
+        color: [0.45, 0.6, 0.38],
+        background: [0.24, 0.35, 0.2],
+    },
+};
+const carpet = {
+    name: 'carpet',
+    glsl: carpetGlsl,
     ranges,
     presets,
 };
@@ -3637,6 +3672,7 @@ function bakeTexture(def, options = {}) {
 const xtextures = {
     wood: defineTexture(wood),
     tatami: defineTexture(tatami),
+    carpet: defineTexture(carpet),
 };
 
 export { xaudio, xbasics, xicons, xnew, xsync, xtextures };

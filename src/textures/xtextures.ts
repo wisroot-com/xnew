@@ -7,6 +7,7 @@
 import noiseGlsl from './glsl/noise.glsl';
 import { wood } from './define/wood';
 import { tatami } from './define/tatami';
+import { carpet } from './define/carpet';
 
 //----------------------------------------------------------------------------------------------------
 // shared shape — what a texture module authors and what the runtime consumes
@@ -293,4 +294,5 @@ function bakeTexture(def: TextureSource, options: BakeOptions = {}): ImageBitmap
 export const xtextures = {
     wood: defineTexture(wood),
     tatami: defineTexture(tatami),
+    carpet: defineTexture(carpet),
 };

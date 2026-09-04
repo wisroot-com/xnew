@@ -610,6 +610,7 @@ interface Texture extends TextureSource {
 declare const xtextures: {
     wood: Texture;
     tatami: Texture;
+    carpet: Texture;
 };
 
 export { xaudio, xbasics, xicons, xnew, xsync, xtextures };

@@ -10,6 +10,7 @@ import { xnew, xbasics, xtextures } from '@mulsense/xnew';
 const TEXTURES = {
   wood: xtextures.wood,
   tatami: xtextures.tatami,
+  carpet: xtextures.carpet,
 };
 
 // how much world each canvas samples (xtextures defaults to 3): tatami is framed on one mat, a touch wider so its heri stays inside
