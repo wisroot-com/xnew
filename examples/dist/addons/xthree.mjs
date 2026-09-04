@@ -129,6 +129,7 @@ normal = normalize(normalMatrix * ${entry}Normal(vXtexPos, xtexN, xtexT)) * face
     material.uniforms = uniforms;
     return material;
 }
+
 const xthree = {
     initialize({ canvas, camera = null }) {
         return xnew.promise(xnew(Root, { canvas, camera }));

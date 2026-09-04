@@ -20,11 +20,11 @@ events into a single unit that can be created and disposed as one.
 
 Integrations for games and interactive apps.
 
-- `addons/xpixi` — PixiJS 8
-- `addons/xthree` — Three.js
-- `addons/xmatter` — matter-js (2D physics)
-- `addons/xrapier2d` — Rapier 2D
-- `addons/xrapier3d` — Rapier 3D
+- `addons/pixi/xpixi` — PixiJS 8
+- `addons/three/xthree` — Three.js
+- `addons/matter/xmatter` — matter-js (2D physics)
+- `addons/rapier2d/xrapier2d` — Rapier 2D
+- `addons/rapier3d/xrapier3d` — Rapier 3D
 
 ## Directory Layout
 
@@ -34,7 +34,7 @@ Integrations for games and interactive apps.
 - `src/basics/` — built-in basic components (exported as `xbasics`); one component per file, grouped by category: `stage/`, `element/`, `widget/`
 - `src/icons/` — heroicons icon set (exported as `xicons`); path data lives in one generated `data.ts` table, `xicons.ts` builds a component per entry from it (shared `<svg>` shell included); path data verbatim from heroicons (MIT — `license.txt`)
 - `src/textures/` — procedural textures (exported as `xtextures`); shader-first WebGL2 rendering, three-free core. One `define/<name>.ts` per texture (TextureSource: name / glsl / ranges / presets); GLSL bodies live in real `glsl/*.glsl` files (imported as strings — rollup inline plugin + `test/transform-glsl.cjs`; uniform declarations are generated from the TS schema); `preview/*.frag` are dev-only glsl-canvas harnesses, never bundled
-- `src/addons/` — third-party library integrations
+- `src/addons/` — third-party library integrations; one folder per library (`three/xthree.ts`), each bundled to a flat `dist/addons/<name>.mjs`
 - `examples/` — runnable samples
 - `docusaurus/` — Docusaurus documentation site
 - `test/` — Jest tests

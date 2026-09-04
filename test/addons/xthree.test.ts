@@ -11,7 +11,7 @@ jest.spyOn(THREE, 'WebGLRenderer').mockImplementation(() => ({
 }));
 
 import { xnew } from '../../src/index';
-import { xthree } from '../../src/addons/xthree';
+import { xthree } from '../../src/addons/three/xthree';
 
 function setup() {
     const canvas = document.createElement('canvas');

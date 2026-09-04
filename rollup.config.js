@@ -5,13 +5,13 @@ import { cpSync } from 'fs';
 const configs = [];
 export default configs;
 
-append('', 'index', 'xnew');
-append('addons/', 'xpixi', 'xpixi',  ['@mulsense/xnew', 'pixi.js']);
-append('addons/', 'xthree', 'xthree', ['@mulsense/xnew', 'three']);
-append('addons/', 'xmatter', 'xmatter', ['@mulsense/xnew', 'matter-js']);
-append('addons/', 'xrapier2d', 'xrapier2d', ['@mulsense/xnew', '@dimforge/rapier2d-compat']);
-append('addons/', 'xrapier3d', 'xrapier3d', ['@mulsense/xnew', '@dimforge/rapier3d-compat']);
-append('addons/', 'xreact', 'xreact', ['@mulsense/xnew', 'react']);
+append('index', 'xnew');
+append('addons/pixi/xpixi', 'addons/xpixi', ['@mulsense/xnew', 'pixi.js']);
+append('addons/three/xthree', 'addons/xthree', ['@mulsense/xnew', 'three']);
+append('addons/matter/xmatter', 'addons/xmatter', ['@mulsense/xnew', 'matter-js']);
+append('addons/rapier2d/xrapier2d', 'addons/xrapier2d', ['@mulsense/xnew', '@dimforge/rapier2d-compat']);
+append('addons/rapier3d/xrapier3d', 'addons/xrapier3d', ['@mulsense/xnew', '@dimforge/rapier3d-compat']);
+append('addons/react/xreact', 'addons/xreact', ['@mulsense/xnew', 'react']);
 
 // import a .glsl file as its source string (see src/textures/glsl-modules.d.ts)
 function glsl() {
@@ -25,26 +25,27 @@ function glsl() {
     };
 }
 
-function append(dir, src, name, external = []) {
+// `src` is the entry path under src/ (addons are nested per library); `dst` is the flat dist/ path.
+function append(src, dst, external = []) {
     // ESM build — the only distribution format (`import { xnew } from '@mulsense/xnew'`).
     configs.push({
-        input: `./src/${dir}${src}.ts`,
+        input: `./src/${src}.ts`,
         output: [
-            { file: `./dist/${dir}${name}.mjs`, format: 'es', },
+            { file: `./dist/${dst}.mjs`, format: 'es', },
         ],
         external,
         plugins: [
             glsl(),
             typescript({ removeComments: true }),
-            copyto(`./dist/${dir}${name}.mjs`, `./examples/dist/${dir}${name}.mjs`),
+            copyto(`./dist/${dst}.mjs`, `./examples/dist/${dst}.mjs`),
         ],
     });
     configs.push({
-        input: `./src/${dir}${src}.ts`,
-        output: { file: `./dist/${dir}${name}.d.ts`, format: 'es', },
+        input: `./src/${src}.ts`,
+        output: { file: `./dist/${dst}.d.ts`, format: 'es', },
         plugins: [
             dts({ compilerOptions: { removeComments: true } }),
-            copyto(`./dist/${dir}${name}.d.ts`, `./examples/dist/${dir}${name}.d.ts`),
+            copyto(`./dist/${dst}.d.ts`, `./examples/dist/${dst}.d.ts`),
         ]
     });
     function copyto(src, dst) {

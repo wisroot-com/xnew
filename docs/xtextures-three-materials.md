@@ -36,7 +36,7 @@ inject の代償は 3 つ:
    文字列パッチなので、three のバージョンアップで壊れ得る。この addon で唯一
    three 内部に依存する箇所。
 
-## inject の実装メモ（src/addons/xthree.ts `injectStandard`）
+## inject の実装メモ（src/addons/three/material.ts `injectStandard`）
 
 `MeshStandardMaterial.onBeforeCompile` で生成済みシェーダーを文字列パッチする:
 
