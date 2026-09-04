@@ -121,6 +121,7 @@ function Model(unit, { state, bags }) {
   // the mat model must match the texture cell in OBJECT space (that is where xtextures is evaluated), so the quad itself is resized; the mesh scale only keeps it a constant size on screen
   let matSize = 0;
   let matAspect = 0;
+  resetRotation(object, state);
 
   unit.on('+texture +display +model', () => {
     material.dispose();
@@ -132,6 +133,13 @@ function Model(unit, { state, bags }) {
     geometry = GEOMETRIES[state.model]();
     object.geometry = geometry;
     [matSize, matAspect] = [0, 0];
+    resetRotation(object, state);
+  });
+  // the model only turns when dragged, so a texture can be inspected from a chosen angle
+  unit.on('touchstart contextmenu', ({ event }) => event.preventDefault());
+  unit.on('dragmove', ({ delta }) => {
+    object.rotation.y += delta.x * 0.01;
+    object.rotation.x += delta.y * 0.01;
   });
   unit.on('update', () => {
     if (state.model === 'mat') {
@@ -146,11 +154,8 @@ function Model(unit, { state, bags }) {
         geometry = new THREE.PlaneGeometry(size, size);
         object.geometry = geometry;
       }
-      object.rotation.set(-0.4, 0, 0);
       object.scale.set(1.7 * aspect / size, 1.7 / size, 1);
     } else {
-      object.rotation.x += 0.006;
-      object.rotation.y += 0.009;
       object.scale.setScalar(1);
     }
     syncUniforms(material, bags[state.texture]);
@@ -159,6 +164,11 @@ function Model(unit, { state, bags }) {
     geometry.dispose();
     material.dispose();
   });
+}
+
+// the mat quad starts tilted so the drag begins from a readable, slightly angled view
+function resetRotation(object, state) {
+  object.rotation.set(state.model === 'mat' ? -0.4 : 0, 0, 0);
 }
 
 // 'shader' / 'baked' / 'inject' are the library materials; 'color' / 'normal' are inspection modes:
