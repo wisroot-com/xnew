@@ -62,8 +62,8 @@ function dispatch(info: ServerRoot | ClientRoot, type: string, id: string | unde
 // boot
 //----------------------------------------------------------------------------------------------------
 
-function bootServer(opts: BootOptions, args: any[]): Unit {
-    const { io, room } = opts;
+function bootServer(options: BootOptions, args: any[]): Unit {
+    const { io, room } = options;
     const info: ServerRoot = { io, room, clients: [] };
 
     const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
@@ -142,8 +142,8 @@ function bootServer(opts: BootOptions, args: any[]): Unit {
     return root;
 }
 
-function bootClient(opts: BootOptions, args: any[]): Unit {
-    const { io, room, client } = opts;
+function bootClient(options: BootOptions, args: any[]): Unit {
+    const { io, room, client } = options;
     // boot owns the socket; the handshake query must stay flat strings (socket.io stringifies values).
     const socket = io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
     const info: ClientRoot = { socket, room, clients: [] };
@@ -265,7 +265,7 @@ export const xsync = {
         // each socket is in a room named by its id, so individual and room-wide delivery share io.to()
         (ids?.length ? ids : [room.id]).forEach((target) => io.to(target).emit('emitToClients', envelope));
     },
-    boot(opts: BootOptions, ...args: any[]): Unit {
-        return getEnvironment() === 'server' ? bootServer(opts, args) : bootClient(opts, args);
+    boot(options: BootOptions, ...args: any[]): Unit {
+        return getEnvironment() === 'server' ? bootServer(options, args) : bootClient(options, args);
     },
 };

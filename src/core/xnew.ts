@@ -97,9 +97,9 @@ export const xnew = Object.assign(
             return (...args: any[]) => Unit.scope(snapshot, callback, ...args);
         },
 
-        // Finds units by component. opts.key narrows by the reserved prop `key` (assumed globally unique).
-        find(Component: Function, opts?: { key?: any }): Unit[] {
-            return Unit.find(Component, opts?.key);
+        // Finds units by component. options.key narrows by the reserved prop `key` (assumed globally unique); options.parent narrows to that unit's descendants.
+        find(Component: Function, options?: { key?: any, parent?: Unit }): Unit[] {
+            return Unit.find(Component, options);
         },
 
         // Emits a custom event ('+event' = broadcast / '-event' = own unit only).

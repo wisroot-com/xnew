@@ -59,4 +59,38 @@ describe('xnew.find', () => {
             expect(xnew.find(A, { key: 0 })).toEqual([zero]);
         });
     });
+
+    describe('by parent', () => {
+        function A(_: Unit) {}
+
+        it('limits results to the descendants of the given unit', () => {
+            let parent!: Unit, inner!: Unit, deep!: Unit, outer!: Unit;
+            xnew(() => {
+                parent = xnew(() => {
+                    inner = xnew(A);
+                    xnew(() => { deep = xnew(A); });
+                });
+                outer = xnew(A);
+            });
+            expect(xnew.find(A, { parent })).toEqual(expect.arrayContaining([inner, deep]));
+            expect(xnew.find(A, { parent })).toHaveLength(2);
+            expect(xnew.find(A, { parent })).not.toContain(outer);
+        });
+
+        it('excludes the parent unit itself', () => {
+            let parent!: Unit, child!: Unit;
+            xnew(() => { parent = xnew(A, () => { child = xnew(A); }); });
+            expect(xnew.find(A, { parent })).toEqual([child]);
+        });
+
+        it('combines with key', () => {
+            let parent!: Unit, k1!: Unit;
+            xnew(() => {
+                parent = xnew(() => { k1 = xnew(A, { key: 'k1' }); xnew(A, { key: 'k2' }); });
+                xnew(A, { key: 'k3' });
+            });
+            expect(xnew.find(A, { parent, key: 'k1' })).toEqual([k1]);
+            expect(xnew.find(A, { parent, key: 'k3' })).toEqual([]);
+        });
+    });
 });
