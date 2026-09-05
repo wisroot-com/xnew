@@ -501,8 +501,8 @@ interface PanelOptions {
     params?: Record<string, any>;
     nested?: boolean;
 }
-declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
-    group(...args: any[]): xnew.Unit | null;
+declare function Panel(unit: xnew.Unit, { name, open, params, nested }: PanelOptions): {
+    group({ name, open, params }: PanelOptions, inner: Function): Unit;
     button({ name }?: {
         name?: string;
     }): Unit;

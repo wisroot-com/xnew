@@ -18,11 +18,8 @@ import { ColorPicker } from './ColorPicker';
 // nested is internal: group() marks its inner Panel so only the root creates the scroll container
 interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; nested?: boolean; }
 
-export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions) {
+export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
-
-    // named groups are remembered so a later group(key, ...) call adds into the same unit instead of creating another one
-    const groups = new Map<string, xnew.Unit>();
 
     if (nested === false) {
         // own scrollport inheriting the host's max-height; the vertical padding sits outside it so the scrollbar clears the host's rounded corners
@@ -34,36 +31,31 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
         xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
 
+    // an `open` value (true / false) makes the panel collapsible; leaving it undefined keeps the rows always shown
+    if (open !== undefined) {
+        const gate = xnew(Gate, { open, duration: 200 });
+
+        // header and accordion are siblings, so they share one wrapper: the unit's container, hidden as a whole
+        xnew.nest('<div>');
+        if (name) {
+            xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header: xnew.Unit) => {
+                header.on('click', () => gate.toggle());
+                const chevron = xnew((unit: xnew.Unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
+                gate.on('-transition', ({ value }: { value: number }) => {
+                    chevron.element.style.transform = `rotate(${(value - 1) * 90}deg)`;
+                });
+                xnew('<div>', name);
+            });
+        }
+        xnew.extend(Accordion, { gate });
+    }
+
     return {
-        // (key?, options?, inner?) — a lone key just looks up a named group; the key doubles as the header label when options.name is omitted
-        group(...args: any[]): xnew.Unit | null {
-            const key: string | null = typeof args[0] === 'string' ? args[0] : null;
-            const rest = key !== null ? args.slice(1) : args;
-            const found = key !== null ? groups.get(key) ?? null : null;
-
-            if (key !== null && rest.length === 0) {
-                return found;
-            } else {
-                const { name, open, params: groupParams }: PanelOptions = typeof rest[0] === 'object' ? rest[0] : {};
-                const inner: Function | null = typeof rest[rest.length - 1] === 'function' ? rest[rest.length - 1] : null;
-                let group = found;
-
-                if (group === null) {
-                    group = xnew(() => {
-                        xnew.extend(Group, { name: name ?? key ?? undefined, open });
-                        xnew.extend(Panel, { params: groupParams ?? object, nested: true });
-                    });
-                    if (key !== null) {
-                        groups.set(key, group);
-                        group.on('finalize', () => groups.delete(key));
-                    }
-                }
-                if (inner !== null) {
-                    // building through the group as parent, so a later call lands exactly where an inline one would
-                    xnew(group, () => { inner(group); });
-                }
-                return group;
-            }
+        group({ name, open, params }: PanelOptions, inner: Function) {
+            return xnew((unit: xnew.Unit) => {
+                xnew.extend(Panel, { name, open, params: params ?? object, nested: true });
+                inner(unit);
+            });
         },
         button({ name = '' }: { name?: string } = {}) {
             return xnew(Button, { text: name, style: 'width: 100%;' });
@@ -96,24 +88,6 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
             xnew(Separator);
         }
     }
-}
-
-function Group(unit: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
-    const gate = xnew(Gate, { open, duration: 200 });
-
-    // header and accordion are siblings, so they share one wrapper: the unit's container, hidden as a whole
-    xnew.nest('<div>');
-    if (name) {
-        xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header: xnew.Unit) => {
-            header.on('click', () => gate.toggle());
-            const chevron = xnew((unit: xnew.Unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
-            gate.on('-transition', ({ value }: { value: number }) => {
-                chevron.element.style.transform = `rotate(${(value - 1) * 90}deg)`;
-            });
-            xnew('<div>', name);
-        });
-    }
-    xnew.extend(Accordion, { gate });
 }
 
 function Separator(unit: xnew.Unit) {

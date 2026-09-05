@@ -3176,9 +3176,8 @@ for (const name of Object.keys(iconData)) {
 }
 const xicons = icons;
 
-function Panel(unit, { params, nested = false }) {
+function Panel(unit, { name, open, params, nested = false }) {
     const object = params !== null && params !== void 0 ? params : {};
-    const groups = new Map();
     if (nested === false) {
         const css = xnew.css({
             scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
@@ -3186,35 +3185,27 @@ function Panel(unit, { params, nested = false }) {
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
         xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
+    if (open !== undefined) {
+        const gate = xnew(Gate, { open, duration: 200 });
+        xnew.nest('<div>');
+        if (name) {
+            xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header) => {
+                header.on('click', () => gate.toggle());
+                const chevron = xnew((unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
+                gate.on('-transition', ({ value }) => {
+                    chevron.element.style.transform = `rotate(${(value - 1) * 90}deg)`;
+                });
+                xnew('<div>', name);
+            });
+        }
+        xnew.extend(Accordion, { gate });
+    }
     return {
-        group(...args) {
-            var _a;
-            const key = typeof args[0] === 'string' ? args[0] : null;
-            const rest = key !== null ? args.slice(1) : args;
-            const found = key !== null ? (_a = groups.get(key)) !== null && _a !== void 0 ? _a : null : null;
-            if (key !== null && rest.length === 0) {
-                return found;
-            }
-            else {
-                const { name, open, params: groupParams } = typeof rest[0] === 'object' ? rest[0] : {};
-                const inner = typeof rest[rest.length - 1] === 'function' ? rest[rest.length - 1] : null;
-                let group = found;
-                if (group === null) {
-                    group = xnew(() => {
-                        var _a;
-                        xnew.extend(Group, { name: (_a = name !== null && name !== void 0 ? name : key) !== null && _a !== void 0 ? _a : undefined, open });
-                        xnew.extend(Panel, { params: groupParams !== null && groupParams !== void 0 ? groupParams : object, nested: true });
-                    });
-                    if (key !== null) {
-                        groups.set(key, group);
-                        group.on('finalize', () => groups.delete(key));
-                    }
-                }
-                if (inner !== null) {
-                    xnew(group, () => { inner(group); });
-                }
-                return group;
-            }
+        group({ name, open, params }, inner) {
+            return xnew((unit) => {
+                xnew.extend(Panel, { name, open, params: params !== null && params !== void 0 ? params : object, nested: true });
+                inner(unit);
+            });
         },
         button({ name = '' } = {}) {
             return xnew(Button, { text: name, style: 'width: 100%;' });
@@ -3251,21 +3242,6 @@ function Panel(unit, { params, nested = false }) {
             xnew(Separator);
         }
     };
-}
-function Group(unit, { name, open = false }) {
-    const gate = xnew(Gate, { open, duration: 200 });
-    xnew.nest('<div>');
-    if (name) {
-        xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header) => {
-            header.on('click', () => gate.toggle());
-            const chevron = xnew((unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
-            gate.on('-transition', ({ value }) => {
-                chevron.element.style.transform = `rotate(${(value - 1) * 90}deg)`;
-            });
-            xnew('<div>', name);
-        });
-    }
-    xnew.extend(Accordion, { gate });
 }
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
