@@ -105,7 +105,10 @@ declare class Unit {
     static component2units: MapSet<Function, Unit>;
     static ancestors(unit: Unit | null): Unit[];
     static isVisible(from: Unit | null, current: Unit | null, ancestors: Unit[]): boolean;
-    static find(Component: Function, key?: any): Unit[];
+    static find(Component: Function, options?: {
+        key?: any;
+        parent?: Unit;
+    }): Unit[];
     static type2units: MapSet<string, Unit>;
     on(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
     once(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
@@ -166,8 +169,9 @@ declare const xnew: XnewBase & {
         (key: string, promise: Function | Promise<any> | Unit): UnitPromise;
     };
     scope(callback: any): any;
-    find(Component: Function, opts?: {
+    find(Component: Function, options?: {
         key?: any;
+        parent?: Unit;
     }): Unit[];
     emit(type: string, ...args: any[]): void;
     timeout(callback: Function, duration?: number): UnitTimer;
@@ -208,7 +212,7 @@ declare const xsync: {
     };
     emitToServer(type: string, props?: Record<string, any>): void;
     emitToClients(type: string, props?: Record<string, any>, ids?: string[]): void;
-    boot(opts: BootOptions, ...args: any[]): Unit;
+    boot(options: BootOptions, ...args: any[]): Unit;
 };
 
 declare class AudioTrack {
@@ -499,32 +503,38 @@ interface PanelOptions {
     name?: string;
     open?: boolean;
     params?: Record<string, any>;
+    key?: any;
     nested?: boolean;
 }
 declare function Panel(unit: xnew.Unit, { name, open, params, nested }: PanelOptions): {
-    group({ name, open, params }: PanelOptions, inner: Function): Unit;
-    button({ name }?: {
+    group({ name, open, params, key }: PanelOptions, inner: Function): Unit;
+    button({ name, key }?: {
         name?: string;
+        key?: any;
     }): Unit;
-    listbox({ name, value, items }?: {
+    listbox({ name, value, items, key }?: {
         name?: string;
         value?: string;
         items?: string[];
+        key?: any;
     }): Unit;
-    range({ name, value, min, max, step }?: {
+    range({ name, value, min, max, step, key }?: {
         name?: string;
         value?: number;
         min?: number;
         max?: number;
         step?: number;
+        key?: any;
     }): Unit;
-    checkbox({ name, value }?: {
+    checkbox({ name, value, key }?: {
         name?: string;
         value?: boolean;
+        key?: any;
     }): Unit;
-    color({ name, value }?: {
+    color({ name, value, key }?: {
         name?: string;
         value?: string;
+        key?: any;
     }): Unit & {
         readonly value: string;
     };

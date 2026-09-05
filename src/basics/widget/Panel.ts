@@ -16,7 +16,7 @@ import { Overlay } from './Overlay';
 import { ColorPicker } from './ColorPicker';
 
 // nested is internal: group() marks its inner Panel so only the root creates the scroll container
-interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; nested?: boolean; }
+interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; key?: any; nested?: boolean; }
 
 export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
@@ -51,36 +51,37 @@ export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: P
     }
 
     return {
-        group({ name, open, params }: PanelOptions, inner: Function) {
+        // every row takes `key` so xnew.find can reach it later; it rides along to the inner control, so find by that control's component
+        group({ name, open, params, key }: PanelOptions, inner: Function) {
             return xnew((unit: xnew.Unit) => {
                 xnew.extend(Panel, { name, open, params: params ?? object, nested: true });
                 inner(unit);
-            });
+            }, { key });
         },
-        button({ name = '' }: { name?: string } = {}) {
-            return xnew(Button, { text: name, style: 'width: 100%;' });
+        button({ name = '', key }: { name?: string, key?: any } = {}) {
+            return xnew(Button, { text: name, key, style: 'width: 100%;' });
         },
-        listbox({ name = '', value, items = [] }: { name?: string, value?: string, items?: string[] } = {}) {
+        listbox({ name = '', value, items = [], key }: { name?: string, value?: string, items?: string[], key?: any } = {}) {
             object[name] = value ?? object[name] ?? items[0] ?? '';
-            const box = xnew(List, { name, value: object[name], items });
+            const box = xnew(List, { name, value: object[name], items, key });
             box.on('-change', ({ value }: { value: string }) => object[name] = value);
             return box;
         },
-        range({ name = '', value, min = 0, max = 100, step }: { name?: string, value?: number, min?: number, max?: number, step?: number } = {}) {
+        range({ name = '', value, min = 0, max = 100, step, key }: { name?: string, value?: number, min?: number, max?: number, step?: number, key?: any } = {}) {
             object[name] = value ?? object[name] ?? min;
-            const range = xnew(Range, { name, value: object[name], min, max, step });
+            const range = xnew(Range, { name, value: object[name], min, max, step, key });
             range.on('input', ({ value }: { value: number }) => object[name] = value);
             return range;
         },
-        checkbox({ name = '', value }: { name?: string, value?: boolean } = {}) {
+        checkbox({ name = '', value, key }: { name?: string, value?: boolean, key?: any } = {}) {
             object[name] = value ?? object[name] ?? false;
-            const checkbox = xnew(Checkbox, { name, value: object[name] });
+            const checkbox = xnew(Checkbox, { name, value: object[name], key });
             checkbox.on('input', ({ value }: { value: boolean }) => object[name] = value);
             return checkbox;
         },
-        color({ name = '', value }: { name?: string, value?: string } = {}) {
+        color({ name = '', value, key }: { name?: string, value?: string, key?: any } = {}) {
             object[name] = value ?? object[name] ?? '#ffffff';
-            const color = xnew(Color, { name, value: object[name] });
+            const color = xnew(Color, { name, value: object[name], key });
             color.on('-change', ({ value }: { value: string }) => object[name] = value);
             return color;
         },
@@ -109,7 +110,7 @@ function Checkbox(unit: xnew.Unit, { name = '', ...others }: { name?: string, [k
     xnew(InputCheckbox, { name, ...others, style: 'width: 1.25em; height: 1.25em;' });
 }
 
-function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: string, value?: string }) {
+function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: string, value?: string, key?: any }) {
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
 

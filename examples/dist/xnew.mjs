@@ -712,15 +712,20 @@ class Unit {
         }
         return boundary === undefined || ancestors.includes(boundary) === true || current === boundary;
     }
-    static find(Component, key) {
+    static find(Component, options = {}) {
         var _a;
         const current = Unit.currentUnit;
         const ancestors = Unit.ancestors(current);
         return [...((_a = Unit.component2units.get(Component)) !== null && _a !== void 0 ? _a : [])].filter((unit) => {
-            if (key !== undefined && unit._.key !== key) {
+            if (options.key !== undefined && unit._.key !== options.key) {
                 return false;
             }
-            return Unit.isVisible(unit._.parent, current, ancestors);
+            else if (options.parent !== undefined && Unit.ancestors(unit).includes(options.parent) === false) {
+                return false;
+            }
+            else {
+                return Unit.isVisible(unit._.parent, current, ancestors);
+            }
         });
     }
     on(type, listener, options) {
@@ -1090,8 +1095,8 @@ const xnew = Object.assign((function (...args) {
         const snapshot = Unit.snapshot(Unit.current);
         return (...args) => Unit.scope(snapshot, callback, ...args);
     },
-    find(Component, opts) {
-        return Unit.find(Component, opts === null || opts === void 0 ? void 0 : opts.key);
+    find(Component, options) {
+        return Unit.find(Component, options);
     },
     emit(type, ...args) {
         return Unit.emit(Unit.current, type, ...args);
@@ -1148,8 +1153,8 @@ function dispatch(info, type, id, data = {}, syncId) {
         (_a = unit._.listeners.get(type)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
     });
 }
-function bootServer(opts, args) {
-    const { io, room } = opts;
+function bootServer(options, args) {
+    const { io, room } = options;
     const info = { io, room, clients: [] };
     const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
     let nextId = 1;
@@ -1216,9 +1221,9 @@ function bootServer(opts, args) {
     root.on('finalize', () => io.off('connection', connection));
     return root;
 }
-function bootClient(opts, args) {
+function bootClient(options, args) {
     var _a;
-    const { io, room, client } = opts;
+    const { io, room, client } = options;
     const socket = io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true });
     const info = { socket, room, clients: [] };
     const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
@@ -1330,8 +1335,8 @@ const xsync = {
         const envelope = { type, syncId: syncData(Unit.current).id, id: undefined, data: props };
         ((ids === null || ids === void 0 ? void 0 : ids.length) ? ids : [room.id]).forEach((target) => io.to(target).emit('emitToClients', envelope));
     },
-    boot(opts, ...args) {
-        return getEnvironment() === 'server' ? bootServer(opts, args) : bootClient(opts, args);
+    boot(options, ...args) {
+        return getEnvironment() === 'server' ? bootServer(options, args) : bootClient(options, args);
     },
 };
 
@@ -3201,40 +3206,40 @@ function Panel(unit, { name, open, params, nested = false }) {
         xnew.extend(Accordion, { gate });
     }
     return {
-        group({ name, open, params }, inner) {
+        group({ name, open, params, key }, inner) {
             return xnew((unit) => {
                 xnew.extend(Panel, { name, open, params: params !== null && params !== void 0 ? params : object, nested: true });
                 inner(unit);
-            });
+            }, { key });
         },
-        button({ name = '' } = {}) {
-            return xnew(Button, { text: name, style: 'width: 100%;' });
+        button({ name = '', key } = {}) {
+            return xnew(Button, { text: name, key, style: 'width: 100%;' });
         },
-        listbox({ name = '', value, items = [] } = {}) {
+        listbox({ name = '', value, items = [], key } = {}) {
             var _a, _b;
             object[name] = (_b = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : items[0]) !== null && _b !== void 0 ? _b : '';
-            const box = xnew(List, { name, value: object[name], items });
+            const box = xnew(List, { name, value: object[name], items, key });
             box.on('-change', ({ value }) => object[name] = value);
             return box;
         },
-        range({ name = '', value, min = 0, max = 100, step } = {}) {
+        range({ name = '', value, min = 0, max = 100, step, key } = {}) {
             var _a;
             object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : min;
-            const range = xnew(Range, { name, value: object[name], min, max, step });
+            const range = xnew(Range, { name, value: object[name], min, max, step, key });
             range.on('input', ({ value }) => object[name] = value);
             return range;
         },
-        checkbox({ name = '', value } = {}) {
+        checkbox({ name = '', value, key } = {}) {
             var _a;
             object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : false;
-            const checkbox = xnew(Checkbox, { name, value: object[name] });
+            const checkbox = xnew(Checkbox, { name, value: object[name], key });
             checkbox.on('input', ({ value }) => object[name] = value);
             return checkbox;
         },
-        color({ name = '', value } = {}) {
+        color({ name = '', value, key } = {}) {
             var _a;
             object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : '#ffffff';
-            const color = xnew(Color, { name, value: object[name] });
+            const color = xnew(Color, { name, value: object[name], key });
             color.on('-change', ({ value }) => object[name] = value);
             return color;
         },

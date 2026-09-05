@@ -1,6 +1,10 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
 import { Panel } from '../../../src/basics/widget/Panel';
+import { Button } from '../../../src/basics/element/Button';
+import { InputRange } from '../../../src/basics/element/InputRange';
+import { InputCheckbox } from '../../../src/basics/element/InputCheckbox';
+import { Listbox } from '../../../src/basics/element/Listbox';
 
 describe('basics Panel', () => {
     beforeEach(() => {
@@ -34,6 +38,30 @@ describe('basics Panel', () => {
             expect(host.textContent).not.toContain('GUI');
             expect(panel.gate).toBe(undefined);
             expect(host.querySelector('button')).not.toBe(null);
+        });
+    });
+
+    describe('key', () => {
+        test('a row key reaches its control, so xnew.find locates the row by that component', () => {
+            const { panel } = newPanel();
+            panel.button({ name: 'go', key: 'go-button' });
+            panel.range({ name: 'data', key: 'data-range' });
+            panel.checkbox({ name: 'flag', key: 'flag-box' });
+            panel.listbox({ name: 'color', items: ['red', 'blue'], key: 'color-list' });
+
+            expect(xnew.find(Button, { key: 'go-button' }).length).toBe(1);
+            expect(xnew.find(InputRange, { key: 'data-range' }).length).toBe(1);
+            expect(xnew.find(InputCheckbox, { key: 'flag-box' }).length).toBe(1);
+            expect(xnew.find(Listbox, { key: 'color-list' }).length).toBe(1);
+        });
+
+        test('a group key finds the group unit itself, since a group is a nested Panel', () => {
+            const { panel } = newPanel();
+            const group = panel.group({ name: 'settings', open: true, key: 'settings-group' }, (group: any) => {
+                group.button({ name: 'one', key: 'inner-button' });
+            });
+            expect(xnew.find(Panel, { key: 'settings-group' })[0]).toBe(group);
+            expect(xnew.find(Button, { key: 'inner-button', parent: group }).length).toBe(1);
         });
     });
 
