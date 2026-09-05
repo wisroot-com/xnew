@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full min-h-screen bg-gray-50">
+  <div id="main" class="p-4"></div>
+  <script type="module">
+    import { xnew, xbasics } from '@mulsense/xnew';
+
+    xnew(document.querySelector('#main'), () => {
+      xnew.nest('<div class="flex flex-wrap items-start gap-6">');
+
+      xnew(SynthPanel);
+      xnew(SharedPanel);
+    });
+
+    // panel.tabs takes the tab names; one group per tab carries the matching key
+    function SynthPanel(unit) {
+      xnew.nest('<div class="w-56 text-sm border rounded-lg overflow-hidden shadow-lg bg-gray-100 text-green-900">');
+
+      const panel = xnew(xbasics.Panel, { name: 'synth', open: true });
+      panel.tabs.items = ['oscillator', 'filter', 'amp'];
+
+      panel.group({ key: 'oscillator' }, (tab) => {
+        tab.listbox({ name: 'wave', items: ['sine', 'square', 'saw'] });
+        tab.range({ name: 'detune', value: 12, min: 0, max: 100 });
+      });
+
+      panel.group({ key: 'filter' }, (tab) => {
+        tab.range({ name: 'cutoff', value: 60, min: 0, max: 100 });
+        tab.range({ name: 'Q', value: 30, min: 0, max: 100 });
+        tab.checkbox({ name: 'enabled', value: true });
+      });
+
+      panel.group({ key: 'amp' }, (tab) => {
+        tab.range({ name: 'attack', value: 10, min: 0, max: 100 });
+        // a tab body is a panel, so it nests groups like any other
+        tab.group({ name: 'release', open: true }, (group) => {
+          group.range({ name: 'time', value: 40, min: 0, max: 100 });
+          group.checkbox({ name: 'hold' });
+        });
+      });
+    }
+
+    // rows placed outside a keyed group are not part of the tab system, so they stay on every tab
+    function SharedPanel(unit) {
+      xnew.nest('<div class="w-56 text-sm border rounded-lg overflow-hidden shadow-lg bg-gray-100 text-green-900">');
+
+      const panel = xnew(xbasics.Panel);
+      panel.tabs.items = ['left', 'right'];
+
+      panel.checkbox({ name: 'shared' });
+      panel.separator();
+
+      panel.group({ key: 'left' }, (tab) => {
+        tab.button({ name: 'only on left' });
+      });
+      panel.group({ key: 'right' }, (tab) => {
+        tab.button({ name: 'only on right' });
+        tab.color({ name: 'tint', value: '#4a90e2' });
+      });
+    }
+  </script>
+</body>
+
+</html>

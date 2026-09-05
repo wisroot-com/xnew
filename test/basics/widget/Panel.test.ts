@@ -41,6 +41,60 @@ describe('basics Panel', () => {
         });
     });
 
+    describe('tabs', () => {
+        function tabButton(host: HTMLElement, name: string): HTMLElement {
+            return [...host.querySelectorAll('button')].find((button) => button.textContent === name) as HTMLElement;
+        }
+
+        test('shows the group keyed with the active tab and hides the groups keyed for the others', () => {
+            const { host, panel } = newPanel();
+            panel.tabs.items = ['left', 'right'];
+            const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
+            const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
+            jest.advanceTimersByTime(1);
+
+            expect((left.container as HTMLElement).style.display).not.toBe('none');
+            expect((right.container as HTMLElement).style.display).toBe('none');
+
+            tabButton(host, 'right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect((left.container as HTMLElement).style.display).toBe('none');
+            expect((right.container as HTMLElement).style.display).not.toBe('none');
+        });
+
+        test('leaves plain rows alone, even ones keyed with a tab name', () => {
+            const { host, panel } = newPanel();
+            panel.tabs.items = ['left', 'right'];
+            const row = panel.range({ name: 'a', key: 'right' });
+            const shared = panel.checkbox({ name: 'shared' });
+            jest.advanceTimersByTime(1);
+
+            expect((row.container as HTMLElement).style.display).toBe('flex');
+            tabButton(host, 'right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect((row.container as HTMLElement).style.display).toBe('flex');
+            expect((shared.container as HTMLElement).style.display).toBe('flex');
+        });
+
+        test('a collapsible group switches as a whole, header included', () => {
+            const { host, panel } = newPanel();
+            panel.tabs.items = ['left', 'right'];
+            const group = panel.group({ name: 'folder', open: true, key: 'right' }, (group: any) => {
+                group.button({ name: 'inside' });
+            });
+            jest.advanceTimersByTime(1);
+
+            expect((group.container as HTMLElement).style.display).toBe('none');
+            tabButton(host, 'right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect((group.container as HTMLElement).textContent).toContain('folder');
+            expect((group.container as HTMLElement).style.display).not.toBe('none');
+        });
+
+        test('tabs.items reads back the names it was given', () => {
+            const { panel } = newPanel();
+            panel.tabs.items = ['left', 'right'];
+            expect(panel.tabs.items).toEqual(['left', 'right']);
+        });
+    });
+
     describe('key', () => {
         test('a row key reaches its control, so xnew.find locates the row by that component', () => {
             const { panel } = newPanel();

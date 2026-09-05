@@ -507,6 +507,9 @@ interface PanelOptions {
     nested?: boolean;
 }
 declare function Panel(unit: xnew.Unit, { name, open, params, nested }: PanelOptions): {
+    readonly tabs: Unit & {
+        items: string[];
+    };
     group({ name, open, params, key }: PanelOptions, inner: Function): Unit;
     button({ name, key }?: {
         name?: string;

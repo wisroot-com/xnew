@@ -31,12 +31,13 @@ export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: P
         xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
 
+    // every panel wraps its own rows, so `container` is the handle a tab uses to show / hide it as a whole
+    xnew.nest('<div>');
+
     // an `open` value (true / false) makes the panel collapsible; leaving it undefined keeps the rows always shown
     if (open !== undefined) {
         const gate = xnew(Gate, { open, duration: 200 });
 
-        // header and accordion are siblings, so they share one wrapper: the unit's container, hidden as a whole
-        xnew.nest('<div>');
         if (name) {
             xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header: xnew.Unit) => {
                 header.on('click', () => gate.toggle());
@@ -50,7 +51,13 @@ export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: P
         xnew.extend(Accordion, { gate });
     }
 
+    // created up front so the strip stays at the top of the panel however late its items are set
+    const tabs = xnew(Tabs, { panel: unit });
+
     return {
+        get tabs() {
+            return tabs;
+        },
         // every row takes `key` so xnew.find can reach it later; it rides along to the inner control, so find by that control's component
         group({ name, open, params, key }: PanelOptions, inner: Function) {
             return xnew((unit: xnew.Unit) => {
@@ -89,6 +96,61 @@ export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: P
             xnew(Separator);
         }
     }
+}
+
+// underline strip pinned to the top of a panel; it stays empty and invisible until items are set
+function Tabs(unit: xnew.Unit, { panel }: { panel: xnew.Unit }) {
+    const strip = xnew.nest('<div style="display: none; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-bottom: 0.25em;">');
+
+    let names: string[] = [];
+    let buttons: xnew.Unit[] = [];
+    let active = '';
+
+    // only nested panels switch: the active tab shows the group keyed with its name and hides the groups keyed for the others
+    function apply() {
+        names.forEach((name: string) => {
+            xnew.find(Panel, { key: name, parent: panel }).forEach((group: xnew.Unit) => {
+                if (group.container !== null) {
+                    group.container.style.display = name === active ? '' : 'none';
+                }
+            });
+        });
+    }
+
+    function paint() {
+        buttons.forEach((button: xnew.Unit, index: number) => {
+            const on = names[index] === active;
+            button.element.style.borderBottomColor = on ? 'currentColor' : 'transparent';
+            button.element.style.fontWeight = on ? '600' : '400';
+            button.element.style.opacity = on ? '1' : '0.55';
+        });
+    }
+
+    return {
+        get items() {
+            return names;
+        },
+        // the groups a tab switches are created after this setter runs, so the first pass waits a tick
+        set items(items: string[]) {
+            buttons.forEach((button: xnew.Unit) => button.finalize());
+            names = items;
+            active = items[0] ?? '';
+            strip.style.display = items.length > 0 ? 'flex' : 'none';
+
+            buttons = items.map((name: string) => {
+                const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', name);
+                button.on('click', () => {
+                    active = name;
+                    paint();
+                    apply();
+                    xnew.emit('-change', { value: name });
+                });
+                return button;
+            });
+            paint();
+            xnew.timeout(() => apply(), 0);
+        },
+    };
 }
 
 function Separator(unit: xnew.Unit) {

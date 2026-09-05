@@ -3190,9 +3190,9 @@ function Panel(unit, { name, open, params, nested = false }) {
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
         xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
+    xnew.nest('<div>');
     if (open !== undefined) {
         const gate = xnew(Gate, { open, duration: 200 });
-        xnew.nest('<div>');
         if (name) {
             xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header) => {
                 header.on('click', () => gate.toggle());
@@ -3205,7 +3205,11 @@ function Panel(unit, { name, open, params, nested = false }) {
         }
         xnew.extend(Accordion, { gate });
     }
+    const tabs = xnew(Tabs, { panel: unit });
     return {
+        get tabs() {
+            return tabs;
+        },
         group({ name, open, params, key }, inner) {
             return xnew((unit) => {
                 xnew.extend(Panel, { name, open, params: params !== null && params !== void 0 ? params : object, nested: true });
@@ -3246,6 +3250,53 @@ function Panel(unit, { name, open, params, nested = false }) {
         separator() {
             xnew(Separator);
         }
+    };
+}
+function Tabs(unit, { panel }) {
+    const strip = xnew.nest('<div style="display: none; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-bottom: 0.25em;">');
+    let names = [];
+    let buttons = [];
+    let active = '';
+    function apply() {
+        names.forEach((name) => {
+            xnew.find(Panel, { key: name, parent: panel }).forEach((group) => {
+                if (group.container !== null) {
+                    group.container.style.display = name === active ? '' : 'none';
+                }
+            });
+        });
+    }
+    function paint() {
+        buttons.forEach((button, index) => {
+            const on = names[index] === active;
+            button.element.style.borderBottomColor = on ? 'currentColor' : 'transparent';
+            button.element.style.fontWeight = on ? '600' : '400';
+            button.element.style.opacity = on ? '1' : '0.55';
+        });
+    }
+    return {
+        get items() {
+            return names;
+        },
+        set items(items) {
+            var _a;
+            buttons.forEach((button) => button.finalize());
+            names = items;
+            active = (_a = items[0]) !== null && _a !== void 0 ? _a : '';
+            strip.style.display = items.length > 0 ? 'flex' : 'none';
+            buttons = items.map((name) => {
+                const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', name);
+                button.on('click', () => {
+                    active = name;
+                    paint();
+                    apply();
+                    xnew.emit('-change', { value: name });
+                });
+                return button;
+            });
+            paint();
+            xnew.timeout(() => apply(), 0);
+        },
     };
 }
 function Separator(unit) {
