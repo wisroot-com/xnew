@@ -43,18 +43,25 @@ describe('Unit element hosting', () => {
     });
 
     describe('container', () => {
-        it('returns the element the unit was created on when it never nests', () => {
+        it('returns null when the unit nests nothing and borrows the parent element', () => {
             let unit!: Unit;
             xnew('<div id="host">', () => { unit = xnew(); });
-            expect(unit.container).toBe(document.getElementById('host'));
-            expect(unit.container).toBe(unit.element);
+            expect(unit.container).toBe(null);
+            expect(unit.element).toBe(document.getElementById('host'));
+        });
+
+        it('returns null when the unit nests nothing under an element given as the target', () => {
+            const el = document.createElement('div');
+            document.body.appendChild(el);
+            const unit = xnew(el);
+            expect(unit.container).toBe(null);
+            el.remove();
         });
 
         it('returns the first nested element, not the innermost one', () => {
-            let unit!: Unit;
             let outer!: HTMLElement | SVGElement;
             let inner!: HTMLElement | SVGElement;
-            unit = xnew((u: Unit) => {
+            const unit = xnew(() => {
                 outer = xnew.nest('<div id="outer">');
                 inner = xnew.nest('<div id="inner">');
             });
@@ -62,20 +69,11 @@ describe('Unit element hosting', () => {
             expect(unit.element).toBe(inner);
         });
 
-        it('returns a nested element over the element given as the target', () => {
+        it('returns the nested element when the unit also has an element target', () => {
             const el = document.createElement('div');
             document.body.appendChild(el);
-            let unit!: Unit;
-            unit = xnew(el, () => { xnew.nest('<div id="nested-over-target">'); });
+            const unit = xnew(el, () => { xnew.nest('<div id="nested-over-target">'); });
             expect(unit.container).toBe(document.getElementById('nested-over-target'));
-            el.remove();
-        });
-
-        it('returns the target element itself when the unit never nests', () => {
-            const el = document.createElement('div');
-            document.body.appendChild(el);
-            const unit = xnew(el);
-            expect(unit.container).toBe(el);
             el.remove();
         });
 

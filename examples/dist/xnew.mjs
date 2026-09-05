@@ -494,7 +494,6 @@ class Unit {
             phase: 'invoked',
             protected: false,
             standalone: true,
-            baseElement,
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
@@ -514,7 +513,7 @@ class Unit {
     static initialize(unit, ...args) {
         var _a;
         if (isDomElement(args[0])) {
-            unit._.baseElement = unit._.currentElement = args.shift();
+            unit._.currentElement = args.shift();
         }
         else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
             Unit.nest(unit, args.shift());
@@ -552,7 +551,7 @@ class Unit {
     }
     get container() {
         var _a;
-        return (_a = this._.nestElements[0]) !== null && _a !== void 0 ? _a : this._.baseElement;
+        return (_a = this._.nestElements[0]) !== null && _a !== void 0 ? _a : null;
     }
     finalize() {
         var _a;
