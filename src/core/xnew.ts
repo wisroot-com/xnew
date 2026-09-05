@@ -63,8 +63,8 @@ export const xnew = Object.assign(
         },
 
         // Returns the nearest unit associated with the given component in the ancestor context chain.
-        context(key: any): any {
-            return Unit.getContext(Unit.current, key);
+        context(Component: Function): any {
+            return Unit.getContext(Unit.current, Component);
         },
             
         // Registers a promise to the current unit (optional string key first). Accepts an executor (resolve, reject), a raw Promise, or a Unit — a Unit aggregates its keyed results without consuming its pool.

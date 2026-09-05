@@ -570,9 +570,9 @@ class Unit {
             contexts === null || contexts === void 0 ? void 0 : contexts.forEach((context) => {
                 let temp = context.previous;
                 while (temp !== null) {
-                    if (contexts.has(temp) === false && temp.key !== undefined) {
+                    if (contexts.has(temp) === false && temp.Component !== undefined) {
                         context.previous = temp;
-                        context.key = undefined;
+                        context.Component = undefined;
                         context.value = undefined;
                         break;
                     }
@@ -683,15 +683,15 @@ class Unit {
     static snapshot(unit) {
         return { unit, context: unit._.currentContext, element: unit._.currentElement, Component: unit._.currentComponent };
     }
-    static addContext(unit, orner, key, value) {
-        unit._.currentContext = { previous: unit._.currentContext, key, value };
+    static addContext(unit, orner, Component, value) {
+        unit._.currentContext = { previous: unit._.currentContext, Component, value };
         Unit.unit2Contexts.add(orner, unit._.currentContext);
     }
-    static getContext(unit, key) {
+    static getContext(unit, Component) {
         for (let context = unit._.currentContext; context.previous !== null; context = context.previous) {
-            if (context.value === Unit.currentUnit && key === unit._.currentComponent)
+            if (context.value === Unit.currentUnit && Component === unit._.currentComponent)
                 continue;
-            if (key === context.key)
+            if (Component === context.Component)
                 return context.value;
         }
     }
@@ -1068,8 +1068,8 @@ const xnew = Object.assign((function (...args) {
         const defs = typeof layerOrDefs === 'string' ? maybeDefs : layerOrDefs;
         return applyCss(Unit.current, layer, defs);
     }),
-    context(key) {
-        return Unit.getContext(Unit.current, key);
+    context(Component) {
+        return Unit.getContext(Unit.current, Component);
     },
     promise: (function (keyOrPromise, maybePromise) {
         const key = typeof keyOrPromise === 'string' ? keyOrPromise : undefined;

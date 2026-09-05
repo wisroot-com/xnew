@@ -12,7 +12,7 @@ import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, cre
 // definitions
 //----------------------------------------------------------------------------------------------------
 
-interface Context { previous: Context | null; key?: any; value?: any; }
+interface Context { previous: Context | null; Component?: Function; value?: any; }
 
 interface Snapshot { unit: Unit; context: Context; element: DomElement; Component: Function | null; }
 
@@ -179,9 +179,9 @@ export class Unit {
             contexts?.forEach((context: Context) => {
                 let temp = context.previous;
                 while(temp !== null) {
-                    if (contexts.has(temp) === false && temp.key !== undefined) {
+                    if (contexts.has(temp) === false && temp.Component !== undefined) {
                         context.previous = temp;
-                        context.key = undefined;
+                        context.Component = undefined;
                         context.value = undefined;
                         break;
                     }
@@ -311,15 +311,15 @@ export class Unit {
 
     static unit2Contexts: MapSet<Unit, Context> = new MapSet();
 
-    static addContext(unit: Unit, orner: Unit, key: any, value?: any): void {
-        unit._.currentContext = { previous: unit._.currentContext, key, value };
+    static addContext(unit: Unit, orner: Unit, Component: Function, value?: any): void {
+        unit._.currentContext = { previous: unit._.currentContext, Component, value };
         Unit.unit2Contexts.add(orner, unit._.currentContext);
     }
 
-    static getContext(unit: Unit, key: any): any {
+    static getContext(unit: Unit, Component: Function): any {
         for (let context = unit._.currentContext; context.previous !== null; context = context.previous) {
-            if (context.value === Unit.currentUnit && key === unit._.currentComponent) continue;
-            if (key === context.key) return context.value;
+            if (context.value === Unit.currentUnit && Component === unit._.currentComponent) continue;
+            if (Component === context.Component) return context.value;
         }
     }
 

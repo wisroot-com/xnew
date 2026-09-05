@@ -35,7 +35,7 @@ declare class EventBinder {
 
 interface Context {
     previous: Context | null;
-    key?: any;
+    Component?: Function;
     value?: any;
 }
 interface Snapshot {
@@ -100,8 +100,8 @@ declare class Unit {
     static scope(snapshot: Snapshot, func: Function, ...args: any[]): any;
     static snapshot(unit: Unit): Snapshot;
     static unit2Contexts: MapSet<Unit, Context>;
-    static addContext(unit: Unit, orner: Unit, key: any, value?: any): void;
-    static getContext(unit: Unit, key: any): any;
+    static addContext(unit: Unit, orner: Unit, Component: Function, value?: any): void;
+    static getContext(unit: Unit, Component: Function): any;
     static component2units: MapSet<Function, Unit>;
     static ancestors(unit: Unit | null): Unit[];
     static isVisible(from: Unit | null, current: Unit | null, ancestors: Unit[]): boolean;
@@ -163,7 +163,7 @@ declare const xnew: XnewBase & {
         <T extends Record<string, CssDef>>(defs: T): Record<keyof T, string>;
         <T extends Record<string, CssDef>>(layer: string, defs: T): Record<keyof T, string>;
     };
-    context(key: any): any;
+    context(Component: Function): any;
     promise: {
         (promise: Function | Promise<any> | Unit): UnitPromise;
         (key: string, promise: Function | Promise<any> | Unit): UnitPromise;
