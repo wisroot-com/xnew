@@ -304,11 +304,11 @@
       if (tab === 'oscillator') {
         xnew(WaveSelect, { target: state.oscillator });
         const panel = xnew(xbasics.Panel);
-        toggleFolder(panel, 'pitch envelope', state.pitch, (sub) => {
+        toggleGroup(panel, 'pitch envelope', state.pitch, (sub) => {
           sub.range({ name: 'amount', min: -24, max: 24, step: 1 }).on('input', emitParams);
           envelopeRows(sub);
         });
-        toggleFolder(panel, 'LFO', state.lfo, (sub) => {
+        toggleGroup(panel, 'LFO', state.lfo, (sub) => {
           xnew(WaveSelect, { target: state.lfo });
           sub.range({ name: 'amount', min: 0, max: 12, step: 0.5 }).on('input', emitParams);
           sub.range({ name: 'rate', min: 1, max: 20, step: 1 }).on('input', emitParams);
@@ -333,11 +333,11 @@
       }
     }
 
-    // named folder with an 'enabled' checkbox that opens / closes its parameter rows
-    function toggleFolder(panel, name, params, inner) {
-      panel.folder({ name, params, open: params.enabled }, (folder) => {
-        const enabled = folder.checkbox({ name: 'enabled' });
-        const sub = folder.folder({ open: params.enabled }, inner);
+    // named group with an 'enabled' checkbox that opens / closes its parameter rows
+    function toggleGroup(panel, name, params, inner) {
+      panel.group({ name, params, open: params.enabled }, (group) => {
+        const enabled = group.checkbox({ name: 'enabled' });
+        const sub = group.group({ open: params.enabled }, inner);
         enabled.on('input', ({ value }) => {
           value ? sub.gate.open() : sub.gate.close();
           emitParams();
@@ -345,10 +345,10 @@
       });
     }
 
-    // an 'enabled' checkbox and its parameter rows filling the whole tab (no folder header)
+    // an 'enabled' checkbox and its parameter rows filling the whole tab (no group header)
     function toggleSection(panel, params, inner) {
       const enabled = panel.checkbox({ name: 'enabled' });
-      const sub = panel.folder({ open: params.enabled, params }, inner);
+      const sub = panel.group({ open: params.enabled, params }, inner);
       enabled.on('input', ({ value }) => {
         value ? sub.gate.open() : sub.gate.close();
         emitParams();

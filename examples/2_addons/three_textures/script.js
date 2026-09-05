@@ -226,7 +226,7 @@ function buildMaterial(state, bags) {
 }
 
 //----------------------------------------------------------------------------------------------------
-// panel — persistent texture listbox on top; below it, one folder rebuilt from the uniform schema
+// panel — persistent texture listbox on top; below it, one group rebuilt from the uniform schema
 //----------------------------------------------------------------------------------------------------
 
 function ControlPanel(unit, { state, bags }) {
@@ -255,17 +255,17 @@ function ControlPanel(unit, { state, bags }) {
   });
   panel.separator();
 
-  let folder = buildFolder(panel, state, bags);
+  let group = buildGroup(panel, state, bags);
   unit.on('+texture', () => {
-    folder.finalize();
-    folder = buildFolder(panel, state, bags);
+    group.finalize();
+    group = buildGroup(panel, state, bags);
   });
 }
 
-function buildFolder(panel, state, bags) {
+function buildGroup(panel, state, bags) {
   const texture = TEXTURES[state.texture];
   const params = bags[state.texture];
-  return panel.folder({ name: state.texture, open: true, params }, (f) => {
+  return panel.group({ name: state.texture, open: true, params }, (f) => {
     for (const [name, value] of Object.entries(params)) {
       if (typeof value === 'string') {
         f.color({ name, value });

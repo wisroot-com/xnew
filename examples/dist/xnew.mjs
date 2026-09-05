@@ -3174,6 +3174,7 @@ const xicons = icons;
 
 function Panel(unit, { params, nested = false }) {
     const object = params !== null && params !== void 0 ? params : {};
+    const groups = new Map();
     if (nested === false) {
         const css = xnew.css({
             scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
@@ -3182,12 +3183,34 @@ function Panel(unit, { params, nested = false }) {
         xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
     return {
-        folder({ name, open, params }, inner) {
-            return xnew((unit) => {
-                xnew.extend(Folder, { name, open });
-                xnew.extend(Panel, { params: params !== null && params !== void 0 ? params : object, nested: true });
-                inner(unit);
-            });
+        group(...args) {
+            var _a;
+            const key = typeof args[0] === 'string' ? args[0] : null;
+            const rest = key !== null ? args.slice(1) : args;
+            const found = key !== null ? (_a = groups.get(key)) !== null && _a !== void 0 ? _a : null : null;
+            if (key !== null && rest.length === 0) {
+                return found;
+            }
+            else {
+                const { name, open, params: groupParams } = typeof rest[0] === 'object' ? rest[0] : {};
+                const inner = typeof rest[rest.length - 1] === 'function' ? rest[rest.length - 1] : null;
+                let group = found;
+                if (group === null) {
+                    group = xnew(() => {
+                        var _a;
+                        xnew.extend(Folder, { name: (_a = name !== null && name !== void 0 ? name : key) !== null && _a !== void 0 ? _a : undefined, open });
+                        xnew.extend(Panel, { params: groupParams !== null && groupParams !== void 0 ? groupParams : object, nested: true });
+                    });
+                    if (key !== null) {
+                        groups.set(key, group);
+                        group.on('finalize', () => groups.delete(key));
+                    }
+                }
+                if (inner !== null) {
+                    xnew(group, () => { inner(group); });
+                }
+                return group;
+            }
         },
         button({ name = '' } = {}) {
             return xnew(Button, { text: name, style: 'width: 100%;' });

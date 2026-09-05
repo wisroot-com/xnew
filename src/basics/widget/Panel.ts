@@ -15,11 +15,14 @@ import { Gate } from './Gate';
 import { Overlay } from './Overlay';
 import { ColorPicker } from './ColorPicker';
 
-// nested is internal: folder() marks its inner Panel so only the root creates the scroll container
+// nested is internal: group() marks its inner Panel so only the root creates the scroll container
 interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; nested?: boolean; }
 
 export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
+
+    // named groups are remembered so a later group(key, ...) call adds into the same unit instead of creating another one
+    const groups = new Map<string, xnew.Unit>();
 
     if (nested === false) {
         // own scrollport inheriting the host's max-height; the vertical padding sits outside it so the scrollbar clears the host's rounded corners
@@ -32,12 +35,35 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
     }
 
     return {
-        folder({ name, open, params }: PanelOptions, inner: Function) {
-            return xnew((unit: xnew.Unit) => {
-                xnew.extend(Folder, { name, open });
-                xnew.extend(Panel, { params: params ?? object, nested: true });
-                inner(unit);
-            });
+        // (key?, options?, inner?) — a lone key just looks up a named group; the key doubles as the header label when options.name is omitted
+        group(...args: any[]): xnew.Unit | null {
+            const key: string | null = typeof args[0] === 'string' ? args[0] : null;
+            const rest = key !== null ? args.slice(1) : args;
+            const found = key !== null ? groups.get(key) ?? null : null;
+
+            if (key !== null && rest.length === 0) {
+                return found;
+            } else {
+                const { name, open, params: groupParams }: PanelOptions = typeof rest[0] === 'object' ? rest[0] : {};
+                const inner: Function | null = typeof rest[rest.length - 1] === 'function' ? rest[rest.length - 1] : null;
+                let group = found;
+
+                if (group === null) {
+                    group = xnew(() => {
+                        xnew.extend(Folder, { name: name ?? key ?? undefined, open });
+                        xnew.extend(Panel, { params: groupParams ?? object, nested: true });
+                    });
+                    if (key !== null) {
+                        groups.set(key, group);
+                        group.on('finalize', () => groups.delete(key));
+                    }
+                }
+                if (inner !== null) {
+                    // building through the group as parent, so a later call lands exactly where an inline one would
+                    xnew(group, () => { inner(group); });
+                }
+                return group;
+            }
         },
         button({ name = '' }: { name?: string } = {}) {
             return xnew(Button, { text: name, style: 'width: 100%;' });

@@ -91,10 +91,10 @@
       const panel = xnew(xbasics.Panel, { params });
 
       // rows write through to params; '+screen' then asks the current scene to rebuild
-      panel.folder({ name: 'screen', open: true }, (folder) => {
-        folder.listbox({ name: 'type', items: ['normal', 'fit', 'contain', 'cover'] }).on('-change', () => xnew.emit('+screen'));
-        folder.listbox({ name: 'resolution', items: ['400 x 300', '160 x 120', '600 x 240'] }).on('-change', () => xnew.emit('+screen'));
-        folder.checkbox({ name: 'pixelated' }).on('input', () => xnew.emit('+screen'));
+      panel.group('screen', { open: true }, (group) => {
+        group.listbox({ name: 'type', items: ['normal', 'fit', 'contain', 'cover'] }).on('-change', () => xnew.emit('+screen'));
+        group.listbox({ name: 'resolution', items: ['400 x 300', '160 x 120', '600 x 240'] }).on('-change', () => xnew.emit('+screen'));
+        group.checkbox({ name: 'pixelated' }).on('input', () => xnew.emit('+screen'));
       });
     }
   </script>
