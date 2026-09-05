@@ -50,7 +50,7 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
 
                 if (group === null) {
                     group = xnew(() => {
-                        xnew.extend(Folder, { name: name ?? key ?? undefined, open });
+                        xnew.extend(Group, { name: name ?? key ?? undefined, open });
                         xnew.extend(Panel, { params: groupParams ?? object, nested: true });
                     });
                     if (key !== null) {
@@ -98,11 +98,11 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
     }
 }
 
-function Folder(unit: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
+function Group(unit: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
     const gate = xnew(Gate, { open, duration: 200 });
 
-    // header and accordion are siblings, so they share one wrapper for `visible` to hide as a whole
-    const container = xnew.nest('<div>');
+    // header and accordion are siblings, so they share one wrapper: the unit's container, hidden as a whole
+    xnew.nest('<div>');
     if (name) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header: xnew.Unit) => {
             header.on('click', () => gate.toggle());
@@ -114,15 +114,6 @@ function Folder(unit: xnew.Unit, { name, open = false }: { name?: string, open?:
         });
     }
     xnew.extend(Accordion, { gate });
-
-    return {
-        get visible() {
-            return container.style.display !== 'none';
-        },
-        set visible(value: boolean) {
-            container.style.display = value === true ? '' : 'none';
-        },
-    };
 }
 
 function Separator(unit: xnew.Unit) {

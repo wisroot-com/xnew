@@ -494,6 +494,7 @@ class Unit {
             phase: 'invoked',
             protected: false,
             standalone: true,
+            baseElement,
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
@@ -513,7 +514,7 @@ class Unit {
     static initialize(unit, ...args) {
         var _a;
         if (isDomElement(args[0])) {
-            unit._.currentElement = args.shift();
+            unit._.baseElement = unit._.currentElement = args.shift();
         }
         else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
             Unit.nest(unit, args.shift());
@@ -548,6 +549,10 @@ class Unit {
     }
     get element() {
         return this._.currentElement;
+    }
+    get container() {
+        var _a;
+        return (_a = this._.nestElements[0]) !== null && _a !== void 0 ? _a : this._.baseElement;
     }
     finalize() {
         var _a;
@@ -3198,7 +3203,7 @@ function Panel(unit, { params, nested = false }) {
                 if (group === null) {
                     group = xnew(() => {
                         var _a;
-                        xnew.extend(Folder, { name: (_a = name !== null && name !== void 0 ? name : key) !== null && _a !== void 0 ? _a : undefined, open });
+                        xnew.extend(Group, { name: (_a = name !== null && name !== void 0 ? name : key) !== null && _a !== void 0 ? _a : undefined, open });
                         xnew.extend(Panel, { params: groupParams !== null && groupParams !== void 0 ? groupParams : object, nested: true });
                     });
                     if (key !== null) {
@@ -3248,9 +3253,9 @@ function Panel(unit, { params, nested = false }) {
         }
     };
 }
-function Folder(unit, { name, open = false }) {
+function Group(unit, { name, open = false }) {
     const gate = xnew(Gate, { open, duration: 200 });
-    const container = xnew.nest('<div>');
+    xnew.nest('<div>');
     if (name) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header) => {
             header.on('click', () => gate.toggle());
@@ -3262,14 +3267,6 @@ function Folder(unit, { name, open = false }) {
         });
     }
     xnew.extend(Accordion, { gate });
-    return {
-        get visible() {
-            return container.style.display !== 'none';
-        },
-        set visible(value) {
-            container.style.display = value === true ? '' : 'none';
-        },
-    };
 }
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);

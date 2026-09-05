@@ -50,6 +50,7 @@ export class Unit {
         defines: Record<string, any>;
         systems: Record<'update' | 'finalize', { listener: Function, execute: Function, count: number, owner: Unit }[]>;
 
+        baseElement: DomElement;    // the element the unit was created on, before any nest
         currentElement: DomElement;
         currentContext: Context;
         currentComponent: Function | null;
@@ -86,6 +87,7 @@ export class Unit {
             phase: 'invoked',
             protected: false,
             standalone: true,
+            baseElement,
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
@@ -106,7 +108,7 @@ export class Unit {
 
     static initialize(unit: Unit, ...args: any[]): void {
         if (isDomElement(args[0])) {
-            unit._.currentElement = args.shift() as DomElement;
+            unit._.baseElement = unit._.currentElement = args.shift() as DomElement;
         } else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
             Unit.nest(unit, args.shift() as string | DomElementDef);
         }
@@ -148,6 +150,11 @@ export class Unit {
     
     public get element(): DomElement {
         return this._.currentElement;
+    }
+
+    // the unit's outermost element: its first nested one, or the element it was created on when it never nested
+    public get container(): DomElement {
+        return this._.nestElements[0] ?? this._.baseElement;
     }
 
     public finalize(): void {

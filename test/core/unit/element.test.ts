@@ -42,6 +42,49 @@ describe('Unit element hosting', () => {
         });
     });
 
+    describe('container', () => {
+        it('returns the element the unit was created on when it never nests', () => {
+            let unit!: Unit;
+            xnew('<div id="host">', () => { unit = xnew(); });
+            expect(unit.container).toBe(document.getElementById('host'));
+            expect(unit.container).toBe(unit.element);
+        });
+
+        it('returns the first nested element, not the innermost one', () => {
+            let unit!: Unit;
+            let outer!: HTMLElement | SVGElement;
+            let inner!: HTMLElement | SVGElement;
+            unit = xnew((u: Unit) => {
+                outer = xnew.nest('<div id="outer">');
+                inner = xnew.nest('<div id="inner">');
+            });
+            expect(unit.container).toBe(outer);
+            expect(unit.element).toBe(inner);
+        });
+
+        it('returns a nested element over the element given as the target', () => {
+            const el = document.createElement('div');
+            document.body.appendChild(el);
+            let unit!: Unit;
+            unit = xnew(el, () => { xnew.nest('<div id="nested-over-target">'); });
+            expect(unit.container).toBe(document.getElementById('nested-over-target'));
+            el.remove();
+        });
+
+        it('returns the target element itself when the unit never nests', () => {
+            const el = document.createElement('div');
+            document.body.appendChild(el);
+            const unit = xnew(el);
+            expect(unit.container).toBe(el);
+            el.remove();
+        });
+
+        it('returns the element created from a tag string target', () => {
+            const unit = xnew('<div id="tag-container">');
+            expect(unit.container).toBe(document.getElementById('tag-container'));
+        });
+    });
+
     describe('xnew.nest', () => {
         it('creates and returns a nested element from a tag string', () => {
             let nested!: HTMLElement | SVGElement;

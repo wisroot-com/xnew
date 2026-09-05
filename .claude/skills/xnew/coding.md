@@ -55,7 +55,10 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
 
 ## 4. DOM: element, nest, events
 
-- `unit.element` is the unit's current DOM element.
+- `unit.element` is the unit's current DOM element — it walks inward with every `xnew.nest`.
+- `unit.container` is the unit's **outermost** element: its first nested element, or the element it was
+  created on when it never nested. Use it when a caller needs the whole component's box; `element` is the
+  innermost part. Note `container` is now a `Unit` member, so a component define named `container` throws.
 - `xnew.css((layer,) { name: def… })` registers pseudo-scoped CSS with **mandatory
   scoping**: every key is a local name, always renamed to a page-unique one, and keys must
   match `[A-Za-z][A-Za-z0-9_-]*` (anything else throws) — there is no way to emit a global
@@ -104,9 +107,10 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   container itself (frame merged in, 2026-07), and `value` / `name` / rest members go to the inner
   hidden native input. State attributes (`data-checked` / `data-open`) toggle on the container; inner
   parts (knob / meter / status / mark) react via parent-keyed rules (`[data-checked] > & { … }`).
-  There is no `container` getter anywhere; for InputCheckbox / InputRange / InputSwitch `unit.element`
-  IS the container (input / knob / meter are children) — for the others it ends on the innermost
-  nested part, so capture the container right after nesting it when the component needs it later.
+  No component exposes a `container` define (it would collide with the `unit.container` member); for
+  InputCheckbox / InputRange / InputSwitch `unit.element` IS the container (input / knob / meter are
+  children) — for the others it ends on the innermost nested part, so read `unit.container` (or capture
+  the element right after nesting it) when the component needs it later.
 - **Basics components expose NO part-customization bag** (no `attributes` / `designs` prop — all
   removed 2026-07). A caller restyles only via `className` / `style` on the container, which reaches
   inner parts through inheritance — the frame border, the knob / meter background, and the state tint

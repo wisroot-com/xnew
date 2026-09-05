@@ -65,6 +65,7 @@ declare class Unit {
             count: number;
             owner: Unit;
         }[]>;
+        baseElement: DomElement;
         currentElement: DomElement;
         currentContext: Context;
         currentComponent: Function | null;
@@ -86,6 +87,7 @@ declare class Unit {
     static initialize(unit: Unit, ...args: any[]): void;
     get parent(): Unit | null;
     get element(): DomElement;
+    get container(): DomElement;
     finalize(): void;
     static nest(unit: Unit, tag: string | DomElementDef, textContent?: string): DomElement;
     static extend(unit: Unit, Component: Function, props?: Object): {
