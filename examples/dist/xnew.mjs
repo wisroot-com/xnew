@@ -3250,6 +3250,7 @@ function Panel(unit, { params, nested = false }) {
 }
 function Folder(unit, { name, open = false }) {
     const gate = xnew(Gate, { open, duration: 200 });
+    const container = xnew.nest('<div>');
     if (name) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header) => {
             header.on('click', () => gate.toggle());
@@ -3261,6 +3262,14 @@ function Folder(unit, { name, open = false }) {
         });
     }
     xnew.extend(Accordion, { gate });
+    return {
+        get visible() {
+            return container.style.display !== 'none';
+        },
+        set visible(value) {
+            container.style.display = value === true ? '' : 'none';
+        },
+    };
 }
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);

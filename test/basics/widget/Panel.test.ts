@@ -78,6 +78,24 @@ describe('basics Panel', () => {
             expect(host.querySelectorAll('button').length).toBe(1);
         });
 
+        test('visible hides the group as a whole, header included', () => {
+            const { panel } = newPanel();
+            const group = panel.group('mygroup', { open: true }, (group: any) => {
+                group.button({ name: 'one' });
+            });
+            const wrapper = (group.element as HTMLElement).parentElement as HTMLElement;
+            expect(wrapper.textContent).toContain('mygroup');
+
+            expect(group.visible).toBe(true);
+            group.visible = false;
+            expect(wrapper.style.display).toBe('none');
+            expect(group.visible).toBe(false);
+
+            group.visible = true;
+            expect(wrapper.style.display).toBe('');
+            expect(group.visible).toBe(true);
+        });
+
         test('an anonymous group is not registered', () => {
             const { panel } = newPanel();
             panel.group({ name: 'settings', open: true });

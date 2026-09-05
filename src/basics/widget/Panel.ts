@@ -100,6 +100,9 @@ export function Panel(unit: xnew.Unit, { params, nested = false }: PanelOptions)
 
 function Folder(unit: xnew.Unit, { name, open = false }: { name?: string, open?: boolean }) {
     const gate = xnew(Gate, { open, duration: 200 });
+
+    // header and accordion are siblings, so they share one wrapper for `visible` to hide as a whole
+    const container = xnew.nest('<div>');
     if (name) {
         xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header: xnew.Unit) => {
             header.on('click', () => gate.toggle());
@@ -111,6 +114,15 @@ function Folder(unit: xnew.Unit, { name, open = false }: { name?: string, open?:
         });
     }
     xnew.extend(Accordion, { gate });
+
+    return {
+        get visible() {
+            return container.style.display !== 'none';
+        },
+        set visible(value: boolean) {
+            container.style.display = value === true ? '' : 'none';
+        },
+    };
 }
 
 function Separator(unit: xnew.Unit) {
