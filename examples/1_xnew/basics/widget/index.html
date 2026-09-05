@@ -151,32 +151,40 @@
       // the panel itself takes name / open, so its rows sit directly under its own header
       const panel = xnew(xbasics.Panel, { name: 'My Panel', open: true });
 
-      panel.group({ name: 'background', open: true }, (group) => {
-        const colors = {
-          'light gray': { background: '#f3f4f6', color: '#14532d' },
-          'dark gray':  { background: '#1f2937', color: '#d1d5db' },
-          'dark navy':  { background: '#172554', color: '#bfdbfe' },
-        };
-        for (const [name, { background, color }] of Object.entries(colors)) {
-          group.button({ name }).on('click', () => {
-            Object.assign(panelbg.style, { background, color });
-            xnew.emit('+console', { text: `${name} button clicked` });
-          });
-        }
-        group.separator();
+      // tabs switch between the groups whose key matches the tab name
+      panel.tabs.items = ['style', 'params'];
+
+      panel.group({ key: 'style' }, (tab) => {
+        tab.group({ name: 'background', open: true }, (group) => {
+          const colors = {
+            'light gray': { background: '#f3f4f6', color: '#14532d' },
+            'dark gray':  { background: '#1f2937', color: '#d1d5db' },
+            'dark navy':  { background: '#172554', color: '#bfdbfe' },
+          };
+          for (const [name, { background, color }] of Object.entries(colors)) {
+            group.button({ name }).on('click', () => {
+              Object.assign(panelbg.style, { background, color });
+              xnew.emit('+console', { text: `${name} button clicked` });
+            });
+          }
+          group.separator();
+        });
+
+        tab.listbox({ name: 'color', items: ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta', 'brown', 'gray', 'black', 'white'] }).on('-change', ({ value }) => xnew.emit('+console', { text: `color changed to ${value}` }));
+        tab.color({ name: 'tint', value: '#4a90e2' }).on('-change', ({ value }) => xnew.emit('+console', { text: `tint changed to ${value}` }));
       });
 
-      panel.range({ name: 'data', value: 20, min: 0, max: 60, step: 2 }).on('input', ({ value }) => xnew.emit('+console', { text: `data changed to ${value}` }));
-      panel.checkbox({ name: 'flag' }).on('input', ({ value }) => xnew.emit('+console', { text: `flag changed to ${value}` }));
-      panel.listbox({ name: 'color', items: ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta', 'brown', 'gray', 'black', 'white'] }).on('-change', ({ value }) => xnew.emit('+console', { text: `color changed to ${value}` }));
-      panel.color({ name: 'tint', value: '#4a90e2' }).on('-change', ({ value }) => xnew.emit('+console', { text: `tint changed to ${value}` }));
-      panel.separator();
+      panel.group({ key: 'params' }, (tab) => {
+        tab.range({ name: 'data', value: 20, min: 0, max: 60, step: 2 }).on('input', ({ value }) => xnew.emit('+console', { text: `data changed to ${value}` }));
+        tab.checkbox({ name: 'flag' }).on('input', ({ value }) => xnew.emit('+console', { text: `flag changed to ${value}` }));
+        tab.separator();
 
-      const show = panel.checkbox({ name: 'show' });
-      const group = panel.group({ open: false }, () => {
-        xnew('<p class="m-1">', 'hellow');
+        const show = tab.checkbox({ name: 'show' });
+        const group = tab.group({ open: false }, () => {
+          xnew('<p class="m-1">', 'hellow');
+        });
+        show.on('input', ({ value }) => value ? group.gate.open() : group.gate.close());
       });
-      show.on('input', ({ value }) => value ? group.gate.open() : group.gate.close());
     }
   </script>
 </body>
