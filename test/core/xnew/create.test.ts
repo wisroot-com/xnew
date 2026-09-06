@@ -59,6 +59,19 @@ describe('xnew() creation', () => {
         expect(unit.current).toBe(el);
     });
 
+    // a leading string is always read as a tag, so text content needs an explicit target: xnew('<p>', 'text')
+    it('rejects a bare string as text content', () => {
+        expect(() => (xnew as any)('plain text')).toThrow(/invalid tag string/);
+    });
+
+    it('rejects a bare number as text content', () => {
+        expect(() => (xnew as any)(42)).toThrow(/text content needs a target element/);
+    });
+
+    it('writes text content onto an explicit target', () => {
+        expect(xnew('<p>', 42).current.textContent).toBe('42');
+    });
+
     it('creates the host element from a tag string target', () => {
         const unit = xnew('<article id="a1">', () => {});
         expect(unit.current.id).toBe('a1');

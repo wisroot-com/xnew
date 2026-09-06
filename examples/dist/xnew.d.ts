@@ -7,18 +7,6 @@ declare class MapSet<Key, Value> extends Map<Key, Set<Value>> {
     delete(key: Key): boolean;
     delete(key: Key, value: Value): boolean;
 }
-declare class MapMap<Key1, Key2, Value> extends Map<Key1, Map<Key2, Value>> {
-    has(key1: Key1): boolean;
-    has(key1: Key1, key2: Key2): boolean;
-    set(key1: Key1, value: Map<Key2, Value>): this;
-    set(key1: Key1, key2: Key2, value: Value): this;
-    get(key1: Key1): Map<Key2, Value> | undefined;
-    get(key1: Key1, key2: Key2): Value | undefined;
-    keys(): IterableIterator<Key1>;
-    keys(key1: Key1): IterableIterator<Key2>;
-    delete(key1: Key1): boolean;
-    delete(key1: Key1, key2: Key2): boolean;
-}
 
 type DomElement = HTMLElement | SVGElement;
 interface DomElementDef {
@@ -43,6 +31,11 @@ interface Snapshot {
     context: Context;
     element: DomElement;
     Component: Function | null;
+}
+interface ListenerEntry {
+    listener: Function;
+    execute: Function;
+    owner: Unit;
 }
 type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends [void] ? {} : Exclude<R, void | undefined>) : {};
@@ -71,10 +64,7 @@ declare class Unit {
         lastSnapshot: Snapshot | null;
         nestElements: DomElement[];
         Components: Function[];
-        listeners: MapMap<string, Function, {
-            execute: Function;
-            owner: Unit;
-        }>;
+        listeners: MapSet<string, ListenerEntry>;
         events: EventBinder;
         key: any;
     };
@@ -115,7 +105,9 @@ declare class Unit {
     once(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
     off(type?: string, listener?: Function): void;
     static owner2targets: MapSet<Unit, Unit>;
+    static target2owners: MapSet<Unit, Unit>;
     static on(unit: Unit, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
+    static registered(unit: Unit, type: string, listener: Function, owner: Unit): boolean;
     static off(unit: Unit, owner: Unit | null, type: string, listener?: Function): void;
     static emit(unit: Unit, type: string, props?: object): void;
 }
@@ -152,7 +144,6 @@ interface XnewBase {
     <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
     <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
     (target: DomElement | string | DomElementDef, content?: string | number): Unit;
-    (content: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
     readonly standalone: boolean;
@@ -175,7 +166,7 @@ declare const xnew: XnewBase & {
         ancestor?: Unit;
         parent?: Unit;
     }): Unit[];
-    emit(type: string, ...args: any[]): void;
+    emit(type: string, props?: object): void;
     timeout(callback: Function, duration?: number): UnitTimer;
     interval(callback: Function, duration: number, iterations?: number): UnitTimer;
     transition(transition: Function, duration?: number, easing?: string): UnitTimer;

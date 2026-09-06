@@ -82,4 +82,21 @@ describe('xnew.emit', () => {
             expect(order).toEqual(['a', 'b', 'c']);
         });
     });
+
+    // an unprefixed type has no dispatch path at all, so a missing '-' must not fail silently
+    describe('type prefix', () => {
+        it('throws on a type with neither the + nor the - prefix', () => {
+            xnew((unit: Unit) => {
+                unit.on('ping', () => {});
+                expect(() => xnew.emit('ping')).toThrow(/must start with/);
+            });
+        });
+
+        it('accepts both prefixes', () => {
+            xnew(() => {
+                expect(() => xnew.emit('-ping')).not.toThrow();
+                expect(() => xnew.emit('+ping')).not.toThrow();
+            });
+        });
+    });
 });

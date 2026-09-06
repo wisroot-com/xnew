@@ -48,13 +48,26 @@ export function syncData(unit: Unit): SyncData {
 //   'emitToClients' server→client  { type, syncId, id, data }  message channel — dispatch `type` on the clients (also carries the lifecycle relay)
 //   connect / disconnect / notfound (socket-native)        lifecycle channel — dispatched as 'sync.connect' / 'sync.disconnect' / 'sync.notfound'
 
+// 'sync.' is the library's own namespace: only bootServer / bootClient may dispatch it, never a client envelope.
+const RESERVED_PREFIX = 'sync.';
+
+// A client envelope is attacker-controlled, so its type is checked before it can reach any listener; the server relay is trusted and keeps the reserved namespace.
+function clientEventType(type: unknown): string | null {
+    if (typeof type === 'string' && type.length > 0 && type.startsWith(RESERVED_PREFIX) === false) {
+        return type;
+    } else {
+        return null;
+    }
+}
+
 function dispatch(info: ServerRoot | ClientRoot, type: string, id: string | undefined, data: Record<string, any> = {}, syncId?: number | null): void {
-    (Unit.type2units.get(type) ?? []).forEach((unit) => {
+    // iterate a copy: a handler may finalize units, which mutates both tables mid-dispatch
+    [...(Unit.type2units.get(type) ?? [])].forEach((unit) => {
         // socket callbacks run outside the scope machinery: a message landing after / mid-finalize must not fire a dying unit's handler.
         if (unit._.phase === 'finalized' || unit._.phase === 'finalizing') return;
         if (syncRoot(unit) !== info) return; // skip units of another root
         if (type[0] === '-' && syncData(unit).id !== syncId) return; // skip units of another sync node
-        unit._.listeners.get(type)?.forEach((item) => item.execute({ id, ...data }));
+        [...(unit._.listeners.get(type) ?? [])].forEach((entry) => entry.execute({ id, ...data }));
     });
 }
 
@@ -124,9 +137,13 @@ function bootServer(options: BootOptions, args: any[]): Unit {
         socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
         io.to(room.id).emit('status', { clients: info.clients });
         dispatch(info, 'sync.statusupdate', undefined);
-        // normalize the untrusted envelope at the wire boundary
+        // normalize the untrusted envelope at the wire boundary; a rejected type is dropped, never dispatched
         socket.on('emitToServer', (p: any) => {
-            dispatch(info, p?.type, socket.id, typeof p?.data === 'object' && p.data !== null ? p.data : {}, p?.syncId);
+            const type = clientEventType(p?.type);
+            if (type !== null) {
+                const data = typeof p?.data === 'object' && p.data !== null ? p.data : {};
+                dispatch(info, type, socket.id, data, typeof p?.syncId === 'number' ? p.syncId : null);
+            }
         });
         socket.on('disconnect', () => {   // mirror of connect
             info.clients = info.clients.filter((c) => c.id !== socket.id);
@@ -192,7 +209,11 @@ function bootClient(options: BootOptions, args: any[]): Unit {
 
     //---- message channel (normalize the untrusted envelope at the wire boundary)
     socket.on('emitToClients', (p: any) => {
-        dispatch(info, p?.type, p?.id, typeof p?.data === 'object' && p.data !== null ? p.data : {}, p?.syncId);
+        // the server is trusted here (it relays 'sync.connect' / 'sync.disconnect' through this channel), so only the payload shape is normalized
+        if (typeof p?.type === 'string' && p.type.length > 0) {
+            const data = typeof p?.data === 'object' && p.data !== null ? p.data : {};
+            dispatch(info, p.type, p?.id, data, typeof p?.syncId === 'number' ? p.syncId : null);
+        }
     });
 
     //---- lifecycle channel: own events dispatch from the own socket; other members' arrive via the server relay

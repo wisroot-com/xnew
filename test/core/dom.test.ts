@@ -75,6 +75,27 @@ describe('EventBinder', () => {
             element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
             expect(listener).not.toHaveBeenCalled();
         });
+
+        // removeEventListener only matches when the capture flag matches, so the original options must reach it
+        it('remove() stops a listener registered with capture', () => {
+            const listener = jest.fn();
+            binder.add(element, 'click', listener, { capture: true });
+            jest.runOnlyPendingTimers();
+
+            binder.remove('click', listener);
+            element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect(listener).not.toHaveBeenCalled();
+        });
+
+        it('remove() stops a listener registered with the boolean capture form', () => {
+            const listener = jest.fn();
+            binder.add(element, 'click', listener, true);
+            jest.runOnlyPendingTimers();
+
+            binder.remove('click', listener);
+            element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect(listener).not.toHaveBeenCalled();
+        });
     });
 
     describe('pointer / click position', () => {

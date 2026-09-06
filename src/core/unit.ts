@@ -4,7 +4,7 @@
 // listeners record their owner, so a finalized owner's listeners elsewhere detach automatically.
 //----------------------------------------------------------------------------------------------------
 
-import { MapSet, MapMap } from './map';
+import { MapSet } from './map';
 import { Ticker, Timer } from './time';
 import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, createElement } from './dom';
 
@@ -16,6 +16,9 @@ interface Context { previous: Context | null; Component?: Function; value?: any;
 
 interface Snapshot { unit: Unit; context: Context; element: DomElement; Component: Function | null; }
 
+// one entry per on() call: keyed by the pair, so two units may share one handler function
+interface ListenerEntry { listener: Function; execute: Function; owner: Unit; }
+
 // Component function type; the returned defines are merged into the xnew(...) return value (Unit & A).
 export type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 
@@ -25,7 +28,7 @@ export type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends 
 // Extract the props type of a Component ({} if absent).
 export type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
 
-// Component that writes a text/number literal into the current element.
+// Component that writes a text/number literal into the element; only reachable with a target (see initialize).
 function textComponent(content: string | number): (unit: Unit) => void {
     return (unit: Unit) => { unit.current.textContent = content.toString(); };
 }
@@ -58,7 +61,7 @@ export class Unit {
 
         nestElements: DomElement[];
         Components: Function[];
-        listeners: MapMap<string, Function, { execute: Function, owner: Unit }>;
+        listeners: MapSet<string, ListenerEntry>;
         events: EventBinder;
 
         key: any;   // reserved prop for find(key) (global unique assumed)
@@ -94,7 +97,7 @@ export class Unit {
             nestElements: [],
             promises: [],
             Components: [],
-            listeners: new MapMap(),
+            listeners: new MapSet(),
             defines: {},
             systems: { update: [], finalize: [] },
             events: new EventBinder(),
@@ -105,10 +108,13 @@ export class Unit {
     }
 
     static initialize(unit: Unit, ...args: any[]): void {
+        let targeted = false;
         if (isDomElement(args[0])) {
             unit._.currentElement = args.shift() as DomElement;
+            targeted = true;
         } else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
             Unit.nest(unit, args.shift() as string | DomElementDef);
+            targeted = true;
         }
 
         // xnew(Component, props?): pull off the component, then optional props.
@@ -123,6 +129,10 @@ export class Unit {
         if (typeof Component === 'function') {
             baseComponent = Component;
         } else if (typeof Component === 'string' || typeof Component === 'number') {
+            // without a target the literal would overwrite the borrowed parent element, wiping its children
+            if (targeted === false) {
+                throw new Error(`xnew: text content needs a target element [${Component}]`);
+            }
             baseComponent = textComponent(Component);
         } else {
             baseComponent = (unit: Unit) => {};
@@ -166,8 +176,13 @@ export class Unit {
             // detach the listeners this unit registered on other units
             Unit.owner2targets.get(this)?.forEach((target) => {
                 [...target._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(target, this, type));
+                Unit.target2owners.delete(target, this);
             });
             Unit.owner2targets.delete(this);
+
+            // and drop itself from every owner's target set — a finalized target left there pins its whole _ bag
+            Unit.target2owners.get(this)?.forEach((owner) => Unit.owner2targets.delete(owner, this));
+            Unit.target2owners.delete(this);
 
             // clear all listeners on this unit regardless of owner
             [...this._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(this, null, type));
@@ -392,8 +407,9 @@ export class Unit {
         types.forEach((type) => Unit.off(this, Unit.currentUnit, type, listener));
     }
     
-    // owner (the unit whose scope called on) → the units it registered listeners on
+    // owner (the unit whose scope called on) → the units it registered listeners on, and its inverse
     static owner2targets = new MapSet<Unit, Unit>();
+    static target2owners = new MapSet<Unit, Unit>();
 
     static on(unit: Unit, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void {
         const owner = Unit.currentUnit;
@@ -404,8 +420,8 @@ export class Unit {
         if (type === 'update' || type === 'finalize') {
             // lifecycle-only: registered in systems, never in the dispatch path (listeners / type2units / events).
             unit._.systems[type].push({ listener, execute, count: 0, owner });
-        } else if (unit._.listeners.has(type, listener) === false) {
-            unit._.listeners.set(type, listener, { execute, owner });
+        } else if (Unit.registered(unit, type, listener, owner) === false) {
+            unit._.listeners.add(type, { listener, execute, owner });
             Unit.type2units.add(type, unit);
             if (/^[A-Za-z]/.test(type) && unit.current !== null) {
                 unit._.events.add(unit.current, type, execute, options);
@@ -413,7 +429,13 @@ export class Unit {
         }
         if (owner !== unit) {
             Unit.owner2targets.add(owner, unit);
+            Unit.target2owners.add(unit, owner);
         }
+    }
+
+    // true when `owner` already registered exactly this listener for this type (the same pair must not stack)
+    static registered(unit: Unit, type: string, listener: Function, owner: Unit): boolean {
+        return [...(unit._.listeners.get(type) ?? [])].some((entry) => entry.listener === listener && entry.owner === owner);
     }
 
     // remove the entries that `owner` registered (owner: null matches any owner; listener narrows further)
@@ -422,11 +444,11 @@ export class Unit {
         if (type === 'update' || type === 'finalize') {
             unit._.systems[type] = unit._.systems[type].filter((entry) => match(entry.listener, entry.owner) === false);
         } else {
-            [...(unit._.listeners.get(type)?.entries() ?? [])].forEach(([lis, item]) => {
-                if (match(lis, item.owner)) {
-                    unit._.listeners.delete(type, lis);
+            [...(unit._.listeners.get(type) ?? [])].forEach((entry) => {
+                if (match(entry.listener, entry.owner)) {
+                    unit._.listeners.delete(type, entry);
                     if (/^[A-Za-z]/.test(type)) {
-                        unit._.events.remove(type, item.execute);
+                        unit._.events.remove(type, entry.execute);
                     }
                 }
             });
@@ -439,13 +461,14 @@ export class Unit {
     static emit(unit: Unit, type: string, props: object = {}): void {
         if (type[0] === '+') {
             const ancestors = Unit.ancestors(unit);
-            Unit.type2units.get(type)?.forEach((target) => {
+            // iterate copies: a listener may add / remove listeners mid-dispatch (as Unit.update does)
+            [...(Unit.type2units.get(type) ?? [])].forEach((target) => {
                 if (Unit.isVisible(target, unit, ancestors)) {
-                    target._.listeners.get(type)?.forEach((item) => item.execute(props));
+                    [...(target._.listeners.get(type) ?? [])].forEach((entry) => entry.execute(props));
                 }
             });
         } else if (type[0] === '-') {
-            unit._.listeners.get(type)?.forEach((item) => item.execute(props));
+            [...(unit._.listeners.get(type) ?? [])].forEach((entry) => entry.execute(props));
         }
     }
 }

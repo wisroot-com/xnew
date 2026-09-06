@@ -51,6 +51,60 @@ describe('Unit.on / Unit.off', () => {
             expect(a).toHaveBeenCalledTimes(1);
             expect(b).toHaveBeenCalledTimes(1);
         });
+
+        // an entry is keyed by (listener, owner), so a handler shared between components is not swallowed
+        it('registers one shared handler once per owner', () => {
+            const cb = jest.fn();
+            let target!: Unit;
+            xnew(() => {
+                target = xnew(() => {});
+                xnew(() => target.on('-ping', cb));
+                xnew(() => target.on('-ping', cb));
+            });
+            Unit.emit(target, '-ping');
+            expect(cb).toHaveBeenCalledTimes(2);
+        });
+
+        it("keeps a shared handler alive for the other owner when one owner finalizes", () => {
+            const cb = jest.fn();
+            let target!: Unit;
+            let first!: Unit;
+            xnew(() => {
+                target = xnew(() => {});
+                first = xnew(() => target.on('-ping', cb));
+                xnew(() => target.on('-ping', cb));
+            });
+            first.finalize();
+            Unit.emit(target, '-ping');
+            expect(cb).toHaveBeenCalledTimes(1);
+        });
+
+        // a listener added mid-dispatch belongs to the next emit, as with the update system
+        it('does not fire a listener added during the same emit', () => {
+            const added = jest.fn();
+            let target!: Unit;
+            xnew((unit: Unit) => {
+                target = unit;
+                unit.on('-ping', () => unit.on('-ping', added));
+            });
+            Unit.emit(target, '-ping');
+            expect(added).not.toHaveBeenCalled();
+            Unit.emit(target, '-ping');
+            expect(added).toHaveBeenCalledTimes(1);
+        });
+
+        // a finalized target left in its owners' index would pin its whole _ bag (elements, children)
+        it('drops a finalized target from the owner index', () => {
+            let target!: Unit;
+            let owner!: Unit;
+            xnew(() => {
+                target = xnew(() => {});
+                owner = xnew(() => target.on('-ping', () => {}));
+            });
+            expect(Unit.owner2targets.get(owner)?.has(target)).toBe(true);
+            target.finalize();
+            expect(Unit.owner2targets.get(owner)?.has(target) ?? false).toBe(false);
+        });
     });
 
     describe('once', () => {

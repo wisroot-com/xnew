@@ -97,7 +97,8 @@ function attach(target: Window | Document | DomElement, type: string, execute: E
         if (initialized === false) {
             clearTimeout(id);
         } else {
-            target.removeEventListener(type, execute);
+            // removeEventListener only matches a listener whose capture flag matches, so the original options must ride along
+            target.removeEventListener(type, execute, options);
         }
     };
 }

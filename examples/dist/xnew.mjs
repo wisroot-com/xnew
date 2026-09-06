@@ -306,7 +306,7 @@ function attach(target, type, execute, options) {
             clearTimeout(id);
         }
         else {
-            target.removeEventListener(type, execute);
+            target.removeEventListener(type, execute, options);
         }
     };
 }
@@ -502,7 +502,7 @@ class Unit {
             nestElements: [],
             promises: [],
             Components: [],
-            listeners: new MapMap(),
+            listeners: new MapSet(),
             defines: {},
             systems: { update: [], finalize: [] },
             events: new EventBinder(),
@@ -512,11 +512,14 @@ class Unit {
     }
     static initialize(unit, ...args) {
         var _a;
+        let targeted = false;
         if (isDomElement(args[0])) {
             unit._.currentElement = args.shift();
+            targeted = true;
         }
         else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
             Unit.nest(unit, args.shift());
+            targeted = true;
         }
         const Component = args.shift();
         let props;
@@ -528,6 +531,9 @@ class Unit {
             baseComponent = Component;
         }
         else if (typeof Component === 'string' || typeof Component === 'number') {
+            if (targeted === false) {
+                throw new Error(`xnew: text content needs a target element [${Component}]`);
+            }
             baseComponent = textComponent(Component);
         }
         else {
@@ -554,15 +560,18 @@ class Unit {
         return (_a = this._.nestElements[0]) !== null && _a !== void 0 ? _a : null;
     }
     finalize() {
-        var _a;
+        var _a, _b;
         if (this._.phase !== 'finalized' && this._.phase !== 'finalizing') {
             this._.phase = 'finalizing';
             [...this._.children].reverse().forEach((child) => child.finalize());
             [...this._.systems.finalize].reverse().forEach(({ execute }) => execute());
             (_a = Unit.owner2targets.get(this)) === null || _a === void 0 ? void 0 : _a.forEach((target) => {
                 [...target._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(target, this, type));
+                Unit.target2owners.delete(target, this);
             });
             Unit.owner2targets.delete(this);
+            (_b = Unit.target2owners.get(this)) === null || _b === void 0 ? void 0 : _b.forEach((owner) => Unit.owner2targets.delete(owner, this));
+            Unit.target2owners.delete(this);
             [...this._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(this, null, type));
             [...this._.nestElements].reverse().forEach((element) => element.remove());
             this._.Components.forEach((Component) => Unit.component2units.delete(Component, this));
@@ -759,8 +768,8 @@ class Unit {
         if (type === 'update' || type === 'finalize') {
             unit._.systems[type].push({ listener, execute, count: 0, owner });
         }
-        else if (unit._.listeners.has(type, listener) === false) {
-            unit._.listeners.set(type, listener, { execute, owner });
+        else if (Unit.registered(unit, type, listener, owner) === false) {
+            unit._.listeners.add(type, { listener, execute, owner });
             Unit.type2units.add(type, unit);
             if (/^[A-Za-z]/.test(type) && unit.current !== null) {
                 unit._.events.add(unit.current, type, execute, options);
@@ -768,20 +777,25 @@ class Unit {
         }
         if (owner !== unit) {
             Unit.owner2targets.add(owner, unit);
+            Unit.target2owners.add(unit, owner);
         }
     }
+    static registered(unit, type, listener, owner) {
+        var _a;
+        return [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].some((entry) => entry.listener === listener && entry.owner === owner);
+    }
     static off(unit, owner, type, listener) {
-        var _a, _b;
+        var _a;
         const match = (lis, own) => (owner === null || own === owner) && (listener === undefined || lis === listener);
         if (type === 'update' || type === 'finalize') {
             unit._.systems[type] = unit._.systems[type].filter((entry) => match(entry.listener, entry.owner) === false);
         }
         else {
-            [...((_b = (_a = unit._.listeners.get(type)) === null || _a === void 0 ? void 0 : _a.entries()) !== null && _b !== void 0 ? _b : [])].forEach(([lis, item]) => {
-                if (match(lis, item.owner)) {
-                    unit._.listeners.delete(type, lis);
+            [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => {
+                if (match(entry.listener, entry.owner)) {
+                    unit._.listeners.delete(type, entry);
                     if (/^[A-Za-z]/.test(type)) {
-                        unit._.events.remove(type, item.execute);
+                        unit._.events.remove(type, entry.execute);
                     }
                 }
             });
@@ -794,15 +808,15 @@ class Unit {
         var _a, _b;
         if (type[0] === '+') {
             const ancestors = Unit.ancestors(unit);
-            (_a = Unit.type2units.get(type)) === null || _a === void 0 ? void 0 : _a.forEach((target) => {
+            [...((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((target) => {
                 var _a;
                 if (Unit.isVisible(target, unit, ancestors)) {
-                    (_a = target._.listeners.get(type)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(props));
+                    [...((_a = target._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => entry.execute(props));
                 }
             });
         }
         else if (type[0] === '-') {
-            (_b = unit._.listeners.get(type)) === null || _b === void 0 ? void 0 : _b.forEach((item) => item.execute(props));
+            [...((_b = unit._.listeners.get(type)) !== null && _b !== void 0 ? _b : [])].forEach((entry) => entry.execute(props));
         }
     }
 }
@@ -810,6 +824,7 @@ Unit.unit2Contexts = new MapSet();
 Unit.component2units = new MapSet();
 Unit.type2units = new MapSet();
 Unit.owner2targets = new MapSet();
+Unit.target2owners = new MapSet();
 class UnitPromise {
     constructor(promise, key) {
         this.promise = promise;
@@ -1101,8 +1116,11 @@ const xnew = Object.assign((function (...args) {
     find(Component, options) {
         return Unit.find(Component, options);
     },
-    emit(type, ...args) {
-        return Unit.emit(Unit.current, type, ...args);
+    emit(type, props) {
+        if (type[0] !== '+' && type[0] !== '-') {
+            throw new Error(`xnew.emit: a custom event type must start with "+" (broadcast) or "-" (own unit) [${type}]`);
+        }
+        return Unit.emit(Unit.current, type, props);
     },
     timeout(callback, duration = 0) {
         return new UnitTimer().timeout(callback, duration);
@@ -1143,9 +1161,18 @@ function syncData(unit) {
     var _b;
     return (_a = (_b = unit._.own).syncData) !== null && _a !== void 0 ? _a : (_b.syncData = { id: null, state: {}, registry: {}, visibility: null });
 }
+const RESERVED_PREFIX = 'sync.';
+function clientEventType(type) {
+    if (typeof type === 'string' && type.length > 0 && type.startsWith(RESERVED_PREFIX) === false) {
+        return type;
+    }
+    else {
+        return null;
+    }
+}
 function dispatch(info, type, id, data = {}, syncId) {
     var _a;
-    ((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : []).forEach((unit) => {
+    [...((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((unit) => {
         var _a;
         if (unit._.phase === 'finalized' || unit._.phase === 'finalizing')
             return;
@@ -1153,7 +1180,7 @@ function dispatch(info, type, id, data = {}, syncId) {
             return;
         if (type[0] === '-' && syncData(unit).id !== syncId)
             return;
-        (_a = unit._.listeners.get(type)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
+        [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => entry.execute(Object.assign({ id }, data)));
     });
 }
 function bootServer(options, args) {
@@ -1209,7 +1236,11 @@ function bootServer(options, args) {
         io.to(room.id).emit('status', { clients: info.clients });
         dispatch(info, 'sync.statusupdate', undefined);
         socket.on('emitToServer', (p) => {
-            dispatch(info, p === null || p === void 0 ? void 0 : p.type, socket.id, typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {}, p === null || p === void 0 ? void 0 : p.syncId);
+            const type = clientEventType(p === null || p === void 0 ? void 0 : p.type);
+            if (type !== null) {
+                const data = typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {};
+                dispatch(info, type, socket.id, data, typeof (p === null || p === void 0 ? void 0 : p.syncId) === 'number' ? p.syncId : null);
+            }
         });
         socket.on('disconnect', () => {
             info.clients = info.clients.filter((c) => c.id !== socket.id);
@@ -1272,7 +1303,10 @@ function bootClient(options, args) {
         dispatch(info, 'sync.statusupdate', undefined);
     });
     socket.on('emitToClients', (p) => {
-        dispatch(info, p === null || p === void 0 ? void 0 : p.type, p === null || p === void 0 ? void 0 : p.id, typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {}, p === null || p === void 0 ? void 0 : p.syncId);
+        if (typeof (p === null || p === void 0 ? void 0 : p.type) === 'string' && p.type.length > 0) {
+            const data = typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {};
+            dispatch(info, p.type, p === null || p === void 0 ? void 0 : p.id, data, typeof (p === null || p === void 0 ? void 0 : p.syncId) === 'number' ? p.syncId : null);
+        }
     });
     socket.on('connect', () => dispatch(info, 'sync.connect', socket.id));
     socket.on('disconnect', () => dispatch(info, 'sync.disconnect', socket.id));

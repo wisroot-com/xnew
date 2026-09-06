@@ -674,3 +674,29 @@ the rule, then one line of why.
   `setTimeout(…, 0)` (`attach` in `dom.ts`), so a click dispatched in the same
   tick as the `xnew(...)` that created the button silently does nothing — call
   `jest.advanceTimersByTime(1)` first.
+- **`xnew.emit` requires a `+` or `-` prefix — an unprefixed type now throws.**
+  Only `'+event'` (broadcast) and `'-event'` (own unit) have a dispatch path, so a
+  missing `-` used to fail silently while `on('event', …)` also bound the name as a
+  DOM listener. `xsync.emitToServer` / `emitToClients` are a different channel and
+  still take unprefixed types.
+- **Text content always needs a target; there is no bare-content form.**
+  `xnew('hello')` throws `invalid tag string` (a leading string is always parsed
+  as a tag) and `xnew(42)` throws `text content needs a target element`. Write
+  `xnew('<p>', 'hello')` — without a target the literal would overwrite the
+  borrowed parent element and wipe its children.
+- **A define overriding another define across `extend` is intentional, not a bug —
+  last extended wins.** That is how `extend` implements method overriding
+  (`extend.test.ts` → "derived definition overrides a base method" / "the last
+  extended base wins on name collision"). Only a collision with a built-in Unit
+  member throws. Do not "fix" the guard in `Unit.extend` to throw on define-over-define.
+- **Two units may share one handler function on the same target.** Listener entries
+  are keyed by the `(listener, owner)` pair, so `target.on('-x', shared)` from two
+  components registers twice and each detaches with its own owner. (Registering the
+  same pair twice is still deduped.)
+- **A listener added during an emit belongs to the next emit, not the current one** —
+  `Unit.emit` iterates a copy, as `Unit.update` does.
+- **Never let a client-supplied wire `type` reach `dispatch` unchecked.** `bootServer`
+  rejects the reserved `sync.*` namespace on `emitToServer` and coerces `syncId` to a
+  number-or-null; without that, a client could spoof `sync.disconnect` for another
+  member. Anything else a server unit listens for is still reachable from any client,
+  so **server handlers must validate their own payloads**.

@@ -13,7 +13,6 @@ export interface XnewBase {
     <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
     <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
     (target: DomElement | string | DomElementDef, content?: string | number): Unit;
-    (content: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
 
@@ -22,7 +21,7 @@ export interface XnewBase {
 }
 
 export const xnew = Object.assign(
-    // Creates a new Unit: xnew((target,) Component?, props?) — a string/number in the Component slot writes text into the element.
+    // Creates a new Unit: xnew((target,) Component?, props?) — a string/number in the Component slot writes text, and needs a target.
     (function(...args: any[]): Unit {
         if (args[0] instanceof Unit) {
             const parent = args.shift() as Unit;
@@ -102,9 +101,12 @@ export const xnew = Object.assign(
             return Unit.find(Component, options);
         },
 
-        // Emits a custom event ('+event' = broadcast / '-event' = own unit only).
-        emit(type: string, ...args: any[]): void {
-            return Unit.emit(Unit.current, type, ...args);
+        // Emits a custom event ('+event' = broadcast / '-event' = own unit only); an unprefixed type has no dispatch path, so it throws rather than doing nothing.
+        emit(type: string, props?: object): void {
+            if (type[0] !== '+' && type[0] !== '-') {
+                throw new Error(`xnew.emit: a custom event type must start with "+" (broadcast) or "-" (own unit) [${type}]`);
+            }
+            return Unit.emit(Unit.current, type, props);
         },
 
         // Runs callback({ count }) once after duration ms (the timer follows the unit lifecycle; timer.clear() aborts).
