@@ -10,7 +10,7 @@
 //   - bootServer/bootClient(): force the boot mode (jsdom would otherwise always detect 'client').
 //
 // - ioMock() : { io, connect(id?) } — server-side io + client-socket factory, wired in-memory
-// - bootServer(opts, ...args) / bootClient(opts, ...args) : xsync.boot with the mode forced
+// - bootServer(opts, Component, props?) / bootClient(opts, Component, props?) : xsync.boot with the mode forced
 //----------------------------------------------------------------------------------------------------
 
 import { xnew, xsync } from '../../src/index';
@@ -43,7 +43,7 @@ function withEnvironment<T>(env: Env, fn: () => T): T {
 /** テストの既定 room。bootServer/bootClient が省略時に補い、connect も既定でここへ join する。 */
 export const ROOM = { id: 'room', name: 'room', count: 0 };
 
-/** socket.io の client socket 相当（boot({ mode: 'client', socket }) と生クライアントの両方で使う）。 */
+/** socket.io の client socket 相当（boot({ io, client, room }) と生クライアントの両方で使う）。 */
 export interface MockClientSocket {
     id: string;
     emit(event: string, payload?: any): void;
@@ -180,15 +180,22 @@ export async function asServerAsync<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /** xsync.boot を server 環境で呼ぶ（room 未指定なら既定 ROOM を補う）。 */
-export function bootServer(opts: { io: any; room?: any }, ...rest: any[]): ReturnType<typeof xsync.boot> {
-    return asServer(() => xsync.boot({ room: ROOM, ...opts }, ...rest));
+export function bootServer(opts: { io: any; room?: any }, Component: any, props?: object): ReturnType<typeof xsync.boot> {
+    return asServer(() => xsync.boot({ room: ROOM, ...opts }, Component, props));
 }
 
 /**
  * xsync.boot を client 環境で呼ぶ（room 未指定なら既定 ROOM を補う）。
  * boot は client 側で io() を呼んで socket を生成するため、事前生成した socket は io: () => socket で包む。
  */
-export function bootClient(opts: { socket: any; room?: any; client?: any }, ...rest: any[]): ReturnType<typeof xsync.boot> {
-    const { socket, room = ROOM, client } = opts;
-    return asClient(() => xsync.boot({ room, client, io: () => socket }, ...rest));
+export function bootClient(opts: { socket: any; room?: any; client?: any; target?: any }, Component: any, props?: object): ReturnType<typeof xsync.boot> {
+    const { socket, room = ROOM, client, target } = opts;
+    const boot = () => xsync.boot({ room, client, io: () => socket }, Component, props);
+    // boot 自身は target を取らないので、既存要素へ描くときは xnew(target, ...) で包む（本番も同じ形）。
+    return asClient(() => {
+        if (target === undefined) { return boot(); }
+        let root!: ReturnType<typeof xsync.boot>;
+        xnew(target, () => { root = boot(); });
+        return root;
+    });
 }

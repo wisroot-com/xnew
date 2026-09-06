@@ -17,14 +17,13 @@ export class RoomIO {
     clients: ClientStatus[] = [];   // room roster; kept up to date by boot's status channel
     readonly root: Unit;
 
-    constructor({ io, room, client }: BootOptions, ...args: any[]) {
+    constructor({ io, room, client }: BootOptions, Component: Function, props?: object) {
         this.io = io;
         this.room = room;
         // the handshake query must stay flat strings (socket.io stringifies values).
         this.socket = getEnvironment() === 'client' ? io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true }) : null;
-        // the reserved _inherited prop rides the props slot, which is last in the xnew arg form (target?, Component, props?)
-        const props = args.length > 1 && typeof args[args.length - 1] === 'object' ? args.pop() : {};
-        this.root = new Unit(Unit.current, ...args, { ...props, _inherited: { syncRoot: this } });
+        // the reserved _inherited prop rides the props slot, so the root and its whole subtree resolve this room from birth
+        this.root = new Unit(Unit.current, Component, { ...props, _inherited: { syncRoot: this } });
         if (this.socket !== null) {
             this.root.on('finalize', () => this.socket.disconnect());
         }
@@ -53,7 +52,7 @@ export class RoomIO {
     static of(unit: Unit, required?: true): RoomIO | null {
         const roomio: RoomIO | null = unit._.inherited.syncRoot ?? null;
         if (required === true && roomio === null) {
-            throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
+            throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, Component).');
         }
         return roomio;
     }

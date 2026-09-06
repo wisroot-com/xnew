@@ -105,10 +105,11 @@ On the client, `boot` **creates and owns the socket itself**. Callers must not c
 io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
 ```
 
-`boot` passes its third and later arguments straight through as the root unit's components. Lifecycle listeners must live **inside the root**, so appending a function is the usual shape.
+`boot` takes **one** root component (plus optional props). Lifecycle listeners must live **inside the root**, so the usual shape is a root component that mixes the game in with `xnew.extend`.
 
 ```js
-xsync.boot({ io, client, room }, Game, (u) => {
+xsync.boot({ io, client, room }, (u) => {
+  xnew.extend(Game);
   u.on('sync.connect', ({ id }) => { /* ... */ });
   u.on('sync.notfound', () => unit.change(Lobby));
 });

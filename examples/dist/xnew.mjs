@@ -1151,14 +1151,13 @@ function getEnvironment() {
 }
 
 class RoomIO {
-    constructor({ io, room, client }, ...args) {
+    constructor({ io, room, client }, Component, props) {
         var _a;
         this.clients = [];
         this.io = io;
         this.room = room;
         this.socket = getEnvironment() === 'client' ? io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true }) : null;
-        const props = args.length > 1 && typeof args[args.length - 1] === 'object' ? args.pop() : {};
-        this.root = new Unit(Unit.current, ...args, Object.assign(Object.assign({}, props), { _inherited: { syncRoot: this } }));
+        this.root = new Unit(Unit.current, Component, Object.assign(Object.assign({}, props), { _inherited: { syncRoot: this } }));
         if (this.socket !== null) {
             this.root.on('finalize', () => this.socket.disconnect());
         }
@@ -1184,7 +1183,7 @@ class RoomIO {
         var _a;
         const roomio = (_a = unit._.inherited.syncRoot) !== null && _a !== void 0 ? _a : null;
         if (required === true && roomio === null) {
-            throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
+            throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, Component).');
         }
         return roomio;
     }
@@ -1217,9 +1216,9 @@ function dispatch(roomio, type, id, data = {}, syncId) {
         [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => entry.execute(Object.assign({ id }, data)));
     });
 }
-function bootServer(options, args) {
+function bootServer(options, Component, props) {
     const { room } = options;
-    const roomio = new RoomIO(options, ...args);
+    const roomio = new RoomIO(options, Component, props);
     const root = roomio.root;
     let nextId = 1;
     const captureStateTree = (clientId) => {
@@ -1287,8 +1286,8 @@ function bootServer(options, args) {
     });
     return root;
 }
-function bootClient(options, args) {
-    const roomio = new RoomIO(options, ...args);
+function bootClient(options, Component, props) {
+    const roomio = new RoomIO(options, Component, props);
     const root = roomio.root;
     const reconcileMap = new Map();
     let lastTree = '';
@@ -1400,8 +1399,8 @@ const xsync = {
         const envelope = { type, syncId: syncData(Unit.current).id, id: undefined, data: props };
         roomio.emit((ids === null || ids === void 0 ? void 0 : ids.length) ? ids : roomio.room.id, 'emitToClients', envelope);
     },
-    boot(options, ...args) {
-        return getEnvironment() === 'server' ? bootServer(options, args) : bootClient(options, args);
+    boot(options, Component, props) {
+        return getEnvironment() === 'server' ? bootServer(options, Component, props) : bootClient(options, Component, props);
     },
 };
 

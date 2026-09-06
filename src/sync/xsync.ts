@@ -59,9 +59,9 @@ function dispatch(roomio: RoomIO, type: string, id: string | undefined, data: Re
 // boot
 //----------------------------------------------------------------------------------------------------
 
-function bootServer(options: BootOptions, args: any[]): Unit {
+function bootServer(options: BootOptions, Component: Function, props?: object): Unit {
     const { room } = options;
-    const roomio = new RoomIO(options, ...args);
+    const roomio = new RoomIO(options, Component, props);
     const root = roomio.root;
 
     //---- state channel
@@ -139,8 +139,8 @@ function bootServer(options: BootOptions, args: any[]): Unit {
     return root;
 }
 
-function bootClient(options: BootOptions, args: any[]): Unit {
-    const roomio = new RoomIO(options, ...args);
+function bootClient(options: BootOptions, Component: Function, props?: object): Unit {
+    const roomio = new RoomIO(options, Component, props);
     const root = roomio.root;
 
     //---- state channel
@@ -261,7 +261,8 @@ export const xsync = {
         // each socket is in a room named by its id, so individual and room-wide delivery share one emit
         roomio.emit(ids?.length ? ids : roomio.room.id, 'emitToClients', envelope);
     },
-    boot(options: BootOptions, ...args: any[]): Unit {
-        return getEnvironment() === 'server' ? bootServer(options, args) : bootClient(options, args);
+    // one root component only: listeners for sync.* must live inside it, so compose with xnew.extend rather than a second argument.
+    boot<C extends ComponentFn<any, any>>(options: BootOptions, Component: C, props?: PropsOf<C>): Unit {
+        return getEnvironment() === 'server' ? bootServer(options, Component, props) : bootClient(options, Component, props);
     },
 };

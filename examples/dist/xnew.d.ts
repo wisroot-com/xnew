@@ -201,7 +201,7 @@ declare const xsync: {
     };
     emitToServer(type: string, props?: Record<string, any>): void;
     emitToClients(type: string, props?: Record<string, any>, ids?: string[]): void;
-    boot(options: BootOptions, ...args: any[]): Unit;
+    boot<C extends ComponentFn<any, any>>(options: BootOptions, Component: C, props?: PropsOf<C>): Unit;
 };
 
 declare class AudioTrack {

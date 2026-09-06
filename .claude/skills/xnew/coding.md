@@ -138,8 +138,8 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   position. **Use the tag string for static markup, the object form once attributes are
   computed or conditional.** It nests the new element under
   the current element and makes it current (init-only). To render into an existing
-  element, bind it at unit creation instead: `xnew(element, Component)` (also works
-  as a boot target: `xsync.boot(opts, element, Component)`). `xnew.extend(Base)`
+  element, bind it at unit creation instead: `xnew(element, Component)` (`xsync.boot`
+  takes no target — wrap it: `xnew(element, () => xsync.boot(opts, Component))`). `xnew.extend(Base)`
   mixes another component into this unit.
 - DOM events are listened with `unit.on('click', ({ event }) => …)`. The payload is
   always `{ type, … }` plus event-specific fields:
@@ -244,8 +244,9 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   Split the props into explicit types and cast inside each block, e.g.
   `RoomServerProps` / `RoomClientProps`, then
   `const { io } = props as RoomServerProps;`.
-- `sync.boot({ io, room }, Component)` (server) / `sync.boot({ io, client, room }, Component)`
-  (client) creates a synced root. On the **client** side boot calls `io(...)` to
+- `sync.boot({ io, room }, Component, props?)` (server) / `sync.boot({ io, client, room }, Component, props?)`
+  (client) creates a synced root. **One** root component only — no target, no second
+  component; compose with `xnew.extend` inside it. On the **client** side boot calls `io(...)` to
   create **and own** the socket, with a **flat string** handshake query
   (`io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true })`),
   and disconnects it on finalize. Callers (e.g. an example's `Room` component) just boot —

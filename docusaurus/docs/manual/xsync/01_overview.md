@@ -105,7 +105,7 @@ xsync.boot({ io, client, room }, Game);
 io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
 ```
 
-`boot` は 2 番目以降の引数をそのままルート unit のコンポーネントとして受け取ります。ライフサイクルイベントのリスナーは **ルートの中** に置く必要があるので、ルートのコンポーネント関数の中でゲームを `xnew.extend` するのが定石です。
+`boot` が受け取るルートのコンポーネントは **1 つだけ** です（props は任意で続けられます）。ライフサイクルイベントのリスナーは **ルートの中** に置く必要があるので、ルートのコンポーネント関数の中でゲームを `xnew.extend` するのが定石です。
 
 ```js
 xsync.boot({ io, client, room }, (u) => {

@@ -93,13 +93,10 @@ describe('event channel (socket.io transport)', () => {
             });
         }
 
-        const view1 = document.createElement('div');
-        const view2 = document.createElement('div');
-
-        const server = bootServer({ io: hub.io }, World);                          // on('sync.connect') を登録
-        const client1 = bootClient({ socket: hub.connect() }, view1, World); // connect → presence に c1
+        const server = bootServer({ io: hub.io }, World);                     // on('sync.connect') を登録
+        const client1 = bootClient({ socket: hub.connect() }, World);         // connect → presence に c1
         const socket2 = hub.connect();
-        const client2 = bootClient({ socket: socket2 }, view2, World);        // connect → presence に c2
+        const client2 = bootClient({ socket: socket2 }, World);               // connect → presence に c2
 
         // server / client サブツリーを各々の環境で別々に tick する（emit/status は env で分岐するため、
         // 1 回の update で両側をまとめて回さない）。server を先に回して Player を spawn → client が emit。
