@@ -199,8 +199,7 @@ declare const xsync: {
         clients: ClientStatus[];
         myself: ClientStatus;
     };
-    emitToServer(type: string, props?: Record<string, any>): void;
-    emitToClients(type: string, props?: Record<string, any>, ids?: string[]): void;
+    emit(type: string, props?: Record<string, any>, clients?: ClientStatus | ClientStatus[]): void;
     boot<C extends ComponentFn<any, any>>(options: BootOptions, Component: C, props?: PropsOf<C>): Unit;
 };
 

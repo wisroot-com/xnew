@@ -32,13 +32,13 @@ export function Player(unit) {
   │      ├ Player (state)      │  state channel   │   └ World                  │
   │      └ Player (state)      │  on change only  │      ├ Player (replica)    │
   │                            │                  │      └ Player (replica)    │
-  │  unit.on('-move')          │ ◀── 'emitToServer'│  xsync.emitToServer('-move')│
+  │  unit.on('-move')          │ ◀── 'emitToServer'│  xsync.emit('-move')        │
   └───────────────────────────┘   messages       └───────────────────────────┘
 ```
 
 - **State is one-way.** It only flows from server to client.
-- **Client input** travels as a message (`xsync.emitToServer`); the server is what mutates state.
-- **There is no client-to-client channel.** To broadcast, relay through `xsync.emitToClients` from a server handler.
+- **Client input** travels as a message (`xsync.emit`); the server is what mutates state.
+- **No socket ever talks to another socket.** A client can address other clients with the third argument of `xsync.emit`, but the server always relays it.
 
 ### The three channels
 
@@ -48,7 +48,7 @@ These are the socket event names `xsync` reserves — never use them as applicat
 | --- | --- | --- | --- |
 | State | server → client | `sync` | Snapshot of the sync tree. Sent **only when it changed** |
 | Roster | server → client | `status` | Room membership list |
-| Message | client → server | `emitToServer` | Fire an arbitrary event on the server |
+| Message | client → server | `emitToServer` | Fire an arbitrary event on the server (or, with a target, have the server relay it) |
 | Message | server → client | `emitToClients` | Fire an arbitrary event on the clients |
 | Lifecycle | both | `connect` / `disconnect` / `notfound` | Delivered to units as `sync.connect` and friends |
 
@@ -217,34 +217,39 @@ State (`xsync.state`) flows only from server to client. Anything going the other
 
 ### Sending
 
-The method names say **which side the event fires on**, not which side you call from.
+Sending is one method: `xsync.emit(type, props, clients?)`. The third argument names the destination; omit it for a single hop — from a client to the server, from the server to the whole room.
 
-| Method | Fires on | Callable from |
+| Called from | `clients` | Fires on |
 | --- | --- | --- |
-| `xsync.emitToServer(type, props)` | the server | both |
-| `xsync.emitToClients(type, props, ids?)` | the clients | **server only** |
+| a client | omitted | the server (with the sender in `id`) |
+| the server | omitted | every client in the room (the sender included) |
+| both | `ClientStatus` | that one client, via the server |
+| both | `ClientStatus[]` | only the listed clients, via the server (an empty array reaches nobody) |
 
 ```js
 // client → server
-xsync.emitToServer('-move', { vector: { x: 1, y: 0 } });
+xsync.emit('-move', { vector: { x: 1, y: 0 } });
 
 // server → every client (including the sender)
-xsync.emitToClients('chat', { id, text });
+xsync.emit('chat', { id, text });
 
-// server → specific clients only
-xsync.emitToClients('deal', { card }, [clientId]);
+// client / server → specific clients only (a client's send is relayed by the server)
+xsync.emit('deal', { card }, target);                                  // one ClientStatus
+xsync.emit('deal', { card }, xsync.session.clients.filter(isPlayer));   // a ClientStatus[]
 ```
 
-- Calling `emitToServer` on the server never touches the wire; it behaves exactly like a local `xnew.emit`.
-- Calling `emitToClients` on a client throws. To broadcast something a client originated, receive it in a server handler and relay it.
+- Targets are `ClientStatus` values from `xsync.session.clients`. Given an `id` (from `sync.connect`, say),
+  look it up with `xsync.session.clients.find((c) => c.id === id)`.
+- When it relays, the server checks each target against its own room roster — a socket id from another room is dropped.
+- To fire something locally on the server without touching the wire, use `xnew.emit`, not `xsync.emit`.
 
 ```js
 // the standard shape: the server receives a client's message and hands it to everyone
 xsync.server(() => {
-  unit.on('chat', ({ id, text }) => xsync.emitToClients('chat', { id, text }));
+  unit.on('chat', ({ id, text }) => xsync.emit('chat', { id, text }));
 });
 xsync.client(() => {
-  sendButton.on('click', () => xsync.emitToServer('chat', { text: input.value }));
+  sendButton.on('click', () => xsync.emit('chat', { text: input.value }));
   unit.on('chat', ({ id, text }) => appendLine(id, text));
 });
 ```
@@ -261,7 +266,7 @@ The first argument carries sender information alongside your payload.
 
 | Field | Contents |
 | --- | --- |
-| `id` | The sender client's socket id. **`undefined` for a server-originated `emitToClients`** |
+| `id` | The sender client's socket id. **`undefined` when the server originated it (`xsync.emit` called on the server)**; on a relayed client message the server stamps the original sender |
 | others | The contents of `props`, spread in |
 
 When the server relays a message and you want the original sender preserved, put it in `props` explicitly — that is what `{ id, text }` above is doing.
@@ -278,7 +283,7 @@ When a component exists many times in a room (one `Player` per participant), you
 ```js
 // Player: deliver this client's input only to "its own" Player on the server
 xsync.client(() => {
-  unit.on('window.keydown.wasd', ({ vector }) => xsync.emitToServer('-move', { vector }));
+  unit.on('window.keydown.wasd', ({ vector }) => xsync.emit('-move', { vector }));
 });
 xsync.server(() => {
   unit.on('-move', ({ vector }) => { vel.x = Math.sign(vector.x); });   // other players' moves never arrive
@@ -328,7 +333,7 @@ Per-frame following (physics objects and the like) should read state in `on('upd
 
 ### Where `xnew.scope` is required
 
-Socket callbacks run outside xnew's tick. Every event `xsync` delivers is already handled internally, but if **your application attaches its own socket handlers**, or you call `xsync.emitToServer` from an addon event (a pixi `pointerdown`, a three raycast hit), wrap it in `xnew.scope`. Without it `Unit.current` is wrong and you get `no socket bound to this root`.
+Socket callbacks run outside xnew's tick. Every event `xsync` delivers is already handled internally, but if **your application attaches its own socket handlers**, or you call `xsync.emit` from an addon event (a pixi `pointerdown`, a three raycast hit), wrap it in `xnew.scope`. Without it `Unit.current` is wrong and you get `no socket bound to this root`.
 
 ```js
 socket.on('roomcreated', xnew.scope((payload) => xnew.emit('-roomcreated', payload)));
@@ -444,7 +449,7 @@ The comparison and the send are per tree, not per node. A frequently-changing in
 
 ### Messages and lifecycle events ignore the tick
 
-`xsync.emitToServer` / `xsync.emitToClients` are sent **the moment you call them**; nothing batches them onto a tick. Input latency is therefore unaffected by the tick — a keypress goes to the server immediately.
+`xsync.emit` is sent **the moment you call it**; nothing batches them onto a tick. Input latency is therefore unaffected by the tick — a keypress goes to the server immediately.
 
 `sync.connect`, `sync.disconnect` and `status` (the roster) are likewise handled as socket events, immediately.
 

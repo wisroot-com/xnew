@@ -25,11 +25,12 @@ export function syncData(unit: Unit): SyncData {
 // transport
 //----------------------------------------------------------------------------------------------------
 
-// The whole wire protocol (reserved names — never use them as app `type`s); fan-out is server-authoritative, no client→client relay:
+// The whole wire protocol (reserved names — never use them as app `type`s); fan-out stays server-authoritative:
+// a client→client message is relayed by the server, never sent socket to socket.
 //   'sync'          server→client  SyncNode[]              state channel — per-client projection, emitted only when changed; the client diff-applies it, then dispatches 'sync.update'
 //   'status'        server→client  { clients }             roster channel — room membership snapshot
-//   'emitToServer'  client→server  { type, syncId, data }  message channel — dispatch `type` on the server
-//   'emitToClients' server→client  { type, syncId, id, data }  message channel — dispatch `type` on the clients (also carries the lifecycle relay)
+//   'emitToServer'  client→server  { type, syncId, data, to? }  message channel — dispatch `type` on the server, or relay it to the `to` clients (xsync.emit with a target)
+//   'emitToClients' server→client  { type, syncId, id, data }   message channel — dispatch `type` on the clients (also carries the lifecycle relay)
 //   connect / disconnect / notfound (socket-native)        lifecycle channel — dispatched as 'sync.connect' / 'sync.disconnect' / 'sync.notfound'
 
 // 'sync.' is the library's own namespace: only bootServer / bootClient may dispatch it, never a client envelope.
@@ -124,7 +125,16 @@ function bootServer(options: BootOptions, Component: Function, props?: object): 
             const type = clientEventType(p?.type);
             if (type !== null) {
                 const data = typeof p?.data === 'object' && p.data !== null ? p.data : {};
-                dispatch(roomio, type, socket.id, data, typeof p?.syncId === 'number' ? p.syncId : null);
+                const syncId = typeof p?.syncId === 'number' ? p.syncId : null;
+                if (Array.isArray(p?.to)) {
+                    // relay targets are attacker-controlled: keep only this room's members (another room's socket id must stay unreachable) and stamp the real sender.
+                    const to = p.to.filter((id: any) => roomio.clients.some((client) => client.id === id));
+                    if (to.length > 0) {
+                        roomio.emit(to, 'emitToClients', { type, syncId, id: socket.id, data });
+                    }
+                } else {
+                    dispatch(roomio, type, socket.id, data, syncId);
+                }
             }
         });
         socket.on('disconnect', () => {   // mirror of connect
@@ -243,23 +253,20 @@ export const xsync = {
             },
         };
     },
-    emitToServer(type: string, props: Record<string, any> = {}): void {
+    // One send across client→server→client: `clients` (a ClientStatus or an array of them) is always delivered by the server — a client's targeted send is relayed, never socket to socket; omitted it means one hop (client→server / server→the whole room), and an empty array reaches nobody.
+    emit(type: string, props: Record<string, any> = {}, clients?: ClientStatus | ClientStatus[]): void {
         const roomio = RoomIO.of(Unit.current, true);
+        const syncId = syncData(Unit.current).id;
+        const to = clients === undefined ? null : (Array.isArray(clients) ? clients : [clients]).map((client) => client.id);
+        if (to !== null && to.length === 0) { return; }
         if (getEnvironment() === 'server') {
-            Unit.emit(Unit.current, type, props);
+            // the envelope id stays undefined (server-originated), so a relay names the original sender inside data.
+            const envelope = { type, syncId, id: undefined, data: props };
+            // each socket is in a room named by its id, so individual and room-wide delivery share one emit
+            roomio.emit(to ?? roomio.room.id, 'emitToClients', envelope);
         } else {
-            roomio.emit(null, 'emitToServer', { type, syncId: syncData(Unit.current).id, data: props });
+            roomio.emit(null, 'emitToServer', { type, syncId, data: props, to: to ?? undefined });
         }
-    },
-    emitToClients(type: string, props: Record<string, any> = {}, ids?: string[]): void {
-        if (getEnvironment() !== 'server') {
-            throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
-        }
-        const roomio = RoomIO.of(Unit.current, true);
-        // the envelope id stays undefined (server-originated), so a relay names the original sender inside data.
-        const envelope = { type, syncId: syncData(Unit.current).id, id: undefined, data: props };
-        // each socket is in a room named by its id, so individual and room-wide delivery share one emit
-        roomio.emit(ids?.length ? ids : roomio.room.id, 'emitToClients', envelope);
     },
     // one root component only: listeners for sync.* must live inside it, so compose with xnew.extend rather than a second argument.
     boot<C extends ComponentFn<any, any>>(options: BootOptions, Component: C, props?: PropsOf<C>): Unit {

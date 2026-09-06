@@ -313,9 +313,9 @@ function Cursor(unit, { player, color }) {
     // 自分のカーソルだけ動かせる（手番でなくても自分のぶんは動かせる。ドロップは手番＆収束後のみ）。
     unit.on('pointermove pointerdown', ({ position }) => {
         if (!iControl) { return; }
-        xsync.emitToServer('move', { x: position.x * xpixi.canvas.width / xpixi.canvas.clientWidth });
+        xsync.emit('move', { x: position.x * xpixi.canvas.width / xpixi.canvas.clientWidth });
     });
-    unit.on('pointerdown', () => { if (canDrop) { xsync.emitToServer('drop'); } });
+    unit.on('pointerdown', () => { if (canDrop) { xsync.emit('drop'); } });
 
     unit.on('update', () => {
         object.rotation += 0.02;

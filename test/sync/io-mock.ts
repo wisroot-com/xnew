@@ -55,7 +55,7 @@ export interface MockClientSocket {
 
 export interface IoMock {
     io: any;                                  // socket.io の io 相当（server 側）
-    connect(id?: string): MockClientSocket;   // 1 接続ぶんの client socket を生成
+    connect(id?: string, roomId?: string): MockClientSocket;   // 1 接続ぶんの client socket を生成（roomId 省略時は既定 ROOM）
     captured: any[];                          // server boot が emit した 'sync' ツリーの記録（capture-only テスト用）
     lastSync(): any;                          // 直近に emit された 'sync' ツリー（capture は root.on('update') で走る）
     lastSyncFor(clientId: string): any;       // その client 宛て（io.to(clientId)）に直近 emit された 'sync' ツリー
@@ -132,7 +132,7 @@ export function ioMock(): IoMock {
         return {
             id: clientId,
             // client→server: the server processes inbound wire events under the server env (a relay
-            // handler may call emitToClients, which is server-only), mirroring deliverToClient's client wrap.
+            // handler may fan out with xsync.emit, whose server branch needs it), mirroring deliverToClient's client wrap.
             emit(event: string, payload?: any): void { withEnvironment('server', () => conn.serverHandlers.get(event)?.forEach((h) => h(payload))); },
             on(event: string, handler: Handler): void {
                 let set = conn.clientHandlers.get(event);
@@ -161,7 +161,7 @@ export function ioMock(): IoMock {
 }
 
 // 実行環境（server/client）を固定して同期的な処理を走らせる。1 プロセスで両側を模すテスト用。
-// 構築（component body / xnew(...) / apply）に加え、session.myself / sync.emitToServer / sync.emitToClients も env で
+// 構築（component body / xnew(...) / apply）に加え、session.myself / sync.emit も env で
 // server/client を分岐する。よって server 側の処理（boot / server update での spawn / status）は asServer、client 側は
 // asClient で囲む。両側を 1 回の update でまとめて回すと env がどちらかにしか合わないので、サブツリーを
 // 各々の env で別々に tick する（例: channel.test の cycle）。apply は src 側で常に client 環境を強制する。

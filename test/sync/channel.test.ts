@@ -25,7 +25,7 @@ describe('event channel (socket.io transport)', () => {
         let id1: string | undefined;
         let id2: string | undefined;
         bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
-            xsync.client(() => { id1 = xsync.session.myself.id; unit.on('update', () => xsync.emitToServer('move', { x: 1 })); });
+            xsync.client(() => { id1 = xsync.session.myself.id; unit.on('update', () => xsync.emit('move', { x: 1 })); });
         });
         bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
             xsync.client(() => { id2 = xsync.session.myself.id; });
@@ -89,7 +89,7 @@ describe('event channel (socket.io transport)', () => {
                 });
             });
             xsync.client(() => {
-                unit.on('update', () => { xsync.emitToServer('move', { dx: 1, dy: 0 }); });
+                unit.on('update', () => { xsync.emit('move', { dx: 1, dy: 0 }); });
             });
         }
 
@@ -179,7 +179,7 @@ describe('event channel (socket.io transport)', () => {
         bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
             xsync.client(() => {
                 syncData(unit).id = 10;
-                xsync.emitToServer('-move', { vector: { x: 1 } });
+                xsync.emit('-move', { vector: { x: 1 } });
             });
         });
 
@@ -197,7 +197,7 @@ describe('event channel (socket.io transport)', () => {
         });
         // 送信ユニットの syncId に関係なく、'+ping' は両方のユニットへ届く（全体）。
         bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
-            xsync.client(() => { syncData(unit).id = 10; xsync.emitToServer('+ping', { n: 1 }); });
+            xsync.client(() => { syncData(unit).id = 10; xsync.emit('+ping', { n: 1 }); });
         });
 
         expect(hits.sort()).toEqual(['A:1', 'B:1']);

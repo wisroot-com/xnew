@@ -3,7 +3,7 @@ import { ChatView } from './chat.js';
 
 //----------------------------------------------------------------------------------------------------
 // game — multi-client のゲームロジック（socket.io 前提・無改変で動く）。
-//   ネットワークは xsync（emitToServer/emitToClients/on/state）だけに依存。transport は起動側が
+//   ネットワークは xsync（emit/on/state）だけに依存。transport は起動側が
 //   xsync.boot({ io, client, room }, ...) で生成する socket.io の socket。1 ブラウザ = 1 client。
 //
 //   シーンは「サーバーが現在のシーンを synced child として 1 つだけ持ち、差し替える」ことで全員に
@@ -21,12 +21,12 @@ import { ChatView } from './chat.js';
 //              クライアントには Setup が存在しないので設定画面はスキップされ、自機も持たない＝観戦になる。
 //   - Player : synced state {x,y,clientId,slot}。server が移動、client が描画＋（自機なら）入力。
 //   - ChatView : 全シーン共通のルームチャット（client 専用・Game の client 直下に常駐・chat.js）。
-//              送信は xsync.emitToServer('chat', { text })、Game の server ブロックが emitToClients で
+//              送信は xsync.emit('chat', { text })、Game の server ブロックが xsync.emit で
 //              ルーム全員（自分含む）へ中継する。受信は unit.on('chat', ({ id, text })=>…)。
 //
-//   sync イベント: 送信は emitToServer/emitToClients（payload はオブジェクト・syncId 自動付与）、受信は unit.on。
-//   emitToServer=client→server（server で type を発火）。emitToClients=server 専用（server→全 client・自分含む）。
-//   client→client は送れない。client 発の全体配信は server ハンドラ内の emitToClients で中継する。
+//   sync イベント: 送信は xsync.emit(type, props, clients?)（payload はオブジェクト・syncId 自動付与）、受信は unit.on。
+//   宛先省略時は client→server（server で type を発火）/ server→全 client（自分含む）の 1 ホップ。
+//   clients（ClientStatus か その配列）を渡すと server 中継で指定クライアントへ届く。
 //   プレフィックス '-'=同一コンポーネント(同じ syncId・replica↔server で一致) / '+'・無印=全体。
 //   key: xnew(C,{key}) で同一性の目印、xnew.find(C,{key}) で引ける（key はグローバル一意の想定）。
 //----------------------------------------------------------------------------------------------------
@@ -44,10 +44,10 @@ export function Game(unit) {
     xsync.register({ Title, Setup, World });   // 同期対象（= シーン）の型を宣言
 
     // server: 最初のシーン Title を生成し、client からの 'chat'（client→server）をルーム全員へ中継する
-    // （emitToClients は server 専用。送信者 id は props に載せて全 client へ配る）。
+    // （server の xsync.emit は宛先省略で全 client。送信者 id は props に載せて配る）。
     xsync.server(() => {
         xnew(Title);
-        unit.on('chat', ({ id, text }) => xsync.emitToClients('chat', { id, text: String(text ?? '').slice(0, 200) }));
+        unit.on('chat', ({ id, text }) => xsync.emit('chat', { id, text: String(text ?? '').slice(0, 200) }));
     });
 
     // client: 左にシーン（synced child）、右にルームチャット（ChatView）を横並びで置く。
@@ -70,7 +70,7 @@ function Title(unit) {
         xnew('<h2 class="m-0 text-lg font-bold text-gray-700">', 'マルチプレイ サンプル');
         xnew('<p class="m-0 text-sm text-gray-500">', 'プレイヤー1 / プレイヤー2 を決めてゲームを開始します。');
         const start = xnew('<button class="px-4 py-2 rounded border-0 bg-emerald-500 hover:bg-emerald-600 text-white text-sm cursor-pointer">', '設定画面へ進む');
-        start.on('click', () => xsync.emitToServer('-proceed'));   // 全員ぶんの Title が同じ syncId なので server の Title に届く
+        start.on('click', () => xsync.emit('-proceed'));   // 全員ぶんの Title が同じ syncId なので server の Title に届く
     });
 }
 
@@ -107,13 +107,13 @@ function Setup(unit) {
             const btn = xnew('<button class="px-3 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-50 text-sm cursor-pointer">');
             slotBtns[slot] = btn.current;
             btn.on('click', () => {
-                if (state.slots[slot] === myId) { xsync.emitToServer('-release'); }
-                else if (!state.slots[slot]) { xsync.emitToServer('-claim', { slot }); }
+                if (state.slots[slot] === myId) { xsync.emit('-release'); }
+                else if (!state.slots[slot]) { xsync.emit('-claim', { slot }); }
             });
         });
 
         const begin = xnew('<button class="px-4 py-2 rounded border-0 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm cursor-pointer">', 'ゲーム開始');
-        begin.on('click', () => xsync.emitToServer('-begin'));
+        begin.on('click', () => xsync.emit('-begin'));
         const hint = xnew('<p class="m-0 text-xs text-gray-400">', '両方のプレイヤーが決まると開始できます。');
 
         // 共有 state（slots）をボタン表示へ反映する。
@@ -191,13 +191,13 @@ export function Player(unit, { clientId = '', slot = '' } = {}) {
 
         // 入力 → 移動は自機（このクライアント自身の Player）だけが受ける。観戦者は描画のみ。
         if (state.clientId === xsync.session.myself.id) {
-            const stop = () => xsync.emitToServer('-move', { vector: { x: 0, y: 0 } });
+            const stop = () => xsync.emit('-move', { vector: { x: 0, y: 0 } });
             // チャット等の入力欄にフォーカスがある間はゲーム入力にしない（文字入力を優先）
             const typing = (target) => target instanceof HTMLElement && (target.matches('input, textarea, select') || target.isContentEditable);
             unit.on('window.keydown.wasd window.keyup.wasd window.keydown.arrow window.keyup.arrow', ({ event, vector }) => {
                 if (typing(event.target) === false) {
                     event.preventDefault();
-                    xsync.emitToServer('-move', { vector });
+                    xsync.emit('-move', { vector });
                 }
             });
             unit.on('window.focusin', ({ event }) => { if (typing(event.target)) { stop(); } });   // キー押下中に入力欄へ移っても停止

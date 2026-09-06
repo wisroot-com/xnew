@@ -32,13 +32,13 @@ export function Player(unit) {
   │      ├ Player (state)      │   状態チャンネル  │   └ World                  │
   │      └ Player (state)      │   変化時のみ      │      ├ Player (replica)    │
   │                            │                  │      └ Player (replica)    │
-  │  unit.on('-move')          │ ◀── 'emitToServer'│  xsync.emitToServer('-move')│
+  │  unit.on('-move')          │ ◀── 'emitToServer'│  xsync.emit('-move')        │
   └───────────────────────────┘   メッセージ      └───────────────────────────┘
 ```
 
 - **状態（state）** は一方通行です。サーバー → クライアントにしか流れません。
-- **クライアントからの働きかけ** はメッセージ（`xsync.emitToServer`）で行い、サーバーが state を書き換えます。
-- **client → client の直接通信はありません。** 全員に配りたいものは、サーバーのハンドラから `xsync.emitToClients` で中継します。
+- **クライアントからの働きかけ** はメッセージ（`xsync.emit`）で行い、サーバーが state を書き換えます。
+- **socket 同士の直接通信はありません。** client → client も `xsync.emit` の第 3 引数（宛先クライアント）で送れますが、必ずサーバーが中継します。
 
 ### 3 つのチャンネル
 
@@ -48,7 +48,7 @@ export function Player(unit) {
 | --- | --- | --- | --- |
 | 状態 | server → client | `sync` | 同期ツリーのスナップショット。**変化したときだけ**送られます |
 | 名簿 | server → client | `status` | ルームの参加者一覧 |
-| メッセージ | client → server | `emitToServer` | サーバー側で任意のイベントを発火する |
+| メッセージ | client → server | `emitToServer` | サーバー側で任意のイベントを発火する（宛先つきならサーバーが中継する） |
 | メッセージ | server → client | `emitToClients` | クライアント側で任意のイベントを発火する |
 | ライフサイクル | 双方向 | `connect` / `disconnect` / `notfound` | `sync.connect` などとして各 unit に届く |
 
@@ -217,34 +217,39 @@ state の更新はオブジェクトを差し替えず、キー単位で書き�
 
 ### 送信
 
-メソッド名は **「どちら側で発火するか」** を表します。呼ぶ側ではありません。
+送信は `xsync.emit(type, props, clients?)` の 1 本です。第 3 引数 `clients` が宛先で、省略すると「1 ホップ」（クライアントからはサーバーへ、サーバーからはルーム全員へ）になります。
 
-| メソッド | 発火する場所 | 呼べる場所 |
+| 呼ぶ場所 | `clients` | 発火する場所 |
 | --- | --- | --- |
-| `xsync.emitToServer(type, props)` | サーバー | 両方 |
-| `xsync.emitToClients(type, props, ids?)` | クライアント | **サーバーのみ** |
+| クライアント | 省略 | サーバー（`id` に送信者が入る） |
+| サーバー | 省略 | ルームの全クライアント（送信者含む） |
+| 両方 | `ClientStatus` | サーバー経由でそのクライアント 1 人 |
+| 両方 | `ClientStatus[]` | サーバー経由で配列内のクライアントだけ（空配列なら誰にも届かない） |
 
 ```js
 // client → server
-xsync.emitToServer('-move', { vector: { x: 1, y: 0 } });
+xsync.emit('-move', { vector: { x: 1, y: 0 } });
 
 // server → 全クライアント（送信者含む）
-xsync.emitToClients('chat', { id, text });
+xsync.emit('chat', { id, text });
 
-// server → 指定したクライアントだけ
-xsync.emitToClients('deal', { card }, [clientId]);
+// client / server → 指定したクライアントだけ（client 発でもサーバーが中継する）
+xsync.emit('deal', { card }, target);                                  // ClientStatus 1 人
+xsync.emit('deal', { card }, xsync.session.clients.filter(isPlayer));   // ClientStatus[]
 ```
 
-- `emitToServer` をサーバーで呼ぶと、ワイヤを通らずローカルの `xnew.emit` と同じ動作になります。
-- `emitToClients` をクライアントで呼ぶと例外です。クライアント発の全体配信は、サーバーのハンドラで受けてから中継します。
+- 宛先は `xsync.session.clients` の `ClientStatus` を渡します。`sync.connect` などで受けた `id` からは
+  `xsync.session.clients.find((c) => c.id === id)` で引きます。
+- サーバーは中継するとき、宛先が自分のルームの参加者かを確かめます。ルーム外の socket id には届きません。
+- サーバー側でワイヤに出さずローカルに発火したいときは `xsync.emit` ではなく `xnew.emit` を使ってください。
 
 ```js
 // 定石: client の発言を server で受けて全員に配る
 xsync.server(() => {
-  unit.on('chat', ({ id, text }) => xsync.emitToClients('chat', { id, text }));
+  unit.on('chat', ({ id, text }) => xsync.emit('chat', { id, text }));
 });
 xsync.client(() => {
-  sendButton.on('click', () => xsync.emitToServer('chat', { text: input.value }));
+  sendButton.on('click', () => xsync.emit('chat', { text: input.value }));
   unit.on('chat', ({ id, text }) => appendLine(id, text));
 });
 ```
@@ -261,7 +266,7 @@ unit.on('chat', ({ id, text }) => { /* ... */ });
 
 | フィールド | 内容 |
 | --- | --- |
-| `id` | 送信元クライアントの socket id。**サーバー発の `emitToClients` では `undefined`** |
+| `id` | 送信元クライアントの socket id。**サーバー発（`xsync.emit` をサーバーで呼んだ場合）は `undefined`**。クライアント発の中継ではサーバーが送信者の id を載せます |
 | その他 | `props` の中身がそのまま展開されます |
 
 サーバーが中継するときに元の送信者を伝えたい場合は、`props` に明示的に載せてください（上の例の `{ id, text }` がそれです）。
@@ -278,7 +283,7 @@ unit.on('chat', ({ id, text }) => { /* ... */ });
 ```js
 // Player: 自機の入力を、サーバー側の「自分に対応する Player」にだけ届ける
 xsync.client(() => {
-  unit.on('window.keydown.wasd', ({ vector }) => xsync.emitToServer('-move', { vector }));
+  unit.on('window.keydown.wasd', ({ vector }) => xsync.emit('-move', { vector }));
 });
 xsync.server(() => {
   unit.on('-move', ({ vector }) => { vel.x = Math.sign(vector.x); });   // 他人の move は届かない
@@ -328,7 +333,7 @@ unit.on('update', () => {
 
 ### `xnew.scope` が必要な場面
 
-socket のコールバックは xnew の tick の外で走ります。`xsync` が配るイベント（上記すべて）は内部で処理済みですが、**アプリが socket に直接ハンドラを付ける場合** や、addon のイベント（pixi の `pointerdown`、three のレイキャストなど）から `xsync.emitToServer` を呼ぶ場合は `xnew.scope` で包む必要があります。包まないと `Unit.current` がずれて `no socket bound to this root` になります。
+socket のコールバックは xnew の tick の外で走ります。`xsync` が配るイベント（上記すべて）は内部で処理済みですが、**アプリが socket に直接ハンドラを付ける場合** や、addon のイベント（pixi の `pointerdown`、three のレイキャストなど）から `xsync.emit` を呼ぶ場合は `xnew.scope` で包む必要があります。包まないと `Unit.current` がずれて `no socket bound to this root` になります。
 
 ```js
 socket.on('roomcreated', xnew.scope((payload) => xnew.emit('-roomcreated', payload)));
@@ -444,7 +449,7 @@ state は同期ノード単位ではなくツリー単位で比較・送信さ�
 
 ### メッセージとライフサイクルは tick と無関係
 
-`xsync.emitToServer` / `xsync.emitToClients` は **呼んだ瞬間に** 送られます。tick に合わせてまとめられることはありません。入力の遅延は tick の影響を受けないので、キー入力はそのまま即時にサーバーへ届きます。
+`xsync.emit` は **呼んだ瞬間に** 送られます。tick に合わせてまとめられることはありません。入力の遅延は tick の影響を受けないので、キー入力はそのまま即時にサーバーへ届きます。
 
 `sync.connect` / `sync.disconnect` / `status`（参加者一覧）も同様に、socket のイベントとして即時に処理されます。
 

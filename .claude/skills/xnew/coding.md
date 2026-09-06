@@ -250,8 +250,8 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   create **and own** the socket, with a **flat string** handshake query
   (`io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true })`),
   and disconnects it on finalize. Callers (e.g. an example's `Room` component) just boot —
-  they no longer touch the socket. `sync.state`, `sync.register`, `sync.emitToServer`,
-  `sync.emitToClients` operate on the current sync root.
+  they no longer touch the socket. `sync.state`, `sync.register` and `sync.emit`
+  operate on the current sync root.
 - **Lifecycle events are `sync.connect` / `sync.disconnect` / `sync.notfound`, dispatched into
   the root on BOTH sides** (the `-connect`-style boot-parent forwards were removed 2026-07). Every
   handler gets `{ id }` = the affected client's socket id; compare with `xsync.session.myself.id`
@@ -263,21 +263,21 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 - **Wire event names vs host event names are independent.** A socket/wire event
   (`'roomcreated'`) and the host-facing unit event it is forwarded to
   (`'-roomcreated'`) are separate strings; keep their mapping deliberate.
-- **Send events with `sync.emitToServer` / `sync.emitToClients` — they name the side the
-  event fires on, not the direction you happen to call from.** Receive both with
+- **Send events with the single `sync.emit(type, props, clients?)` (the old
+  `emitToServer` / `emitToClients` pair was merged into it).** Receive with
   `unit.on(type, ({ id, ...props }) => …)` (`id` = sender socket id).
-  - `sync.emitToServer(type, props)` → fires `type` on the **server**. From a client it
-    travels over the socket (a `'-type'` is scoped to the server unit sharing the
-    sender's `syncId`); on the server it is a local emit (identical to `xnew.emit`,
-    so `'+'`/`'-'` only).
-  - `sync.emitToClients(type, props, ids?)` → fires `type` on the **clients** via the
-    server. From a client it round-trips through the server to every client incl. the
-    sender (`id` = sender); from the server it broadcasts (`id` = `undefined`). `ids`
-    limits delivery to those client ids (default: the whole room). This is the
+  - `clients` omitted = one hop: from a **client** it fires `type` on the **server**
+    (a `'-type'` is scoped to the server unit sharing the sender's `syncId`); from the
+    **server** it fires on every client in the room (`id` = `undefined`). This is the
     built-in room broadcast — don't hand-roll a relay component.
-  - There is **no** `sync.emit`/`sync.message` anymore. The wire events
-    `emitToServer` / `emitToClients` (same names as the facade methods, written inline —
-    no WIRE_* consts) are reserved — don't use them as app `type`s.
+  - `clients` = a `ClientStatus` or `ClientStatus[]` (from `sync.session.clients`) →
+    delivered to exactly those clients, always **via the server**: a client's targeted
+    send is relayed, and the server keeps only targets in its own room roster. `[]`
+    reaches nobody.
+  - On the server `sync.emit` always goes to the wire — for a local fire use `xnew.emit`
+    (`'+'`/`'-'` only).
+  - The wire events `emitToServer` / `emitToClients` (written inline — no WIRE_* consts)
+    are reserved — don't use them as app `type`s.
 - **Per-client state projection — `sync.visibility(predicate)`.** The server captures the sync tree
   **once per connected client** and emits each socket its own projection. By default a node is
   **public** (reaches every client). `sync.visibility((clientId) => boolean | null)` (predicate or
@@ -399,8 +399,8 @@ the rule, then one line of why.
   Three into Pixi as a bg sprite (`PIXI.Texture.from(xthree.canvas)`, `texture.source.update()` per frame)
   and give scene children explicit `zIndex` + `scene.sortableChildren = true` — replicas mount async, so
   add-order can't be relied on for layering. Addon event callbacks (`pixiObject.on('pointertap', …)`,
-  a Three raycast handler, etc.) fire OUTSIDE the tick/scope, so any `xsync.emitToServer` / `xnew.emit` /
-  `xnew(...)` inside them must be wrapped in `xnew.scope(...)` (§7) — otherwise `emitToServer` throws
+  a Three raycast handler, etc.) fire OUTSIDE the tick/scope, so any `xsync.emit` / `xnew.emit` /
+  `xnew(...)` inside them must be wrapped in `xnew.scope(...)` (§7) — otherwise `xsync.emit` throws
   `no socket bound to this root` (Unit.current isn't the sync node).
 
 - **InputCheckbox holds a Gate for its checked state and its `unit.current` is the CONTAINER, not the
@@ -690,8 +690,7 @@ the rule, then one line of why.
 - **`xnew.emit` requires a `+` or `-` prefix — an unprefixed type now throws.**
   Only `'+event'` (broadcast) and `'-event'` (own unit) have a dispatch path, so a
   missing `-` used to fail silently while `on('event', …)` also bound the name as a
-  DOM listener. `xsync.emitToServer` / `emitToClients` are a different channel and
-  still take unprefixed types.
+  DOM listener. `xsync.emit` is a different channel and still takes unprefixed types.
 - **Text content always needs a target; there is no bare-content form.**
   `xnew('hello')` throws `invalid tag string` (a leading string is always parsed
   as a tag) and `xnew(42)` throws `text content needs a target element`. Write
@@ -711,5 +710,6 @@ the rule, then one line of why.
 - **Never let a client-supplied wire `type` reach `dispatch` unchecked.** `bootServer`
   rejects the reserved `sync.*` namespace on `emitToServer` and coerces `syncId` to a
   number-or-null; without that, a client could spoof `sync.disconnect` for another
-  member. Anything else a server unit listens for is still reachable from any client,
+  member. A relay envelope's `to` is filtered against the room roster for the same
+  reason — an unfiltered id would reach a socket in another room. Anything else a server unit listens for is still reachable from any client,
   so **server handlers must validate their own payloads**.

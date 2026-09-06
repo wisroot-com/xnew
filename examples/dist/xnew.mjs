@@ -1272,7 +1272,16 @@ function bootServer(options, Component, props) {
             const type = clientEventType(p === null || p === void 0 ? void 0 : p.type);
             if (type !== null) {
                 const data = typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {};
-                dispatch(roomio, type, socket.id, data, typeof (p === null || p === void 0 ? void 0 : p.syncId) === 'number' ? p.syncId : null);
+                const syncId = typeof (p === null || p === void 0 ? void 0 : p.syncId) === 'number' ? p.syncId : null;
+                if (Array.isArray(p === null || p === void 0 ? void 0 : p.to)) {
+                    const to = p.to.filter((id) => roomio.clients.some((client) => client.id === id));
+                    if (to.length > 0) {
+                        roomio.emit(to, 'emitToClients', { type, syncId, id: socket.id, data });
+                    }
+                }
+                else {
+                    dispatch(roomio, type, socket.id, data, syncId);
+                }
             }
         });
         socket.on('disconnect', () => {
@@ -1382,22 +1391,20 @@ const xsync = {
             },
         };
     },
-    emitToServer(type, props = {}) {
+    emit(type, props = {}, clients) {
         const roomio = RoomIO.of(Unit.current, true);
+        const syncId = syncData(Unit.current).id;
+        const to = clients === undefined ? null : (Array.isArray(clients) ? clients : [clients]).map((client) => client.id);
+        if (to !== null && to.length === 0) {
+            return;
+        }
         if (getEnvironment() === 'server') {
-            Unit.emit(Unit.current, type, props);
+            const envelope = { type, syncId, id: undefined, data: props };
+            roomio.emit(to !== null && to !== void 0 ? to : roomio.room.id, 'emitToClients', envelope);
         }
         else {
-            roomio.emit(null, 'emitToServer', { type, syncId: syncData(Unit.current).id, data: props });
+            roomio.emit(null, 'emitToServer', { type, syncId, data: props, to: to !== null && to !== void 0 ? to : undefined });
         }
-    },
-    emitToClients(type, props = {}, ids) {
-        if (getEnvironment() !== 'server') {
-            throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
-        }
-        const roomio = RoomIO.of(Unit.current, true);
-        const envelope = { type, syncId: syncData(Unit.current).id, id: undefined, data: props };
-        roomio.emit((ids === null || ids === void 0 ? void 0 : ids.length) ? ids : roomio.room.id, 'emitToClients', envelope);
     },
     boot(options, Component, props) {
         return getEnvironment() === 'server' ? bootServer(options, Component, props) : bootClient(options, Component, props);
