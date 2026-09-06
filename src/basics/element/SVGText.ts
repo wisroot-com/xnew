@@ -24,10 +24,10 @@ export function SVGText(unit: xnew.Unit,
     const inner = xnew({ tag: 'text', x: 0, y: 0, paintOrder: 'stroke fill', ...others }, text);
 
     function resize() {
-        const bbox = (inner.element as SVGGraphicsElement).getBBox();
-        unit.element.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
-        unit.element.style.width = bbox.width + 'px';
-        unit.element.style.height = bbox.height + 'px';
+        const bbox = (inner.current as SVGGraphicsElement).getBBox();
+        unit.current.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+        unit.current.style.width = bbox.width + 'px';
+        unit.current.style.height = bbox.height + 'px';
     }
     resize();
     inner.on('resize', resize);

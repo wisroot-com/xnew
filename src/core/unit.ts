@@ -27,7 +27,7 @@ export type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) 
 
 // Component that writes a text/number literal into the current element.
 function textComponent(content: string | number): (unit: Unit) => void {
-    return (unit: Unit) => { unit.element.textContent = content.toString(); };
+    return (unit: Unit) => { unit.current.textContent = content.toString(); };
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -146,7 +146,8 @@ export class Unit {
         return this._.parent;
     }
     
-    public get element(): DomElement {
+    // the element new children attach to: the innermost element the unit nested, or the one it was created on
+    public get current(): DomElement {
         return this._.currentElement;
     }
 
@@ -403,8 +404,8 @@ export class Unit {
         } else if (unit._.listeners.has(type, listener) === false) {
             unit._.listeners.set(type, listener, { execute, owner });
             Unit.type2units.add(type, unit);
-            if (/^[A-Za-z]/.test(type) && unit.element !== null) {
-                unit._.events.add(unit.element, type, execute, options);
+            if (/^[A-Za-z]/.test(type) && unit.current !== null) {
+                unit._.events.add(unit.current, type, execute, options);
             }
         }
         if (owner !== unit) {

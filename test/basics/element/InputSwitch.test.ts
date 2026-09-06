@@ -12,9 +12,9 @@ describe('basics InputSwitch', () => {
         jest.useRealTimers();
     });
 
-    // unit.element is the container (carries the framed pill); the hidden input and the knob div nest inside it
+    // unit.current is the container (carries the framed pill); the hidden input and the knob div nest inside it
     function inputOf(unit: xnew.Unit): HTMLInputElement {
-        return unit.element.querySelector('input') as HTMLInputElement;
+        return unit.current.querySelector('input') as HTMLInputElement;
     }
 
     it('nests a hidden native checkbox with the given state', () => {
@@ -31,14 +31,14 @@ describe('basics InputSwitch', () => {
         const unit = xnew(InputSwitch);
 
         expect(inputOf(unit).checked).toBe(false);
-        expect(unit.element.hasAttribute('data-checked')).toBe(false);
+        expect(unit.current.hasAttribute('data-checked')).toBe(false);
         expect(unit.input.checked).toBe(false);
     });
 
     it('marks the container as checked while on', () => {
         const unit = xnew(InputSwitch, { value: true });
 
-        expect(unit.element.hasAttribute('data-checked')).toBe(true);
+        expect(unit.current.hasAttribute('data-checked')).toBe(true);
         expect(unit.input.checked).toBe(true);
     });
 
@@ -61,14 +61,14 @@ describe('basics InputSwitch', () => {
         input.dispatchEvent(new Event('input', { bubbles: true }));
 
         expect(received).toEqual([true]);
-        expect(unit.element.hasAttribute('data-checked')).toBe(true);
+        expect(unit.current.hasAttribute('data-checked')).toBe(true);
     });
 
     it('applies className and style to the container element', () => {
         const unit = xnew(InputSwitch, { className: 'pill', style: 'width: 4em;' });
 
-        expect(unit.element.className).toContain('pill');
-        expect(unit.element.getAttribute('style')).toContain('width: 4em;');
+        expect(unit.current.className).toContain('pill');
+        expect(unit.current.getAttribute('style')).toContain('width: 4em;');
     });
 
     it('omits the default knob when composed by the caller', () => {
@@ -76,7 +76,7 @@ describe('basics InputSwitch', () => {
             xnew.extend(InputSwitch, { value: true });
         });
 
-        expect(unit.element.querySelectorAll('div')).toHaveLength(0);
+        expect(unit.current.querySelectorAll('div')).toHaveLength(0);
         expect(inputOf(unit).tagName).toBe('INPUT');
     });
 

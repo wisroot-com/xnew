@@ -249,8 +249,8 @@ function ControlPanel(unit, { state, bags }) {
   copy.on('click', () => {
     const text = JSON.stringify({ texture: state.texture, params: copyableParams(bags[state.texture]) }, null, 2);
     navigator.clipboard.writeText(text).then(() => {
-      copy.element.textContent = 'copied!';
-      xnew.timeout(() => { copy.element.textContent = 'copy params'; }, 1000);
+      copy.current.textContent = 'copied!';
+      xnew.timeout(() => { copy.current.textContent = 'copy params'; }, 1000);
     });
   });
   panel.separator();

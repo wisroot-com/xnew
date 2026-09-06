@@ -28,7 +28,7 @@ describe('basics Panel', () => {
             panel.button({ name: 'one' });
             expect(host.textContent).toContain('GUI');
             expect(panel.gate).not.toBe(undefined);
-            expect((panel.element as HTMLElement).querySelector('button')).not.toBe(null);
+            expect((panel.current as HTMLElement).querySelector('button')).not.toBe(null);
         });
 
         test('leaving open undefined keeps the rows always shown, with no header and no gate', () => {
@@ -139,7 +139,7 @@ describe('basics Panel', () => {
             const wrapper = group.container as HTMLElement;
             expect(wrapper.textContent).toContain('settings');
             expect(wrapper.querySelector('button')).not.toBe(null);
-            expect(wrapper.contains(group.element)).toBe(true);
+            expect(wrapper.contains(group.current)).toBe(true);
         });
 
         test('groups nest, and a nested group shares the outer params object', () => {

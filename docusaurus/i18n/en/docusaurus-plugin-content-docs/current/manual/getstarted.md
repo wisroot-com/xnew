@@ -66,7 +66,7 @@ function Component(unit, props) {
 #### 2. Creating HTML Elements
 ```js
 const unit = xnew('<div class="my-class">', 'inner text');
-unit.element; // Access the created DOM element
+unit.current; // Access the created DOM element
 ```
 
 ### Example 1: Your First Component
@@ -210,7 +210,7 @@ Click the box below to start and stop a CSS rotation animation.
       let running = false;
       unit.on('click', ({ event }) => {
         running = !running;
-        text.element.textContent = running ? 'start' : 'stop';
+        text.current.textContent = running ? 'start' : 'stop';
       });
 
       // Update animation frame
@@ -218,7 +218,7 @@ Click the box below to start and stop a CSS rotation animation.
       unit.on('update', () => {
         if (running === false) return;
         rotate++;
-        unit.element.style.transform = `rotate(${rotate}deg)`;
+        unit.current.style.transform = `rotate(${rotate}deg)`;
       });
     }
   </script>

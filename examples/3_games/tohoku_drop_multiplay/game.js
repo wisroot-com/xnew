@@ -339,11 +339,11 @@ function HUD(unit) {
 
     // 手番のプレイヤーは緑背景＋枠で強調、そうでない方は淡色にする。
     const paint = (box, label, score, active, mine) => {
-        box.element.innerHTML = `${label}${mine ? '<span class="text-[2cqw]">（あなた）</span>' : ''}<br>${score} <span class="text-[2cqw]">/ ${WIN_SCORE}</span>`;
-        box.element.style.background = active ? '#16a34a' : 'rgba(255,255,255,0.75)';
-        box.element.style.color = active ? '#ffffff' : '#15803d';
-        box.element.style.boxShadow = active ? '0 0 0 0.5cqw #bbf7d0' : 'none';
-        box.element.style.opacity = active ? '1' : '0.8';
+        box.current.innerHTML = `${label}${mine ? '<span class="text-[2cqw]">（あなた）</span>' : ''}<br>${score} <span class="text-[2cqw]">/ ${WIN_SCORE}</span>`;
+        box.current.style.background = active ? '#16a34a' : 'rgba(255,255,255,0.75)';
+        box.current.style.color = active ? '#ffffff' : '#15803d';
+        box.current.style.boxShadow = active ? '0 0 0 0.5cqw #bbf7d0' : 'none';
+        box.current.style.opacity = active ? '1' : '0.8';
     };
 
     unit.on('+status', ({ phase, myNo, turn, score1, score2, winner }) => {
@@ -351,12 +351,12 @@ function HUD(unit) {
         paint(p1box, 'P1', score1, playing && turn === 1, myNo === 1);
         paint(p2box, 'P2', score2, playing && turn === 2, myNo === 2);
         if (phase === 'waiting') {
-            center.element.textContent = '相手の参加を待っています…';
+            center.current.textContent = '相手の参加を待っています…';
         } else if (phase === 'over') {
             const youWin = myNo !== 0 && myNo === winner;
-            center.element.textContent = myNo === 0 ? `Player ${winner} の勝ち！` : (youWin ? 'あなたの勝ち！' : 'あなたの負け…');
+            center.current.textContent = myNo === 0 ? `Player ${winner} の勝ち！` : (youWin ? 'あなたの勝ち！' : 'あなたの負け…');
         } else {
-            center.element.textContent = '';
+            center.current.textContent = '';
         }
     });
 }

@@ -110,7 +110,7 @@ function cornerBrackets({ offset = 0, size, borderW, opacity, color }) {
     for (const hside of ['left', 'right']) {
       const b = xnew(`<div class="absolute ${vside}-[${offset}cqw] ${hside}-[${offset}cqw] w-[${size}cqw] h-[${size}cqw]" style="border-${vside}:${borderW}cqw solid; border-${hside}:${borderW}cqw solid; opacity:${opacity};">`);
       if (color) {
-        b.element.style.color = color;
+        b.current.style.color = color;
       }
     }
   }
@@ -440,15 +440,15 @@ function StoryDialog(_unit, { accent, tag, bottomCqw }) {
   // ヘッダー: [線] ● ▶ TAG [線]
   xnew('<div class="flex items-center mb-[1cqw] font-bold tracking-[0.3em]" style="font-size:1.8cqw;">', () => {
     const lineL = xnew('<div class="mr-[1cqw]" style="width:6cqw; height:0.18cqw;">');
-    lineL.element.style.background = `linear-gradient(90deg, transparent, ${accent})`;
+    lineL.current.style.background = `linear-gradient(90deg, transparent, ${accent})`;
     const blink = xnew('<div class="mr-[0.8cqw]">', '●');
     blink.on('update', ({ count: t }) => {
-      blink.element.style.opacity = Math.floor(t / 16) % 2 ? '1' : '0.2';
+      blink.current.style.opacity = Math.floor(t / 16) % 2 ? '1' : '0.2';
     });
     const lbl = xnew('<div class="mr-[1cqw]">', `▶ ${tag}`);
     const lineR = xnew('<div style="width:6cqw; height:0.18cqw;">');
-    lineR.element.style.background = `linear-gradient(90deg, ${accent}, transparent)`;
-    for (const e of [blink, lbl]) e.element.style.color = accent;
+    lineR.current.style.background = `linear-gradient(90deg, ${accent}, transparent)`;
+    for (const e of [blink, lbl]) e.current.style.color = accent;
   });
   cornerBrackets({ offset: 0, size: 2.2, borderW: 0.25, opacity: 0.85, color: accent });
 
@@ -507,7 +507,7 @@ function StoryPageHit(unit) {
         xnew.emit('+shake', { amount: 0.7 });
         xnew(ExpandingBurst, { x: impactX + 28, y: impactY, power: 2.4 });
         flashG.alpha = 0.85;
-        xnew.transition(({ value }) => { sub.element.style.opacity = `${value}`; }, 500, 'ease');
+        xnew.transition(({ value }) => { sub.current.style.opacity = `${value}`; }, 500, 'ease');
       }
     } else {
       hitT++;
@@ -576,7 +576,7 @@ function GameScene(unit) {
     xpixi.renderer.render(xpixi.scene); // preserveDrawingBuffer なしでも同一タスク内の描画直後なら canvas が写る
     const image = html2canvas(document.querySelector('#main'), {
       scale: 2, logging: false, useCORS: true,
-      ignoreElements: (element) => element === gameover.element,
+      ignoreElements: (element) => element === gameover.current,
     }).then((canvas) => canvas.toDataURL('image/png'));
     xnew.timeout(() => unit.change(ResultScene, { image, score, wave, kills, cleared }), 2000);
   });
@@ -590,7 +590,7 @@ function ResultScene(unit, { image, score, wave, kills, cleared }) {
   // popup
   xnew.nest(`<div class="absolute inset-0 size-full">`);
   xnew.transition(({ value }) => {
-    Object.assign(unit.element.style, { opacity: value, transform: `scale(${0.8 + value * 0.2})` });
+    Object.assign(unit.current.style, { opacity: value, transform: `scale(${0.8 + value * 0.2})` });
   }, 500, 'ease');
 
   xnew(ResultBackground, { gradient: 'from-slate-900 to-blue-950', textColor: 'text-blue-800' });
@@ -676,11 +676,11 @@ function WaveTransition(unit, { wave }) {
   const color = waveCss(wave);
   const code = ENEMIES[enemyIdForWave(wave)].code;
   xnew.nest('<div class="absolute left-0 right-[25cqw] top-0 bottom-0 overflow-hidden pointer-events-none" style="font-family: monospace;">');
-  unit.element.style.color = color; // 文字はすべて wave 色を継承
+  unit.current.style.color = color; // 文字はすべて wave 色を継承
 
   // 暗幕 + 色フラッシュ + 走査線オーバーレイ
   const flash = xnew('<div class="absolute inset-0">');
-  flash.element.style.background = color;
+  flash.current.style.background = color;
   xnew('<div class="absolute inset-0" style="background: rgba(2,4,8,0.4);">');
   xnew('<div class="absolute inset-0" style="background: repeating-linear-gradient(0deg, transparent 0 0.35cqw, rgba(0,0,0,0.28) 0.35cqw 0.7cqw);">');
 
@@ -688,7 +688,7 @@ function WaveTransition(unit, { wave }) {
   const stripe = `repeating-linear-gradient(45deg, ${color} 0, ${color} 1cqw, transparent 1cqw, transparent 2.2cqw)`;
   for (const edge of ['top-0', 'bottom-0']) {
     const s = xnew(`<div class="absolute ${edge} left-0 right-0 h-[2.4cqw]" style="opacity:0.45;">`);
-    s.element.style.background = stripe;
+    s.current.style.background = stripe;
   }
 
   // HUD コーナーブラケット（四隅）。色は親の currentColor（wave 色）を継承。
@@ -696,8 +696,8 @@ function WaveTransition(unit, { wave }) {
 
   // 縦に流れる走査ライン
   const scan = xnew('<div class="absolute left-0 right-0 h-[0.35cqw]" style="top:0;">');
-  scan.element.style.background = color;
-  scan.element.style.boxShadow = `0 0 1.6cqw ${color}`;
+  scan.current.style.background = color;
+  scan.current.style.boxShadow = `0 0 1.6cqw ${color}`;
 
   // 上部の謎文字（左：システムアラート / 右：流れる hex）
   xnew('<div class="absolute left-[3.5cqw] top-[5.5cqw] text-[1.9cqw] tracking-[0.3em] font-bold">', '▚ SYSTEM ALERT ▚');
@@ -720,41 +720,41 @@ function WaveTransition(unit, { wave }) {
     });
     xnew('<div class="relative w-full h-[1.5cqw]" style="border:0.15cqw solid; box-shadow:0 0 1cqw currentColor;">', () => {
       bar = xnew('<div class="absolute inset-y-0 left-0" style="width:0%;">');
-      bar.element.style.background = color;
+      bar.current.style.background = color;
     });
     streamEl = xnew('<div class="text-[1.2cqw] mt-[0.6cqw] tracking-[0.15em] whitespace-nowrap overflow-hidden" style="opacity:0.6;">', '');
   });
 
   const VISIBLE = 126; // フェード前のおおよそのフレーム数（解析バーをこの間にちょうど満たす）
   unit.on('update', ({ count: t }) => {
-    flash.element.style.opacity = `${(Math.sin(t * 0.08) * 0.5 + 0.5) * 0.1 + 0.03}`; // ゆったり明滅
-    warn.element.style.opacity = `${Math.floor(t / 18) % 2 ? 1 : 0.25}`;
+    flash.current.style.opacity = `${(Math.sin(t * 0.08) * 0.5 + 0.5) * 0.1 + 0.03}`; // ゆったり明滅
+    warn.current.style.opacity = `${Math.floor(t / 18) % 2 ? 1 : 0.25}`;
 
     // WAVE N グリッチ：たまに横ズレ + 色収差シャドウ
     const jump = Math.random() < 0.12 ? (Math.random() * 2 - 1) * 0.7 : 0;
-    label.element.style.transform = `translateX(${jump}cqw)`;
-    label.element.style.textShadow = `0 0 2cqw ${color}, ${0.25 + jump}cqw 0 rgba(255,40,90,0.55), ${-0.25}cqw 0 rgba(40,200,255,0.55)`;
+    label.current.style.transform = `translateX(${jump}cqw)`;
+    label.current.style.textShadow = `0 0 2cqw ${color}, ${0.25 + jump}cqw 0 rgba(255,40,90,0.55), ${-0.25}cqw 0 rgba(40,200,255,0.55)`;
 
     // 縦走査ライン（上→下を繰り返す）
-    scan.element.style.top = `${(t * 1.1) % 100}%`;
+    scan.current.style.top = `${(t * 1.1) % 100}%`;
 
     // 流れる謎文字
     if (t % 4 === 0) {
-      hexTop.element.textContent = Array.from({ length: 6 }, () => randHex(2)).join(' ');
+      hexTop.current.textContent = Array.from({ length: 6 }, () => randHex(2)).join(' ');
     }
     if (t % 2 === 0) {
-      streamEl.element.textContent = '> ' + randStream(40);
+      streamEl.current.textContent = '> ' + randStream(40);
     }
 
     // 脅威解析バー（0→100% を VISIBLE フレームで満たす）
     const p = Math.min(1, t / VISIBLE);
-    bar.element.style.width = `${p * 100}%`;
-    pctEl.element.textContent = `${Math.round(p * 100)}%`;
+    bar.current.style.width = `${p * 100}%`;
+    pctEl.current.textContent = `${Math.round(p * 100)}%`;
   });
 
-  xnew.transition(({ value }) => { unit.element.style.opacity = value; }, 450);
+  xnew.transition(({ value }) => { unit.current.style.opacity = value; }, 450);
   xnew.timeout(() => {
-    xnew.transition(({ value }) => { unit.element.style.opacity = 1 - value; }, 450).timeout(() => unit.finalize());
+    xnew.transition(({ value }) => { unit.current.style.opacity = 1 - value; }, 450).timeout(() => unit.finalize());
   }, 2100);
 }
 
@@ -763,8 +763,8 @@ function WaveLabel(unit, { wave = 1 } = {}) {
   xnew.nest('<div class="absolute top-[1.5cqw] right-0 w-[25cqw] text-center font-bold text-lime-400">');
   const text = xnew(xbasics.SVGText, { text: 'Wave 1', fontSize: '6cqw', style: 'stroke: #102008; stroke-width: 0.2cqw;' });
   function update({ wave }) {
-    text.element.textContent = `Wave ${wave}`;
-    unit.element.style.color = waveCss(wave); // SVGText の fill=currentColor が追従
+    text.current.textContent = `Wave ${wave}`;
+    unit.current.style.color = waveCss(wave); // SVGText の fill=currentColor が追従
   }
   update({ wave });
   unit.on('+wave', update);
@@ -797,13 +797,13 @@ function CyberBar(unit, { boxClass, boxStyle, fillWidth, fillStyle = '', segment
   // fill 割合（0..1）を保持し、毎フレーム fill 充填内を走査ラインが往復する。
   let fraction = parseFloat(fillWidth) / 100 || 0;
   unit.on('update', ({ count: t }) => {
-    scan.element.style.left = `${(Math.sin(t * scanSpeed) * 0.5 + 0.5) * Math.max(0, fraction * 100 - scanMargin)}%`;
+    scan.current.style.left = `${(Math.sin(t * scanSpeed) * 0.5 + 0.5) * Math.max(0, fraction * 100 - scanMargin)}%`;
   });
 
   return {
     get frame() { return frame; },
     get fill() { return fill; },
-    setFill(f) { fraction = f; fill.element.style.width = `${f * 100}%`; },
+    setFill(f) { fraction = f; fill.current.style.width = `${f * 100}%`; },
   };
 }
 
@@ -828,10 +828,10 @@ function ScoreGauge(unit, { wave = 1 } = {}) {
 
   function update({ wave }) {
     const c = waveCss(wave);
-    bar.fill.element.style.background = c;
-    bar.frame.element.style.borderColor = c;
-    labelEl.element.style.color = c;
-    pctEl.element.style.color = c;
+    bar.fill.current.style.background = c;
+    bar.frame.current.style.borderColor = c;
+    labelEl.current.style.color = c;
+    pctEl.current.style.color = c;
   }
   update({ wave });
   unit.on('+wave', update);
@@ -848,7 +848,7 @@ function ScoreGauge(unit, { wave = 1 } = {}) {
     if (!Number.isFinite(shown)) shown = 0; // NaN に陥っても自己回復する保険
     shown += (target - shown) * 0.15; // イージング（wave 切替時に滑らかにリセット）
     bar.setFill(shown);
-    pctEl.element.textContent = `${Math.round(shown * 100)}%`;
+    pctEl.current.textContent = `${Math.round(shown * 100)}%`;
   });
 }
 
@@ -1042,8 +1042,8 @@ function TargetInfo(unit, { wave = 1 } = {}) {
 
   function update({ wave }) {
     const id = enemyIdForWave(wave);
-    idLine.element.textContent = `ID ${ENEMIES[id].code} ${'▮'.repeat(id + 1)}`;
-    unit.element.style.color = waveCss(wave); // 全テキストが継承
+    idLine.current.textContent = `ID ${ENEMIES[id].code} ${'▮'.repeat(id + 1)}`;
+    unit.current.style.color = waveCss(wave); // 全テキストが継承
   }
   update({ wave });
   unit.on('+wave', update);
@@ -1052,26 +1052,26 @@ function TargetInfo(unit, { wave = 1 } = {}) {
   unit.on('update', ({ count: t }) => {
     // hex レールを数フレームごとに1行スクロール（流れる解析ダンプ）
     if (t % 5 === 0) {
-      for (let i = 0; i < leftRail.length - 1; i++) leftRail[i].element.textContent = leftRail[i + 1].element.textContent;
-      leftRail[leftRail.length - 1].element.textContent = randHex(2);
-      for (let i = 0; i < rightRail.length - 1; i++) rightRail[i].element.textContent = rightRail[i + 1].element.textContent;
-      rightRail[rightRail.length - 1].element.textContent = Math.random() < 0.5 ? `${randInt(100)}%` : pick(rightTokens);
+      for (let i = 0; i < leftRail.length - 1; i++) leftRail[i].current.textContent = leftRail[i + 1].current.textContent;
+      leftRail[leftRail.length - 1].current.textContent = randHex(2);
+      for (let i = 0; i < rightRail.length - 1; i++) rightRail[i].current.textContent = rightRail[i + 1].current.textContent;
+      rightRail[rightRail.length - 1].current.textContent = Math.random() < 0.5 ? `${randInt(100)}%` : pick(rightTokens);
     }
 
     // 四隅ラベル
-    cTL.element.textContent = 'LAT ' + (Math.sin(t * 0.03) * 45).toFixed(1).padStart(5, '+');
-    cTR.element.textContent = 'LON ' + (Math.cos(t * 0.027) * 90).toFixed(1).padStart(5, '+');
-    cBL.element.textContent = 'LOCK ' + (Math.floor(t / 15) % 2 ? '▮' : '▯');
-    cBR.element.textContent = '0x' + randHex(4);
+    cTL.current.textContent = 'LAT ' + (Math.sin(t * 0.03) * 45).toFixed(1).padStart(5, '+');
+    cTR.current.textContent = 'LON ' + (Math.cos(t * 0.027) * 90).toFixed(1).padStart(5, '+');
+    cBL.current.textContent = 'LOCK ' + (Math.floor(t / 15) % 2 ? '▮' : '▯');
+    cBR.current.textContent = '0x' + randHex(4);
 
     // SYNC バー
     const s = Math.floor((Math.sin(t * 0.05) * 0.5 + 0.5) * 5);
-    syncBar.element.textContent = '▰'.repeat(s) + '▱'.repeat(5 - s);
-    syncPct.element.textContent = `${Math.floor((Math.sin(t * 0.05) * 0.5 + 0.5) * 99)}%`;
+    syncBar.current.textContent = '▰'.repeat(s) + '▱'.repeat(5 - s);
+    syncPct.current.textContent = `${Math.floor((Math.sin(t * 0.05) * 0.5 + 0.5) * 99)}%`;
 
     // データストリーム
     if (t % 3 === 0) {
-      stream.element.textContent = '> ' + randStream(9);
+      stream.current.textContent = '> ' + randStream(9);
     }
   });
 }
@@ -1201,9 +1201,9 @@ function ScoreManager(unit, { wave = 1 } = {}) {
 
   function update({ wave }) {
     const c = waveCss(wave);
-    label.element.style.color = c;
-    text.element.style.color = c;
-    text.element.style.textShadow = `0 0 0.8cqw ${c}, 0 0.1cqw 0.1cqw rgba(0,0,0,0.6)`;
+    label.current.style.color = c;
+    text.current.style.color = c;
+    text.current.style.textShadow = `0 0 0.8cqw ${c}, 0 0.1cqw 0.1cqw rgba(0,0,0,0.6)`;
   }
   let sum = 0;        // 合計スコア（リザルト表示用）
   let waveScore = 0;  // 現在の wave 内で稼いだスコア（wave 開始ごとに 0 リセット）
@@ -1221,7 +1221,7 @@ function ScoreManager(unit, { wave = 1 } = {}) {
       sum += score;
       waveScore += score;
       if (id !== undefined) kills[id]++;
-      text.element.textContent = String(sum).padStart(6, '0');
+      text.current.textContent = String(sum).padStart(6, '0');
     }
   };
 }
@@ -1590,10 +1590,10 @@ function ShotEnergy(unit) {
     const ready = energy >= COST;
 
     bar.setFill(pct);
-    bar.fill.element.style.opacity = ready ? '1' : '0.45';
-    statusEl.element.textContent = ready ? 'READY' : 'CHARGE';
-    statusEl.element.style.color = ready ? '#22FFFF' : '#ff5577';
-    statusEl.element.style.opacity = ready ? '1' : `${Math.floor(t / 12) % 2 ? 1 : 0.3}`; // CHARGE 中は点滅
+    bar.fill.current.style.opacity = ready ? '1' : '0.45';
+    statusEl.current.textContent = ready ? 'READY' : 'CHARGE';
+    statusEl.current.style.color = ready ? '#22FFFF' : '#ff5577';
+    statusEl.current.style.opacity = ready ? '1' : `${Math.floor(t / 12) % 2 ? 1 : 0.3}`; // CHARGE 中は点滅
   });
 
   return {
@@ -1658,7 +1658,7 @@ function ResultDetail(unit, { score, wave, kills = [0, 0, 0, 0], cleared = false
     _enemyIcons.forEach((iconSrc, i) => {
       xnew('<div class="flex items-center justify-center gap-x-[1cqw]">', () => {
         const icon = xnew('<img class="w-[7cqw] h-[7cqw] object-contain">');
-        iconSrc.then((src) => icon.element.src = src);
+        iconSrc.then((src) => icon.current.src = src);
         xnew('<div class="text-[3.5cqw] text-cyan-700">', `× ${kills[i] ?? 0}`);
       });
     });
@@ -1688,9 +1688,9 @@ function ResultDetail(unit, { score, wave, kills = [0, 0, 0, 0], cleared = false
 // 生成時に渡された要素を白で覆ってからフェードアウトしつつ撮影し、PNG をダウンロードする。
 function ScreenShot(unit) {
   const cover = xnew('<div class="absolute inset-0 size-full z-10 bg-white">');
-  xnew.transition(({ value }) => cover.element.style.opacity = 1 - value, 1000)
+  xnew.transition(({ value }) => cover.current.style.opacity = 1 - value, 1000)
     .timeout(() => {
-      html2canvas(unit.element, { scale: 2, logging: false, useCORS: true }).then((canvas) => {
+      html2canvas(unit.current, { scale: 2, logging: false, useCORS: true }).then((canvas) => {
         // 下部のフッターを除いた領域を切り出して PNG としてダウンロードする。
         const [width, height] = [canvas.width, Math.floor(canvas.height * (1 - RESULT_FOOTER_RATIO))];
         const cropped = document.createElement('canvas');
@@ -1735,7 +1735,7 @@ function ResultBackground(unit, { gradient, textColor }) {
     const circle = xnew(`<div class="absolute rounded-full bg-white" style="width: ${sizeCqw}cqw; height: ${sizeCqw}cqw; left: ${x}%; top: ${y}%; opacity: 0.2;">`);
     circle.on('update', ({ count }) => {
       const p = count * 0.02;
-      Object.assign(circle.element.style, { opacity: Math.sin(p) * 0.1 + 0.2, transform: transform(p) });
+      Object.assign(circle.current.style, { opacity: Math.sin(p) * 0.1 + 0.2, transform: transform(p) });
     });
   }
 
@@ -1757,7 +1757,7 @@ function TitleText(unit, { text, color }) {
 function TouchMessage(unit, { color }) {
   xnew.nest(`<div class="absolute w-full top-[30cqw] text-center ${color} font-bold">`);
   xnew(xbasics.SVGText, { text: 'touch start', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
-  unit.on('update', ({ count }) => unit.element.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
+  unit.on('update', ({ count }) => unit.current.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
 }
 
 // 中央に降りてくる "Game Over"。className で横位置を調整（既定は全幅中央）。
@@ -1765,7 +1765,7 @@ function GameOverText(unit, { className = 'w-full' }) {
   xnew.nest(`<div class="absolute ${className} text-center text-red-400 font-bold">`);
   xnew(xbasics.SVGText, { text: 'Game Over', fontSize: '12cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   xnew.transition(({ value }) => {
-    Object.assign(unit.element.style, { opacity: value, top: `${10 + value * 15}cqw` });
+    Object.assign(unit.current.style, { opacity: value, top: `${10 + value * 15}cqw` });
   }, 1000, 'ease');
 }
 

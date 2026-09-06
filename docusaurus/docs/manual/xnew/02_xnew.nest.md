@@ -1,6 +1,6 @@
 # xnew.nest
 
-`xnew.nest` は子要素を生成して `unit.element` をその要素に切り替えます。
+`xnew.nest` は子要素を生成して `unit.current` をその要素に切り替えます。
 
 ## 使い方
 
@@ -13,7 +13,7 @@ const element = xnew.nest(tag, textContent);
 - `textContent` (省略可): 生成した要素に設定するテキスト
 
 **戻り値:**
-- 生成された HTMLElement (`unit.element` も同じ要素を指すようになります)
+- 生成された HTMLElement (`unit.current` も同じ要素を指すようになります)
 
 ## 動作
 
@@ -25,10 +25,10 @@ const element = xnew.nest(tag, textContent);
 
 ```js
 xnew((unit) => {
-  // Initially, unit.element is document.body
+  // Initially, unit.current is document.body
 
   xnew.nest('<header>');
-  // Now unit.element === header
+  // Now unit.current === header
 
   xnew('<h1>', 'Welcome');
   // h1 is created inside header
@@ -45,21 +45,21 @@ xnew((unit) => {
 ```js
 function Card(unit, { title, content }) {
   xnew.nest('<div class="card">');
-  unit.element.style.border = '1px solid #ddd';
-  unit.element.style.padding = '15px';
+  unit.current.style.border = '1px solid #ddd';
+  unit.current.style.padding = '15px';
 
   // Create and immediately exit header
   xnew((unit) => {
     xnew.nest('<div class="card-header">');
-    unit.element.style.fontWeight = 'bold';
-    unit.element.textContent = title;
+    unit.current.style.fontWeight = 'bold';
+    unit.current.textContent = title;
   });
   // After the nested xnew, we're back to the card level
 
   // Create body at card level
   xnew((unit) => {
     xnew.nest('<div class="card-body">');
-    unit.element.textContent = content;
+    unit.current.textContent = content;
   });
 }
 

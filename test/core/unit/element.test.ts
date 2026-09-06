@@ -8,7 +8,7 @@ describe('Unit element hosting', () => {
     describe('default host element', () => {
         it('defaults the element to document.body for a root-level unit', () => {
             const seen = jest.fn();
-            xnew((u: Unit) => { seen(u.element); });
+            xnew((u: Unit) => { seen(u.current); });
             expect(seen).toHaveBeenCalledWith(document.body);
         });
 
@@ -16,9 +16,9 @@ describe('Unit element hosting', () => {
             let parentElement!: HTMLElement | SVGElement;
             let childElement!: HTMLElement | SVGElement;
             xnew('<div>', (p: Unit) => {
-                parentElement = p.element;
+                parentElement = p.current;
                 const child = xnew();
-                childElement = child.element;
+                childElement = child.current;
             });
             expect(childElement).toBe(parentElement);
         });
@@ -27,7 +27,7 @@ describe('Unit element hosting', () => {
     describe('target resolution', () => {
         it('creates the element from a tag string target', () => {
             let element!: HTMLElement | SVGElement;
-            xnew('<div id="tag-host">', (u: Unit) => { element = u.element; });
+            xnew('<div id="tag-host">', (u: Unit) => { element = u.current; });
             expect(element.id).toBe('tag-host');
             expect(document.getElementById('tag-host')).toBe(element);
         });
@@ -36,7 +36,7 @@ describe('Unit element hosting', () => {
             const el = document.createElement('div');
             document.body.appendChild(el);
             let element!: HTMLElement | SVGElement;
-            xnew(el, (u: Unit) => { element = u.element; });
+            xnew(el, (u: Unit) => { element = u.current; });
             expect(element).toBe(el);
             el.remove();
         });
@@ -47,7 +47,7 @@ describe('Unit element hosting', () => {
             let unit!: Unit;
             xnew('<div id="host">', () => { unit = xnew(); });
             expect(unit.container).toBe(null);
-            expect(unit.element).toBe(document.getElementById('host'));
+            expect(unit.current).toBe(document.getElementById('host'));
         });
 
         it('returns null when the unit nests nothing under an element given as the target', () => {
@@ -66,7 +66,7 @@ describe('Unit element hosting', () => {
                 inner = xnew.nest('<div id="inner">');
             });
             expect(unit.container).toBe(outer);
-            expect(unit.element).toBe(inner);
+            expect(unit.current).toBe(inner);
         });
 
         it('returns the nested element when the unit also has an element target', () => {
@@ -197,15 +197,15 @@ describe('Unit element hosting', () => {
     describe('element definition object as the xnew target', () => {
         it('creates the unit element from the definition', () => {
             let element!: HTMLElement | SVGElement;
-            xnew({ tag: 'div', className: 'card' }, (u: Unit) => { element = u.element; });
+            xnew({ tag: 'div', className: 'card' }, (u: Unit) => { element = u.current; });
             expect(element.tagName).toBe('DIV');
             expect(element.className).toBe('card');
         });
 
         it('accepts text content after the definition', () => {
             const unit = xnew({ tag: 'p', className: 'note' }, 'hello');
-            expect(unit.element.textContent).toBe('hello');
-            expect(unit.element.className).toBe('note');
+            expect(unit.current.textContent).toBe('hello');
+            expect(unit.current.className).toBe('note');
         });
     });
 

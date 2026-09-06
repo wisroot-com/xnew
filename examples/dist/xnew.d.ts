@@ -85,7 +85,7 @@ declare class Unit {
     }, ...args: any[]);
     static initialize(unit: Unit, ...args: any[]): void;
     get parent(): Unit | null;
-    get element(): DomElement;
+    get current(): DomElement;
     get container(): DomElement | null;
     finalize(): void;
     static nest(unit: Unit, tag: string | DomElementDef, textContent?: string): DomElement;

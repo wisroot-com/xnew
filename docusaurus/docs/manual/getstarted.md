@@ -66,7 +66,7 @@ function Component(unit, props) {
 #### 2. HTML 要素の生成
 ```js
 const unit = xnew('<div class="my-class">', 'inner text');
-unit.element; // Access the created DOM element
+unit.current; // Access the created DOM element
 ```
 
 ### 例 1: 最初のコンポーネント
@@ -210,7 +210,7 @@ unit.element; // Access the created DOM element
       let running = false;
       unit.on('click', ({ event }) => {
         running = !running;
-        text.element.textContent = running ? 'start' : 'stop';
+        text.current.textContent = running ? 'start' : 'stop';
       });
 
       // Update animation frame
@@ -218,7 +218,7 @@ unit.element; // Access the created DOM element
       unit.on('update', () => {
         if (running === false) return;
         rotate++;
-        unit.element.style.transform = `rotate(${rotate}deg)`;
+        unit.current.style.transform = `rotate(${rotate}deg)`;
       });
     }
   </script>

@@ -82,7 +82,7 @@ function ViewHost(unit, { state, bags }) {
 
 function TextureView(unit, { texture, params, channel }) {
   xnew.nest('<div class="rounded-xl overflow-hidden shadow-2xl bg-black">');
-  const canvas = xnew('<canvas width="512" height="512" style="display: block; width: 100%; height: auto;">').element;
+  const canvas = xnew('<canvas width="512" height="512" style="display: block; width: 100%; height: auto;">').current;
   const renderer = texture.renderer(canvas, { channel, worldSize: WORLD_SIZES[texture.name] });
   unit.on('update', () => renderer.render(values(params)));
   unit.on('finalize', () => renderer.dispose());

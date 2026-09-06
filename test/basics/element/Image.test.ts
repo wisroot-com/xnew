@@ -26,7 +26,7 @@ describe('basics Image', () => {
 
     it('nests an <img> with className / style and sets a string src directly', () => {
         const unit = xnew(Image, { src: './a.png', className: 'bg', style: 'opacity: 0.5;' });
-        const img = unit.element as HTMLImageElement;
+        const img = unit.current as HTMLImageElement;
 
         expect(img.tagName).toBe('IMG');
         expect(img.getAttribute('src')).toBe('./a.png');
@@ -41,7 +41,7 @@ describe('basics Image', () => {
         const unit = xnew(Image, { src: blob });
 
         expect(createObjectURL).toHaveBeenCalledWith(blob);
-        expect((unit.element as HTMLImageElement).getAttribute('src')).toBe('blob:mock');
+        expect((unit.current as HTMLImageElement).getAttribute('src')).toBe('blob:mock');
     });
 
     it('wraps raw binary in a Blob before creating the object URL', () => {
@@ -53,7 +53,7 @@ describe('basics Image', () => {
 
     it('applies a Promise src (binary) after it resolves', async () => {
         const unit = xnew(Image, { src: Promise.resolve(new Blob(['x'])) });
-        const img = unit.element as HTMLImageElement;
+        const img = unit.current as HTMLImageElement;
         expect(img.getAttribute('src')).toBe(null);
 
         await jest.advanceTimersByTimeAsync(0);
@@ -66,7 +66,7 @@ describe('basics Image', () => {
 
         await jest.advanceTimersByTimeAsync(0);
 
-        expect((unit.element as HTMLImageElement).getAttribute('src')).toBe('./b.png');
+        expect((unit.current as HTMLImageElement).getAttribute('src')).toBe('./b.png');
         expect(createObjectURL).not.toHaveBeenCalled();
     });
 

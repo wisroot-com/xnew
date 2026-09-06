@@ -12,9 +12,9 @@ describe('basics InputCheckbox', () => {
         jest.useRealTimers();
     });
 
-    // unit.element is the container (carries the frame ring); the hidden input nests inside it
+    // unit.current is the container (carries the frame ring); the hidden input nests inside it
     function inputOf(unit: xnew.Unit): HTMLInputElement {
-        return unit.element.querySelector('input') as HTMLInputElement;
+        return unit.current.querySelector('input') as HTMLInputElement;
     }
 
     it('nests a hidden native checkbox input with the given attributes', () => {
@@ -31,14 +31,14 @@ describe('basics InputCheckbox', () => {
         const unit = xnew(InputCheckbox);
 
         expect(inputOf(unit).checked).toBe(false);
-        expect(unit.element.hasAttribute('data-checked')).toBe(false);
+        expect(unit.current.hasAttribute('data-checked')).toBe(false);
         expect(unit.input.checked).toBe(false);
     });
 
     it('marks the box as checked when initially checked', () => {
         const unit = xnew(InputCheckbox, { value: true });
 
-        expect(unit.element.hasAttribute('data-checked')).toBe(true);
+        expect(unit.current.hasAttribute('data-checked')).toBe(true);
         expect(unit.input.checked).toBe(true);
     });
 
@@ -58,13 +58,13 @@ describe('basics InputCheckbox', () => {
         input.checked = true;
         input.dispatchEvent(new Event('input', { bubbles: true }));
         jest.advanceTimersByTime(0);
-        expect(unit.element.hasAttribute('data-checked')).toBe(true);
+        expect(unit.current.hasAttribute('data-checked')).toBe(true);
         expect(unit.input.checked).toBe(true);
 
         input.checked = false;
         input.dispatchEvent(new Event('input', { bubbles: true }));
         jest.advanceTimersByTime(1);
-        expect(unit.element.hasAttribute('data-checked')).toBe(false);
+        expect(unit.current.hasAttribute('data-checked')).toBe(false);
         expect(unit.input.checked).toBe(false);
     });
 
@@ -92,9 +92,9 @@ describe('basics InputCheckbox', () => {
     it('applies className and style to the container element', () => {
         const unit = xnew(InputCheckbox, { className: 'boxed', style: 'width: 2em; border-radius: 50%;' });
 
-        expect(unit.element.className).toContain('boxed');
-        expect(unit.element.getAttribute('style')).toContain('width: 2em;');
-        expect(unit.element.getAttribute('style')).toContain('border-radius: 50%;');
+        expect(unit.current.className).toContain('boxed');
+        expect(unit.current.getAttribute('style')).toContain('width: 2em;');
+        expect(unit.current.getAttribute('style')).toContain('border-radius: 50%;');
     });
 
     it('exposes the checked-state gate, reflecting it in the native input', () => {
@@ -107,14 +107,14 @@ describe('basics InputCheckbox', () => {
         jest.advanceTimersByTime(1);
         expect(unit.gate.state).toBe('closed');
         expect(unit.input.checked).toBe(false);
-        expect(unit.element.hasAttribute('data-checked')).toBe(false);
+        expect(unit.current.hasAttribute('data-checked')).toBe(false);
     });
 
     it('draws a default check mark svg when the caller composes none', () => {
         const unit = xnew(InputCheckbox);
         jest.advanceTimersByTime(0);
 
-        expect(unit.element.querySelector('svg path')?.getAttribute('d')).toBe('M2 6 5 9 10 3');
+        expect(unit.current.querySelector('svg path')?.getAttribute('d')).toBe('M2 6 5 9 10 3');
     });
 
     it('lets an outer component compose the mark and suppresses the default', () => {
@@ -124,8 +124,8 @@ describe('basics InputCheckbox', () => {
         });
         jest.advanceTimersByTime(0);
 
-        expect(unit.element.querySelector('.my-mark')).not.toBeNull();
-        expect(unit.element.querySelector('svg')).toBeNull();
+        expect(unit.current.querySelector('.my-mark')).not.toBeNull();
+        expect(unit.current.querySelector('svg')).toBeNull();
     });
 
     it('suppresses the default when extended onto an outer component', () => {
@@ -134,7 +134,7 @@ describe('basics InputCheckbox', () => {
         });
         jest.advanceTimersByTime(0);
 
-        expect(unit.element.querySelector('svg')).toBeNull();
+        expect(unit.current.querySelector('svg')).toBeNull();
     });
 
     it('exposes the hidden native checkbox through .input', () => {

@@ -43,8 +43,8 @@ function Board(unit) {
         const reveal = xnew('<button class="mt-2 px-3 py-1.5 rounded border-0 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm cursor-pointer">', 'いっせいに公開');
         reveal.on('click', () => xsync.emitToServer('reveal'));   // server の全 PlayerView / Board へ届く
         unit.on('update', () => {
-            info.element.textContent = `参加者 ${state.players} 人 / ${state.revealed ? '公開済み（全員の数字が見えます）' : '各自の数字は本人だけに見えています'}`;
-            reveal.element.disabled = state.revealed;
+            info.current.textContent = `参加者 ${state.players} 人 / ${state.revealed ? '公開済み（全員の数字が見えます）' : '各自の数字は本人だけに見えています'}`;
+            reveal.current.disabled = state.revealed;
         });
     });
 }
@@ -66,7 +66,7 @@ export function PlayerView(unit, { ownerId = '' } = {}) {
         const label = xnew('<p class="m-0 text-sm font-medium text-gray-700">');
         unit.on('update', () => {
             const who = mine ? 'あなた' : `プレイヤー ${state.ownerId.slice(0, 4)}`;
-            label.element.textContent = `${who} の秘密の数字: ${state.secret}`;
+            label.current.textContent = `${who} の秘密の数字: ${state.secret}`;
         });
     });
 }

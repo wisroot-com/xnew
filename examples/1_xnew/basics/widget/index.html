@@ -22,7 +22,7 @@
       xnew.nest('<div class="p-2 flex flex-col items-start gap-y-2">');
 
       const textunit = xnew('<div class="m-0.5 p-1 rounded bg-gray-200">', 'Console');
-      textunit.on('+console', ({ text }) => textunit.element.textContent = text);
+      textunit.on('+console', ({ text }) => textunit.current.textContent = text);
 
       xnew('<div class="flex items-baseline gap-x-2">', () => {
         xnew(MyAccordion);
@@ -31,7 +31,7 @@
         button1.on('click', () => xnew(MyModal));
 
         const button2 = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open menu!');
-        button2.on('click', () => xnew(MyMenu, { anchor: button2.element }));
+        button2.on('click', () => xnew(MyMenu, { anchor: button2.current }));
       });
 
       xnew(MyColorPicker);
@@ -53,7 +53,7 @@
           current.x = Math.max(-84, Math.min(84, current.x + move.x * 2));
           current.y = Math.max(-36, Math.min(36, current.y + move.y * 2));
           current.r += 1;
-          box.element.style.transform = `translate(${current.x}px, ${current.y}px) rotate(${current.r}deg)`;
+          box.current.style.transform = `translate(${current.x}px, ${current.y}px) rotate(${current.r}deg)`;
         });
       });
 
@@ -76,11 +76,11 @@
       xnew('<div class="flex flex-col items-center gap-y-1">', () => {
         const box = xnew('<div class="w-24 h-24 rounded-lg border">');
         const label = xnew('<div class="text-sm">', picker.value);
-        box.element.style.background = picker.value;
+        box.current.style.background = picker.value;
 
         picker.on('-change', ({ value }) => {
-          box.element.style.background = value;
-          label.element.textContent = value;
+          box.current.style.background = value;
+          label.current.textContent = value;
           xnew.emit('+console', { text: `color changed to ${value}` });
         });
       });
@@ -92,7 +92,7 @@
       const gate = xnew(xbasics.Gate, { open: false, duration: 200 });
       xnew('<div class="flex items-center select-none cursor-pointer">', (header) => {
         const chevron = xnew((unit) => xnew.extend(xicons.ChevronRight, { className: 'size-4' }));
-        gate.on('-transition', ({ value }) => chevron.element.style.transform = `rotate(${value * 90}deg)`);
+        gate.on('-transition', ({ value }) => chevron.current.style.transform = `rotate(${value * 90}deg)`);
         xnew('<div class="my-2">', 'accordion (click me!)');
         header.on('click', () => gate.toggle());
       });

@@ -31,7 +31,7 @@ export function InputRadio(unit: xnew.Unit,
 
     return {
         get input() {
-            return input.element as HTMLInputElement;
+            return input.current as HTMLInputElement;
         },
     };
 }

@@ -21,7 +21,7 @@ describe('basics Overlay', () => {
 
     it('nests a full-viewport backdrop and ends on it when no anchor is given', () => {
         const overlay = xnew(Overlay, {});
-        const backdrop = overlay.element as HTMLElement;
+        const backdrop = overlay.current as HTMLElement;
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
         expect(styleText).toContain('position: fixed; inset: 0; z-index: 1000;');
@@ -34,7 +34,7 @@ describe('basics Overlay', () => {
         mockRect(anchor, { left: 10, top: 20, width: 100, height: 40 });
 
         const overlay = xnew(Overlay, { anchor });
-        const box = overlay.element as HTMLElement; // the body ends on the tether box
+        const box = overlay.current as HTMLElement; // the body ends on the tether box
 
         // the tether carries its positioning inline (no CSS class)
         expect(box.style.position).toBe('absolute');
@@ -62,7 +62,7 @@ describe('basics Overlay', () => {
         mockRect(anchor, { left: 0, top: 0, width: 10, height: 10 });
 
         const overlay = xnew(Overlay, { anchor });
-        const box = overlay.element as HTMLElement;
+        const box = overlay.current as HTMLElement;
         let finalized = false;
         overlay.on('finalize', () => { finalized = true; });
         overlay.gate.on('-closed', () => overlay.finalize());
@@ -78,7 +78,7 @@ describe('basics Overlay', () => {
 
     it('is click-through while fully closed and interactive once opened', () => {
         const overlay = xnew(Overlay, { gate: { open: false, duration: 200 } });
-        const backdrop = overlay.element as HTMLElement;
+        const backdrop = overlay.current as HTMLElement;
 
         // the deferred initial emit lands the closed state: transparent; while closed the backdrop is
         // click-through via its CSS default (pointer-events: none), so the inline override stays empty

@@ -27,8 +27,8 @@
       context.fillRect(0, 0, unit.canvas.width, unit.canvas.height);
       
       unit.on('dragstart dragmove', ({ type, position, delta }) => {
-        const scaleX = unit.canvas.width / unit.element.clientWidth;
-        const scaleY = unit.canvas.height / unit.element.clientHeight;
+        const scaleX = unit.canvas.width / unit.current.clientWidth;
+        const scaleY = unit.canvas.height / unit.current.clientHeight;
 
         context.beginPath();
         context.fillStyle = 'white';
@@ -48,13 +48,13 @@
         const text2 = xnew('<div class="text-white text-lg text-center">', 'pointer');
         const text3 = xnew('<div class="text-white text-lg text-center">', 'drag');
         unit.on('pointerover pointerout', ({ type, position }) => {
-          text1.element.textContent = `${type} {x:${position.x}, y:${position.y}}`;
+          text1.current.textContent = `${type} {x:${position.x}, y:${position.y}}`;
         });
         unit.on('pointerdown pointermove pointerup', ({ type, position, delta }) => {
-          text2.element.textContent = `${type} {x:${Math.floor(position.x)}, y:${Math.floor(position.y)}}`;
+          text2.current.textContent = `${type} {x:${Math.floor(position.x)}, y:${Math.floor(position.y)}}`;
         });
         unit.on('dragstart dragmove dragend', ({ type, position, delta }) => {
-          text3.element.textContent = `${type} {x:${Math.floor(position.x)}, y:${Math.floor(position.y)}}`;
+          text3.current.textContent = `${type} {x:${Math.floor(position.x)}, y:${Math.floor(position.y)}}`;
         });
       })
     });

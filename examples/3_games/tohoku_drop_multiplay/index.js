@@ -41,10 +41,10 @@ function Lobby(unit, { io }) {
         xnew('<button class="px-3 py-1.5 rounded border-0 bg-emerald-500 hover:bg-emerald-600 text-white text-sm cursor-pointer" type="submit">', '作成');
         form.on('submit', ({ event }) => {
             event.preventDefault();
-            const name = nameInput.element.value.trim();
+            const name = nameInput.current.value.trim();
             if (!name) { return; }
             createRoom(name);
-            nameInput.element.value = '';
+            nameInput.current.value = '';
         });
     });
     const listEl = xnew('<ul class="flex flex-col gap-2">');
@@ -75,7 +75,7 @@ function Lobby(unit, { io }) {
     unit.on('-disconnect', () => app.setStatus('切断', false));
     unit.on('-statusupdate', ({ rooms: list }) => { rooms = list; render(); });
     unit.on('-roomcreated', ({ room }) => unit.change(Room, { io: window.io, client: { name: '' }, room: { id: room.id, name: room.name } }));
-    unit.on('-roomrejected', ({ message }) => { hintEl.element.textContent = message; });
+    unit.on('-roomrejected', ({ message }) => { hintEl.current.textContent = message; });
 
     render();
 }

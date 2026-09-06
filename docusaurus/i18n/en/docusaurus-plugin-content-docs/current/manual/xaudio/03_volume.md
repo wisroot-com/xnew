@@ -7,7 +7,7 @@ import { xnew, xaudio } from '@mulsense/xnew';
 
 function Main(unit) {
   const input = xnew('<input type="range" min="0" max="100">');
-  input.element.value = xaudio.volume * 100;
+  input.current.value = xaudio.volume * 100;
   input.on('input', ({ event }) => xaudio.volume = event.target.value / 100);
 }
 ```

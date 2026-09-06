@@ -105,7 +105,7 @@ function Setup(unit) {
         const slotBtns = {};
         SLOTS.forEach((slot) => {
             const btn = xnew('<button class="px-3 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-50 text-sm cursor-pointer">');
-            slotBtns[slot] = btn.element;
+            slotBtns[slot] = btn.current;
             btn.on('click', () => {
                 if (state.slots[slot] === myId) { xsync.emitToServer('-release'); }
                 else if (!state.slots[slot]) { xsync.emitToServer('-claim', { slot }); }
@@ -123,8 +123,8 @@ function Setup(unit) {
                 const who = owner ? (owner === myId ? 'あなた' : nameOf(owner)) : '空き';
                 slotBtns[slot].textContent = `${slotLabel(slot)}: ${who}`;
             });
-            begin.element.disabled = !(state.slots.p1 && state.slots.p2);
-            hint.element.textContent = `参加者 ${xsync.session.clients.length} 人 / 観戦者は盤面を見るだけです。`;
+            begin.current.disabled = !(state.slots.p1 && state.slots.p2);
+            hint.current.textContent = `参加者 ${xsync.session.clients.length} 人 / 観戦者は盤面を見るだけです。`;
         });
     });
 }
@@ -152,9 +152,9 @@ export function World(unit, { slots } = {}) {
         unit.on('update', () => {
             const players = xnew.find(Player);
             const mine = players.find((player) => player.clientId === myId);
-            status.element.textContent = mine ? `操作中: ${slotLabel(mine.slot)}（WASD / 矢印で移動）` : '観戦中（操作はできません）';
+            status.current.textContent = mine ? `操作中: ${slotLabel(mine.slot)}（WASD / 矢印で移動）` : '観戦中（操作はできません）';
             // 各枠を slot 順に並べ、担当者名を出す（自分は「あなた」）。
-            roster.element.textContent = SLOTS
+            roster.current.textContent = SLOTS
                 .map((slot) => {
                     const p = players.find((player) => player.slot === slot);
                     const who = p ? (p.clientId === myId ? 'あなた' : nameOf(p.clientId)) : '空き';

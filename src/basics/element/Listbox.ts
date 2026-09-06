@@ -94,15 +94,15 @@ export function ListboxButton(unit: xnew.Unit,
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
     const label = xnew({ tag: 'div', className: css.label });
-    listbox.bind(label.element);
+    listbox.bind(label.current);
 
     // stop the opening click from bubbling to the document, or ListboxMenu's click.outside would self-close it
     unit.on('click', ({ event }: { event: PointerEvent }) => {
         event.stopPropagation();
         listbox.gate.toggle();
     });
-    listbox.gate.on('-open', () => unit.element.toggleAttribute('data-open', true));
-    listbox.gate.on('-closed', () => unit.element.toggleAttribute('data-open', false));
+    listbox.gate.on('-open', () => unit.current.toggleAttribute('data-open', true));
+    listbox.gate.on('-closed', () => unit.current.toggleAttribute('data-open', false));
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -124,7 +124,7 @@ export function ListboxMenu(unit: xnew.Unit,
         `,
     });
 
-    xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.element });
+    xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.current });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others }) as HTMLElement;
 
@@ -136,10 +136,10 @@ export function ListboxMenu(unit: xnew.Unit,
         }
     });
 
-    listbox.gate.on('-open', () => unit.element.style.background = surfaceColor());
+    listbox.gate.on('-open', () => unit.current.style.background = surfaceColor());
 
     function surfaceColor() {
-        for (let element = listbox.element.parentElement; element !== null; element = element.parentElement) {
+        for (let element = listbox.current.parentElement; element !== null; element = element.parentElement) {
             const color = getComputedStyle(element).backgroundColor;
             if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
             return color;
@@ -178,7 +178,7 @@ export function ListboxItem(unit: xnew.Unit,
     });
     // fall back to the value as text when the row is used standalone (no content composed into it)
     if (xnew.standalone === true) {
-        unit.element.textContent = value;
+        unit.current.textContent = value;
     }
 
     return {
@@ -186,7 +186,7 @@ export function ListboxItem(unit: xnew.Unit,
             return value;
         },
         check(current: boolean) {
-            unit.element.toggleAttribute('data-checked', current);
+            unit.current.toggleAttribute('data-checked', current);
         },
     };
 }

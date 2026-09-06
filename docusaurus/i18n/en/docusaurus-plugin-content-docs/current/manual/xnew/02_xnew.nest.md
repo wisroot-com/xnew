@@ -1,6 +1,6 @@
 # xnew.nest
 
-`xnew.nest` creates a child element and shifts `unit.element` to point to it. Any elements created after the call are placed inside the new element automatically — no manual parent references needed.
+`xnew.nest` creates a child element and shifts `unit.current` to point to it. Any elements created after the call are placed inside the new element automatically — no manual parent references needed.
 
 ## Usage
 
@@ -12,7 +12,7 @@ const element = xnew.nest(tag);
 - `tag`: HTML string to create the element (e.g., `'<div>'`, `'<span class="highlight">'`)
 
 **Returns:**
-- The newly created HTMLElement (`unit.element` also now points to this element)
+- The newly created HTMLElement (`unit.current` also now points to this element)
 
 ## How It Works
 
@@ -24,10 +24,10 @@ const element = xnew.nest(tag);
 
 ```js
 xnew((unit) => {
-  // Initially, unit.element is document.body
+  // Initially, unit.current is document.body
 
   xnew.nest('<header>');
-  // Now unit.element === header
+  // Now unit.current === header
 
   xnew('<h1>', 'Welcome');
   // h1 is created inside header
@@ -44,21 +44,21 @@ xnew((unit) => {
 ```js
 function Card(unit, { title, content }) {
   xnew.nest('<div class="card">');
-  unit.element.style.border = '1px solid #ddd';
-  unit.element.style.padding = '15px';
+  unit.current.style.border = '1px solid #ddd';
+  unit.current.style.padding = '15px';
 
   // Create and immediately exit header
   xnew((unit) => {
     xnew.nest('<div class="card-header">');
-    unit.element.style.fontWeight = 'bold';
-    unit.element.textContent = title;
+    unit.current.style.fontWeight = 'bold';
+    unit.current.textContent = title;
   });
   // After the nested xnew, we're back to the card level
 
   // Create body at card level
   xnew((unit) => {
     xnew.nest('<div class="card-body">');
-    unit.element.textContent = content;
+    unit.current.textContent = content;
   });
 }
 

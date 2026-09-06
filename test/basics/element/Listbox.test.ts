@@ -25,7 +25,7 @@ describe('basics Listbox', () => {
                 button = xnew(ListboxButton);
                 xnew((m: xnew.Unit) => {
                     xnew.extend(ListboxMenu);
-                    menu = m.element as HTMLElement;
+                    menu = m.current as HTMLElement;
                     for (const value of values) {
                         xnew(ListboxItem, { value });
                     }
@@ -36,7 +36,7 @@ describe('basics Listbox', () => {
     }
 
     function triggerOf(button: xnew.Unit): HTMLElement {
-        return button.element as HTMLElement;
+        return button.current as HTMLElement;
     }
 
     function labelOf(button: xnew.Unit): HTMLElement {
@@ -162,7 +162,7 @@ describe('basics Listbox', () => {
                 button = xnew(ListboxButton);
                 xnew((m: xnew.Unit) => {
                     xnew.extend(ListboxMenu);
-                    menu = m.element as HTMLElement;
+                    menu = m.current as HTMLElement;
                     xnew(ListboxItem, { value: 'plain' });
                     xnew(() => {
                         xnew.extend(ListboxItem, { value: 'rich' });
@@ -190,7 +190,7 @@ describe('basics Listbox', () => {
                 button = xnew(ListboxButton);
                 xnew((m: xnew.Unit) => {
                     xnew.extend(ListboxMenu);
-                    menu = m.element as HTMLElement;
+                    menu = m.current as HTMLElement;
                     xnew(() => {
                         xnew.extend(ListboxItem, { value: 'apple' });
                         xnew('<span>', 'りんご');
@@ -215,7 +215,7 @@ describe('basics Listbox', () => {
                 xnew(ListboxButton);
                 xnew((m: xnew.Unit) => {
                     xnew.extend(ListboxMenu);
-                    menu = m.element as HTMLElement;
+                    menu = m.current as HTMLElement;
                     xnew(ListboxItem, { value: 'low', className: 'row' });
                     xnew(ListboxItem, { value: 'mid', className: 'row' });
                 });
@@ -233,7 +233,7 @@ describe('basics Listbox', () => {
                 xnew(ListboxButton);
                 xnew((m: xnew.Unit) => {
                     xnew.extend(ListboxMenu, { className: 'panel', style: 'border-radius: 0.5em;' });
-                    menu = m.element as HTMLElement;
+                    menu = m.current as HTMLElement;
                     xnew(ListboxItem, { value: 'low' });
                 });
             });
@@ -246,8 +246,8 @@ describe('basics Listbox', () => {
     it('applies className and style to the Listbox host element', () => {
         const { box } = build({ className: 'boxed', style: 'max-width: 12em;' }, ['low']);
 
-        expect((box.element as HTMLElement).className).toContain('boxed');
-        expect((box.element as HTMLElement).getAttribute('style')).toContain('max-width: 12em;');
+        expect((box.current as HTMLElement).className).toContain('boxed');
+        expect((box.current as HTMLElement).getAttribute('style')).toContain('max-width: 12em;');
     });
 
     it('applies className and style to the ListboxButton trigger', () => {
@@ -279,7 +279,7 @@ describe('basics Listbox', () => {
                 button = xnew(ListboxButton);
                 xnew((m: xnew.Unit) => {
                     xnew.extend(ListboxMenu);
-                    menu = m.element as HTMLElement;
+                    menu = m.current as HTMLElement;
                     xnew(ListboxItem, { value: 'low' });
                     xnew(ListboxItem, { value: 'mid' });
                 });
@@ -321,7 +321,7 @@ describe('basics Listbox', () => {
                 xnew((m: xnew.Unit) => {
                     xnew.extend(ListboxMenu);
                     xnew.extend(Accordion, { gate: b.gate });
-                    accordion = m.element as HTMLElement;
+                    accordion = m.current as HTMLElement;
                     xnew(ListboxItem, { value: 'low' });
                     xnew(ListboxItem, { value: 'mid' });
                 });

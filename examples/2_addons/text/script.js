@@ -58,7 +58,7 @@ function CanvasTransfer(unit) {
 
 function HtmlText(unit) {
   xnew.nest('<div class="absolute left-0 top-0 text-[4cqw] text-red-400 font-bold">');
-  unit.element.textContent = 'This text is rendered by HTML/CSS';
+  unit.current.textContent = 'This text is rendered by HTML/CSS';
 }
 
 function SVGText(unit) {

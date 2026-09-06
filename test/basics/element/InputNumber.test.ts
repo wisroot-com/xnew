@@ -14,7 +14,7 @@ describe('basics InputNumber', () => {
 
     it('nests a native number input inside a container with the given attributes', () => {
         const unit = xnew(InputNumber, { value: 30, min: 10, max: 50, step: 5, name: 'count' });
-        const container = unit.element as HTMLElement;
+        const container = unit.current as HTMLElement;
         const input = container.querySelector('input') as HTMLInputElement;
 
         expect(container.tagName).toBe('DIV');
@@ -29,7 +29,7 @@ describe('basics InputNumber', () => {
 
     it('omits value / min / max / step / name when not given', () => {
         const unit = xnew(InputNumber);
-        const input = unit.element.querySelector('input') as HTMLInputElement;
+        const input = unit.current.querySelector('input') as HTMLInputElement;
 
         expect(input.value).toBe('');
         expect(input.hasAttribute('min')).toBe(false);
@@ -40,7 +40,7 @@ describe('basics InputNumber', () => {
 
     it('exposes the inner input element through .input', () => {
         const unit = xnew(InputNumber, { value: 30 });
-        const input = unit.element.querySelector('input') as HTMLInputElement;
+        const input = unit.current.querySelector('input') as HTMLInputElement;
 
         expect(unit.input).toBe(input);
 
@@ -50,7 +50,7 @@ describe('basics InputNumber', () => {
 
     it('routes a click on the container to focus the inner input', () => {
         const unit = xnew(InputNumber);
-        const container = unit.element as HTMLElement;
+        const container = unit.current as HTMLElement;
         const input = container.querySelector('input') as HTMLInputElement;
 
         jest.advanceTimersByTime(0);
@@ -61,7 +61,7 @@ describe('basics InputNumber', () => {
 
     it('delivers a numeric value to input listeners (the native event bubbles to the container)', () => {
         const unit = xnew(InputNumber);
-        const input = unit.element.querySelector('input') as HTMLInputElement;
+        const input = unit.current.querySelector('input') as HTMLInputElement;
 
         const received: number[] = [];
         unit.on('input', ({ value }: { value: number }) => received.push(value));
@@ -74,7 +74,7 @@ describe('basics InputNumber', () => {
 
     it('delivers NaN while the field is empty', () => {
         const unit = xnew(InputNumber, { value: 1 });
-        const input = unit.element.querySelector('input') as HTMLInputElement;
+        const input = unit.current.querySelector('input') as HTMLInputElement;
 
         const received: number[] = [];
         unit.on('input', ({ value }: { value: number }) => received.push(value));
@@ -88,7 +88,7 @@ describe('basics InputNumber', () => {
 
     it('applies className and style to the container', () => {
         const unit = xnew(InputNumber, { className: 'boxed', style: 'width: 4em;' });
-        const container = unit.element as HTMLElement;
+        const container = unit.current as HTMLElement;
 
         expect(container.className).toContain('boxed');
         expect(container.getAttribute('style')).toContain('width: 4em;');

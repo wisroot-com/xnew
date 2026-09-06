@@ -17,7 +17,7 @@ function Main(unit) {
 
 function HtmlMain(unit) {
   const targets = xnew(document.querySelector('#targets'));
-  targets.element.style.display = 'block';
+  targets.current.style.display = 'block';
 
   document.querySelectorAll('.target').forEach((element, index) => {
     xnew(element, Plane, index);
@@ -33,8 +33,8 @@ function Plane(unit, id) {
   });
 
   unit.on('update', () => {
-    unit.element.style.opacity = opacity;
-    unit.element.style.transform = `
+    unit.current.style.opacity = opacity;
+    unit.current.style.transform = `
           translateZ(${perspective}px) 
           translateX(${(transform.tx + offset.tx)}px) translateY(${(transform.ty + offset.ty)}px)
           rotateX(${transform.rx + offset.rx}deg) rotateY(${transform.ry + offset.ry + id * 90}deg) 
@@ -77,7 +77,7 @@ function ThreeMain(unit) {
   xthree.initialize({ canvas: unit.canvas });
 
   unit.on('resize', () => {
-    xthree.camera.fov = Math.atan2(unit.element.getBoundingClientRect().height / 2, perspective) * 2 * 180 / Math.PI;
+    xthree.camera.fov = Math.atan2(unit.current.getBoundingClientRect().height / 2, perspective) * 2 * 180 / Math.PI;
     xthree.camera.updateProjectionMatrix();
   });
 

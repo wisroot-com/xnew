@@ -41,14 +41,14 @@
     function Normal(unit) {
       xnew.extend(xbasics.Scene);
       const [width, height] = resolution();
-      draw(xnew(`<canvas width="${width}" height="${height}" class="w-full align-bottom">`).element);
+      draw(xnew(`<canvas width="${width}" height="${height}" class="w-full align-bottom">`).current);
     }
 
     // fit: the canvas stretches to both box edges (distorts when the aspects differ)
     function Fit(unit) {
       xnew.extend(xbasics.Scene);
       const [width, height] = resolution();
-      draw(xnew(`<canvas width="${width}" height="${height}" class="size-full align-bottom">`).element);
+      draw(xnew(`<canvas width="${width}" height="${height}" class="size-full align-bottom">`).current);
     }
 
     function Contain(unit) {

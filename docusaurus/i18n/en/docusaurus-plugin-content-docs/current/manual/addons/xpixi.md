@@ -47,7 +47,7 @@ Call once in the root component to create the PixiJS renderer. After this you ha
 ```js
 function Main(unit) {
   const canvas = xnew('<canvas width="800" height="600">');
-  xpixi.initialize({ canvas: canvas.element });
+  xpixi.initialize({ canvas: canvas.current });
 
   unit.on('update', () => xpixi.renderer.render(xpixi.scene));
 }

@@ -24,12 +24,12 @@ const [unit] = xnew.find(Component, { key }); // narrow to one by the reserved `
 function Counter(unit) {
   xnew.nest('<div>');
   let count = 0;
-  unit.element.textContent = count;
+  unit.current.textContent = count;
 
   return {
     increment() {
       count++;
-      unit.element.textContent = count;
+      unit.current.textContent = count;
     }
   };
 }
@@ -52,14 +52,14 @@ allCounters.forEach(counter => counter.increment());
 ```js
 function Player(unit, { name }) {
   xnew.nest('<div>');
-  unit.element.textContent = `Player: ${name}`;
+  unit.current.textContent = `Player: ${name}`;
 
   let score = 0;
 
   return {
     addScore(points) {
       score += points;
-      unit.element.textContent = `Player: ${name} - Score: ${score}`;
+      unit.current.textContent = `Player: ${name} - Score: ${score}`;
     },
     getScore() {
       return score;

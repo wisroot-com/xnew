@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // InputRange — text-free gauge backed by a hidden native <input type="range">, horizontal or vertical (`vertical: true`)
-// unit.element is the container (frame ring + interaction input); used standalone, the default
+// unit.current is the container (frame ring + interaction input); used standalone, the default
 // InputRangeMeter + InputRangeStatus are drawn; a trailing compose fn replaces them (xnew.standalone gate).
 //----------------------------------------------------------------------------------------------------
 
@@ -47,7 +47,7 @@ export function InputRange(unit: xnew.Unit,
 
     return {
         get input() {
-            return input.element as HTMLInputElement;
+            return input.current as HTMLInputElement;
         },
     };
 }
@@ -106,9 +106,9 @@ function InputRangeMeter(unit: xnew.Unit,
     function apply(v: number) {
         const percent = `${(v - min) / (max - min) * 100}%`;
         if (vertical) {
-            meter.element.style.height = percent;
+            meter.current.style.height = percent;
         } else {
-            meter.element.style.width = percent;
+            meter.current.style.width = percent;
         }
     }
     apply(value);
@@ -146,7 +146,7 @@ function InputRangeStatus(unit: xnew.Unit,
     const status = xnew({ tag: 'div', className: `${css.status} ${vertical ? css.vertical : css.horizontal}` });
 
     function apply(v: number) {
-        status.element.textContent = String(v);
+        status.current.textContent = String(v);
     }
     apply(value);
 

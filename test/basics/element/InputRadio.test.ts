@@ -15,7 +15,7 @@ describe('basics InputRadio', () => {
     // each InputRadio is a <label> (its value as text) wrapping a hidden native <input type="radio">;
     // the unit's element is the label container, and the input is a child unit nested inside it
     function partsOf(unit: xnew.Unit): { label: HTMLElement, input: HTMLInputElement } {
-        const label = unit.element as HTMLElement;
+        const label = unit.current as HTMLElement;
         return { label, input: label.querySelector('input') as HTMLInputElement };
     }
 
@@ -44,7 +44,7 @@ describe('basics InputRadio', () => {
             xnew(InputRadio, { name: 'g', value: 'b' });
             xnew(InputRadio, { name: 'g', value: 'c' });
         });
-        const inputs = Array.from(container.element.querySelectorAll('input')) as HTMLInputElement[];
+        const inputs = Array.from(container.current.querySelectorAll('input')) as HTMLInputElement[];
 
         expect(inputs.map((i) => i.name)).toEqual(['g', 'g', 'g']);
         inputs[2].click();

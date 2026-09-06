@@ -42,7 +42,7 @@
 
       const p = xnew('<p class="text-blue-700">', '-myclick: 0');
       let count = 0;
-      inner.on('-myclick', () => p.element.textContent = `-myclick: ${++count}`);
+      inner.on('-myclick', () => p.current.textContent = `-myclick: ${++count}`);
     }
 
     // --- global event (green theme) ---
@@ -56,7 +56,7 @@
         xnew('<p class="font-bold text-yellow-800">', 'not protected');
         const p = xnew('<p class="text-yellow-700">', '+myclick: 0');
         let count = 0;
-        unit.on('+myclick', () => p.element.textContent = `+myclick: ${++count}`);
+        unit.on('+myclick', () => p.current.textContent = `+myclick: ${++count}`);
         xnew(Button, { name: 'emit +myclick' }).on('click', () => xnew.emit('+myclick'));
       });
 
@@ -75,7 +75,7 @@
         xnew('<p class="font-bold text-slate-700">', 'protected');
         const p = xnew('<p class="text-slate-600">', '+myclick: 0');
         let count = 0;
-        unit.on('+myclick', () => p.element.textContent = `+myclick: ${++count}`);
+        unit.on('+myclick', () => p.current.textContent = `+myclick: ${++count}`);
         xnew(Button, { name: 'emit +myclick' }).on('click', () => xnew.emit('+myclick'));
       });
 
@@ -86,7 +86,7 @@
 
     function Button(unit, { name = 'button' }) {
       xnew.nest('<button class="px-3 py-1 border rounded-lg cursor-pointer bg-white hover:bg-gray-100 border-gray-300 text-gray-700">');
-      unit.element.textContent = name;
+      unit.current.textContent = name;
     }
 
   </script>

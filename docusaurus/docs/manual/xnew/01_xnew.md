@@ -18,7 +18,7 @@ const unit = xnew(target, Component, props); // target は省略可
 
 ```js
 function MyComponent(unit, { message }) {
-  unit.element.textContent = message; // unit.element でアタッチ先の DOM 要素にアクセス
+  unit.current.textContent = message; // unit.current でアタッチ先の DOM 要素にアクセス
 }
 
 const unit = xnew(MyComponent, { message: 'Hello World' });
@@ -28,23 +28,23 @@ const unit = xnew(MyComponent, { message: 'Hello World' });
 
 ```js
 xnew((unit) => {
-  unit.element.style.color = 'blue';
+  unit.current.style.color = 'blue';
 });
 ```
 
 ## ターゲット指定
 
-`target` はコンポーネントのアタッチ先を決めます。コンポーネント内ではいつでも `unit.element` から参照できます。
+`target` はコンポーネントのアタッチ先を決めます。コンポーネント内ではいつでも `unit.current` から参照できます。
 
 ```js
 // 1. 既存の DOM 要素にアタッチ
-xnew(document.querySelector('#app'), (unit) => { /* unit.element === #app */ });
+xnew(document.querySelector('#app'), (unit) => { /* unit.current === #app */ });
 
 // 2. HTML 文字列から新しい要素を生成してアタッチ
-xnew('<div class="box">', (unit) => { /* unit.element === 生成された div */ });
+xnew('<div class="box">', (unit) => { /* unit.current === 生成された div */ });
 
 // 3. target 省略で親の要素を継承
-xnew((unit) => { /* unit.element === 親の要素 */ });
+xnew((unit) => { /* unit.current === 親の要素 */ });
 ```
 
 `Component` の代わりに文字列や数値を渡すと、その内容を `textContent` に持つ要素を生成します。
@@ -83,7 +83,7 @@ function AnimatedBox(unit) {
   let angle = 0;
   unit.on('update', () => {
     angle++;
-    unit.element.style.transform = `rotate(${angle}deg)`;
+    unit.current.style.transform = `rotate(${angle}deg)`;
   });
   unit.on('finalize', () => console.log('cleaned up'));
 }
@@ -181,7 +181,7 @@ console.log(counter.value); // 1
 次の名前は unit が既に使っているため、カスタムプロパティには使えません。
 
 - `finalize`
-- `element`, `parent`, `promise`, `on`, `off`
+- `current`, `parent`, `promise`, `on`, `off`
 - `_`（内部用）
 
 次は [`xnew.nest`](./xnew.nest) で、ネスト構造を簡潔に組み立てる方法を確認してください。

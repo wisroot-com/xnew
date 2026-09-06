@@ -22,7 +22,7 @@ export function VirtualPad(unit: xnew.Unit,
     xnew.nest({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.container} ${className}`, style });
 
     unit.on('dragstart dragmove', ({ type: event, position }: { type: string, position: { x: number, y: number } }) => {
-        const size = unit.element.clientWidth;
+        const size = unit.current.clientWidth;
         const x = position.x - size / 2;
         const y = position.y - size / 2;
         const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
@@ -74,12 +74,12 @@ function VirtualPadAnalog() {
     const target = xnew('<circle cx="32" cy="32" r="14">');
 
     pad.on('-down -move', ({ vector }: { vector: { x: number, y: number } }) => {
-        target.element.setAttribute('transform', `translate(${vector.x * 16} ${vector.y * 16})`);
-        target.element.style.filter = 'brightness(80%)';
+        target.current.setAttribute('transform', `translate(${vector.x * 16} ${vector.y * 16})`);
+        target.current.style.filter = 'brightness(80%)';
     });
     pad.on('-up', () => {
-        target.element.removeAttribute('transform');
-        target.element.style.filter = '';
+        target.current.removeAttribute('transform');
+        target.current.style.filter = '';
     });
 }
 
@@ -118,15 +118,15 @@ function VirtualPadDPad() {
     });
 
     pad.on('-down -move', ({ vector }: { vector: { x: number, y: number } }) => {
-        targets[0].element.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
-        targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
-        targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
-        targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
+        targets[0].current.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
+        targets[1].current.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
+        targets[2].current.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
+        targets[3].current.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
     });
     pad.on('-up', () => {
-        targets[0].element.style.filter = '';
-        targets[1].element.style.filter = '';
-        targets[2].element.style.filter = '';
-        targets[3].element.style.filter = '';
+        targets[0].current.style.filter = '';
+        targets[1].current.style.filter = '';
+        targets[2].current.style.filter = '';
+        targets[3].current.style.filter = '';
     });
 }

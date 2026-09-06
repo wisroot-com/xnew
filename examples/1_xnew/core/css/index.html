@@ -131,7 +131,7 @@
       button.on('click', () => {
         const dark = root.classList.contains(css.dark);
         root.classList.replace(dark ? css.dark : css.light, dark ? css.light : css.dark);
-        button.element.textContent = dark ? 'switch to dark' : 'switch to light';
+        button.current.textContent = dark ? 'switch to dark' : 'switch to light';
       });
 
       xnew(ThemedCard, { label: 'card A' });

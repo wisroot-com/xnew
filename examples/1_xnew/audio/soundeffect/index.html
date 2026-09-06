@@ -47,14 +47,14 @@
       xnew('<div class="absolute right-2 bottom-2 flex items-center gap-2 text-stone-500">', (unit) => {
         xnew('<span class="text-sm">', 'volume');
         const input = xnew('<input type="range" min="0" max="100" class="cursor-pointer">');
-        input.element.value = xaudio.volume * 100;
+        input.current.value = xaudio.volume * 100;
         input.on('input', ({ event }) => xaudio.volume = event.target.value / 100);
       });
     }
 
     function Button(unit, { name }) {
       xnew.nest('<button class="h-8 px-3 border rounded-lg cursor-pointer bg-blue-200 hover:opacity-50">');
-      unit.element.textContent = name;
+      unit.current.textContent = name;
     }
 
     // Coin pickup: a short low blip snapping up to a sustained bright note (classic platformer coin).

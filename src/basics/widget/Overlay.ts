@@ -23,9 +23,9 @@ export function Overlay(unit: xnew.Unit,
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
 
-    gate.on('-transition', ({ value }: { value: number }) => unit.element.style.opacity = value.toString());
-    gate.on('-open', () => unit.element.style.pointerEvents = 'auto');
-    gate.on('-closed', () => unit.element.style.pointerEvents = 'none');
+    gate.on('-transition', ({ value }: { value: number }) => unit.current.style.opacity = value.toString());
+    gate.on('-open', () => unit.current.style.pointerEvents = 'auto');
+    gate.on('-closed', () => unit.current.style.pointerEvents = 'none');
 
     if (anchor instanceof HTMLElement) {
         const tether = xnew.nest({ tag: 'div', style: 'position: absolute; box-sizing: border-box' }) as HTMLElement;

@@ -22,14 +22,14 @@ export function ChatView(unit) {
         xnew('<button type="submit" class="px-2 py-1 rounded border-0 bg-emerald-500 hover:bg-emerald-600 text-white text-sm cursor-pointer">', '送信');
         form.on('submit', ({ event }) => {
             event.preventDefault();
-            const text = input.element.value.trim();
+            const text = input.current.value.trim();
 
             if (!text) {
                 return;
             }
 
             xsync.emitToServer('chat', { text });   // server が受けて emitToClients でルーム全員（自分含む）へ中継
-            input.element.value = '';
+            input.current.value = '';
         });
     });
 
@@ -41,6 +41,6 @@ export function ChatView(unit) {
             xnew(`<span class="font-bold ${mine ? 'text-emerald-600' : 'text-gray-700'}">`, nameOf(id));
             xnew('<span class="ml-1 text-gray-600">', text);
         });
-        log.element.scrollTop = log.element.scrollHeight;
+        log.current.scrollTop = log.current.scrollHeight;
     });
 }

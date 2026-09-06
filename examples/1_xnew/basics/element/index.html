@@ -78,7 +78,7 @@
       xnew((unit) => {
         xnew.extend(xbasics.InputCheckbox, { value: true });
         const mark = xnew(xicons.Check, { mode: 'solid', style: 'position: absolute; inset: 0; width: 100%; height: 100%; color: red;' });
-        unit.gate.on('-transition', ({ value }) => mark.element.style.opacity = value);
+        unit.gate.on('-transition', ({ value }) => mark.current.style.opacity = value);
       });
     }
 
@@ -170,7 +170,7 @@
         xnew('<div class="absolute inset-x-2 top-1/2 h-1 -translate-y-1/2 rounded-full bg-indigo-200 pointer-events-none">');
         const knob = xnew('<div class="absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600 shadow pointer-events-none">');
         function move(value) {
-          knob.element.style.left = `calc(0.5rem + (100% - 1rem) * ${value / 100})`;
+          knob.current.style.left = `calc(0.5rem + (100% - 1rem) * ${value / 100})`;
         }
         move(50);
         range.on('input', ({ value }) => move(value));
@@ -182,7 +182,7 @@
         xnew('<div class="absolute inset-y-2 left-1/2 w-1 -translate-x-1/2 rounded-full bg-indigo-200 pointer-events-none">');
         const knob = xnew('<div class="absolute left-1/2 size-4 -translate-x-1/2 translate-y-1/2 rounded-full bg-indigo-600 shadow pointer-events-none">');
         function move(value) {
-          knob.element.style.bottom = `calc(0.5rem + (100% - 1rem) * ${value / 100})`;
+          knob.current.style.bottom = `calc(0.5rem + (100% - 1rem) * ${value / 100})`;
         }
         move(70);
         range.on('input', ({ value }) => move(value));

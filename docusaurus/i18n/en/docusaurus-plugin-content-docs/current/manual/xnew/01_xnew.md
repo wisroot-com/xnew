@@ -18,7 +18,7 @@ A component is a function. It receives its unit and the props passed at creation
 
 ```js
 function MyComponent(unit, { message }) {
-  unit.element.textContent = message; // unit.element is the attached DOM element
+  unit.current.textContent = message; // unit.current is the attached DOM element
 }
 
 const unit = xnew(MyComponent, { message: 'Hello World' });
@@ -28,23 +28,23 @@ Arrow functions work the same way.
 
 ```js
 xnew((unit) => {
-  unit.element.style.color = 'blue';
+  unit.current.style.color = 'blue';
 });
 ```
 
 ## Targets
 
-`target` decides where the component attaches. You can always reach it through `unit.element`.
+`target` decides where the component attaches. You can always reach it through `unit.current`.
 
 ```js
 // 1. Attach to an existing DOM element
-xnew(document.querySelector('#app'), (unit) => { /* unit.element === #app */ });
+xnew(document.querySelector('#app'), (unit) => { /* unit.current === #app */ });
 
 // 2. Create a new element from an HTML string
-xnew('<div class="box">', (unit) => { /* unit.element === the new div */ });
+xnew('<div class="box">', (unit) => { /* unit.current === the new div */ });
 
 // 3. Omit target to inherit the parent's element
-xnew((unit) => { /* unit.element === parent's element */ });
+xnew((unit) => { /* unit.current === parent's element */ });
 ```
 
 Passing a string or number in place of `Component` creates an element whose `textContent` is that value.
@@ -83,7 +83,7 @@ function AnimatedBox(unit) {
   let angle = 0;
   unit.on('update', () => {
     angle++;
-    unit.element.style.transform = `rotate(${angle}deg)`;
+    unit.current.style.transform = `rotate(${angle}deg)`;
   });
   unit.on('finalize', () => console.log('cleaned up'));
 }
@@ -181,7 +181,7 @@ console.log(counter.value); // 1
 These names are already used by the unit, so they cannot be used for custom properties.
 
 - `finalize`
-- `element`, `parent`, `promise`, `on`, `off`
+- `current`, `parent`, `promise`, `on`, `off`
 - `_` (internal)
 
 Next, see [`xnew.nest`](./xnew.nest) for building nested structures concisely.

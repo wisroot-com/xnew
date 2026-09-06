@@ -122,9 +122,9 @@ export function ColorPicker(unit: xnew.Unit,
     // saturation map: x = saturation, y = value (bright at the top)
     xnew((zone: xnew.Unit) => {
         saturationElement = xnew.nest({ tag: 'div', className: css.saturation }) as HTMLElement;
-        circleElement = xnew({ tag: 'div', className: css.circle }).element as HTMLElement;
+        circleElement = xnew({ tag: 'div', className: css.circle }).current as HTMLElement;
         zone.on('dragstart dragmove', ({ position }: { position: { x: number, y: number } }) => {
-            const rect = zone.element.getBoundingClientRect();
+            const rect = zone.current.getBoundingClientRect();
             apply({ ...hsva, s: ratio(position.x, rect.width), v: 1 - ratio(position.y, rect.height) }, true);
         });
     });
@@ -150,25 +150,25 @@ export function ColorPicker(unit: xnew.Unit,
         xnew.nest({ tag: 'div', className: css.controls });
         xnew(() => {
             xnew.nest({ tag: 'div', className: css.swatch });
-            swatchOverlay = xnew({ tag: 'div', className: css.overlay }).element as HTMLElement;
+            swatchOverlay = xnew({ tag: 'div', className: css.overlay }).current as HTMLElement;
         });
         xnew(() => {
             xnew.nest({ tag: 'div', className: css.bars });
             xnew((zone: xnew.Unit) => {
                 xnew.nest({ tag: 'div', className: `${css.bar} ${css.hue}` });
-                huePointer = xnew({ tag: 'div', className: css.pointer }).element as HTMLElement;
+                huePointer = xnew({ tag: 'div', className: css.pointer }).current as HTMLElement;
                 zone.on('dragstart dragmove', ({ position }: { position: { x: number, y: number } }) => {
-                    const rect = zone.element.getBoundingClientRect();
+                    const rect = zone.current.getBoundingClientRect();
                     apply({ ...hsva, h: ratio(position.x, rect.width) * 360 }, true);
                 });
             });
             if (alpha === true) {
                 xnew((zone: xnew.Unit) => {
                     xnew.nest({ tag: 'div', className: `${css.bar} ${css.alphaTrack}` });
-                    alphaOverlay = xnew({ tag: 'div', className: css.overlay }).element as HTMLElement;
-                    alphaPointer = xnew({ tag: 'div', className: css.pointer }).element as HTMLElement;
+                    alphaOverlay = xnew({ tag: 'div', className: css.overlay }).current as HTMLElement;
+                    alphaPointer = xnew({ tag: 'div', className: css.pointer }).current as HTMLElement;
                     zone.on('dragstart dragmove', ({ position }: { position: { x: number, y: number } }) => {
-                        const rect = zone.element.getBoundingClientRect();
+                        const rect = zone.current.getBoundingClientRect();
                         apply({ ...hsva, a: ratio(position.x, rect.width) }, true);
                     });
                 });
@@ -190,7 +190,7 @@ export function ColorPicker(unit: xnew.Unit,
 
     function Field(sub: xnew.Unit, { label, commit }: { label: string, commit: (text: string) => void }) {
         xnew.nest({ tag: 'div', className: css.field });
-        const input = xnew({ tag: 'input', type: 'text', spellcheck: false, className: css.fieldInput }).element as HTMLInputElement;
+        const input = xnew({ tag: 'input', type: 'text', spellcheck: false, className: css.fieldInput }).current as HTMLInputElement;
         xnew({ tag: 'div', className: css.fieldLabel, textContent: label });
         // keep the native change inside the picker so hosts only see the canonical '-change'
         sub.on('change', ({ event, value }: { event: Event, value: string }) => {

@@ -53,14 +53,14 @@ function Draggable(unit) {
     dragging = true;
     startX = event.clientX;
     startY = event.clientY;
-    originX = parseInt(unit.element.style.left) || 0;
-    originY = parseInt(unit.element.style.top)  || 0;
+    originX = parseInt(unit.current.style.left) || 0;
+    originY = parseInt(unit.current.style.top)  || 0;
   });
 
   unit.on('window.mousemove', ({ event }) => {
     if (!dragging) return;
-    unit.element.style.left = originX + (event.clientX - startX) + 'px';
-    unit.element.style.top  = originY + (event.clientY - startY) + 'px';
+    unit.current.style.left = originX + (event.clientX - startX) + 'px';
+    unit.current.style.top  = originY + (event.clientY - startY) + 'px';
   });
 
   unit.on('window.mouseup', () => { dragging = false; });

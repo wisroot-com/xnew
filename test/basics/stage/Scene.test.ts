@@ -32,7 +32,7 @@ describe('basics Scene', () => {
 
             expect(log).toEqual(['A:in', 'B:in', 'A:out']);
             expect(received).toEqual([{ score: 42 }]);
-            expect(host.element.children.length).toBe(0); // scenes share the host element (no nest)
+            expect(host.current.children.length).toBe(0); // scenes share the host element (no nest)
         });
 
         it('a swapped-in scene can itself navigate onward', () => {

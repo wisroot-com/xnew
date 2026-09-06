@@ -21,7 +21,7 @@ describe('basics ColorPicker', () => {
 
     // container children: [saturation, presets, controls, fields]
     function containerOf(unit: xnew.Unit): HTMLElement {
-        return unit.element as HTMLElement;
+        return unit.current as HTMLElement;
     }
 
     function saturationOf(unit: xnew.Unit): HTMLElement {

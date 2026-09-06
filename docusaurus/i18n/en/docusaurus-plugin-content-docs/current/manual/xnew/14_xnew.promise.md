@@ -25,8 +25,8 @@ xnew.promise();              // deferred (returns { resolve, reject })
 ```js
 xnew((unit) => {
   xnew.promise(fetch('/api/data'))
-    .then((res) => unit.element.textContent = 'loaded')
-    .catch((err) => unit.element.textContent = 'error');
+    .then((res) => unit.current.textContent = 'loaded')
+    .catch((err) => unit.current.textContent = 'error');
 });
 ```
 

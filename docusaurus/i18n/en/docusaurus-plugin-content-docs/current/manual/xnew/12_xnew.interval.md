@@ -23,11 +23,11 @@ const timer = xnew.interval(callback, duration, iterations);
 ```js
 xnew('<div>', (unit) => {
   let count = 0;
-  unit.element.textContent = count;
+  unit.current.textContent = count;
 
   xnew.interval(() => {
     count++;
-    unit.element.textContent = count;
+    unit.current.textContent = count;
   }, 1000); // Update every second
 });
 ```
@@ -38,15 +38,15 @@ Call `clear()` on the returned timer to stop it. The callback receives the curre
 
 ```js
 xnew('<div>', (unit) => {
-  unit.element.textContent = 'Starting countdown...';
+  unit.current.textContent = 'Starting countdown...';
 
   const timer = xnew.interval(({ count }) => {
-    unit.element.textContent = `Count: ${count + 1}`;
+    unit.current.textContent = `Count: ${count + 1}`;
 
     // Stop after 10 iterations
     if (count + 1 >= 10) {
       timer.clear();
-      unit.element.textContent = 'Countdown complete!';
+      unit.current.textContent = 'Countdown complete!';
     }
   }, 500);
 });

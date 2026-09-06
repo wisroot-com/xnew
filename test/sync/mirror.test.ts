@@ -35,11 +35,11 @@ describe('server/client mirror (server/client blocks)', () => {
         cycle();
         const replicaMover = client._.children[0];
         expect(syncData(replicaMover).state!.position).toBe(1);
-        expect((replicaMover.element as HTMLElement).style.left).toBe('1px');   // client block render consumed synced state
+        expect((replicaMover.current as HTMLElement).style.left).toBe('1px');   // client block render consumed synced state
 
         cycle();
         expect(syncData(replicaMover).state!.position).toBe(2);
-        expect((replicaMover.element as HTMLElement).style.left).toBe('2px');
+        expect((replicaMover.current as HTMLElement).style.left).toBe('2px');
         expect(client._.children.length).toBe(1);
     });
 
@@ -70,8 +70,8 @@ describe('server/client mirror (server/client blocks)', () => {
         const replicaMover = client._.children[0];
         expect(replicaMover).toBeDefined();
         expect(syncData(replicaMover).state!.position).toBe(1);
-        expect(view.contains(replicaMover.element as Node)).toBe(true);
-        expect((replicaMover.element as HTMLElement).style.left).toBe('1px');
+        expect(view.contains(replicaMover.current as Node)).toBe(true);
+        expect((replicaMover.current as HTMLElement).style.left).toBe('1px');
     });
 
     it('mirrors spawn and despawn driven from server update', () => {

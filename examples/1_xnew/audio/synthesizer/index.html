@@ -182,21 +182,21 @@
         xnew('<div class="mb-1 text-[9px] leading-none text-stone-400">', note);
         badge = xnew('<div class="mb-1 w-3.5 h-3.5 rounded-sm text-[9px] leading-none flex items-center justify-center border border-stone-300 bg-white/70 text-stone-500">');
       }
-      unit.element.style.background = releasedBackground;
+      unit.current.style.background = releasedBackground;
 
       // qwerty badge for the keys the physical keyboard maps to
       const char = charForNote(note);
       if (char) {
-        badge.element.textContent = char;
+        badge.current.textContent = char;
       } else {
-        badge.element.style.visibility = 'hidden';
+        badge.current.style.visibility = 'hidden';
       }
 
       unit.on('+notedown', ({ note: pressed }) => {
-        if (pressed === note) unit.element.style.background = pressedBackground;
+        if (pressed === note) unit.current.style.background = pressedBackground;
       });
       unit.on('+noteup', ({ note: released }) => {
-        if (released === note) unit.element.style.background = releasedBackground;
+        if (released === note) unit.current.style.background = releasedBackground;
       });
 
       unit.on('pointerdown', () => app.press(note));
@@ -292,7 +292,7 @@
 
       function updateTabs() {
         for (const [name, tab] of Object.entries(tabs)) {
-          tab.element.className = 'flex-1 h-8 px-2 text-xs rounded-md border cursor-pointer ' +
+          tab.current.className = 'flex-1 h-8 px-2 text-xs rounded-md border cursor-pointer ' +
             (active === name ? 'border-stone-700 bg-stone-700 text-white' : 'border-stone-300 bg-white text-stone-600 hover:bg-stone-200');
         }
       }
@@ -374,13 +374,13 @@
       const buttons = {};
       const update = () => {
         for (const [type, button] of Object.entries(buttons)) {
-          button.element.className = 'w-9 h-7 border rounded flex items-center justify-center cursor-pointer ' +
+          button.current.className = 'w-9 h-7 border rounded flex items-center justify-center cursor-pointer ' +
             (target.type === type ? 'border-stone-700 bg-stone-700 text-white' : 'border-stone-300 bg-white text-stone-400 hover:bg-stone-100');
         }
       };
       for (const [type, d] of Object.entries(shapes)) {
         const button = xnew(`<button title="${type}">`);
-        button.element.innerHTML = `<svg viewBox="0 0 20 20" class="w-5 h-4" fill="none" stroke="currentColor" stroke-width="2"><path d="${d}"/></svg>`;
+        button.current.innerHTML = `<svg viewBox="0 0 20 20" class="w-5 h-4" fill="none" stroke="currentColor" stroke-width="2"><path d="${d}"/></svg>`;
         button.on('click', () => {
           target.type = type;
           update();
@@ -407,7 +407,7 @@
           `${(env.attack + env.decay + SUSTAIN_HOLD) * scale},${y(peak * env.sustain)}`,
           `${end * scale},${y(0)}`,
         ].join(' ');
-        unit.element.innerHTML = `<polyline points="${points}" fill="rgba(52, 211, 153, 0.15)" stroke="#34d399" stroke-width="2"/>`;
+        unit.current.innerHTML = `<polyline points="${points}" fill="rgba(52, 211, 153, 0.15)" stroke="#34d399" stroke-width="2"/>`;
       };
       draw();
       unit.on('+params', draw);
@@ -424,22 +424,22 @@
         xnew('<div class="text-xs text-stone-400">', 'generated code');
         const copy = xnew('<button class="h-6 px-2 text-xs border border-stone-600 rounded text-stone-300 hover:bg-stone-700 cursor-pointer">', 'copy');
         copy.on('click', () => {
-          navigator.clipboard.writeText(`${setup.element.textContent}\n${play.element.textContent}`);
-          copy.element.textContent = 'copied';
-          xnew.timeout(() => copy.element.textContent = 'copy', 800);
+          navigator.clipboard.writeText(`${setup.current.textContent}\n${play.current.textContent}`);
+          copy.current.textContent = 'copied';
+          xnew.timeout(() => copy.current.textContent = 'copy', 800);
         });
       });
 
       const setup = xnew('<pre class="select-text px-3 pt-2 m-0 text-xs leading-5 text-stone-100 whitespace-pre-wrap">');
       const play = xnew('<pre class="select-text px-3 pb-3 m-0 text-xs leading-5 text-emerald-300 whitespace-pre-wrap">');
 
-      const update = () => setup.element.textContent = synthesizerCode();
+      const update = () => setup.current.textContent = synthesizerCode();
       update();
       unit.on('+params', update);
 
-      play.element.textContent = '// click a key or type A W S E D F T G Y H U J K';
-      unit.on('+notedown', ({ note }) => play.element.textContent = `const note = synth.press('${note}');`);
-      unit.on('+noteup', ({ note, duration }) => play.element.textContent = `synth.press('${note}', ${duration});`);
+      play.current.textContent = '// click a key or type A W S E D F T G Y H U J K';
+      unit.on('+notedown', ({ note }) => play.current.textContent = `const note = synth.press('${note}');`);
+      unit.on('+noteup', ({ note, duration }) => play.current.textContent = `synth.press('${note}', ${duration});`);
     }
 
     //----------------------------------------------------------------------------------------------------

@@ -99,13 +99,13 @@ describe('composed synced state (base + extend)', () => {
                 unit.on('update', () => { el.style.left = `${pos.x}px`; el.style.top = `${pos.y}px`; });
             });
         }
-        // 拡張: Actor を取り込み hp を足し、基底が nest した要素を unit.element 経由で着色する
+        // 拡張: Actor を取り込み hp を足し、基底が nest した要素を unit.current 経由で着色する
         function Sprite(unit: Unit, props: any = {}) {
             xnew.extend(Actor, props);
             const state = xsync.state({ hp: 3 });
             xsync.server(() => { unit.on('update', () => { state.x += 3; state.hp -= 1; }); });
             xsync.client(() => {
-                const el = unit.element as HTMLElement;
+                const el = unit.current as HTMLElement;
                 unit.on('update', () => { el.style.background = state.hp >= 2 ? 'red' : 'gray'; });
             });
         }
@@ -120,7 +120,7 @@ describe('composed synced state (base + extend)', () => {
 
         asClient(() => Unit.update(client));                      // replica update（両描画ハンドラが走る）
 
-        const el = client._.children[0].element as HTMLElement;
+        const el = client._.children[0].current as HTMLElement;
         expect(el.style.left).toBe('3px');                      // 基底 Actor の render（位置）
         expect(el.style.top).toBe('8px');
         expect(el.style.background).toBe('red');                // 拡張 Sprite の render（hp 由来の色）

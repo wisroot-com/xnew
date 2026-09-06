@@ -108,12 +108,12 @@
     function Title(unit) {
       xnew.extend(xbasics.Scene);
       xnew.nest('<div class="absolute inset-0 bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 flex flex-col items-center justify-center gap-6 cursor-pointer select-none" style="opacity:0;">');
-      xnew.transition(({ value }) => unit.element.style.opacity = `${value}`, 400);
+      xnew.transition(({ value }) => unit.current.style.opacity = `${value}`, 400);
       xnew('<div class="text-6xl">', '🚉');
       xnew('<h1 class="text-4xl font-bold tracking-[0.3em]">', 'まよなかステーション');
       xnew('<p class="text-slate-400 animate-pulse">', 'click to start');
       unit.on('pointerdown', () => unit.change(NovelScene));
-      return { leave() { return xnew.transition(({ value }) => unit.element.style.opacity = `${1 - value}`, 400); } };
+      return { leave() { return xnew.transition(({ value }) => unit.current.style.opacity = `${1 - value}`, 400); } };
     }
 
     // the scenario player: executes tokens until something asks to pause (click-wait, timed wait,
@@ -121,7 +121,7 @@
     function NovelScene(unit) {
       xnew.extend(xbasics.Scene);
       xnew.nest('<div class="absolute inset-0 select-none cursor-pointer" style="opacity:0;">');
-      xnew.transition(({ value }) => unit.element.style.opacity = `${value}`, 400);
+      xnew.transition(({ value }) => unit.current.style.opacity = `${value}`, 400);
 
       // persistent layers: they live across pages and only react to commands
       const bg = xnew(Background);
@@ -222,7 +222,7 @@
           stopped = false;
           run();
         },
-        leave() { return xnew.transition(({ value }) => unit.element.style.opacity = `${1 - value}`, 600); },
+        leave() { return xnew.transition(({ value }) => unit.current.style.opacity = `${1 - value}`, 600); },
       };
     }
 
@@ -256,7 +256,7 @@
 
     function BG(unit, { className, deco, label }) {
       xnew.nest(`<div class="absolute inset-0 ${className}" style="opacity:0;">`);
-      xnew.transition(({ value }) => unit.element.style.opacity = `${value}`, 600);
+      xnew.transition(({ value }) => unit.current.style.opacity = `${value}`, 600);
       xnew('<div class="absolute top-8 right-12 text-7xl opacity-50">', deco);
       xnew('<div class="absolute top-4 left-4 text-xs tracking-[0.3em] text-white/40">', `◈ ${label}`);
     }
@@ -272,8 +272,8 @@
       function refresh() {
         for (const slot of Object.values(slots)) {
           const active = slot.id !== null && slot.id === speaker;
-          slot.el.element.style.filter = active ? 'none' : 'brightness(0.45)';
-          slot.el.element.style.transform = active ? 'scale(1)' : 'scale(0.92)';
+          slot.el.current.style.filter = active ? 'none' : 'brightness(0.45)';
+          slot.el.current.style.transform = active ? 'scale(1)' : 'scale(0.92)';
         }
       }
       return {
@@ -286,7 +286,7 @@
               xnew('<div class="text-8xl drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">', chara.face);
               xnew('<div class="text-xs tracking-widest text-white/60">', chara.label);
             });
-            slot.el.element.style.opacity = '1';
+            slot.el.current.style.opacity = '1';
             refresh();
           }
         },
@@ -296,7 +296,7 @@
               slot.id = null;
               slot.content?.finalize();
               slot.content = null;
-              slot.el.element.style.opacity = '0';
+              slot.el.current.style.opacity = '0';
             }
           }
           refresh();
@@ -344,14 +344,14 @@
       let stream = xnew(Typewriter, { parts, speed: 40 });
 
       unit.on('update', () => {
-        textArea.element.textContent = done + stream.current;
+        textArea.current.textContent = done + stream.current;
       });
 
       return {
         get completed() { return stream.completed; },
         skip() {
           stream.skip();
-          textArea.element.textContent = done + stream.current;
+          textArea.current.textContent = done + stream.current;
         },
         append(parts) {
           done = done + stream.current + '\n';
@@ -411,7 +411,7 @@
       xnew.nest('<div class="absolute inset-x-0 bottom-40 flex flex-col items-center gap-3">');
       for (const { text, to } of items) {
         const button = xnew('<button class="w-72 px-4 py-2 rounded-xl bg-indigo-800/90 hover:bg-indigo-600 border border-indigo-400/40 tracking-widest cursor-pointer" style="opacity:0;">', `▶ ${text}`);
-        xnew.transition(({ value }) => button.element.style.opacity = `${value}`, 300);
+        xnew.transition(({ value }) => button.current.style.opacity = `${value}`, 300);
         button.on('click', () => {
           const scene = xnew.context(NovelScene);
           unit.finalize();

@@ -23,6 +23,6 @@ export function Screen(unit: xnew.Unit,
     const canvas = xnew({ tag: 'canvas', width, height, className: css.canvas });
 
     return {
-        get canvas() { return canvas.element; },
+        get canvas() { return canvas.current; },
     }
 }

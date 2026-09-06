@@ -121,7 +121,7 @@ function GameScene(unit) {
     xpixi.renderer.render(xpixi.scene); // preserveDrawingBuffer なしでも同一タスク内の描画直後なら canvas が写る
     const image = html2canvas(document.querySelector('#main'), {
       scale: 2, logging: false, useCORS: true,
-      ignoreElements: (element) => element === gameover.element,
+      ignoreElements: (element) => element === gameover.current,
     }).then((canvas) => canvas.toDataURL('image/png'));
 
     xnew.timeout(() => {
@@ -138,7 +138,7 @@ function ResultScene(unit, { image }) {
   // popup
   xnew.nest(`<div class="absolute inset-0 size-full">`);
   xnew.transition(({ value }) => {
-    Object.assign(unit.element.style, { opacity: value, transform: `scale(${0.8 + value * 0.2})` });
+    Object.assign(unit.current.style, { opacity: value, transform: `scale(${0.8 + value * 0.2})` });
   }, 500, 'ease');
 
   xnew(ResultBackground, { gradient: 'from-stone-300 to-stone-400', textColor: 'text-stone-400' });
@@ -157,7 +157,7 @@ function ScoreText(unit) {
   const text = xnew(xbasics.SVGText, { text: 'score 0', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   let sum = 0;
   unit.on('+scoreup', ({ score }) => {
-    text.element.textContent = `score ${sum += Math.pow(2, score)}`;
+    text.current.textContent = `score ${sum += Math.pow(2, score)}`;
     xnew.context(GameData).scores[score]++;
   });
 }
@@ -422,9 +422,9 @@ function Circle(unit, { x, y, radius, color = 0xFFFFFF, alpha = 1.0, options = {
 // 生成時に渡された要素を白で覆ってからフェードアウトしつつ撮影し、PNG をダウンロードする。
 function ScreenShot(unit) {
   const cover = xnew('<div class="absolute inset-0 size-full z-10 bg-white">');
-  xnew.transition(({ value }) => cover.element.style.opacity = 1 - value, 1000)
+  xnew.transition(({ value }) => cover.current.style.opacity = 1 - value, 1000)
     .timeout(() => {
-      html2canvas(unit.element, { scale: 2, logging: false, useCORS: true }).then((canvas) => {
+      html2canvas(unit.current, { scale: 2, logging: false, useCORS: true }).then((canvas) => {
         // 下部 13% のフッターを除いた領域を切り出して PNG としてダウンロードする。
         const [width, height] = [canvas.width, Math.floor(canvas.height * 0.87)];
         const cropped = document.createElement('canvas');
@@ -469,7 +469,7 @@ function ResultBackground(unit, { gradient, textColor }) {
     const circle = xnew(`<div class="absolute rounded-full bg-white" style="width: ${sizeCqw}cqw; height: ${sizeCqw}cqw; left: ${x}%; top: ${y}%; opacity: 0.2;">`);
     circle.on('update', ({ count }) => {
       const p = count * 0.02;
-      Object.assign(circle.element.style, { opacity: Math.sin(p) * 0.1 + 0.2, transform: transform(p) });
+      Object.assign(circle.current.style, { opacity: Math.sin(p) * 0.1 + 0.2, transform: transform(p) });
     });
   }
 
@@ -491,7 +491,7 @@ function TitleText(unit, { text, color }) {
 function TouchMessage(unit, { color }) {
   xnew.nest(`<div class="absolute w-full top-[30cqw] text-center ${color} font-bold">`);
   xnew(xbasics.SVGText, { text: 'touch start', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
-  unit.on('update', ({ count }) => unit.element.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
+  unit.on('update', ({ count }) => unit.current.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
 }
 
 // 中央に降りてくる "Game Over"。className で横位置を調整（既定は全幅中央）。
@@ -499,7 +499,7 @@ function GameOverText(unit, { className = 'w-full' }) {
   xnew.nest(`<div class="absolute ${className} text-center text-red-400 font-bold">`);
   xnew(xbasics.SVGText, { text: 'Game Over', fontSize: '12cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   xnew.transition(({ value }) => {
-    Object.assign(unit.element.style, { opacity: value, top: `${10 + value * 15}cqw` });
+    Object.assign(unit.current.style, { opacity: value, top: `${10 + value * 15}cqw` });
   }, 1000, 'ease');
 }
 

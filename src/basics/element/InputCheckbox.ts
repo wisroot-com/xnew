@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputCheckbox — framed check box backed by a hidden native <input type="checkbox">
 // Holds a Gate for the checked state and exposes it as `gate`; the invisible native input captures
-// interaction. unit.element is the container (not the input), so a trailing compose fn nests inside it.
+// interaction. unit.current is the container (not the input), so a trailing compose fn nests inside it.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -33,8 +33,8 @@ export function InputCheckbox(unit: xnew.Unit,
 
     // the hidden input holds the state (read through `input`); the container attribute only drives the look
     function apply(checked: boolean) {
-        (input.element as HTMLInputElement).checked = checked;
-        unit.element.toggleAttribute('data-checked', checked);
+        (input.current as HTMLInputElement).checked = checked;
+        unit.current.toggleAttribute('data-checked', checked);
     }
 
     gate.on('-open', () => apply(true));
@@ -49,7 +49,7 @@ export function InputCheckbox(unit: xnew.Unit,
 
     return {
         get input() {
-            return input.element as HTMLInputElement;
+            return input.current as HTMLInputElement;
         },
         get gate() {
             return gate;

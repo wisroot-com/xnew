@@ -85,7 +85,7 @@
 
     function Lamp(unit, { key }) {
       const box = xnew.nest('<div class="w-16 h-16 rounded-lg border border-green-600 bg-white flex items-center justify-center font-bold text-green-800 transition-colors duration-150">');
-      unit.element.textContent = key;
+      unit.current.textContent = key;
       return {
         flash() {
           box.classList.add('bg-yellow-300');
@@ -98,7 +98,7 @@
 
     function Button(unit, { name = 'button' }) {
       xnew.nest('<button class="px-3 py-1 border rounded-lg cursor-pointer bg-white hover:bg-gray-100 border-gray-300 text-gray-700">');
-      unit.element.textContent = name;
+      unit.current.textContent = name;
     }
   </script>
 </body>

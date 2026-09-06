@@ -23,13 +23,13 @@ const timer = xnew.timeout(callback, duration);
 
 ```js
 xnew('<div>', (unit) => {
-  unit.element.textContent = 'Click me!';
+  unit.current.textContent = 'Click me!';
 
   unit.on('click', () => {
-    unit.element.textContent = 'Clicked! Resetting in 2 seconds...';
+    unit.current.textContent = 'Clicked! Resetting in 2 seconds...';
 
     xnew.timeout(() => {
-      unit.element.textContent = 'Click me!';
+      unit.current.textContent = 'Click me!';
     }, 2000);
   });
 });
@@ -39,7 +39,7 @@ xnew('<div>', (unit) => {
 
 ```js
 xnew('<button>', (unit) => {
-  unit.element.textContent = 'Start countdown';
+  unit.current.textContent = 'Start countdown';
 
   let timeout;
 
@@ -49,10 +49,10 @@ xnew('<button>', (unit) => {
       timeout.clear();
     }
 
-    unit.element.textContent = 'Countdown started...';
+    unit.current.textContent = 'Countdown started...';
 
     timeout = xnew.timeout(() => {
-      unit.element.textContent = 'Done!';
+      unit.current.textContent = 'Done!';
     }, 3000);
   });
 });

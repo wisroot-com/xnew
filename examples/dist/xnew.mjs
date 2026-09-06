@@ -470,7 +470,7 @@ function keyboardEvent(matched, props) {
 }
 
 function textComponent(content) {
-    return (unit) => { unit.element.textContent = content.toString(); };
+    return (unit) => { unit.current.textContent = content.toString(); };
 }
 class Unit {
     constructor({ parent, inherited, own }, ...args) {
@@ -546,7 +546,7 @@ class Unit {
     get parent() {
         return this._.parent;
     }
-    get element() {
+    get current() {
         return this._.currentElement;
     }
     get container() {
@@ -759,8 +759,8 @@ class Unit {
         else if (unit._.listeners.has(type, listener) === false) {
             unit._.listeners.set(type, listener, { execute, owner });
             Unit.type2units.add(type, unit);
-            if (/^[A-Za-z]/.test(type) && unit.element !== null) {
-                unit._.events.add(unit.element, type, execute, options);
+            if (/^[A-Za-z]/.test(type) && unit.current !== null) {
+                unit._.events.add(unit.current, type, execute, options);
             }
         }
         if (owner !== unit) {
@@ -1711,13 +1711,13 @@ function Aspect(unit, { aspect = 1.0, fit = 'contain' } = {}) {
     });
     xnew.nest({ tag: 'div', className: css.container });
     xnew.nest({ tag: 'div', className: css.inner });
-    unit.element.style.aspectRatio = String(aspect);
+    unit.current.style.aspectRatio = String(aspect);
     if (fit === 'contain') {
-        unit.element.style.width = `min(100cqw, calc(100cqh * ${aspect}))`;
+        unit.current.style.width = `min(100cqw, calc(100cqh * ${aspect}))`;
     }
     else {
-        unit.element.style.flexShrink = '0';
-        unit.element.style.width = `max(100cqw, calc(100cqh * ${aspect}))`;
+        unit.current.style.flexShrink = '0';
+        unit.current.style.width = `max(100cqw, calc(100cqh * ${aspect}))`;
     }
 }
 
@@ -1731,7 +1731,7 @@ function Screen(unit, { width = 800, height = 600, fit = 'contain' } = {}) {
     });
     const canvas = xnew({ tag: 'canvas', width, height, className: css.canvas });
     return {
-        get canvas() { return canvas.element; },
+        get canvas() { return canvas.current; },
     };
 }
 
@@ -1816,7 +1816,7 @@ function Image(unit, _a) {
         `,
     });
     xnew.nest(Object.assign({ tag: 'img', className: `${css.container} ${className}`, style }, others));
-    const element = unit.element;
+    const element = unit.current;
     let objectURL = null;
     function apply(value) {
         if (typeof value === 'string') {
@@ -1853,10 +1853,10 @@ function SVGText(unit, _a = {}) {
     xnew.nest({ tag: 'svg', className: `${css.container} ${className}`, style });
     const inner = xnew(Object.assign({ tag: 'text', x: 0, y: 0, paintOrder: 'stroke fill' }, others), text);
     function resize() {
-        const bbox = inner.element.getBBox();
-        unit.element.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
-        unit.element.style.width = bbox.width + 'px';
-        unit.element.style.height = bbox.height + 'px';
+        const bbox = inner.current.getBBox();
+        unit.current.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+        unit.current.style.width = bbox.width + 'px';
+        unit.current.style.height = bbox.height + 'px';
     }
     resize();
     inner.on('resize', resize);
@@ -1895,7 +1895,7 @@ function InputRange(unit, _a = {}) {
     }
     return {
         get input() {
-            return input.element;
+            return input.current;
         },
     };
 }
@@ -1941,10 +1941,10 @@ function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false
     function apply(v) {
         const percent = `${(v - min) / (max - min) * 100}%`;
         if (vertical) {
-            meter.element.style.height = percent;
+            meter.current.style.height = percent;
         }
         else {
-            meter.element.style.width = percent;
+            meter.current.style.width = percent;
         }
     }
     apply(value);
@@ -1971,7 +1971,7 @@ function InputRangeStatus(unit, { value = 0, vertical = false } = {}) {
     });
     const status = xnew({ tag: 'div', className: `${css.status} ${vertical ? css.vertical : css.horizontal}` });
     function apply(v) {
-        status.element.textContent = String(v);
+        status.current.textContent = String(v);
     }
     apply(value);
     unit.on('input', ({ value }) => {
@@ -2051,8 +2051,8 @@ function InputCheckbox(unit, _a = {}) {
     const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
     function apply(checked) {
-        input.element.checked = checked;
-        unit.element.toggleAttribute('data-checked', checked);
+        input.current.checked = checked;
+        unit.current.toggleAttribute('data-checked', checked);
     }
     gate.on('-open', () => apply(true));
     gate.on('-closed', () => apply(false));
@@ -2063,7 +2063,7 @@ function InputCheckbox(unit, _a = {}) {
     }
     return {
         get input() {
-            return input.element;
+            return input.current;
         },
         get gate() {
             return gate;
@@ -2105,10 +2105,10 @@ function InputText(unit, _a = {}) {
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     const input = xnew(Object.assign({ tag: 'input', type: 'text', value, className: css.input }, others));
-    unit.on('click', () => input.element.focus());
+    unit.on('click', () => input.current.focus());
     return {
         get input() {
-            return input.element;
+            return input.current;
         },
     };
 }
@@ -2137,10 +2137,10 @@ function InputNumber(unit, _a = {}) {
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     const input = xnew(Object.assign({ tag: 'input', type: 'number', value, className: css.input }, others));
-    unit.on('click', () => input.element.focus());
+    unit.on('click', () => input.current.focus());
     return {
         get input() {
-            return input.element;
+            return input.current;
         },
     };
 }
@@ -2164,8 +2164,8 @@ function InputSwitch(unit, _a = {}) {
     const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
     function apply(checked) {
-        input.element.checked = checked;
-        unit.element.toggleAttribute('data-checked', checked);
+        input.current.checked = checked;
+        unit.current.toggleAttribute('data-checked', checked);
     }
     gate.on('-open', () => apply(true));
     gate.on('-closed', () => apply(false));
@@ -2176,7 +2176,7 @@ function InputSwitch(unit, _a = {}) {
     }
     return {
         get input() {
-            return input.element;
+            return input.current;
         },
         get gate() {
             return gate;
@@ -2217,7 +2217,7 @@ function InputRadio(unit, _a = {}) {
     const input = xnew(Object.assign({ tag: 'input', type: 'radio', name, value, checked, className: css.input }, others));
     return {
         get input() {
-            return input.element;
+            return input.current;
         },
     };
 }
@@ -2233,9 +2233,9 @@ function Overlay(unit, _a = {}) {
             `,
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
-    gate.on('-transition', ({ value }) => unit.element.style.opacity = value.toString());
-    gate.on('-open', () => unit.element.style.pointerEvents = 'auto');
-    gate.on('-closed', () => unit.element.style.pointerEvents = 'none');
+    gate.on('-transition', ({ value }) => unit.current.style.opacity = value.toString());
+    gate.on('-open', () => unit.current.style.pointerEvents = 'auto');
+    gate.on('-closed', () => unit.current.style.pointerEvents = 'none');
     if (anchor instanceof HTMLElement) {
         const tether = xnew.nest({ tag: 'div', style: 'position: absolute; box-sizing: border-box' });
         track();
@@ -2319,13 +2319,13 @@ function ListboxButton(unit, _a = {}) {
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     const label = xnew({ tag: 'div', className: css.label });
-    listbox.bind(label.element);
+    listbox.bind(label.current);
     unit.on('click', ({ event }) => {
         event.stopPropagation();
         listbox.gate.toggle();
     });
-    listbox.gate.on('-open', () => unit.element.toggleAttribute('data-open', true));
-    listbox.gate.on('-closed', () => unit.element.toggleAttribute('data-open', false));
+    listbox.gate.on('-open', () => unit.current.toggleAttribute('data-open', true));
+    listbox.gate.on('-closed', () => unit.current.toggleAttribute('data-open', false));
 }
 function ListboxMenu(unit, _a = {}) {
     var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
@@ -2338,7 +2338,7 @@ function ListboxMenu(unit, _a = {}) {
             overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
         `,
     });
-    xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.element });
+    xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.current });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     unit.on('click.outside', () => {
         const state = listbox.gate.state;
@@ -2346,9 +2346,9 @@ function ListboxMenu(unit, _a = {}) {
             listbox.gate.close();
         }
     });
-    listbox.gate.on('-open', () => unit.element.style.background = surfaceColor());
+    listbox.gate.on('-open', () => unit.current.style.background = surfaceColor());
     function surfaceColor() {
-        for (let element = listbox.element.parentElement; element !== null; element = element.parentElement) {
+        for (let element = listbox.current.parentElement; element !== null; element = element.parentElement) {
             const color = getComputedStyle(element).backgroundColor;
             if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
                 return color;
@@ -2377,14 +2377,14 @@ function ListboxItem(unit, _a = {}) {
         listbox.select(value);
     });
     if (xnew.standalone === true) {
-        unit.element.textContent = value;
+        unit.current.textContent = value;
     }
     return {
         get value() {
             return value;
         },
         check(current) {
-            unit.element.toggleAttribute('data-checked', current);
+            unit.current.toggleAttribute('data-checked', current);
         },
     };
 }
@@ -2402,8 +2402,8 @@ function Accordion(unit, _a = {}) {
     apply(gate.value);
     gate.on('-transition', ({ value }) => apply(value));
     function apply(value) {
-        unit.element.style.height = value < 1.0 ? unit.element.scrollHeight * value + 'px' : 'auto';
-        unit.element.style.opacity = value.toString();
+        unit.current.style.height = value < 1.0 ? unit.current.scrollHeight * value + 'px' : 'auto';
+        unit.current.style.opacity = value.toString();
     }
     return {
         get gate() {
@@ -2514,9 +2514,9 @@ function ColorPicker(unit, _a = {}) {
     let fieldA = null;
     xnew((zone) => {
         saturationElement = xnew.nest({ tag: 'div', className: css.saturation });
-        circleElement = xnew({ tag: 'div', className: css.circle }).element;
+        circleElement = xnew({ tag: 'div', className: css.circle }).current;
         zone.on('dragstart dragmove', ({ position }) => {
-            const rect = zone.element.getBoundingClientRect();
+            const rect = zone.current.getBoundingClientRect();
             apply(Object.assign(Object.assign({}, hsva), { s: ratio(position.x, rect.width), v: 1 - ratio(position.y, rect.height) }), true);
         });
     });
@@ -2538,25 +2538,25 @@ function ColorPicker(unit, _a = {}) {
         xnew.nest({ tag: 'div', className: css.controls });
         xnew(() => {
             xnew.nest({ tag: 'div', className: css.swatch });
-            swatchOverlay = xnew({ tag: 'div', className: css.overlay }).element;
+            swatchOverlay = xnew({ tag: 'div', className: css.overlay }).current;
         });
         xnew(() => {
             xnew.nest({ tag: 'div', className: css.bars });
             xnew((zone) => {
                 xnew.nest({ tag: 'div', className: `${css.bar} ${css.hue}` });
-                huePointer = xnew({ tag: 'div', className: css.pointer }).element;
+                huePointer = xnew({ tag: 'div', className: css.pointer }).current;
                 zone.on('dragstart dragmove', ({ position }) => {
-                    const rect = zone.element.getBoundingClientRect();
+                    const rect = zone.current.getBoundingClientRect();
                     apply(Object.assign(Object.assign({}, hsva), { h: ratio(position.x, rect.width) * 360 }), true);
                 });
             });
             if (alpha === true) {
                 xnew((zone) => {
                     xnew.nest({ tag: 'div', className: `${css.bar} ${css.alphaTrack}` });
-                    alphaOverlay = xnew({ tag: 'div', className: css.overlay }).element;
-                    alphaPointer = xnew({ tag: 'div', className: css.pointer }).element;
+                    alphaOverlay = xnew({ tag: 'div', className: css.overlay }).current;
+                    alphaPointer = xnew({ tag: 'div', className: css.pointer }).current;
                     zone.on('dragstart dragmove', ({ position }) => {
-                        const rect = zone.element.getBoundingClientRect();
+                        const rect = zone.current.getBoundingClientRect();
                         apply(Object.assign(Object.assign({}, hsva), { a: ratio(position.x, rect.width) }), true);
                     });
                 });
@@ -2575,7 +2575,7 @@ function ColorPicker(unit, _a = {}) {
     });
     function Field(sub, { label, commit }) {
         xnew.nest({ tag: 'div', className: css.field });
-        const input = xnew({ tag: 'input', type: 'text', spellcheck: false, className: css.fieldInput }).element;
+        const input = xnew({ tag: 'input', type: 'text', spellcheck: false, className: css.fieldInput }).current;
         xnew({ tag: 'div', className: css.fieldLabel, textContent: label });
         sub.on('change', ({ event, value }) => {
             event.stopPropagation();
@@ -2734,7 +2734,7 @@ function VirtualPad(unit, { type = 'analog', className = '', style = '' } = {}) 
     });
     xnew.nest({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.container} ${className}`, style });
     unit.on('dragstart dragmove', ({ type: event, position }) => {
-        const size = unit.element.clientWidth;
+        const size = unit.current.clientWidth;
         const x = position.x - size / 2;
         const y = position.y - size / 2;
         const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
@@ -2776,12 +2776,12 @@ function VirtualPadAnalog() {
     xnew('<polygon points="57 32 51 27 51 37">');
     const target = xnew('<circle cx="32" cy="32" r="14">');
     pad.on('-down -move', ({ vector }) => {
-        target.element.setAttribute('transform', `translate(${vector.x * 16} ${vector.y * 16})`);
-        target.element.style.filter = 'brightness(80%)';
+        target.current.setAttribute('transform', `translate(${vector.x * 16} ${vector.y * 16})`);
+        target.current.style.filter = 'brightness(80%)';
     });
     pad.on('-up', () => {
-        target.element.removeAttribute('transform');
-        target.element.style.filter = '';
+        target.current.removeAttribute('transform');
+        target.current.style.filter = '';
     });
 }
 function VirtualPadDPad() {
@@ -2809,16 +2809,16 @@ function VirtualPadDPad() {
         xnew('<polygon points="57 32 51 27 51 37">');
     });
     pad.on('-down -move', ({ vector }) => {
-        targets[0].element.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
-        targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
-        targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
-        targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
+        targets[0].current.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
+        targets[1].current.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
+        targets[2].current.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
+        targets[3].current.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
     });
     pad.on('-up', () => {
-        targets[0].element.style.filter = '';
-        targets[1].element.style.filter = '';
-        targets[2].element.style.filter = '';
-        targets[3].element.style.filter = '';
+        targets[0].current.style.filter = '';
+        targets[1].current.style.filter = '';
+        targets[2].current.style.filter = '';
+        targets[3].current.style.filter = '';
     });
 }
 
@@ -3198,7 +3198,7 @@ function Panel(unit, { name, open, params, nested = false }) {
                 header.on('click', () => gate.toggle());
                 const chevron = xnew((unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
                 gate.on('-transition', ({ value }) => {
-                    chevron.element.style.transform = `rotate(${(value - 1) * 90}deg)`;
+                    chevron.current.style.transform = `rotate(${(value - 1) * 90}deg)`;
                 });
                 xnew('<div>', name);
             });
@@ -3269,9 +3269,9 @@ function Tabs(unit, { panel }) {
     function paint() {
         buttons.forEach((button, index) => {
             const on = names[index] === active;
-            button.element.style.borderBottomColor = on ? 'currentColor' : 'transparent';
-            button.element.style.fontWeight = on ? '600' : '400';
-            button.element.style.opacity = on ? '1' : '0.55';
+            button.current.style.borderBottomColor = on ? 'currentColor' : 'transparent';
+            button.current.style.fontWeight = on ? '600' : '400';
+            button.current.style.opacity = on ? '1' : '0.55';
         });
     }
     return {
@@ -3319,18 +3319,18 @@ function Color(unit, { name = '', value = '#ffffff' }) {
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
     let current = value;
     const swatch = xnew({ tag: 'button', type: 'button', style: 'height: 2em; flex: 1; max-width: 60%; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer;' });
-    swatch.element.style.background = current;
+    swatch.current.style.background = current;
     const notify = xnew.scope(() => xnew.emit('-change', { value: current }));
     let popup = null;
     swatch.on('click', ({ event }) => {
         event.stopPropagation();
         if (popup === null) {
             popup = xnew(ColorPopup, {
-                anchor: swatch.element,
+                anchor: swatch.current,
                 value: current,
                 commit(next) {
                     current = next;
-                    swatch.element.style.background = next;
+                    swatch.current.style.background = next;
                     notify();
                 },
             });

@@ -34,11 +34,11 @@ const timer = xnew.transition(callback, duration, easing);
 
 ```js
 xnew('<div>', (unit) => {
-  unit.element.textContent = 'Fading in...';
-  unit.element.style.opacity = '0';
+  unit.current.textContent = 'Fading in...';
+  unit.current.style.opacity = '0';
 
   xnew.transition(({ value }) => {
-    unit.element.style.opacity = value;
+    unit.current.style.opacity = value;
   }, 2000, 'ease-in');
 });
 ```
@@ -46,15 +46,15 @@ xnew('<div>', (unit) => {
 
 ```js
 xnew('<div>', (unit) => {
-  unit.element.textContent = 'Click to stop animation';
+  unit.current.textContent = 'Click to stop animation';
 
   const transition = xnew.transition(({ value }) => {
-    unit.element.style.opacity = 1 - value;
+    unit.current.style.opacity = 1 - value;
   }, 5000, 'linear');
 
   unit.on('click', () => {
     transition.clear();
-    unit.element.textContent = 'Animation stopped';
+    unit.current.textContent = 'Animation stopped';
   });
 });
 ```

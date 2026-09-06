@@ -43,7 +43,7 @@ export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: P
                 header.on('click', () => gate.toggle());
                 const chevron = xnew((unit: xnew.Unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
                 gate.on('-transition', ({ value }: { value: number }) => {
-                    chevron.element.style.transform = `rotate(${(value - 1) * 90}deg)`;
+                    chevron.current.style.transform = `rotate(${(value - 1) * 90}deg)`;
                 });
                 xnew('<div>', name);
             });
@@ -120,9 +120,9 @@ function Tabs(unit: xnew.Unit, { panel }: { panel: xnew.Unit }) {
     function paint() {
         buttons.forEach((button: xnew.Unit, index: number) => {
             const on = names[index] === active;
-            button.element.style.borderBottomColor = on ? 'currentColor' : 'transparent';
-            button.element.style.fontWeight = on ? '600' : '400';
-            button.element.style.opacity = on ? '1' : '0.55';
+            button.current.style.borderBottomColor = on ? 'currentColor' : 'transparent';
+            button.current.style.fontWeight = on ? '600' : '400';
+            button.current.style.opacity = on ? '1' : '0.55';
         });
     }
 
@@ -178,7 +178,7 @@ function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: strin
 
     let current = value;
     const swatch = xnew({ tag: 'button', type: 'button', style: 'height: 2em; flex: 1; max-width: 60%; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer;' });
-    swatch.element.style.background = current;
+    swatch.current.style.background = current;
 
     // '-change' must fire on this row unit, while commits arrive from the popup's scope
     const notify = xnew.scope(() => xnew.emit('-change', { value: current }));
@@ -188,11 +188,11 @@ function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: strin
         event.stopPropagation();
         if (popup === null) {
             popup = xnew(ColorPopup, {
-                anchor: swatch.element as HTMLElement,
+                anchor: swatch.current as HTMLElement,
                 value: current,
                 commit(next: string) {
                     current = next;
-                    swatch.element.style.background = next;
+                    swatch.current.style.background = next;
                     notify();
                 },
             });

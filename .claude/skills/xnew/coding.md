@@ -55,10 +55,10 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
 
 ## 4. DOM: element, nest, events
 
-- `unit.element` is the unit's current DOM element — it walks inward with every `xnew.nest`.
+- `unit.current` is the unit's current DOM element — it walks inward with every `xnew.nest`.
 - `unit.container` is the unit's **own outermost** element — its first nested element, or **`null`** when it
   nested none and merely borrows the element it was created on. Use it when a caller needs the whole
-  component's box; `element` is the innermost part. Note `container` is a `Unit` member, so a component
+  component's box; `current` is the innermost part. Note `container` is a `Unit` member, so a component
   define named `container` throws.
 - `xnew.css((layer,) { name: def… })` registers pseudo-scoped CSS with **mandatory
   scoping**: every key is a local name, always renamed to a page-unique one, and keys must
@@ -109,7 +109,7 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   hidden native input. State attributes (`data-checked` / `data-open`) toggle on the container; inner
   parts (knob / meter / status / mark) react via parent-keyed rules (`[data-checked] > & { … }`).
   No component exposes a `container` define (it would collide with the `unit.container` member); for
-  InputCheckbox / InputRange / InputSwitch `unit.element` IS the container (input / knob / meter are
+  InputCheckbox / InputRange / InputSwitch `unit.current` IS the container (input / knob / meter are
   children) — for the others it ends on the innermost nested part, so read `unit.container` (or capture
   the element right after nesting it) when the component needs it later.
 - **Basics components expose NO part-customization bag** (no `attributes` / `designs` prop — all
@@ -400,7 +400,7 @@ the rule, then one line of why.
   `xnew(...)` inside them must be wrapped in `xnew.scope(...)` (§7) — otherwise `emitToServer` throws
   `no socket bound to this root` (Unit.current isn't the sync node).
 
-- **InputCheckbox holds a Gate for its checked state and its `unit.element` is the CONTAINER, not the
+- **InputCheckbox holds a Gate for its checked state and its `unit.current` is the CONTAINER, not the
   hidden input (modeled on Listbox, 2026-07).** The `<input>` is nested as a *child unit*
   (`xnew({ tag: 'input', … })`, no `xnew.nest`) so the container stays current — an outer component
   then composes the mark INTO the box (`xnew((unit) => { xnew.extend(InputCheckbox); … unit.gate … xnew(xicons.Check) })`);
@@ -409,8 +409,8 @@ the rule, then one line of why.
   marks never steal its clicks. Native `input` bubbles up to the container where `unit.on('input', …)`
   lives → toggles `gate.open()/close()`; `gate.on('-open'/'-closed')` toggles `data-checked` on the
   container (set it once initially from `gate.state`, since the Gate's constructor emits the first `-open`
-  before you subscribe). Do NOT assume `unit.element` is the input here — that still holds for InputSwitch,
-  but InputCheckbox and InputRange diverged (their `unit.element` is the container; the input is a
+  before you subscribe). Do NOT assume `unit.current` is the input here — that still holds for InputSwitch,
+  but InputCheckbox and InputRange diverged (their `unit.current` is the container; the input is a
   `xnew({ tag: 'input', … })` child, not an `xnew.nest`). InputRange follows the same compose gate:
   its default `InputRangeMeter` + `InputRangeStatus` are drawn only when `xnew.standalone === true`, so
   extending it onto an outer component replaces them with caller content.
@@ -433,7 +433,7 @@ the rule, then one line of why.
   let it listen to the bubbling native event — don't thread a value-setter define across the boundary.**
   InputRange is InputRange (container + hidden input) + two same-file sub-components `InputRangeMeter`
   (the growing meter) and `InputRangeStatus` (the value readout), each mounted with `xnew(…)` and no
-  `xnew.nest` so their `unit.element` = the container; each `unit.on('input', …)` catches the input event
+  `xnew.nest` so their `unit.current` = the container; each `unit.on('input', …)` catches the input event
   that bubbles up from the later-nested `<input>`. Works because the core reads the value off
   `event.target` (the range input), not the bound element (`dom.ts` `defineEvent(['change','input'])`),
   so an ancestor listener still gets the numeric value. Native `input` events bubble — tests must dispatch
@@ -450,7 +450,7 @@ the rule, then one line of why.
 
 - **For close-on-outside-press, use the built-in `unit.on('click.outside', …)` — don't hand-roll a
   backdrop `click` listener.** `click.outside` (also `pointerdown/move/up.outside`, `dom.ts`) attaches
-  at `document` and fires only when the press target is NOT inside `unit.element` **as of registration
+  at `document` and fires only when the press target is NOT inside `unit.current` **as of registration
   time** — so register it right after nesting the content box you want to protect. DOM listeners attach
   via `setTimeout(0)`, so the same press that opened the popup can't self-close it. Cleaned up on
   finalize like any listener. `Overlay` deliberately has NO built-in click-to-close (removed 2026-07);
@@ -529,7 +529,7 @@ the rule, then one line of why.
   spawned from a callback, bind an explicit element instead: `xnew(safeElement, Component, props)`
   (bit InputSelect: its dropdown vanished into the hidden select).
 
-- **Don't read the host's `unit.element` inside a callback registered on a child unit that was
+- **Don't read the host's `unit.current` inside a callback registered on a child unit that was
   created before a later `xnew.nest(...)` — it sees the nest chain as of that child's creation,
   not the final element.** The callback runs in the child's scope, which snapshots the host's
   current element at creation time (bit InputNumber: the left spin button's click handler got the

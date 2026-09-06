@@ -56,11 +56,11 @@ describe('xnew() creation', () => {
     it('hosts the unit on an explicit DOM element target', () => {
         const el = document.createElement('section');
         const unit = xnew(el, () => {});
-        expect(unit.element).toBe(el);
+        expect(unit.current).toBe(el);
     });
 
     it('creates the host element from a tag string target', () => {
         const unit = xnew('<article id="a1">', () => {});
-        expect(unit.element.id).toBe('a1');
+        expect(unit.current.id).toBe('a1');
     });
 });

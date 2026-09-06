@@ -46,7 +46,7 @@ describe('xsync.boot', () => {
     it('forwards extra args to the unit (target, Component)', () => {
         const el = document.createElement('div');
         const unit = bootClient({ socket: hub.connect() }, el, (_: Unit) => {});
-        expect(unit.element).toBe(el);
+        expect(unit.current).toBe(el);
     });
 
     it('propagates a throw from the component', () => {

@@ -59,7 +59,7 @@ function Lobby(unit, { io }) {
     xnew('<label class="flex items-center gap-2 text-sm text-gray-600">', () => {
         xnew('<span>', 'あなたの名前');
         const nameField = xnew('<input class="flex-1 px-2.5 py-1.5 rounded border border-gray-300 text-sm" type="text" maxlength="16" placeholder="ゲスト">');
-        nameField.element.value = app.playerName;   // シーン復帰時に既存の名前を復元
+        nameField.current.value = app.playerName;   // シーン復帰時に既存の名前を復元
         nameField.on('input', ({ value }) => app.setPlayerName(value));
     });
     // 作成フォーム
@@ -68,10 +68,10 @@ function Lobby(unit, { io }) {
         xnew('<button class="px-3 py-1.5 rounded border-0 bg-emerald-500 hover:bg-emerald-600 text-white text-sm cursor-pointer" type="submit">', '作成');
         form.on('submit', ({ event }) => {
             event.preventDefault();
-            const name = nameInput.element.value.trim();
+            const name = nameInput.current.value.trim();
             if (!name) { return; }
             createRoom(name);   // 内部で socket が 'roomcreate' を emit
-            nameInput.element.value = '';
+            nameInput.current.value = '';
         });
     });
     const listEl = xnew('<ul class="flex flex-col gap-2">');
@@ -104,7 +104,7 @@ function Lobby(unit, { io }) {
     unit.on('-disconnect', () => app.setStatus('切断', false));
     unit.on('-statusupdate', ({ rooms: list }) => { rooms = list; render(); });
     unit.on('-roomcreated', ({ room }) => unit.change(Room, { io: window.io, client: client(), room: { id: room.id, name: room.name, count: room.count } }));
-    unit.on('-roomrejected', ({ message }) => { hintEl.element.textContent = message; });
+    unit.on('-roomrejected', ({ message }) => { hintEl.current.textContent = message; });
 
     render();   // 初期描画（一覧は -statusupdate 受信で更新）
 }

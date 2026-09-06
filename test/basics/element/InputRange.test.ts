@@ -12,10 +12,10 @@ describe('basics InputRange', () => {
         jest.useRealTimers();
     });
 
-    // unit.element is the container; its div children are the meter first, then the status readout
+    // unit.current is the container; its div children are the meter first, then the status readout
     // (the hidden input is a child too but an <input>, not a <div>)
     function containerOf(unit: xnew.Unit): HTMLElement {
-        return unit.element as HTMLElement;
+        return unit.current as HTMLElement;
     }
 
     function inputOf(unit: xnew.Unit): HTMLInputElement {

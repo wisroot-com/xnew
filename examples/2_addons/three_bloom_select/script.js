@@ -152,8 +152,8 @@ function Controller(unit) {
 
   unit.on('pointerdown', ({ position }) => {
     const mouse = new THREE.Vector2();
-    mouse.x = (position.x / unit.element.clientWidth) * 2 - 1;
-    mouse.y = - (position.y / unit.element.clientHeight) * 2 + 1;
+    mouse.x = (position.x / unit.current.clientWidth) * 2 - 1;
+    mouse.y = - (position.y / unit.current.clientHeight) * 2 + 1;
 
     raycaster.setFromCamera(mouse, xthree.camera);
     const intersects = raycaster.intersectObjects(xthree.scene.children, false);

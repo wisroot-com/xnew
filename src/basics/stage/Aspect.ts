@@ -27,11 +27,11 @@ export function Aspect(unit: xnew.Unit,
     xnew.nest({ tag: 'div', className: css.container });
     xnew.nest({ tag: 'div', className: css.inner });
 
-    unit.element.style.aspectRatio = String(aspect);
+    unit.current.style.aspectRatio = String(aspect);
     if (fit === 'contain') {
-        unit.element.style.width = `min(100cqw, calc(100cqh * ${aspect}))`;
+        unit.current.style.width = `min(100cqw, calc(100cqh * ${aspect}))`;
     } else {
-        unit.element.style.flexShrink = '0';
-        unit.element.style.width = `max(100cqw, calc(100cqh * ${aspect}))`;
+        unit.current.style.flexShrink = '0';
+        unit.current.style.width = `max(100cqw, calc(100cqh * ${aspect}))`;
     }
 }

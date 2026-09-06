@@ -28,14 +28,14 @@
       let running = false;
       unit.on('click', ({ event }) => {
         running ^= true;
-        text.element.textContent = running ? 'start' : 'stop';
+        text.current.textContent = running ? 'start' : 'stop';
       });
 
       let rotate = 0;
       unit.on('update', () => {
         if (running === false) return;
         rotate++;
-        unit.element.style.transform = `rotate(${rotate}deg)`;
+        unit.current.style.transform = `rotate(${rotate}deg)`;
       });
     }
   </script>

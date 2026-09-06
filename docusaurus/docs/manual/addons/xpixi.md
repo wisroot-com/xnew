@@ -47,7 +47,7 @@ import { xpixi } from '@mulsense/xnew/addons/xpixi'
 ```js
 function Main(unit) {
   const canvas = xnew('<canvas width="800" height="600">');
-  xpixi.initialize({ canvas: canvas.element });
+  xpixi.initialize({ canvas: canvas.current });
 
   unit.on('update', () => xpixi.renderer.render(xpixi.scene));
 }
