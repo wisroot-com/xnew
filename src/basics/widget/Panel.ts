@@ -109,7 +109,7 @@ function Tabs(unit: xnew.Unit, { panel }: { panel: xnew.Unit }) {
     // only nested panels switch: the active tab shows the group keyed with its name and hides the groups keyed for the others
     function apply() {
         names.forEach((name: string) => {
-            xnew.find(Panel, { key: name, parent: panel }).forEach((group: xnew.Unit) => {
+            xnew.find(Panel, { key: name, root: panel }).forEach((group: xnew.Unit) => {
                 if (group.container !== null) {
                     group.container.style.display = name === active ? '' : 'none';
                 }

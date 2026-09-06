@@ -5,13 +5,15 @@
 ## 使い方
 
 ```js
-const units = xnew.find(Component);          // 該当する unit をすべて取得
-const [unit] = xnew.find(Component, { key }); // 予約 prop `key` で 1 つに絞り込む
+const units = xnew.find(Component);            // 該当する unit をすべて取得
+const [unit] = xnew.find(Component, { key });  // 予約 prop `key` で 1 つに絞り込む
+const inside = xnew.find(Component, { root }); // 指定した unit より下（深さ問わず）に絞り込む
 ```
 
 **パラメータ:**
 - `Component`: 検索対象のコンポーネント関数
 - `opts.key` *(省略可)*: 予約 prop `key`（生成時に `xnew(Component, { key })` で付与）が一致する unit に絞り込みます
+- `opts.root` *(省略可)*: 指定した unit の子孫（直下の子に限らず、何階層下でも可）に絞り込みます。`root` 自身は含まれません
 
 **戻り値:**
 - 条件に一致する、現在アクティブな unit の配列

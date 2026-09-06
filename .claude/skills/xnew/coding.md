@@ -210,6 +210,8 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   component (its exposed defines are accessible). **Returns `any`** — no type
   checking, so a typo or wrong shape will not be caught at compile time.
 - `xnew.find(Component, { key })` → array of matching units (respects `protect`).
+- `xnew.find(Component, { root })` narrows to the descendants of `root` at any depth
+  (`root` itself excluded).
 - `key` is a **reserved prop** used by `find(..., { key })`; assume it is globally
   unique.
 

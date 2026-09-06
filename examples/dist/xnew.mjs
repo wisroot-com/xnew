@@ -720,7 +720,7 @@ class Unit {
             if (options.key !== undefined && unit._.key !== options.key) {
                 return false;
             }
-            else if (options.parent !== undefined && Unit.ancestors(unit).includes(options.parent) === false) {
+            else if (options.root !== undefined && Unit.ancestors(unit).includes(options.root) === false) {
                 return false;
             }
             else {
@@ -3259,7 +3259,7 @@ function Tabs(unit, { panel }) {
     let active = '';
     function apply() {
         names.forEach((name) => {
-            xnew.find(Panel, { key: name, parent: panel }).forEach((group) => {
+            xnew.find(Panel, { key: name, root: panel }).forEach((group) => {
                 if (group.container !== null) {
                     group.container.style.display = name === active ? '' : 'none';
                 }

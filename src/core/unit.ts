@@ -341,13 +341,13 @@ export class Unit {
         return boundary === undefined || ancestors.includes(boundary) === true || current === boundary;
     }
 
-    static find(Component: Function, options: { key?: any, parent?: Unit } = {}): Unit[] {
+    static find(Component: Function, options: { key?: any, root?: Unit } = {}): Unit[] {
         const current = Unit.currentUnit;
         const ancestors = Unit.ancestors(current);
         return [...(Unit.component2units.get(Component) ?? [])].filter((unit) => {
             if (options.key !== undefined && unit._.key !== options.key) {
                 return false;
-            } else if (options.parent !== undefined && Unit.ancestors(unit).includes(options.parent) === false) {
+            } else if (options.root !== undefined && Unit.ancestors(unit).includes(options.root) === false) {
                 return false;
             } else {
                 return Unit.isVisible(unit._.parent, current, ancestors);

@@ -60,37 +60,37 @@ describe('xnew.find', () => {
         });
     });
 
-    describe('by parent', () => {
+    describe('by root', () => {
         function A(_: Unit) {}
 
         it('limits results to the descendants of the given unit', () => {
-            let parent!: Unit, inner!: Unit, deep!: Unit, outer!: Unit;
+            let root!: Unit, inner!: Unit, deep!: Unit, outer!: Unit;
             xnew(() => {
-                parent = xnew(() => {
+                root = xnew(() => {
                     inner = xnew(A);
                     xnew(() => { deep = xnew(A); });
                 });
                 outer = xnew(A);
             });
-            expect(xnew.find(A, { parent })).toEqual(expect.arrayContaining([inner, deep]));
-            expect(xnew.find(A, { parent })).toHaveLength(2);
-            expect(xnew.find(A, { parent })).not.toContain(outer);
+            expect(xnew.find(A, { root })).toEqual(expect.arrayContaining([inner, deep]));
+            expect(xnew.find(A, { root })).toHaveLength(2);
+            expect(xnew.find(A, { root })).not.toContain(outer);
         });
 
-        it('excludes the parent unit itself', () => {
-            let parent!: Unit, child!: Unit;
-            xnew(() => { parent = xnew(A, () => { child = xnew(A); }); });
-            expect(xnew.find(A, { parent })).toEqual([child]);
+        it('excludes the root unit itself', () => {
+            let root!: Unit, child!: Unit;
+            xnew(() => { root = xnew(A, () => { child = xnew(A); }); });
+            expect(xnew.find(A, { root })).toEqual([child]);
         });
 
         it('combines with key', () => {
-            let parent!: Unit, k1!: Unit;
+            let root!: Unit, k1!: Unit;
             xnew(() => {
-                parent = xnew(() => { k1 = xnew(A, { key: 'k1' }); xnew(A, { key: 'k2' }); });
+                root = xnew(() => { k1 = xnew(A, { key: 'k1' }); xnew(A, { key: 'k2' }); });
                 xnew(A, { key: 'k3' });
             });
-            expect(xnew.find(A, { parent, key: 'k1' })).toEqual([k1]);
-            expect(xnew.find(A, { parent, key: 'k3' })).toEqual([]);
+            expect(xnew.find(A, { root, key: 'k1' })).toEqual([k1]);
+            expect(xnew.find(A, { root, key: 'k3' })).toEqual([]);
         });
     });
 });
