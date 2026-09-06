@@ -480,8 +480,9 @@ the rule, then one line of why.
 - **Anything registered on the shared `io` (server side) must be detached on `finalize` — including
   inside `sync.boot`.** Rooms are created and destroyed continuously, so a dead room that leaves its
   `io.on('connection')` behind grows the namespace's listener count without bound (MaxListenersExceededWarning
-  at 10, then unbounded). `bootServer` now keeps the handler in a local and does
-  `root.on('finalize', () => io.off('connection', connection))`; any io mock therefore needs an `off`.
+  at 10, then unbounded). `roomio.on(type, listener)` handles this for every wire subscription (it detaches
+  on root finalize), so boot never calls `io.on` / `socket.on` directly — and **every io / socket mock or
+  stub therefore needs an `off`** (`io-mock`'s client socket and the hand-rolled socket in `channel.test` both have one).
   Note the count is legitimately `2 × live rooms` (boot + the caller's own counter), so a server hosting
   many rooms should raise `io.sockets.setMaxListeners(...)` rather than treat the warning as a leak.
 
@@ -596,7 +597,11 @@ the rule, then one line of why.
   the standard shader via onBeforeCompile — full PBR + live `material.uniforms`, but the one
   three-chunk-dependent spot; method comparison lives in docs/xtextures-three-materials.md). Both
   material fns take a REQUIRED second argument. Don't re-wrap textures as xnew components.
-  The networking layer is a single file `src/sync/xsync.ts` (shared state + boot + facade). `xsync`
+  The networking layer is `src/sync/xsync.ts` (shared state + boot + facade) plus `src/sync/roomio.ts`
+  (`RoomIO`: holds the root unit, the given `io`, the `socket` it creates from it on the client, the
+  `room` and the `clients` roster, plus the wire pair `emit(to, type, data)` — `to` is an id / room id /
+  array of them, `null` means the server — and `on(type, listener)`, which detaches on root finalize;
+  it must never import from `xsync.ts`). `xsync`
   **is** the facade object literal (`export const xsync = { … }`) — there is no Lobby / Room component
   built in; lobby / room lifecycle is assembled by callers from the facade (see `examples/*/server.js` +
   `index.js`). Export the literal directly — **never `Object.assign` the facade onto a fresh object**,
@@ -619,10 +624,10 @@ the rule, then one line of why.
   immediately showing "切断". (`matter-js`/`voxelkit` *do* default-export — per-package.)
 
 - **`captureStateTree(clientId)` runs once per connected client (per-client projection, 2026-07).**
-  The server no longer broadcasts one `'sync'` tree to the room; it loops `info.clients` and emits
+  The server no longer broadcasts one `'sync'` tree to the room; it loops `roomio.clients` and emits
   `io.to(client.id).emit('sync', captureStateTree(client.id))`. Consequence for tests: a capture-only
   test that boots the server and reads `hub.lastSync()` must **connect a client first** (`hub.connect()`),
-  or nothing is emitted (empty `info.clients` → no `'sync'`). `io-mock` records the target of each
+  or nothing is emitted (empty `roomio.clients` → no `'sync'`). `io-mock` records the target of each
   `'sync'` — use `hub.lastSyncFor(clientId)` to read one client's projection. Since 2026-08 the server
   also **skips emitting when a client's projection is unchanged**, so a test that updates twice without
   mutating state records ONE `'sync'` (count with `hub.syncCountFor(clientId)`).
@@ -633,12 +638,18 @@ the rule, then one line of why.
   boot's wiring — `io-mock` records emitted `'sync'` trees (`hub.lastSync()`) and the mock client
   socket has `fire(event, payload)` to inject a down-event (e.g. a hand-built tree) in client env.
   Never re-add a direct `import { captureStateTree, applyStateTree }`.
+- **`new RoomIO(bootOptions, ...args)` creates the root unit in its constructor and hangs itself on
+  `inherited.syncRoot`; resolve it from any descendant with `RoomIO.of(unit)` (`RoomIO.of(unit, true)`
+  throws when there is no sync root).** boot builds the RoomIO first, then wires its channels around
+  `roomio.root` / `roomio.io` — the root's component body runs inside the constructor, so anything the
+  body may call must already be reachable through the RoomIO, not through a local set afterwards.
 - **Capture runs after children update.** `Unit.update` recurses children *then* runs the unit's
-  own update systems, so boot's `root.on('update')` capture sees this tick's child mutations. A
+  own update systems, so the `root.on('update')` capture sees this tick's child mutations. A
   single `asServer(() => Unit.update(server))` both advances server logic and broadcasts state.
-- **`sync.boot` (client) owns the socket — don't create it in callers.** Pass
-  `{ io, client, room }` (`client` is `{ name }`); boot does
-  `io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true })`
+- **`RoomIO` (client) owns the socket — don't create it in callers or in boot.** Pass
+  `{ io, client, room }` (`client` is `{ name }`); the RoomIO constructor does
+  `io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true })` and disconnects it
+  on root finalize
   and the server reads `query.roomId` / `query.clientName`. Keep the query **flat
   strings** (socket.io stringifies query values, so a nested object would arrive as
   `[object Object]`). boot dispatches `sync.connect`/`sync.disconnect`/`sync.notfound` into the
@@ -648,7 +659,8 @@ the rule, then one line of why.
   boot's connection handler **and** the examples' Lobby/Room server blocks (`examples/*/server.js`)
   **and** the test mocks (`io-mock.ts` — its server-side socket also implements `to(room)` for the
   connect/disconnect relay).
-- **When changing `BootOptions` (the one shared server/client boot options bag), update the test
+- **When changing `BootOptions` (the one shared server/client boot options bag, defined in `roomio.ts`
+  since `RoomIO`'s constructor takes it), update the test
   `bootClient` adapter in `test/sync/io-mock.ts` too.** It wraps a pre-made mock socket as
   `io: () => socket` so the ~25 call sites stay unchanged; miss it and every sync test
   throws `io is not a function`. Tests in `boot-api`/`channel` also *document* the

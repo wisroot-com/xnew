@@ -213,6 +213,7 @@ describe('event channel (socket.io transport)', () => {
             id: 'c1',
             emit: () => {},
             on: (event: string, h: Function) => { if (!handlers.has(event)) { handlers.set(event, new Set()); } handlers.get(event)!.add(h); },
+            off: (event: string, h: Function) => { handlers.get(event)?.delete(h); },   // boot detaches on root finalize
             disconnect: () => {},
         };
         const fire = (event: string, payload?: any) => handlers.get(event)?.forEach((h) => (h as Function)(payload));

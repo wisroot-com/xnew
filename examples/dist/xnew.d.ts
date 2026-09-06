@@ -192,6 +192,7 @@ interface BootOptions {
     room: RoomStatus;
     client?: any;
 }
+
 declare const xsync: {
     server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
     client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};

@@ -6,31 +6,15 @@
 
 import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';
 import { getEnvironment } from './environment';
+import { RoomIO, BootOptions, ClientStatus, RoomStatus } from './roomio';
 
 //----------------------------------------------------------------------------------------------------
-// shared state — rides Unit's generic slots: the root object on _.inherited, node data on _.own
+// shared state — rides Unit's generic slots: the RoomIO on _.inherited, node data on _.own
 //----------------------------------------------------------------------------------------------------
 
 export interface SyncNode { id: number; name: string; parent: number | null; state: Record<string, any>; }
 // visibility === null → public; otherwise a predicate re-evaluated per capture, so a closure over dynamic state can widen private → public.
 interface SyncData { id: number | null; state: Record<string, any>; registry: Record<string, Function>; visibility: ((clientId: string) => boolean) | null; }
-
-interface ClientStatus { id: string; name: string; }
-interface RoomStatus { id: string; name: string; count: number; }
-
-interface ServerRoot { io: any; room: RoomStatus; clients: ClientStatus[]; }
-interface ClientRoot { socket: any; room: RoomStatus; clients: ClientStatus[]; }
-
-interface BootOptions { io: any; room: RoomStatus; client?: any; }   // client is client-boot only
-
-// boot puts its root object on inherited.syncRoot, so every descendant carries it from construction.
-function syncRoot(unit: Unit, required?: true): ServerRoot | ClientRoot | null {
-    const root = unit._.inherited.syncRoot ?? null;
-    if (required === true && root === null) {
-        throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
-    }
-    return root;
-}
 
 // lazily created; every caller (reader or writer) shares the one object.
 export function syncData(unit: Unit): SyncData {
@@ -60,12 +44,12 @@ function clientEventType(type: unknown): string | null {
     }
 }
 
-function dispatch(info: ServerRoot | ClientRoot, type: string, id: string | undefined, data: Record<string, any> = {}, syncId?: number | null): void {
+function dispatch(roomio: RoomIO, type: string, id: string | undefined, data: Record<string, any> = {}, syncId?: number | null): void {
     // iterate a copy: a handler may finalize units, which mutates both tables mid-dispatch
     [...(Unit.type2units.get(type) ?? [])].forEach((unit) => {
         // socket callbacks run outside the scope machinery: a message landing after / mid-finalize must not fire a dying unit's handler.
         if (unit._.phase === 'finalized' || unit._.phase === 'finalizing') return;
-        if (syncRoot(unit) !== info) return; // skip units of another root
+        if (RoomIO.of(unit) !== roomio) return; // skip units of another root
         if (type[0] === '-' && syncData(unit).id !== syncId) return; // skip units of another sync node
         [...(unit._.listeners.get(type) ?? [])].forEach((entry) => entry.execute({ id, ...data }));
     });
@@ -76,10 +60,9 @@ function dispatch(info: ServerRoot | ClientRoot, type: string, id: string | unde
 //----------------------------------------------------------------------------------------------------
 
 function bootServer(options: BootOptions, args: any[]): Unit {
-    const { io, room } = options;
-    const info: ServerRoot = { io, room, clients: [] };
-
-    const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
+    const { room } = options;
+    const roomio = new RoomIO(options, ...args);
+    const root = roomio.root;
 
     //---- state channel
 
@@ -115,64 +98,57 @@ function bootServer(options: BootOptions, args: any[]): Unit {
 
     // emit only when the client's projection changed — the wire goes quiet between changes, so each delivery means "changed" on the client.
     const lastEmits = new Map<string, string>();
-    root.on('update', () => info.clients.forEach((client) => {
+    root.on('update', () => roomio.clients.forEach((client) => {
         const tree = captureStateTree(client.id);
         const json = JSON.stringify(tree);
         if (lastEmits.get(client.id) !== json) {
             lastEmits.set(client.id, json);
-            io.to(client.id).emit('sync', tree);
+            roomio.emit(client.id, 'sync', tree);
         }
     }));
 
     //---- roster / lifecycle / message channels (per connected socket)
 
-    // keep the handler so finalize can detach it — a dead room must not leave a listener on io (its count would grow without bound).
-    const connection = (socket: any) => {
+    roomio.on('connection', (socket: any) => {
         const query = socket.handshake?.query;
         if (query?.roomId !== room.id) return;
         socket.join(room.id);
         // lifecycle relay: socket.to excludes the sender — each client dispatches its own from its local socket events
-        info.clients.push({ id: socket.id, name: query?.clientName ?? '' });
-        dispatch(info, 'sync.connect', socket.id);
+        roomio.clients.push({ id: socket.id, name: query?.clientName ?? '' });
+        dispatch(roomio, 'sync.connect', socket.id);
         socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
-        io.to(room.id).emit('status', { clients: info.clients });
-        dispatch(info, 'sync.statusupdate', undefined);
+        roomio.emit(room.id, 'status', { clients: roomio.clients });
+        dispatch(roomio, 'sync.statusupdate', undefined);
         // normalize the untrusted envelope at the wire boundary; a rejected type is dropped, never dispatched
         socket.on('emitToServer', (p: any) => {
             const type = clientEventType(p?.type);
             if (type !== null) {
                 const data = typeof p?.data === 'object' && p.data !== null ? p.data : {};
-                dispatch(info, type, socket.id, data, typeof p?.syncId === 'number' ? p.syncId : null);
+                dispatch(roomio, type, socket.id, data, typeof p?.syncId === 'number' ? p.syncId : null);
             }
         });
         socket.on('disconnect', () => {   // mirror of connect
-            info.clients = info.clients.filter((c) => c.id !== socket.id);
+            roomio.clients = roomio.clients.filter((c) => c.id !== socket.id);
             lastEmits.delete(socket.id);
-            dispatch(info, 'sync.disconnect', socket.id);
+            dispatch(roomio, 'sync.disconnect', socket.id);
             socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
-            io.to(room.id).emit('status', { clients: info.clients });
-            dispatch(info, 'sync.statusupdate', undefined);
+            roomio.emit(room.id, 'status', { clients: roomio.clients });
+            dispatch(roomio, 'sync.statusupdate', undefined);
         });
-    };
-    io.on('connection', connection);
-    root.on('finalize', () => io.off('connection', connection));
+    });
     return root;
 }
 
 function bootClient(options: BootOptions, args: any[]): Unit {
-    const { io, room, client } = options;
-    // boot owns the socket; the handshake query must stay flat strings (socket.io stringifies values).
-    const socket = io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true });
-    const info: ClientRoot = { socket, room, clients: [] };
-
-    const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
+    const roomio = new RoomIO(options, ...args);
+    const root = roomio.root;
 
     //---- state channel
 
     const reconcileMap = new Map<number, Unit>();   // node id → replica unit
     // duplicate-frame guard: 'sync.update' must mean an actual change, even against a server that re-emits an unchanged tree
     let lastTree = '';
-    socket.on('sync', (tree: SyncNode[]) => {
+    roomio.on('sync', (tree: SyncNode[]) => {
         const json = JSON.stringify(tree);
         if (json !== lastTree) {
             lastTree = json;
@@ -198,30 +174,29 @@ function bootClient(options: BootOptions, args: any[]): Unit {
             for (const [id, unit] of reconcileMap) {   // deleting the visited entry mid-iteration is spec-safe for Map
                 if (!incoming.has(id)) { unit.finalize(); reconcileMap.delete(id); }
             }
-            dispatch(info, 'sync.update', undefined);   // after reconcile, so handlers read the applied state (fresh replicas included)
+            dispatch(roomio, 'sync.update', undefined);   // after reconcile, so handlers read the applied state (fresh replicas included)
         }
     });
     //---- roster channel
-    socket.on('status', (status: { clients?: ClientStatus[] }) => {
-        info.clients = status?.clients ?? [];
-        dispatch(info, 'sync.statusupdate', undefined);
+    roomio.on('status', (status: { clients?: ClientStatus[] }) => {
+        roomio.clients = status?.clients ?? [];
+        dispatch(roomio, 'sync.statusupdate', undefined);
     });
 
     //---- message channel (normalize the untrusted envelope at the wire boundary)
-    socket.on('emitToClients', (p: any) => {
+    roomio.on('emitToClients', (p: any) => {
         // the server is trusted here (it relays 'sync.connect' / 'sync.disconnect' through this channel), so only the payload shape is normalized
         if (typeof p?.type === 'string' && p.type.length > 0) {
             const data = typeof p?.data === 'object' && p.data !== null ? p.data : {};
-            dispatch(info, p.type, p?.id, data, typeof p?.syncId === 'number' ? p.syncId : null);
+            dispatch(roomio, p.type, p?.id, data, typeof p?.syncId === 'number' ? p.syncId : null);
         }
     });
 
     //---- lifecycle channel: own events dispatch from the own socket; other members' arrive via the server relay
-    socket.on('connect', () => dispatch(info, 'sync.connect', socket.id));
-    socket.on('disconnect', () => dispatch(info, 'sync.disconnect', socket.id));
-    socket.on('notfound', (payload: any) => dispatch(info, 'sync.notfound', socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
+    roomio.on('connect', () => dispatch(roomio, 'sync.connect', roomio.socket.id));
+    roomio.on('disconnect', () => dispatch(roomio, 'sync.disconnect', roomio.socket.id));
+    roomio.on('notfound', (payload: any) => dispatch(roomio, 'sync.notfound', roomio.socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
 
-    root.on('finalize', () => socket.disconnect());
     return root;
 }
 
@@ -255,36 +230,36 @@ export const xsync = {
         syncData(Unit.current).visibility = target;
     },
     get session(): { room: RoomStatus; clients: ClientStatus[]; myself: ClientStatus } {
-        const info = syncRoot(Unit.current, true) as ServerRoot | ClientRoot;
+        const roomio = RoomIO.of(Unit.current, true);
         return {
-            get room(): RoomStatus { return info.room; },
-            get clients(): ClientStatus[] { return info.clients; },
+            get room(): RoomStatus { return roomio.room; },
+            get clients(): ClientStatus[] { return roomio.clients; },
             get myself(): ClientStatus {
                 if (getEnvironment() === 'server') {
                     throw new Error('xsync.session.myself is only available on the client side.');
                 }
-                const client = info as ClientRoot;
-                return client.clients.find((c) => c.id === client.socket.id) ?? { id: client.socket.id, name: '' };
+                const socket = roomio.socket;
+                return roomio.clients.find((c) => c.id === socket.id) ?? { id: socket.id, name: '' };
             },
         };
     },
     emitToServer(type: string, props: Record<string, any> = {}): void {
-        const info = syncRoot(Unit.current, true) as ServerRoot | ClientRoot;
+        const roomio = RoomIO.of(Unit.current, true);
         if (getEnvironment() === 'server') {
             Unit.emit(Unit.current, type, props);
         } else {
-            (info as ClientRoot).socket.emit('emitToServer', { type, syncId: syncData(Unit.current).id, data: props });
+            roomio.emit(null, 'emitToServer', { type, syncId: syncData(Unit.current).id, data: props });
         }
     },
     emitToClients(type: string, props: Record<string, any> = {}, ids?: string[]): void {
         if (getEnvironment() !== 'server') {
             throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
         }
-        const { io, room } = syncRoot(Unit.current, true) as ServerRoot;
+        const roomio = RoomIO.of(Unit.current, true);
         // the envelope id stays undefined (server-originated), so a relay names the original sender inside data.
         const envelope = { type, syncId: syncData(Unit.current).id, id: undefined, data: props };
-        // each socket is in a room named by its id, so individual and room-wide delivery share io.to()
-        (ids?.length ? ids : [room.id]).forEach((target) => io.to(target).emit('emitToClients', envelope));
+        // each socket is in a room named by its id, so individual and room-wide delivery share one emit
+        roomio.emit(ids?.length ? ids : roomio.room.id, 'emitToClients', envelope);
     },
     boot(options: BootOptions, ...args: any[]): Unit {
         return getEnvironment() === 'server' ? bootServer(options, args) : bootClient(options, args);
