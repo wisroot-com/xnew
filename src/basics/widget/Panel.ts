@@ -15,8 +15,8 @@ import { Gate } from './Gate';
 import { Overlay } from './Overlay';
 import { ColorPicker } from './ColorPicker';
 
-// nested is internal: group() marks its inner Panel so only the root creates the scroll container
-interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; key?: any; nested?: boolean; }
+// tab is group-only (a group naming a tab joins the panel's tab strip); nested is internal: group() marks its inner Panel so only the root creates the scroll container
+interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; key?: any; tab?: string; nested?: boolean; }
 
 export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
@@ -51,19 +51,23 @@ export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: P
         xnew.extend(Accordion, { gate });
     }
 
-    // created up front so the strip stays at the top of the panel however late its items are set
-    const tabs = xnew(Tabs, { panel: unit });
+    // '-change' fires on the panel itself when a tab is picked
+    const notify = xnew.scope((name: string) => xnew.emit('-change', { value: name }));
+
+    // created up front so the strip stays at the top of the panel however late its groups declare a tab
+    const tabs = xnew(Tabs, { notify });
 
     return {
-        get tabs() {
-            return tabs;
-        },
         // every row takes `key` so xnew.find can reach it later; it rides along to the inner control, so find by that control's component
-        group({ name, open, params, key }: PanelOptions, inner: Function) {
-            return xnew((unit: xnew.Unit) => {
+        group({ name, open, params, key, tab }: PanelOptions, inner: Function) {
+            const group = xnew((unit: xnew.Unit) => {
                 xnew.extend(Panel, { name, open, params: params ?? object, nested: true });
                 inner(unit);
             }, { key });
+            if (tab !== undefined) {
+                tabs.add(tab, group);
+            }
+            return group;
         },
         button({ name = '', key }: { name?: string, key?: any } = {}) {
             return xnew(Button, { text: name, key, style: 'width: 100%;' });
@@ -98,18 +102,17 @@ export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: P
     }
 }
 
-// underline strip pinned to the top of a panel; it stays empty and invisible until items are set
-function Tabs(unit: xnew.Unit, { panel }: { panel: xnew.Unit }) {
+// underline strip pinned to the top of a panel; it stays empty and invisible until a group declares a tab
+function Tabs(unit: xnew.Unit, { notify }: { notify: (name: string) => void }) {
     const strip = xnew.nest('<div style="display: none; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-bottom: 0.25em;">');
 
-    let names: string[] = [];
-    let buttons: xnew.Unit[] = [];
+    const tabs: { name: string, button: xnew.Unit, groups: xnew.Unit[] }[] = [];
     let active = '';
 
-    // only nested panels switch: the active tab shows the group keyed with its name and hides the groups keyed for the others
+    // the active tab shows its own groups as a whole and hides every other tab's
     function apply() {
-        names.forEach((name: string) => {
-            xnew.find(Panel, { key: name, ancestor: panel }).forEach((group: xnew.Unit) => {
+        tabs.forEach(({ name, groups }) => {
+            groups.forEach((group: xnew.Unit) => {
                 if (group.container !== null) {
                     group.container.style.display = name === active ? '' : 'none';
                 }
@@ -118,8 +121,8 @@ function Tabs(unit: xnew.Unit, { panel }: { panel: xnew.Unit }) {
     }
 
     function paint() {
-        buttons.forEach((button: xnew.Unit, index: number) => {
-            const on = names[index] === active;
+        tabs.forEach(({ name, button }) => {
+            const on = name === active;
             button.current.style.borderBottomColor = on ? 'currentColor' : 'transparent';
             button.current.style.fontWeight = on ? '600' : '400';
             button.current.style.opacity = on ? '1' : '0.55';
@@ -127,28 +130,27 @@ function Tabs(unit: xnew.Unit, { panel }: { panel: xnew.Unit }) {
     }
 
     return {
-        get items() {
-            return names;
-        },
-        // the groups a tab switches are created after this setter runs, so the first pass waits a tick
-        set items(items: string[]) {
-            buttons.forEach((button: xnew.Unit) => button.finalize());
-            names = items;
-            active = items[0] ?? '';
-            strip.style.display = items.length > 0 ? 'flex' : 'none';
-
-            buttons = items.map((name: string) => {
+        // groups declaring the same name share one button, and the first name declared starts active
+        add(name: string, group: xnew.Unit) {
+            let tab = tabs.find((tab) => tab.name === name);
+            if (tab === undefined) {
                 const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', name);
                 button.on('click', () => {
                     active = name;
                     paint();
                     apply();
-                    xnew.emit('-change', { value: name });
+                    notify(name);
                 });
-                return button;
-            });
+                tab = { name, button, groups: [] };
+                tabs.push(tab);
+                strip.style.display = 'flex';
+                if (active === '') {
+                    active = name;
+                }
+            }
+            tab.groups.push(group);
             paint();
-            xnew.timeout(() => apply(), 0);
+            apply();
         },
     };
 }

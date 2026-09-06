@@ -3208,16 +3208,18 @@ function Panel(unit, { name, open, params, nested = false }) {
         }
         xnew.extend(Accordion, { gate });
     }
-    const tabs = xnew(Tabs, { panel: unit });
+    const notify = xnew.scope((name) => xnew.emit('-change', { value: name }));
+    const tabs = xnew(Tabs, { notify });
     return {
-        get tabs() {
-            return tabs;
-        },
-        group({ name, open, params, key }, inner) {
-            return xnew((unit) => {
+        group({ name, open, params, key, tab }, inner) {
+            const group = xnew((unit) => {
                 xnew.extend(Panel, { name, open, params: params !== null && params !== void 0 ? params : object, nested: true });
                 inner(unit);
             }, { key });
+            if (tab !== undefined) {
+                tabs.add(tab, group);
+            }
+            return group;
         },
         button({ name = '', key } = {}) {
             return xnew(Button, { text: name, key, style: 'width: 100%;' });
@@ -3255,14 +3257,13 @@ function Panel(unit, { name, open, params, nested = false }) {
         }
     };
 }
-function Tabs(unit, { panel }) {
+function Tabs(unit, { notify }) {
     const strip = xnew.nest('<div style="display: none; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-bottom: 0.25em;">');
-    let names = [];
-    let buttons = [];
+    const tabs = [];
     let active = '';
     function apply() {
-        names.forEach((name) => {
-            xnew.find(Panel, { key: name, ancestor: panel }).forEach((group) => {
+        tabs.forEach(({ name, groups }) => {
+            groups.forEach((group) => {
                 if (group.container !== null) {
                     group.container.style.display = name === active ? '' : 'none';
                 }
@@ -3270,35 +3271,34 @@ function Tabs(unit, { panel }) {
         });
     }
     function paint() {
-        buttons.forEach((button, index) => {
-            const on = names[index] === active;
+        tabs.forEach(({ name, button }) => {
+            const on = name === active;
             button.current.style.borderBottomColor = on ? 'currentColor' : 'transparent';
             button.current.style.fontWeight = on ? '600' : '400';
             button.current.style.opacity = on ? '1' : '0.55';
         });
     }
     return {
-        get items() {
-            return names;
-        },
-        set items(items) {
-            var _a;
-            buttons.forEach((button) => button.finalize());
-            names = items;
-            active = (_a = items[0]) !== null && _a !== void 0 ? _a : '';
-            strip.style.display = items.length > 0 ? 'flex' : 'none';
-            buttons = items.map((name) => {
+        add(name, group) {
+            let tab = tabs.find((tab) => tab.name === name);
+            if (tab === undefined) {
                 const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', name);
                 button.on('click', () => {
                     active = name;
                     paint();
                     apply();
-                    xnew.emit('-change', { value: name });
+                    notify(name);
                 });
-                return button;
-            });
+                tab = { name, button, groups: [] };
+                tabs.push(tab);
+                strip.style.display = 'flex';
+                if (active === '') {
+                    active = name;
+                }
+            }
+            tab.groups.push(group);
             paint();
-            xnew.timeout(() => apply(), 0);
+            apply();
         },
     };
 }

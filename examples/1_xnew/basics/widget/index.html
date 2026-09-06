@@ -151,10 +151,8 @@
       // the panel itself takes name / open, so its rows sit directly under its own header
       const panel = xnew(xbasics.Panel, { name: 'My Panel', open: true });
 
-      // tabs switch between the groups whose key matches the tab name
-      panel.tabs.items = ['style', 'params'];
-
-      panel.group({ key: 'style' }, (tab) => {
+      // a group naming a tab joins the panel's tab strip, and the strip switches between them
+      panel.group({ tab: 'style' }, (tab) => {
         tab.group({ name: 'background', open: true }, (group) => {
           const colors = {
             'light gray': { background: '#f3f4f6', color: '#14532d' },
@@ -174,7 +172,7 @@
         tab.color({ name: 'tint', value: '#4a90e2' }).on('-change', ({ value }) => xnew.emit('+console', { text: `tint changed to ${value}` }));
       });
 
-      panel.group({ key: 'params' }, (tab) => {
+      panel.group({ tab: 'params' }, (tab) => {
         tab.range({ name: 'data', value: 20, min: 0, max: 60, step: 2 }).on('input', ({ value }) => xnew.emit('+console', { text: `data changed to ${value}` }));
         tab.checkbox({ name: 'flag' }).on('input', ({ value }) => xnew.emit('+console', { text: `flag changed to ${value}` }));
         tab.separator();

@@ -669,3 +669,8 @@ the rule, then one line of why.
   not at the start of a line (e.g. "asserted with a ts-expect-error directive").
 - **Index signature ≠ typed.** `unit.someDefine()` compiles even when misspelled;
   do not rely on the compiler to catch unit-member typos (see §12).
+- **In jsdom tests, advance the fake timers before dispatching a DOM event on a
+  unit created after the test started.** `on(...)` attaches through
+  `setTimeout(…, 0)` (`attach` in `dom.ts`), so a click dispatched in the same
+  tick as the `xnew(...)` that created the button silently does nothing — call
+  `jest.advanceTimersByTime(1)` first.

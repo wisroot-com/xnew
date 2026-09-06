@@ -46,52 +46,69 @@ describe('basics Panel', () => {
             return [...host.querySelectorAll('button')].find((button) => button.textContent === name) as HTMLElement;
         }
 
-        test('shows the group keyed with the active tab and hides the groups keyed for the others', () => {
+        test('a group naming a tab joins the strip; the active tab shows its group and hides the others', () => {
             const { host, panel } = newPanel();
-            panel.tabs.items = ['left', 'right'];
-            const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
-            const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
-            jest.advanceTimersByTime(1);
+            const left = panel.group({ tab: 'left' }, (group: any) => group.button({ name: 'a' }));
+            const right = panel.group({ tab: 'right' }, (group: any) => group.button({ name: 'b' }));
 
             expect((left.container as HTMLElement).style.display).not.toBe('none');
             expect((right.container as HTMLElement).style.display).toBe('none');
 
+            jest.advanceTimersByTime(1);
             tabButton(host, 'right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
             expect((left.container as HTMLElement).style.display).toBe('none');
             expect((right.container as HTMLElement).style.display).not.toBe('none');
         });
 
-        test('leaves plain rows alone, even ones keyed with a tab name', () => {
+        test('leaves rows and groups that name no tab alone', () => {
             const { host, panel } = newPanel();
-            panel.tabs.items = ['left', 'right'];
-            const row = panel.range({ name: 'a', key: 'right' });
-            const shared = panel.checkbox({ name: 'shared' });
-            jest.advanceTimersByTime(1);
+            panel.group({ tab: 'right' }, (group: any) => group.button({ name: 'b' }));
+            const row = panel.range({ name: 'a' });
+            const plain = panel.group({}, (group: any) => group.button({ name: 'c' }));
 
-            expect((row.container as HTMLElement).style.display).toBe('flex');
+            jest.advanceTimersByTime(1);
             tabButton(host, 'right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
             expect((row.container as HTMLElement).style.display).toBe('flex');
-            expect((shared.container as HTMLElement).style.display).toBe('flex');
+            expect((plain.container as HTMLElement).style.display).toBe('');
         });
 
         test('a collapsible group switches as a whole, header included', () => {
             const { host, panel } = newPanel();
-            panel.tabs.items = ['left', 'right'];
-            const group = panel.group({ name: 'folder', open: true, key: 'right' }, (group: any) => {
+            panel.group({ tab: 'left' }, (group: any) => group.button({ name: 'a' }));
+            const group = panel.group({ name: 'folder', open: true, tab: 'right' }, (group: any) => {
                 group.button({ name: 'inside' });
             });
-            jest.advanceTimersByTime(1);
 
             expect((group.container as HTMLElement).style.display).toBe('none');
+            jest.advanceTimersByTime(1);
             tabButton(host, 'right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
             expect((group.container as HTMLElement).textContent).toContain('folder');
             expect((group.container as HTMLElement).style.display).not.toBe('none');
         });
 
-        test('tabs.items reads back the names it was given', () => {
-            const { panel } = newPanel();
-            panel.tabs.items = ['left', 'right'];
-            expect(panel.tabs.items).toEqual(['left', 'right']);
+        test('groups naming the same tab share one button and switch together', () => {
+            const { host, panel } = newPanel();
+            panel.group({ tab: 'left' }, (group: any) => group.button({ name: 'a' }));
+            const first = panel.group({ tab: 'right' }, (group: any) => group.button({ name: 'b' }));
+            const second = panel.group({ tab: 'right' }, (group: any) => group.button({ name: 'c' }));
+
+            expect([...host.querySelectorAll('button')].filter((button) => button.textContent === 'right').length).toBe(1);
+            jest.advanceTimersByTime(1);
+            tabButton(host, 'right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect((first.container as HTMLElement).style.display).not.toBe('none');
+            expect((second.container as HTMLElement).style.display).not.toBe('none');
+        });
+
+        test("picking a tab fires '-change' on the panel", () => {
+            const { host, panel } = newPanel();
+            const values: string[] = [];
+            panel.on('-change', ({ value }: { value: string }) => values.push(value));
+            panel.group({ tab: 'left' }, (group: any) => group.button({ name: 'a' }));
+            panel.group({ tab: 'right' }, (group: any) => group.button({ name: 'b' }));
+
+            jest.advanceTimersByTime(1);
+            tabButton(host, 'right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect(values).toEqual(['right']);
         });
     });
 
