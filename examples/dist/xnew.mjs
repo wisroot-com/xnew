@@ -473,8 +473,8 @@ function textComponent(content) {
     return (unit) => { unit.current.textContent = content.toString(); };
 }
 class Unit {
-    constructor({ parent, inherited, own }, ...args) {
-        var _a, _b, _c;
+    constructor(parent, ...args) {
+        var _a, _b, _c, _d;
         parent === null || parent === void 0 ? void 0 : parent._.children.push(this);
         const baseContext = (_a = parent === null || parent === void 0 ? void 0 : parent._.currentContext) !== null && _a !== void 0 ? _a : { previous: null };
         let baseElement;
@@ -489,8 +489,8 @@ class Unit {
         }
         this._ = {
             parent,
-            inherited: inherited === undefined ? ((_c = parent === null || parent === void 0 ? void 0 : parent._.inherited) !== null && _c !== void 0 ? _c : {}) : Object.assign(Object.assign({}, parent === null || parent === void 0 ? void 0 : parent._.inherited), inherited),
-            own: own !== null && own !== void 0 ? own : {},
+            inherited: (_c = parent === null || parent === void 0 ? void 0 : parent._.inherited) !== null && _c !== void 0 ? _c : {},
+            own: {},
             phase: 'invoked',
             protected: false,
             standalone: true,
@@ -508,17 +508,13 @@ class Unit {
             events: new EventBinder(),
             key: null,
         };
-        Unit.initialize(this, ...args);
-    }
-    static initialize(unit, ...args) {
-        var _a;
         let targeted = false;
         if (isDomElement(args[0])) {
-            unit._.currentElement = args.shift();
+            this._.currentElement = args.shift();
             targeted = true;
         }
         else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
-            Unit.nest(unit, args.shift());
+            Unit.nest(this, args.shift());
             targeted = true;
         }
         const Component = args.shift();
@@ -539,14 +535,20 @@ class Unit {
         else {
             baseComponent = (unit) => { };
         }
-        unit._.key = (_a = props === null || props === void 0 ? void 0 : props.key) !== null && _a !== void 0 ? _a : null;
-        const backup = Unit.currentUnit;
-        Unit.currentUnit = unit;
-        Unit.extend(unit, baseComponent, props);
-        if (unit._.phase === 'invoked') {
-            unit._.phase = 'initialized';
+        this._.key = (_d = props === null || props === void 0 ? void 0 : props.key) !== null && _d !== void 0 ? _d : null;
+        if ((props === null || props === void 0 ? void 0 : props._inherited) !== undefined) {
+            this._.inherited = Object.assign(Object.assign({}, this._.inherited), props._inherited);
         }
-        unit._.lastSnapshot = Unit.snapshot(unit);
+        if ((props === null || props === void 0 ? void 0 : props._own) !== undefined) {
+            this._.own = props._own;
+        }
+        const backup = Unit.currentUnit;
+        Unit.currentUnit = this;
+        Unit.extend(this, baseComponent, props);
+        if (this._.phase === 'invoked') {
+            this._.phase = 'initialized';
+        }
+        this._.lastSnapshot = Unit.snapshot(this);
         Unit.currentUnit = backup;
     }
     get parent() {
@@ -663,7 +665,7 @@ class Unit {
     static reset() {
         var _a;
         (_a = Unit.engineRoot) === null || _a === void 0 ? void 0 : _a.finalize();
-        Unit.currentUnit = Unit.engineRoot = new Unit({ parent: null });
+        Unit.currentUnit = Unit.engineRoot = new Unit(null);
         const ticker = new Ticker((delta) => {
             Unit.update(Unit.engineRoot, delta);
         });
@@ -917,7 +919,7 @@ class UnitTimer {
         return this;
     }
     start(Component) {
-        this.unit = new Unit({ parent: Unit.currentUnit }, Component);
+        this.unit = new Unit(Unit.currentUnit, Component);
         this.unit.on('finalize', () => {
             const owner = Unit.currentUnit;
             if (this.queue.length > 0 && owner._.phase !== 'finalizing' && owner._.phase !== 'finalized') {
@@ -1060,10 +1062,10 @@ const xnew = Object.assign((function (...args) {
     if (args[0] instanceof Unit) {
         const parent = args.shift();
         const snapshot = (_a = parent._.lastSnapshot) !== null && _a !== void 0 ? _a : Unit.snapshot(parent);
-        return Unit.scope(snapshot, () => new Unit({ parent }, ...args));
+        return Unit.scope(snapshot, () => new Unit(parent, ...args));
     }
     else {
-        return new Unit({ parent: Unit.current }, ...args);
+        return new Unit(Unit.current, ...args);
     }
 }), {
     nest(tag, textContent) {
@@ -1155,7 +1157,8 @@ class RoomIO {
         this.io = io;
         this.room = room;
         this.socket = getEnvironment() === 'client' ? io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true }) : null;
-        this.root = new Unit({ parent: Unit.current, inherited: { syncRoot: this } }, ...args);
+        const props = args.length > 1 && typeof args[args.length - 1] === 'object' ? args.pop() : {};
+        this.root = new Unit(Unit.current, ...args, Object.assign(Object.assign({}, props), { _inherited: { syncRoot: this } }));
         if (this.socket !== null) {
             this.root.on('finalize', () => this.socket.disconnect());
         }
@@ -1311,7 +1314,7 @@ function bootClient(options, args) {
                 if (!Component) {
                     continue;
                 }
-                const unit = new Unit({ parent: nodeParent, own: { syncData: { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null } } }, Component);
+                const unit = new Unit(nodeParent, Component, { _own: { syncData: { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null } } });
                 reconcileMap.set(node.id, unit);
             }
             for (const [id, unit] of reconcileMap) {

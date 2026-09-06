@@ -26,9 +26,9 @@ export const xnew = Object.assign(
         if (args[0] instanceof Unit) {
             const parent = args.shift() as Unit;
             const snapshot = parent._.lastSnapshot ?? Unit.snapshot(parent);
-            return Unit.scope(snapshot, () => new Unit({ parent }, ...args)) as Unit;
+            return Unit.scope(snapshot, () => new Unit(parent, ...args)) as Unit;
         } else {
-            return new Unit({ parent: Unit.current }, ...args);
+            return new Unit(Unit.current, ...args);
         }
     }) as unknown as XnewBase,
     {

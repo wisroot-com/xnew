@@ -168,7 +168,7 @@ function bootClient(options: BootOptions, args: any[]): Unit {
                 const Component = nodeParent && syncData(nodeParent).registry[node.name];
                 if (!Component) { continue; }
                 // seed syncData at construction so the body's xsync.state sees the server state and fixed id
-                const unit = new Unit({ parent: nodeParent, own: { syncData: { id: node.id, state: { ...node.state }, registry: {}, visibility: null } } }, Component);
+                const unit = new Unit(nodeParent, Component, { _own: { syncData: { id: node.id, state: { ...node.state }, registry: {}, visibility: null } } });
                 reconcileMap.set(node.id, unit);
             }
             for (const [id, unit] of reconcileMap) {   // deleting the visited entry mid-iteration is spec-safe for Map

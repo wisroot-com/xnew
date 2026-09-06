@@ -68,12 +68,7 @@ declare class Unit {
         events: EventBinder;
         key: any;
     };
-    constructor({ parent, inherited, own }: {
-        parent: Unit | null;
-        inherited?: Record<string, any>;
-        own?: Record<string, any>;
-    }, ...args: any[]);
-    static initialize(unit: Unit, ...args: any[]): void;
+    constructor(parent: Unit | null, ...args: any[]);
     get parent(): Unit | null;
     get current(): DomElement;
     get container(): DomElement | null;

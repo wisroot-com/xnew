@@ -22,7 +22,9 @@ export class RoomIO {
         this.room = room;
         // the handshake query must stay flat strings (socket.io stringifies values).
         this.socket = getEnvironment() === 'client' ? io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true }) : null;
-        this.root = new Unit({ parent: Unit.current, inherited: { syncRoot: this } }, ...args);
+        // the reserved _inherited prop rides the props slot, which is last in the xnew arg form (target?, Component, props?)
+        const props = args.length > 1 && typeof args[args.length - 1] === 'object' ? args.pop() : {};
+        this.root = new Unit(Unit.current, ...args, { ...props, _inherited: { syncRoot: this } });
         if (this.socket !== null) {
             this.root.on('finalize', () => this.socket.disconnect());
         }

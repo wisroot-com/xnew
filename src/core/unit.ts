@@ -28,7 +28,7 @@ export type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends 
 // Extract the props type of a Component ({} if absent).
 export type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
 
-// Component that writes a text/number literal into the element; only reachable with a target (see initialize).
+// Component that writes a text/number literal into the element; only reachable with a target (see the constructor).
 function textComponent(content: string | number): (unit: Unit) => void {
     return (unit: Unit) => { unit.current.textContent = content.toString(); };
 }
@@ -43,8 +43,8 @@ export class Unit {
     public _: {
         parent: Unit | null;
         children: Unit[];
-        inherited: Record<string, any>;   // library-internal keyed values, each key propagated from the parent unless given (not a user-facing API)
-        own: Record<string, any>;         // library-internal keyed values, per-unit only — set at construction, never propagated (not a user-facing API)
+        inherited: Record<string, any>;   // library-internal keyed values, each key propagated from the parent unless the reserved _inherited prop overrides it (not a user-facing API)
+        own: Record<string, any>;         // library-internal keyed values, per-unit only — seeded by the reserved _own prop, never propagated (not a user-facing API)
 
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
@@ -67,7 +67,7 @@ export class Unit {
         key: any;   // reserved prop for find(key) (global unique assumed)
     };
 
-    constructor({ parent, inherited, own }: { parent: Unit | null; inherited?: Record<string, any>; own?: Record<string, any> }, ...args: any[]) {
+    constructor(parent: Unit | null, ...args: any[]) {
         parent?._.children.push(this);
 
         const baseContext = parent?._.currentContext ?? { previous: null };
@@ -83,9 +83,9 @@ export class Unit {
 
         this._ = {
             parent,
-            // shared with the parent unless overridden, so keys must only be set via the constructor argument
-            inherited: inherited === undefined ? (parent?._.inherited ?? {}) : { ...parent?._.inherited, ...inherited },
-            own: own ?? {},
+            // shared with the parent unless the _inherited prop forks it below
+            inherited: parent?._.inherited ?? {},
+            own: {},
             phase: 'invoked',
             protected: false,
             standalone: true,
@@ -104,16 +104,12 @@ export class Unit {
             key: null,
         };
 
-        Unit.initialize(this, ...args);
-    }
-
-    static initialize(unit: Unit, ...args: any[]): void {
         let targeted = false;
         if (isDomElement(args[0])) {
-            unit._.currentElement = args.shift() as DomElement;
+            this._.currentElement = args.shift() as DomElement;
             targeted = true;
         } else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
-            Unit.nest(unit, args.shift() as string | DomElementDef);
+            Unit.nest(this, args.shift() as string | DomElementDef);
             targeted = true;
         }
 
@@ -138,17 +134,25 @@ export class Unit {
             baseComponent = (unit: Unit) => {};
         }
 
-        unit._.key = (props as any)?.key ?? null;
+        this._.key = (props as any)?.key ?? null;
+
+        // reserved library-internal props, applied before the component body so it and its descendants see them from birth
+        if ((props as any)?._inherited !== undefined) {
+            this._.inherited = { ...this._.inherited, ...(props as any)._inherited };
+        }
+        if ((props as any)?._own !== undefined) {
+            this._.own = (props as any)._own;
+        }
 
         const backup = Unit.currentUnit;
-        Unit.currentUnit = unit;
+        Unit.currentUnit = this;
 
-        Unit.extend(unit, baseComponent, props);
+        Unit.extend(this, baseComponent, props);
 
-        if (unit._.phase === 'invoked') {
-            unit._.phase = 'initialized';
+        if (this._.phase === 'invoked') {
+            this._.phase = 'initialized';
         }
-        unit._.lastSnapshot = Unit.snapshot(unit);
+        this._.lastSnapshot = Unit.snapshot(this);
         Unit.currentUnit = backup;
     }
 
@@ -294,7 +298,7 @@ export class Unit {
 
     static reset(): void {
         Unit.engineRoot?.finalize();
-        Unit.currentUnit = Unit.engineRoot = new Unit({ parent: null });
+        Unit.currentUnit = Unit.engineRoot = new Unit(null);
         const ticker = new Ticker((delta: number) => {
             Unit.update(Unit.engineRoot, delta);
         });
@@ -568,7 +572,7 @@ export class UnitTimer {
     }
 
     private start(Component: Function) {
-        this.unit = new Unit({ parent: Unit.currentUnit }, Component);
+        this.unit = new Unit(Unit.currentUnit, Component);
         this.unit.on('finalize', () => {
             // While the owner unit is finalizing, the next task would escape its child-finalize loop — drop the queue instead.
             const owner = Unit.currentUnit;
