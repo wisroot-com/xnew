@@ -107,7 +107,8 @@ declare class Unit {
     static isVisible(from: Unit | null, current: Unit | null, ancestors: Unit[]): boolean;
     static find(Component: Function, options?: {
         key?: any;
-        root?: Unit;
+        ancestor?: Unit;
+        parent?: Unit;
     }): Unit[];
     static type2units: MapSet<string, Unit>;
     on(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
@@ -171,7 +172,8 @@ declare const xnew: XnewBase & {
     scope(callback: any): any;
     find(Component: Function, options?: {
         key?: any;
-        root?: Unit;
+        ancestor?: Unit;
+        parent?: Unit;
     }): Unit[];
     emit(type: string, ...args: any[]): void;
     timeout(callback: Function, duration?: number): UnitTimer;

@@ -115,7 +115,7 @@ describe('basics Panel', () => {
                 group.button({ name: 'one', key: 'inner-button' });
             });
             expect(xnew.find(Panel, { key: 'settings-group' })[0]).toBe(group);
-            expect(xnew.find(Button, { key: 'inner-button', root: group }).length).toBe(1);
+            expect(xnew.find(Button, { key: 'inner-button', ancestor: group }).length).toBe(1);
         });
     });
 

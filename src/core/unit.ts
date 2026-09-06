@@ -342,13 +342,16 @@ export class Unit {
         return boundary === undefined || ancestors.includes(boundary) === true || current === boundary;
     }
 
-    static find(Component: Function, options: { key?: any, root?: Unit } = {}): Unit[] {
+    // every option is an independent predicate on the found unit, so any combination is valid (they AND together).
+    static find(Component: Function, options: { key?: any, ancestor?: Unit, parent?: Unit } = {}): Unit[] {
         const current = Unit.currentUnit;
         const ancestors = Unit.ancestors(current);
         return [...(Unit.component2units.get(Component) ?? [])].filter((unit) => {
             if (options.key !== undefined && unit._.key !== options.key) {
                 return false;
-            } else if (options.root !== undefined && Unit.ancestors(unit).includes(options.root) === false) {
+            } else if (options.ancestor !== undefined && Unit.ancestors(unit).includes(options.ancestor) === false) {
+                return false;
+            } else if (options.parent !== undefined && unit._.parent !== options.parent) {
                 return false;
             } else {
                 return Unit.isVisible(unit._.parent, current, ancestors);

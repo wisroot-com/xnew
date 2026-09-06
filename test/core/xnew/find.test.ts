@@ -60,37 +60,81 @@ describe('xnew.find', () => {
         });
     });
 
-    describe('by root', () => {
+    describe('by ancestor', () => {
         function A(_: Unit) {}
 
         it('limits results to the descendants of the given unit', () => {
-            let root!: Unit, inner!: Unit, deep!: Unit, outer!: Unit;
+            let ancestor!: Unit, inner!: Unit, deep!: Unit, outer!: Unit;
             xnew(() => {
-                root = xnew(() => {
+                ancestor = xnew(() => {
                     inner = xnew(A);
                     xnew(() => { deep = xnew(A); });
                 });
                 outer = xnew(A);
             });
-            expect(xnew.find(A, { root })).toEqual(expect.arrayContaining([inner, deep]));
-            expect(xnew.find(A, { root })).toHaveLength(2);
-            expect(xnew.find(A, { root })).not.toContain(outer);
+            expect(xnew.find(A, { ancestor })).toEqual(expect.arrayContaining([inner, deep]));
+            expect(xnew.find(A, { ancestor })).toHaveLength(2);
+            expect(xnew.find(A, { ancestor })).not.toContain(outer);
         });
 
-        it('excludes the root unit itself', () => {
-            let root!: Unit, child!: Unit;
-            xnew(() => { root = xnew(A, () => { child = xnew(A); }); });
-            expect(xnew.find(A, { root })).toEqual([child]);
+        it('excludes the given unit itself', () => {
+            let ancestor!: Unit, child!: Unit;
+            xnew(() => { ancestor = xnew(A, () => { child = xnew(A); }); });
+            expect(xnew.find(A, { ancestor })).toEqual([child]);
         });
 
         it('combines with key', () => {
-            let root!: Unit, k1!: Unit;
+            let ancestor!: Unit, k1!: Unit;
             xnew(() => {
-                root = xnew(() => { k1 = xnew(A, { key: 'k1' }); xnew(A, { key: 'k2' }); });
+                ancestor = xnew(() => { k1 = xnew(A, { key: 'k1' }); xnew(A, { key: 'k2' }); });
                 xnew(A, { key: 'k3' });
             });
-            expect(xnew.find(A, { root, key: 'k1' })).toEqual([k1]);
-            expect(xnew.find(A, { root, key: 'k3' })).toEqual([]);
+            expect(xnew.find(A, { ancestor, key: 'k1' })).toEqual([k1]);
+            expect(xnew.find(A, { ancestor, key: 'k3' })).toEqual([]);
+        });
+    });
+
+    describe('by parent', () => {
+        function A(_: Unit) {}
+
+        it('limits results to the direct children of the given unit', () => {
+            let parent!: Unit, child!: Unit, deep!: Unit, outer!: Unit;
+            xnew(() => {
+                parent = xnew(() => {
+                    child = xnew(A);
+                    xnew(() => { deep = xnew(A); });
+                });
+                outer = xnew(A);
+            });
+            expect(xnew.find(A, { parent })).toEqual([child]);
+            expect(xnew.find(A, { parent })).not.toContain(deep);
+            expect(xnew.find(A, { parent })).not.toContain(outer);
+        });
+
+        it('excludes the given unit itself', () => {
+            let parent!: Unit;
+            xnew(() => { parent = xnew(A); });
+            expect(xnew.find(A, { parent })).toEqual([]);
+        });
+
+        it('combines with key', () => {
+            let parent!: Unit, k1!: Unit;
+            xnew(() => {
+                parent = xnew(() => { k1 = xnew(A, { key: 'k1' }); xnew(A, { key: 'k2' }); });
+                xnew(A, { key: 'k1' });
+            });
+            expect(xnew.find(A, { parent, key: 'k1' })).toEqual([k1]);
+        });
+
+        it('intersects with ancestor rather than conflicting', () => {
+            let ancestor!: Unit, parent!: Unit, child!: Unit;
+            xnew(() => {
+                ancestor = xnew(() => {
+                    parent = xnew(() => { child = xnew(A); });
+                });
+            });
+            expect(xnew.find(A, { ancestor, parent })).toEqual([child]);
+            expect(xnew.find(A, { ancestor: parent, parent: ancestor })).toEqual([]);
         });
     });
 });

@@ -97,8 +97,8 @@ export const xnew = Object.assign(
             return (...args: any[]) => Unit.scope(snapshot, callback, ...args);
         },
 
-        // Finds units by component. options.key narrows by the reserved prop `key` (assumed globally unique); options.root narrows to that unit's descendants at any depth (the unit itself excluded).
-        find(Component: Function, options?: { key?: any, root?: Unit }): Unit[] {
+        // Finds units by component. Options are independent conditions on the found unit: `key` = its reserved prop `key` (assumed globally unique), `ancestor` = that unit is among its ancestors, `parent` = that unit is its direct parent.
+        find(Component: Function, options?: { key?: any, ancestor?: Unit, parent?: Unit }): Unit[] {
             return Unit.find(Component, options);
         },
 

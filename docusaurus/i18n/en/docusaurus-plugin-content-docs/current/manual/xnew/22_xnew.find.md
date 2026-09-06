@@ -7,11 +7,17 @@
 ```js
 const units = xnew.find(Component);          // every matching unit
 const [unit] = xnew.find(Component, { key }); // narrow to one by the reserved `key` prop
+const inside = xnew.find(Component, { ancestor }); // units that have the given unit among their ancestors
+const children = xnew.find(Component, { parent });  // units whose direct parent is the given unit
 ```
 
 **Parameters:**
 - `Component`: The component function to search for
 - `opts.key` *(optional)*: narrow to the unit whose reserved `key` prop (set at creation via `xnew(Component, { key })`) matches
+- `opts.ancestor` *(optional)*: narrow to units that have the given unit among their ancestors (at any depth); the given unit itself is excluded
+- `opts.parent` *(optional)*: narrow to units whose direct parent is the given unit
+
+Each option is an independent condition on the found unit, so any combination is valid — they simply AND together.
 
 **Returns:**
 - An array of the currently active units that match
