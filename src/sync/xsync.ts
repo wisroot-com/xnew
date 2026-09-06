@@ -104,7 +104,7 @@ function bootServer(options: BootOptions, Component: Function, props?: object): 
         const json = JSON.stringify(tree);
         if (lastEmits.get(client.id) !== json) {
             lastEmits.set(client.id, json);
-            roomio.emit(client.id, 'sync', tree);
+            roomio.emit('sync', tree, client);
         }
     }));
 
@@ -118,7 +118,7 @@ function bootServer(options: BootOptions, Component: Function, props?: object): 
         roomio.clients.push({ id: socket.id, name: query?.clientName ?? '' });
         dispatch(roomio, 'sync.connect', socket.id);
         socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
-        roomio.emit(room.id, 'status', { clients: roomio.clients });
+        roomio.emit('status', { clients: roomio.clients });
         dispatch(roomio, 'sync.statusupdate', undefined);
         // normalize the untrusted envelope at the wire boundary; a rejected type is dropped, never dispatched
         socket.on('emitToServer', (p: any) => {
@@ -128,9 +128,9 @@ function bootServer(options: BootOptions, Component: Function, props?: object): 
                 const syncId = typeof p?.syncId === 'number' ? p.syncId : null;
                 if (Array.isArray(p?.to)) {
                     // relay targets are attacker-controlled: keep only this room's members (another room's socket id must stay unreachable) and stamp the real sender.
-                    const to = p.to.filter((id: any) => roomio.clients.some((client) => client.id === id));
+                    const to = roomio.clients.filter((client) => p.to.includes(client.id));
                     if (to.length > 0) {
-                        roomio.emit(to, 'emitToClients', { type, syncId, id: socket.id, data });
+                        roomio.emit('emitToClients', { type, syncId, id: socket.id, data }, to);
                     }
                 } else {
                     dispatch(roomio, type, socket.id, data, syncId);
@@ -142,7 +142,7 @@ function bootServer(options: BootOptions, Component: Function, props?: object): 
             lastEmits.delete(socket.id);
             dispatch(roomio, 'sync.disconnect', socket.id);
             socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
-            roomio.emit(room.id, 'status', { clients: roomio.clients });
+            roomio.emit('status', { clients: roomio.clients });
             dispatch(roomio, 'sync.statusupdate', undefined);
         });
     });
@@ -257,15 +257,13 @@ export const xsync = {
     emit(type: string, props: Record<string, any> = {}, clients?: ClientStatus | ClientStatus[]): void {
         const roomio = RoomIO.of(Unit.current, true);
         const syncId = syncData(Unit.current).id;
-        const to = clients === undefined ? null : (Array.isArray(clients) ? clients : [clients]).map((client) => client.id);
-        if (to !== null && to.length === 0) { return; }
+        const to = clients === undefined ? undefined : (Array.isArray(clients) ? clients : [clients]);
+        if (to !== undefined && to.length === 0) { return; }
         if (getEnvironment() === 'server') {
             // the envelope id stays undefined (server-originated), so a relay names the original sender inside data.
-            const envelope = { type, syncId, id: undefined, data: props };
-            // each socket is in a room named by its id, so individual and room-wide delivery share one emit
-            roomio.emit(to ?? roomio.room.id, 'emitToClients', envelope);
+            roomio.emit('emitToClients', { type, syncId, id: undefined, data: props }, to);
         } else {
-            roomio.emit(null, 'emitToServer', { type, syncId, data: props, to: to ?? undefined });
+            roomio.emit('emitToServer', { type, syncId, data: props, to: to?.map((client) => client.id) });
         }
     },
     // one root component only: listeners for sync.* must live inside it, so compose with xnew.extend rather than a second argument.

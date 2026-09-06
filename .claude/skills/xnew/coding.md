@@ -600,8 +600,9 @@ the rule, then one line of why.
   material fns take a REQUIRED second argument. Don't re-wrap textures as xnew components.
   The networking layer is `src/sync/xsync.ts` (shared state + boot + facade) plus `src/sync/roomio.ts`
   (`RoomIO`: holds the root unit, the given `io`, the `socket` it creates from it on the client, the
-  `room` and the `clients` roster, plus the wire pair `emit(to, type, data)` — `to` is an id / room id /
-  array of them, `null` means the server — and `on(type, listener)`, which detaches on root finalize;
+  `room` and the `clients` roster, plus the wire pair `emit(type, data, clients?)` — `clients` is a
+  `ClientStatus` or an array of them, omitted means the whole room (server) / the server itself (client)
+  — and `on(type, listener)`, which detaches on root finalize;
   it must never import from `xsync.ts`). `xsync`
   **is** the facade object literal (`export const xsync = { … }`) — there is no Lobby / Room component
   built in; lobby / room lifecycle is assembled by callers from the facade (see `examples/*/server.js` +

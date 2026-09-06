@@ -1162,15 +1162,17 @@ class RoomIO {
             this.root.on('finalize', () => this.socket.disconnect());
         }
     }
-    emit(to, type, data) {
-        if (Array.isArray(to)) {
-            to.forEach((target) => this.io.to(target).emit(type, data));
-        }
-        else if (to === null) {
-            this.socket.emit(type, data);
+    emit(type, data, clients) {
+        if (clients === undefined) {
+            if (this.socket !== null) {
+                this.socket.emit(type, data);
+            }
+            else {
+                this.io.to(this.room.id).emit(type, data);
+            }
         }
         else {
-            this.io.to(to).emit(type, data);
+            (Array.isArray(clients) ? clients : [clients]).forEach((client) => this.io.to(client.id).emit(type, data));
         }
     }
     on(type, listener) {
@@ -1254,7 +1256,7 @@ function bootServer(options, Component, props) {
         const json = JSON.stringify(tree);
         if (lastEmits.get(client.id) !== json) {
             lastEmits.set(client.id, json);
-            roomio.emit(client.id, 'sync', tree);
+            roomio.emit('sync', tree, client);
         }
     }));
     roomio.on('connection', (socket) => {
@@ -1266,7 +1268,7 @@ function bootServer(options, Component, props) {
         roomio.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
         dispatch(roomio, 'sync.connect', socket.id);
         socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
-        roomio.emit(room.id, 'status', { clients: roomio.clients });
+        roomio.emit('status', { clients: roomio.clients });
         dispatch(roomio, 'sync.statusupdate', undefined);
         socket.on('emitToServer', (p) => {
             const type = clientEventType(p === null || p === void 0 ? void 0 : p.type);
@@ -1274,9 +1276,9 @@ function bootServer(options, Component, props) {
                 const data = typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {};
                 const syncId = typeof (p === null || p === void 0 ? void 0 : p.syncId) === 'number' ? p.syncId : null;
                 if (Array.isArray(p === null || p === void 0 ? void 0 : p.to)) {
-                    const to = p.to.filter((id) => roomio.clients.some((client) => client.id === id));
+                    const to = roomio.clients.filter((client) => p.to.includes(client.id));
                     if (to.length > 0) {
-                        roomio.emit(to, 'emitToClients', { type, syncId, id: socket.id, data });
+                        roomio.emit('emitToClients', { type, syncId, id: socket.id, data }, to);
                     }
                 }
                 else {
@@ -1289,7 +1291,7 @@ function bootServer(options, Component, props) {
             lastEmits.delete(socket.id);
             dispatch(roomio, 'sync.disconnect', socket.id);
             socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
-            roomio.emit(room.id, 'status', { clients: roomio.clients });
+            roomio.emit('status', { clients: roomio.clients });
             dispatch(roomio, 'sync.statusupdate', undefined);
         });
     });
@@ -1394,16 +1396,15 @@ const xsync = {
     emit(type, props = {}, clients) {
         const roomio = RoomIO.of(Unit.current, true);
         const syncId = syncData(Unit.current).id;
-        const to = clients === undefined ? null : (Array.isArray(clients) ? clients : [clients]).map((client) => client.id);
-        if (to !== null && to.length === 0) {
+        const to = clients === undefined ? undefined : (Array.isArray(clients) ? clients : [clients]);
+        if (to !== undefined && to.length === 0) {
             return;
         }
         if (getEnvironment() === 'server') {
-            const envelope = { type, syncId, id: undefined, data: props };
-            roomio.emit(to !== null && to !== void 0 ? to : roomio.room.id, 'emitToClients', envelope);
+            roomio.emit('emitToClients', { type, syncId, id: undefined, data: props }, to);
         }
         else {
-            roomio.emit(null, 'emitToServer', { type, syncId, data: props, to: to !== null && to !== void 0 ? to : undefined });
+            roomio.emit('emitToServer', { type, syncId, data: props, to: to === null || to === void 0 ? void 0 : to.map((client) => client.id) });
         }
     },
     boot(options, Component, props) {

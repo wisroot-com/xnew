@@ -29,14 +29,17 @@ export class RoomIO {
         }
     }
 
-    // `to` is a client id / room id (both are socket.io rooms) or an array of them; null sends to the server.
-    emit(to: string | string[] | null, type: string, data: any): void {
-        if (Array.isArray(to)) {
-            to.forEach((target) => this.io.to(target).emit(type, data));
-        } else if (to === null) {
-            this.socket.emit(type, data);
+    // `clients` is the destination roster entry / entries; omitted it means the whole room (server) or the server itself (client).
+    emit(type: string, data: any, clients?: ClientStatus | ClientStatus[]): void {
+        if (clients === undefined) {
+            if (this.socket !== null) {
+                this.socket.emit(type, data);
+            } else {
+                this.io.to(this.room.id).emit(type, data);
+            }
         } else {
-            this.io.to(to).emit(type, data);
+            // each socket is in a room named by its own id, so per-client delivery is the same io.to
+            (Array.isArray(clients) ? clients : [clients]).forEach((client) => this.io.to(client.id).emit(type, data));
         }
     }
 
