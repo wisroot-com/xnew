@@ -1840,7 +1840,7 @@ function Image(unit, _a) {
     });
 }
 
-function GraphicText(unit, _a = {}) {
+function SVGText(unit, _a = {}) {
     var { text = '', className = '', style = '' } = _a, others = __rest(_a, ["text", "className", "style"]);
     const css = xnew.css('base', {
         container: `
@@ -3429,7 +3429,7 @@ const xbasics = {
     Scene,
     Button,
     Image,
-    GraphicText,
+    SVGText,
     InputRange,
     InputCheckbox,
     InputText,

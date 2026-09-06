@@ -154,7 +154,7 @@ function ThreeTexture(unit) {
 
 function ScoreText(unit) {
   xnew.nest('<div class="absolute top-[1cqw] right-[2cqw] w-full text-right text-green-600 font-bold">');
-  const text = xnew(xbasics.GraphicText, { text: 'score 0', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
+  const text = xnew(xbasics.SVGText, { text: 'score 0', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   let sum = 0;
   unit.on('+scoreup', ({ score }) => {
     text.element.textContent = `score ${sum += Math.pow(2, score)}`;
@@ -481,23 +481,23 @@ function ResultBackground(unit, { gradient, textColor }) {
   }
 }
 
-// タイトルの見出し（縁取り GraphicText）。text=文言 / color="text-..."。
+// タイトルの見出し（縁取り SVGText）。text=文言 / color="text-..."。
 function TitleText(unit, { text, color }) {
   xnew.nest(`<div class="absolute w-full top-[16cqw] text-center ${color} font-bold">`);
-  xnew(xbasics.GraphicText, { text, fontSize: '10cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
+  xnew(xbasics.SVGText, { text, fontSize: '10cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
 }
 
 // 点滅する "touch start"。color="text-..."。
 function TouchMessage(unit, { color }) {
   xnew.nest(`<div class="absolute w-full top-[30cqw] text-center ${color} font-bold">`);
-  xnew(xbasics.GraphicText, { text: 'touch start', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
+  xnew(xbasics.SVGText, { text: 'touch start', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   unit.on('update', ({ count }) => unit.element.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
 }
 
 // 中央に降りてくる "Game Over"。className で横位置を調整（既定は全幅中央）。
 function GameOverText(unit, { className = 'w-full' }) {
   xnew.nest(`<div class="absolute ${className} text-center text-red-400 font-bold">`);
-  xnew(xbasics.GraphicText, { text: 'Game Over', fontSize: '12cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
+  xnew(xbasics.SVGText, { text: 'Game Over', fontSize: '12cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   xnew.transition(({ value }) => {
     Object.assign(unit.element.style, { opacity: value, top: `${10 + value * 15}cqw` });
   }, 1000, 'ease');

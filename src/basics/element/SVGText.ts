@@ -1,12 +1,12 @@
 //----------------------------------------------------------------------------------------------------
-// GraphicText — decoratable (fill + stroke halo) text drawn as SVG, auto-fitted to its bounding box
+// SVGText — decoratable (fill + stroke halo) text drawn as SVG, auto-fitted to its bounding box
 // display: inline-block by default, so it flows inline; the svg is resized to the text's bbox.
 // className / style land on the svg; rest props (fontSize, fontFamily, …) land on the inner <text>.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 
-export function GraphicText(unit: xnew.Unit,
+export function SVGText(unit: xnew.Unit,
     { text = '', className = '', style = '', ...others }:
     { text?: string, className?: string, style?: string, [key: string]: any } = {}
 ) {

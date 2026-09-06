@@ -39,7 +39,7 @@
       xnew(MyInputRadio);
       xnew(MyListbox);
       xnew(MyInputRange);
-      xnew(MyGraphicText);
+      xnew(MySVGText);
     });
 
     // each block: the default look next to a designed variant
@@ -189,15 +189,15 @@
       });
     }
 
-    function MyGraphicText(unit) {
+    function MySVGText(unit) {
       xnew.nest('<div>');
-      xnew('<div class="mb-1">', 'GraphicText');
+      xnew('<div class="mb-1">', 'SVGText');
       xnew.nest('<div class="flex gap-4 items-center">');
       // text drawn as SVG, auto-fitted to its bbox; fill picks up currentColor from the className color
-      xnew(xbasics.GraphicText, { text: 'default', fontSize: 32, className: 'text-indigo-600' });
+      xnew(xbasics.SVGText, { text: 'default', fontSize: 32, className: 'text-indigo-600' });
       // stroke + fill give a game-style outlined label (paint-order draws the stroke behind the fill)
       xnew('<div class="px-3 py-1 rounded-lg bg-slate-800">', () => {
-        xnew(xbasics.GraphicText, { text: 'OUTLINE', fontSize: 32, className: 'text-emerald-300', style: 'stroke: #0f172a; stroke-width: 3;' });
+        xnew(xbasics.SVGText, { text: 'OUTLINE', fontSize: 32, className: 'text-emerald-300', style: 'stroke: #0f172a; stroke-width: 3;' });
       });
     }
   </script>

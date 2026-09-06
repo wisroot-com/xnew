@@ -268,8 +268,8 @@ TitleScene ──tap/Space──▶ StoryScene ──2ページ目のtap/Space�
 - `asset(name)` … `../../assets/${name}`。アセット読み込みは全部これ経由。
 - `enemyIdForWave(wave)` … その wave の主役敵 id（`Math.min(wave-1, 3)`）。WaveManager /
   WaveEnemyDisplay / TargetInfo が共用。`waveColor()` は別概念（色）なので分離したまま。
-- `svgText(text, fontSize, stroke?, strokeWidth?)` … `xbasics.GraphicText` の縁取りテキスト
-  ラッパー（GraphicText は既定で inline-block 表示。stroke 既定 `#EEEEEE` / strokeWidth 既定 `0.2cqw`）。
+- `svgText(text, fontSize, stroke?, strokeWidth?)` … `xbasics.SVGText` の縁取りテキスト
+  ラッパー（SVGText は既定で inline-block 表示。stroke 既定 `#EEEEEE` / strokeWidth 既定 `0.2cqw`）。
 - `ResultBackground` 内の白丸 2 ループは局所関数 `floatingCircle(size, transform)` に集約。
 
 ---

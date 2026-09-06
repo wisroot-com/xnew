@@ -8,7 +8,7 @@ import { Screen } from './stage/Screen';
 import { Scene } from './stage/Scene';
 import { Button } from './element/Button';
 import { Image } from './element/Image';
-import { GraphicText } from './element/GraphicText';
+import { SVGText } from './element/SVGText';
 import { InputRange } from './element/InputRange';
 import { InputCheckbox } from './element/InputCheckbox';
 import { InputText } from './element/InputText';
@@ -30,7 +30,7 @@ export const xbasics = {
     Scene,
     Button,
     Image,
-    GraphicText,
+    SVGText,
     InputRange,
     InputCheckbox,
     InputText,
