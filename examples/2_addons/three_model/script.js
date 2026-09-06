@@ -168,7 +168,7 @@ function Panel(unit) {
     model.crossfade(value);
   });
 
-  xnew('<p>', 'weights');
+  xnew(panel, '<p>', 'weights');
   for (const name of model.actions('additive')) {
     panel.range({ name, value: model.settings[name].weight, min: 0, max: 1, step: 0.01 })
     .on('input', ({ event }) => {

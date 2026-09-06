@@ -1,13 +1,13 @@
 //----------------------------------------------------------------------------------------------------
 // InputRange — text-free gauge backed by a hidden native <input type="range">, horizontal or vertical (`vertical: true`)
-// unit.element is the container (frame ring + interaction input); used standalone, the default
+// unit.current is the container (frame ring + interaction input); used standalone, the default
 // InputRangeMeter + InputRangeStatus are drawn; a trailing compose fn replaces them (xnew.standalone gate).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 
 export function InputRange(unit: xnew.Unit,
-    { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '', ...others }:
+    { value, min = 0, max = 100, step, vertical = false, className = '', style = '', ...others }:
     { value?: number, min?: number, max?: number, step?: number, vertical?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
@@ -38,18 +38,45 @@ export function InputRange(unit: xnew.Unit,
 
     // hidden native input for interaction (min / max / step before value, so value never clamps against defaults)
     const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
-    xnew({ tag: 'input', type: 'range', min, max, step, value: initial, className: css.input, style: direction, ...others });
+    const input = xnew({ tag: 'input', type: 'range', min, max, step: step ?? autoStep(min, max), value: initial, className: css.input, style: direction, ...others });
 
     if (xnew.standalone === true) {
         xnew(InputRangeMeter, { value: initial, min, max, vertical });
         xnew(InputRangeStatus, { value: initial, vertical });
     }
+
+    return {
+        get input() {
+            return input.current as HTMLInputElement;
+        },
+    };
 }
 
 //----------------------------------------------------------------------------------------------------
-// InputRangeMeter — the value-driven meter layer of an InputRange that grows with the value
-// Mounted on the InputRange container, it follows the bubbling `input` event (event.target is the range
-// input, so the numeric value arrives even though the listener is on the container).
+// autoStep — default step when unspecified: ~100 steps over d = max - min, snapped to …, 0.1, 0.5, 1, 5, 10, …
+//----------------------------------------------------------------------------------------------------
+
+function autoStep(min: number, max: number): number {
+    const d = max - min;
+    if (d > 0) {
+        const target = d / 100;
+        const base = Math.pow(10, Math.floor(Math.log10(target)));
+        const ratio = target / base;
+        // snap to the 1 / 5 sequence at the geometric midpoints (√5, √50)
+        if (ratio < Math.sqrt(5)) {
+            return base;
+        } else if (ratio < Math.sqrt(50)) {
+            return base * 5;
+        } else {
+            return base * 10;
+        }
+    } else {
+        return 1;
+    }
+}
+
+//----------------------------------------------------------------------------------------------------
+// InputRangeMeter — the meter layer that grows with the value, mounted on the InputRange container (follows the bubbling `input` event)
 //----------------------------------------------------------------------------------------------------
 
 function InputRangeMeter(unit: xnew.Unit,
@@ -79,9 +106,9 @@ function InputRangeMeter(unit: xnew.Unit,
     function apply(v: number) {
         const percent = `${(v - min) / (max - min) * 100}%`;
         if (vertical) {
-            meter.element.style.height = percent;
+            meter.current.style.height = percent;
         } else {
-            meter.element.style.width = percent;
+            meter.current.style.width = percent;
         }
     }
     apply(value);
@@ -92,9 +119,7 @@ function InputRangeMeter(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// InputRangeStatus — the value readout painted above an InputRange meter
-// Mounted on the InputRange container, it follows the bubbling `input` event and shows the raw value
-// (pointer-events: none keeps the drag on the hidden input).
+// InputRangeStatus — the value readout painted above the meter (pointer-events: none keeps the drag on the hidden input)
 //----------------------------------------------------------------------------------------------------
 
 function InputRangeStatus(unit: xnew.Unit,
@@ -121,7 +146,7 @@ function InputRangeStatus(unit: xnew.Unit,
     const status = xnew({ tag: 'div', className: `${css.status} ${vertical ? css.vertical : css.horizontal}` });
 
     function apply(v: number) {
-        status.element.textContent = String(v);
+        status.current.textContent = String(v);
     }
     apply(value);
 

@@ -37,12 +37,12 @@
       xnew('<div class="w-32 h-8 bg-red-400 border rounded">', '1');
 
       xnew('<div class="w-32 h-8 bg-green-400 border rounded">', (unit) => {
-        unit.element.textContent = '2';
+        unit.current.textContent = '2';
       });
 
       xnew((unit) => {
         xnew.nest('<div class="w-32 h-8 bg-blue-400 border rounded">');
-        unit.element.textContent = '3';
+        unit.current.textContent = '3';
       });
     }
 
@@ -54,7 +54,7 @@
         const button = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'click me');
 
         button.on('click', ({ event }) => {
-          button.element.textContent = `count: ${count++}`;
+          button.current.textContent = `count: ${count++}`;
         });
       });
 
@@ -63,7 +63,7 @@
         const text = xnew('<span class="ml-2">');
 
         input.on('change input', ({ event }) => {
-          text.element.textContent = input.element.value;
+          text.current.textContent = input.current.value;
         });
       });
 
@@ -76,7 +76,7 @@
 
         const text = xnew('<span style="margin: 0 8px;">');
         select.on('change', ({ event }) => {
-          text.element.textContent = event.target.value;
+          text.current.textContent = event.target.value;
         });
       });
     }

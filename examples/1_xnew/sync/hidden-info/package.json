@@ -2,7 +2,7 @@
   "name": "xnew-example-hidden-info",
   "version": "0.1.0",
   "private": true,
-  "description": "xnew per-client state filter sample (xsync.visibleTo). npm install && npm start, then open http://localhost:3002/ in multiple tabs.",
+  "description": "xnew per-client state filter sample (xsync.visibility). npm install && npm start, then open http://localhost:3002/ in multiple tabs.",
   "type": "module",
   "scripts": {
     "sync-xnew": "node sync-xnew.js",

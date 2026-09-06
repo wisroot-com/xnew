@@ -35,7 +35,7 @@ declare class EventBinder {
 
 interface Context {
     previous: Context | null;
-    key?: any;
+    Component?: Function;
     value?: any;
 }
 interface Snapshot {
@@ -52,6 +52,8 @@ declare class Unit {
     _: {
         parent: Unit | null;
         children: Unit[];
+        inherited: Record<string, any>;
+        own: Record<string, any>;
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
         standalone: boolean;
@@ -76,11 +78,15 @@ declare class Unit {
         events: EventBinder;
         key: any;
     };
-    constructor(parent?: Unit | null);
-    static create(parent: Unit | null, ...args: any[]): Unit;
+    constructor({ parent, inherited, own }: {
+        parent: Unit | null;
+        inherited?: Record<string, any>;
+        own?: Record<string, any>;
+    }, ...args: any[]);
     static initialize(unit: Unit, ...args: any[]): void;
     get parent(): Unit | null;
-    get element(): DomElement;
+    get current(): DomElement;
+    get container(): DomElement | null;
     finalize(): void;
     static nest(unit: Unit, tag: string | DomElementDef, textContent?: string): DomElement;
     static extend(unit: Unit, Component: Function, props?: Object): {
@@ -94,12 +100,16 @@ declare class Unit {
     static scope(snapshot: Snapshot, func: Function, ...args: any[]): any;
     static snapshot(unit: Unit): Snapshot;
     static unit2Contexts: MapSet<Unit, Context>;
-    static addContext(unit: Unit, orner: Unit, key: any, value?: any): void;
-    static getContext(unit: Unit, key: any): any;
+    static addContext(unit: Unit, orner: Unit, Component: Function, value?: any): void;
+    static getContext(unit: Unit, Component: Function): any;
     static component2units: MapSet<Function, Unit>;
     static ancestors(unit: Unit | null): Unit[];
     static isVisible(from: Unit | null, current: Unit | null, ancestors: Unit[]): boolean;
-    static find(Component: Function, key?: any): Unit[];
+    static find(Component: Function, options?: {
+        key?: any;
+        ancestor?: Unit;
+        parent?: Unit;
+    }): Unit[];
     static type2units: MapSet<string, Unit>;
     on(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
     once(type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
@@ -130,16 +140,16 @@ declare class UnitTimer {
     private start;
 }
 
+type CssDef = string | {
+    rule: '@keyframes' | '@property' | '@counter-style';
+    body: string;
+} | {
+    rule: '@font-face';
+    body: string | string[];
+};
+
 interface XnewBase {
-    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(Base: C, props: PropsOf<C>, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
-    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(Base: C, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
-    <C extends ComponentFn<any, any>>(Base: C, props: PropsOf<C>, content: string | number): Unit & DefinesOf<C>;
-    <C extends ComponentFn<any, any>>(Base: C, content: string | number): Unit & DefinesOf<C>;
     <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
-    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, props: PropsOf<C>, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
-    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
-    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, props: PropsOf<C>, content: string | number): Unit & DefinesOf<C>;
-    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, content: string | number): Unit & DefinesOf<C>;
     <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
     (target: DomElement | string | DomElementDef, content?: string | number): Unit;
     (content: string | number): Unit;
@@ -151,17 +161,19 @@ declare const xnew: XnewBase & {
     nest(tag: string | DomElementDef, textContent?: string): HTMLElement | SVGElement;
     extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
     css: {
-        <T extends Record<string, string>>(defs: T): Record<keyof T, string>;
-        <T extends Record<string, string>>(layer: string, defs: T): Record<keyof T, string>;
+        <T extends Record<string, CssDef>>(defs: T): Record<keyof T, string>;
+        <T extends Record<string, CssDef>>(layer: string, defs: T): Record<keyof T, string>;
     };
-    context(key: any): any;
+    context(Component: Function): any;
     promise: {
         (promise: Function | Promise<any> | Unit): UnitPromise;
         (key: string, promise: Function | Promise<any> | Unit): UnitPromise;
     };
     scope(callback: any): any;
-    find(Component: Function, opts?: {
+    find(Component: Function, options?: {
         key?: any;
+        ancestor?: Unit;
+        parent?: Unit;
     }): Unit[];
     emit(type: string, ...args: any[]): void;
     timeout(callback: Function, duration?: number): UnitTimer;
@@ -184,21 +196,17 @@ interface RoomStatus {
     name: string;
     count: number;
 }
-interface BootServerOptions {
+interface BootOptions {
     io: any;
     room: RoomStatus;
-}
-interface BootClientOptions {
-    io: any;
-    room: RoomStatus;
-    client: any;
+    client?: any;
 }
 declare const xsync: {
     server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
     client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
     state(initial?: Record<string, any>): Record<string, any>;
     register(Components: Record<string, Function>): void;
-    visibleTo(target: string | string[] | ((clientId: string) => boolean) | null): void;
+    visibility(target: ((clientId: string) => boolean) | null): void;
     readonly session: {
         room: RoomStatus;
         clients: ClientStatus[];
@@ -206,7 +214,86 @@ declare const xsync: {
     };
     emitToServer(type: string, props?: Record<string, any>): void;
     emitToClients(type: string, props?: Record<string, any>, ids?: string[]): void;
-    boot(opts: BootServerOptions | BootClientOptions, ...args: any[]): Unit;
+    boot(options: BootOptions, ...args: any[]): Unit;
+};
+
+declare class AudioTrack {
+    readonly promise: Promise<void>;
+    private buffer;
+    private source;
+    private startedAt;
+    private paused;
+    private pausedOffsetMs;
+    private looping;
+    private readonly amp;
+    private readonly fade;
+    constructor({ url, volume, loop }: {
+        url: string;
+        volume?: number;
+        loop?: boolean;
+    });
+    play({ offset, fade: fadeMs, loop: loopArg }?: {
+        offset?: number;
+        fade?: number;
+        loop?: boolean;
+    }): void;
+    pause({ fade: fadeMs }?: {
+        fade?: number;
+    }): void;
+    get status(): 'loading' | 'loaded' | 'playing' | 'paused';
+    get volume(): number;
+    set volume(value: number);
+    clear(): void;
+    private forceStop;
+    private startSource;
+    private stopSource;
+}
+
+type SynthesizerOptions = {
+    oscillator: {
+        type: OscillatorType;
+        envelope?: Envelope;
+        LFO?: {
+            amount: number;
+            type: OscillatorType;
+            rate: number;
+        };
+    };
+    amp: {
+        envelope: Envelope;
+    };
+    filter?: {
+        type: BiquadFilterType;
+        cutoff: number;
+    };
+    reverb?: {
+        time: number;
+        mix: number;
+    };
+    bpm?: number;
+};
+type Envelope = {
+    amount: number;
+    ADSR: [number, number, number, number];
+};
+declare class Synthesizer {
+    private readonly props;
+    private readonly active;
+    constructor(props: SynthesizerOptions);
+    press(frequency: number | string, duration?: number | string, wait?: number): {
+        release: () => void;
+    } | undefined;
+    clear(): void;
+}
+
+declare const xaudio: {
+    load(props: {
+        url: string;
+        volume?: number;
+        loop?: boolean;
+    }): AudioTrack;
+    synthesizer(props: SynthesizerOptions): Synthesizer;
+    volume: number;
 };
 
 declare function Aspect(unit: xnew.Unit, { aspect, fit }?: {
@@ -242,7 +329,7 @@ declare function Image(unit: xnew.Unit, { src, className, style, ...others }: {
     [key: string]: any;
 }): void;
 
-declare function GraphicText(unit: xnew.Unit, { text, className, style, ...others }?: {
+declare function SVGText(unit: xnew.Unit, { text, className, style, ...others }?: {
     text?: string;
     className?: string;
     style?: string;
@@ -258,7 +345,9 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, 
     className?: string;
     style?: string;
     [key: string]: any;
-}): void;
+}): {
+    readonly input: HTMLInputElement;
+};
 
 declare function InputCheckbox(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
     value?: boolean;
@@ -271,7 +360,7 @@ declare function InputCheckbox(unit: xnew.Unit, { value, gate, className, style,
     style?: string;
     [key: string]: any;
 }): {
-    readonly value: boolean;
+    readonly input: HTMLInputElement;
     readonly gate: Unit;
 };
 
@@ -281,7 +370,7 @@ declare function InputText(unit: xnew.Unit, { value, className, style, ...others
     style?: string;
     [key: string]: any;
 }): {
-    readonly value: string;
+    readonly input: HTMLInputElement;
 };
 
 declare function InputNumber(unit: xnew.Unit, { value, className, style, ...others }?: {
@@ -290,7 +379,7 @@ declare function InputNumber(unit: xnew.Unit, { value, className, style, ...othe
     style?: string;
     [key: string]: any;
 }): {
-    readonly value: number;
+    readonly input: HTMLInputElement;
 };
 
 declare function InputSwitch(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
@@ -304,7 +393,7 @@ declare function InputSwitch(unit: xnew.Unit, { value, gate, className, style, .
     style?: string;
     [key: string]: any;
 }): {
-    readonly value: boolean;
+    readonly input: HTMLInputElement;
     readonly gate: Unit;
 };
 
@@ -315,7 +404,9 @@ declare function InputRadio(unit: xnew.Unit, { value, name, checked, className, 
     className?: string;
     style?: string;
     [key: string]: any;
-}): void;
+}): {
+    readonly input: HTMLInputElement;
+};
 
 declare function Listbox(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
     value?: string;
@@ -354,65 +445,6 @@ declare function ListboxItem(unit: xnew.Unit, { value, className, style, ...othe
     check(current: boolean): void;
 };
 
-declare function AudioTrack(unit: xnew.Unit, { url, volume, loop }: {
-    url: string;
-    volume?: number;
-    loop?: boolean;
-}): {
-    play: ({ offset, fade: fadeMs, loop: loopArg }?: {
-        offset?: number;
-        fade?: number;
-        loop?: boolean;
-    }) => void;
-    pause({ fade: fadeMs }?: {
-        fade?: number;
-    }): void;
-    readonly status: "loading" | "loaded" | "playing" | "paused";
-    volume: number;
-};
-
-type SynthesizerOptions = {
-    oscillator: OscillatorOptions;
-    amp: AmpOptions;
-    filter?: FilterOptions;
-    reverb?: ReverbOptions;
-    bpm?: number;
-};
-type OscillatorOptions = {
-    type: OscillatorType;
-    envelope?: Envelope;
-    LFO?: LFO;
-};
-type FilterOptions = {
-    type: BiquadFilterType;
-    cutoff: number;
-};
-type AmpOptions = {
-    envelope: Envelope;
-};
-type ReverbOptions = {
-    time: number;
-    mix: number;
-};
-type Envelope = {
-    amount: number;
-    ADSR: [number, number, number, number];
-};
-type LFO = {
-    amount: number;
-    type: OscillatorType;
-    rate: number;
-};
-declare function Synthesizer(unit: xnew.Unit, props: SynthesizerOptions): {
-    press: (frequency: number | string, duration?: number | string, wait?: number) => {
-        release: () => void;
-    } | undefined;
-};
-
-declare function Volume(unit: xnew.Unit): {
-    volume: number;
-};
-
 declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
     open?: boolean;
     duration?: number;
@@ -436,6 +468,17 @@ declare function Accordion(unit: xnew.Unit, { gate, className, style, ...others 
     [key: string]: any;
 }): {
     readonly gate: Unit;
+};
+
+declare function ColorPicker(unit: xnew.Unit, { value, presets, alpha, className, style, ...others }?: {
+    value?: string;
+    presets?: string[];
+    alpha?: boolean;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    value: string;
 };
 
 declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...others }?: {
@@ -462,29 +505,42 @@ interface PanelOptions {
     name?: string;
     open?: boolean;
     params?: Record<string, any>;
+    key?: any;
+    tab?: string;
     nested?: boolean;
 }
-declare function Panel(unit: xnew.Unit, { params, nested }: PanelOptions): {
-    folder({ name, open, params }: PanelOptions, inner: Function): Unit;
-    button({ name }?: {
+declare function Panel(unit: xnew.Unit, { name, open, params, nested }: PanelOptions): {
+    group({ name, open, params, key, tab }: PanelOptions, inner: Function): Unit;
+    button({ name, key }?: {
         name?: string;
+        key?: any;
     }): Unit;
-    listbox({ name, value, items }?: {
+    listbox({ name, value, items, key }?: {
         name?: string;
         value?: string;
         items?: string[];
+        key?: any;
     }): Unit;
-    range({ name, value, min, max, step }?: {
+    range({ name, value, min, max, step, key }?: {
         name?: string;
         value?: number;
         min?: number;
         max?: number;
         step?: number;
+        key?: any;
     }): Unit;
-    checkbox({ name, value }?: {
+    checkbox({ name, value, key }?: {
         name?: string;
         value?: boolean;
+        key?: any;
     }): Unit;
+    color({ name, value, key }?: {
+        name?: string;
+        value?: string;
+        key?: any;
+    }): Unit & {
+        readonly value: string;
+    };
     separator(): void;
 };
 
@@ -501,7 +557,7 @@ declare const xbasics: {
     Scene: typeof Scene;
     Button: typeof Button;
     Image: typeof Image;
-    GraphicText: typeof GraphicText;
+    SVGText: typeof SVGText;
     InputRange: typeof InputRange;
     InputCheckbox: typeof InputCheckbox;
     InputText: typeof InputText;
@@ -512,11 +568,9 @@ declare const xbasics: {
     ListboxButton: typeof ListboxButton;
     ListboxMenu: typeof ListboxMenu;
     ListboxItem: typeof ListboxItem;
-    AudioTrack: typeof AudioTrack;
-    Synthesizer: typeof Synthesizer;
-    Volume: typeof Volume;
     Gate: typeof Gate;
     Accordion: typeof Accordion;
+    ColorPicker: typeof ColorPicker;
     Overlay: typeof Overlay;
     VirtualPad: typeof VirtualPad;
     Panel: typeof Panel;
@@ -529,8 +583,49 @@ type IconProps = {
     style?: string;
     [key: string]: any;
 };
-
 type IconComponent = (unit: xnew.Unit, props?: IconProps) => void;
 declare const xicons: Record<"AcademicCap" | "AdjustmentsHorizontal" | "AdjustmentsVertical" | "ArchiveBoxArrowDown" | "ArchiveBoxXMark" | "ArchiveBox" | "ArrowDownCircle" | "ArrowDownLeft" | "ArrowDownOnSquareStack" | "ArrowDownOnSquare" | "ArrowDownRight" | "ArrowDownTray" | "ArrowDown" | "ArrowLeftCircle" | "ArrowLeftEndOnRectangle" | "ArrowLeftOnRectangle" | "ArrowLeftStartOnRectangle" | "ArrowLeft" | "ArrowLongDown" | "ArrowLongLeft" | "ArrowLongRight" | "ArrowLongUp" | "ArrowPathRoundedSquare" | "ArrowPath" | "ArrowRightCircle" | "ArrowRightEndOnRectangle" | "ArrowRightOnRectangle" | "ArrowRightStartOnRectangle" | "ArrowRight" | "ArrowSmallDown" | "ArrowSmallLeft" | "ArrowSmallRight" | "ArrowSmallUp" | "ArrowTopRightOnSquare" | "ArrowTrendingDown" | "ArrowTrendingUp" | "ArrowTurnDownLeft" | "ArrowTurnDownRight" | "ArrowTurnLeftDown" | "ArrowTurnLeftUp" | "ArrowTurnRightDown" | "ArrowTurnRightUp" | "ArrowTurnUpLeft" | "ArrowTurnUpRight" | "ArrowUpCircle" | "ArrowUpLeft" | "ArrowUpOnSquareStack" | "ArrowUpOnSquare" | "ArrowUpRight" | "ArrowUpTray" | "ArrowUp" | "ArrowUturnDown" | "ArrowUturnLeft" | "ArrowUturnRight" | "ArrowUturnUp" | "ArrowsPointingIn" | "ArrowsPointingOut" | "ArrowsRightLeft" | "ArrowsUpDown" | "AtSymbol" | "Backspace" | "Backward" | "Banknotes" | "Bars2" | "Bars3BottomLeft" | "Bars3BottomRight" | "Bars3CenterLeft" | "Bars3" | "Bars4" | "BarsArrowDown" | "BarsArrowUp" | "Battery0" | "Battery100" | "Battery50" | "Beaker" | "BellAlert" | "BellSlash" | "BellSnooze" | "Bell" | "Bold" | "BoltSlash" | "Bolt" | "BookOpen" | "BookmarkSlash" | "BookmarkSquare" | "Bookmark" | "Briefcase" | "BugAnt" | "BuildingLibrary" | "BuildingOffice2" | "BuildingOffice" | "BuildingStorefront" | "Cake" | "Calculator" | "CalendarDateRange" | "CalendarDays" | "Calendar" | "Camera" | "ChartBarSquare" | "ChartBar" | "ChartPie" | "ChatBubbleBottomCenterText" | "ChatBubbleBottomCenter" | "ChatBubbleLeftEllipsis" | "ChatBubbleLeftRight" | "ChatBubbleLeft" | "ChatBubbleOvalLeftEllipsis" | "ChatBubbleOvalLeft" | "CheckBadge" | "CheckCircle" | "Check" | "ChevronDoubleDown" | "ChevronDoubleLeft" | "ChevronDoubleRight" | "ChevronDoubleUp" | "ChevronDown" | "ChevronLeft" | "ChevronRight" | "ChevronUpDown" | "ChevronUp" | "CircleStack" | "ClipboardDocumentCheck" | "ClipboardDocumentList" | "ClipboardDocument" | "Clipboard" | "Clock" | "CloudArrowDown" | "CloudArrowUp" | "Cloud" | "CodeBracketSquare" | "CodeBracket" | "Cog6Tooth" | "Cog8Tooth" | "Cog" | "CommandLine" | "ComputerDesktop" | "CpuChip" | "CreditCard" | "CubeTransparent" | "Cube" | "CurrencyBangladeshi" | "CurrencyDollar" | "CurrencyEuro" | "CurrencyPound" | "CurrencyRupee" | "CurrencyYen" | "CursorArrowRays" | "CursorArrowRipple" | "DevicePhoneMobile" | "DeviceTablet" | "Divide" | "DocumentArrowDown" | "DocumentArrowUp" | "DocumentChartBar" | "DocumentCheck" | "DocumentCurrencyBangladeshi" | "DocumentCurrencyDollar" | "DocumentCurrencyEuro" | "DocumentCurrencyPound" | "DocumentCurrencyRupee" | "DocumentCurrencyYen" | "DocumentDuplicate" | "DocumentMagnifyingGlass" | "DocumentMinus" | "DocumentPlus" | "DocumentText" | "Document" | "EllipsisHorizontalCircle" | "EllipsisHorizontal" | "EllipsisVertical" | "EnvelopeOpen" | "Envelope" | "Equals" | "ExclamationCircle" | "ExclamationTriangle" | "EyeDropper" | "EyeSlash" | "Eye" | "FaceFrown" | "FaceSmile" | "Film" | "FingerPrint" | "Fire" | "Flag" | "FolderArrowDown" | "FolderMinus" | "FolderOpen" | "FolderPlus" | "Folder" | "Forward" | "Funnel" | "Gif" | "GiftTop" | "Gift" | "GlobeAlt" | "GlobeAmericas" | "GlobeAsiaAustralia" | "GlobeEuropeAfrica" | "H1" | "H2" | "H3" | "HandRaised" | "HandThumbDown" | "HandThumbUp" | "Hashtag" | "Heart" | "HomeModern" | "Home" | "Identification" | "InboxArrowDown" | "InboxStack" | "Inbox" | "InformationCircle" | "Italic" | "Key" | "Language" | "Lifebuoy" | "LightBulb" | "LinkSlash" | "Link" | "ListBullet" | "LockClosed" | "LockOpen" | "MagnifyingGlassCircle" | "MagnifyingGlassMinus" | "MagnifyingGlassPlus" | "MagnifyingGlass" | "MapPin" | "Map" | "Megaphone" | "Microphone" | "MinusCircle" | "MinusSmall" | "Minus" | "Moon" | "MusicalNote" | "Newspaper" | "NoSymbol" | "NumberedList" | "PaintBrush" | "PaperAirplane" | "PaperClip" | "PauseCircle" | "Pause" | "PencilSquare" | "Pencil" | "PercentBadge" | "PhoneArrowDownLeft" | "PhoneArrowUpRight" | "PhoneXMark" | "Phone" | "Photo" | "PlayCircle" | "PlayPause" | "Play" | "PlusCircle" | "PlusSmall" | "Plus" | "Power" | "PresentationChartBar" | "PresentationChartLine" | "Printer" | "PuzzlePiece" | "QrCode" | "QuestionMarkCircle" | "QueueList" | "Radio" | "ReceiptPercent" | "ReceiptRefund" | "RectangleGroup" | "RectangleStack" | "RocketLaunch" | "Rss" | "Scale" | "Scissors" | "ServerStack" | "Server" | "Share" | "ShieldCheck" | "ShieldExclamation" | "ShoppingBag" | "ShoppingCart" | "SignalSlash" | "Signal" | "Slash" | "Sparkles" | "SpeakerWave" | "SpeakerXMark" | "Square2Stack" | "Square3Stack3d" | "Squares2x2" | "SquaresPlus" | "Star" | "StopCircle" | "Stop" | "Strikethrough" | "Sun" | "Swatch" | "TableCells" | "Tag" | "Ticket" | "Trash" | "Trophy" | "Truck" | "Tv" | "Underline" | "UserCircle" | "UserGroup" | "UserMinus" | "UserPlus" | "User" | "Users" | "Variable" | "VideoCameraSlash" | "VideoCamera" | "ViewColumns" | "ViewfinderCircle" | "Wallet" | "Wifi" | "Window" | "WrenchScrewdriver" | "Wrench" | "XCircle" | "XMark", IconComponent>;
 
-export { xbasics, xicons, xnew, xsync };
+interface TextureRange {
+    min: number;
+    max: number;
+}
+type TexturePreset = Record<string, number | number[]>;
+type TexturePresets = {
+    standard: TexturePreset;
+} & Record<string, TexturePreset>;
+interface TextureSource {
+    name: string;
+    glsl: string;
+    ranges: Record<string, TextureRange>;
+    presets: TexturePresets;
+}
+type TextureChannel = 'color' | 'normal';
+interface TextureRenderer {
+    render(params?: TexturePreset): void;
+    dispose(): void;
+}
+interface RendererOptions {
+    worldSize?: number;
+    channel?: TextureChannel;
+    tile?: boolean;
+}
+interface BakeOptions extends RendererOptions {
+    size?: {
+        width: number;
+        height: number;
+    };
+    params?: TexturePreset;
+}
+interface Texture extends TextureSource {
+    entry: string;
+    bake(options?: BakeOptions): ImageBitmap;
+    renderer(canvas: HTMLCanvasElement, options?: RendererOptions): TextureRenderer;
+}
+declare const xtextures: {
+    wood: Texture;
+    tatami: Texture;
+    carpet: Texture;
+};
+
+export { xaudio, xbasics, xicons, xnew, xsync, xtextures };

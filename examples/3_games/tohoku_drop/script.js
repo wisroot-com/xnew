@@ -4,13 +4,24 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import voxelkit from 'voxelkit';
-import { xnew, xbasics, xicons } from '@mulsense/xnew';
+import { xnew, xaudio, xbasics, xicons } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 import { xthree } from '@mulsense/xnew/addons/xthree';
 import { xmatter } from '@mulsense/xnew/addons/xmatter';
 import html2canvas from 'html2canvas-pro';
 
 xnew(document.querySelector('#main'), Main);
+
+// canvas 2D 座標をワールドの z 平面上の 3D 座標へ写す（near/far を unproject して視線と z 平面の交点を取る）
+function coord2dTo3d(x, y, z = 0) {
+  const camera = xthree.camera;
+  camera.updateMatrixWorld();
+  const nx = (x / xthree.canvas.width) * 2 - 1;
+  const ny = -(y / xthree.canvas.height) * 2 + 1;
+  const near = new THREE.Vector3(nx, ny, -1).unproject(camera);
+  const direction = new THREE.Vector3(nx, ny, +1).unproject(camera).sub(near);
+  return near.add(direction.multiplyScalar((z - near.z) / direction.z));
+}
 
 function Main(unit) {
   const [width, height] = [800, 600];
@@ -63,7 +74,7 @@ function TitleScene(unit) {
   xnew(AmbientLight);
 
   for (let id = 0; id < 7; id++) {
-    const position = xthree.coord2dTo3d(140 + id * 90, 450);
+    const position = coord2dTo3d(140 + id * 90, 450);
     const rotation = { x: 10 / 180 * Math.PI, y: (-10 - 3 * id) / 180 * Math.PI, z: 0 };
     xnew(Model, { position, rotation, id, scale: 0.8 });
   }
@@ -97,7 +108,7 @@ function GameScene(unit) {
 
   const playing = xnew((unit) => {
     xnew(Controller);
-    xnew(xbasics.AudioTrack, { url: '../../assets/y015.mp3' }).play({ fade: 1000, loop: true });
+    xaudio.load({ url: '../../assets/y015.mp3' }).play({ fade: 1000, loop: true });
   })
 
   // xnew.timeout(() => xnew.emit('+gameover'), 1100);
@@ -110,7 +121,7 @@ function GameScene(unit) {
     xpixi.renderer.render(xpixi.scene); // preserveDrawingBuffer なしでも同一タスク内の描画直後なら canvas が写る
     const image = html2canvas(document.querySelector('#main'), {
       scale: 2, logging: false, useCORS: true,
-      ignoreElements: (element) => element === gameover.element,
+      ignoreElements: (element) => element === gameover.current,
     }).then((canvas) => canvas.toDataURL('image/png'));
 
     xnew.timeout(() => {
@@ -122,12 +133,12 @@ function GameScene(unit) {
 function ResultScene(unit, { image }) {
   xnew.extend(xbasics.Scene);
   
-  xnew(xbasics.AudioTrack, { url: '../../assets/st005.mp3' }).play({ fade: 1, loop: true });
+  xaudio.load({ url: '../../assets/st005.mp3' }).play({ fade: 1, loop: true });
 
   // popup
   xnew.nest(`<div class="absolute inset-0 size-full">`);
   xnew.transition(({ value }) => {
-    Object.assign(unit.element.style, { opacity: value, transform: `scale(${0.8 + value * 0.2})` });
+    Object.assign(unit.current.style, { opacity: value, transform: `scale(${0.8 + value * 0.2})` });
   }, 500, 'ease');
 
   xnew(ResultBackground, { gradient: 'from-stone-300 to-stone-400', textColor: 'text-stone-400' });
@@ -143,10 +154,10 @@ function ThreeTexture(unit) {
 
 function ScoreText(unit) {
   xnew.nest('<div class="absolute top-[1cqw] right-[2cqw] w-full text-right text-green-600 font-bold">');
-  const text = xnew(xbasics.GraphicText, { text: 'score 0', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
+  const text = xnew(xbasics.SVGText, { text: 'score 0', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   let sum = 0;
   unit.on('+scoreup', ({ score }) => {
-    text.element.textContent = `score ${sum += Math.pow(2, score)}`;
+    text.current.textContent = `score ${sum += Math.pow(2, score)}`;
     xnew.context(GameData).scores[score]++;
   });
 }
@@ -214,19 +225,19 @@ function Queue(unit) {
   const balls = [...Array(4)].map(() => Math.floor(Math.random() * 3));
   xnew.emit('+relode:done', { id: 0 });
 
-  const position = xthree.coord2dTo3d(10 + 70, 70);
+  const position = coord2dTo3d(10 + 70, 70);
   const rotation = { x: 30 / 180 * Math.PI, y: 60 / 180 * Math.PI, z: 0 };
   let model = xnew(Model, { position, rotation, id: balls[0], scale: 0.6 });
 
   unit.on('+reload', () => {
-    const position = xthree.coord2dTo3d(10, 70);
+    const position = coord2dTo3d(10, 70);
     const rotation = { x: 30 / 180 * Math.PI, y: 60 / 180 * Math.PI, z: 0 };
     model.finalize();
     model = xnew(Model, { position, rotation, id: balls[1], scale: 0.6 });
 
     balls.push(Math.floor(Math.random() * 3));
     xnew.transition(({ value }) => {
-      const position = xthree.coord2dTo3d(10 + value * 70, 70);
+      const position = coord2dTo3d(10 + value * 70, 70);
       model.threeObject.position.set(position.x, position.y, position.z);
     }, 500).timeout(() => xnew.emit('+relode:done', { id: balls.shift() }));
   });
@@ -295,7 +306,7 @@ function Cursor(unit) {
   const offset = 50;
   let model = null
   unit.on('+relode:done', ({ id }) => {
-    const position = xthree.coord2dTo3d(object.x, object.y + offset);
+    const position = coord2dTo3d(object.x, object.y + offset);
     model = xnew(Model, { position, id, scale: 0.5 });
   });
   unit.on('+drop', () => {
@@ -308,7 +319,7 @@ function Cursor(unit) {
   });
   unit.on('update', () => {
     object.rotation += 0.02;
-    const position = xthree.coord2dTo3d(object.x, object.y + offset);
+    const position = coord2dTo3d(object.x, object.y + offset);
     model?.threeObject.position.set(position.x, position.y, position.z);
   });
 }
@@ -322,7 +333,7 @@ function ModelBall(ball, { x, y, id = 0 }) {
   const now = new Date().getTime();
   if (now - prev > 200) {
     prev = now;
-    const synth = xnew(xbasics.Synthesizer, { oscillator: { type: 'triangle', envelope: { amount: 8, ADSR: [0, 500, 1, 0], }, }, filter: { type: 'bandpass', cutoff: 1000}, amp: { envelope: { amount: 1, ADSR: [20, 100, 0, 0], }, }, reverb: { time: 1000, mix: 0.2, },  });
+    const synth = xaudio.synthesizer({ oscillator: { type: 'triangle', envelope: { amount: 8, ADSR: [0, 500, 1, 0], }, }, filter: { type: 'bandpass', cutoff: 1000}, amp: { envelope: { amount: 1, ADSR: [20, 100, 0, 0], }, }, reverb: { time: 1000, mix: 0.2, },  });
     synth.press(['C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', 'C6'][id], 100);
   }
 
@@ -332,7 +343,7 @@ function ModelBall(ball, { x, y, id = 0 }) {
   xnew.context(xbasics.Scene).add(StarParticles, { x, y });
   
   ball.on('update', () => {
-    const position = xthree.coord2dTo3d(ball.pixiObject.x, ball.pixiObject.y);
+    const position = coord2dTo3d(ball.pixiObject.x, ball.pixiObject.y);
     model.threeObject.position.set(position.x, position.y, position.z);
     model.threeObject.rotation.z = -ball.pixiObject.rotation;
     if (ball.pixiObject.y > xpixi.canvas.height) {
@@ -411,9 +422,9 @@ function Circle(unit, { x, y, radius, color = 0xFFFFFF, alpha = 1.0, options = {
 // 生成時に渡された要素を白で覆ってからフェードアウトしつつ撮影し、PNG をダウンロードする。
 function ScreenShot(unit) {
   const cover = xnew('<div class="absolute inset-0 size-full z-10 bg-white">');
-  xnew.transition(({ value }) => cover.element.style.opacity = 1 - value, 1000)
+  xnew.transition(({ value }) => cover.current.style.opacity = 1 - value, 1000)
     .timeout(() => {
-      html2canvas(unit.element, { scale: 2, logging: false, useCORS: true }).then((canvas) => {
+      html2canvas(unit.current, { scale: 2, logging: false, useCORS: true }).then((canvas) => {
         // 下部 13% のフッターを除いた領域を切り出して PNG としてダウンロードする。
         const [width, height] = [canvas.width, Math.floor(canvas.height * 0.87)];
         const cropped = document.createElement('canvas');
@@ -458,7 +469,7 @@ function ResultBackground(unit, { gradient, textColor }) {
     const circle = xnew(`<div class="absolute rounded-full bg-white" style="width: ${sizeCqw}cqw; height: ${sizeCqw}cqw; left: ${x}%; top: ${y}%; opacity: 0.2;">`);
     circle.on('update', ({ count }) => {
       const p = count * 0.02;
-      Object.assign(circle.element.style, { opacity: Math.sin(p) * 0.1 + 0.2, transform: transform(p) });
+      Object.assign(circle.current.style, { opacity: Math.sin(p) * 0.1 + 0.2, transform: transform(p) });
     });
   }
 
@@ -470,25 +481,25 @@ function ResultBackground(unit, { gradient, textColor }) {
   }
 }
 
-// タイトルの見出し（縁取り GraphicText）。text=文言 / color="text-..."。
+// タイトルの見出し（縁取り SVGText）。text=文言 / color="text-..."。
 function TitleText(unit, { text, color }) {
   xnew.nest(`<div class="absolute w-full top-[16cqw] text-center ${color} font-bold">`);
-  xnew(xbasics.GraphicText, { text, fontSize: '10cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
+  xnew(xbasics.SVGText, { text, fontSize: '10cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
 }
 
 // 点滅する "touch start"。color="text-..."。
 function TouchMessage(unit, { color }) {
   xnew.nest(`<div class="absolute w-full top-[30cqw] text-center ${color} font-bold">`);
-  xnew(xbasics.GraphicText, { text: 'touch start', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
-  unit.on('update', ({ count }) => unit.element.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
+  xnew(xbasics.SVGText, { text: 'touch start', fontSize: '6cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
+  unit.on('update', ({ count }) => unit.current.style.opacity = 0.6 + Math.sin(count * 0.08) * 0.4);
 }
 
 // 中央に降りてくる "Game Over"。className で横位置を調整（既定は全幅中央）。
 function GameOverText(unit, { className = 'w-full' }) {
   xnew.nest(`<div class="absolute ${className} text-center text-red-400 font-bold">`);
-  xnew(xbasics.GraphicText, { text: 'Game Over', fontSize: '12cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
+  xnew(xbasics.SVGText, { text: 'Game Over', fontSize: '12cqw', style: 'stroke: #EEEEEE; stroke-width: 0.2cqw;' });
   xnew.transition(({ value }) => {
-    Object.assign(unit.element.style, { opacity: value, top: `${10 + value * 15}cqw` });
+    Object.assign(unit.current.style, { opacity: value, top: `${10 + value * 15}cqw` });
   }, 1000, 'ease');
 }
 

@@ -148,18 +148,18 @@ export function BlockBUtton(unit, { text }) {
 
   let count = 0;
   unit.on('update', () => {
-    unit.element.style.opacity = 0.9 + Math.sin(count * 0.04) * 0.1;
+    unit.current.style.opacity = 0.9 + Math.sin(count * 0.04) * 0.1;
     count++;
   });
 }
 
 export function GrowText(unit, { text }) {
   xnew.nest('<div style="text-shadow: 0 0 0.5cqw currentColor;">');
-  unit.element.textContent = text;
+  unit.current.textContent = text;
 
   let count = 0;
   unit.on('update', () => {
-    unit.element.style.textShadow = `0 0 ${0.6 + Math.sin(count * 0.04) * 0.1}cqw currentColor`;
+    unit.current.style.textShadow = `0 0 ${0.6 + Math.sin(count * 0.04) * 0.1}cqw currentColor`;
     count++;
   });
 }
@@ -170,9 +170,9 @@ export function TextStream(unit, { text = '', speed = 50, fade = 300 } = {}) {
 
     for (let i = 0; i < text.length; i++) {
         const unit = xnew('<span>');
-        unit.element.textContent = text[i];
-        unit.element.style.opacity = '0';
-        unit.element.style.transition = `opacity ${fade}ms ease-in-out`;
+        unit.current.textContent = text[i];
+        unit.current.style.opacity = '0';
+        unit.current.style.transition = `opacity ${fade}ms ease-in-out`;
         chars.push(unit);
     }
 
@@ -188,7 +188,7 @@ export function TextStream(unit, { text = '', speed = 50, fade = 300 } = {}) {
         // Display characters up to the current index (fade in)
         for (let i = 0; i < chars.length; i++) {
             if (i <= index) {
-                chars[i].element.style.opacity = '1';
+                chars[i].current.style.opacity = '1';
             }
         }
         if (state === 0 && index >= text.length) {
@@ -203,7 +203,7 @@ export function TextStream(unit, { text = '', speed = 50, fade = 300 } = {}) {
         if (state === 0) {
             state = 1;
             for (let i = 0; i < chars.length; i++) {
-                chars[i].element.style.opacity = '1';
+                chars[i].current.style.opacity = '1';
             }
             xnew.emit('-complete');
         } else if (state === 1) {

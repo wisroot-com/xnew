@@ -1,5 +1,5 @@
 import { Unit } from '../../src/core/unit';
-import { syncOf } from '../../src/sync/xsync';
+import { syncData } from '../../src/sync/xsync';
 import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, bootClient, asServer, asServerAsync, asClient } from './io-mock';
 
@@ -57,10 +57,10 @@ describe('2-level spawn hierarchy (Mover -> Enemy)', () => {
         asClient(() => Unit.update(client));
 
         const replicaMover = client._.children[0];
-        expect(syncOf(replicaMover).id).toBe(moverNode.id);
-        const replicaEnemy = replicaMover._.children.find(c => syncOf(c).id === enemyNode.id)!;
+        expect(syncData(replicaMover).id).toBe(moverNode.id);
+        const replicaEnemy = replicaMover._.children.find(c => syncData(c).id === enemyNode.id)!;
         expect(replicaEnemy).toBeDefined();                  // replica 側も Mover -> Enemy の 2 階層
-        expect(syncOf(replicaEnemy).state!.x).toBe(enemyNode.state.x);
+        expect(syncData(replicaEnemy).state!.x).toBe(enemyNode.state.x);
     });
 
     it('despawns Enemy after its lifetime and removes that replica', async () => {
@@ -72,12 +72,12 @@ describe('2-level spawn hierarchy (Mover -> Enemy)', () => {
         const replicaMover = client._.children[0];
         expect(replicaMover._.children.length).toBe(1);
         const firstEnemy = replicaMover._.children[0];
-        const firstId = syncOf(firstEnemy).id;
+        const firstId = syncData(firstEnemy).id;
 
         await asServerAsync(() => jest.advanceTimersByTimeAsync(1000));   // 最初の Enemy の寿命経過 → server 側 finalize
         asServer(() => Unit.update(server));                   // capture + 'sync' → client apply
         // 最初の Enemy は replica からも消える（interval で別の Enemy は spawn され続ける）
         expect(firstEnemy._.phase).toBe('finalized');
-        expect(replicaMover._.children.some(c => syncOf(c).id === firstId)).toBe(false);
+        expect(replicaMover._.children.some(c => syncData(c).id === firstId)).toBe(false);
     });
 });

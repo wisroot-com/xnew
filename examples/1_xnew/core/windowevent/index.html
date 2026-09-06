@@ -46,7 +46,7 @@
     function Console(unit, { title, key }) {
       xnew('<p>', title);
       const div = xnew('<div class="m-0.5 p-1 rounded bg-gray-200">', 'Console')
-      div.on(key, ({ text }) => div.element.textContent = text);
+      div.on(key, ({ text }) => div.current.textContent = text);
     }
   </script>
 </body>

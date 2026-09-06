@@ -70,15 +70,15 @@ function TitleScene(unit) {
 }
 
 function Fade(unit, { fadein, fadeout }) {
-  const internal = xnew(xnew.find(Main)[0].element, () => {
+  const internal = xnew(xnew.find(Main)[0].current, () => {
     const cover = xnew('<div class="absolute inset-0 size-full z-10 bg-black" style="opacity: 0">');
 
     let timer;
     if (fadeout) {
-      timer = xnew.transition(({ value }) => cover.element.style.opacity = value, fadeout, 'ease').timeout((() => xnew.emit('-fadeout')));
+      timer = xnew.transition(({ value }) => cover.current.style.opacity = value, fadeout, 'ease').timeout((() => xnew.emit('-fadeout')));
     }
     if (fadein) {
-      timer = (timer ?? xnew).transition(({ value }) => cover.element.style.opacity = 1 - value, fadein, 'ease');
+      timer = (timer ?? xnew).transition(({ value }) => cover.current.style.opacity = 1 - value, fadein, 'ease');
     }
     timer.timeout(() => {
       xnew.emit('-fadein')
@@ -211,11 +211,11 @@ function TitleText(unit) {
         xnew.extend(GrowText, { text: text[i] });
 
         let offset = { x: Math.random() * 40 - 20, y: Math.random() * 40 - 20, a: Math.random() * 4 - 2, s: Math.random() * 1 - 0.5 };
-        unit.element.style.transform = `translate(${offset.x}cqw, ${offset.y}cqw)`;
+        unit.current.style.transform = `translate(${offset.x}cqw, ${offset.y}cqw)`;
 
         xnew.transition(({ value }) => {
-          unit.element.style.opacity = value;
-          unit.element.style.transform = `translate(${offset.x * (1 - value)}cqw, ${offset.y * (1 - value)}cqw) rotate(${offset.a * (1 - value)}rad) scale(${1 + offset.s * (1 - value)})`;
+          unit.current.style.opacity = value;
+          unit.current.style.transform = `translate(${offset.x * (1 - value)}cqw, ${offset.y * (1 - value)}cqw) rotate(${offset.a * (1 - value)}rad) scale(${1 + offset.s * (1 - value)})`;
         }, 4000, 'ease');
       });
       chars.push(unit);
@@ -435,10 +435,10 @@ function Box(box, { x, y }) {
 function GameClearText(unit) {
   xnew.nest('<div class="absolute w-full text-center text-[14cqw] text-green-600">');
   
-  unit.element.textContent = '生還!';
+  unit.current.textContent = '生還!';
   xnew.transition(({ value }) => {
-    unit.element.style.opacity = value;
-    unit.element.style.top = `${16 + value * 10}cqh`;
+    unit.current.style.opacity = value;
+    unit.current.style.top = `${16 + value * 10}cqh`;
   }, 1000, 'ease');
 }
 
@@ -488,7 +488,7 @@ function RightBlock(unit, { id }) {
     const canvas = xnew(`<canvas width="${width}" height="${height}" class="size-full align-bottom">`);
 
     const camera = new THREE.OrthographicCamera(-1, +1, +1, -1, 0, 100);
-    xthree.initialize({ canvas: canvas.element, camera });
+    xthree.initialize({ canvas: canvas.current, camera });
     xthree.renderer.shadowMap.enabled = true;
     xthree.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     xthree.camera.position.set(0, 0, +10);

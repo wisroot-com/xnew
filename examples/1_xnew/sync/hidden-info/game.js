@@ -1,9 +1,9 @@
 //----------------------------------------------------------------------------------------------------
-// hidden-info game — per-client state フィルタ（xsync.visibleTo）のサンプル。server/client 共通で動く。
+// hidden-info game — per-client state フィルタ（xsync.visibility）のサンプル。server/client 共通で動く。
 //   サーバーは接続クライアントごとに PlayerView を 1 つ持ち、それぞれ秘密の数字を state に載せる。だが
-//   PlayerView は xsync.visibleTo(ownerId) で「その所有者にだけ見える」と宣言してあるので、各クライアント
+//   PlayerView は xsync.visibility の述語で「その所有者にだけ見える」と宣言してあるので、各クライアント
 //   には自分ぶんの PlayerView しか届かない（他人の数字はワイヤに載らない＝ DevTools でも見えない）。
-//   「いっせいに公開」を押すと revealed が立ち、visibleTo の述語が全員 true を返すので全員ぶんが広がる。
+//   「いっせいに公開」を押すと revealed が立ち、visibility の述語が全員 true を返すので全員ぶんが広がる。
 //----------------------------------------------------------------------------------------------------
 
 import { xnew, xsync } from '@mulsense/xnew';
@@ -28,7 +28,7 @@ export function Game(unit) {
     });
 }
 
-// ---- Board: 公開ノード（visibleTo を宣言しない＝全員に届く）。参加人数と公開状態を共有する ----
+// ---- Board: 公開ノード（visibility を宣言しない＝全員に届く）。参加人数と公開状態を共有する ----
 function Board(unit) {
     const state = xsync.state({ players: 0, revealed: false });
 
@@ -43,8 +43,8 @@ function Board(unit) {
         const reveal = xnew('<button class="mt-2 px-3 py-1.5 rounded border-0 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm cursor-pointer">', 'いっせいに公開');
         reveal.on('click', () => xsync.emitToServer('reveal'));   // server の全 PlayerView / Board へ届く
         unit.on('update', () => {
-            info.element.textContent = `参加者 ${state.players} 人 / ${state.revealed ? '公開済み（全員の数字が見えます）' : '各自の数字は本人だけに見えています'}`;
-            reveal.element.disabled = state.revealed;
+            info.current.textContent = `参加者 ${state.players} 人 / ${state.revealed ? '公開済み（全員の数字が見えます）' : '各自の数字は本人だけに見えています'}`;
+            reveal.current.disabled = state.revealed;
         });
     });
 }
@@ -55,8 +55,8 @@ export function PlayerView(unit, { ownerId = '' } = {}) {
 
     xsync.server(() => {
         state.secret = 1 + Math.floor(Math.random() * 100);
-        // visibleTo の述語は capture のたびに再評価される。revealed が立つと全員 true になり、公開へ広がる。
-        xsync.visibleTo((clientId) => state.revealed || clientId === state.ownerId);
+        // visibility の述語は capture のたびに再評価される。revealed が立つと全員 true になり、公開へ広がる。
+        xsync.visibility((clientId) => state.revealed || clientId === state.ownerId);
         unit.on('reveal', () => { state.revealed = true; });
     });
 
@@ -66,7 +66,7 @@ export function PlayerView(unit, { ownerId = '' } = {}) {
         const label = xnew('<p class="m-0 text-sm font-medium text-gray-700">');
         unit.on('update', () => {
             const who = mine ? 'あなた' : `プレイヤー ${state.ownerId.slice(0, 4)}`;
-            label.element.textContent = `${who} の秘密の数字: ${state.secret}`;
+            label.current.textContent = `${who} の秘密の数字: ${state.secret}`;
         });
     });
 }

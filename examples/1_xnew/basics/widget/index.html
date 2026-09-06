@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {
+      "imports": {
+        "@mulsense/xnew": "../../../dist/xnew.mjs"
+      }
+    }
+  </script>
+  <script src="../../../thirdparty/tailwindcss/playcdn.js"></script>
+</head>
+
+<body class="m-0 p-0 w-full h-screen overflow-hidden">
+  <div id="main" class="relative w-full h-full"></div>
+  <script type="module">
+    import { xnew, xbasics, xicons } from '@mulsense/xnew';
+
+    xnew(document.querySelector('#main'), (unit) => {
+      xnew.nest('<div class="p-2 flex flex-col items-start gap-y-2">');
+
+      const textunit = xnew('<div class="m-0.5 p-1 rounded bg-gray-200">', 'Console');
+      textunit.on('+console', ({ text }) => textunit.current.textContent = text);
+
+      xnew('<div class="flex items-baseline gap-x-2">', () => {
+        xnew(MyAccordion);
+
+        const button1 = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open modal!');
+        button1.on('click', () => xnew(MyModal));
+
+        const button2 = xnew('<button class="h-8 px-2 border rounded-lg cursor-pointer hover:bg-gray-200">', 'open menu!');
+        button2.on('click', () => xnew(MyMenu, { anchor: button2.current }));
+      });
+
+      xnew(MyColorPicker);
+
+      xnew(MyVirtualPad);
+
+      xnew(MyPanel);
+    });
+
+    function MyVirtualPad(unit) {
+      // arena stays in the page flow; the pads drive the box via '+move'
+      xnew('<div class="relative w-48 h-24 border rounded-lg overflow-hidden">', (unit) => {
+        const box = xnew('<div class="absolute size-6 inset-0 m-auto bg-blue-500 rounded">');
+        const current = { x: 0, y: 0, r: 0 };
+        let move = { x: 0, y: 0 };
+        unit.on('+move', ({ vector }) => move = vector);
+
+        unit.on('update', () => {
+          current.x = Math.max(-84, Math.min(84, current.x + move.x * 2));
+          current.y = Math.max(-36, Math.min(36, current.y + move.y * 2));
+          current.r += 1;
+          box.current.style.transform = `translate(${current.x}px, ${current.y}px) rotate(${current.r}deg)`;
+        });
+      });
+
+      // pads pinned to the screen's bottom corners; the strip lets clicks through, only the pads take them
+      xnew('<div class="absolute left-0 right-0 bottom-0 h-[30%] pointer-events-none select-none" style="container-type: size;">', (unit) => {
+        // prevent touch scroll / long-press menu while operating the pads (their events bubble here)
+        unit.on('touchstart contextmenu', ({ event }) => event.preventDefault());
+
+        const dpad = xnew(xbasics.VirtualPad, { type: '8way', className: 'pointer-events-auto absolute left-[5cqh] bottom-[5cqh] w-[90cqh] h-[90cqh]' });
+        const stick = xnew(xbasics.VirtualPad, { type: 'analog', className: 'pointer-events-auto absolute right-[5cqh] bottom-[5cqh] w-[90cqh] h-[90cqh]' });
+        [dpad, stick].forEach((pad) => pad.on('-down -move -up', ({ vector }) => xnew.emit('+move', { vector })));
+      });
+    }
+
+    function MyColorPicker(unit) {
+      xnew.nest('<div class="flex items-start gap-x-2">');
+
+      const picker = xnew(xbasics.ColorPicker, { value: '#4A90E2' });
+
+      xnew('<div class="flex flex-col items-center gap-y-1">', () => {
+        const box = xnew('<div class="w-24 h-24 rounded-lg border">');
+        const label = xnew('<div class="text-sm">', picker.value);
+        box.current.style.background = picker.value;
+
+        picker.on('-change', ({ value }) => {
+          box.current.style.background = value;
+          label.current.textContent = value;
+          xnew.emit('+console', { text: `color changed to ${value}` });
+        });
+      });
+    }
+
+    function MyAccordion(unit) {
+      xnew.nest('<div class="w-64 border rounded-lg">');
+
+      const gate = xnew(xbasics.Gate, { open: false, duration: 200 });
+      xnew('<div class="flex items-center select-none cursor-pointer">', (header) => {
+        const chevron = xnew((unit) => xnew.extend(xicons.ChevronRight, { className: 'size-4' }));
+        gate.on('-transition', ({ value }) => chevron.current.style.transform = `rotate(${value * 90}deg)`);
+        xnew('<div class="my-2">', 'accordion (click me!)');
+        header.on('click', () => gate.toggle());
+      });
+
+      xnew.extend(xbasics.Accordion, { gate });
+
+      xnew('<div class="p-2 border-t">', Contents);
+    }
+
+    function MyModal(unit) {
+      xnew.extend(xbasics.Overlay, { gate: { open: false, duration: 200 }, className: 'bg-black/10' });
+      unit.gate.on('-closed', () => unit.finalize());
+      unit.gate.open();
+
+      xnew.nest('<div class="absolute inset-0 m-auto w-max h-max">');
+      xnew.nest('<div class="m-auto w-[300px] max-w-[80%] border rounded-lg bg-white">');
+      // close on a press outside the dialog box (click.outside excludes the current element's subtree)
+      unit.on('click.outside', () => unit.gate.close());
+
+      xnew('<div class="p-2 flex justify-between">', () => {
+        xnew('<span>', 'Title');
+        xnew('<button class="cursor-pointer hover:opacity-50">', 'Close').on('click', () => unit.gate.close());
+      });
+
+      xnew('<div class="p-2 border-t">', Contents);
+    }
+
+    function MyMenu(unit, { anchor }) {
+      // Overlay covers the page with a backdrop (so the button can't be re-triggered) and, via anchor,
+      // gives a box tracking the button's rect; finalize this unit once the gate reports closed
+      xnew.extend(xbasics.Overlay, { gate: { open: false, duration: 200 }, anchor });
+      unit.gate.on('-closed', () => unit.finalize());
+
+      // the dropdown hangs just below the tracked box; Accordion shares the Gate so both animate together
+      xnew.nest('<div class="absolute top-full right-0 py-2">');
+      // close on a press outside the dropdown (click.outside excludes the current element's subtree)
+      unit.on('click.outside', () => unit.gate.close());
+      xnew.extend(xbasics.Accordion, { gate: unit.gate });
+      xnew.nest('<div class="w-[300px] border rounded-lg bg-white">');
+      xnew('<div class="p-2">', Contents);
+
+      unit.gate.open();
+    }
+
+    function Contents(unit) {
+      xnew('<span>', 'Contents');
+      xnew('<ul>', () => {
+        xnew('<li class="ml-2">', '1st item');
+        xnew('<li class="ml-2">', '2nd item');
+        xnew('<li class="ml-2">', '3rd item');
+      });
+    }
+
+    function MyPanel(unit) {
+      const panelbg = xnew.nest('<div class="absolute top-2 right-2 w-48 max-h-[calc(100vh-1rem)] text-sm border rounded-lg overflow-hidden shadow-lg bg-gray-100 text-green-900">');
+      // the panel itself takes name / open, so its rows sit directly under its own header
+      const panel = xnew(xbasics.Panel, { name: 'My Panel', open: true });
+
+      // a group naming a tab joins the panel's tab strip, and the strip switches between them
+      panel.group({ tab: 'style' }, (tab) => {
+        tab.group({ name: 'background', open: true }, (group) => {
+          const colors = {
+            'light gray': { background: '#f3f4f6', color: '#14532d' },
+            'dark gray':  { background: '#1f2937', color: '#d1d5db' },
+            'dark navy':  { background: '#172554', color: '#bfdbfe' },
+          };
+          for (const [name, { background, color }] of Object.entries(colors)) {
+            group.button({ name }).on('click', () => {
+              Object.assign(panelbg.style, { background, color });
+              xnew.emit('+console', { text: `${name} button clicked` });
+            });
+          }
+          group.separator();
+        });
+
+        tab.listbox({ name: 'color', items: ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta', 'brown', 'gray', 'black', 'white'] }).on('-change', ({ value }) => xnew.emit('+console', { text: `color changed to ${value}` }));
+        tab.color({ name: 'tint', value: '#4a90e2' }).on('-change', ({ value }) => xnew.emit('+console', { text: `tint changed to ${value}` }));
+      });
+
+      panel.group({ tab: 'params' }, (tab) => {
+        tab.range({ name: 'data', value: 20, min: 0, max: 60, step: 2 }).on('input', ({ value }) => xnew.emit('+console', { text: `data changed to ${value}` }));
+        tab.checkbox({ name: 'flag' }).on('input', ({ value }) => xnew.emit('+console', { text: `flag changed to ${value}` }));
+        tab.separator();
+
+        const show = tab.checkbox({ name: 'show' });
+        const group = tab.group({ open: false }, () => {
+          xnew('<p class="m-1">', 'hellow');
+        });
+        show.on('input', ({ value }) => value ? group.gate.open() : group.gate.close());
+      });
+    }
+  </script>
+</body>
+
+</html>

@@ -12,7 +12,7 @@ import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, cre
 // definitions
 //----------------------------------------------------------------------------------------------------
 
-interface Context { previous: Context | null; key?: any; value?: any; }
+interface Context { previous: Context | null; Component?: Function; value?: any; }
 
 interface Snapshot { unit: Unit; context: Context; element: DomElement; Component: Function | null; }
 
@@ -25,10 +25,9 @@ export type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends 
 // Extract the props type of a Component ({} if absent).
 export type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
 
-// Component that writes a text/number literal into the unit's current element.
-// Used for both the base (xnew(target, 'text')) and the trailing ExComponent (xnew(Base, props, 'text')) forms.
+// Component that writes a text/number literal into the current element.
 function textComponent(content: string | number): (unit: Unit) => void {
-    return (unit: Unit) => { unit.element.textContent = content.toString(); };
+    return (unit: Unit) => { unit.current.textContent = content.toString(); };
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -41,6 +40,8 @@ export class Unit {
     public _: {
         parent: Unit | null;
         children: Unit[];
+        inherited: Record<string, any>;   // library-internal keyed values, each key propagated from the parent unless given (not a user-facing API)
+        own: Record<string, any>;         // library-internal keyed values, per-unit only — set at construction, never propagated (not a user-facing API)
 
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
@@ -63,7 +64,7 @@ export class Unit {
         key: any;   // reserved prop for find(key) (global unique assumed)
     };
 
-    constructor(parent: Unit | null = null) {
+    constructor({ parent, inherited, own }: { parent: Unit | null; inherited?: Record<string, any>; own?: Record<string, any> }, ...args: any[]) {
         parent?._.children.push(this);
 
         const baseContext = parent?._.currentContext ?? { previous: null };
@@ -79,6 +80,9 @@ export class Unit {
 
         this._ = {
             parent,
+            // shared with the parent unless overridden, so keys must only be set via the constructor argument
+            inherited: inherited === undefined ? (parent?._.inherited ?? {}) : { ...parent?._.inherited, ...inherited },
+            own: own ?? {},
             phase: 'invoked',
             protected: false,
             standalone: true,
@@ -96,12 +100,8 @@ export class Unit {
             events: new EventBinder(),
             key: null,
         };
-    }
 
-    static create(parent: Unit | null, ...args: any[]): Unit {
-        const unit = new Unit(parent);
-        Unit.initialize(unit, ...args);
-        return unit;
+        Unit.initialize(this, ...args);
     }
 
     static initialize(unit: Unit, ...args: any[]): void {
@@ -111,21 +111,12 @@ export class Unit {
             Unit.nest(unit, args.shift() as string | DomElementDef);
         }
 
-        // xnew(Base, props?, ExComponent?): pull off the component, then an optional props
-        // object, then a trailing extension component extended on top of Base.
+        // xnew(Component, props?): pull off the component, then optional props.
         const Component = args.shift() as Function | string | number | undefined;
 
         let props: Object | undefined;
         if (typeof args[0] === 'object') {
             props = args.shift() as Object | undefined;
-        }
-
-        // a trailing function extends on top of Base; a trailing string/number sets the element's text
-        let ExComponent: Function | undefined;
-        if (typeof args[0] === 'function') {
-            ExComponent = args.shift() as Function;
-        } else if (typeof args[0] === 'string' || typeof args[0] === 'number') {
-            ExComponent = textComponent(args.shift() as string | number);
         }
 
         let baseComponent: Function;
@@ -142,17 +133,7 @@ export class Unit {
         const backup = Unit.currentUnit;
         Unit.currentUnit = unit;
 
-        // a trailing ExComponent is composed with the base inside one synthetic component, so both reach
-        // the unit through the ordinary nested extend and neither sees itself as standalone (no special-casing)
-        if (ExComponent !== undefined) {
-            const Ex = ExComponent;
-            Unit.extend(unit, (unit: Unit, props: Object) => {
-                Unit.extend(unit, baseComponent, props);
-                Unit.extend(unit, Ex, props);
-            }, props);
-        } else {
-            Unit.extend(unit, baseComponent, props);
-        }
+        Unit.extend(unit, baseComponent, props);
 
         if (unit._.phase === 'invoked') {
             unit._.phase = 'initialized';
@@ -165,8 +146,14 @@ export class Unit {
         return this._.parent;
     }
     
-    public get element(): DomElement {
+    // the element new children attach to: the innermost element the unit nested, or the one it was created on
+    public get current(): DomElement {
         return this._.currentElement;
+    }
+
+    // the unit's own outermost element: null when it nested none and merely borrows the element it was created on
+    public get container(): DomElement | null {
+        return this._.nestElements[0] ?? null;
     }
 
     public finalize(): void {
@@ -193,9 +180,9 @@ export class Unit {
             contexts?.forEach((context: Context) => {
                 let temp = context.previous;
                 while(temp !== null) {
-                    if (contexts.has(temp) === false && temp.key !== undefined) {
+                    if (contexts.has(temp) === false && temp.Component !== undefined) {
                         context.previous = temp;
-                        context.key = undefined;
+                        context.Component = undefined;
                         context.value = undefined;
                         break;
                     }
@@ -228,8 +215,7 @@ export class Unit {
     static extend(unit: Unit, Component: Function, props?: Object): { [key: string]: any } {
         const backupComponent = unit._.currentComponent;
         const backupStandalone = unit._.standalone;
-        // standalone is scoped to this invocation (restored on exit) so a component's own inner xnew.extend
-        // never flips its own value: false when it rides on an outer component, true when it is the base alone
+        // standalone is scoped to this invocation (restored on exit) so a component's own inner xnew.extend never flips its value
         unit._.standalone = backupComponent === null;
         unit._.currentComponent = Component;
 
@@ -271,8 +257,7 @@ export class Unit {
         return clone;
     }
 
-    // Drives only initialized units. Listeners receive ({ count, delta }): count is per
-    // registration (starting at 0), delta is elapsed ms since the previous frame.
+    // Drives only initialized units; listeners receive { count, delta } (count per registration, delta ms since the previous frame).
     static update(unit: Unit, delta: number = 0): void {
         if (unit._.phase === 'initialized') {
             unit._.children.forEach((child: Unit) => Unit.update(child, delta));
@@ -284,8 +269,7 @@ export class Unit {
     static engineRoot: Unit;
     static currentUnit: Unit;
 
-    // the current unit as read from outside unit.ts, initializing the engine on first access;
-    // inside unit.ts read only the raw fields (reading this getter during reset() would recurse before engineRoot is assigned)
+    // the current unit as read from outside unit.ts, initializing the engine on first access (inside unit.ts read only the raw fields — this getter recurses during reset())
     static get current(): Unit {
         if (Unit.engineRoot === undefined) {
             Unit.reset();
@@ -295,7 +279,7 @@ export class Unit {
 
     static reset(): void {
         Unit.engineRoot?.finalize();
-        Unit.currentUnit = Unit.engineRoot = Unit.create(null);
+        Unit.currentUnit = Unit.engineRoot = new Unit({ parent: null });
         const ticker = new Ticker((delta: number) => {
             Unit.update(Unit.engineRoot, delta);
         });
@@ -328,15 +312,15 @@ export class Unit {
 
     static unit2Contexts: MapSet<Unit, Context> = new MapSet();
 
-    static addContext(unit: Unit, orner: Unit, key: any, value?: any): void {
-        unit._.currentContext = { previous: unit._.currentContext, key, value };
+    static addContext(unit: Unit, orner: Unit, Component: Function, value?: any): void {
+        unit._.currentContext = { previous: unit._.currentContext, Component, value };
         Unit.unit2Contexts.add(orner, unit._.currentContext);
     }
 
-    static getContext(unit: Unit, key: any): any {
+    static getContext(unit: Unit, Component: Function): any {
         for (let context = unit._.currentContext; context.previous !== null; context = context.previous) {
-            if (context.value === Unit.currentUnit && key === unit._.currentComponent) continue;
-            if (key === context.key) return context.value;
+            if (context.value === Unit.currentUnit && Component === unit._.currentComponent) continue;
+            if (Component === context.Component) return context.value;
         }
     }
 
@@ -349,8 +333,7 @@ export class Unit {
         return ancestors;
     }
 
-    // Visibility across protect boundaries: find the nearest protected ancestor of `from`;
-    // visible if there is none, or if it is `current` or one of its ancestors.
+    // Visibility across protect boundaries: visible unless `from` has a protected ancestor that is neither `current` nor one of its ancestors.
     static isVisible(from: Unit | null, current: Unit | null, ancestors: Unit[]): boolean {
         let boundary: Unit | undefined;
         for (let u = from; u !== null; u = u._.parent) {
@@ -359,14 +342,20 @@ export class Unit {
         return boundary === undefined || ancestors.includes(boundary) === true || current === boundary;
     }
 
-    static find(Component: Function, key?: any): Unit[] {
+    // every option is an independent predicate on the found unit, so any combination is valid (they AND together).
+    static find(Component: Function, options: { key?: any, ancestor?: Unit, parent?: Unit } = {}): Unit[] {
         const current = Unit.currentUnit;
         const ancestors = Unit.ancestors(current);
         return [...(Unit.component2units.get(Component) ?? [])].filter((unit) => {
-            if (key !== undefined && unit._.key !== key) {
+            if (options.key !== undefined && unit._.key !== options.key) {
                 return false;
+            } else if (options.ancestor !== undefined && Unit.ancestors(unit).includes(options.ancestor) === false) {
+                return false;
+            } else if (options.parent !== undefined && unit._.parent !== options.parent) {
+                return false;
+            } else {
+                return Unit.isVisible(unit._.parent, current, ancestors);
             }
-            return Unit.isVisible(unit._.parent, current, ancestors);
         });
     }
 
@@ -418,8 +407,8 @@ export class Unit {
         } else if (unit._.listeners.has(type, listener) === false) {
             unit._.listeners.set(type, listener, { execute, owner });
             Unit.type2units.add(type, unit);
-            if (/^[A-Za-z]/.test(type) && unit.element !== null) {
-                unit._.events.add(unit.element, type, execute, options);
+            if (/^[A-Za-z]/.test(type) && unit.current !== null) {
+                unit._.events.add(unit.current, type, execute, options);
             }
         }
         if (owner !== unit) {
@@ -468,8 +457,7 @@ export class Unit {
 export class UnitPromise {
     constructor(private promise: Promise<any>, public key?: string) {}
 
-    // then / catch / finally run the callback in the captured scope; the return value becomes the
-    // chain value (a returned UnitPromise unwraps to its inner promise for async continuation).
+    // then / catch / finally run the callback in the captured scope; a returned UnitPromise unwraps to its inner promise.
     private chain(method: 'then' | 'catch' | 'finally', callback: Function): UnitPromise {
         const snapshot = Unit.snapshot(Unit.currentUnit);
         this.promise = (this.promise[method] as Function)((...args: any[]) => {
@@ -482,8 +470,7 @@ export class UnitPromise {
     public catch(callback: Function): UnitPromise { return this.chain('catch', callback); }
     public finally(callback: Function): UnitPromise { return this.chain('finally', callback); }
 
-    // Aggregate promises into one Promise resolving to an object: keyed entries are included
-    // (a `name[]` key pushes into out[name] in registration order); unkeyed ones are awaited only.
+    // Aggregate promises into one object: keyed entries are included (a `name[]` key pushes in registration order), unkeyed ones only awaited.
     public static async collect(promises: UnitPromise[]): Promise<Record<string, any>> {
         const values = await Promise.all(promises.map(p => p.promise));
         const out: Record<string, any> = {};
@@ -548,8 +535,7 @@ export class UnitTimer {
             unit.on('finalize', () => current.clear());
         };
 
-        // Run now if idle, otherwise queue behind the running task
-        // (each running task starts the next queued one when it finalizes).
+        // Run now if idle, otherwise queue behind the running task (each task starts the next queued one when it finalizes).
         if (this.unit === null || this.unit._.phase === 'finalized') {
             this.start(Component);
         } else {
@@ -559,10 +545,9 @@ export class UnitTimer {
     }
 
     private start(Component: Function) {
-        this.unit = Unit.create(Unit.currentUnit, Component);
+        this.unit = new Unit({ parent: Unit.currentUnit }, Component);
         this.unit.on('finalize', () => {
-            // While the owner unit is finalizing, starting the next task would attach a new unit
-            // to the dying owner and escape its child-finalize loop, so drop the queue instead.
+            // While the owner unit is finalizing, the next task would escape its child-finalize loop — drop the queue instead.
             const owner = Unit.currentUnit;
             if (this.queue.length > 0 && owner._.phase !== 'finalizing' && owner._.phase !== 'finalized') {
                 this.start(this.queue.shift()!);

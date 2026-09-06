@@ -1,20 +1,19 @@
 //----------------------------------------------------------------------------------------------------
 // VolumeController — speaker icon that reveals a master-volume slider on click
-// Extends xbasics.Volume for the master gain and slides an InputRange out toward `placement`
-// (top / bottom use the vertical InputRange); Aspect makes the icon square so cqw / cqh track its size.
+// Reads / writes the master gain via xaudio.volume (the one basics → xaudio dependency) and slides an
+// InputRange out toward `placement` (top / bottom vertical); Aspect keeps the icon square for cqw / cqh.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Volume } from '../audio/master';
-import { Aspect } from '../layout/Aspect';
+import { xaudio } from '../../audio/xaudio';
+import { Aspect } from '../stage/Aspect';
 import { InputRange } from '../element/InputRange';
 import { Gate } from './Gate';
 import { xicons } from '../../icons/xicons';
 
 type Placement = 'left' | 'right' | 'top' | 'bottom';
 
-// per-placement geometry: the slider grows along `grow` from the icon edge; the cross axis is pinned
-// full-length by its two insets, so only the grow axis carries the initial 0 (setting both collapses it)
+// per-placement geometry: only the grow axis carries the initial 0 — the cross axis is pinned full-length by its two insets
 const placements: Record<Placement, { vertical: boolean, grow: 'width' | 'height', outer: string }> = {
     left: { vertical: false, grow: 'width', outer: 'top: 0; bottom: 0; right: calc(100% + 4cqw); width: 0;' },
     right: { vertical: false, grow: 'width', outer: 'top: 0; bottom: 0; left: calc(100% + 4cqw); width: 0;' },
@@ -45,7 +44,6 @@ export function VolumeController(unit: xnew.Unit,
     });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const volume = xnew.extend(Volume);
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     unit.on('pointerdown', ({ event }: { event: PointerEvent }) => event.stopPropagation());
 
@@ -54,11 +52,11 @@ export function VolumeController(unit: xnew.Unit,
     const button = xnew((unit: xnew.Unit) => {
         xnew.nest({ tag: 'div', className: css.button });
         unit.on('click', () => gate.toggle());
-        let icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
+        let icon = xnew(SpeakerIcon, { muted: xaudio.volume === 0 });
         return {
             update() {
                 icon?.finalize();
-                icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
+                icon = xnew(SpeakerIcon, { muted: xaudio.volume === 0 });
             },
         };
     });
@@ -68,10 +66,10 @@ export function VolumeController(unit: xnew.Unit,
 
         // AudioParam is float32, so round the read-back to a clean integer for the display
         xnew(InputRange, config.vertical
-            ? { value: Math.round(volume.volume * 100), vertical: true, style: 'height: 100%;' }
-            : { value: Math.round(volume.volume * 100), style: 'width: 100%;' }
+            ? { value: Math.round(xaudio.volume * 100), vertical: true, style: 'height: 100%;' }
+            : { value: Math.round(xaudio.volume * 100), style: 'width: 100%;' }
         ).on('input', ({ value }: { value: number }) => {
-            volume.volume = value / 100;
+            xaudio.volume = value / 100;
             button.update();
         });
 

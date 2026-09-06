@@ -45,33 +45,39 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   that DOM target. A tag string creates and nests the element.
 - `xnew(target, 'text')` / `xnew('text')` — sets `textContent` (safe for user input).
 - `xnew(target, (unit) => { … })` — an inline component function.
-- `xnew(Base, props?, (unit, props) => { … })` — a **trailing function after a component**
-  is an **extension component** (`ExComponent`) extended on top of `Base` (props optional).
-  Equivalent to `xnew((unit) => { xnew.extend(Base, props); … })`: `Base` is extended first,
-  then the `ExComponent` runs on the same unit; both receive `props`. Defines from both merge
-  onto the unit.
-- `xnew(Base, props?, 'text')` — a **trailing string/number after a component** is an
-  `ExComponent` too: it becomes a component that sets the unit's current element `textContent`
-  (same wrapper as the base-position `xnew(target, 'text')` form). Runs after `Base`, so it
-  writes into whatever element `Base`'s body ended on (e.g. `ListboxItem`'s row).
+- There is **no trailing extension component** (`xnew(Base, props, fn)` was removed 2026-08):
+  the third argument is ignored. To compose onto a component, wrap it —
+  `xnew((unit) => { xnew.extend(Base, props); … })`: `Base` is extended first, then the body
+  runs on the same unit, and defines from both merge onto it.
 - **Init-only helpers** (throw if called after `invoked`, i.e. outside the
   synchronous body or in a later callback): `xnew.nest`, `xnew.extend`,
   `sync.server`, `sync.client`, `sync.register`, `sync.state`.
 
 ## 4. DOM: element, nest, events
 
-- `unit.element` is the unit's current DOM element.
-- `xnew.css((layer,) { name: 'decls…' })` registers pseudo-scoped CSS with **mandatory
+- `unit.current` is the unit's current DOM element — it walks inward with every `xnew.nest`.
+- `unit.container` is the unit's **own outermost** element — its first nested element, or **`null`** when it
+  nested none and merely borrows the element it was created on. Use it when a caller needs the whole
+  component's box; `current` is the innermost part. Note `container` is a `Unit` member, so a component
+  define named `container` throws.
+- `xnew.css((layer,) { name: def… })` registers pseudo-scoped CSS with **mandatory
   scoping**: every key is a local name, always renamed to a page-unique one, and keys must
   match `[A-Za-z][A-Za-z0-9_-]*` (anything else throws) — there is no way to emit a global
-  rule. A value is always a **CSS fragment string**: a **declaration block**, wrapped as
-  `.xnewN-key { … }` (native CSS nesting works inside: `&:hover`, `&[data-checked]`, `@media`,
-  descendant selectors), or a **nameless at-rule** `@type { … }` that hangs the generated name
-  on it — `turn: '@keyframes { from {…} to {…} }'` emits a **scoped animation**
-  `@keyframes xnewN-turn { … }`. A name inside the at-rule (`@keyframes spin { … }`) throws, so
-  scoping always holds. `$key` inside a value references another entry's generated name —
+  rule (a body whose braces escape or don't balance throws). A **string** value is a class
+  **declaration body**, wrapped as `.xnewN-key { … }` (native CSS nesting works inside:
+  `&:hover`, `&[data-checked]`, descendant selectors — and `@media` / `@supports` /
+  `@container` nest here, which is THE way to write responsive rules). An **at-rule** value
+  declares its kind as `{ rule, body }` with
+  `rule: '@keyframes' | '@property' | '@counter-style' | '@font-face'`, hanging the generated
+  name on it — `turn: { rule: '@keyframes', body: 'from {…} to {…}' }` emits
+  `@keyframes xnewN-turn { … }`; `'@property'` names become `--xnewN-key` (so `var($key)` is
+  correct as-is); `'@font-face'` injects the name as the `font-family` descriptor and its
+  `body` may be an **array** of faces (weights / unicode-ranges) — an array anywhere else
+  throws, and a string body starting with a definition at-rule throws (write it as
+  `{ rule, body }`). `$key` inside a body references another entry's generated name —
   `animation: $turn 0.8s linear infinite;` — and an unknown `$key` throws (a letter must
-  follow `$`, so `[href$=".png"]` is untouched). An **optional `layer` string first argument**
+  follow `$`, so `[href$=".png"]` is untouched; `$words` inside strings / comments pass
+  through unrenamed). An **optional `layer` string first argument**
   wraps the whole block in `@layer` (invalid layer throws). The return value maps each key to
   its generated name (typed via `keyof`) to embed in tag strings
   (`xnew.nest(`<div class="${css.name}">`)`). Identical definitions share one ref-counted
@@ -102,16 +108,18 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   container itself (frame merged in, 2026-07), and `value` / `name` / rest members go to the inner
   hidden native input. State attributes (`data-checked` / `data-open`) toggle on the container; inner
   parts (knob / meter / status / mark) react via parent-keyed rules (`[data-checked] > & { … }`).
-  There is no `container` getter anywhere; for InputCheckbox / InputRange / InputSwitch `unit.element`
-  IS the container (input / knob / meter are children) — for the others it ends on the innermost
-  nested part, so capture the container right after nesting it when the component needs it later.
+  No component exposes a `container` define (it would collide with the `unit.container` member); for
+  InputCheckbox / InputRange / InputSwitch `unit.current` IS the container (input / knob / meter are
+  children) — for the others it ends on the innermost nested part, so read `unit.container` (or capture
+  the element right after nesting it) when the component needs it later.
 - **Basics components expose NO part-customization bag** (no `attributes` / `designs` prop — all
   removed 2026-07). A caller restyles only via `className` / `style` on the container, which reaches
   inner parts through inheritance — the frame border, the knob / meter background, and the state tint
   all key on `currentColor`, so a single `className: 'text-indigo-600'` recolors the whole control
-  cohesively. For structural change, InputCheckbox / InputRange / InputSwitch accept a **trailing
-  compose function** that replaces their default inner content — the mark, the meter + status, the
-  knob respectively (`xnew.standalone === true` gate). Generated
+  cohesively. For structural change, InputCheckbox / InputRange / InputSwitch let a caller replace
+  their default inner content — the mark, the meter + status, the knob respectively — by extending
+  them onto an outer component (`xnew(() => { xnew.extend(InputRange, props); … })`, gated on
+  `xnew.standalone === true`). Generated
   class names are page-unique, so page CSS cannot target inner parts directly by design.
 - `xnew.nest(tagOrDef, textContent?)` creates a child element from a **tag string**
   (`'<div …>'`) or an **element definition object** — an existing element is rejected
@@ -202,6 +210,10 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   component (its exposed defines are accessible). **Returns `any`** — no type
   checking, so a typo or wrong shape will not be caught at compile time.
 - `xnew.find(Component, { key })` → array of matching units (respects `protect`).
+- Every `find` option is an independent condition on the **found** unit, so any combination
+  is valid (they AND together): `key`, `ancestor` (that unit is among its ancestors — i.e.
+  descendants at any depth, the ancestor itself excluded), `parent` (its direct parent).
+  There is no `root` option anymore (renamed to `ancestor`, 2026-09).
 - `key` is a **reserved prop** used by `find(..., { key })`; assume it is globally
   unique.
 
@@ -236,10 +248,16 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   (client) creates a synced root. On the **client** side boot calls `io(...)` to
   create **and own** the socket, with a **flat string** handshake query
   (`io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true })`),
-  forwards the socket's `connect`/`disconnect`/`notfound` to the boot **parent** (host)
-  unit as `-connect`/`-disconnect`/`-notfound`, and disconnects it on finalize. Callers
-  (e.g. an example's `Room` component) just boot — they no longer touch the socket. `sync.state`,
-  `sync.register`, `sync.emitToServer`, `sync.emitToClients` operate on the current sync root.
+  and disconnects it on finalize. Callers (e.g. an example's `Room` component) just boot —
+  they no longer touch the socket. `sync.state`, `sync.register`, `sync.emitToServer`,
+  `sync.emitToClients` operate on the current sync root.
+- **Lifecycle events are `sync.connect` / `sync.disconnect` / `sync.notfound`, dispatched into
+  the root on BOTH sides** (the `-connect`-style boot-parent forwards were removed 2026-07). Every
+  handler gets `{ id }` = the affected client's socket id; compare with `xsync.session.myself.id`
+  to tell self from others. Self events come from the own socket; other members' connect/disconnect
+  are relayed by the server (`socket.to(room)`, sender excluded — no double fire). `sync.notfound`
+  is own-boot-failure only. Listeners must live **inside** the boot root — pass a component that
+  extends the game onto it: `xsync.boot(opts, (u) => { xnew.extend(Game); u.on('sync.connect', …); })`.
 - Socket handlers run outside the tick → wrap them in `xnew.scope` (§7).
 - **Wire event names vs host event names are independent.** A socket/wire event
   (`'roomcreated'`) and the host-facing unit event it is forwarded to
@@ -257,18 +275,30 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
     limits delivery to those client ids (default: the whole room). This is the
     built-in room broadcast — don't hand-roll a relay component.
   - There is **no** `sync.emit`/`sync.message` anymore. The wire events
-    `sync:toServer` / `sync:toClient` / `sync:deliver` are reserved — don't use them
-    as app `type`s.
-- **Per-client state projection — `sync.visibleTo(target)`.** The server captures the sync tree
+    `emitToServer` / `emitToClients` (same names as the facade methods, written inline —
+    no WIRE_* consts) are reserved — don't use them as app `type`s.
+- **Per-client state projection — `sync.visibility(predicate)`.** The server captures the sync tree
   **once per connected client** and emits each socket its own projection. By default a node is
-  **public** (reaches every client). `sync.visibleTo(clientId | clientId[] | (clientId) => boolean | null)`
-  restricts the **current** sync node — **and its whole subtree**, since hidden children would lose
-  their parent link — to the clients it names; `null` makes it public again. Declare it in the
+  **public** (reaches every client). `sync.visibility((clientId) => boolean | null)` (predicate or
+  null ONLY — the old id/list forms were removed with the `visibleTo` rename, 2026-07) restricts the
+  **current** sync node — **and its whole subtree**, since hidden children would lose their parent
+  link — to the clients the predicate accepts; `null` makes it public again. Declare it in the
   component's `sync.server` block so private state (hands, roles) **never reaches the wire** for
   excluded clients — hiding on the client is not secure (DevTools sees the payload). The predicate is
   **re-evaluated every capture**, so close over a flag (`revealed`) and flip it for a dynamic reveal —
-  no re-call needed. Typical shape: one `PlayerView` per client, `sync.visibleTo(ownerId)`, spawned on
-  `sync.connect` and removed on `sync.disconnect` (see `examples/1_xnew/sync/hidden-info/`).
+  no re-call needed. Typical shape: one `PlayerView` per client,
+  `sync.visibility((clientId) => clientId === ownerId)`, spawned on `sync.connect` and removed on
+  `sync.disconnect` (see `examples/1_xnew/sync/hidden-info/`).
+- **Change signal — `'sync.update'` (client-side, 2026-08).** The server emits `'sync'` to a client
+  only when that client's projection actually changed (per-client JSON cache, cleared on disconnect);
+  the client boot dispatches `'sync.update'` into the root after reconciling an arriving tree — so it
+  fires exactly once per applied change, with the state already applied, and reaches replicas created
+  by that same frame. Use it for redraw-on-change instead of per-tick `JSON.stringify` key diffing:
+  set a `dirty` flag in `unit.on('sync.update', …)` (and at local UI-state mutations) and rebuild in
+  `unit.on('update')` when dirty — rebuilding inside the tick avoids destroying pixi objects
+  mid-event-dispatch (see `examples/3_games/cat_king/`). Server side has no such event (its state
+  changes are its own writes). Per-frame streaming state (physics positions) still reads the state
+  object in `on('update')` — `sync.update` is for rebuild-style UI, not per-frame follow.
 
 ## 12. TypeScript notes
 
@@ -302,6 +332,13 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
+
+- **Never let a `+event` listener mount a unit that itself listens for that same `+event` (e.g.
+  `unit.on('+x', () => unit.change(Next))` where `Next` registers `'+x'` too) — put the ONE listener on a
+  stable ancestor instead.** `Unit.emit` iterates `type2units` live, so a unit added during the emit also
+  receives it: the freshly mounted scene changes again, mounting another, forever (page freeze, no error).
+  Pattern: the parent listens once and drives the swap via `xnew.find(xbasics.Scene)[0].change(...)`
+  (bit the stage example when every scene variant subscribed to `'+screen'`).
 
 - **`xpixi.nest()` never takes an EXISTING object — it always creates a fresh group Container and moves
   the current parent into it (stateful); `xpixi.add(obj)` attaches a leaf/display object without moving.
@@ -363,22 +400,22 @@ the rule, then one line of why.
   add-order can't be relied on for layering. Addon event callbacks (`pixiObject.on('pointertap', …)`,
   a Three raycast handler, etc.) fire OUTSIDE the tick/scope, so any `xsync.emitToServer` / `xnew.emit` /
   `xnew(...)` inside them must be wrapped in `xnew.scope(...)` (§7) — otherwise `emitToServer` throws
-  `no socket bound to this root` (Unit.current isn't the sync node). (See `examples/3_games/card/`.)
+  `no socket bound to this root` (Unit.current isn't the sync node).
 
-- **InputCheckbox holds a Gate for its checked state and its `unit.element` is the CONTAINER, not the
+- **InputCheckbox holds a Gate for its checked state and its `unit.current` is the CONTAINER, not the
   hidden input (modeled on Listbox, 2026-07).** The `<input>` is nested as a *child unit*
-  (`xnew({ tag: 'input', … })`, no `xnew.nest`) so the container stays current — a trailing function
-  then composes the mark INTO the box (`xnew(InputCheckbox, {}, (unit) => { … unit.gate … xnew(xicons.Check) })`);
+  (`xnew({ tag: 'input', … })`, no `xnew.nest`) so the container stays current — an outer component
+  then composes the mark INTO the box (`xnew((unit) => { xnew.extend(InputCheckbox); … unit.gate … xnew(xicons.Check) })`);
   left empty, a one-tick `xnew.timeout` fallback draws a default check svg (detect "caller composed
   something" by any container child that is not the input). The hidden input gets `z-index: 1` so composed
   marks never steal its clicks. Native `input` bubbles up to the container where `unit.on('input', …)`
   lives → toggles `gate.open()/close()`; `gate.on('-open'/'-closed')` toggles `data-checked` on the
   container (set it once initially from `gate.state`, since the Gate's constructor emits the first `-open`
-  before you subscribe). Do NOT assume `unit.element` is the input here — that still holds for InputSwitch,
-  but InputCheckbox and InputRange diverged (their `unit.element` is the container; the input is a
+  before you subscribe). Do NOT assume `unit.current` is the input here — that still holds for InputSwitch,
+  but InputCheckbox and InputRange diverged (their `unit.current` is the container; the input is a
   `xnew({ tag: 'input', … })` child, not an `xnew.nest`). InputRange follows the same compose gate:
-  its default `InputRangeMeter` + `InputRangeStatus` are drawn only when `xnew.standalone === true`, so a
-  trailing compose function replaces them with caller content.
+  its default `InputRangeMeter` + `InputRangeStatus` are drawn only when `xnew.standalone === true`, so
+  extending it onto an outer component replaces them with caller content.
 
 - **A basics component's `frame` ring may be merged INTO the `container` (user decision, 2026-07) —
   the container then carries the border / radius / state tint directly, and there is no separate frame
@@ -398,7 +435,7 @@ the rule, then one line of why.
   let it listen to the bubbling native event — don't thread a value-setter define across the boundary.**
   InputRange is InputRange (container + hidden input) + two same-file sub-components `InputRangeMeter`
   (the growing meter) and `InputRangeStatus` (the value readout), each mounted with `xnew(…)` and no
-  `xnew.nest` so their `unit.element` = the container; each `unit.on('input', …)` catches the input event
+  `xnew.nest` so their `unit.current` = the container; each `unit.on('input', …)` catches the input event
   that bubbles up from the later-nested `<input>`. Works because the core reads the value off
   `event.target` (the range input), not the bound element (`dom.ts` `defineEvent(['change','input'])`),
   so an ancestor listener still gets the numeric value. Native `input` events bubble — tests must dispatch
@@ -415,7 +452,7 @@ the rule, then one line of why.
 
 - **For close-on-outside-press, use the built-in `unit.on('click.outside', …)` — don't hand-roll a
   backdrop `click` listener.** `click.outside` (also `pointerdown/move/up.outside`, `dom.ts`) attaches
-  at `document` and fires only when the press target is NOT inside `unit.element` **as of registration
+  at `document` and fires only when the press target is NOT inside `unit.current` **as of registration
   time** — so register it right after nesting the content box you want to protect. DOM listeners attach
   via `setTimeout(0)`, so the same press that opened the popup can't self-close it. Cleaned up on
   finalize like any listener. `Overlay` deliberately has NO built-in click-to-close (removed 2026-07);
@@ -463,7 +500,7 @@ the rule, then one line of why.
   wrapper swallowed the caller's `className`, so `absolute left/right` placement always
   rendered centered (bit AnalogStick / DPad).
 
-- **Round `xbasics.Volume`'s `volume` before showing it in UI (e.g. `Math.round(v * 100)` for a
+- **Round `xaudio.volume` before showing it in UI (e.g. `Math.round(v * 100)` for a
   0–100 InputRange).** The backing `AudioParam` stores float32, so a set of `0.1` reads back as
   `0.10000000149…` — feeding the raw read into InputRange's `value` displays a decimal-laden
   status until the first drag (bit the 3_games VolumeController).
@@ -494,7 +531,7 @@ the rule, then one line of why.
   spawned from a callback, bind an explicit element instead: `xnew(safeElement, Component, props)`
   (bit InputSelect: its dropdown vanished into the hidden select).
 
-- **Don't read the host's `unit.element` inside a callback registered on a child unit that was
+- **Don't read the host's `unit.current` inside a callback registered on a child unit that was
   created before a later `xnew.nest(...)` — it sees the nest chain as of that child's creation,
   not the final element.** The callback runs in the child's scope, which snapshots the host's
   current element at creation time (bit InputNumber: the left spin button's click handler got the
@@ -530,9 +567,35 @@ the rule, then one line of why.
   `isContentEditable`), and send a stop on `window.focusin` into an editable element so a
   held key doesn't keep the player moving.
 
-- **The public barrel exposes four tiers: `xnew` (core) / `xsync` (networking) / `xbasics`
-  (networking-free components) / `xicons` (heroicons-based icons, MIT — `src/icons/license.txt`),
-  all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
+- **The public barrel exposes six tiers: `xnew` (core) / `xsync` (networking) / `xaudio` (audio) /
+  `xbasics` (UI components) / `xicons` (heroicons-based icons, MIT — `src/icons/license.txt`) /
+  `xtextures` (procedural textures), all from `@mulsense/xnew`; addons stay on `/addons/*` subpaths.**
+  `xaudio` (src/audio/) is a facade like `xsync`: `load` / `synthesizer` return plain xnew-free
+  `AudioTrack` / `Synthesizer` class instances whose teardown `clear()` (load also registers
+  `xnew.promise`) is wired to a unit under the current scope inside the facade; `volume` is a
+  getter/setter on the shared master gain. There are no `xbasics.AudioTrack` / `Synthesizer` /
+  `Volume` members anymore (moved 2026-07); the only basics → xaudio dependency is
+  `VolumeController`, which reads/writes `xaudio.volume` directly.
+  **`xtextures` entries are plain texture objects, NOT component functions** (lowercase members:
+  `xtextures.wood`): the fields `name`/`glsl`/`ranges`/`presets` plus the flows. There are **NO
+  `.color`/`.normal` members** — both channels live as entry functions inside `glsl`, so a stale
+  `texture[channel] !== undefined` check silently yields zero views (bit the 1_xnew/textures viewer).
+  A texture module authors only `{ name, glsl, ranges, presets }` (TextureSource; `name` =
+  lowercase member key). **`presets.standard` is the authority on uniform keys and types** (scalar →
+  float, `[r,g,b]` → vec3; it feeds `uniformDeclarations`); other presets partially override it;
+  `ranges` holds `{ min, max }` for every scalar key (no `step` — InputRange auto-computes it). The
+  entry-fn names `xtex<Name>Color` / `xtex<Name>Normal` are derived from `name`; `defineTexture` is
+  check-free — schema / glsl consistency is asserted by the tests, and only invalid uniform keys
+  throw at assembly (`uniformDeclarations`). Flows —
+  `bake(options)` → ImageBitmap on ONE shared OffscreenCanvas (never one WebGL context per texture:
+  browsers cap contexts), `renderer(canvas, options)` for a caller-owned live-preview canvas (caller
+  wires `unit.on('finalize', () => renderer.dispose())`), and passing the object to
+  `xthree.material.shader(texture, params)` (ShaderMaterial injection, fake fixed light) or
+  `xthree.material.standard(texture, options)` (bakes internally → MeshStandardMaterial; there is NO
+  separate `xthree.bake` — removed 2026-07-24; `inject: true` skips baking and patches the GLSL into
+  the standard shader via onBeforeCompile — full PBR + live `material.uniforms`, but the one
+  three-chunk-dependent spot; method comparison lives in docs/xtextures-three-materials.md). Both
+  material fns take a REQUIRED second argument. Don't re-wrap textures as xnew components.
   The networking layer is a single file `src/sync/xsync.ts` (shared state + boot + facade). `xsync`
   **is** the facade object literal (`export const xsync = { … }`) — there is no Lobby / Room component
   built in; lobby / room lifecycle is assembled by callers from the facade (see `examples/*/server.js` +
@@ -560,7 +623,9 @@ the rule, then one line of why.
   `io.to(client.id).emit('sync', captureStateTree(client.id))`. Consequence for tests: a capture-only
   test that boots the server and reads `hub.lastSync()` must **connect a client first** (`hub.connect()`),
   or nothing is emitted (empty `info.clients` → no `'sync'`). `io-mock` records the target of each
-  `'sync'` — use `hub.lastSyncFor(clientId)` to read one client's projection.
+  `'sync'` — use `hub.lastSyncFor(clientId)` to read one client's projection. Since 2026-08 the server
+  also **skips emitting when a client's projection is unchanged**, so a test that updates twice without
+  mutating state records ONE `'sync'` (count with `hub.syncCountFor(clientId)`).
 - **`captureStateTree` / `applyStateTree` are boot-internal (not exported).** Capture lives
   in boot's server branch (closes over `root` + a local `nextId`), apply in the client branch
   (closes over `root` + a local `reconcileMap`). The only seams are: server emits `'sync'` on
@@ -576,14 +641,15 @@ the rule, then one line of why.
   `io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true })`
   and the server reads `query.roomId` / `query.clientName`. Keep the query **flat
   strings** (socket.io stringifies query values, so a nested object would arrive as
-  `[object Object]`). boot also forwards `connect`/`disconnect`/`notfound` to the boot
-  **parent** as `-events`. When you change a query key, update every reader in one pass:
+  `[object Object]`). boot dispatches `sync.connect`/`sync.disconnect`/`sync.notfound` into the
+  root (see §11) — there is no boot-parent `-event` forward anymore, so host-side listeners go in
+  boot's root component (`xsync.boot(opts, (u) => { xnew.extend(Game); … })`). When you change a
+  query key, update every reader in one pass:
   boot's connection handler **and** the examples' Lobby/Room server blocks (`examples/*/server.js`)
-  **and** the test mocks (`io-mock.ts`).
-  The forward reaches up to the parent (the boot root is a *child* of the host), so it
-  bypasses the root-scoped `dispatch` on purpose — host listeners live above the root.
-- **When changing `BootServerOptions`/`BootClientOptions`, update the test `bootClient`
-  adapter in `test/core/sync/io-mock.ts` too.** It wraps a pre-made mock socket as
+  **and** the test mocks (`io-mock.ts` — its server-side socket also implements `to(room)` for the
+  connect/disconnect relay).
+- **When changing `BootOptions` (the one shared server/client boot options bag), update the test
+  `bootClient` adapter in `test/sync/io-mock.ts` too.** It wraps a pre-made mock socket as
   `io: () => socket` so the ~25 call sites stay unchanged; miss it and every sync test
   throws `io is not a function`. Tests in `boot-api`/`channel` also *document* the
   boot contract — update those assertions when the contract changes.
@@ -603,3 +669,8 @@ the rule, then one line of why.
   not at the start of a line (e.g. "asserted with a ts-expect-error directive").
 - **Index signature ≠ typed.** `unit.someDefine()` compiles even when misspelled;
   do not rely on the compiler to catch unit-member typos (see §12).
+- **In jsdom tests, advance the fake timers before dispatching a DOM event on a
+  unit created after the test started.** `on(...)` attaches through
+  `setTimeout(…, 0)` (`attach` in `dom.ts`), so a click dispatched in the same
+  tick as the `xnew(...)` that created the button silently does nothing — call
+  `jest.advanceTimersByTime(1)` first.

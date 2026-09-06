@@ -41,10 +41,10 @@ function Lobby(unit, { io }) {
         xnew('<button class="px-3 py-1.5 rounded border-0 bg-emerald-500 hover:bg-emerald-600 text-white text-sm cursor-pointer" type="submit">', '作成');
         form.on('submit', ({ event }) => {
             event.preventDefault();
-            const name = nameInput.element.value.trim();
+            const name = nameInput.current.value.trim();
             if (!name) { return; }
             createRoom(name);
-            nameInput.element.value = '';
+            nameInput.current.value = '';
         });
     });
     const listEl = xnew('<ul class="flex flex-col gap-2">');
@@ -75,7 +75,7 @@ function Lobby(unit, { io }) {
     unit.on('-disconnect', () => app.setStatus('切断', false));
     unit.on('-statusupdate', ({ rooms: list }) => { rooms = list; render(); });
     unit.on('-roomcreated', ({ room }) => unit.change(Room, { io: window.io, client: { name: '' }, room: { id: room.id, name: room.name } }));
-    unit.on('-roomrejected', ({ message }) => { hintEl.element.textContent = message; });
+    unit.on('-roomrejected', ({ message }) => { hintEl.current.textContent = message; });
 
     render();
 }
@@ -88,9 +88,11 @@ function Room(unit, { io, client, room }) {
     xnew.nest('<div class="relative w-[90vmin] max-w-[800px] aspect-[4/3]">');   // Game（Screen）の mount 先（高さを確定させる）
 
     xnew.extend(xbasics.Scene);   // シーン遷移（change）は呼び出し側の責務
-    xsync.boot({ io, client, room }, Game);   // boot が socket を生成・所有し connect/disconnect/notfound を '-event' へ転送
-
-    unit.on('-connect', ({ id }) => app.setStatus(`ルーム ${room.id}: ${id}`, true));
-    unit.on('-disconnect', () => app.setStatus('切断', false));
-    unit.on('-notfound', () => unit.change(Lobby, { io: window.io }));
+    // boot が socket を生成・所有し、sync.connect/sync.disconnect/sync.notfound を root 配下へ配る（id で自他判別）
+    xsync.boot({ io, client, room }, (u) => {
+        xnew.extend(Game);
+        u.on('sync.connect', ({ id }) => { if (id === xsync.session.myself.id) { app.setStatus(`ルーム ${room.id}: ${id}`, true); } });
+        u.on('sync.disconnect', ({ id }) => { if (id === xsync.session.myself.id) { app.setStatus('切断', false); } });
+        u.on('sync.notfound', () => unit.change(Lobby, { io: window.io }));
+    });
 }

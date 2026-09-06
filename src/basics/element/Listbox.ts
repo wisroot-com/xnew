@@ -68,8 +68,7 @@ export function Listbox(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListboxButton — the framed trigger: draws the border / label, toggles the Listbox gate on click.
-// Compose extra content (e.g. a chevron icon) with a trailing function; the label reflects the value.
+// ListboxButton — the framed trigger: draws the border / label, toggles the Listbox gate on click (compose extra content with a trailing function)
 //----------------------------------------------------------------------------------------------------
 
 export function ListboxButton(unit: xnew.Unit,
@@ -95,20 +94,19 @@ export function ListboxButton(unit: xnew.Unit,
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
     const label = xnew({ tag: 'div', className: css.label });
-    listbox.bind(label.element);
+    listbox.bind(label.current);
 
     // stop the opening click from bubbling to the document, or ListboxMenu's click.outside would self-close it
     unit.on('click', ({ event }: { event: PointerEvent }) => {
         event.stopPropagation();
         listbox.gate.toggle();
     });
-    listbox.gate.on('-open', () => unit.element.toggleAttribute('data-open', true));
-    listbox.gate.on('-closed', () => unit.element.toggleAttribute('data-open', false));
+    listbox.gate.on('-open', () => unit.current.toggleAttribute('data-open', true));
+    listbox.gate.on('-closed', () => unit.current.toggleAttribute('data-open', false));
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListboxMenu — the floating option list, built on Overlay (backdrop + anchor tracking + outside-click + fade).
-// Follows the Listbox container's '-toggle' / '-close'; rides the Gate the Listbox owns (`listbox.gate`).
+// ListboxMenu — the floating option list, built on Overlay and riding the Gate the Listbox owns (`listbox.gate`)
 //----------------------------------------------------------------------------------------------------
 
 export function ListboxMenu(unit: xnew.Unit,
@@ -126,12 +124,11 @@ export function ListboxMenu(unit: xnew.Unit,
         `,
     });
 
-    xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.element });
+    xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.current });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others }) as HTMLElement;
 
-    // one outside-press closer for the whole list (registered right after nesting the menu, so the press
-    // that opened it can't self-close it); a press on a row stays inside the menu and is handled by the item
+    // one outside-press closer for the whole list, registered right after nesting the menu so the opening press can't self-close it
     unit.on('click.outside', () => {
         const state = listbox.gate.state;
         if (state === 'opened' || state === 'opening') {
@@ -139,10 +136,10 @@ export function ListboxMenu(unit: xnew.Unit,
         }
     });
 
-    listbox.gate.on('-open', () => unit.element.style.background = surfaceColor());
+    listbox.gate.on('-open', () => unit.current.style.background = surfaceColor());
 
     function surfaceColor() {
-        for (let element = listbox.element.parentElement; element !== null; element = element.parentElement) {
+        for (let element = listbox.current.parentElement; element !== null; element = element.parentElement) {
             const color = getComputedStyle(element).backgroundColor;
             if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
             return color;
@@ -153,9 +150,7 @@ export function ListboxMenu(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListboxItem — one option row of a Listbox; nests into the ListboxMenu it is created inside.
-// Pass row content as a trailing text (xnew(ListboxItem, { value }, 'label')) or an inline function;
-// leave it empty to fall back to the value as text.
+// ListboxItem — one option row of a Listbox; a trailing text / function supplies the row content, empty falls back to the value
 //----------------------------------------------------------------------------------------------------
 
 export function ListboxItem(unit: xnew.Unit,
@@ -183,7 +178,7 @@ export function ListboxItem(unit: xnew.Unit,
     });
     // fall back to the value as text when the row is used standalone (no content composed into it)
     if (xnew.standalone === true) {
-        unit.element.textContent = value;
+        unit.current.textContent = value;
     }
 
     return {
@@ -191,7 +186,7 @@ export function ListboxItem(unit: xnew.Unit,
             return value;
         },
         check(current: boolean) {
-            unit.element.toggleAttribute('data-checked', current);
+            unit.current.toggleAttribute('data-checked', current);
         },
     };
 }

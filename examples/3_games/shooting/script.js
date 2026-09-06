@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { xnew, xbasics } from '@mulsense/xnew';
+import { xnew, xaudio, xbasics } from '@mulsense/xnew';
 import { xpixi } from '@mulsense/xnew/addons/xpixi';
 
 xnew(document.querySelector('#main'), Main);
@@ -152,7 +152,7 @@ function Player(unit) {
   });
   return {
     sound() {
-      const synth = xnew(xbasics.Synthesizer, {
+      const synth = xaudio.synthesizer({
         oscillator: { type: 'square', envelope: { amount: 36, ADSR: [0, 200, 0.2, 200], }, },
         amp: { envelope: { amount: 0.1, ADSR: [0, 100, 0.2, 200], },},
       });
@@ -220,7 +220,7 @@ function Enemy(unit) {
     },
     sound(score) {
       const v = Math.log2(score); // convert svore (1->0, 2->1, 4->2, 8->3, ...)
-      const synth = xnew(xbasics.Synthesizer, {
+      const synth = xaudio.synthesizer({
         oscillator: { type: 'triangle', },
         amp: { envelope: { amount: 0.1, ADSR: [0, 200, 0.0, 0], }, },
       });

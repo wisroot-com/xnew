@@ -25,8 +25,8 @@ export function Accordion(unit: xnew.Unit,
     apply(gate.value);
     gate.on('-transition', ({ value }: { value: number }) => apply(value));
     function apply(value: number) {
-        unit.element.style.height = value < 1.0 ? unit.element.scrollHeight * value + 'px' : 'auto';
-        unit.element.style.opacity = value.toString();
+        unit.current.style.height = value < 1.0 ? unit.current.scrollHeight * value + 'px' : 'auto';
+        unit.current.style.opacity = value.toString();
     }
 
     return {

@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------
-// icons/data — heroicons path data table (generated); consumed by the xicons factory + Template
+// icons/data — heroicons path data table (generated); consumed by the xicons factory
 // Each entry: `o` = outline paths (stroked), `s` = solid paths; a solid path wrapped as `[d]`
 // draws with fill-rule / clip-rule "evenodd". Path data verbatim from heroicons (MIT — license.txt).
 //----------------------------------------------------------------------------------------------------

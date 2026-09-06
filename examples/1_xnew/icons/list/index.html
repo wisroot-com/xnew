@@ -31,7 +31,7 @@
         const btn = xnew('<button class="px-3 py-1 text-sm border rounded hover:bg-slate-100">', `mode: ${mode}`);
         btn.on('click', () => {
           mode = mode === 'outline' ? 'solid' : 'outline';
-          btn.element.textContent = `mode: ${mode}`;
+          btn.current.textContent = `mode: ${mode}`;
           xnew.emit('+mode', { mode });
         });
       });

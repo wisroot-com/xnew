@@ -18,7 +18,7 @@ export function Image(unit: xnew.Unit,
     });
 
     xnew.nest({ tag: 'img', className: `${css.container} ${className}`, style, ...others });
-    const element = unit.element as HTMLImageElement;
+    const element = unit.current as HTMLImageElement;
 
     let objectURL: string | null = null;
     function apply(value: ImageSource): void {

@@ -470,11 +470,11 @@ function keyboardEvent(matched, props) {
 }
 
 function textComponent(content) {
-    return (unit) => { unit.element.textContent = content.toString(); };
+    return (unit) => { unit.current.textContent = content.toString(); };
 }
 class Unit {
-    constructor(parent = null) {
-        var _a, _b;
+    constructor({ parent, inherited, own }, ...args) {
+        var _a, _b, _c;
         parent === null || parent === void 0 ? void 0 : parent._.children.push(this);
         const baseContext = (_a = parent === null || parent === void 0 ? void 0 : parent._.currentContext) !== null && _a !== void 0 ? _a : { previous: null };
         let baseElement;
@@ -489,6 +489,8 @@ class Unit {
         }
         this._ = {
             parent,
+            inherited: inherited === undefined ? ((_c = parent === null || parent === void 0 ? void 0 : parent._.inherited) !== null && _c !== void 0 ? _c : {}) : Object.assign(Object.assign({}, parent === null || parent === void 0 ? void 0 : parent._.inherited), inherited),
+            own: own !== null && own !== void 0 ? own : {},
             phase: 'invoked',
             protected: false,
             standalone: true,
@@ -506,11 +508,7 @@ class Unit {
             events: new EventBinder(),
             key: null,
         };
-    }
-    static create(parent, ...args) {
-        const unit = new Unit(parent);
-        Unit.initialize(unit, ...args);
-        return unit;
+        Unit.initialize(this, ...args);
     }
     static initialize(unit, ...args) {
         var _a;
@@ -525,13 +523,6 @@ class Unit {
         if (typeof args[0] === 'object') {
             props = args.shift();
         }
-        let ExComponent;
-        if (typeof args[0] === 'function') {
-            ExComponent = args.shift();
-        }
-        else if (typeof args[0] === 'string' || typeof args[0] === 'number') {
-            ExComponent = textComponent(args.shift());
-        }
         let baseComponent;
         if (typeof Component === 'function') {
             baseComponent = Component;
@@ -545,16 +536,7 @@ class Unit {
         unit._.key = (_a = props === null || props === void 0 ? void 0 : props.key) !== null && _a !== void 0 ? _a : null;
         const backup = Unit.currentUnit;
         Unit.currentUnit = unit;
-        if (ExComponent !== undefined) {
-            const Ex = ExComponent;
-            Unit.extend(unit, (unit, props) => {
-                Unit.extend(unit, baseComponent, props);
-                Unit.extend(unit, Ex, props);
-            }, props);
-        }
-        else {
-            Unit.extend(unit, baseComponent, props);
-        }
+        Unit.extend(unit, baseComponent, props);
         if (unit._.phase === 'invoked') {
             unit._.phase = 'initialized';
         }
@@ -564,8 +546,12 @@ class Unit {
     get parent() {
         return this._.parent;
     }
-    get element() {
+    get current() {
         return this._.currentElement;
+    }
+    get container() {
+        var _a;
+        return (_a = this._.nestElements[0]) !== null && _a !== void 0 ? _a : null;
     }
     finalize() {
         var _a;
@@ -584,9 +570,9 @@ class Unit {
             contexts === null || contexts === void 0 ? void 0 : contexts.forEach((context) => {
                 let temp = context.previous;
                 while (temp !== null) {
-                    if (contexts.has(temp) === false && temp.key !== undefined) {
+                    if (contexts.has(temp) === false && temp.Component !== undefined) {
                         context.previous = temp;
-                        context.key = undefined;
+                        context.Component = undefined;
                         context.value = undefined;
                         break;
                     }
@@ -668,7 +654,7 @@ class Unit {
     static reset() {
         var _a;
         (_a = Unit.engineRoot) === null || _a === void 0 ? void 0 : _a.finalize();
-        Unit.currentUnit = Unit.engineRoot = Unit.create(null);
+        Unit.currentUnit = Unit.engineRoot = new Unit({ parent: null });
         const ticker = new Ticker((delta) => {
             Unit.update(Unit.engineRoot, delta);
         });
@@ -697,15 +683,15 @@ class Unit {
     static snapshot(unit) {
         return { unit, context: unit._.currentContext, element: unit._.currentElement, Component: unit._.currentComponent };
     }
-    static addContext(unit, orner, key, value) {
-        unit._.currentContext = { previous: unit._.currentContext, key, value };
+    static addContext(unit, orner, Component, value) {
+        unit._.currentContext = { previous: unit._.currentContext, Component, value };
         Unit.unit2Contexts.add(orner, unit._.currentContext);
     }
-    static getContext(unit, key) {
+    static getContext(unit, Component) {
         for (let context = unit._.currentContext; context.previous !== null; context = context.previous) {
-            if (context.value === Unit.currentUnit && key === unit._.currentComponent)
+            if (context.value === Unit.currentUnit && Component === unit._.currentComponent)
                 continue;
-            if (key === context.key)
+            if (Component === context.Component)
                 return context.value;
         }
     }
@@ -726,15 +712,23 @@ class Unit {
         }
         return boundary === undefined || ancestors.includes(boundary) === true || current === boundary;
     }
-    static find(Component, key) {
+    static find(Component, options = {}) {
         var _a;
         const current = Unit.currentUnit;
         const ancestors = Unit.ancestors(current);
         return [...((_a = Unit.component2units.get(Component)) !== null && _a !== void 0 ? _a : [])].filter((unit) => {
-            if (key !== undefined && unit._.key !== key) {
+            if (options.key !== undefined && unit._.key !== options.key) {
                 return false;
             }
-            return Unit.isVisible(unit._.parent, current, ancestors);
+            else if (options.ancestor !== undefined && Unit.ancestors(unit).includes(options.ancestor) === false) {
+                return false;
+            }
+            else if (options.parent !== undefined && unit._.parent !== options.parent) {
+                return false;
+            }
+            else {
+                return Unit.isVisible(unit._.parent, current, ancestors);
+            }
         });
     }
     on(type, listener, options) {
@@ -768,8 +762,8 @@ class Unit {
         else if (unit._.listeners.has(type, listener) === false) {
             unit._.listeners.set(type, listener, { execute, owner });
             Unit.type2units.add(type, unit);
-            if (/^[A-Za-z]/.test(type) && unit.element !== null) {
-                unit._.events.add(unit.element, type, execute, options);
+            if (/^[A-Za-z]/.test(type) && unit.current !== null) {
+                unit._.events.add(unit.current, type, execute, options);
             }
         }
         if (owner !== unit) {
@@ -908,7 +902,7 @@ class UnitTimer {
         return this;
     }
     start(Component) {
-        this.unit = Unit.create(Unit.currentUnit, Component);
+        this.unit = new Unit({ parent: Unit.currentUnit }, Component);
         this.unit.on('finalize', () => {
             const owner = Unit.currentUnit;
             if (this.queue.length > 0 && owner._.phase !== 'finalizing' && owner._.phase !== 'finalized') {
@@ -925,66 +919,125 @@ const registry = new Map();
 let counter = 0;
 const localName = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const layerName = /^[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*)*$/;
-const atRule = /^@([a-z-]+)\s*\{([\s\S]*)\}\s*$/;
-const reference = /\$([A-Za-z][A-Za-z0-9_-]*)/g;
+const atRules = ['@keyframes', '@property', '@counter-style', '@font-face'];
+function generatedName(def, prefix, name) {
+    if (typeof def === 'object' && def.rule === '@property') {
+        return `--${prefix}${name}`;
+    }
+    else {
+        return `${prefix}${name}`;
+    }
+}
+function resolveBody(key, source, names) {
+    var _a;
+    let out = '';
+    let depth = 0;
+    let i = 0;
+    while (i < source.length) {
+        const c = source[i];
+        if (c === '/' && source[i + 1] === '*') {
+            const end = source.indexOf('*/', i + 2);
+            const next = end === -1 ? source.length : end + 2;
+            out += source.slice(i, next);
+            i = next;
+        }
+        else if (c === '"' || c === "'") {
+            let j = i + 1;
+            while (j < source.length && source[j] !== c) {
+                j += source[j] === '\\' ? 2 : 1;
+            }
+            const next = Math.min(j + 1, source.length);
+            out += source.slice(i, next);
+            i = next;
+        }
+        else if (c === '$' && /[A-Za-z]/.test((_a = source[i + 1]) !== null && _a !== void 0 ? _a : '')) {
+            const ref = source.slice(i + 1).match(/^[A-Za-z][A-Za-z0-9_-]*/)[0];
+            if (Object.prototype.hasOwnProperty.call(names, ref) === false) {
+                throw new Error(`xnew.css: unknown reference "$${ref}" in "${key}".`);
+            }
+            out += names[ref];
+            i += 1 + ref.length;
+        }
+        else {
+            if (c === '{') {
+                depth++;
+            }
+            else if (c === '}') {
+                depth--;
+            }
+            if (depth < 0) {
+                throw new Error(`xnew.css: unbalanced braces in "${key}".`);
+            }
+            out += c;
+            i++;
+        }
+    }
+    if (depth !== 0) {
+        throw new Error(`xnew.css: unbalanced braces in "${key}".`);
+    }
+    return out;
+}
 function applyCss(unit, layer, defs) {
     var _a;
     if (((_a = globalThis.document) === null || _a === void 0 ? void 0 : _a.head) === undefined) {
-        return Object.fromEntries(Object.keys(defs).map((name) => [name, name]));
+        return Object.fromEntries(Object.entries(defs).map(([name, def]) => [name, generatedName(def, '', name)]));
     }
-    const key = JSON.stringify([layer, defs]);
-    let entry = registry.get(key);
-    if (entry === undefined) {
-        if (layer !== undefined && layerName.test(layer) === false) {
-            throw new Error(`xnew.css: invalid layer "${layer}".`);
+    else {
+        const key = JSON.stringify([layer, defs]);
+        let entry = registry.get(key);
+        if (entry === undefined) {
+            if (layer !== undefined && layerName.test(layer) === false) {
+                throw new Error(`xnew.css: invalid layer "${layer}".`);
+            }
+            const id = counter++;
+            const names = {};
+            for (const [name, def] of Object.entries(defs)) {
+                if (localName.test(name) === false) {
+                    throw new Error(`xnew.css: invalid local name "${name}".`);
+                }
+                else if (typeof def === 'object' && atRules.includes(def.rule) === false) {
+                    throw new Error(`xnew.css: unsupported rule "${def.rule}" in "${name}".`);
+                }
+                else if (typeof def === 'object' && Array.isArray(def.body) === true && def.rule !== '@font-face') {
+                    throw new Error(`xnew.css: only @font-face may take multiple bodies ("${name}").`);
+                }
+                else {
+                    names[name] = generatedName(def, `xnew${id}-`, name);
+                }
+            }
+            const blocks = Object.entries(defs).map(([name, def]) => {
+                if (typeof def === 'string') {
+                    if (/^@(keyframes|property|counter-style|font-face)\b/.test(def.trim()) === true) {
+                        throw new Error(`xnew.css: write "${name}" as { rule: '@…', body: '…' }.`);
+                    }
+                    return `.${names[name]} {\n${resolveBody(name, def, names)}\n}`;
+                }
+                else if (def.rule === '@font-face') {
+                    const bodies = Array.isArray(def.body) ? def.body : [def.body];
+                    return bodies.map((body) => `@font-face {\nfont-family: ${names[name]};\n${resolveBody(name, body, names)}\n}`).join('\n');
+                }
+                else {
+                    return `${def.rule} ${names[name]} {\n${resolveBody(name, def.body, names)}\n}`;
+                }
+            }).join('\n');
+            const text = layer === undefined ? blocks : `@layer ${layer} {\n${blocks}\n}`;
+            const style = document.createElement('style');
+            style.textContent = text;
+            document.head.appendChild(style);
+            entry = { names, refs: 0, style };
+            registry.set(key, entry);
         }
-        const id = counter++;
-        const names = {};
-        for (const name of Object.keys(defs)) {
-            if (localName.test(name) === true) {
-                names[name] = `xnew${id}-${name}`;
-            }
-            else {
-                throw new Error(`xnew.css: invalid local name "${name}".`);
-            }
-        }
-        const resolve = (body) => body.replace(reference, (_, ref) => {
-            if (names[ref] === undefined) {
-                throw new Error(`xnew.css: unknown reference "$${ref}".`);
-            }
-            else {
-                return names[ref];
+        const held = entry;
+        held.refs++;
+        unit.on('finalize', () => {
+            held.refs--;
+            if (held.refs === 0) {
+                held.style.remove();
+                registry.delete(key);
             }
         });
-        const rules = Object.entries(defs).map(([name, value]) => {
-            if (value.trim().startsWith('@') === true) {
-                const match = value.trim().match(atRule);
-                if (match === null) {
-                    throw new Error(`xnew.css: at-rule "${name}" must be nameless, as "@type { … }".`);
-                }
-                return `@${match[1]} ${names[name]} {\n${resolve(match[2].trim())}\n}`;
-            }
-            else {
-                return `.${names[name]} {\n${resolve(value)}\n}`;
-            }
-        }).join('\n');
-        const text = layer === undefined ? rules : `@layer ${layer} {\n${rules}\n}`;
-        const style = document.createElement('style');
-        style.textContent = text;
-        document.head.appendChild(style);
-        entry = { names, refs: 0, style };
-        registry.set(key, entry);
+        return held.names;
     }
-    const held = entry;
-    held.refs++;
-    unit.on('finalize', () => {
-        held.refs--;
-        if (held.refs === 0) {
-            held.style.remove();
-            registry.delete(key);
-        }
-    });
-    return held.names;
 }
 
 const xnew = Object.assign((function (...args) {
@@ -992,10 +1045,10 @@ const xnew = Object.assign((function (...args) {
     if (args[0] instanceof Unit) {
         const parent = args.shift();
         const snapshot = (_a = parent._.lastSnapshot) !== null && _a !== void 0 ? _a : Unit.snapshot(parent);
-        return Unit.scope(snapshot, () => Unit.create(parent, ...args));
+        return Unit.scope(snapshot, () => new Unit({ parent }, ...args));
     }
     else {
-        return Unit.create(Unit.current, ...args);
+        return new Unit({ parent: Unit.current }, ...args);
     }
 }), {
     nest(tag, textContent) {
@@ -1018,8 +1071,8 @@ const xnew = Object.assign((function (...args) {
         const defs = typeof layerOrDefs === 'string' ? maybeDefs : layerOrDefs;
         return applyCss(Unit.current, layer, defs);
     }),
-    context(key) {
-        return Unit.getContext(Unit.current, key);
+    context(Component) {
+        return Unit.getContext(Unit.current, Component);
     },
     promise: (function (keyOrPromise, maybePromise) {
         const key = typeof keyOrPromise === 'string' ? keyOrPromise : undefined;
@@ -1045,8 +1098,8 @@ const xnew = Object.assign((function (...args) {
         const snapshot = Unit.snapshot(Unit.current);
         return (...args) => Unit.scope(snapshot, callback, ...args);
     },
-    find(Component, opts) {
-        return Unit.find(Component, opts === null || opts === void 0 ? void 0 : opts.key);
+    find(Component, options) {
+        return Unit.find(Component, options);
     },
     emit(type, ...args) {
         return Unit.emit(Unit.current, type, ...args);
@@ -1076,87 +1129,57 @@ Object.defineProperty(xnew, 'standalone', {
 function getEnvironment() {
     return ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
 }
-const syncData = new WeakMap();
-function syncOf(unit) {
-    if (syncData.has(unit) === false) {
-        syncData.set(unit, { id: null, state: {}, registry: {}, visibility: null });
-    }
-    return syncData.get(unit);
-}
-const rootInfos = new WeakMap();
-function findRootInfo(unit) {
-    for (let u = unit; u !== null; u = u._.parent) {
-        if (rootInfos.has(u) === true) {
-            return rootInfos.get(u);
-        }
-    }
-    return undefined;
-}
-function rootInfoOf(unit) {
-    const info = findRootInfo(unit);
-    if (info === undefined) {
+
+function syncRoot(unit, required) {
+    var _a;
+    const root = (_a = unit._.inherited.syncRoot) !== null && _a !== void 0 ? _a : null;
+    if (required === true && root === null) {
         throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
     }
-    return info;
+    return root;
 }
-const WIRE_TO_SERVER = 'sync:toServer';
-const WIRE_DELIVER = 'sync:deliver';
-function dispatch(info, event, id, payload) {
+function syncData(unit) {
     var _a;
-    const data = payload && payload.data !== null && typeof payload.data === 'object' ? payload.data : {};
-    const syncId = payload ? payload.syncId : undefined;
-    ((_a = Unit.type2units.get(event)) !== null && _a !== void 0 ? _a : []).forEach((unit) => {
+    var _b;
+    return (_a = (_b = unit._.own).syncData) !== null && _a !== void 0 ? _a : (_b.syncData = { id: null, state: {}, registry: {}, visibility: null });
+}
+function dispatch(info, type, id, data = {}, syncId) {
+    var _a;
+    ((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : []).forEach((unit) => {
         var _a;
         if (unit._.phase === 'finalized' || unit._.phase === 'finalizing')
             return;
-        if (findRootInfo(unit) !== info)
+        if (syncRoot(unit) !== info)
             return;
-        if (event[0] === '-' && syncOf(unit).id !== syncId)
+        if (type[0] === '-' && syncData(unit).id !== syncId)
             return;
-        (_a = unit._.listeners.get(event)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
+        (_a = unit._.listeners.get(type)) === null || _a === void 0 ? void 0 : _a.forEach((item) => item.execute(Object.assign({ id }, data)));
     });
 }
-function relayToClients(info, type, syncId, data, ids) {
-    const envelope = { type, syncId, id: undefined, data };
-    if (Array.isArray(ids) && ids.length > 0) {
-        ids.forEach((cid) => info.io.to(cid).emit(WIRE_DELIVER, envelope));
-    }
-    else {
-        info.io.to(info.room.id).emit(WIRE_DELIVER, envelope);
-    }
-}
-function bootServer(opts, parent, args) {
-    const { io, room } = opts;
+function bootServer(options, args) {
+    const { io, room } = options;
     const info = { io, room, clients: [] };
-    const root = new Unit(parent);
-    rootInfos.set(root, info);
-    Unit.initialize(root, ...args);
+    const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
     let nextId = 1;
     const captureStateTree = (clientId) => {
         const nodes = [];
-        const syncName = (unit) => {
-            var _a;
+        const walk = (unit, parent) => {
+            var _a, _b, _c;
             let name = undefined;
-            const registry = unit._.parent ? (_a = syncData.get(unit._.parent)) === null || _a === void 0 ? void 0 : _a.registry : undefined;
+            const registry = (_b = (_a = unit._.parent) === null || _a === void 0 ? void 0 : _a._.own.syncData) === null || _b === void 0 ? void 0 : _b.registry;
             if (registry !== undefined) {
-                const names = new Map(Object.entries(registry).map(([key, Component]) => [Component, key]));
                 for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
-                    name = names.get(unit._.Components[i]);
+                    name = Object.keys(registry).find((key) => registry[key] === unit._.Components[i]);
                 }
             }
-            return name;
-        };
-        const walk = (unit, parent) => {
-            var _a;
-            const name = syncName(unit);
             if (name === undefined) {
                 unit._.children.forEach((child) => walk(child, parent));
             }
             else {
-                const data = syncOf(unit);
+                const data = syncData(unit);
                 const visible = data.visibility === null || data.visibility(clientId) === true;
                 if (visible === true) {
-                    (_a = data.id) !== null && _a !== void 0 ? _a : (data.id = nextId++);
+                    (_c = data.id) !== null && _c !== void 0 ? _c : (data.id = nextId++);
                     nodes.push({ id: data.id, name, parent, state: Object.assign({}, data.state) });
                     unit._.children.forEach((child) => walk(child, data.id));
                 }
@@ -1165,7 +1188,15 @@ function bootServer(opts, parent, args) {
         walk(root, null);
         return nodes;
     };
-    root.on('update', () => info.clients.forEach((client) => io.to(client.id).emit('sync', captureStateTree(client.id))));
+    const lastEmits = new Map();
+    root.on('update', () => info.clients.forEach((client) => {
+        const tree = captureStateTree(client.id);
+        const json = JSON.stringify(tree);
+        if (lastEmits.get(client.id) !== json) {
+            lastEmits.set(client.id, json);
+            io.to(client.id).emit('sync', tree);
+        }
+    }));
     const connection = (socket) => {
         var _a, _b;
         const query = (_a = socket.handshake) === null || _a === void 0 ? void 0 : _a.query;
@@ -1173,87 +1204,80 @@ function bootServer(opts, parent, args) {
             return;
         socket.join(room.id);
         info.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
-        dispatch(info, 'sync.connect', socket.id, undefined);
-        statusUpdate();
-        socket.onAny((event, payload) => {
-            if (event === WIRE_TO_SERVER) {
-                dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, socket.id, payload);
-            }
+        dispatch(info, 'sync.connect', socket.id);
+        socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
+        io.to(room.id).emit('status', { clients: info.clients });
+        dispatch(info, 'sync.statusupdate', undefined);
+        socket.on('emitToServer', (p) => {
+            dispatch(info, p === null || p === void 0 ? void 0 : p.type, socket.id, typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {}, p === null || p === void 0 ? void 0 : p.syncId);
         });
         socket.on('disconnect', () => {
             info.clients = info.clients.filter((c) => c.id !== socket.id);
-            dispatch(info, 'sync.disconnect', socket.id, undefined);
-            statusUpdate();
+            lastEmits.delete(socket.id);
+            dispatch(info, 'sync.disconnect', socket.id);
+            socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
+            io.to(room.id).emit('status', { clients: info.clients });
+            dispatch(info, 'sync.statusupdate', undefined);
         });
     };
     io.on('connection', connection);
     root.on('finalize', () => io.off('connection', connection));
-    function statusUpdate() {
-        io.to(room.id).emit('status', { clients: info.clients });
-        dispatch(info, 'sync.statusupdate', undefined, undefined);
-    }
     return root;
 }
-function bootClient(opts, parent, args) {
+function bootClient(options, args) {
     var _a;
-    const { io, room, client } = opts;
+    const { io, room, client } = options;
     const socket = io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true });
     const info = { socket, room, clients: [] };
-    const root = new Unit(parent);
-    rootInfos.set(root, info);
-    Unit.initialize(root, ...args);
+    const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
     const reconcileMap = new Map();
-    const applyStateTree = (tree) => {
-        const incoming = new Set(tree.map((node) => node.id));
-        for (const node of tree) {
-            const existing = reconcileMap.get(node.id);
-            if (existing !== undefined) {
-                const state = syncOf(existing).state;
-                for (const key of Object.keys(state)) {
-                    if ((key in node.state) === false) {
-                        delete state[key];
+    let lastTree = '';
+    socket.on('sync', (tree) => {
+        const json = JSON.stringify(tree);
+        if (json !== lastTree) {
+            lastTree = json;
+            const incoming = new Set(tree.map((node) => node.id));
+            for (const node of tree) {
+                const existing = reconcileMap.get(node.id);
+                if (existing !== undefined) {
+                    const state = syncData(existing).state;
+                    for (const key of Object.keys(state)) {
+                        if ((key in node.state) === false) {
+                            delete state[key];
+                        }
                     }
+                    Object.assign(state, node.state);
+                    continue;
                 }
-                Object.assign(state, node.state);
-                continue;
+                const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
+                const Component = nodeParent && syncData(nodeParent).registry[node.name];
+                if (!Component) {
+                    continue;
+                }
+                const unit = new Unit({ parent: nodeParent, own: { syncData: { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null } } }, Component);
+                reconcileMap.set(node.id, unit);
             }
-            const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
-            const Component = nodeParent && syncOf(nodeParent).registry[node.name];
-            if (!Component) {
-                continue;
+            for (const [id, unit] of reconcileMap) {
+                if (!incoming.has(id)) {
+                    unit.finalize();
+                    reconcileMap.delete(id);
+                }
             }
-            const unit = new Unit(nodeParent);
-            syncData.set(unit, { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null });
-            Unit.initialize(unit, Component);
-            reconcileMap.set(node.id, unit);
+            dispatch(info, 'sync.update', undefined);
         }
-        for (const [id, unit] of [...reconcileMap.entries()]) {
-            if (!incoming.has(id)) {
-                unit.finalize();
-                reconcileMap.delete(id);
-            }
-        }
-    };
-    socket.on('sync', applyStateTree);
-    const onStatus = (status) => {
+    });
+    socket.on('status', (status) => {
         var _a;
         info.clients = (_a = status === null || status === void 0 ? void 0 : status.clients) !== null && _a !== void 0 ? _a : [];
-        dispatch(info, 'sync.statusupdate', undefined, undefined);
-    };
-    socket.on('status', onStatus);
-    socket.onAny((event, payload) => {
-        if (event === WIRE_DELIVER) {
-            dispatch(info, payload === null || payload === void 0 ? void 0 : payload.type, payload === null || payload === void 0 ? void 0 : payload.id, payload);
-        }
+        dispatch(info, 'sync.statusupdate', undefined);
     });
-    socket.on('connect', () => Unit.emit(parent, '-connect', { id: socket.id }));
-    socket.on('disconnect', () => Unit.emit(parent, '-disconnect', {}));
-    socket.on('notfound', (payload) => Unit.emit(parent, '-notfound', payload !== null && payload !== void 0 ? payload : {}));
-    root.on('finalize', () => {
-        socket.off('sync', applyStateTree);
-        socket.off('status', onStatus);
-        socket.disconnect();
+    socket.on('emitToClients', (p) => {
+        dispatch(info, p === null || p === void 0 ? void 0 : p.type, p === null || p === void 0 ? void 0 : p.id, typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {}, p === null || p === void 0 ? void 0 : p.syncId);
     });
+    socket.on('connect', () => dispatch(info, 'sync.connect', socket.id));
+    socket.on('disconnect', () => dispatch(info, 'sync.disconnect', socket.id));
+    socket.on('notfound', (payload) => dispatch(info, 'sync.notfound', socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
+    root.on('finalize', () => socket.disconnect());
     return root;
 }
 const xsync = {
@@ -1264,7 +1288,7 @@ const xsync = {
         return getEnvironment() === 'client' ? Unit.extend(Unit.current, callback, props) : {};
     },
     state(initial = {}) {
-        const data = syncOf(Unit.current);
+        const data = syncData(Unit.current);
         for (const key of Object.keys(initial)) {
             if (!(key in data.state)) {
                 data.state[key] = initial[key];
@@ -1277,33 +1301,19 @@ const xsync = {
         if (unit._.phase !== 'invoked') {
             throw new Error('xsync.register must be called during component initialization.');
         }
-        Object.assign(syncOf(unit).registry, Components);
+        Object.assign(syncData(unit).registry, Components);
     },
-    visibleTo(target) {
-        const data = syncOf(Unit.current);
-        if (target === null) {
-            data.visibility = null;
-        }
-        else if (typeof target === 'function') {
-            data.visibility = target;
-        }
-        else if (Array.isArray(target)) {
-            const allowed = new Set(target);
-            data.visibility = (clientId) => allowed.has(clientId);
-        }
-        else {
-            data.visibility = (clientId) => clientId === target;
-        }
+    visibility(target) {
+        syncData(Unit.current).visibility = target;
     },
     get session() {
-        const info = rootInfoOf(Unit.current);
-        const isServer = getEnvironment() === 'server';
+        const info = syncRoot(Unit.current, true);
         return {
             get room() { return info.room; },
             get clients() { return info.clients; },
             get myself() {
                 var _a;
-                if (isServer) {
+                if (getEnvironment() === 'server') {
                     throw new Error('xsync.session.myself is only available on the client side.');
                 }
                 const client = info;
@@ -1312,29 +1322,381 @@ const xsync = {
         };
     },
     emitToServer(type, props = {}) {
-        const info = rootInfoOf(Unit.current);
+        const info = syncRoot(Unit.current, true);
         if (getEnvironment() === 'server') {
             Unit.emit(Unit.current, type, props);
         }
         else {
-            info.socket.emit(WIRE_TO_SERVER, { type, syncId: syncOf(Unit.current).id, data: props });
+            info.socket.emit('emitToServer', { type, syncId: syncData(Unit.current).id, data: props });
         }
     },
     emitToClients(type, props = {}, ids) {
         if (getEnvironment() !== 'server') {
             throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
         }
-        const info = rootInfoOf(Unit.current);
-        const syncId = syncOf(Unit.current).id;
-        relayToClients(info, type, syncId, props, ids);
+        const { io, room } = syncRoot(Unit.current, true);
+        const envelope = { type, syncId: syncData(Unit.current).id, id: undefined, data: props };
+        ((ids === null || ids === void 0 ? void 0 : ids.length) ? ids : [room.id]).forEach((target) => io.to(target).emit('emitToClients', envelope));
     },
-    boot(opts, ...args) {
-        if (getEnvironment() === 'server') {
-            return bootServer(opts, Unit.current, args);
+    boot(options, ...args) {
+        return getEnvironment() === 'server' ? bootServer(options, args) : bootClient(options, args);
+    },
+};
+
+var _a;
+const DEFAULT_MASTER_GAIN = 0.1;
+const AudioContextCtor = typeof window !== 'undefined' ? ((_a = window.AudioContext) !== null && _a !== void 0 ? _a : window.webkitAudioContext) : undefined;
+const context = typeof AudioContextCtor === 'function' ? new AudioContextCtor() : null;
+const master = context !== null ? context.createGain() : null;
+if (context !== null && master !== null) {
+    master.gain.value = DEFAULT_MASTER_GAIN;
+    master.connect(context.destination);
+}
+function resume() {
+    if (context !== null && context.state === 'suspended') {
+        context.resume();
+    }
+}
+
+class AudioTrack {
+    constructor({ url, volume, loop = false }) {
+        this.source = null;
+        this.startedAt = null;
+        this.paused = false;
+        this.pausedOffsetMs = 0;
+        this.looping = loop;
+        this.amp = context.createGain();
+        this.amp.gain.value = volume !== null && volume !== void 0 ? volume : 1.0;
+        this.amp.connect(master);
+        this.fade = context.createGain();
+        this.fade.gain.value = 1.0;
+        this.fade.connect(this.amp);
+        this.promise = fetch(url)
+            .then((response) => response.arrayBuffer())
+            .then((response) => context.decodeAudioData(response))
+            .then((response) => { this.buffer = response; });
+    }
+    play({ offset, fade: fadeMs = 0, loop: loopArg } = {}) {
+        resume();
+        if (this.buffer === undefined) {
+            this.promise.then(() => this.play({ offset, fade: fadeMs, loop: loopArg }));
         }
         else {
-            return bootClient(opts, Unit.current, args);
+            if (loopArg !== undefined) {
+                this.looping = loopArg;
+            }
+            if (this.startedAt !== null) {
+                this.forceStop();
+            }
+            this.paused = false;
+            this.startSource(offset !== null && offset !== void 0 ? offset : this.pausedOffsetMs, fadeMs);
         }
+    }
+    pause({ fade: fadeMs = 0 } = {}) {
+        if (this.buffer === undefined || this.startedAt === null) ;
+        else {
+            const elapsedSec = context.currentTime - this.startedAt;
+            const positionSec = this.looping ? elapsedSec % this.buffer.duration : Math.min(elapsedSec, this.buffer.duration);
+            this.paused = true;
+            this.pausedOffsetMs = positionSec * 1000;
+            const node = this.source;
+            this.source = null;
+            this.startedAt = null;
+            this.stopSource(node, fadeMs);
+        }
+    }
+    get status() {
+        if (this.buffer === undefined) {
+            return 'loading';
+        }
+        else if (this.startedAt !== null) {
+            return 'playing';
+        }
+        else if (this.paused) {
+            return 'paused';
+        }
+        else {
+            return 'loaded';
+        }
+    }
+    get volume() {
+        return this.amp.gain.value;
+    }
+    set volume(value) {
+        this.amp.gain.value = value;
+    }
+    clear() {
+        this.forceStop();
+        this.amp.disconnect();
+        this.fade.disconnect();
+        this.pausedOffsetMs = 0;
+    }
+    forceStop() {
+        if (this.source !== null) {
+            this.source.onended = null;
+            try {
+                this.source.stop();
+            }
+            catch (_a) {
+            }
+            this.source.disconnect();
+            this.source = null;
+        }
+        this.startedAt = null;
+    }
+    startSource(offsetMs, fadeMs) {
+        const node = context.createBufferSource();
+        this.source = node;
+        node.buffer = this.buffer;
+        node.loop = this.looping;
+        node.connect(this.fade);
+        const now = context.currentTime;
+        this.startedAt = now - offsetMs / 1000;
+        node.start(now, offsetMs / 1000);
+        this.fade.gain.cancelScheduledValues(now);
+        if (fadeMs > 0) {
+            this.fade.gain.setValueAtTime(0, now);
+            this.fade.gain.linearRampToValueAtTime(1.0, now + fadeMs / 1000);
+        }
+        else {
+            this.fade.gain.setValueAtTime(1.0, now);
+        }
+        node.onended = () => {
+            node.disconnect();
+            if (this.source === node) {
+                this.source = null;
+                this.startedAt = null;
+                this.pausedOffsetMs = 0;
+            }
+        };
+    }
+    stopSource(node, fadeMs) {
+        const now = context.currentTime;
+        if (fadeMs > 0) {
+            this.fade.gain.setValueAtTime(1.0, now);
+            this.fade.gain.linearRampToValueAtTime(0, now + fadeMs / 1000);
+            node.stop(now + fadeMs / 1000);
+        }
+        else {
+            node.stop(now);
+        }
+    }
+}
+
+const DEFAULT_BPM = 120;
+const RELEASE_CLEANUP_DELAY_MS = 2000;
+const NOTE_INDEX = { 'C': 0, 'C#': 1, 'D': 2, 'D#': 3, 'E': 4, 'F': 5, 'F#': 6, 'G': 7, 'G#': 8, 'A': 9, 'A#': 10, 'B': 11 };
+const notemap = {
+    '1m': 4.000, '2n': 2.000, '4n': 1.000, '8n': 0.500, '16n': 0.250, '32n': 0.125,
+};
+function resolveFrequency(value) {
+    if (typeof value === 'string') {
+        const semitone = NOTE_INDEX[value.slice(0, -1)] + Number(value.slice(-1)) * 12;
+        return 440 * Math.pow(2, (semitone - 57) / 12);
+    }
+    else {
+        return value;
+    }
+}
+function resolveDurationSeconds(value, bpm) {
+    if (typeof value === 'string') {
+        return notemap[value] * 60 / bpm;
+    }
+    else if (typeof value === 'number') {
+        return value / 1000;
+    }
+    else {
+        return 0;
+    }
+}
+function semitoneOffset(baseFreq, amount) {
+    return baseFreq * (Math.pow(2.0, amount / 12.0) - 1.0);
+}
+function scheduleAttackDecay(param, start, base, amount, ADSR) {
+    const [a, d, s] = ADSR;
+    param.value = base;
+    param.setValueAtTime(base, start);
+    param.linearRampToValueAtTime(base + amount, start + a / 1000);
+    param.linearRampToValueAtTime(base + amount * s, start + (a + d) / 1000);
+}
+function scheduleRelease(param, start, dv, base, amount, ADSR) {
+    const [a, d, s, r] = ADSR;
+    const end = dv > 0 ? dv : (context.currentTime - start);
+    const rate = a === 0 ? 1.0 : Math.min(end / (a / 1000), 1.0);
+    if (rate < 1.0) {
+        param.cancelScheduledValues(start);
+        param.setValueAtTime(base, start);
+        param.linearRampToValueAtTime(base + amount * rate, start + (a / 1000) * rate);
+        param.linearRampToValueAtTime(base + amount * rate * s, start + ((a + d) / 1000) * rate);
+    }
+    param.linearRampToValueAtTime(base + amount * rate * s, start + Math.max(((a + d) / 1000) * rate, dv));
+    const stop = start + Math.max(((a + d) / 1000) * rate, end) + r / 1000;
+    param.linearRampToValueAtTime(base, stop);
+    return stop;
+}
+function createImpulseResponse(timeMs, decay = 2.0) {
+    const length = context.sampleRate * timeMs / 1000;
+    const impulse = context.createBuffer(2, length, context.sampleRate);
+    const ch0 = impulse.getChannelData(0);
+    const ch1 = impulse.getChannelData(1);
+    for (let i = 0; i < length; i++) {
+        const k = Math.pow(1 - i / length, decay);
+        ch0[i] = (2 * Math.random() - 1) * k;
+        ch1[i] = (2 * Math.random() - 1) * k;
+    }
+    return impulse;
+}
+function attachLFO(target, baseFreq, lfo, start) {
+    const oscillator = context.createOscillator();
+    const depth = context.createGain();
+    depth.gain.value = semitoneOffset(baseFreq, lfo.amount);
+    oscillator.type = lfo.type;
+    oscillator.frequency.value = lfo.rate;
+    oscillator.start(start);
+    oscillator.connect(depth);
+    depth.connect(target.frequency);
+    return { oscillator, depth };
+}
+function attachReverb(amp, target, reverb) {
+    const convolver = context.createConvolver();
+    convolver.buffer = createImpulseResponse(reverb.time);
+    const depth = context.createGain();
+    depth.gain.value = reverb.mix;
+    target.gain.value *= (1.0 - reverb.mix);
+    amp.connect(convolver);
+    convolver.connect(depth);
+    depth.connect(master);
+    return { convolver, depth };
+}
+class Synthesizer {
+    constructor(props) {
+        this.active = new Set();
+        this.props = props;
+    }
+    press(frequency, duration, wait) {
+        var _a;
+        resume();
+        const props = this.props;
+        const freq = resolveFrequency(frequency);
+        const dv = resolveDurationSeconds(duration, (_a = props.bpm) !== null && _a !== void 0 ? _a : DEFAULT_BPM);
+        const start = context.currentTime + (wait !== null && wait !== void 0 ? wait : 0) / 1000;
+        const oscillators = [];
+        const nodesToDisconnect = [];
+        const oscillator = context.createOscillator();
+        oscillator.type = props.oscillator.type;
+        oscillator.frequency.value = freq;
+        oscillators.push(oscillator);
+        if (props.oscillator.LFO) {
+            const lfo = attachLFO(oscillator, freq, props.oscillator.LFO, start);
+            oscillators.push(lfo.oscillator);
+            nodesToDisconnect.push(lfo.oscillator, lfo.depth);
+        }
+        const amp = context.createGain();
+        amp.gain.value = 0.0;
+        const target = context.createGain();
+        target.gain.value = 1.0;
+        amp.connect(target);
+        target.connect(master);
+        nodesToDisconnect.push(oscillator, amp, target);
+        if (props.filter) {
+            const filter = context.createBiquadFilter();
+            filter.type = props.filter.type;
+            filter.frequency.value = props.filter.cutoff;
+            oscillator.connect(filter);
+            filter.connect(amp);
+            nodesToDisconnect.push(filter);
+        }
+        else {
+            oscillator.connect(amp);
+        }
+        if (props.reverb) {
+            const reverb = attachReverb(amp, target, props.reverb);
+            nodesToDisconnect.push(reverb.convolver, reverb.depth);
+        }
+        if (props.oscillator.envelope) {
+            const amount = semitoneOffset(freq, props.oscillator.envelope.amount);
+            scheduleAttackDecay(oscillator.frequency, start, freq, amount, props.oscillator.envelope.ADSR);
+        }
+        if (props.amp.envelope) {
+            scheduleAttackDecay(amp.gain, start, 0.0, props.amp.envelope.amount, props.amp.envelope.ADSR);
+        }
+        oscillator.start(start);
+        const note = {
+            stopped: false,
+            cleanupTimer: null,
+            stopAll: () => {
+                for (const o of oscillators) {
+                    o.stop();
+                }
+            },
+            cleanup: () => {
+                this.active.delete(note);
+                for (const n of nodesToDisconnect) {
+                    n.disconnect();
+                }
+            },
+        };
+        this.active.add(note);
+        const release = () => {
+            if (props.oscillator.envelope) {
+                const amount = semitoneOffset(freq, props.oscillator.envelope.amount);
+                scheduleRelease(oscillator.frequency, start, dv, freq, amount, props.oscillator.envelope.ADSR);
+            }
+            let stop;
+            if (props.amp.envelope) {
+                stop = scheduleRelease(amp.gain, start, dv, 0.0, props.amp.envelope.amount, props.amp.envelope.ADSR);
+            }
+            else {
+                stop = start + (dv > 0 ? dv : (context.currentTime - start));
+            }
+            for (const o of oscillators) {
+                o.stop(stop);
+            }
+            note.stopped = true;
+            note.cleanupTimer = setTimeout(note.cleanup, RELEASE_CLEANUP_DELAY_MS);
+        };
+        if (dv > 0) {
+            release();
+            return undefined;
+        }
+        else {
+            return { release };
+        }
+    }
+    clear() {
+        for (const note of this.active) {
+            if (note.cleanupTimer !== null) {
+                clearTimeout(note.cleanupTimer);
+            }
+            if (note.stopped === false) {
+                note.stopAll();
+            }
+            note.cleanup();
+        }
+    }
+}
+
+const xaudio = {
+    load(props) {
+        const track = new AudioTrack(props);
+        xnew((unit) => {
+            xnew.promise(track.promise);
+            unit.on('finalize', () => track.clear());
+        });
+        return track;
+    },
+    synthesizer(props) {
+        const synth = new Synthesizer(props);
+        xnew((unit) => {
+            unit.on('finalize', () => synth.clear());
+        });
+        return synth;
+    },
+    get volume() {
+        return master.gain.value;
+    },
+    set volume(value) {
+        master.gain.value = value;
     },
 };
 
@@ -1352,13 +1714,13 @@ function Aspect(unit, { aspect = 1.0, fit = 'contain' } = {}) {
     });
     xnew.nest({ tag: 'div', className: css.container });
     xnew.nest({ tag: 'div', className: css.inner });
-    unit.element.style.aspectRatio = String(aspect);
+    unit.current.style.aspectRatio = String(aspect);
     if (fit === 'contain') {
-        unit.element.style.width = `min(100cqw, calc(100cqh * ${aspect}))`;
+        unit.current.style.width = `min(100cqw, calc(100cqh * ${aspect}))`;
     }
     else {
-        unit.element.style.flexShrink = '0';
-        unit.element.style.width = `max(100cqw, calc(100cqh * ${aspect}))`;
+        unit.current.style.flexShrink = '0';
+        unit.current.style.width = `max(100cqw, calc(100cqh * ${aspect}))`;
     }
 }
 
@@ -1372,7 +1734,7 @@ function Screen(unit, { width = 800, height = 600, fit = 'contain' } = {}) {
     });
     const canvas = xnew({ tag: 'canvas', width, height, className: css.canvas });
     return {
-        get canvas() { return canvas.element; },
+        get canvas() { return canvas.current; },
     };
 }
 
@@ -1457,7 +1819,7 @@ function Image(unit, _a) {
         `,
     });
     xnew.nest(Object.assign({ tag: 'img', className: `${css.container} ${className}`, style }, others));
-    const element = unit.element;
+    const element = unit.current;
     let objectURL = null;
     function apply(value) {
         if (typeof value === 'string') {
@@ -1481,7 +1843,7 @@ function Image(unit, _a) {
     });
 }
 
-function GraphicText(unit, _a = {}) {
+function SVGText(unit, _a = {}) {
     var { text = '', className = '', style = '' } = _a, others = __rest(_a, ["text", "className", "style"]);
     const css = xnew.css('base', {
         container: `
@@ -1494,17 +1856,17 @@ function GraphicText(unit, _a = {}) {
     xnew.nest({ tag: 'svg', className: `${css.container} ${className}`, style });
     const inner = xnew(Object.assign({ tag: 'text', x: 0, y: 0, paintOrder: 'stroke fill' }, others), text);
     function resize() {
-        const bbox = inner.element.getBBox();
-        unit.element.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
-        unit.element.style.width = bbox.width + 'px';
-        unit.element.style.height = bbox.height + 'px';
+        const bbox = inner.current.getBBox();
+        unit.current.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+        unit.current.style.width = bbox.width + 'px';
+        unit.current.style.height = bbox.height + 'px';
     }
     resize();
     inner.on('resize', resize);
 }
 
 function InputRange(unit, _a = {}) {
-    var { value, min = 0, max = 100, step = 1, vertical = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "min", "max", "step", "vertical", "className", "style"]);
+    var { value, min = 0, max = 100, step, vertical = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "min", "max", "step", "vertical", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-block;
@@ -1529,10 +1891,35 @@ function InputRange(unit, _a = {}) {
     xnew.nest({ tag: 'div', className: `${css.container} ${vertical ? css.vertical : css.horizontal} ${className}`, style });
     const initial = value !== null && value !== void 0 ? value : min;
     const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
-    xnew(Object.assign({ tag: 'input', type: 'range', min, max, step, value: initial, className: css.input, style: direction }, others));
+    const input = xnew(Object.assign({ tag: 'input', type: 'range', min, max, step: step !== null && step !== void 0 ? step : autoStep(min, max), value: initial, className: css.input, style: direction }, others));
     if (xnew.standalone === true) {
         xnew(InputRangeMeter, { value: initial, min, max, vertical });
         xnew(InputRangeStatus, { value: initial, vertical });
+    }
+    return {
+        get input() {
+            return input.current;
+        },
+    };
+}
+function autoStep(min, max) {
+    const d = max - min;
+    if (d > 0) {
+        const target = d / 100;
+        const base = Math.pow(10, Math.floor(Math.log10(target)));
+        const ratio = target / base;
+        if (ratio < Math.sqrt(5)) {
+            return base;
+        }
+        else if (ratio < Math.sqrt(50)) {
+            return base * 5;
+        }
+        else {
+            return base * 10;
+        }
+    }
+    else {
+        return 1;
     }
 }
 function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false } = {}) {
@@ -1557,10 +1944,10 @@ function InputRangeMeter(unit, { value = 0, min = 0, max = 100, vertical = false
     function apply(v) {
         const percent = `${(v - min) / (max - min) * 100}%`;
         if (vertical) {
-            meter.element.style.height = percent;
+            meter.current.style.height = percent;
         }
         else {
-            meter.element.style.width = percent;
+            meter.current.style.width = percent;
         }
     }
     apply(value);
@@ -1587,7 +1974,7 @@ function InputRangeStatus(unit, { value = 0, vertical = false } = {}) {
     });
     const status = xnew({ tag: 'div', className: `${css.status} ${vertical ? css.vertical : css.horizontal}` });
     function apply(v) {
-        status.element.textContent = String(v);
+        status.current.textContent = String(v);
     }
     apply(value);
     unit.on('input', ({ value }) => {
@@ -1664,18 +2051,22 @@ function InputCheckbox(unit, _a = {}) {
         `,
     });
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
-    xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
+    const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
-    gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
-    gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
-    unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
+    function apply(checked) {
+        input.current.checked = checked;
+        unit.current.toggleAttribute('data-checked', checked);
+    }
+    gate.on('-open', () => apply(true));
+    gate.on('-closed', () => apply(false));
+    apply(gate.state === 'opened' || gate.state === 'opening');
     unit.on('input', ({ value }) => value ? gate.open() : gate.close());
     if (xnew.standalone === true) {
         xnew(CheckMark);
     }
     return {
-        get value() {
-            return gate.state === 'opened' || gate.state === 'opening';
+        get input() {
+            return input.current;
         },
         get gate() {
             return gate;
@@ -1717,11 +2108,11 @@ function InputText(unit, _a = {}) {
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     const input = xnew(Object.assign({ tag: 'input', type: 'text', value, className: css.input }, others));
-    unit.on('click', () => input.element.focus());
+    unit.on('click', () => input.current.focus());
     return {
-        get value() {
-            return input.element.value;
-        }
+        get input() {
+            return input.current;
+        },
     };
 }
 
@@ -1749,11 +2140,11 @@ function InputNumber(unit, _a = {}) {
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
     const input = xnew(Object.assign({ tag: 'input', type: 'number', value, className: css.input }, others));
-    unit.on('click', () => input.element.focus());
+    unit.on('click', () => input.current.focus());
     return {
-        get value() {
-            return parseFloat(input.element.value);
-        }
+        get input() {
+            return input.current;
+        },
     };
 }
 
@@ -1773,18 +2164,22 @@ function InputSwitch(unit, _a = {}) {
         `,
     });
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
-    xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
+    const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
-    gate.on('-open', () => unit.element.toggleAttribute('data-checked', true));
-    gate.on('-closed', () => unit.element.toggleAttribute('data-checked', false));
-    unit.element.toggleAttribute('data-checked', gate.state === 'opened' || gate.state === 'opening');
+    function apply(checked) {
+        input.current.checked = checked;
+        unit.current.toggleAttribute('data-checked', checked);
+    }
+    gate.on('-open', () => apply(true));
+    gate.on('-closed', () => apply(false));
+    apply(gate.state === 'opened' || gate.state === 'opening');
     unit.on('input', ({ value }) => value ? gate.open() : gate.close());
     if (xnew.standalone === true) {
         xnew(Knob);
     }
     return {
-        get value() {
-            return gate.state === 'opened' || gate.state === 'opening';
+        get input() {
+            return input.current;
         },
         get gate() {
             return gate;
@@ -1822,7 +2217,12 @@ function InputRadio(unit, _a = {}) {
         `,
     });
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style }, value);
-    xnew(Object.assign({ tag: 'input', type: 'radio', name, value, checked, className: css.input }, others));
+    const input = xnew(Object.assign({ tag: 'input', type: 'radio', name, value, checked, className: css.input }, others));
+    return {
+        get input() {
+            return input.current;
+        },
+    };
 }
 
 function Overlay(unit, _a = {}) {
@@ -1836,9 +2236,9 @@ function Overlay(unit, _a = {}) {
             `,
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
-    gate.on('-transition', ({ value }) => unit.element.style.opacity = value.toString());
-    gate.on('-open', () => unit.element.style.pointerEvents = 'auto');
-    gate.on('-closed', () => unit.element.style.pointerEvents = 'none');
+    gate.on('-transition', ({ value }) => unit.current.style.opacity = value.toString());
+    gate.on('-open', () => unit.current.style.pointerEvents = 'auto');
+    gate.on('-closed', () => unit.current.style.pointerEvents = 'none');
     if (anchor instanceof HTMLElement) {
         const tether = xnew.nest({ tag: 'div', style: 'position: absolute; box-sizing: border-box' });
         track();
@@ -1922,13 +2322,13 @@ function ListboxButton(unit, _a = {}) {
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     const label = xnew({ tag: 'div', className: css.label });
-    listbox.bind(label.element);
+    listbox.bind(label.current);
     unit.on('click', ({ event }) => {
         event.stopPropagation();
         listbox.gate.toggle();
     });
-    listbox.gate.on('-open', () => unit.element.toggleAttribute('data-open', true));
-    listbox.gate.on('-closed', () => unit.element.toggleAttribute('data-open', false));
+    listbox.gate.on('-open', () => unit.current.toggleAttribute('data-open', true));
+    listbox.gate.on('-closed', () => unit.current.toggleAttribute('data-open', false));
 }
 function ListboxMenu(unit, _a = {}) {
     var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
@@ -1941,7 +2341,7 @@ function ListboxMenu(unit, _a = {}) {
             overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
         `,
     });
-    xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.element });
+    xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.current });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     unit.on('click.outside', () => {
         const state = listbox.gate.state;
@@ -1949,9 +2349,9 @@ function ListboxMenu(unit, _a = {}) {
             listbox.gate.close();
         }
     });
-    listbox.gate.on('-open', () => unit.element.style.background = surfaceColor());
+    listbox.gate.on('-open', () => unit.current.style.background = surfaceColor());
     function surfaceColor() {
-        for (let element = listbox.element.parentElement; element !== null; element = element.parentElement) {
+        for (let element = listbox.current.parentElement; element !== null; element = element.parentElement) {
             const color = getComputedStyle(element).backgroundColor;
             if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
                 return color;
@@ -1980,360 +2380,16 @@ function ListboxItem(unit, _a = {}) {
         listbox.select(value);
     });
     if (xnew.standalone === true) {
-        unit.element.textContent = value;
+        unit.current.textContent = value;
     }
     return {
         get value() {
             return value;
         },
         check(current) {
-            unit.element.toggleAttribute('data-checked', current);
+            unit.current.toggleAttribute('data-checked', current);
         },
     };
-}
-
-var _a;
-const DEFAULT_MASTER_GAIN = 0.1;
-const AudioContextCtor = typeof window !== 'undefined' ? ((_a = window.AudioContext) !== null && _a !== void 0 ? _a : window.webkitAudioContext) : undefined;
-const context = typeof AudioContextCtor === 'function' ? new AudioContextCtor() : null;
-const master = context !== null ? context.createGain() : null;
-if (context !== null && master !== null) {
-    master.gain.value = DEFAULT_MASTER_GAIN;
-    master.connect(context.destination);
-}
-function resume() {
-    if (context !== null && context.state === 'suspended') {
-        context.resume();
-    }
-}
-function Volume(unit) {
-    return {
-        get volume() {
-            return master.gain.value;
-        },
-        set volume(value) {
-            master.gain.value = value;
-        },
-    };
-}
-
-function AudioTrack(unit, { url, volume, loop = false }) {
-    let buffer;
-    let source = null;
-    let startedAt = null;
-    let paused = false;
-    let pausedOffsetMs = 0;
-    let looping = loop;
-    const amp = context.createGain();
-    amp.gain.value = volume !== null && volume !== void 0 ? volume : 1.0;
-    amp.connect(master);
-    const fade = context.createGain();
-    fade.gain.value = 1.0;
-    fade.connect(amp);
-    const promise = fetch(url)
-        .then((response) => response.arrayBuffer())
-        .then((response) => context.decodeAudioData(response))
-        .then((response) => { buffer = response; });
-    xnew.promise(promise);
-    function forceStop() {
-        if (source !== null) {
-            source.onended = null;
-            try {
-                source.stop();
-            }
-            catch (_a) {
-            }
-            source.disconnect();
-            source = null;
-        }
-        startedAt = null;
-    }
-    function startSource(offsetMs, fadeMs) {
-        const node = context.createBufferSource();
-        source = node;
-        node.buffer = buffer;
-        node.loop = looping;
-        node.connect(fade);
-        const now = context.currentTime;
-        startedAt = now - offsetMs / 1000;
-        node.start(now, offsetMs / 1000);
-        fade.gain.cancelScheduledValues(now);
-        if (fadeMs > 0) {
-            fade.gain.setValueAtTime(0, now);
-            fade.gain.linearRampToValueAtTime(1.0, now + fadeMs / 1000);
-        }
-        else {
-            fade.gain.setValueAtTime(1.0, now);
-        }
-        node.onended = () => {
-            node.disconnect();
-            if (source === node) {
-                source = null;
-                startedAt = null;
-                pausedOffsetMs = 0;
-            }
-        };
-    }
-    function stopSource(node, fadeMs) {
-        const now = context.currentTime;
-        if (fadeMs > 0) {
-            fade.gain.setValueAtTime(1.0, now);
-            fade.gain.linearRampToValueAtTime(0, now + fadeMs / 1000);
-            node.stop(now + fadeMs / 1000);
-        }
-        else {
-            node.stop(now);
-        }
-    }
-    unit.on('finalize', () => {
-        forceStop();
-        amp.disconnect();
-        fade.disconnect();
-        pausedOffsetMs = 0;
-    });
-    return {
-        play: function play({ offset, fade: fadeMs = 0, loop: loopArg } = {}) {
-            resume();
-            if (buffer === undefined) {
-                promise.then(() => play({ offset, fade: fadeMs, loop: loopArg }));
-                return;
-            }
-            if (loopArg !== undefined) {
-                looping = loopArg;
-            }
-            if (startedAt !== null) {
-                forceStop();
-            }
-            paused = false;
-            startSource(offset !== null && offset !== void 0 ? offset : pausedOffsetMs, fadeMs);
-        },
-        pause({ fade: fadeMs = 0 } = {}) {
-            if (buffer === undefined || startedAt === null) {
-                return;
-            }
-            const elapsedSec = context.currentTime - startedAt;
-            const positionSec = looping ? elapsedSec % buffer.duration : Math.min(elapsedSec, buffer.duration);
-            paused = true;
-            pausedOffsetMs = positionSec * 1000;
-            const node = source;
-            source = null;
-            startedAt = null;
-            stopSource(node, fadeMs);
-        },
-        get status() {
-            if (buffer === undefined) {
-                return 'loading';
-            }
-            else if (startedAt !== null) {
-                return 'playing';
-            }
-            else if (paused) {
-                return 'paused';
-            }
-            else {
-                return 'loaded';
-            }
-        },
-        get volume() {
-            return amp.gain.value;
-        },
-        set volume(value) {
-            amp.gain.value = value;
-        },
-    };
-}
-
-const DEFAULT_BPM = 120;
-const RELEASE_CLEANUP_DELAY_MS = 2000;
-const keymap = {
-    'A0': 27.500, 'A#0': 29.135, 'B0': 30.868,
-    'C1': 32.703, 'C#1': 34.648, 'D1': 36.708, 'D#1': 38.891, 'E1': 41.203, 'F1': 43.654, 'F#1': 46.249, 'G1': 48.999, 'G#1': 51.913, 'A1': 55.000, 'A#1': 58.270, 'B1': 61.735,
-    'C2': 65.406, 'C#2': 69.296, 'D2': 73.416, 'D#2': 77.782, 'E2': 82.407, 'F2': 87.307, 'F#2': 92.499, 'G2': 97.999, 'G#2': 103.826, 'A2': 110.000, 'A#2': 116.541, 'B2': 123.471,
-    'C3': 130.813, 'C#3': 138.591, 'D3': 146.832, 'D#3': 155.563, 'E3': 164.814, 'F3': 174.614, 'F#3': 184.997, 'G3': 195.998, 'G#3': 207.652, 'A3': 220.000, 'A#3': 233.082, 'B3': 246.942,
-    'C4': 261.626, 'C#4': 277.183, 'D4': 293.665, 'D#4': 311.127, 'E4': 329.628, 'F4': 349.228, 'F#4': 369.994, 'G4': 391.995, 'G#4': 415.305, 'A4': 440.000, 'A#4': 466.164, 'B4': 493.883,
-    'C5': 523.251, 'C#5': 554.365, 'D5': 587.330, 'D#5': 622.254, 'E5': 659.255, 'F5': 698.456, 'F#5': 739.989, 'G5': 783.991, 'G#5': 830.609, 'A5': 880.000, 'A#5': 932.328, 'B5': 987.767,
-    'C6': 1046.502, 'C#6': 1108.731, 'D6': 1174.659, 'D#6': 1244.508, 'E6': 1318.510, 'F6': 1396.913, 'F#6': 1479.978, 'G6': 1567.982, 'G#6': 1661.219, 'A6': 1760.000, 'A#6': 1864.655, 'B6': 1975.533,
-    'C7': 2093.005, 'C#7': 2217.461, 'D7': 2349.318, 'D#7': 2489.016, 'E7': 2637.020, 'F7': 2793.826, 'F#7': 2959.955, 'G7': 3135.963, 'G#7': 3322.438, 'A7': 3520.000, 'A#7': 3729.310, 'B7': 3951.066,
-    'C8': 4186.009,
-};
-const notemap = {
-    '1m': 4.000, '2n': 2.000, '4n': 1.000, '8n': 0.500, '16n': 0.250, '32n': 0.125,
-};
-function resolveFrequency(value) {
-    if (typeof value === 'string') {
-        return keymap[value];
-    }
-    else {
-        return value;
-    }
-}
-function resolveDurationSeconds(value, bpm) {
-    if (typeof value === 'string') {
-        return notemap[value] * 60 / bpm;
-    }
-    else if (typeof value === 'number') {
-        return value / 1000;
-    }
-    else {
-        return 0;
-    }
-}
-function semitoneOffset(baseFreq, amount) {
-    return baseFreq * (Math.pow(2.0, amount / 12.0) - 1.0);
-}
-function scheduleAttackDecay(param, start, base, amount, ADSR) {
-    const [a, d, s] = ADSR;
-    param.value = base;
-    param.setValueAtTime(base, start);
-    param.linearRampToValueAtTime(base + amount, start + a / 1000);
-    param.linearRampToValueAtTime(base + amount * s, start + (a + d) / 1000);
-}
-function scheduleRelease(param, start, dv, base, amount, ADSR) {
-    const [a, d, s, r] = ADSR;
-    const end = dv > 0 ? dv : (context.currentTime - start);
-    const rate = a === 0 ? 1.0 : Math.min(end / (a / 1000), 1.0);
-    if (rate < 1.0) {
-        param.cancelScheduledValues(start);
-        param.setValueAtTime(base, start);
-        param.linearRampToValueAtTime(base + amount * rate, start + (a / 1000) * rate);
-        param.linearRampToValueAtTime(base + amount * rate * s, start + ((a + d) / 1000) * rate);
-    }
-    param.linearRampToValueAtTime(base + amount * rate * s, start + Math.max(((a + d) / 1000) * rate, dv));
-    const stop = start + Math.max(((a + d) / 1000) * rate, end) + r / 1000;
-    param.linearRampToValueAtTime(base, stop);
-    return stop;
-}
-function createImpulseResponse(timeMs, decay = 2.0) {
-    const length = context.sampleRate * timeMs / 1000;
-    const impulse = context.createBuffer(2, length, context.sampleRate);
-    const ch0 = impulse.getChannelData(0);
-    const ch1 = impulse.getChannelData(1);
-    for (let i = 0; i < length; i++) {
-        const k = Math.pow(1 - i / length, decay);
-        ch0[i] = (2 * Math.random() - 1) * k;
-        ch1[i] = (2 * Math.random() - 1) * k;
-    }
-    return impulse;
-}
-function attachLFO(target, baseFreq, lfo, start) {
-    const oscillator = context.createOscillator();
-    const depth = context.createGain();
-    depth.gain.value = semitoneOffset(baseFreq, lfo.amount);
-    oscillator.type = lfo.type;
-    oscillator.frequency.value = lfo.rate;
-    oscillator.start(start);
-    oscillator.connect(depth);
-    depth.connect(target.frequency);
-    return { oscillator, depth };
-}
-function attachReverb(amp, target, reverb) {
-    const convolver = context.createConvolver();
-    convolver.buffer = createImpulseResponse(reverb.time);
-    const depth = context.createGain();
-    depth.gain.value = reverb.mix;
-    target.gain.value *= (1.0 - reverb.mix);
-    amp.connect(convolver);
-    convolver.connect(depth);
-    depth.connect(master);
-    return { convolver, depth };
-}
-function Synthesizer(unit, props) {
-    const active = new Set();
-    function press(frequency, duration, wait) {
-        var _a;
-        resume();
-        const freq = resolveFrequency(frequency);
-        const dv = resolveDurationSeconds(duration, (_a = props.bpm) !== null && _a !== void 0 ? _a : DEFAULT_BPM);
-        const start = context.currentTime + (wait !== null && wait !== void 0 ? wait : 0) / 1000;
-        const oscillator = context.createOscillator();
-        oscillator.type = props.oscillator.type;
-        oscillator.frequency.value = freq;
-        const lfo = props.oscillator.LFO ? attachLFO(oscillator, freq, props.oscillator.LFO, start) : null;
-        const amp = context.createGain();
-        amp.gain.value = 0.0;
-        const target = context.createGain();
-        target.gain.value = 1.0;
-        amp.connect(target);
-        target.connect(master);
-        let filter = null;
-        if (props.filter) {
-            filter = context.createBiquadFilter();
-            filter.type = props.filter.type;
-            filter.frequency.value = props.filter.cutoff;
-            oscillator.connect(filter);
-            filter.connect(amp);
-        }
-        else {
-            oscillator.connect(amp);
-        }
-        const reverb = props.reverb ? attachReverb(amp, target, props.reverb) : null;
-        if (props.oscillator.envelope) {
-            const amount = semitoneOffset(freq, props.oscillator.envelope.amount);
-            scheduleAttackDecay(oscillator.frequency, start, freq, amount, props.oscillator.envelope.ADSR);
-        }
-        if (props.amp.envelope) {
-            scheduleAttackDecay(amp.gain, start, 0.0, props.amp.envelope.amount, props.amp.envelope.ADSR);
-        }
-        oscillator.start(start);
-        const oscillators = [oscillator];
-        const nodesToDisconnect = [oscillator, amp, target];
-        if (lfo) {
-            oscillators.push(lfo.oscillator);
-            nodesToDisconnect.push(lfo.oscillator, lfo.depth);
-        }
-        if (filter) {
-            nodesToDisconnect.push(filter);
-        }
-        if (reverb) {
-            nodesToDisconnect.push(reverb.convolver, reverb.depth);
-        }
-        const note = { oscillators, nodesToDisconnect, stopped: false };
-        active.add(note);
-        const cleanup = () => {
-            active.delete(note);
-            for (const n of nodesToDisconnect) {
-                n.disconnect();
-            }
-        };
-        const release = () => {
-            if (props.oscillator.envelope) {
-                const amount = semitoneOffset(freq, props.oscillator.envelope.amount);
-                scheduleRelease(oscillator.frequency, start, dv, freq, amount, props.oscillator.envelope.ADSR);
-            }
-            let stop;
-            if (props.amp.envelope) {
-                stop = scheduleRelease(amp.gain, start, dv, 0.0, props.amp.envelope.amount, props.amp.envelope.ADSR);
-            }
-            else {
-                stop = start + (dv > 0 ? dv : (context.currentTime - start));
-            }
-            for (const o of oscillators) {
-                o.stop(stop);
-            }
-            note.stopped = true;
-            xnew.timeout(cleanup, RELEASE_CLEANUP_DELAY_MS);
-        };
-        if (dv > 0) {
-            release();
-        }
-        else {
-            return { release };
-        }
-    }
-    unit.on('finalize', () => {
-        for (const note of active) {
-            if (note.stopped === false) {
-                for (const o of note.oscillators) {
-                    o.stop();
-                }
-            }
-            for (const n of note.nodesToDisconnect) {
-                n.disconnect();
-            }
-        }
-        active.clear();
-    });
-    return { press };
 }
 
 function Accordion(unit, _a = {}) {
@@ -2349,14 +2405,325 @@ function Accordion(unit, _a = {}) {
     apply(gate.value);
     gate.on('-transition', ({ value }) => apply(value));
     function apply(value) {
-        unit.element.style.height = value < 1.0 ? unit.element.scrollHeight * value + 'px' : 'auto';
-        unit.element.style.opacity = value.toString();
+        unit.current.style.height = value < 1.0 ? unit.current.scrollHeight * value + 'px' : 'auto';
+        unit.current.style.opacity = value.toString();
     }
     return {
         get gate() {
             return gate;
         },
     };
+}
+
+const PRESETS = [
+    '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321', '#417505', '#BD10E0', '#9013FE',
+    '#4A90E2', '#50E3C2', '#B8E986',
+];
+const CHECKERBOARD = 'conic-gradient(#ccc 0% 25%, #fff 25% 50%, #ccc 50% 75%, #fff 75% 100%)';
+function ColorPicker(unit, _a = {}) {
+    var _b;
+    var { value = '#4A90E2', presets = PRESETS, alpha = true, className = '', style = '' } = _a, others = __rest(_a, ["value", "presets", "alpha", "className", "style"]);
+    const css = xnew.css('base', {
+        container: `
+            display: inline-block;
+            box-sizing: content-box; width: 200px;
+            padding: 10px 10px 0;
+            background: #fff; border-radius: 4px;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.15);
+            user-select: none;
+        `,
+        saturation: `
+            position: relative; height: 150px;
+            background-image: linear-gradient(to top, #000, rgba(0, 0, 0, 0)), linear-gradient(to right, #fff, rgba(255, 255, 255, 0));
+            touch-action: none;
+        `,
+        circle: `
+            position: absolute; width: 4px; height: 4px;
+            border-radius: 50%;
+            box-shadow: 0 0 0 1.5px #fff, inset 0 0 1px 1px rgba(0, 0, 0, 0.3), 0 0 1px 2px rgba(0, 0, 0, 0.4);
+            transform: translate(-2px, -2px);
+            pointer-events: none;
+        `,
+        controls: `display: flex; padding-top: 4px;`,
+        bars: `flex: 1 1 0;`,
+        bar: `position: relative; height: 10px; touch-action: none;`,
+        hue: `background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);`,
+        alphaTrack: `
+            margin-top: 4px;
+            background-image: ${CHECKERBOARD}; background-size: 8px 8px;
+        `,
+        overlay: `position: absolute; inset: 0; pointer-events: none;`,
+        pointer: `
+            position: absolute; top: 0; bottom: 0; width: 4px;
+            background: #fff; border-radius: 1px;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.6);
+            transform: translateX(-2px);
+            pointer-events: none;
+        `,
+        swatch: `
+            position: relative; width: 24px; margin-right: 4px;
+            border-radius: 3px; overflow: hidden;
+            background-image: ${CHECKERBOARD}; background-size: 8px 8px;
+            &::after { content: ''; position: absolute; inset: 0; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); }
+        `,
+        fields: `display: flex; padding: 4px 0 10px;`,
+        field: `
+            flex: 1 1 0; padding-left: 6px;
+            &:first-child { flex: 2 2 0; padding-left: 0; }
+        `,
+        fieldInput: `
+            box-sizing: border-box; width: 100%;
+            margin: 0; padding: 4px 0 3px;
+            border: none; outline: none;
+            box-shadow: inset 0 0 0 1px #ccc;
+            background: #fff; color: #333;
+            font: inherit; font-size: 11px; text-align: center;
+            user-select: text;
+        `,
+        fieldLabel: `
+            padding-top: 3px;
+            font-size: 11px; text-align: center; color: #222;
+        `,
+        presets: `
+            display: flex; gap: 3px;
+            margin: 8px 0 4px;
+        `,
+        preset: `
+            flex: 1 1 0; height: 16px;
+            border-radius: 3px;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+        `,
+    });
+    let hsva = rgbaToHsva((_b = parseHex(value)) !== null && _b !== void 0 ? _b : { r: 74, g: 144, b: 226, a: 1 });
+    if (alpha === false) {
+        hsva = Object.assign(Object.assign({}, hsva), { a: 1 });
+    }
+    xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    unit.on('pointerdown', ({ event }) => event.stopPropagation());
+    const notify = xnew.scope(function () {
+        xnew.emit('-change', { value: formatHex(hsvaToRgba(hsva)) });
+    });
+    let saturationElement;
+    let circleElement;
+    let huePointer;
+    let alphaOverlay = null;
+    let alphaPointer = null;
+    let swatchOverlay;
+    let fieldHex;
+    let fieldR;
+    let fieldG;
+    let fieldB;
+    let fieldA = null;
+    xnew((zone) => {
+        saturationElement = xnew.nest({ tag: 'div', className: css.saturation });
+        circleElement = xnew({ tag: 'div', className: css.circle }).current;
+        zone.on('dragstart dragmove', ({ position }) => {
+            const rect = zone.current.getBoundingClientRect();
+            apply(Object.assign(Object.assign({}, hsva), { s: ratio(position.x, rect.width), v: 1 - ratio(position.y, rect.height) }), true);
+        });
+    });
+    if (presets.length > 0) {
+        xnew(() => {
+            xnew.nest({ tag: 'div', className: css.presets });
+            for (const preset of presets) {
+                const rgba = parseHex(preset);
+                if (rgba !== null) {
+                    xnew((swatch) => {
+                        xnew.nest({ tag: 'div', className: css.preset, style: `background: ${formatHex(rgba)};`, title: preset });
+                        swatch.on('click', () => apply(rgbaToHsva(rgba), true));
+                    });
+                }
+            }
+        });
+    }
+    xnew(() => {
+        xnew.nest({ tag: 'div', className: css.controls });
+        xnew(() => {
+            xnew.nest({ tag: 'div', className: css.swatch });
+            swatchOverlay = xnew({ tag: 'div', className: css.overlay }).current;
+        });
+        xnew(() => {
+            xnew.nest({ tag: 'div', className: css.bars });
+            xnew((zone) => {
+                xnew.nest({ tag: 'div', className: `${css.bar} ${css.hue}` });
+                huePointer = xnew({ tag: 'div', className: css.pointer }).current;
+                zone.on('dragstart dragmove', ({ position }) => {
+                    const rect = zone.current.getBoundingClientRect();
+                    apply(Object.assign(Object.assign({}, hsva), { h: ratio(position.x, rect.width) * 360 }), true);
+                });
+            });
+            if (alpha === true) {
+                xnew((zone) => {
+                    xnew.nest({ tag: 'div', className: `${css.bar} ${css.alphaTrack}` });
+                    alphaOverlay = xnew({ tag: 'div', className: css.overlay }).current;
+                    alphaPointer = xnew({ tag: 'div', className: css.pointer }).current;
+                    zone.on('dragstart dragmove', ({ position }) => {
+                        const rect = zone.current.getBoundingClientRect();
+                        apply(Object.assign(Object.assign({}, hsva), { a: ratio(position.x, rect.width) }), true);
+                    });
+                });
+            }
+        });
+    });
+    xnew(() => {
+        xnew.nest({ tag: 'div', className: css.fields });
+        fieldHex = xnew(Field, { label: 'Hex', commit: commitHex });
+        fieldR = xnew(Field, { label: 'R', commit: (text) => commitChannel('r', text) });
+        fieldG = xnew(Field, { label: 'G', commit: (text) => commitChannel('g', text) });
+        fieldB = xnew(Field, { label: 'B', commit: (text) => commitChannel('b', text) });
+        if (alpha === true) {
+            fieldA = xnew(Field, { label: 'A', commit: commitAlpha });
+        }
+    });
+    function Field(sub, { label, commit }) {
+        xnew.nest({ tag: 'div', className: css.field });
+        const input = xnew({ tag: 'input', type: 'text', spellcheck: false, className: css.fieldInput }).current;
+        xnew({ tag: 'div', className: css.fieldLabel, textContent: label });
+        sub.on('change', ({ event, value }) => {
+            event.stopPropagation();
+            commit(String(value));
+        });
+        return {
+            set(text) {
+                input.value = text;
+            },
+        };
+    }
+    function commitHex(text) {
+        const rgba = parseHex(text);
+        if (rgba === null) {
+            render();
+        }
+        else {
+            const stripped = text.trim().replace(/^#/, '');
+            const merged = (stripped.length === 4 || stripped.length === 8) ? rgba : Object.assign(Object.assign({}, rgba), { a: hsva.a });
+            apply(rgbaToHsva(merged), true);
+        }
+    }
+    function commitChannel(key, text) {
+        const parsed = Number.parseInt(text, 10);
+        if (Number.isNaN(parsed) === true) {
+            render();
+        }
+        else {
+            apply(rgbaToHsva(Object.assign(Object.assign({}, hsvaToRgba(hsva)), { [key]: clamp(parsed, 0, 255) })), true);
+        }
+    }
+    function commitAlpha(text) {
+        const parsed = Number.parseFloat(text);
+        if (Number.isNaN(parsed) === true) {
+            render();
+        }
+        else {
+            apply(Object.assign(Object.assign({}, hsva), { a: clamp(parsed, 0, 100) / 100 }), true);
+        }
+    }
+    function apply(next, emit) {
+        hsva = {
+            h: clamp(next.h, 0, 360),
+            s: clamp01(next.s),
+            v: clamp01(next.v),
+            a: alpha === true ? clamp01(next.a) : 1,
+        };
+        render();
+        if (emit === true) {
+            notify();
+        }
+    }
+    function render() {
+        const rgba = hsvaToRgba(hsva);
+        saturationElement.style.backgroundColor = `hsl(${hsva.h}, 100%, 50%)`;
+        circleElement.style.left = `${hsva.s * 100}%`;
+        circleElement.style.top = `${(1 - hsva.v) * 100}%`;
+        huePointer.style.left = `${hsva.h / 360 * 100}%`;
+        if (alphaOverlay !== null && alphaPointer !== null) {
+            alphaOverlay.style.background = `linear-gradient(to right, rgba(${rgba.r}, ${rgba.g}, ${rgba.b}, 0), rgb(${rgba.r}, ${rgba.g}, ${rgba.b}))`;
+            alphaPointer.style.left = `${hsva.a * 100}%`;
+        }
+        swatchOverlay.style.background = `rgba(${rgba.r}, ${rgba.g}, ${rgba.b}, ${hsva.a})`;
+        fieldHex.set(formatHex(Object.assign(Object.assign({}, rgba), { a: 1 })).replace('#', '').toUpperCase());
+        fieldR.set(String(rgba.r));
+        fieldG.set(String(rgba.g));
+        fieldB.set(String(rgba.b));
+        if (fieldA !== null) {
+            fieldA.set(String(Math.round(hsva.a * 100)));
+        }
+    }
+    render();
+    return {
+        get value() {
+            return formatHex(hsvaToRgba(hsva));
+        },
+        set value(text) {
+            const rgba = parseHex(text);
+            if (rgba !== null) {
+                apply(rgbaToHsva(rgba), false);
+            }
+        },
+    };
+}
+function clamp(value, low, high) {
+    return Math.min(Math.max(value, low), high);
+}
+function clamp01(value) {
+    return clamp(value, 0, 1);
+}
+function ratio(position, span) {
+    return span > 0 ? clamp01(position / span) : 0;
+}
+function hsvaToRgba({ h, s, v, a }) {
+    const f = (n) => {
+        const k = (n + h / 60) % 6;
+        return v - v * s * Math.max(0, Math.min(k, 4 - k, 1));
+    };
+    return { r: Math.round(f(5) * 255), g: Math.round(f(3) * 255), b: Math.round(f(1) * 255), a };
+}
+function rgbaToHsva({ r, g, b, a }) {
+    const rf = r / 255;
+    const gf = g / 255;
+    const bf = b / 255;
+    const max = Math.max(rf, gf, bf);
+    const delta = max - Math.min(rf, gf, bf);
+    let h = 0;
+    if (delta === 0) {
+        h = 0;
+    }
+    else if (max === rf) {
+        h = 60 * (((gf - bf) / delta) % 6);
+    }
+    else if (max === gf) {
+        h = 60 * ((bf - rf) / delta + 2);
+    }
+    else {
+        h = 60 * ((rf - gf) / delta + 4);
+    }
+    if (h < 0) {
+        h += 360;
+    }
+    return { h, s: max === 0 ? 0 : delta / max, v: max, a };
+}
+function parseHex(text) {
+    const stripped = text.trim().replace(/^#/, '').toLowerCase();
+    let expanded = null;
+    if (/^[0-9a-f]{3}$/.test(stripped) === true || /^[0-9a-f]{4}$/.test(stripped) === true) {
+        expanded = stripped.split('').map((c) => c + c).join('');
+    }
+    else if (/^[0-9a-f]{6}$/.test(stripped) === true || /^[0-9a-f]{8}$/.test(stripped) === true) {
+        expanded = stripped;
+    }
+    if (expanded === null) {
+        return null;
+    }
+    else {
+        const channel = (i) => Number.parseInt(expanded.substring(i, i + 2), 16);
+        return { r: channel(0), g: channel(2), b: channel(4), a: expanded.length === 8 ? channel(6) / 255 : 1 };
+    }
+}
+function formatHex({ r, g, b, a }) {
+    const hex = (n) => n.toString(16).padStart(2, '0');
+    const base = `#${hex(r)}${hex(g)}${hex(b)}`;
+    return a < 1 ? `${base}${hex(Math.round(a * 255))}` : base;
 }
 
 function VirtualPad(unit, { type = 'analog', className = '', style = '' } = {}) {
@@ -2370,7 +2737,7 @@ function VirtualPad(unit, { type = 'analog', className = '', style = '' } = {}) 
     });
     xnew.nest({ tag: 'svg', viewBox: '0 0 64 64', className: `${css.container} ${className}`, style });
     unit.on('dragstart dragmove', ({ type: event, position }) => {
-        const size = unit.element.clientWidth;
+        const size = unit.current.clientWidth;
         const x = position.x - size / 2;
         const y = position.y - size / 2;
         const d = Math.min(1.0, Math.sqrt(x * x + y * y) / (size / 4));
@@ -2412,12 +2779,12 @@ function VirtualPadAnalog() {
     xnew('<polygon points="57 32 51 27 51 37">');
     const target = xnew('<circle cx="32" cy="32" r="14">');
     pad.on('-down -move', ({ vector }) => {
-        target.element.setAttribute('transform', `translate(${vector.x * 16} ${vector.y * 16})`);
-        target.element.style.filter = 'brightness(80%)';
+        target.current.setAttribute('transform', `translate(${vector.x * 16} ${vector.y * 16})`);
+        target.current.style.filter = 'brightness(80%)';
     });
     pad.on('-up', () => {
-        target.element.removeAttribute('transform');
-        target.element.style.filter = '';
+        target.current.removeAttribute('transform');
+        target.current.style.filter = '';
     });
 }
 function VirtualPadDPad() {
@@ -2445,42 +2812,17 @@ function VirtualPadDPad() {
         xnew('<polygon points="57 32 51 27 51 37">');
     });
     pad.on('-down -move', ({ vector }) => {
-        targets[0].element.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
-        targets[1].element.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
-        targets[2].element.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
-        targets[3].element.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
+        targets[0].current.style.filter = (vector.y < 0) ? 'brightness(80%)' : '';
+        targets[1].current.style.filter = (vector.y > 0) ? 'brightness(80%)' : '';
+        targets[2].current.style.filter = (vector.x < 0) ? 'brightness(80%)' : '';
+        targets[3].current.style.filter = (vector.x > 0) ? 'brightness(80%)' : '';
     });
     pad.on('-up', () => {
-        targets[0].element.style.filter = '';
-        targets[1].element.style.filter = '';
-        targets[2].element.style.filter = '';
-        targets[3].element.style.filter = '';
+        targets[0].current.style.filter = '';
+        targets[1].current.style.filter = '';
+        targets[2].current.style.filter = '';
+        targets[3].current.style.filter = '';
     });
-}
-
-function Template(unit, _a) {
-    var { mode = 'outline', className = '', style = '', paths } = _a, others = __rest(_a, ["mode", "className", "style", "paths"]);
-    const css = xnew.css('base', {
-        outline: `
-                width: 1em; height: 1em;
-                stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round;
-                fill: none;
-            `,
-        solid: `
-                width: 1em; height: 1em;
-                stroke: none;
-                fill: currentColor;
-            `,
-    });
-    xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 24 24', className: `${css[mode]} ${className}`, style }, others));
-    for (const path of paths[mode === 'solid' ? 's' : 'o']) {
-        if (typeof path === 'string') {
-            xnew({ tag: 'path', d: path });
-        }
-        else {
-            xnew({ tag: 'path', d: path[0], fillRule: 'evenodd', clipRule: 'evenodd' });
-        }
-    }
 }
 
 const iconData = {
@@ -2811,8 +3153,29 @@ const iconData = {
 };
 
 function makeIcon(paths) {
-    return function Icon(unit, props = {}) {
-        xnew.extend(Template, Object.assign(Object.assign({}, props), { paths }));
+    return function Icon(unit, _a = {}) {
+        var { mode = 'outline', className = '', style = '' } = _a, others = __rest(_a, ["mode", "className", "style"]);
+        const css = xnew.css('base', {
+            outline: `
+                width: 1em; height: 1em;
+                stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round;
+                fill: none;
+            `,
+            solid: `
+                width: 1em; height: 1em;
+                stroke: none;
+                fill: currentColor;
+            `,
+        });
+        xnew.nest(Object.assign({ tag: 'svg', viewBox: '0 0 24 24', className: `${css[mode]} ${className}`, style }, others));
+        for (const path of paths[mode === 'solid' ? 's' : 'o']) {
+            if (typeof path === 'string') {
+                xnew({ tag: 'path', d: path });
+            }
+            else {
+                xnew({ tag: 'path', d: path[0], fillRule: 'evenodd', clipRule: 'evenodd' });
+            }
+        }
     };
 }
 const icons = {};
@@ -2821,7 +3184,7 @@ for (const name of Object.keys(iconData)) {
 }
 const xicons = icons;
 
-function Panel(unit, { params, nested = false }) {
+function Panel(unit, { name, open, params, nested = false }) {
     const object = params !== null && params !== void 0 ? params : {};
     if (nested === false) {
         const css = xnew.css({
@@ -2830,56 +3193,114 @@ function Panel(unit, { params, nested = false }) {
         xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
         xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
     }
-    return {
-        folder({ name, open, params }, inner) {
-            return xnew((unit) => {
-                xnew.extend(Folder, { name, open });
-                xnew.extend(Panel, { params: params !== null && params !== void 0 ? params : object, nested: true });
-                inner(unit);
+    xnew.nest('<div>');
+    if (open !== undefined) {
+        const gate = xnew(Gate, { open, duration: 200 });
+        if (name) {
+            xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header) => {
+                header.on('click', () => gate.toggle());
+                const chevron = xnew((unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
+                gate.on('-transition', ({ value }) => {
+                    chevron.current.style.transform = `rotate(${(value - 1) * 90}deg)`;
+                });
+                xnew('<div>', name);
             });
+        }
+        xnew.extend(Accordion, { gate });
+    }
+    const notify = xnew.scope((name) => xnew.emit('-change', { value: name }));
+    const tabs = xnew(Tabs, { notify });
+    return {
+        group({ name, open, params, key, tab }, inner) {
+            const group = xnew((unit) => {
+                xnew.extend(Panel, { name, open, params: params !== null && params !== void 0 ? params : object, nested: true });
+                inner(unit);
+            }, { key });
+            if (tab !== undefined) {
+                tabs.add(tab, group);
+            }
+            return group;
         },
-        button({ name = '' } = {}) {
-            return xnew(Button, { text: name, style: 'width: 100%;' });
+        button({ name = '', key } = {}) {
+            return xnew(Button, { text: name, key, style: 'width: 100%;' });
         },
-        listbox({ name = '', value, items = [] } = {}) {
+        listbox({ name = '', value, items = [], key } = {}) {
             var _a, _b;
             object[name] = (_b = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : items[0]) !== null && _b !== void 0 ? _b : '';
-            const box = xnew(List, { name, value: object[name], items });
+            const box = xnew(List, { name, value: object[name], items, key });
             box.on('-change', ({ value }) => object[name] = value);
             return box;
         },
-        range({ name = '', value, min = 0, max = 100, step = 1 } = {}) {
+        range({ name = '', value, min = 0, max = 100, step, key } = {}) {
             var _a;
             object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : min;
-            const range = xnew(Range, { name, value: object[name], min, max, step });
+            const range = xnew(Range, { name, value: object[name], min, max, step, key });
             range.on('input', ({ value }) => object[name] = value);
             return range;
         },
-        checkbox({ name = '', value } = {}) {
+        checkbox({ name = '', value, key } = {}) {
             var _a;
             object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : false;
-            const checkbox = xnew(Checkbox, { name, value: object[name] });
+            const checkbox = xnew(Checkbox, { name, value: object[name], key });
             checkbox.on('input', ({ value }) => object[name] = value);
             return checkbox;
+        },
+        color({ name = '', value, key } = {}) {
+            var _a;
+            object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : '#ffffff';
+            const color = xnew(Color, { name, value: object[name], key });
+            color.on('-change', ({ value }) => object[name] = value);
+            return color;
         },
         separator() {
             xnew(Separator);
         }
     };
 }
-function Folder(unit, { name, open = false }) {
-    const gate = xnew(Gate, { open, duration: 200 });
-    if (name) {
-        xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header) => {
-            header.on('click', () => gate.toggle());
-            const chevron = xnew((unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
-            gate.on('-transition', ({ value }) => {
-                chevron.element.style.transform = `rotate(${(value - 1) * 90}deg)`;
+function Tabs(unit, { notify }) {
+    const strip = xnew.nest('<div style="display: none; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-bottom: 0.25em;">');
+    const tabs = [];
+    let active = '';
+    function apply() {
+        tabs.forEach(({ name, groups }) => {
+            groups.forEach((group) => {
+                if (group.container !== null) {
+                    group.container.style.display = name === active ? '' : 'none';
+                }
             });
-            xnew('<div>', name);
         });
     }
-    xnew.extend(Accordion, { gate });
+    function paint() {
+        tabs.forEach(({ name, button }) => {
+            const on = name === active;
+            button.current.style.borderBottomColor = on ? 'currentColor' : 'transparent';
+            button.current.style.fontWeight = on ? '600' : '400';
+            button.current.style.opacity = on ? '1' : '0.55';
+        });
+    }
+    return {
+        add(name, group) {
+            let tab = tabs.find((tab) => tab.name === name);
+            if (tab === undefined) {
+                const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', name);
+                button.on('click', () => {
+                    active = name;
+                    paint();
+                    apply();
+                    notify(name);
+                });
+                tab = { name, button, groups: [] };
+                tabs.push(tab);
+                strip.style.display = 'flex';
+                if (active === '') {
+                    active = name;
+                }
+            }
+            tab.groups.push(group);
+            paint();
+            apply();
+        },
+    };
 }
 function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
@@ -2896,15 +3317,57 @@ function Checkbox(unit, _a) {
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
     xnew(InputCheckbox, Object.assign(Object.assign({ name }, others), { style: 'width: 1.25em; height: 1.25em;' }));
 }
+function Color(unit, { name = '', value = '#ffffff' }) {
+    xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
+    xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
+    let current = value;
+    const swatch = xnew({ tag: 'button', type: 'button', style: 'height: 2em; flex: 1; max-width: 60%; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer;' });
+    swatch.current.style.background = current;
+    const notify = xnew.scope(() => xnew.emit('-change', { value: current }));
+    let popup = null;
+    swatch.on('click', ({ event }) => {
+        event.stopPropagation();
+        if (popup === null) {
+            popup = xnew(ColorPopup, {
+                anchor: swatch.current,
+                value: current,
+                commit(next) {
+                    current = next;
+                    swatch.current.style.background = next;
+                    notify();
+                },
+            });
+            popup.on('finalize', () => popup = null);
+        }
+        else {
+            popup.gate.close();
+        }
+    });
+    return {
+        get value() {
+            return current;
+        },
+    };
+}
+function ColorPopup(unit, { anchor, value, commit }) {
+    xnew.extend(Overlay, { gate: { open: false, duration: 100 }, anchor });
+    unit.gate.on('-closed', () => unit.finalize());
+    xnew.nest('<div style="position: absolute; top: 100%; right: 0; padding: 0.25em 0;">');
+    unit.on('pointerdown.outside', () => unit.gate.close());
+    xnew(ColorPicker, { value }).on('-change', ({ value }) => commit(value));
+    unit.gate.open();
+}
 function List(unit, _a) {
     var { name = '', value, items = [] } = _a, others = __rest(_a, ["name", "value", "items"]);
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
     xnew.extend(Listbox, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%;' }));
-    xnew(ListboxButton, { style: 'height: 2em;' }, () => {
+    xnew(() => {
+        xnew.extend(ListboxButton, { style: 'height: 2em;' });
         xnew(xicons.ChevronDown, { style: 'flex: none; width: 0.9em; height: 0.9em;' });
     });
-    xnew(ListboxMenu, () => {
+    xnew(() => {
+        xnew.extend(ListboxMenu);
         items.forEach((item) => xnew(ListboxItem, { value: item }));
     });
 }
@@ -2931,27 +3394,26 @@ function VolumeController(unit, { placement = 'left', className = '', style = ''
             `,
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const volume = xnew.extend(Volume);
     xnew.extend(Aspect, { aspect: 1.0, fit: 'contain' });
     unit.on('pointerdown', ({ event }) => event.stopPropagation());
     const gate = xnew(Gate, { open: false, duration: 250, easing: 'ease' });
     const button = xnew((unit) => {
         xnew.nest({ tag: 'div', className: css.button });
         unit.on('click', () => gate.toggle());
-        let icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
+        let icon = xnew(SpeakerIcon, { muted: xaudio.volume === 0 });
         return {
             update() {
                 icon === null || icon === void 0 ? void 0 : icon.finalize();
-                icon = xnew(SpeakerIcon, { muted: volume.volume === 0 });
+                icon = xnew(SpeakerIcon, { muted: xaudio.volume === 0 });
             },
         };
     });
     xnew(() => {
         const outer = xnew.nest({ tag: 'div', className: css.outer, style: config.outer });
         xnew(InputRange, config.vertical
-            ? { value: Math.round(volume.volume * 100), vertical: true, style: 'height: 100%;' }
-            : { value: Math.round(volume.volume * 100), style: 'width: 100%;' }).on('input', ({ value }) => {
-            volume.volume = value / 100;
+            ? { value: Math.round(xaudio.volume * 100), vertical: true, style: 'height: 100%;' }
+            : { value: Math.round(xaudio.volume * 100), style: 'width: 100%;' }).on('input', ({ value }) => {
+            xaudio.volume = value / 100;
             button.update();
         });
         gate.on('-transition', ({ value }) => {
@@ -2970,7 +3432,7 @@ const xbasics = {
     Scene,
     Button,
     Image,
-    GraphicText,
+    SVGText,
     InputRange,
     InputCheckbox,
     InputText,
@@ -2981,15 +3443,298 @@ const xbasics = {
     ListboxButton,
     ListboxMenu,
     ListboxItem,
-    AudioTrack,
-    Synthesizer,
-    Volume,
     Gate,
     Accordion,
+    ColorPicker,
     Overlay,
     VirtualPad,
     Panel,
     VolumeController,
 };
 
-export { xbasics, xicons, xnew, xsync };
+var noiseGlsl = "//----------------------------------------------------------------------------------------------------\n// xtex_noise — classic 3D Perlin noise (Gustavson / Ashima, MIT), output ~[-1,1]\n// Version-agnostic (only function defs), so it injects into WebGL2 (300 es), three (1.00), and previews.\n//----------------------------------------------------------------------------------------------------\n\nvec3 xtex_mod289(vec3 x){ return x - floor(x*(1.0/289.0))*289.0; }\nvec4 xtex_mod289(vec4 x){ return x - floor(x*(1.0/289.0))*289.0; }\nvec4 xtex_permute(vec4 x){ return xtex_mod289(((x*34.0)+1.0)*x); }\nvec4 xtex_taylorInvSqrt(vec4 r){ return 1.79284291400159 - 0.85373472095314 * r; }\nvec3 xtex_fade(vec3 t){ return t*t*t*(t*(t*6.0-15.0)+10.0); }\n\nfloat xtex_noise(vec3 P){\n  vec3 Pi0 = floor(P);\n  vec3 Pi1 = Pi0 + vec3(1.0);\n  Pi0 = xtex_mod289(Pi0);\n  Pi1 = xtex_mod289(Pi1);\n  vec3 Pf0 = fract(P);\n  vec3 Pf1 = Pf0 - vec3(1.0);\n  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);\n  vec4 iy = vec4(Pi0.yy, Pi1.yy);\n  vec4 iz0 = Pi0.zzzz;\n  vec4 iz1 = Pi1.zzzz;\n\n  vec4 ixy = xtex_permute(xtex_permute(ix) + iy);\n  vec4 ixy0 = xtex_permute(ixy + iz0);\n  vec4 ixy1 = xtex_permute(ixy + iz1);\n\n  vec4 gx0 = ixy0 * (1.0 / 7.0);\n  vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;\n  gx0 = fract(gx0);\n  vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);\n  vec4 sz0 = step(gz0, vec4(0.0));\n  gx0 -= sz0 * (step(0.0, gx0) - 0.5);\n  gy0 -= sz0 * (step(0.0, gy0) - 0.5);\n\n  vec4 gx1 = ixy1 * (1.0 / 7.0);\n  vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;\n  gx1 = fract(gx1);\n  vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);\n  vec4 sz1 = step(gz1, vec4(0.0));\n  gx1 -= sz1 * (step(0.0, gx1) - 0.5);\n  gy1 -= sz1 * (step(0.0, gy1) - 0.5);\n\n  vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);\n  vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);\n  vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);\n  vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);\n  vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);\n  vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);\n  vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);\n  vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);\n\n  vec4 norm0 = xtex_taylorInvSqrt(vec4(dot(g000,g000), dot(g010,g010), dot(g100,g100), dot(g110,g110)));\n  g000 *= norm0.x; g010 *= norm0.y; g100 *= norm0.z; g110 *= norm0.w;\n  vec4 norm1 = xtex_taylorInvSqrt(vec4(dot(g001,g001), dot(g011,g011), dot(g101,g101), dot(g111,g111)));\n  g001 *= norm1.x; g011 *= norm1.y; g101 *= norm1.z; g111 *= norm1.w;\n\n  float n000 = dot(g000, Pf0);\n  float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));\n  float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));\n  float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));\n  float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));\n  float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));\n  float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));\n  float n111 = dot(g111, Pf1);\n\n  vec3 f = xtex_fade(Pf0);\n  vec4 n_z = mix(vec4(n000,n100,n010,n110), vec4(n001,n101,n011,n111), f.z);\n  vec2 n_yz = mix(n_z.xy, n_z.zw, f.y);\n  return 2.2 * mix(n_yz.x, n_yz.y, f.x);\n}\n";
+
+var woodGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexWood* — procedural wood (rings + fibers) as a function of object-space position.\n// The surface is flat, so the normal channel returns the geometric normal unperturbed.\n// Requires noise.glsl before it; uniform declarations are generated from the TS schema (wood.ts).\n//----------------------------------------------------------------------------------------------------\n\nfloat xtex_noise(vec3 P);  // defined in noise.glsl\n\nvec3 xtexWoodColor(vec3 position){\n  float ang = radians(angle);\n  float ca = cos(ang), sa = sin(ang);\n  vec3 posLocal = vec3(\n    position.x*ca - position.y*sa,\n    position.x*sa + position.y*ca,\n    position.z\n  );\n\n  // main ring pattern; one ring cell is scale world units across\n  float s = 1.0 / scale;\n  vec3 pos = posLocal * s * vec3(1.0/lengths, 4.0, 1.0/lengths) + seed;\n  float k = (xtex_noise(pos) + 1.0) * 10.0 * rings;\n  k = (cos(k + cos(k)) + 1.0) / 2.0;\n\n  // fibers: 10 octaves of turbulence, high-frequency along y, 2.7x finer than the rings\n  float kk = 0.0, sum = 0.0, power = 2.0;\n  vec3 sc = s * 2.7 * vec3(1.0, fibersDensity, 1.0);\n  for (int i = 0; i < 10; i++){\n    kk += power * xtex_noise(posLocal * sc + seed);\n    sum += power;\n    sc *= 1.8;\n    power *= 0.6;\n  }\n  kk = (sin(kk * 5.0 / sum * 10.0) + 1.0) / 2.0;\n\n  return mix(color, background, mix(k, kk, fibers));\n}\n\nvec3 xtexWoodNormal(vec3 position, vec3 normal, vec3 tangent){\n  return normalize(normal);\n}\n";
+
+const ranges$2 = {
+    scale: { min: 0.1, max: 6 },
+    angle: { min: 0, max: 360 },
+    seed: { min: 0, max: 100 },
+    rings: { min: 0, max: 20 },
+    lengths: { min: 0.1, max: 10 },
+    fibers: { min: 0, max: 1 },
+    fibersDensity: { min: 0, max: 40 },
+};
+const presets$2 = {
+    standard: {
+        scale: 1.65, angle: 0, seed: 0,
+        color: [0.8, 0.4, 0.0],
+        background: [0.4, 0.1, 0.0],
+        rings: 4.5, lengths: 1, fibers: 0.3, fibersDensity: 10,
+    },
+    hinoki: {
+        scale: 1.1, angle: 20, lengths: 10,
+        color: [0.792, 0.714, 0.635],
+        background: [0.78, 0.616, 0.557],
+    },
+};
+const wood = {
+    name: 'wood',
+    glsl: woodGlsl,
+    ranges: ranges$2,
+    presets: presets$2,
+};
+
+var tatamiGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexTatami* — tatami mats: one mat is a scale-wide cell, centered on the origin so a single mat\n// frames on its own; aspect is the mat's real long/short ratio and only sets the pattern's\n// proportions, so a 2:1 mat is authored in a square cell and stretched by the mesh itself.\n//----------------------------------------------------------------------------------------------------\n\nfloat xtex_noise(vec3 P);  // defined in noise.glsl\n\nconst float XTEX_TATAMI_PI = 3.141592653589793;\n\n// mat space: one mat per unit cell, the origin at a mat's center (so position 0 sits inside one mat, not on a joint)\nvec2 xtex_tatamiMat(vec3 p){\n  return p.xy + 0.5;\n}\n\n// 1 inside the heri cloth strips along the long edges (v near 0 / 1); heri is a fraction of the short side\nfloat xtex_tatamiHeri(float v){\n  return 1.0 - smoothstep(heri - 0.008, heri + 0.008, min(v, 1.0 - v));\n}\n\n// 1 at the butt joint of neighboring mats (short edges); aspect converts u into short-side units so the joint keeps its width\nfloat xtex_tatamiSeam(float u){\n  return 1.0 - smoothstep(0.0, 0.01, min(u, 1.0 - u) * aspect);\n}\n\nfloat xtex_tatamiHeight(vec3 q){\n  vec2 cell = fract(xtex_tatamiMat(q));\n  float ridge = abs(sin(XTEX_TATAMI_PI * cell.y * weave));\n  float h = mix(ridge, 0.9, xtex_tatamiHeri(cell.y));\n  return h * (1.0 - 0.6 * xtex_tatamiSeam(cell.x));\n}\n\nvec3 xtexTatamiColor(vec3 position){\n  vec3 p = position / scale;\n  vec2 mat = xtex_tatamiMat(p);\n  vec2 matIndex = floor(mat);\n  vec2 cell = fract(mat);\n  // the long axis in short-side units, so features keep their real pitch whatever the aspect is\n  float u = mat.x * aspect;\n\n  // per-mat tone: checkered pair + a small per-mat hash so mats do not look identical\n  float checker = mod(matIndex.x + matIndex.y, 2.0);\n  float hash = xtex_noise(vec3(matIndex.x * 1.7 + 0.37, matIndex.y * 2.3 + 0.58, seed)) * 0.5 + 0.5;\n  vec3 base = mix(color, background, clamp(0.7 * checker + 0.3 * hash, 0.0, 1.0));\n\n  // weave: faint ridges along the long axis, each strand row gets a slight tint, plus sun-fade mottling\n  float ridge = abs(sin(XTEX_TATAMI_PI * cell.y * weave));\n  float strand = xtex_noise(vec3(u * 8.0, floor(cell.y * weave) * 0.53, seed + 5.0));\n  float mottle = xtex_noise(vec3(u * 0.6, mat.y * 0.6, seed + 9.0));\n  vec3 igusa = base * (0.88 + 0.07 * ridge + 0.06 * strand + 0.08 * mottle);\n  // fine faint weft lines parallel to the short edges; a whole number of periods per mat keeps them tiling-safe\n  float weft = abs(sin(2.0 * XTEX_TATAMI_PI * mat.x * floor(aspect * weave * 0.75 + 0.5)));\n  igusa *= 0.95 + 0.05 * weft;\n  igusa *= 1.0 - 0.35 * xtex_tatamiSeam(cell.x);\n\n  // heri: flat cloth color, shaded only across v so baked tiles stay seamless along the long axis\n  vec3 cloth = border * (0.85 + 0.3 * smoothstep(0.0, heri, min(cell.y, 1.0 - cell.y)));\n  return mix(igusa, cloth, xtex_tatamiHeri(cell.y));\n}\n\nvec3 xtexTatamiNormal(vec3 position, vec3 normal, vec3 tangent){\n  const float EPS = 0.002;\n  vec3 p = position / scale;\n  vec3 xnormal = normalize(normal);\n  vec3 xtangent = normalize(tangent) * EPS;\n  vec3 xbitangent = normalize(cross(xnormal, xtangent)) * EPS;\n  vec3 bumped = xnormal * (0.02 * bump);\n\n  vec3 pos  = p + bumped * xtex_tatamiHeight(p);\n  vec3 posU = (p + xtangent) + bumped * xtex_tatamiHeight(p + xtangent);\n  vec3 posV = (p + xbitangent) + bumped * xtex_tatamiHeight(p + xbitangent);\n  return normalize(cross(posU - pos, posV - pos));\n}\n";
+
+const ranges$1 = {
+    scale: { min: 0.1, max: 4 },
+    bump: { min: 0, max: 1 },
+    seed: { min: 0, max: 100 },
+    aspect: { min: 1, max: 2 },
+    weave: { min: 8, max: 60 },
+    heri: { min: 0, max: 0.2 },
+};
+const presets$1 = {
+    standard: {
+        scale: 1, bump: 0.2, seed: 0,
+        color: [0.72, 0.71, 0.42],
+        background: [0.66, 0.68, 0.38],
+        aspect: 2, weave: 30, heri: 0.04,
+        border: [0.33, 0.36, 0.24],
+    },
+    hanjo: {
+        aspect: 1,
+    },
+};
+const tatami = {
+    name: 'tatami',
+    glsl: tatamiGlsl,
+    ranges: ranges$1,
+    presets: presets$1,
+};
+
+var carpetGlsl = "//----------------------------------------------------------------------------------------------------\n// xtexCarpet* — a fluffy pile carpet: a dense field of fine fibers under a soft cloudy drift.\n// The look lives in low contrast — plush shows no deep gaps, only faint hairs and gentle shading.\n// Requires noise.glsl before it; uniform declarations are generated from the TS schema (carpet.ts).\n//----------------------------------------------------------------------------------------------------\n\nfloat xtex_noise(vec3 P);  // defined in noise.glsl\n\nconst float XTEX_CARPET_PI = 3.141592653589793;\n\n// nap space: the plane turned by angle, so the fibers can be aimed without turning the mesh\nvec3 xtex_carpetSpace(vec3 position){\n  float a = radians(angle);\n  vec3 p = position / scale;\n  return vec3(p.x * cos(a) - p.y * sin(a), p.x * sin(a) + p.y * cos(a), p.z);\n}\n\n// one fiber layer, 0 between the hairs to 1 on a lit one; the lean is fixed per layer because a rotating direction field twists the ridges into marble swirls when magnified\nfloat xtex_carpetFibers(vec2 uv, float freq, float lean, float ofs){\n  vec2 dir = vec2(cos(lean), sin(lean));\n  vec2 r = vec2(dot(uv, dir), dot(uv, vec2(-dir.y, dir.x))) * freq;\n  // a wobble the width of a hair: it makes them waver without the large-scale flow a rotation would add\n  r += 0.6 * vec2(xtex_noise(vec3(r.yx * 0.5, seed + ofs)), xtex_noise(vec3(r * 0.5, seed + ofs + 2.0)));\n  float ridge = 1.0 - abs(xtex_noise(vec3(r * vec2(0.35, 1.0), seed + ofs + 3.0)));\n  // a second field along the lean chops each ridge into separate hairs\n  float cut = 0.5 + 0.5 * xtex_noise(vec3(r * vec2(4.0, 0.35), seed + ofs + 11.0));\n  // only the top of the ridge is a visible hair; fluff lowers that cut, blending the hairs into plush\n  return smoothstep(mix(0.85, 0.55, fluff), 1.0, ridge * (0.6 + 0.6 * cut));\n}\n\n// the broad drift of light across the pile — plush is never evenly lit\nfloat xtex_carpetCloud(vec2 uv){\n  return 0.75 + 0.5 * (xtex_noise(vec3(uv * 1.3, seed + 21.0)) * 0.5 + 0.5);\n}\n\n// pile height: three layers crossing at their own leans, combined brightest-wins because hairs overlap rather than average; swirl spreads the leans apart, 0 combing them all along the nap\nfloat xtex_carpetHeight(vec3 q){\n  vec2 uv = q.xy;\n  float spread = swirl * XTEX_CARPET_PI;\n  float fibers = xtex_carpetFibers(uv, density, 0.0, 1.0);\n  fibers = max(fibers, 0.9 * xtex_carpetFibers(uv, density * 1.7, spread / 3.0, 7.0));\n  fibers = max(fibers, 0.8 * xtex_carpetFibers(uv, density * 2.6, 2.0 * spread / 3.0, 13.0));\n  return clamp((0.3 + 0.7 * fibers) * xtex_carpetCloud(uv), 0.0, 1.0);\n}\n\n// relief for the normal channel: a soft isotropic swell, not the color field — its leaning ridges would light up as grooves, and its hairs sit below a texel and would difference into static\nfloat xtex_carpetRelief(vec3 q){\n  float grain = xtex_noise(vec3(q.xy * density * 0.8, seed + 51.0)) * 0.5 + 0.5;\n  float lump = xtex_noise(vec3(q.xy * density * 0.25, seed + 57.0)) * 0.5 + 0.5;\n  return clamp(xtex_carpetCloud(q.xy) * (0.45 + 0.3 * lump + 0.25 * grain), 0.0, 1.0);\n}\n\nvec3 xtexCarpetColor(vec3 position){\n  vec3 q = xtex_carpetSpace(position);\n  float h = xtex_carpetHeight(q);\n  // dye blotches: the two yarn tones drift slowly across the rug, the lit hairs catching the lighter one\n  float dye = xtex_noise(vec3(q.xy * 0.8, seed + 31.0)) * 0.5 + 0.5;\n  vec3 yarn = mix(background, color, clamp(0.45 + 0.35 * dye + 0.3 * h, 0.0, 1.0));\n  return yarn * mix(1.0 - shade, 1.0, h);\n}\n\nvec3 xtexCarpetNormal(vec3 position, vec3 normal, vec3 tangent){\n  // the step follows the fiber size: a fixed one would fall inside the grain and difference into noise\n  float EPS = 0.5 / density;\n  vec3 q = xtex_carpetSpace(position);\n  vec3 xnormal = normalize(normal);\n  vec3 xtangent = normalize(tangent) * EPS;\n  vec3 xbitangent = normalize(cross(xnormal, xtangent)) * EPS;\n  vec3 bumped = xnormal * (0.02 * bump);\n\n  vec3 pos  = q + bumped * xtex_carpetRelief(q);\n  vec3 posU = (q + xtangent) + bumped * xtex_carpetRelief(q + xtangent);\n  vec3 posV = (q + xbitangent) + bumped * xtex_carpetRelief(q + xbitangent);\n  return normalize(cross(posU - pos, posV - pos));\n}\n";
+
+const ranges = {
+    scale: { min: 0.1, max: 2 },
+    angle: { min: 0, max: 360 },
+    bump: { min: 0, max: 1 },
+    seed: { min: 0, max: 100 },
+    fluff: { min: 0, max: 1 },
+    density: { min: 5, max: 60 },
+    swirl: { min: 0, max: 1 },
+    shade: { min: 0, max: 1 },
+};
+const presets = {
+    standard: {
+        scale: 1, angle: 0, bump: 0.6, seed: 0,
+        color: [1.0, 1.0, 1.0],
+        background: [1.0, 1.0, 1.0],
+        fluff: 0.5, density: 25, swirl: 0.5, shade: 0.1,
+    },
+    plush: {
+        bump: 0.4, fluff: 0.85, shade: 0.25,
+    },
+    moss: {
+        fluff: 0.7, density: 40, swirl: 0.3, shade: 0.5,
+        color: [0.45, 0.6, 0.38],
+        background: [0.24, 0.35, 0.2],
+    },
+};
+const carpet = {
+    name: 'carpet',
+    glsl: carpetGlsl,
+    ranges,
+    presets,
+};
+
+function defineTexture(source) {
+    const texture = Object.assign(Object.assign({}, source), { entry: 'xtex' + source.name.charAt(0).toUpperCase() + source.name.slice(1), glsl: noiseGlsl + uniformDeclarations(source.presets.standard) + source.glsl, bake(options = {}) {
+            return bakeTexture(texture, options);
+        },
+        renderer(canvas, options = {}) {
+            return createTextureRenderer(canvas, texture, options);
+        } });
+    return texture;
+}
+const RESERVED_UNIFORMS = ['uWorldSize'];
+function uniformDeclarations(standard) {
+    const floats = [];
+    const vec3s = [];
+    for (const key in standard) {
+        if (/^[A-Za-z][A-Za-z0-9_]*$/.test(key) === false) {
+            throw new Error(`xtextures: uniform key "${key}" is not a valid GLSL identifier`);
+        }
+        else if (key.startsWith('gl_') || key.startsWith('xtex') || RESERVED_UNIFORMS.includes(key)) {
+            throw new Error(`xtextures: uniform key "${key}" is reserved`);
+        }
+        else if (Array.isArray(standard[key])) {
+            vec3s.push(key);
+        }
+        else {
+            floats.push(key);
+        }
+    }
+    let declarations = '';
+    if (floats.length > 0) {
+        declarations += `uniform float ${floats.join(', ')};\n`;
+    }
+    if (vec3s.length > 0) {
+        declarations += `uniform vec3 ${vec3s.join(', ')};\n`;
+    }
+    return declarations;
+}
+const VERTEX_SOURCE = `#version 300 es
+in vec2 aPos;
+out vec2 vUv;
+void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
+function fragmentSource(def, channel, tile) {
+    const sample = channel === 'normal'
+        ? (pos) => `${def.entry}Normal(${pos}, vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0))`
+        : (pos) => `${def.entry}Color(${pos})`;
+    const encode = channel === 'normal'
+        ? (value) => `vec4(normalize(${value}) * 0.5 + 0.5, 1.0)`
+        : (value) => `vec4(${value}, 1.0)`;
+    const body = tile
+        ? `vec2 w = smoothstep(1.0 - 0.2, 1.0, vUv);
+  vec3 sx = vec3(uWorldSize, 0.0, 0.0);
+  vec3 sy = vec3(0.0, uWorldSize, 0.0);
+  vec3 blended = mix(
+    mix(${sample('pos')}, ${sample('pos - sx')}, w.x),
+    mix(${sample('pos - sy')}, ${sample('pos - sx - sy')}, w.x),
+    w.y);
+  fragColor = ${encode('blended')};`
+        : `fragColor = ${encode(sample('pos'))};`;
+    return `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform float uWorldSize;
+${def.glsl}
+void main(){
+  vec3 pos = vec3((vUv - 0.5) * uWorldSize, 0.0);
+  ${body}
+}`;
+}
+function compileTextureProgram(gl, def, channel, tile) {
+    const program = gl.createProgram();
+    gl.attachShader(program, compileShader(gl, gl.VERTEX_SHADER, VERTEX_SOURCE));
+    gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource(def, channel, tile)));
+    gl.bindAttribLocation(program, 0, 'aPos');
+    gl.linkProgram(program);
+    if (gl.getProgramParameter(program, gl.LINK_STATUS) === false) {
+        const log = gl.getProgramInfoLog(program);
+        gl.deleteProgram(program);
+        throw new Error('xtextures: program link failed\n' + log);
+    }
+    return program;
+}
+function compileShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (gl.getShaderParameter(shader, gl.COMPILE_STATUS) === false) {
+        const log = gl.getShaderInfoLog(shader);
+        gl.deleteShader(shader);
+        throw new Error('xtextures: shader compile failed\n' + log + '\n' + source);
+    }
+    return shader;
+}
+function createFullscreenVao(gl) {
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    return { vao, buffer };
+}
+function createPipeline(gl, def, channel, tile, vao) {
+    const program = compileTextureProgram(gl, def, channel, tile);
+    const locations = new Map();
+    function locate(name) {
+        var _a;
+        if (locations.has(name) === false) {
+            locations.set(name, gl.getUniformLocation(program, name));
+        }
+        return (_a = locations.get(name)) !== null && _a !== void 0 ? _a : null;
+    }
+    function draw(width, height, worldSize, params) {
+        var _a;
+        gl.viewport(0, 0, width, height);
+        gl.useProgram(program);
+        gl.bindVertexArray(vao);
+        gl.uniform1f(locate('uWorldSize'), worldSize);
+        for (const name in def.presets.standard) {
+            const value = (_a = params[name]) !== null && _a !== void 0 ? _a : def.presets.standard[name];
+            if (Array.isArray(value)) {
+                gl.uniform3f(locate(name), value[0], value[1], value[2]);
+            }
+            else {
+                gl.uniform1f(locate(name), value);
+            }
+        }
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    return { program, draw };
+}
+function createTextureRenderer(canvas, def, options = {}) {
+    const { worldSize = 3, channel = 'color', tile = false } = options;
+    const gl = canvas.getContext('webgl2');
+    if (gl === null) {
+        throw new Error('xtextures: WebGL2 is not available');
+    }
+    const { vao, buffer } = createFullscreenVao(gl);
+    const pipeline = createPipeline(gl, def, channel, tile, vao);
+    return {
+        render(params = {}) {
+            pipeline.draw(canvas.width, canvas.height, worldSize, params);
+        },
+        dispose() {
+            gl.deleteProgram(pipeline.program);
+            gl.deleteBuffer(buffer);
+            gl.deleteVertexArray(vao);
+        },
+    };
+}
+let bakeContext = null;
+function sharedBakeContext() {
+    if (bakeContext === null) {
+        if (typeof OffscreenCanvas === 'undefined') {
+            throw new Error('xtextures: bake requires OffscreenCanvas support');
+        }
+        const canvas = new OffscreenCanvas(1, 1);
+        const gl = canvas.getContext('webgl2');
+        if (gl === null) {
+            throw new Error('xtextures: WebGL2 is not available');
+        }
+        const { vao } = createFullscreenVao(gl);
+        bakeContext = { canvas, gl, vao, pipelines: new Map() };
+    }
+    return bakeContext;
+}
+function bakeTexture(def, options = {}) {
+    var _a;
+    const { worldSize = 3, channel = 'color', tile = false, params = {} } = options;
+    const { width = 512, height = 512 } = (_a = options.size) !== null && _a !== void 0 ? _a : {};
+    const { canvas, gl, vao, pipelines } = sharedBakeContext();
+    const key = `${def.name}:${channel}:${tile}`;
+    let pipeline = pipelines.get(key);
+    if (pipeline === undefined) {
+        pipeline = createPipeline(gl, def, channel, tile, vao);
+        pipelines.set(key, pipeline);
+    }
+    canvas.width = width;
+    canvas.height = height;
+    pipeline.draw(width, height, worldSize, params);
+    return canvas.transferToImageBitmap();
+}
+const xtextures = {
+    wood: defineTexture(wood),
+    tatami: defineTexture(tatami),
+    carpet: defineTexture(carpet),
+};
+
+export { xaudio, xbasics, xicons, xnew, xsync, xtextures };

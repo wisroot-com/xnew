@@ -12,8 +12,7 @@ export class Ticker {
 
     constructor(callback: Function, fps: number = 60) {
         const interval = 1000 / fps;
-        // absolute schedule (next += interval): the fractional remainder carries over, so the
-        // average rate holds the target fps even when the frame rate is not a multiple of it
+        // absolute schedule (next += interval): the fractional remainder carries over, so the average rate holds the target fps
         let previous = Date.now();
         let next = previous + interval;
 
@@ -62,9 +61,7 @@ export class Ticker {
 // timer
 //----------------------------------------------------------------------------------------------------
 
-/**
- * Maps a linear progress value in [0, 1] to an eased value, anchored at 0 and 1.
- */
+// Maps a linear progress value in [0, 1] to an eased value, anchored at 0 and 1.
 function ease(p: number, easing?: string): number {
     switch (easing) {
         case 'ease-out':

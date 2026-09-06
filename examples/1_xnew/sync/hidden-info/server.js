@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // hidden-info（server 側）— express で静的配信し、socket.io で 1 つの固定ルームを同期する。
 //   ロビーは無く、全接続が固定ルーム 'main' に入る。server は Game を 1 度 boot するだけ。Node 実行なので
-//   Game の xsync.server 分岐（PlayerView 生成 + visibleTo 宣言）だけが動く。ゲーム本体 game.js は無改変。
+//   Game の xsync.server 分岐（PlayerView 生成 + visibility 宣言）だけが動く。ゲーム本体 game.js は無改変。
 //----------------------------------------------------------------------------------------------------
 
 import { createServer } from 'node:http';

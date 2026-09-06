@@ -89,16 +89,16 @@
       });
     }
 
-    // A nameless "@keyframes { … }" entry scopes the animation name like a class key;
-    // $turn links the animation: reference to it, so no global name is created.
+    // An at-rule entry declares its kind as { rule, body }; the animation name is scoped
+    // like a class key, and $turn links the animation: reference to it.
     function Spinners(unit) {
       xnew.extend(Base, { name: 'xnew.css: @keyframes (scoped animation name)' });
 
       const css = xnew.css({
-        turn: `@keyframes {
+        turn: { rule: '@keyframes', body: `
           from { transform: rotate(0turn); }
           to { transform: rotate(1turn); }
-        }`,
+        ` },
         spinner: `
           width: 2rem; height: 2rem; border-radius: 50%;
           border: 0.25rem solid #dbeafe; border-top-color: #3b82f6;
@@ -131,7 +131,7 @@
       button.on('click', () => {
         const dark = root.classList.contains(css.dark);
         root.classList.replace(dark ? css.dark : css.light, dark ? css.light : css.dark);
-        button.element.textContent = dark ? 'switch to dark' : 'switch to light';
+        button.current.textContent = dark ? 'switch to dark' : 'switch to light';
       });
 
       xnew(ThemedCard, { label: 'card A' });

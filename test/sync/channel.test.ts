@@ -1,6 +1,6 @@
 import { Unit } from '../../src/core/unit';
+import { syncData } from '../../src/sync/xsync';
 import { xnew, xsync } from '../../src/index';
-import { syncOf } from '../../src/sync/xsync';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
 //----------------------------------------------------------------------------------------------------
@@ -51,9 +51,9 @@ describe('event channel (socket.io transport)', () => {
         });
 
         const socket = hub.connect();   // 同じ hub の生 client
-        // 生 socket から送るときも xsync.emitToServer と同じ封筒（予約 wire 'sync:toServer' + { type, data }）で送る。
-        socket.emit('sync:toServer', { type: 'move', data: { dx: 5 } });
-        socket.emit('sync:toServer', { type: 'move', data: { dx: 2 } });
+        // 生 socket から送るときも xsync.emitToServer と同じ封筒（予約 wire 'emitToServer' + { type, data }）で送る。
+        socket.emit('emitToServer', { type: 'move', data: { dx: 5 } });
+        socket.emit('emitToServer', { type: 'move', data: { dx: 2 } });
         expect(state.x).toBe(7);
     });
 
@@ -120,8 +120,8 @@ describe('event channel (socket.io transport)', () => {
         expect(byClient.c2.x).toBeGreaterThanOrEqual(1);
 
         // 両 replica が 2 Player を持つ（World 直下に同期生成）
-        expect(client1._.children.filter((c: Unit) => syncOf(c).state).length).toBe(2);
-        expect(client2._.children.filter((c: Unit) => syncOf(c).state).length).toBe(2);
+        expect(client1._.children.filter((c: Unit) => syncData(c).state).length).toBe(2);
+        expect(client2._.children.filter((c: Unit) => syncData(c).state).length).toBe(2);
 
         // 切断 → 次フレームで despawn
         socket2.disconnect();
@@ -143,10 +143,10 @@ describe('event channel (socket.io transport)', () => {
 
         Unit.update(Unit.engineRoot);   // server Mover が x+=1、World(server) が 'sync' を broadcast → client が apply
 
-        const replica = client._.children.find((c: Unit) => syncOf(c).state);
+        const replica = client._.children.find((c: Unit) => syncData(c).state);
         expect(replica).toBeDefined();
-        expect(syncOf(replica!).state!.x).toBe(hub.lastSync().find((n: any) => n.name === 'Mover')!.state.x);
-        expect(syncOf(replica!).state!.x).toBeGreaterThanOrEqual(1);
+        expect(syncData(replica!).state!.x).toBe(hub.lastSync().find((n: any) => n.name === 'Mover')!.state.x);
+        expect(syncData(replica!).state!.x).toBeGreaterThanOrEqual(1);
     });
 
     it('unit.on sync handler runs in the registering unit scope (inner xnew(...) parents correctly)', () => {
@@ -160,7 +160,7 @@ describe('event channel (socket.io transport)', () => {
         bootServer({ io: hub.io }, World);
 
         // 同じ hub の生 client が join を送ると server の on('join') が発火する（id=clientId）。
-        hub.connect('c1').emit('sync:toServer', { type: 'join' });
+        hub.connect('c1').emit('emitToServer', { type: 'join' });
 
         const child = xnew.find(Child, { key: 'c1' })[0];
         expect(child).toBeDefined();
@@ -171,7 +171,7 @@ describe('event channel (socket.io transport)', () => {
         const hits: string[] = [];
         // server 側: syncId を持つ 2 ユニットが各々 on('-move') を登録。
         function Tagged(unit: Unit, props: { tag?: string; syncId?: number } = {}) {
-            syncOf(unit).id = props.syncId ?? null;
+            syncData(unit).id = props.syncId ?? null;
             xsync.server(() => { unit.on('-move', ({ vector }: any) => hits.push(`${props.tag}:${vector.x}`)); });
         }
         bootServer({ io: hub.io }, function Server() {
@@ -181,7 +181,7 @@ describe('event channel (socket.io transport)', () => {
         // client 側: syncId=10 のユニットから '-move' を送ると、同じ syncId の A だけに届く。
         bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
             xsync.client(() => {
-                syncOf(unit).id = 10;
+                syncData(unit).id = 10;
                 xsync.emitToServer('-move', { vector: { x: 1 } });
             });
         });
@@ -192,7 +192,7 @@ describe('event channel (socket.io transport)', () => {
     it("'+event' routes to all components under the root (regardless of syncId)", () => {
         const hits: string[] = [];
         function Tagged(unit: Unit, props: { tag?: string; syncId?: number } = {}) {
-            syncOf(unit).id = props.syncId ?? null;
+            syncData(unit).id = props.syncId ?? null;
             xsync.server(() => { unit.on('+ping', ({ n }: any) => hits.push(`${props.tag}:${n}`)); });
         }
         bootServer({ io: hub.io }, function Server() {
@@ -200,37 +200,34 @@ describe('event channel (socket.io transport)', () => {
         });
         // 送信ユニットの syncId に関係なく、'+ping' は両方のユニットへ届く（全体）。
         bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
-            xsync.client(() => { syncOf(unit).id = 10; xsync.emitToServer('+ping', { n: 1 }); });
+            xsync.client(() => { syncData(unit).id = 10; xsync.emitToServer('+ping', { n: 1 }); });
         });
 
         expect(hits.sort()).toEqual(['A:1', 'B:1']);
     });
 
-    it('client boot forwards the socket lifecycle to the boot parent as local -events', () => {
-        // boot が socket の connect/disconnect/notfound を host(=boot 親) の '-event' へ転送する。
+    it('client boot dispatches the socket lifecycle into the root as sync.* events with the own id', () => {
+        // boot は socket の connect/disconnect/notfound を root 配下へ sync.* として配る（id = 自分の socket id）。
         const handlers = new Map<string, Set<Function>>();
         const socket: any = {
             id: 'c1',
             emit: () => {},
             on: (event: string, h: Function) => { if (!handlers.has(event)) { handlers.set(event, new Set()); } handlers.get(event)!.add(h); },
-            off: (event: string, h: Function) => { handlers.get(event)?.delete(h); },
-            onAny: () => {},
             disconnect: () => {},
         };
         const fire = (event: string, payload?: any) => handlers.get(event)?.forEach((h) => (h as Function)(payload));
 
-        const parentLog: string[] = [];
-        xnew(function Parent(unit: Unit) {
-            bootClient({ socket }, function Client() {});
-            unit.on('-connect', ({ id }: any) => parentLog.push(`connect:${id}`));
-            unit.on('-disconnect', () => parentLog.push('disconnect'));
-            unit.on('-notfound', ({ roomId }: any) => parentLog.push(`notfound:${roomId}`));
+        const log: string[] = [];
+        bootClient({ socket }, function Client(unit: Unit) {
+            unit.on('sync.connect', ({ id }: any) => log.push(`connect:${id}`));
+            unit.on('sync.disconnect', ({ id }: any) => log.push(`disconnect:${id}`));
+            unit.on('sync.notfound', ({ id, roomId }: any) => log.push(`notfound:${id}:${roomId}`));
         });
 
         fire('connect');
         fire('notfound', { roomId: 'r1' });
         fire('disconnect');
 
-        expect(parentLog).toEqual(['connect:c1', 'notfound:r1', 'disconnect']);
+        expect(log).toEqual(['connect:c1', 'notfound:c1:r1', 'disconnect:c1']);
     });
 });

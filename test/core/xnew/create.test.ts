@@ -17,7 +17,7 @@ describe('xnew() creation', () => {
     });
 
     it('hosts created units under the root unit established by reset()', () => {
-        // Unit.reset() eagerly creates the root unit (Unit.engineRoot = new Unit(null)),
+        // Unit.reset() eagerly creates the root unit (Unit.engineRoot = new Unit({ parent: null })),
         // so the root already exists before the first xnew() call rather than being
         // initialized lazily on first use.
         expect(Unit.engineRoot).not.toBeNull();
@@ -56,11 +56,11 @@ describe('xnew() creation', () => {
     it('hosts the unit on an explicit DOM element target', () => {
         const el = document.createElement('section');
         const unit = xnew(el, () => {});
-        expect(unit.element).toBe(el);
+        expect(unit.current).toBe(el);
     });
 
     it('creates the host element from a tag string target', () => {
         const unit = xnew('<article id="a1">', () => {});
-        expect(unit.element.id).toBe('a1');
+        expect(unit.current.id).toBe('a1');
     });
 });

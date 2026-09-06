@@ -36,11 +36,11 @@ export function InputNumber(unit: xnew.Unit,
     const input = xnew({ tag: 'input', type: 'number', value, className: css.input, ...others });
 
     // clicking the container padding routes focus to the inner input
-    unit.on('click', () => input.element.focus());
+    unit.on('click', () => input.current.focus());
 
     return {
-        get value() {
-            return parseFloat((input.element as HTMLInputElement).value);
-        }
+        get input() {
+            return input.current as HTMLInputElement;
+        },
     };
 }

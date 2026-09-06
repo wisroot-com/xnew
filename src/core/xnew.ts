@@ -6,40 +6,30 @@
 
 import { Unit, UnitPromise, UnitTimer, ComponentFn, DefinesOf, PropsOf } from './unit';
 import { DomElement, DomElementDef } from './dom';
-import { applyCss } from './css';
+import { applyCss, CssDef } from './css';
 
 // Call signatures of xnew(...); passing a Component merges its defines into the return type.
 export interface XnewBase {
-    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(Base: C, props: PropsOf<C>, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
-    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(Base: C, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
-    <C extends ComponentFn<any, any>>(Base: C, props: PropsOf<C>, content: string | number): Unit & DefinesOf<C>;
-    <C extends ComponentFn<any, any>>(Base: C, content: string | number): Unit & DefinesOf<C>;
     <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
-    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, props: PropsOf<C>, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
-    <C extends ComponentFn<any, any>, E extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, ExComponent: E): Unit & DefinesOf<C> & DefinesOf<E>;
-    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, props: PropsOf<C>, content: string | number): Unit & DefinesOf<C>;
-    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Base: C, content: string | number): Unit & DefinesOf<C>;
     <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
     (target: DomElement | string | DomElementDef, content?: string | number): Unit;
     (content: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
 
-    // True when the component whose body is currently running is used on its own — not composed by its caller:
-    // no trailing ExComponent (xnew(Base, props, fn)) and not extended onto another component (xnew.extend(Base)).
+    // True when the currently running component is used on its own — not extended onto another component.
     readonly standalone: boolean;
 }
 
 export const xnew = Object.assign(
-    // Creates a new Unit: xnew((target,) Component?, props?) — target is an element or a tag string like '<div>'.
-    // A trailing function after a Component is an extension component extended on top of it: xnew(Base, props?, (unit) => { … }).
+    // Creates a new Unit: xnew((target,) Component?, props?) — a string/number in the Component slot writes text into the element.
     (function(...args: any[]): Unit {
         if (args[0] instanceof Unit) {
             const parent = args.shift() as Unit;
             const snapshot = parent._.lastSnapshot ?? Unit.snapshot(parent);
-            return Unit.scope(snapshot, () => Unit.create(parent, ...args)) as Unit;
+            return Unit.scope(snapshot, () => new Unit({ parent }, ...args)) as Unit;
         } else {
-            return Unit.create(Unit.current, ...args);
+            return new Unit({ parent: Unit.current }, ...args);
         }
     }) as unknown as XnewBase,
     {
@@ -62,19 +52,19 @@ export const xnew = Object.assign(
             return Unit.extend(Unit.current, Component, props) as DefinesOf<C>;
         },
 
-        // Registers pseudo-scoped CSS: each key is a local name, always renamed to a page-unique one (scoping is mandatory — invalid keys throw). A value is a CSS fragment string: a declaration body, wrapped as .xnewN-key { … } (native nesting works inside, e.g. &:hover / &[data-checked]), or a nameless at-rule "@type { … }" that hangs the generated name on it (@keyframes { … } → @keyframes xnewN-key; a name inside throws, so scoping holds). $key inside a body references another entry's generated name (unknown references throw). An optional layer (first arg) wraps the whole block in @layer (xbasics passes 'base'). Returns { key: generatedName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it finalizes.
-        css: (function(layerOrDefs: string | Record<string, string>, maybeDefs?: Record<string, string>): Record<string, string> {
+        // Registers pseudo-scoped CSS: each key is a local name, always renamed to a page-unique one (scoping is mandatory — invalid keys throw). A string value is a class declaration body wrapped as .xnewN-key { … } (native nesting works inside: &:hover, &[data-checked], @media, …); an at-rule value declares its kind as { rule: '@keyframes' | '@property' | '@counter-style' | '@font-face', body } and hangs the generated name on it ('@property' names become --xnewN-key; '@font-face' injects the name as font-family and body may be an array of faces). $key inside a body references another entry's generated name (unknown references throw; strings / comments pass through untouched, and a body cannot escape its braces). An optional layer (first arg) wraps the whole block in @layer (xbasics passes 'base'). Returns { key: generatedName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it finalizes.
+        css: (function(layerOrDefs: string | Record<string, CssDef>, maybeDefs?: Record<string, CssDef>): Record<string, string> {
             const layer = typeof layerOrDefs === 'string' ? layerOrDefs : undefined;
             const defs = typeof layerOrDefs === 'string' ? maybeDefs! : layerOrDefs;
             return applyCss(Unit.current, layer, defs);
         }) as {
-            <T extends Record<string, string>>(defs: T): Record<keyof T, string>;
-            <T extends Record<string, string>>(layer: string, defs: T): Record<keyof T, string>;
+            <T extends Record<string, CssDef>>(defs: T): Record<keyof T, string>;
+            <T extends Record<string, CssDef>>(layer: string, defs: T): Record<keyof T, string>;
         },
 
         // Returns the nearest unit associated with the given component in the ancestor context chain.
-        context(key: any): any {
-            return Unit.getContext(Unit.current, key);
+        context(Component: Function): any {
+            return Unit.getContext(Unit.current, Component);
         },
             
         // Registers a promise to the current unit (optional string key first). Accepts an executor (resolve, reject), a raw Promise, or a Unit — a Unit aggregates its keyed results without consuming its pool.
@@ -107,9 +97,9 @@ export const xnew = Object.assign(
             return (...args: any[]) => Unit.scope(snapshot, callback, ...args);
         },
 
-        // Finds units by component. opts.key narrows by the reserved prop `key` (assumed globally unique).
-        find(Component: Function, opts?: { key?: any }): Unit[] {
-            return Unit.find(Component, opts?.key);
+        // Finds units by component. Options are independent conditions on the found unit: `key` = its reserved prop `key` (assumed globally unique), `ancestor` = that unit is among its ancestors, `parent` = that unit is its direct parent.
+        find(Component: Function, options?: { key?: any, ancestor?: Unit, parent?: Unit }): Unit[] {
+            return Unit.find(Component, options);
         },
 
         // Emits a custom event ('+event' = broadcast / '-event' = own unit only).
@@ -137,8 +127,7 @@ export const xnew = Object.assign(
             Unit.current._.protected = true;
         },
 
-        // Runtime type guard for a Unit — the discriminator for `props | Unit` params. The Unit class
-        // itself is not exposed as a value, so use this instead of `x instanceof xnew.Unit`.
+        // Runtime type guard for a Unit (the Unit class is not exposed as a value, so `instanceof xnew.Unit` is impossible).
         isUnit(value: any): value is Unit {
             return value instanceof Unit;
         },

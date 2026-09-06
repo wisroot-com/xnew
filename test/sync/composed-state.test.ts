@@ -1,5 +1,5 @@
 import { Unit } from '../../src/core/unit';
-import { syncOf } from '../../src/sync/xsync';
+import { syncData } from '../../src/sync/xsync';
 import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
@@ -43,7 +43,7 @@ describe('composed synced state (base + extend)', () => {
         const replica = client._.children[0];
         // Base(hp) と Enemy(x) の両宣言が、構築時点でサーバー値として読めている
         expect(clientReadAtConstruction).toEqual({ hp: 101, x: 3 });
-        expect(syncOf(replica).state).toEqual({ hp: 101, x: 3 });
+        expect(syncData(replica).state).toEqual({ hp: 101, x: 3 });
     });
 
     it('keeps the first value when keys collide across declarations (existing-wins)', () => {
@@ -51,14 +51,14 @@ describe('composed synced state (base + extend)', () => {
             xsync.state({ pos: 1 });
             xsync.state({ pos: 2 });   // 同名キー: 既存（先勝ち）を尊重
         });
-        expect(syncOf(unit).state).toEqual({ pos: 1 });   // existing-wins（プリシード/先行宣言を優先する規則と一貫）
+        expect(syncData(unit).state).toEqual({ pos: 1 });   // existing-wins（プリシード/先行宣言を優先する規則と一貫）
     });
 
     it('does not leak injected state into a non-synced child built during the body', () => {
         let childState: Record<string, any> = {};
         function Host(unit: Unit) {
             xsync.state({ value: 0 });
-            xsync.server(() => { unit.on('update', () => { (syncOf(unit).state as any).value += 5; }); });
+            xsync.server(() => { unit.on('update', () => { (syncData(unit).state as any).value += 5; }); });
             // 本体内でインライン生成する非 synced 子（apply ではなく親本体が生成する）
             xsync.client(() => {
                 xnew(function Child() { childState = xsync.state({ value: -1 }); });
@@ -70,7 +70,7 @@ describe('composed synced state (base + extend)', () => {
         asServer(() => Unit.update(server));   // server Host: value=5 → 'sync' → client が replica Host + inline Child を生成
 
         const replicaHost = client._.children[0];
-        expect(syncOf(replicaHost).state!.value).toBe(5);             // Host は注入値
+        expect(syncData(replicaHost).state!.value).toBe(5);             // Host は注入値
         expect(childState.value).toBe(-1);                      // 子は自分の initial（親の注入が漏れない）
     });
 
@@ -99,13 +99,13 @@ describe('composed synced state (base + extend)', () => {
                 unit.on('update', () => { el.style.left = `${pos.x}px`; el.style.top = `${pos.y}px`; });
             });
         }
-        // 拡張: Actor を取り込み hp を足し、基底が nest した要素を unit.element 経由で着色する
+        // 拡張: Actor を取り込み hp を足し、基底が nest した要素を unit.current 経由で着色する
         function Sprite(unit: Unit, props: any = {}) {
             xnew.extend(Actor, props);
             const state = xsync.state({ hp: 3 });
             xsync.server(() => { unit.on('update', () => { state.x += 3; state.hp -= 1; }); });
             xsync.client(() => {
-                const el = unit.element as HTMLElement;
+                const el = unit.current as HTMLElement;
                 unit.on('update', () => { el.style.background = state.hp >= 2 ? 'red' : 'gray'; });
             });
         }
@@ -120,7 +120,7 @@ describe('composed synced state (base + extend)', () => {
 
         asClient(() => Unit.update(client));                      // replica update（両描画ハンドラが走る）
 
-        const el = client._.children[0].element as HTMLElement;
+        const el = client._.children[0].current as HTMLElement;
         expect(el.style.left).toBe('3px');                      // 基底 Actor の render（位置）
         expect(el.style.top).toBe('8px');
         expect(el.style.background).toBe('red');                // 拡張 Sprite の render（hp 由来の色）

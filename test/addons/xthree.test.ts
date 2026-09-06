@@ -11,7 +11,8 @@ jest.spyOn(THREE, 'WebGLRenderer').mockImplementation(() => ({
 }));
 
 import { xnew } from '../../src/index';
-import { xthree } from '../../src/addons/xthree';
+import { xthree } from '../../src/addons/three/xthree';
+import { xtextures } from '../../src/textures/xtextures';
 
 function setup() {
     const canvas = document.createElement('canvas');
@@ -163,80 +164,35 @@ test('finalize: ユニット破棄では dispose しない（共有リソース�
     expect(matSpy).not.toHaveBeenCalled();
 });
 
-test('coord2dTo3d: perspective カメラで canvas 中心が z 平面の原点に写る', () => {
-    const canvas = setup();
-    [canvas.width, canvas.height] = [800, 600];
-    const camera = new THREE.PerspectiveCamera(45, 800 / 600);
-    camera.position.set(0, 0, 10);
+// glsl テンプレートのトークン（XTEX_ / //#include <...>）が解決されずに残るとコンパイルが落ちる。
+// ヘッダーコメント内にトークンを書いて誤置換した実績があるので固定する。
+test('material.shader: glsl テンプレートのトークンが解決される', () => {
+    const material = xthree.material.shader(xtextures.wood, { scale: 5 });
 
-    xnew(() => {
-        xthree.initialize({ canvas, camera });
-
-        const center = xthree.coord2dTo3d(400, 300, 0);
-        expect(center.x).toBeCloseTo(0);
-        expect(center.y).toBeCloseTo(0);
-        expect(center.z).toBeCloseTo(0);
-
-        // 右端 x = 距離10 × tan(fov/2) × アスペクト。上下反転（canvas 下 → ワールド -y）も確認。
-        const right = xthree.coord2dTo3d(800, 300, 0);
-        expect(right.x).toBeCloseTo(10 * Math.tan(Math.PI * 22.5 / 180) * (800 / 600));
-        const bottom = xthree.coord2dTo3d(400, 600, 0);
-        expect(bottom.y).toBeCloseTo(-10 * Math.tan(Math.PI * 22.5 / 180));
-    });
+    expect(material.fragmentShader).not.toContain('XTEX_');
+    expect(material.fragmentShader).not.toContain('#include <');
+    expect(material.fragmentShader).toContain(xtextures.wood.glsl);
+    expect(material.fragmentShader).toContain('vec3 xtexTangent(vec3 n)');
+    expect(material.fragmentShader).toContain('xtexWoodNormal(vXtexPos, nrm, xtexTangent(nrm))');
+    expect(material.fragmentShader).toContain('xtexWoodColor(vXtexPos)');
+    expect(material.uniforms.scale.value).toBe(5);
+    expect(material.uniforms.color.value).toBeInstanceOf(THREE.Vector3);
 });
 
-test('coord2dTo3d: orthographic カメラでは視錐台の端がそのまま写る', () => {
-    const canvas = setup();
-    [canvas.width, canvas.height] = [800, 600];
-    const camera = new THREE.OrthographicCamera(-4, +4, +3, -3, 0.1, 10);
-    camera.position.set(0, 0, 5);
+// 接線フレームは両経路で同一でなければならない（frame.glsl に一本化した不変条件）。
+test('material.standard({ inject: true }): frame / texture glsl が standard シェーダーに注入される', () => {
+    const material = xthree.material.standard(xtextures.wood, { inject: true, params: { scale: 5 } });
+    const shader = {
+        vertexShader: '#include <common>\n#include <begin_vertex>\n',
+        fragmentShader: '#include <common>\n#include <map_fragment>\n#include <normal_fragment_maps>\n',
+        uniforms: {},
+    };
+    material.onBeforeCompile(shader);
 
-    xnew(() => {
-        xthree.initialize({ canvas, camera });
-
-        const topLeft = xthree.coord2dTo3d(0, 0, 0);
-        expect(topLeft.x).toBeCloseTo(-4);
-        expect(topLeft.y).toBeCloseTo(+3);
-        const bottomRight = xthree.coord2dTo3d(800, 600, 0);
-        expect(bottomRight.x).toBeCloseTo(+4);
-        expect(bottomRight.y).toBeCloseTo(-3);
-    });
-});
-
-test('coord3dTo2d: coord2dTo3d と往復して元の canvas 座標に戻る', () => {
-    const canvas = setup();
-    [canvas.width, canvas.height] = [800, 600];
-    const camera = new THREE.PerspectiveCamera(45, 800 / 600);
-    camera.position.set(1, 2, 10);
-
-    xnew(() => {
-        xthree.initialize({ canvas, camera });
-
-        const world = xthree.coord2dTo3d(123, 456, 0);
-        const screen = xthree.coord3dTo2d(world.x, world.y, world.z);
-        expect(screen.x).toBeCloseTo(123);
-        expect(screen.y).toBeCloseTo(456);
-    });
-});
-
-test('dispose: 親から外して配下の geometry/material/texture を全解放する', () => {
-    const canvas = setup();
-    const texture = new THREE.Texture();
-    const material = new THREE.MeshBasicMaterial({ map: texture });
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(), material);
-
-    const geoSpy = jest.spyOn(mesh.geometry, 'dispose');
-    const matSpy = jest.spyOn(material, 'dispose');
-    const texSpy = jest.spyOn(texture, 'dispose');
-
-    xnew(() => {
-        xthree.initialize({ canvas });
-        xthree.add(mesh);
-        xthree.dispose(mesh); // 親から外して geometry/material/texture を dispose
-    });
-
-    expect(mesh.parent).toBe(null);
-    expect(geoSpy).toHaveBeenCalled();
-    expect(matSpy).toHaveBeenCalled();
-    expect(texSpy).toHaveBeenCalled();
+    expect(shader.fragmentShader).not.toContain('XTEX_');
+    expect(shader.fragmentShader).toContain('vec3 xtexTangent(vec3 n)');
+    expect(shader.fragmentShader).toContain('xtexWoodNormal(vXtexPos, xtexN, xtexTangent(xtexN))');
+    expect(shader.vertexShader).toContain('vXtexPos = position;');
+    expect(material.customProgramCacheKey()).toBe('xtextures:wood');
+    expect(material.uniforms.scale.value).toBe(5);
 });

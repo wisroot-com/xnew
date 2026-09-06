@@ -59,7 +59,7 @@ function Lobby(unit, { io }) {
     xnew('<label class="flex items-center gap-2 text-sm text-gray-600">', () => {
         xnew('<span>', 'あなたの名前');
         const nameField = xnew('<input class="flex-1 px-2.5 py-1.5 rounded border border-gray-300 text-sm" type="text" maxlength="16" placeholder="ゲスト">');
-        nameField.element.value = app.playerName;   // シーン復帰時に既存の名前を復元
+        nameField.current.value = app.playerName;   // シーン復帰時に既存の名前を復元
         nameField.on('input', ({ value }) => app.setPlayerName(value));
     });
     // 作成フォーム
@@ -68,10 +68,10 @@ function Lobby(unit, { io }) {
         xnew('<button class="px-3 py-1.5 rounded border-0 bg-emerald-500 hover:bg-emerald-600 text-white text-sm cursor-pointer" type="submit">', '作成');
         form.on('submit', ({ event }) => {
             event.preventDefault();
-            const name = nameInput.element.value.trim();
+            const name = nameInput.current.value.trim();
             if (!name) { return; }
             createRoom(name);   // 内部で socket が 'roomcreate' を emit
-            nameInput.element.value = '';
+            nameInput.current.value = '';
         });
     });
     const listEl = xnew('<ul class="flex flex-col gap-2">');
@@ -104,7 +104,7 @@ function Lobby(unit, { io }) {
     unit.on('-disconnect', () => app.setStatus('切断', false));
     unit.on('-statusupdate', ({ rooms: list }) => { rooms = list; render(); });
     unit.on('-roomcreated', ({ room }) => unit.change(Room, { io: window.io, client: client(), room: { id: room.id, name: room.name, count: room.count } }));
-    unit.on('-roomrejected', ({ message }) => { hintEl.element.textContent = message; });
+    unit.on('-roomrejected', ({ message }) => { hintEl.current.textContent = message; });
 
     render();   // 初期描画（一覧は -statusupdate 受信で更新）
 }
@@ -112,8 +112,8 @@ function Lobby(unit, { io }) {
 //----------------------------------------------------------------------------------------------------
 // Room — 渡された io / client / room でそのルームへ接続し、client ツリー(Game) を mount してプレイ
 //   呼び出し側が io（socket.io factory）・client（表示名）・room({id,name}）を渡す。HTML（戻るボタン・
-//   シーンの mount 先）だけを持ち、room 関連の配線（socket 生成・所有 / 基本イベント connect・disconnect・
-//   notfound の '-event' 転送）は xsync.boot に委ねる（browser 実行なので client 分岐が動く）。
+//   シーンの mount 先）だけを持ち、room 関連の配線（socket 生成・所有 / sync.connect・sync.disconnect・
+//   sync.notfound の root 配下への dispatch）は xsync.boot に委ねる（browser 実行なので client 分岐が動く）。
 //----------------------------------------------------------------------------------------------------
 
 function Room(unit, { io, client, room }) {
@@ -124,12 +124,13 @@ function Room(unit, { io, client, room }) {
     xnew.nest('<div class="flex gap-4">');   // シーンの mount 先（Game の client が Title/Setup/World を nest する）
 
     // xsync.boot が socket を io から生成・所有し（query に roomId/clientName を載せる）、finalize で切断する。
-    // socket の connect/disconnect/notfound は boot がこの Room の unit.on('-event') へ転送する。
+    // sync.connect/sync.disconnect/sync.notfound は root 配下へ届くので、root コンポーネントの中に listener を置く。
     // シーン遷移（change）は呼び出し側の責務なので Scene をここで extend する。
     xnew.extend(xbasics.Scene);
-    xsync.boot({ io, client, room }, Game);
-
-    unit.on('-connect', ({ id }) => app.setStatus(`ルーム ${room.id}: ${id}`, true));
-    unit.on('-disconnect', () => app.setStatus('切断', false));
-    unit.on('-notfound', () => unit.change(Lobby, { io: window.io }));   // 消滅ルームへ来たらロビーへ
+    xsync.boot({ io, client, room }, (u) => {
+        xnew.extend(Game);
+        u.on('sync.connect', ({ id }) => { if (id === xsync.session.myself.id) { app.setStatus(`ルーム ${room.id}: ${id}`, true); } });
+        u.on('sync.disconnect', ({ id }) => { if (id === xsync.session.myself.id) { app.setStatus('切断', false); } });
+        u.on('sync.notfound', () => unit.change(Lobby, { io: window.io }));   // 消滅ルームへ来たらロビーへ
+    });
 }

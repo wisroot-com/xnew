@@ -1,7 +1,7 @@
 import { Unit } from '../../src/core/unit';
 import { xnew, xsync } from '../../src/index';
 import { ioMock, bootClient } from './io-mock';
-import { syncOf, SyncNode } from '../../src/sync/xsync';
+import { SyncNode, syncData } from '../../src/sync/xsync';
 
 // apply は boot 内部へ移動したため、client boot の socket に 'sync' を fire して駆動する。
 // socket.fire は受信を client 環境で擬似発火し、boot の on('sync')→apply を呼ぶ（手で作ったツリーを流し込める）。
@@ -31,8 +31,8 @@ describe('applyStateTree create', () => {
         socket.fire('sync', tree);
         expect(view._.children.length).toBe(1);
         const child = view._.children[0];
-        expect(syncOf(child).id).toBe(1);
-        expect(syncOf(child).state).toEqual({ value: 7 });
+        expect(syncData(child).id).toBe(1);
+        expect(syncData(child).state).toEqual({ value: 7 });
     });
 
     it('creates nested replica units honoring parent', () => {
@@ -41,8 +41,8 @@ describe('applyStateTree create', () => {
             { id: 1, name: 'Box', parent: null, state: { value: 1 } },
             { id: 2, name: 'Box', parent: 1, state: { value: 2 } },
         ]);
-        expect(syncOf(view._.children[0]).id).toBe(1);
-        expect(syncOf(view._.children[0]._.children[0]).id).toBe(2);
+        expect(syncData(view._.children[0]).id).toBe(1);
+        expect(syncData(view._.children[0]._.children[0]).id).toBe(2);
     });
 });
 
@@ -90,18 +90,18 @@ describe('applyStateTree update', () => {
         const first = view._.children[0];
         socket.fire('sync', [{ id: 1, name: 'Box', parent: null, state: { value: 2 } }]);
         expect(view._.children[0]).toBe(first);
-        expect(syncOf(first).state).toEqual({ value: 2 });
+        expect(syncData(first).state).toEqual({ value: 2 });
         expect(view._.children.length).toBe(1);
     });
 
     it('drops keys the authoritative state no longer carries, keeping the state object identity', () => {
         const { view, socket } = makeView();
         socket.fire('sync', [{ id: 1, name: 'Box', parent: null, state: { value: 1, flag: true } }]);
-        const state = syncOf(view._.children[0]).state;
+        const state = syncData(view._.children[0]).state;
         socket.fire('sync', [{ id: 1, name: 'Box', parent: null, state: { value: 2 } }]);
         expect(state).toEqual({ value: 2 });          // 'flag' が消える
         expect('flag' in state).toBe(false);
-        expect(syncOf(view._.children[0]).state).toBe(state);   // 参照は据え置き（本体が掴んだクロージャが生きる）
+        expect(syncData(view._.children[0]).state).toBe(state);   // 参照は据え置き（本体が掴んだクロージャが生きる）
     });
 });
 
@@ -121,10 +121,10 @@ describe('applyStateTree remove', () => {
             { id: 2, name: 'Box', parent: null, state: {} },
         ]);
         expect(view._.children.length).toBe(2);
-        const removed = view._.children.find(c => syncOf(c).id === 2)!;
+        const removed = view._.children.find(c => syncData(c).id === 2)!;
         socket.fire('sync', [{ id: 1, name: 'Box', parent: null, state: {} }]);
         expect(view._.children.length).toBe(1);
-        expect(syncOf(view._.children[0]).id).toBe(1);
+        expect(syncData(view._.children[0]).id).toBe(1);
         expect(removed._.phase).toBe('finalized');
     });
 });

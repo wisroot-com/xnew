@@ -59,4 +59,82 @@ describe('xnew.find', () => {
             expect(xnew.find(A, { key: 0 })).toEqual([zero]);
         });
     });
+
+    describe('by ancestor', () => {
+        function A(_: Unit) {}
+
+        it('limits results to the descendants of the given unit', () => {
+            let ancestor!: Unit, inner!: Unit, deep!: Unit, outer!: Unit;
+            xnew(() => {
+                ancestor = xnew(() => {
+                    inner = xnew(A);
+                    xnew(() => { deep = xnew(A); });
+                });
+                outer = xnew(A);
+            });
+            expect(xnew.find(A, { ancestor })).toEqual(expect.arrayContaining([inner, deep]));
+            expect(xnew.find(A, { ancestor })).toHaveLength(2);
+            expect(xnew.find(A, { ancestor })).not.toContain(outer);
+        });
+
+        it('excludes the given unit itself', () => {
+            let ancestor!: Unit, child!: Unit;
+            xnew(() => { ancestor = xnew(A, () => { child = xnew(A); }); });
+            expect(xnew.find(A, { ancestor })).toEqual([child]);
+        });
+
+        it('combines with key', () => {
+            let ancestor!: Unit, k1!: Unit;
+            xnew(() => {
+                ancestor = xnew(() => { k1 = xnew(A, { key: 'k1' }); xnew(A, { key: 'k2' }); });
+                xnew(A, { key: 'k3' });
+            });
+            expect(xnew.find(A, { ancestor, key: 'k1' })).toEqual([k1]);
+            expect(xnew.find(A, { ancestor, key: 'k3' })).toEqual([]);
+        });
+    });
+
+    describe('by parent', () => {
+        function A(_: Unit) {}
+
+        it('limits results to the direct children of the given unit', () => {
+            let parent!: Unit, child!: Unit, deep!: Unit, outer!: Unit;
+            xnew(() => {
+                parent = xnew(() => {
+                    child = xnew(A);
+                    xnew(() => { deep = xnew(A); });
+                });
+                outer = xnew(A);
+            });
+            expect(xnew.find(A, { parent })).toEqual([child]);
+            expect(xnew.find(A, { parent })).not.toContain(deep);
+            expect(xnew.find(A, { parent })).not.toContain(outer);
+        });
+
+        it('excludes the given unit itself', () => {
+            let parent!: Unit;
+            xnew(() => { parent = xnew(A); });
+            expect(xnew.find(A, { parent })).toEqual([]);
+        });
+
+        it('combines with key', () => {
+            let parent!: Unit, k1!: Unit;
+            xnew(() => {
+                parent = xnew(() => { k1 = xnew(A, { key: 'k1' }); xnew(A, { key: 'k2' }); });
+                xnew(A, { key: 'k1' });
+            });
+            expect(xnew.find(A, { parent, key: 'k1' })).toEqual([k1]);
+        });
+
+        it('intersects with ancestor rather than conflicting', () => {
+            let ancestor!: Unit, parent!: Unit, child!: Unit;
+            xnew(() => {
+                ancestor = xnew(() => {
+                    parent = xnew(() => { child = xnew(A); });
+                });
+            });
+            expect(xnew.find(A, { ancestor, parent })).toEqual([child]);
+            expect(xnew.find(A, { ancestor: parent, parent: ancestor })).toEqual([]);
+        });
+    });
 });

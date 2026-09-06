@@ -15,15 +15,15 @@ jobs:
         with:
           node-version: 20
       - run: |
-          cd website
+          cd docusaurus
           npm ci
       - run: |
-          cd website
+          cd docusaurus
           npm run build
       - id: deployment
         uses: actions/upload-pages-artifact@v3
         with:
-          path: website/build
+          path: docusaurus/build
 
   deploy:
     name: deploy

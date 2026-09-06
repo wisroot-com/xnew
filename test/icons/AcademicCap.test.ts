@@ -18,7 +18,7 @@ describe('icons xicons (AcademicCap)', () => {
 
     it('nests an <svg> with the heroicons 24 viewBox and the outline paths by default', () => {
         const unit = xnew(xicons.AcademicCap);
-        const svg = unit.element as SVGSVGElement;
+        const svg = unit.current as SVGSVGElement;
 
         expect(svg.tagName.toLowerCase()).toBe('svg');
         expect(svg.getAttribute('viewBox')).toBe('0 0 24 24');
@@ -28,13 +28,13 @@ describe('icons xicons (AcademicCap)', () => {
     it('renders the solid variant with its filled paths', () => {
         const unit = xnew(xicons.AcademicCap, { mode: 'solid' });
 
-        expect(unit.element.querySelectorAll('path').length).toBe(iconData.AcademicCap.s.length);
+        expect(unit.current.querySelectorAll('path').length).toBe(iconData.AcademicCap.s.length);
     });
 
     it('injects an @layer base rule referencing currentColor for the active mode', () => {
         const unit = xnew(xicons.AcademicCap, { mode: 'solid' });
         const styleText = Array.from(document.head.querySelectorAll('style')).map((s) => s.textContent).join('');
-        const generated = (unit.element as SVGSVGElement).getAttribute('class')?.split(' ')[0] ?? '';
+        const generated = (unit.current as SVGSVGElement).getAttribute('class')?.split(' ')[0] ?? '';
 
         expect(generated).not.toBe('');
         expect(styleText).toContain('@layer base');
@@ -45,7 +45,7 @@ describe('icons xicons (AcademicCap)', () => {
     it('applies fill-rule / clip-rule "evenodd" for a solid path marked as a tuple', () => {
         // CheckCircle solid is a single evenodd path (hole punched out)
         const unit = xnew(xicons.CheckCircle, { mode: 'solid' });
-        const path = unit.element.querySelector('path') as SVGPathElement;
+        const path = unit.current.querySelector('path') as SVGPathElement;
 
         expect(Array.isArray(iconData.CheckCircle.s[0])).toBe(true);
         expect(path.getAttribute('fill-rule')).toBe('evenodd');
@@ -54,7 +54,7 @@ describe('icons xicons (AcademicCap)', () => {
 
     it('appends caller className / style onto the svg element', () => {
         const unit = xnew(xicons.AcademicCap, { mode: 'solid', className: 'size-8', style: 'opacity: 0.5;' });
-        const svg = unit.element as SVGSVGElement;
+        const svg = unit.current as SVGSVGElement;
 
         expect(svg.getAttribute('class')).toContain('size-8');
         expect(svg.getAttribute('style')).toContain('opacity: 0.5;');
