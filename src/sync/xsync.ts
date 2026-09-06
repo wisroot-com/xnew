@@ -36,13 +36,11 @@ export function syncData(unit: Unit): SyncData {
 // 'sync.' is the library's own namespace: only bootServer / bootClient may dispatch it, never a client envelope.
 const RESERVED_PREFIX = 'sync.';
 
-// A client envelope is attacker-controlled, so its type is checked before it can reach any listener; the server relay is trusted and keeps the reserved namespace.
-function clientEventType(type: unknown): string | null {
-    if (typeof type === 'string' && type.length > 0 && type.startsWith(RESERVED_PREFIX) === false) {
-        return type;
-    } else {
-        return null;
-    }
+// An inbound envelope is attacker-controlled, so both wire boundaries normalize it here; `trusted` (the server relay) is the only caller allowed to keep the reserved namespace.
+function envelope(p: any, trusted: boolean = false): { type: string; syncId: number | null; data: Record<string, any> } | null {
+    const type: string = typeof p?.type === 'string' ? p.type : '';
+    if (type === '' || (trusted === false && type.startsWith(RESERVED_PREFIX) === true)) { return null; }
+    return { type, syncId: typeof p?.syncId === 'number' ? p.syncId : null, data: typeof p?.data === 'object' && p.data !== null ? p.data : {} };
 }
 
 function dispatch(roomio: RoomIO, type: string, id: string | undefined, data: Record<string, any> = {}, syncId?: number | null): void {
@@ -73,14 +71,11 @@ function bootServer(options: BootOptions, Component: Function, props?: object): 
     const captureStateTree = (clientId: string): SyncNode[] => {
         const nodes: SyncNode[] = [];
         const walk = (unit: Unit, parent: number | null): void => {
+            const registry = unit._.parent?._.own.syncData?.registry ?? {};
+            const names = Object.keys(registry);
             // _.Components is [base..., most-derived]; match the registered name from the tail.
             let name: string | undefined = undefined;
-            const registry = unit._.parent?._.own.syncData?.registry;
-            if (registry !== undefined) {
-                for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
-                    name = Object.keys(registry).find((key) => registry[key] === unit._.Components[i]);
-                }
-            }
+            for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) { name = names.find((key) => registry[key] === unit._.Components[i]); }
             if (name === undefined) {
                 unit._.children.forEach((child) => walk(child, parent));   // pass-through: keep the same parent id
             } else {
@@ -114,36 +109,30 @@ function bootServer(options: BootOptions, Component: Function, props?: object): 
         const query = socket.handshake?.query;
         if (query?.roomId !== room.id) return;
         socket.join(room.id);
-        // lifecycle relay: socket.to excludes the sender — each client dispatches its own from its local socket events
-        roomio.clients.push({ id: socket.id, name: query?.clientName ?? '' });
-        dispatch(roomio, 'sync.connect', socket.id);
-        socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
-        roomio.emit('status', { clients: roomio.clients });
-        dispatch(roomio, 'sync.statusupdate', undefined);
-        // normalize the untrusted envelope at the wire boundary; a rejected type is dropped, never dispatched
-        socket.on('emitToServer', (p: any) => {
-            const type = clientEventType(p?.type);
-            if (type !== null) {
-                const data = typeof p?.data === 'object' && p.data !== null ? p.data : {};
-                const syncId = typeof p?.syncId === 'number' ? p.syncId : null;
-                if (Array.isArray(p?.to)) {
-                    // relay targets are attacker-controlled: keep only this room's members (another room's socket id must stay unreachable) and stamp the real sender.
-                    const to = roomio.clients.filter((client) => p.to.includes(client.id));
-                    if (to.length > 0) {
-                        roomio.emit('emitToClients', { type, syncId, id: socket.id, data }, to);
-                    }
-                } else {
-                    dispatch(roomio, type, socket.id, data, syncId);
-                }
-            }
-        });
-        socket.on('disconnect', () => {   // mirror of connect
-            roomio.clients = roomio.clients.filter((c) => c.id !== socket.id);
-            lastEmits.delete(socket.id);
-            dispatch(roomio, 'sync.disconnect', socket.id);
-            socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
+        // connect / disconnect are mirrors: dispatch here, relay to the other members (socket.to excludes the sender, who dispatches from its own socket events), then refresh the roster.
+        const announce = (type: string): void => {
+            dispatch(roomio, type, socket.id);
+            socket.to(room.id).emit('emitToClients', { type, syncId: null, id: socket.id, data: {} });
             roomio.emit('status', { clients: roomio.clients });
             dispatch(roomio, 'sync.statusupdate', undefined);
+        };
+        roomio.clients.push({ id: socket.id, name: query?.clientName ?? '' });
+        announce('sync.connect');
+        socket.on('emitToServer', (p: any) => {
+            const message = envelope(p);
+            if (message === null) { return; }   // a rejected envelope is dropped, never dispatched
+            if (Array.isArray(p?.to)) {
+                // relay targets are attacker-controlled: keep only this room's members (another room's socket id must stay unreachable) and stamp the real sender.
+                const to = roomio.clients.filter((client) => p.to.includes(client.id));
+                if (to.length > 0) { roomio.emit('emitToClients', { ...message, id: socket.id }, to); }
+            } else {
+                dispatch(roomio, message.type, socket.id, message.data, message.syncId);
+            }
+        });
+        socket.on('disconnect', () => {
+            roomio.clients = roomio.clients.filter((c) => c.id !== socket.id);
+            lastEmits.delete(socket.id);
+            announce('sync.disconnect');
         });
     });
     return root;
@@ -193,13 +182,10 @@ function bootClient(options: BootOptions, Component: Function, props?: object): 
         dispatch(roomio, 'sync.statusupdate', undefined);
     });
 
-    //---- message channel (normalize the untrusted envelope at the wire boundary)
+    //---- message channel: the server is trusted here (it relays 'sync.connect' / 'sync.disconnect' through this channel), so the envelope keeps the reserved namespace
     roomio.on('emitToClients', (p: any) => {
-        // the server is trusted here (it relays 'sync.connect' / 'sync.disconnect' through this channel), so only the payload shape is normalized
-        if (typeof p?.type === 'string' && p.type.length > 0) {
-            const data = typeof p?.data === 'object' && p.data !== null ? p.data : {};
-            dispatch(roomio, p.type, p?.id, data, typeof p?.syncId === 'number' ? p.syncId : null);
-        }
+        const message = envelope(p, true);
+        if (message !== null) { dispatch(roomio, message.type, p?.id, message.data, message.syncId); }
     });
 
     //---- lifecycle channel: own events dispatch from the own socket; other members' arrive via the server relay
@@ -257,7 +243,7 @@ export const xsync = {
     emit(type: string, props: Record<string, any> = {}, clients?: ClientStatus | ClientStatus[]): void {
         const roomio = RoomIO.of(Unit.current, true);
         const syncId = syncData(Unit.current).id;
-        const to = clients === undefined ? undefined : (Array.isArray(clients) ? clients : [clients]);
+        const to = clients === undefined ? undefined : [clients].flat();
         if (to !== undefined && to.length === 0) { return; }
         if (getEnvironment() === 'server') {
             // the envelope id stays undefined (server-originated), so a relay names the original sender inside data.

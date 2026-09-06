@@ -31,15 +31,12 @@ export class RoomIO {
 
     // `clients` is the destination roster entry / entries; omitted it means the whole room (server) or the server itself (client).
     emit(type: string, data: any, clients?: ClientStatus | ClientStatus[]): void {
-        if (clients === undefined) {
-            if (this.socket !== null) {
-                this.socket.emit(type, data);
-            } else {
-                this.io.to(this.room.id).emit(type, data);
-            }
+        if (clients === undefined && this.socket !== null) {
+            this.socket.emit(type, data);
         } else {
-            // each socket is in a room named by its own id, so per-client delivery is the same io.to
-            (Array.isArray(clients) ? clients : [clients]).forEach((client) => this.io.to(client.id).emit(type, data));
+            // each socket sits in a room named by its own id, so per-client and room-wide delivery share one path
+            const targets = clients === undefined ? [this.room.id] : [clients].flat().map((client) => client.id);
+            targets.forEach((target) => this.io.to(target).emit(type, data));
         }
     }
 

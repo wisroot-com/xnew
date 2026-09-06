@@ -1163,16 +1163,12 @@ class RoomIO {
         }
     }
     emit(type, data, clients) {
-        if (clients === undefined) {
-            if (this.socket !== null) {
-                this.socket.emit(type, data);
-            }
-            else {
-                this.io.to(this.room.id).emit(type, data);
-            }
+        if (clients === undefined && this.socket !== null) {
+            this.socket.emit(type, data);
         }
         else {
-            (Array.isArray(clients) ? clients : [clients]).forEach((client) => this.io.to(client.id).emit(type, data));
+            const targets = clients === undefined ? [this.room.id] : [clients].flat().map((client) => client.id);
+            targets.forEach((target) => this.io.to(target).emit(type, data));
         }
     }
     on(type, listener) {
@@ -1197,13 +1193,12 @@ function syncData(unit) {
     return (_a = (_b = unit._.own).syncData) !== null && _a !== void 0 ? _a : (_b.syncData = { id: null, state: {}, registry: {}, visibility: null });
 }
 const RESERVED_PREFIX = 'sync.';
-function clientEventType(type) {
-    if (typeof type === 'string' && type.length > 0 && type.startsWith(RESERVED_PREFIX) === false) {
-        return type;
-    }
-    else {
+function envelope(p, trusted = false) {
+    const type = typeof (p === null || p === void 0 ? void 0 : p.type) === 'string' ? p.type : '';
+    if (type === '' || (trusted === false && type.startsWith(RESERVED_PREFIX) === true)) {
         return null;
     }
+    return { type, syncId: typeof (p === null || p === void 0 ? void 0 : p.syncId) === 'number' ? p.syncId : null, data: typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {} };
 }
 function dispatch(roomio, type, id, data = {}, syncId) {
     var _a;
@@ -1226,13 +1221,12 @@ function bootServer(options, Component, props) {
     const captureStateTree = (clientId) => {
         const nodes = [];
         const walk = (unit, parent) => {
-            var _a, _b, _c;
+            var _a, _b, _c, _d;
+            const registry = (_c = (_b = (_a = unit._.parent) === null || _a === void 0 ? void 0 : _a._.own.syncData) === null || _b === void 0 ? void 0 : _b.registry) !== null && _c !== void 0 ? _c : {};
+            const names = Object.keys(registry);
             let name = undefined;
-            const registry = (_b = (_a = unit._.parent) === null || _a === void 0 ? void 0 : _a._.own.syncData) === null || _b === void 0 ? void 0 : _b.registry;
-            if (registry !== undefined) {
-                for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
-                    name = Object.keys(registry).find((key) => registry[key] === unit._.Components[i]);
-                }
+            for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
+                name = names.find((key) => registry[key] === unit._.Components[i]);
             }
             if (name === undefined) {
                 unit._.children.forEach((child) => walk(child, parent));
@@ -1241,7 +1235,7 @@ function bootServer(options, Component, props) {
                 const data = syncData(unit);
                 const visible = data.visibility === null || data.visibility(clientId) === true;
                 if (visible === true) {
-                    (_c = data.id) !== null && _c !== void 0 ? _c : (data.id = nextId++);
+                    (_d = data.id) !== null && _d !== void 0 ? _d : (data.id = nextId++);
                     nodes.push({ id: data.id, name, parent, state: Object.assign({}, data.state) });
                     unit._.children.forEach((child) => walk(child, data.id));
                 }
@@ -1265,34 +1259,33 @@ function bootServer(options, Component, props) {
         if ((query === null || query === void 0 ? void 0 : query.roomId) !== room.id)
             return;
         socket.join(room.id);
+        const announce = (type) => {
+            dispatch(roomio, type, socket.id);
+            socket.to(room.id).emit('emitToClients', { type, syncId: null, id: socket.id, data: {} });
+            roomio.emit('status', { clients: roomio.clients });
+            dispatch(roomio, 'sync.statusupdate', undefined);
+        };
         roomio.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
-        dispatch(roomio, 'sync.connect', socket.id);
-        socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
-        roomio.emit('status', { clients: roomio.clients });
-        dispatch(roomio, 'sync.statusupdate', undefined);
+        announce('sync.connect');
         socket.on('emitToServer', (p) => {
-            const type = clientEventType(p === null || p === void 0 ? void 0 : p.type);
-            if (type !== null) {
-                const data = typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {};
-                const syncId = typeof (p === null || p === void 0 ? void 0 : p.syncId) === 'number' ? p.syncId : null;
-                if (Array.isArray(p === null || p === void 0 ? void 0 : p.to)) {
-                    const to = roomio.clients.filter((client) => p.to.includes(client.id));
-                    if (to.length > 0) {
-                        roomio.emit('emitToClients', { type, syncId, id: socket.id, data }, to);
-                    }
+            const message = envelope(p);
+            if (message === null) {
+                return;
+            }
+            if (Array.isArray(p === null || p === void 0 ? void 0 : p.to)) {
+                const to = roomio.clients.filter((client) => p.to.includes(client.id));
+                if (to.length > 0) {
+                    roomio.emit('emitToClients', Object.assign(Object.assign({}, message), { id: socket.id }), to);
                 }
-                else {
-                    dispatch(roomio, type, socket.id, data, syncId);
-                }
+            }
+            else {
+                dispatch(roomio, message.type, socket.id, message.data, message.syncId);
             }
         });
         socket.on('disconnect', () => {
             roomio.clients = roomio.clients.filter((c) => c.id !== socket.id);
             lastEmits.delete(socket.id);
-            dispatch(roomio, 'sync.disconnect', socket.id);
-            socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
-            roomio.emit('status', { clients: roomio.clients });
-            dispatch(roomio, 'sync.statusupdate', undefined);
+            announce('sync.disconnect');
         });
     });
     return root;
@@ -1342,9 +1335,9 @@ function bootClient(options, Component, props) {
         dispatch(roomio, 'sync.statusupdate', undefined);
     });
     roomio.on('emitToClients', (p) => {
-        if (typeof (p === null || p === void 0 ? void 0 : p.type) === 'string' && p.type.length > 0) {
-            const data = typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {};
-            dispatch(roomio, p.type, p === null || p === void 0 ? void 0 : p.id, data, typeof (p === null || p === void 0 ? void 0 : p.syncId) === 'number' ? p.syncId : null);
+        const message = envelope(p, true);
+        if (message !== null) {
+            dispatch(roomio, message.type, p === null || p === void 0 ? void 0 : p.id, message.data, message.syncId);
         }
     });
     roomio.on('connect', () => dispatch(roomio, 'sync.connect', roomio.socket.id));
@@ -1396,7 +1389,7 @@ const xsync = {
     emit(type, props = {}, clients) {
         const roomio = RoomIO.of(Unit.current, true);
         const syncId = syncData(Unit.current).id;
-        const to = clients === undefined ? undefined : (Array.isArray(clients) ? clients : [clients]);
+        const to = clients === undefined ? undefined : [clients].flat();
         if (to !== undefined && to.length === 0) {
             return;
         }
