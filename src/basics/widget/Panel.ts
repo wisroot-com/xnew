@@ -58,14 +58,10 @@ export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: P
         },
         // every row takes `key` so xnew.find can reach it later; it rides along to the inner control, so find by that control's component
         group({ name, open, params, key }: PanelOptions, inner: Function) {
-            const group = xnew((unit: xnew.Unit) => {
+            return xnew((unit: xnew.Unit) => {
                 xnew.extend(Panel, { name, open, params: params ?? object, nested: true });
                 inner(unit);
             }, { key });
-
-            // a group can be declared after a strip, so every strip of this panel looks at its siblings again
-            xnew.find(Tabs, { parent: unit }).forEach((strip: xnew.Unit) => strip.apply());
-            return group;
         },
         button({ name = '', key }: { name?: string, key?: any } = {}) {
             return xnew(Button, { text: name, key, style: 'width: 100%;' });
@@ -104,6 +100,8 @@ export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: P
 function Tabs(unit: xnew.Unit, { names }: { names: Record<string, string> }) {
     xnew.nest('<div style="display: flex; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-bottom: 0.25em;">');
 
+    // the groups a tab names are this strip's siblings, so the panel above holds both
+    const panel = unit.parent;
     const keys = Object.keys(names);
     const buttons = keys.map((key) => {
         const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', names[key]);
@@ -114,10 +112,7 @@ function Tabs(unit: xnew.Unit, { names }: { names: Record<string, string> }) {
 
     let active = keys[0] ?? '';
 
-    // the groups a tab names are this strip's siblings, so they are the panel's children too
     function apply() {
-        const panel = unit.parent;
-
         if (panel === null) {
             return;
         }
@@ -153,13 +148,14 @@ function Tabs(unit: xnew.Unit, { names }: { names: Record<string, string> }) {
     paint();
     apply();
 
+    // a group can be declared after the strip, so every child joining the panel is a reason to look again
+    panel?.on('childattach', apply);
+
     return {
         select,
         get active() {
             return active;
         },
-        // the panel calls this when a group joins after the strip was built
-        apply,
     };
 }
 

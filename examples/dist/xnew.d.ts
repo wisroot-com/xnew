@@ -507,7 +507,6 @@ declare function Panel(unit: xnew.Unit, { name, open, params, nested }: PanelOpt
     }): Unit & {
         select: (key: string) => void;
         readonly active: string;
-        apply: () => void;
     };
     group({ name, open, params, key }: PanelOptions, inner: Function): Unit;
     button({ name, key }?: {

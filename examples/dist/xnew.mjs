@@ -3282,12 +3282,10 @@ function Panel(unit, { name, open, params, nested = false }) {
             return xnew(Tabs, { names });
         },
         group({ name, open, params, key }, inner) {
-            const group = xnew((unit) => {
+            return xnew((unit) => {
                 xnew.extend(Panel, { name, open, params: params !== null && params !== void 0 ? params : object, nested: true });
                 inner(unit);
             }, { key });
-            xnew.find(Tabs, { parent: unit }).forEach((strip) => strip.apply());
-            return group;
         },
         button({ name = '', key } = {}) {
             return xnew(Button, { text: name, key, style: 'width: 100%;' });
@@ -3328,6 +3326,7 @@ function Panel(unit, { name, open, params, nested = false }) {
 function Tabs(unit, { names }) {
     var _a;
     xnew.nest('<div style="display: flex; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-bottom: 0.25em;">');
+    const panel = unit.parent;
     const keys = Object.keys(names);
     const buttons = keys.map((key) => {
         const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', names[key]);
@@ -3336,7 +3335,6 @@ function Tabs(unit, { names }) {
     });
     let active = (_a = keys[0]) !== null && _a !== void 0 ? _a : '';
     function apply() {
-        const panel = unit.parent;
         if (panel === null) {
             return;
         }
@@ -3367,12 +3365,12 @@ function Tabs(unit, { names }) {
     }
     paint();
     apply();
+    panel === null || panel === void 0 ? void 0 : panel.on('childattach', apply);
     return {
         select,
         get active() {
             return active;
         },
-        apply,
     };
 }
 function Separator(unit) {
