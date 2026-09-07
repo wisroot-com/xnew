@@ -285,20 +285,13 @@ export class Unit {
     static engineRoot: Unit;
     static currentUnit: Unit;
 
-    // the current unit as read from outside unit.ts, initializing the engine on first access (inside unit.ts read only the raw fields — this getter recurses during reset())
-    static get current(): Unit {
-        if (Unit.engineRoot === undefined) {
-            Unit.reset();
-        }
-        return Unit.currentUnit;
-    }
-
     static reset(): void {
         Unit.engineRoot?.finalize();
         Unit.currentUnit = Unit.engineRoot = new Unit(null);
+        // unref'd: the root ticker starts at import time, so it must not keep a Node process alive on its own
         const ticker = new Ticker((delta: number) => {
             Unit.update(Unit.engineRoot, delta);
-        });
+        }, 60, true);
         Unit.engineRoot.on('finalize', () => ticker.clear());
     }
 
@@ -471,6 +464,15 @@ export class Unit {
         } else if (type[0] === '-') {
             [...(unit._.listeners.get(type) ?? [])].forEach((entry) => entry.execute(props));
         }
+    }
+
+    // Boot the engine as part of evaluating the class, so Unit.currentUnit is never undefined and callers
+    // need no lazy guard. A bare `Unit.reset()` at module scope would be fair game for a bundler to drop
+    // (package.json declares "sideEffects": false); a static block belongs to the class every consumer uses.
+    // It has to sit last in the body: reset() builds a Unit, which touches static maps declared above, and
+    // static initializers run in textual order.
+    static {
+        Unit.reset();
     }
 }
 

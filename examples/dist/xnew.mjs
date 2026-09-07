@@ -108,7 +108,7 @@ class MapMap extends Map {
 }
 
 class Ticker {
-    constructor(callback, fps = 60) {
+    constructor(callback, fps = 60, unref = false) {
         this.cancel = null;
         const interval = 1000 / fps;
         let previous = Date.now();
@@ -132,6 +132,14 @@ class Ticker {
         }
         else {
             let id;
+            const schedule = (ms) => {
+                var _a, _b;
+                const handle = setTimeout(tick, ms);
+                if (unref === true) {
+                    (_b = (_a = handle).unref) === null || _b === void 0 ? void 0 : _b.call(_a);
+                }
+                return handle;
+            };
             const tick = () => {
                 const now = Date.now();
                 callback(now - previous);
@@ -140,9 +148,9 @@ class Ticker {
                 if (next < now) {
                     next = now + interval;
                 }
-                id = setTimeout(tick, next - now);
+                id = schedule(next - now);
             };
-            id = setTimeout(tick, interval);
+            id = schedule(interval);
             this.cancel = () => clearTimeout(id);
         }
     }
@@ -652,19 +660,13 @@ class Unit {
             [...unit._.systems.update].forEach((entry) => entry.execute({ count: entry.count++, delta }));
         }
     }
-    static get current() {
-        if (Unit.engineRoot === undefined) {
-            Unit.reset();
-        }
-        return Unit.currentUnit;
-    }
     static reset() {
         var _a;
         (_a = Unit.engineRoot) === null || _a === void 0 ? void 0 : _a.finalize();
         Unit.currentUnit = Unit.engineRoot = new Unit(null);
         const ticker = new Ticker((delta) => {
             Unit.update(Unit.engineRoot, delta);
-        });
+        }, 60, true);
         Unit.engineRoot.on('finalize', () => ticker.clear());
     }
     static scope(snapshot, func, ...args) {
@@ -823,6 +825,9 @@ Unit.component2units = new MapSet();
 Unit.type2units = new MapSet();
 Unit.owner2targets = new MapSet();
 Unit.target2owners = new MapSet();
+(() => {
+    Unit.reset();
+})();
 class UnitPromise {
     constructor(promise, key) {
         this.promise = promise;
@@ -1061,31 +1066,31 @@ const xnew = Object.assign((function (...args) {
         return Unit.scope(snapshot, () => new Unit(parent, ...args));
     }
     else {
-        return new Unit(Unit.current, ...args);
+        return new Unit(Unit.currentUnit, ...args);
     }
 }), {
     nest(tag, textContent) {
-        if (Unit.current._.phase !== 'invoked') {
+        if (Unit.currentUnit._.phase !== 'invoked') {
             throw new Error('xnew.nest can not be called after initialized.');
         }
-        return Unit.nest(Unit.current, tag, textContent);
+        return Unit.nest(Unit.currentUnit, tag, textContent);
     },
     extend(Component, props) {
-        if (Unit.current._.phase !== 'invoked') {
+        if (Unit.currentUnit._.phase !== 'invoked') {
             throw new Error('xnew.extend can not be called after initialized.');
         }
-        if (Unit.current._.Components.includes(Component) === true) {
+        if (Unit.currentUnit._.Components.includes(Component) === true) {
             console.warn('Component is already extended in this unit:', Component);
         }
-        return Unit.extend(Unit.current, Component, props);
+        return Unit.extend(Unit.currentUnit, Component, props);
     },
     css: (function (layerOrDefs, maybeDefs) {
         const layer = typeof layerOrDefs === 'string' ? layerOrDefs : undefined;
         const defs = typeof layerOrDefs === 'string' ? maybeDefs : layerOrDefs;
-        return applyCss(Unit.current, layer, defs);
+        return applyCss(Unit.currentUnit, layer, defs);
     }),
     context(Component) {
-        return Unit.getContext(Unit.current, Component);
+        return Unit.getContext(Unit.currentUnit, Component);
     },
     promise: (function (keyOrPromise, maybePromise) {
         const key = typeof keyOrPromise === 'string' ? keyOrPromise : undefined;
@@ -1104,11 +1109,11 @@ const xnew = Object.assign((function (...args) {
             source = new Promise(xnew.scope(promise));
         }
         const unitPromise = new UnitPromise(source, key);
-        Unit.current._.promises.push(unitPromise);
+        Unit.currentUnit._.promises.push(unitPromise);
         return unitPromise;
     }),
     scope(callback) {
-        const snapshot = Unit.snapshot(Unit.current);
+        const snapshot = Unit.snapshot(Unit.currentUnit);
         return (...args) => Unit.scope(snapshot, callback, ...args);
     },
     find(Component, options) {
@@ -1118,7 +1123,7 @@ const xnew = Object.assign((function (...args) {
         if (type[0] !== '+' && type[0] !== '-') {
             throw new Error(`xnew.emit: a custom event type must start with "+" (broadcast) or "-" (own unit) [${type}]`);
         }
-        return Unit.emit(Unit.current, type, props);
+        return Unit.emit(Unit.currentUnit, type, props);
     },
     timeout(callback, duration = 0) {
         return new UnitTimer().timeout(callback, duration);
@@ -1130,7 +1135,7 @@ const xnew = Object.assign((function (...args) {
         return new UnitTimer().transition(transition, duration, easing);
     },
     protect() {
-        Unit.current._.protected = true;
+        Unit.currentUnit._.protected = true;
     },
     isUnit(value) {
         return value instanceof Unit;
@@ -1138,64 +1143,9 @@ const xnew = Object.assign((function (...args) {
 });
 Object.defineProperty(xnew, 'standalone', {
     get() {
-        return Unit.current._.standalone;
+        return Unit.currentUnit._.standalone;
     },
 });
-
-function getSide() {
-    return ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
-}
-
-class RoomIO {
-    constructor({ io, room, client }, Component, props) {
-        var _a;
-        this.clients = [];
-        this.io = io;
-        this.room = room;
-        this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true }) : null;
-        this.root = new Unit(Unit.current, Component, Object.assign(Object.assign({}, props), { _hook: (unit) => { unit._.sync.root = unit; RoomIO.rooms.set(unit, this); } }));
-        if (this.socket !== null) {
-            this.root.on('finalize', () => this.socket.disconnect());
-        }
-    }
-    emit(type, data, clients) {
-        if (clients === undefined && this.socket !== null) {
-            this.socket.emit(type, data);
-        }
-        else {
-            const targets = clients === undefined ? [this.room.id] : [clients].flat().map((client) => client.id);
-            targets.forEach((target) => this.io.to(target).emit(type, data));
-        }
-    }
-    dispatch(type, id, data = {}, syncId) {
-        var _a;
-        [...((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((unit) => {
-            var _a;
-            if (unit._.phase === 'finalized' || unit._.phase === 'finalizing')
-                return;
-            if (unit._.sync.root !== this.root)
-                return;
-            if (type[0] === '-' && unit._.sync.id !== syncId)
-                return;
-            [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => entry.execute(Object.assign({ id }, data)));
-        });
-    }
-    on(type, listener) {
-        var _a;
-        const wire = (_a = this.socket) !== null && _a !== void 0 ? _a : this.io;
-        wire.on(type, listener);
-        this.root.on('finalize', () => wire.off(type, listener));
-    }
-    static of(unit) {
-        const root = unit._.sync.root;
-        const roomio = root === null ? undefined : RoomIO.rooms.get(root);
-        if (roomio === undefined) {
-            throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, Component).');
-        }
-        return roomio;
-    }
-}
-RoomIO.rooms = new WeakMap();
 
 const RESERVED_PREFIX = 'sync.';
 function envelope(p, trusted = false) {
@@ -1253,7 +1203,7 @@ function bootServer(roomio) {
             roomio.dispatch(type, socket.id);
             socket.to(room.id).emit('emitToClients', { type, syncId: null, id: socket.id, data: {} });
             roomio.emit('status', { clients: roomio.clients });
-            roomio.dispatch('sync.statusupdate', undefined);
+            roomio.dispatch('sync.status', undefined);
         };
         roomio.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
         announce('sync.connect');
@@ -1321,7 +1271,7 @@ function bootClient(roomio) {
     roomio.on('status', (status) => {
         var _a;
         roomio.clients = (_a = status === null || status === void 0 ? void 0 : status.clients) !== null && _a !== void 0 ? _a : [];
-        roomio.dispatch('sync.statusupdate', undefined);
+        roomio.dispatch('sync.status', undefined);
     });
     roomio.on('emitToClients', (p) => {
         const message = envelope(p, true);
@@ -1334,20 +1284,71 @@ function bootClient(roomio) {
     roomio.on('notfound', (payload) => roomio.dispatch('sync.notfound', roomio.socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
     return root;
 }
-function boot(options, Component, props) {
-    const roomio = new RoomIO(options, Component, props);
-    return getSide() === 'server' ? bootServer(roomio) : bootClient(roomio);
+
+function getSide() {
+    return ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
 }
+
+class RoomIO {
+    constructor({ io, room, client }, Component, props) {
+        var _a;
+        this.clients = [];
+        this.io = io;
+        this.room = room;
+        this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true }) : null;
+        this.root = new Unit(Unit.currentUnit, Component, Object.assign(Object.assign({}, props), { _hook: (unit) => { unit._.sync.root = unit; RoomIO.rooms.set(unit, this); } }));
+        if (this.socket !== null) {
+            this.root.on('finalize', () => this.socket.disconnect());
+        }
+    }
+    emit(type, data, clients) {
+        if (clients === undefined && this.socket !== null) {
+            this.socket.emit(type, data);
+        }
+        else {
+            const targets = clients === undefined ? [this.room.id] : [clients].flat().map((client) => client.id);
+            targets.forEach((target) => this.io.to(target).emit(type, data));
+        }
+    }
+    dispatch(type, id, data = {}, syncId) {
+        var _a;
+        [...((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((unit) => {
+            var _a;
+            if (unit._.phase === 'finalized' || unit._.phase === 'finalizing')
+                return;
+            if (unit._.sync.root !== this.root)
+                return;
+            if (type[0] === '-' && unit._.sync.id !== syncId)
+                return;
+            [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => entry.execute(Object.assign({ id }, data)));
+        });
+    }
+    on(type, listener) {
+        var _a;
+        const wire = (_a = this.socket) !== null && _a !== void 0 ? _a : this.io;
+        wire.on(type, listener);
+        this.root.on('finalize', () => wire.off(type, listener));
+    }
+    static of(unit) {
+        const root = unit._.sync.root;
+        const roomio = root === null ? undefined : RoomIO.rooms.get(root);
+        if (roomio === undefined) {
+            throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, Component).');
+        }
+        return roomio;
+    }
+}
+RoomIO.rooms = new WeakMap();
 
 const xsync = {
     server(callback, props) {
-        return getSide() === 'server' ? Unit.extend(Unit.current, callback, props) : {};
+        return getSide() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) : {};
     },
     client(callback, props) {
-        return getSide() === 'client' ? Unit.extend(Unit.current, callback, props) : {};
+        return getSide() === 'client' ? Unit.extend(Unit.currentUnit, callback, props) : {};
     },
     state(initial = {}) {
-        const state = Unit.current._.sync.state;
+        const state = Unit.currentUnit._.sync.state;
         for (const key of Object.keys(initial)) {
             if (!(key in state)) {
                 state[key] = initial[key];
@@ -1356,17 +1357,17 @@ const xsync = {
         return state;
     },
     register(Components) {
-        const unit = Unit.current;
+        const unit = Unit.currentUnit;
         if (unit._.phase !== 'invoked') {
             throw new Error('xsync.register must be called during component initialization.');
         }
         Object.assign(unit._.sync.registry, Components);
     },
     visibility(target) {
-        Unit.current._.sync.visibility = target;
+        Unit.currentUnit._.sync.visibility = target;
     },
     get session() {
-        const roomio = RoomIO.of(Unit.current);
+        const roomio = RoomIO.of(Unit.currentUnit);
         return {
             get room() { return roomio.room; },
             get clients() { return roomio.clients; },
@@ -1381,8 +1382,8 @@ const xsync = {
         };
     },
     emit(type, props = {}, clients) {
-        const roomio = RoomIO.of(Unit.current);
-        const syncId = Unit.current._.sync.id;
+        const roomio = RoomIO.of(Unit.currentUnit);
+        const syncId = Unit.currentUnit._.sync.id;
         const to = clients === undefined ? undefined : [clients].flat();
         if (to !== undefined && to.length === 0) {
             return;
@@ -1395,7 +1396,8 @@ const xsync = {
         }
     },
     boot(options, Component, props) {
-        return boot(options, Component, props);
+        const roomio = new RoomIO(options, Component, props);
+        return getSide() === 'server' ? bootServer(roomio) : bootClient(roomio);
     },
 };
 

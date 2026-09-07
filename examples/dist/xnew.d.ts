@@ -86,7 +86,6 @@ declare class Unit {
     static update(unit: Unit, delta?: number): void;
     static engineRoot: Unit;
     static currentUnit: Unit;
-    static get current(): Unit;
     static reset(): void;
     static scope(snapshot: Snapshot, func: Function, ...args: any[]): any;
     static snapshot(unit: Unit): Snapshot;

@@ -10,7 +10,9 @@
 export class Ticker {
     private cancel: (() => void) | null = null;
 
-    constructor(callback: Function, fps: number = 60) {
+    // `unref`: Node only — keeps the ticker from holding the process open (used by the engine root ticker,
+    // which now starts at import time; user timers stay ref'd so a pending xnew.timeout still fires).
+    constructor(callback: Function, fps: number = 60, unref: boolean = false) {
         const interval = 1000 / fps;
         // absolute schedule (next += interval): the fractional remainder carries over, so the average rate holds the target fps
         let previous = Date.now();
@@ -34,6 +36,13 @@ export class Ticker {
             this.cancel = () => cancelAnimationFrame(id);
         } else {
             let id: ReturnType<typeof setTimeout>;
+            const schedule = (ms: number): ReturnType<typeof setTimeout> => {
+                const handle = setTimeout(tick, ms);
+                if (unref === true) {
+                    (handle as any).unref?.();
+                }
+                return handle;
+            };
             const tick = (): void => {
                 const now = Date.now();
                 callback(now - previous);
@@ -42,9 +51,9 @@ export class Ticker {
                 if (next < now) {
                     next = now + interval;
                 }
-                id = setTimeout(tick, next - now);
+                id = schedule(next - now);
             };
-            id = setTimeout(tick, interval);
+            id = schedule(interval);
             this.cancel = () => clearTimeout(id);
         }
     }

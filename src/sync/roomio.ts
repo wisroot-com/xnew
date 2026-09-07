@@ -23,7 +23,7 @@ export class RoomIO {
         // the handshake query must stay flat strings (socket.io stringifies values).
         this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true }) : null;
         // the hook runs before the root's body, so a xsync.session / xsync.emit inside it already resolves this room
-        this.root = new Unit(Unit.current, Component, { ...props, _hook: (unit: Unit) => { unit._.sync.root = unit; RoomIO.rooms.set(unit, this); } });
+        this.root = new Unit(Unit.currentUnit, Component, { ...props, _hook: (unit: Unit) => { unit._.sync.root = unit; RoomIO.rooms.set(unit, this); } });
         if (this.socket !== null) {
             this.root.on('finalize', () => this.socket.disconnect());
         }

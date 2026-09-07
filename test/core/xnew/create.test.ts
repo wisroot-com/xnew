@@ -31,16 +31,16 @@ describe('xnew() creation', () => {
         expect(unit.parent).toBe(root);
     });
 
-    it('initializes the engine lazily on the first xnew() call, not at module load', () => {
+    it('initializes the engine at module load, so the first xnew() needs no bootstrap', () => {
         jest.isolateModules(() => {
             const { Unit: FreshUnit } = require('../../../src/core/unit');
             const { xnew: freshXnew } = require('../../../src/core/xnew');
 
-            // importing the library must not start the engine (no ticker side effect)
-            expect(FreshUnit.engineRoot).toBeUndefined();
+            // the class's static block boots the engine: root and current unit exist before any call
+            expect(FreshUnit.engineRoot).toBeInstanceOf(FreshUnit);
+            expect(FreshUnit.currentUnit).toBe(FreshUnit.engineRoot);
 
             const unit = freshXnew(() => {});
-            expect(FreshUnit.engineRoot).toBeInstanceOf(FreshUnit);
             expect(unit.parent).toBe(FreshUnit.engineRoot);
 
             FreshUnit.engineRoot.finalize();

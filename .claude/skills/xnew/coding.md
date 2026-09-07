@@ -401,7 +401,7 @@ the rule, then one line of why.
   add-order can't be relied on for layering. Addon event callbacks (`pixiObject.on('pointertap', …)`,
   a Three raycast handler, etc.) fire OUTSIDE the tick/scope, so any `xsync.emit` / `xnew.emit` /
   `xnew(...)` inside them must be wrapped in `xnew.scope(...)` (§7) — otherwise `xsync.emit` throws
-  `no socket bound to this root` (Unit.current isn't the sync node).
+  `no socket bound to this root` (Unit.currentUnit isn't the sync node).
 
 - **InputCheckbox holds a Gate for its checked state and its `unit.current` is the CONTAINER, not the
   hidden input (modeled on Listbox, 2026-07).** The `<input>` is nested as a *child unit*
@@ -557,11 +557,13 @@ the rule, then one line of why.
   `can't access lexical declaration '…' before initialization` (bit the 3_games samples
   when a shared `const paleColor` moved from an imported ui.js into the same file).
 
-- **Outside `unit.ts`, read the current unit via `Unit.current`, never the raw `Unit.currentUnit`.**
-  The getter lazily bootstraps the engine (root + ticker) on first access, so callers need no
-  `Unit.reset()` guard. Inside `unit.ts` (reset / initialize / scope) use only the raw fields —
-  reading the getter during `reset()` recurses infinitely before `engineRoot` is assigned.
-  (Tests may still read `Unit.currentUnit`: they assert the raw scope-restore behavior.)
+- **The current unit is `Unit.currentUnit` everywhere — there is no `Unit.current` getter (2026-09).**
+  The engine (root + ticker) boots from a `static { Unit.reset(); }` block in the `Unit` class body, so
+  the field is never undefined and no caller needs a lazy guard. Keep the boot inside the class: a bare
+  `Unit.reset()` at module scope is droppable by a bundler because `package.json` declares
+  `"sideEffects": false`. Because the root ticker now starts at import time, it is built with
+  `new Ticker(cb, 60, true)` — the `unref` flag, so merely importing xnew cannot keep a Node process
+  alive. User-facing timers stay ref'd, so a pending `xnew.timeout` still fires in Node.
 
 - **A `window.keydown.*` game-input handler that calls `preventDefault()` steals those keys
   from every form field on the page** (e.g. WASD became untypable in the multiplay chat).
