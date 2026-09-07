@@ -71,12 +71,14 @@ unit.off('click', fn);    // リスナーを明示すれば登録者に関係な
 
 ## ライフサイクルイベント
 
-ライフサイクル全体は 2 つのイベントでカバーされます。必要なものだけ購読してください。
+ライフサイクル全体は 4 つのイベントでカバーされます。必要なものだけ購読してください。
 
-| イベント     | タイミング                    |
-| ------------ | ----------------------------- |
-| `update`     | 毎フレーム（おおよそ 60fps）  |
-| `finalize`   | unit が破棄されるとき         |
+| イベント       | タイミング                                  | コールバック引数 |
+| -------------- | ------------------------------------------- | ---------------- |
+| `update`       | 毎フレーム（おおよそ 60fps）                | `{ count, delta }` |
+| `finalize`     | unit が破棄されるとき                       |                  |
+| `childattach`  | 子 unit の生成が完了したとき                | `{ child }`      |
+| `childdetach`  | 子 unit の破棄が完了したとき                | `{ child }`      |
 
 ```js
 function AnimatedBox(unit) {
@@ -86,6 +88,15 @@ function AnimatedBox(unit) {
     unit.current.style.transform = `rotate(${angle}deg)`;
   });
   unit.on('finalize', () => console.log('cleaned up'));
+}
+```
+
+`childattach` は子のコンストラクタが完了した時点（defines も揃った状態）で、`childdetach` は子の finalize が完了した時点（`unit` の子リストから外れた後）で発火します。親自身が finalize されるときも、子が順に破棄されるのに合わせて `childdetach` が発火します。
+
+```js
+function Roster(unit) {
+  unit.on('childattach', ({ child }) => console.log('joined', child));
+  unit.on('childdetach', ({ child }) => console.log('left', child));
 }
 ```
 

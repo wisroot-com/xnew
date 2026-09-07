@@ -477,6 +477,7 @@ function keyboardEvent(matched, props) {
     }, props.options);
 }
 
+const SYSTEM_TYPES = ['update', 'finalize', 'childattach', 'childdetach'];
 function textComponent(content) {
     return (unit) => { unit.current.textContent = content.toString(); };
 }
@@ -498,6 +499,7 @@ class Unit {
         this._ = {
             parent,
             phase: 'invoked',
+            attached: false,
             protected: false,
             standalone: true,
             currentElement: baseElement,
@@ -510,7 +512,7 @@ class Unit {
             Components: [],
             listeners: new MapSet(),
             defines: {},
-            systems: { update: [], finalize: [] },
+            systems: { update: [], finalize: [], childattach: [], childdetach: [] },
             events: new EventBinder(),
             key: null,
             sync: { root: (_c = parent === null || parent === void 0 ? void 0 : parent._.sync.root) !== null && _c !== void 0 ? _c : null, id: null, state: {}, registry: {}, visibility: null },
@@ -554,6 +556,10 @@ class Unit {
         }
         this._.lastSnapshot = Unit.snapshot(this);
         Unit.currentUnit = backup;
+        if (parent !== null && this._.phase !== 'finalized') {
+            this._.attached = true;
+            [...parent._.systems.childattach].forEach((entry) => entry.execute({ child: this }));
+        }
     }
     get parent() {
         return this._.parent;
@@ -572,13 +578,13 @@ class Unit {
             [...this._.children].reverse().forEach((child) => child.finalize());
             [...this._.systems.finalize].reverse().forEach(({ execute }) => execute());
             (_a = Unit.owner2targets.get(this)) === null || _a === void 0 ? void 0 : _a.forEach((target) => {
-                [...target._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(target, this, type));
+                [...target._.listeners.keys(), ...SYSTEM_TYPES].forEach((type) => Unit.off(target, this, type));
                 Unit.target2owners.delete(target, this);
             });
             Unit.owner2targets.delete(this);
             (_b = Unit.target2owners.get(this)) === null || _b === void 0 ? void 0 : _b.forEach((owner) => Unit.owner2targets.delete(owner, this));
             Unit.target2owners.delete(this);
-            [...this._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(this, null, type));
+            [...this._.listeners.keys(), ...SYSTEM_TYPES].forEach((type) => Unit.off(this, null, type));
             [...this._.nestElements].reverse().forEach((element) => element.remove());
             this._.Components.forEach((Component) => Unit.component2units.delete(Component, this));
             const contexts = Unit.unit2Contexts.get(this);
@@ -598,10 +604,14 @@ class Unit {
             this._.currentContext = { previous: null };
             Object.keys(this._.defines).forEach((key) => delete this[key]);
             this._.defines = {};
-            if (this._.parent) {
-                this._.parent._.children = this._.parent._.children.filter((u) => u !== this);
+            const parent = this._.parent;
+            if (parent !== null) {
+                parent._.children = parent._.children.filter((u) => u !== this);
             }
             this._.phase = 'finalized';
+            if (parent !== null && this._.attached === true) {
+                [...parent._.systems.childdetach].forEach((entry) => entry.execute({ child: this }));
+            }
         }
     }
     static nest(unit, tag, textContent) {
@@ -756,7 +766,7 @@ class Unit {
         });
     }
     off(type, listener) {
-        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), 'update', 'finalize'];
+        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), ...SYSTEM_TYPES];
         types.forEach((type) => Unit.off(this, Unit.currentUnit, type, listener));
     }
     static on(unit, type, listener, options) {
@@ -765,7 +775,7 @@ class Unit {
         const execute = (props = {}) => {
             Unit.scope(snapshot, listener, Object.assign({ type }, props));
         };
-        if (type === 'update' || type === 'finalize') {
+        if (SYSTEM_TYPES.includes(type)) {
             unit._.systems[type].push({ listener, execute, count: 0, owner });
         }
         else if (Unit.registered(unit, type, listener, owner) === false) {
@@ -787,8 +797,9 @@ class Unit {
     static off(unit, owner, type, listener) {
         var _a;
         const match = (lis, own) => (owner === null || own === owner) && (listener === undefined || lis === listener);
-        if (type === 'update' || type === 'finalize') {
-            unit._.systems[type] = unit._.systems[type].filter((entry) => match(entry.listener, entry.owner) === false);
+        if (SYSTEM_TYPES.includes(type)) {
+            const system = type;
+            unit._.systems[system] = unit._.systems[system].filter((entry) => match(entry.listener, entry.owner) === false);
         }
         else {
             [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => {

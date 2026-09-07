@@ -71,12 +71,14 @@ Each listener records which unit's scope registered it. Blanket removal without 
 
 ## Lifecycle events
 
-The whole lifecycle is covered by two events. Subscribe only to the ones you need.
+The whole lifecycle is covered by four events. Subscribe only to the ones you need.
 
-| Event       | When it fires                |
-| ----------- | ---------------------------- |
-| `update`    | every frame (roughly 60fps)  |
-| `finalize`  | when the unit is destroyed   |
+| Event          | When it fires                          | Callback argument  |
+| -------------- | -------------------------------------- | ------------------ |
+| `update`       | every frame (roughly 60fps)            | `{ count, delta }` |
+| `finalize`     | when the unit is destroyed             |                    |
+| `childattach`  | when a child unit has been created     | `{ child }`        |
+| `childdetach`  | when a child unit has been destroyed   | `{ child }`        |
 
 ```js
 function AnimatedBox(unit) {
@@ -86,6 +88,15 @@ function AnimatedBox(unit) {
     unit.current.style.transform = `rotate(${angle}deg)`;
   });
   unit.on('finalize', () => console.log('cleaned up'));
+}
+```
+
+`childattach` fires once the child's constructor is complete (its defines are in place), and `childdetach` once the child has been finalized (after it left the parent's child list). While the parent itself is being finalized, `childdetach` still fires for each child as it is destroyed.
+
+```js
+function Roster(unit) {
+  unit.on('childattach', ({ child }) => console.log('joined', child));
+  unit.on('childdetach', ({ child }) => console.log('left', child));
 }
 ```
 

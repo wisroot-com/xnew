@@ -37,6 +37,7 @@ interface ListenerEntry {
     execute: Function;
     owner: Unit;
 }
+type SystemType = 'update' | 'finalize' | 'childattach' | 'childdetach';
 interface SyncData {
     root: Unit | null;
     id: number | null;
@@ -53,11 +54,12 @@ declare class Unit {
         parent: Unit | null;
         children: Unit[];
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
+        attached: boolean;
         protected: boolean;
         standalone: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
-        systems: Record<'update' | 'finalize', {
+        systems: Record<SystemType, {
             listener: Function;
             execute: Function;
             count: number;

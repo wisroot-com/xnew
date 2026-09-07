@@ -19,6 +19,10 @@ interface Snapshot { unit: Unit; context: Context; element: DomElement; Componen
 // one entry per on() call: keyed by the pair, so two units may share one handler function
 interface ListenerEntry { listener: Function; execute: Function; owner: Unit; }
 
+// engine-dispatched lifecycle events: they live in _.systems, so they never reach addEventListener nor need the '+' / '-' prefix
+export type SystemType = 'update' | 'finalize' | 'childattach' | 'childdetach';
+const SYSTEM_TYPES: SystemType[] = ['update', 'finalize', 'childattach', 'childdetach'];
+
 // xsync node record (see src/sync): every unit carries one; root is the sync root it lives under (null outside one) and is inherited, the rest is per-unit.
 export interface SyncData { root: Unit | null; id: number | null; state: Record<string, any>; registry: Record<string, Function>; visibility: ((clientId: string) => boolean) | null; }
 
@@ -48,11 +52,12 @@ export class Unit {
         children: Unit[];
 
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
+        attached: boolean;   // childattach has fired on the parent; keeps the childattach / childdetach pair balanced
         protected: boolean;
         standalone: boolean;
         promises: UnitPromise[];
         defines: Record<string, any>;
-        systems: Record<'update' | 'finalize', { listener: Function, execute: Function, count: number, owner: Unit }[]>;
+        systems: Record<SystemType, { listener: Function, execute: Function, count: number, owner: Unit }[]>;
 
         currentElement: DomElement;
         currentContext: Context;
@@ -86,6 +91,7 @@ export class Unit {
         this._ = {
             parent,
             phase: 'invoked',
+            attached: false,
             protected: false,
             standalone: true,
             currentElement: baseElement,
@@ -98,7 +104,7 @@ export class Unit {
             Components: [],
             listeners: new MapSet(),
             defines: {},
-            systems: { update: [], finalize: [] },
+            systems: { update: [], finalize: [], childattach: [], childdetach: [] },
             events: new EventBinder(),
             key: null,
             sync: { root: parent?._.sync.root ?? null, id: null, state: {}, registry: {}, visibility: null },
@@ -151,6 +157,12 @@ export class Unit {
         }
         this._.lastSnapshot = Unit.snapshot(this);
         Unit.currentUnit = backup;
+
+        // fired once the constructor is done, so listeners see a fully built child (a unit finalized inside its own component body never attaches, nor detaches); iterate a copy, since a listener may add / remove listeners mid-dispatch
+        if (parent !== null && this._.phase !== 'finalized') {
+            this._.attached = true;
+            [...parent._.systems.childattach].forEach((entry) => entry.execute({ child: this }));
+        }
     }
 
     public get parent(): Unit | null {
@@ -176,7 +188,7 @@ export class Unit {
 
             // detach the listeners this unit registered on other units
             Unit.owner2targets.get(this)?.forEach((target) => {
-                [...target._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(target, this, type));
+                [...target._.listeners.keys(), ...SYSTEM_TYPES].forEach((type) => Unit.off(target, this, type));
                 Unit.target2owners.delete(target, this);
             });
             Unit.owner2targets.delete(this);
@@ -186,7 +198,7 @@ export class Unit {
             Unit.target2owners.delete(this);
 
             // clear all listeners on this unit regardless of owner
-            [...this._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(this, null, type));
+            [...this._.listeners.keys(), ...SYSTEM_TYPES].forEach((type) => Unit.off(this, null, type));
 
             [...this._.nestElements].reverse().forEach((element) => element.remove());
             this._.Components.forEach((Component) => Unit.component2units.delete(Component, this));
@@ -211,10 +223,16 @@ export class Unit {
             Object.keys(this._.defines).forEach((key) => delete this[key]);
             this._.defines = {};
 
-            if (this._.parent) {
-                this._.parent._.children = this._.parent._.children.filter((u: Unit) => u !== this);
+            const parent = this._.parent;
+            if (parent !== null) {
+                parent._.children = parent._.children.filter((u: Unit) => u !== this);
             }
             this._.phase = 'finalized';
+
+            // fired after the child is fully finalized; it reaches the parent during the parent's own cascade too, since the parent clears its listeners only after its children
+            if (parent !== null && this._.attached === true) {
+                [...parent._.systems.childdetach].forEach((entry) => entry.execute({ child: this }));
+            }
         }
     }
 
@@ -396,7 +414,7 @@ export class Unit {
     }
 
     public off(type?: string, listener?: Function): void {
-        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), 'update', 'finalize'];
+        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), ...SYSTEM_TYPES];
 
         types.forEach((type) => Unit.off(this, Unit.currentUnit, type, listener));
     }
@@ -411,9 +429,9 @@ export class Unit {
         const execute = (props: object = {}) => {
             Unit.scope(snapshot, listener, Object.assign({ type }, props));
         }
-        if (type === 'update' || type === 'finalize') {
+        if (SYSTEM_TYPES.includes(type as SystemType)) {
             // lifecycle-only: registered in systems, never in the dispatch path (listeners / type2units / events).
-            unit._.systems[type].push({ listener, execute, count: 0, owner });
+            unit._.systems[type as SystemType].push({ listener, execute, count: 0, owner });
         } else if (Unit.registered(unit, type, listener, owner) === false) {
             unit._.listeners.add(type, { listener, execute, owner });
             Unit.type2units.add(type, unit);
@@ -435,8 +453,9 @@ export class Unit {
     // remove the entries that `owner` registered (owner: null matches any owner; listener narrows further)
     static off(unit: Unit, owner: Unit | null, type: string, listener?: Function): void {
         const match = (lis: Function, own: Unit) => (owner === null || own === owner) && (listener === undefined || lis === listener);
-        if (type === 'update' || type === 'finalize') {
-            unit._.systems[type] = unit._.systems[type].filter((entry) => match(entry.listener, entry.owner) === false);
+        if (SYSTEM_TYPES.includes(type as SystemType)) {
+            const system = type as SystemType;
+            unit._.systems[system] = unit._.systems[system].filter((entry) => match(entry.listener, entry.owner) === false);
         } else {
             [...(unit._.listeners.get(type) ?? [])].forEach((entry) => {
                 if (match(entry.listener, entry.owner)) {
