@@ -38,7 +38,7 @@ export const xsync = {
         Unit.current._.sync.visibility = target;
     },
     get session(): { room: RoomStatus; clients: ClientStatus[]; myself: ClientStatus } {
-        const roomio = RoomIO.of(Unit.current, true);
+        const roomio = RoomIO.of(Unit.current);
         return {
             get room(): RoomStatus { return roomio.room; },
             get clients(): ClientStatus[] { return roomio.clients; },
@@ -53,7 +53,7 @@ export const xsync = {
     },
     // One send across client→server→client: `clients` (a ClientStatus or an array of them) is always delivered by the server — a client's targeted send is relayed, never socket to socket; omitted it means one hop (client→server / server→the whole room), and an empty array reaches nobody.
     emit(type: string, props: Record<string, any> = {}, clients?: ClientStatus | ClientStatus[]): void {
-        const roomio = RoomIO.of(Unit.current, true);
+        const roomio = RoomIO.of(Unit.current);
         const syncId = Unit.current._.sync.id;
         const to = clients === undefined ? undefined : [clients].flat();
         if (to !== undefined && to.length === 0) { return; }

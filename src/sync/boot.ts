@@ -33,17 +33,6 @@ function envelope(p: any, trusted: boolean = false): { type: string; syncId: num
     return { type, syncId: typeof p?.syncId === 'number' ? p.syncId : null, data: typeof p?.data === 'object' && p.data !== null ? p.data : {} };
 }
 
-function dispatch(roomio: RoomIO, type: string, id: string | undefined, data: Record<string, any> = {}, syncId?: number | null): void {
-    // iterate a copy: a handler may finalize units, which mutates both tables mid-dispatch
-    [...(Unit.type2units.get(type) ?? [])].forEach((unit) => {
-        // socket callbacks run outside the scope machinery: a message landing after / mid-finalize must not fire a dying unit's handler.
-        if (unit._.phase === 'finalized' || unit._.phase === 'finalizing') return;
-        if (RoomIO.of(unit) !== roomio) return; // skip units of another root
-        if (type[0] === '-' && unit._.sync.id !== syncId) return; // skip units of another sync node
-        [...(unit._.listeners.get(type) ?? [])].forEach((entry) => entry.execute({ id, ...data }));
-    });
-}
-
 //----------------------------------------------------------------------------------------------------
 // boot
 //----------------------------------------------------------------------------------------------------
@@ -99,10 +88,10 @@ function bootServer(roomio: RoomIO): Unit {
         socket.join(room.id);
         // connect / disconnect are mirrors: dispatch here, relay to the other members (socket.to excludes the sender, who dispatches from its own socket events), then refresh the roster.
         const announce = (type: string): void => {
-            dispatch(roomio, type, socket.id);
+            roomio.dispatch(type, socket.id);
             socket.to(room.id).emit('emitToClients', { type, syncId: null, id: socket.id, data: {} });
             roomio.emit('status', { clients: roomio.clients });
-            dispatch(roomio, 'sync.statusupdate', undefined);
+            roomio.dispatch('sync.statusupdate', undefined);
         };
         roomio.clients.push({ id: socket.id, name: query?.clientName ?? '' });
         announce('sync.connect');
@@ -114,7 +103,7 @@ function bootServer(roomio: RoomIO): Unit {
                 const to = roomio.clients.filter((client) => p.to.includes(client.id));
                 if (to.length > 0) { roomio.emit('emitToClients', { ...message, id: socket.id }, to); }
             } else {
-                dispatch(roomio, message.type, socket.id, message.data, message.syncId);
+                roomio.dispatch(message.type, socket.id, message.data, message.syncId);
             }
         });
         socket.on('disconnect', () => {
@@ -160,25 +149,25 @@ function bootClient(roomio: RoomIO): Unit {
             for (const [id, unit] of reconcileMap) {   // deleting the visited entry mid-iteration is spec-safe for Map
                 if (!incoming.has(id)) { unit.finalize(); reconcileMap.delete(id); }
             }
-            dispatch(roomio, 'sync.update', undefined);   // after reconcile, so handlers read the applied state (fresh replicas included)
+            roomio.dispatch('sync.update', undefined);   // after reconcile, so handlers read the applied state (fresh replicas included)
         }
     });
     //---- roster channel
     roomio.on('status', (status: { clients?: ClientStatus[] }) => {
         roomio.clients = status?.clients ?? [];
-        dispatch(roomio, 'sync.statusupdate', undefined);
+        roomio.dispatch('sync.statusupdate', undefined);
     });
 
     //---- message channel: the server is trusted here (it relays 'sync.connect' / 'sync.disconnect' through this channel), so the envelope keeps the reserved namespace
     roomio.on('emitToClients', (p: any) => {
         const message = envelope(p, true);
-        if (message !== null) { dispatch(roomio, message.type, p?.id, message.data, message.syncId); }
+        if (message !== null) { roomio.dispatch(message.type, p?.id, message.data, message.syncId); }
     });
 
     //---- lifecycle channel: own events dispatch from the own socket; other members' arrive via the server relay
-    roomio.on('connect', () => dispatch(roomio, 'sync.connect', roomio.socket.id));
-    roomio.on('disconnect', () => dispatch(roomio, 'sync.disconnect', roomio.socket.id));
-    roomio.on('notfound', (payload: any) => dispatch(roomio, 'sync.notfound', roomio.socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
+    roomio.on('connect', () => roomio.dispatch('sync.connect', roomio.socket.id));
+    roomio.on('disconnect', () => roomio.dispatch('sync.disconnect', roomio.socket.id));
+    roomio.on('notfound', (payload: any) => roomio.dispatch('sync.notfound', roomio.socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
 
     return root;
 }

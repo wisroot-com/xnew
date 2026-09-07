@@ -40,6 +40,18 @@ export class RoomIO {
         }
     }
 
+    // fires `type` on every unit of this room that listens for it; a '-type' also has to match the emitter's sync node id.
+    dispatch(type: string, id: string | undefined, data: Record<string, any> = {}, syncId?: number | null): void {
+        // iterate a copy: a handler may finalize units, which mutates both tables mid-dispatch
+        [...(Unit.type2units.get(type) ?? [])].forEach((unit) => {
+            // socket callbacks run outside the scope machinery: a message landing after / mid-finalize must not fire a dying unit's handler.
+            if (unit._.phase === 'finalized' || unit._.phase === 'finalizing') return;
+            if (unit._.sync.root !== this.root) return; // skip units of another root
+            if (type[0] === '-' && unit._.sync.id !== syncId) return; // skip units of another sync node
+            [...(unit._.listeners.get(type) ?? [])].forEach((entry) => entry.execute({ id, ...data }));
+        });
+    }
+
     // listens on the own socket (client) or the io namespace (server); detached when the root finalizes, so a dead room leaves no listener on the shared io.
     on(type: string, listener: (...args: any[]) => void): void {
         const wire = this.socket ?? this.io;
@@ -49,12 +61,11 @@ export class RoomIO {
 
     static rooms = new WeakMap<Unit, RoomIO>();   // root unit → the RoomIO that booted it, stamped by the boot hook
 
-    static of(unit: Unit): RoomIO | null;
-    static of(unit: Unit, required: true): RoomIO;
-    static of(unit: Unit, required?: true): RoomIO | null {
+    // the room this unit belongs to; every caller needs the real thing, so a unit outside a booted root is an error
+    static of(unit: Unit): RoomIO {
         const root = unit._.sync.root;
-        const roomio: RoomIO | null = root === null ? null : RoomIO.rooms.get(root) ?? null;
-        if (required === true && roomio === null) {
+        const roomio = root === null ? undefined : RoomIO.rooms.get(root);
+        if (roomio === undefined) {
             throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, Component).');
         }
         return roomio;
