@@ -15,8 +15,8 @@ import { Gate } from './Gate';
 import { Overlay } from './Overlay';
 import { ColorPicker } from './ColorPicker';
 
-// tab is group-only (a group naming a tab joins the panel's tab strip); nested is internal: group() marks its inner Panel so only the root creates the scroll container
-interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; key?: any; tab?: string; nested?: boolean; }
+// nested is internal: group() marks its inner Panel so only the root creates the scroll container
+interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; key?: any; nested?: boolean; }
 
 export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
@@ -51,29 +51,20 @@ export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: P
         xnew.extend(Accordion, { gate });
     }
 
-    // '-change' fires on the panel itself when a tab is picked
-    const notify = xnew.scope((name: string) => xnew.emit('-change', { value: name }));
-
-    // created up front so the strip stays at the top of the panel however late its groups declare a tab
-    const tabs = xnew(Tabs, { notify });
-
     return {
-        // the same word as group({ tab }): reading gives the active caption, writing switches as a press does (an unknown name is ignored)
-        get tab() {
-            return tabs.active;
-        },
-        set tab(name: string) {
-            tabs.select(name);
+        // a tab strip over the groups of this panel: names maps a group key to its button caption, and the first key starts active
+        tabs({ names = {} }: { names?: Record<string, string> } = {}) {
+            return xnew(Tabs, { names });
         },
         // every row takes `key` so xnew.find can reach it later; it rides along to the inner control, so find by that control's component
-        group({ name, open, params, key, tab }: PanelOptions, inner: Function) {
+        group({ name, open, params, key }: PanelOptions, inner: Function) {
             const group = xnew((unit: xnew.Unit) => {
                 xnew.extend(Panel, { name, open, params: params ?? object, nested: true });
                 inner(unit);
             }, { key });
-            if (tab !== undefined) {
-                tabs.add(tab, group);
-            }
+
+            // a group can be declared after a strip, so every strip of this panel looks at its siblings again
+            xnew.find(Tabs, { parent: unit }).forEach((strip: xnew.Unit) => strip.apply());
             return group;
         },
         button({ name = '', key }: { name?: string, key?: any } = {}) {
@@ -109,27 +100,39 @@ export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: P
     }
 }
 
-// underline strip pinned to the top of a panel; it stays empty and invisible until a group declares a tab
-function Tabs(unit: xnew.Unit, { notify }: { notify: (name: string) => void }) {
-    const strip = xnew.nest('<div style="display: none; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-bottom: 0.25em;">');
+// underline strip switching the sibling groups of one panel; a group whose key no tab names stays visible whichever tab is on
+function Tabs(unit: xnew.Unit, { names }: { names: Record<string, string> }) {
+    xnew.nest('<div style="display: flex; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-bottom: 0.25em;">');
 
-    const tabs: { name: string, button: xnew.Unit, groups: xnew.Unit[] }[] = [];
-    let active = '';
+    const keys = Object.keys(names);
+    const buttons = keys.map((key) => {
+        const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', names[key]);
 
-    // the active tab shows its own groups as a whole and hides every other tab's
+        button.on('click', () => select(key));
+        return { key, button };
+    });
+
+    let active = keys[0] ?? '';
+
+    // the groups a tab names are this strip's siblings, so they are the panel's children too
     function apply() {
-        tabs.forEach(({ name, groups }) => {
-            groups.forEach((group: xnew.Unit) => {
+        const panel = unit.parent;
+
+        if (panel === null) {
+            return;
+        }
+        keys.forEach((key) => {
+            xnew.find(Panel, { parent: panel, key }).forEach((group: xnew.Unit) => {
                 if (group.container !== null) {
-                    group.container.style.display = name === active ? '' : 'none';
+                    group.container.style.display = key === active ? '' : 'none';
                 }
             });
         });
     }
 
     function paint() {
-        tabs.forEach(({ name, button }) => {
-            const on = name === active;
+        buttons.forEach(({ key, button }) => {
+            const on = key === active;
             button.current.style.borderBottomColor = on ? 'currentColor' : 'transparent';
             button.current.style.fontWeight = on ? '600' : '400';
             button.current.style.opacity = on ? '1' : '0.55';
@@ -137,38 +140,26 @@ function Tabs(unit: xnew.Unit, { notify }: { notify: (name: string) => void }) {
     }
 
     // one path for both the button and a code-driven switch, so either notifies the same way
-    function select(name: string) {
-        if (tabs.some((tab) => tab.name === name) === false) {
+    function select(key: string) {
+        if (keys.includes(key) === false) {
             return;
         }
-        active = name;
+        active = key;
         paint();
         apply();
-        notify(name);
+        xnew.emit('-change', { value: key });
     }
+
+    paint();
+    apply();
 
     return {
         select,
         get active() {
             return active;
         },
-        // groups declaring the same name share one button, and the first name declared starts active
-        add(name: string, group: xnew.Unit) {
-            let tab = tabs.find((tab) => tab.name === name);
-            if (tab === undefined) {
-                const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', name);
-                button.on('click', () => select(name));
-                tab = { name, button, groups: [] };
-                tabs.push(tab);
-                strip.style.display = 'flex';
-                if (active === '') {
-                    active = name;
-                }
-            }
-            tab.groups.push(group);
-            paint();
-            apply();
-        },
+        // the panel calls this when a group joins after the strip was built
+        apply,
     };
 }
 

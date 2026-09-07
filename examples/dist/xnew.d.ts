@@ -497,12 +497,17 @@ interface PanelOptions {
     open?: boolean;
     params?: Record<string, any>;
     key?: any;
-    tab?: string;
     nested?: boolean;
 }
 declare function Panel(unit: xnew.Unit, { name, open, params, nested }: PanelOptions): {
-    tab: string;
-    group({ name, open, params, key, tab }: PanelOptions, inner: Function): Unit;
+    tabs({ names }?: {
+        names?: Record<string, string>;
+    }): Unit & {
+        select: (key: string) => void;
+        readonly active: string;
+        apply: () => void;
+    };
+    group({ name, open, params, key }: PanelOptions, inner: Function): Unit;
     button({ name, key }?: {
         name?: string;
         key?: any;

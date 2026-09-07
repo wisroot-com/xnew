@@ -3266,23 +3266,16 @@ function Panel(unit, { name, open, params, nested = false }) {
         }
         xnew.extend(Accordion, { gate });
     }
-    const notify = xnew.scope((name) => xnew.emit('-change', { value: name }));
-    const tabs = xnew(Tabs, { notify });
     return {
-        get tab() {
-            return tabs.active;
+        tabs({ names = {} } = {}) {
+            return xnew(Tabs, { names });
         },
-        set tab(name) {
-            tabs.select(name);
-        },
-        group({ name, open, params, key, tab }, inner) {
+        group({ name, open, params, key }, inner) {
             const group = xnew((unit) => {
                 xnew.extend(Panel, { name, open, params: params !== null && params !== void 0 ? params : object, nested: true });
                 inner(unit);
             }, { key });
-            if (tab !== undefined) {
-                tabs.add(tab, group);
-            }
+            xnew.find(Tabs, { parent: unit }).forEach((strip) => strip.apply());
             return group;
         },
         button({ name = '', key } = {}) {
@@ -3321,57 +3314,54 @@ function Panel(unit, { name, open, params, nested = false }) {
         }
     };
 }
-function Tabs(unit, { notify }) {
-    const strip = xnew.nest('<div style="display: none; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-bottom: 0.25em;">');
-    const tabs = [];
-    let active = '';
+function Tabs(unit, { names }) {
+    var _a;
+    xnew.nest('<div style="display: flex; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-bottom: 0.25em;">');
+    const keys = Object.keys(names);
+    const buttons = keys.map((key) => {
+        const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', names[key]);
+        button.on('click', () => select(key));
+        return { key, button };
+    });
+    let active = (_a = keys[0]) !== null && _a !== void 0 ? _a : '';
     function apply() {
-        tabs.forEach(({ name, groups }) => {
-            groups.forEach((group) => {
+        const panel = unit.parent;
+        if (panel === null) {
+            return;
+        }
+        keys.forEach((key) => {
+            xnew.find(Panel, { parent: panel, key }).forEach((group) => {
                 if (group.container !== null) {
-                    group.container.style.display = name === active ? '' : 'none';
+                    group.container.style.display = key === active ? '' : 'none';
                 }
             });
         });
     }
     function paint() {
-        tabs.forEach(({ name, button }) => {
-            const on = name === active;
+        buttons.forEach(({ key, button }) => {
+            const on = key === active;
             button.current.style.borderBottomColor = on ? 'currentColor' : 'transparent';
             button.current.style.fontWeight = on ? '600' : '400';
             button.current.style.opacity = on ? '1' : '0.55';
         });
     }
-    function select(name) {
-        if (tabs.some((tab) => tab.name === name) === false) {
+    function select(key) {
+        if (keys.includes(key) === false) {
             return;
         }
-        active = name;
+        active = key;
         paint();
         apply();
-        notify(name);
+        xnew.emit('-change', { value: key });
     }
+    paint();
+    apply();
     return {
         select,
         get active() {
             return active;
         },
-        add(name, group) {
-            let tab = tabs.find((tab) => tab.name === name);
-            if (tab === undefined) {
-                const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', name);
-                button.on('click', () => select(name));
-                tab = { name, button, groups: [] };
-                tabs.push(tab);
-                strip.style.display = 'flex';
-                if (active === '') {
-                    active = name;
-                }
-            }
-            tab.groups.push(group);
-            paint();
-            apply();
-        },
+        apply,
     };
 }
 function Separator(unit) {
