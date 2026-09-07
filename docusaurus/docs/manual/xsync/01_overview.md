@@ -131,7 +131,7 @@ xsync.session.myself     // { id, name } 自分（client 側のみ）
 
 - `clients` はサーバー / クライアントの両方で参照できます。サーバーは接続受理時に更新し、クライアントは `status` チャンネルで受け取ります。
 - `myself` は **クライアント専用** です。サーバーで参照すると例外になります（サーバーには「自分」がいません）。
-- 一覧が更新されると `sync.statusupdate` イベントが両側で発火します。
+- 一覧が更新されると `sync.status` イベントが両側で発火します。
 
 ---
 
@@ -305,7 +305,7 @@ boot ルートの配下に、次のイベントが自動的に発火します。
 | `sync.connect` | 両方 | `{ id }` の参加者が接続した |
 | `sync.disconnect` | 両方 | `{ id }` の参加者が切断した |
 | `sync.notfound` | client | 入室しようとしたルームが存在しなかった（自分の接続失敗のみ） |
-| `sync.statusupdate` | 両方 | 参加者一覧（`xsync.session.clients`）が更新された |
+| `sync.status` | 両方 | 参加者一覧（`xsync.session.clients`）が更新された |
 | `sync.update` | **client のみ** | サーバーから届いた状態を適用し終えた |
 
 自分と他人の区別は `id` の比較で行います。

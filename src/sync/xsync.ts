@@ -4,7 +4,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';
-import { boot } from './boot';
+import { bootServer, bootClient } from './boot';
 import { getSide } from './side';
 import { RoomIO, BootOptions, ClientStatus, RoomStatus } from './roomio';
 
@@ -64,7 +64,10 @@ export const xsync = {
             roomio.emit('emitToServer', { type, syncId, data: props, to: to?.map((client) => client.id) });
         }
     },
+    // one root component only: listeners for sync.* must live inside it, so compose with xnew.extend rather than a second argument.
     boot<C extends ComponentFn<any, any>>(options: BootOptions, Component: C, props?: PropsOf<C>): Unit {
-        return boot(options, Component, props);
+        // the root (and its body) exists once RoomIO is built; the channels only wire onto it
+        const roomio = new RoomIO(options, Component, props);
+        return getSide() === 'server' ? bootServer(roomio) : bootClient(roomio);
     },
 };

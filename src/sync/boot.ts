@@ -1,11 +1,10 @@
 //----------------------------------------------------------------------------------------------------
-// boot — the channel wiring behind xsync.boot: it hangs the state / roster / message / lifecycle
-// channels onto a RoomIO. The server root is the source of truth: each update it projects its
+// boot — the channel wiring behind xsync.boot (which builds the RoomIO and picks the side): bootServer /
+// bootClient hang the state / roster / message / lifecycle channels onto that RoomIO. The server root is the source of truth: each update it projects its
 // registered units per connected client (respecting visibility) and emits that node list ('sync').
 //----------------------------------------------------------------------------------------------------
 
-import { Unit, ComponentFn, PropsOf } from '../core/unit';
-import { getSide } from './side';
+import { Unit } from '../core/unit';
 import { RoomIO, BootOptions, ClientStatus } from './roomio';
 
 //----------------------------------------------------------------------------------------------------
@@ -37,7 +36,7 @@ function envelope(p: any, trusted: boolean = false): { type: string; syncId: num
 // boot
 //----------------------------------------------------------------------------------------------------
 
-function bootServer(roomio: RoomIO): Unit {
+export function bootServer(roomio: RoomIO): Unit {
     const { room, root } = roomio;
 
     //---- state channel
@@ -91,7 +90,7 @@ function bootServer(roomio: RoomIO): Unit {
             roomio.dispatch(type, socket.id);
             socket.to(room.id).emit('emitToClients', { type, syncId: null, id: socket.id, data: {} });
             roomio.emit('status', { clients: roomio.clients });
-            roomio.dispatch('sync.statusupdate', undefined);
+            roomio.dispatch('sync.status', undefined);
         };
         roomio.clients.push({ id: socket.id, name: query?.clientName ?? '' });
         announce('sync.connect');
@@ -115,7 +114,7 @@ function bootServer(roomio: RoomIO): Unit {
     return root;
 }
 
-function bootClient(roomio: RoomIO): Unit {
+export function bootClient(roomio: RoomIO): Unit {
     const { root } = roomio;
 
     //---- state channel
@@ -155,7 +154,7 @@ function bootClient(roomio: RoomIO): Unit {
     //---- roster channel
     roomio.on('status', (status: { clients?: ClientStatus[] }) => {
         roomio.clients = status?.clients ?? [];
-        roomio.dispatch('sync.statusupdate', undefined);
+        roomio.dispatch('sync.status', undefined);
     });
 
     //---- message channel: the server is trusted here (it relays 'sync.connect' / 'sync.disconnect' through this channel), so the envelope keeps the reserved namespace
@@ -170,15 +169,4 @@ function bootClient(roomio: RoomIO): Unit {
     roomio.on('notfound', (payload: any) => roomio.dispatch('sync.notfound', roomio.socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
 
     return root;
-}
-
-//----------------------------------------------------------------------------------------------------
-// entry
-//----------------------------------------------------------------------------------------------------
-
-// one root component only: listeners for sync.* must live inside it, so compose with xnew.extend rather than a second argument.
-export function boot<C extends ComponentFn<any, any>>(options: BootOptions, Component: C, props?: PropsOf<C>): Unit {
-    // the root (and its body) exists once RoomIO is built; the channels below only wire onto it
-    const roomio = new RoomIO(options, Component, props);
-    return getSide() === 'server' ? bootServer(roomio) : bootClient(roomio);
 }

@@ -131,7 +131,7 @@ xsync.session.myself     // { id, name } yourself (client only)
 
 - `clients` is readable on both sides. The server updates it as connections are accepted; the client receives it over the `status` channel.
 - `myself` is **client-only** — reading it on the server throws, since the server has no "self".
-- When the roster changes, `sync.statusupdate` fires on both sides.
+- When the roster changes, `sync.status` fires on both sides.
 
 ---
 
@@ -305,7 +305,7 @@ These fire automatically under the boot root. **Listeners must live inside the b
 | `sync.connect` | both | The participant `{ id }` connected |
 | `sync.disconnect` | both | The participant `{ id }` disconnected |
 | `sync.notfound` | client | The room being joined did not exist (own connection failure only) |
-| `sync.statusupdate` | both | The roster (`xsync.session.clients`) changed |
+| `sync.status` | both | The roster (`xsync.session.clients`) changed |
 | `sync.update` | **client only** | An incoming state update has been applied |
 
 Tell yourself from others by comparing ids.
