@@ -115,6 +115,10 @@ xsync.boot({ io, client, room }, (u) => {
 });
 ```
 
+:::info ルートは protect 境界です
+`boot` したルートは `xnew.protect()` された状態になります。1 つの Node プロセスが複数のルームを抱えるとき、キー無しの `xnew.find` や `'+event'` が隣のルームの unit を掴んでしまわないようにするためです（イベントの配送は元からルームごとに絞られています）。ルームの外から中の unit を `xnew.find` で引くこともできません。
+:::
+
 :::info ロビー / ルームは xsync に含まれません
 `xsync` が提供するのは boot / state / emit などの同期ファサードだけです。「部屋一覧」「部屋の作成」といった集会所の配線は、アプリ側で socket.io を直接使って組みます（`examples/1_xnew/sync/multiplay/server.js` が実例です）。
 :::
@@ -132,6 +136,22 @@ xsync.session.myself     // { id, name } 自分（client 側のみ）
 - `clients` はサーバー / クライアントの両方で参照できます。サーバーは接続受理時に更新し、クライアントは `status` チャンネルで受け取ります。
 - `myself` は **クライアント専用** です。サーバーで参照すると例外になります（サーバーには「自分」がいません）。
 - 一覧が更新されると `sync.status` イベントが両側で発火します。
+- ソケットを持たないメンバー（下の `xsync.attach`）も、`{ id, name, virtual: true }` としてこの一覧に載ります。
+
+### 仮想メンバー — `xsync.attach` / `xsync.detach` / `xsync.dispatch`
+
+サーバー側だけで、**ソケットを持たないメンバー**を名簿に置けます（サーバー自身が指す CPU の席など）。
+
+```js
+xsync.attach({ id: 'cpu:1', name: 'CPU 1' });   // 名簿に載せる（'sync.connect' が飛ぶ）
+xsync.dispatch('play', 'cpu:1', { card: 7 });   // その人から届いた 1 通として流す
+xsync.detach('cpu:1');                          // 名簿から外す（'sync.disconnect' が飛ぶ）
+```
+
+- 置かれた側から見ると、線の向こうから来た人と区別が付きません。`session.clients` に載り、`sync.connect` / `sync.disconnect` が両側へ届き、`status` チャンネルで全クライアントの名簿にも現れます。既存のゲームは席割りも名札も入退室ログも、そのまま同じコードで扱えます。
+- 線の側では素通しです。**投影（`sync`）は送られず**、そこからメッセージが届くこともありません。`xsync.visibility` でその id にだけ見せている state は、結果として誰の線にも乗りません（サーバーは同期ツリーから直接読めます）。
+- `xsync.dispatch` は「その人が送ってきた 1 通」をこのルームへ流します。人間の手とまったく同じハンドラ・同じ検証を通るので、仮想メンバーだけがルールを飛び越えることはありません。予約名前空間（`sync.`）と、virtual でない id は拒否されます。
+- 3 つともサーバー専用です（クライアントで呼ぶと例外になります）。実クライアントを `detach` することはできません（切断で抜けます）。
 
 ---
 

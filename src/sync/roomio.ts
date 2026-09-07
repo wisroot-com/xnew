@@ -6,7 +6,9 @@
 import { Unit } from '../core/unit';
 import { getSide } from './side';
 
-export interface ClientStatus { id: string; name: string; }
+// `virtual` marks a roster entry with no socket behind it (added with xsync.attach): it is announced and
+// listed like anyone else, but nothing is ever sent to it (see RoomIO.emit and boot's per-client projection).
+export interface ClientStatus { id: string; name: string; virtual?: boolean; }
 export interface RoomStatus { id: string; name: string; count: number; }
 export interface BootOptions { io: any; room: RoomStatus; client?: any; }   // client is client-boot only
 
@@ -14,7 +16,7 @@ export class RoomIO {
     readonly io: any;
     readonly socket: any;           // client side only: the socket this room creates, owns and disconnects
     readonly room: RoomStatus;
-    clients: ClientStatus[] = [];   // room roster; kept up to date by boot's status channel
+    clients: ClientStatus[] = [];   // room roster; kept up to date by boot's status channel (and by attach / detach)
     readonly root: Unit;
 
     constructor({ io, room, client }: BootOptions, Component: Function, props?: object) {
@@ -24,6 +26,9 @@ export class RoomIO {
         this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true }) : null;
         // the hook runs before the root's body, so a xsync.session / xsync.emit inside it already resolves this room
         this.root = new Unit(Unit.currentUnit, Component, { ...props, _hook: (unit: Unit) => { unit._.sync.root = unit; RoomIO.rooms.set(unit, this); } });
+        // A booted room is a protection boundary: one Node process holds many rooms, and they all share the
+        // same Component functions, so an unscoped xnew.find / '+event' would otherwise reach into the others.
+        this.root._.protected = true;
         if (this.socket !== null) {
             this.root.on('finalize', () => this.socket.disconnect());
         }
@@ -35,7 +40,8 @@ export class RoomIO {
             this.socket.emit(type, data);
         } else {
             // each socket sits in a room named by its own id, so per-client and room-wide delivery share one path
-            const targets = clients === undefined ? [this.room.id] : [clients].flat().map((client) => client.id);
+            // a virtual member has no socket to deliver to, so it drops out of the destinations here
+            const targets = clients === undefined ? [this.room.id] : [clients].flat().filter((client) => client.virtual !== true).map((client) => client.id);
             targets.forEach((target) => this.io.to(target).emit(type, data));
         }
     }
@@ -57,6 +63,36 @@ export class RoomIO {
         const wire = this.socket ?? this.io;
         wire.on(type, listener);
         this.root.on('finalize', () => wire.off(type, listener));
+    }
+
+    // Roster announcement (server side): dispatch here, relay to the other members, then re-broadcast the roster.
+    // `sender` is the socket the change came from — it is left out of the relay because it dispatches the same
+    // event from its own socket. A virtual member has no sender, so the relay goes to the whole room.
+    announce(type: string, id: string, sender: any = null): void {
+        this.dispatch(type, id);
+        (sender ?? this.io).to(this.room.id).emit('emitToClients', { type, syncId: null, id, data: {} });
+        this.emit('status', { clients: this.clients });
+        this.dispatch('sync.status', undefined);
+    }
+
+    // Adds a roster entry that no socket stands behind. It joins exactly the way a connection does
+    // ('sync.connect' + a fresh roster), so the tree cannot tell it from a member who arrived over the wire.
+    attach({ id, name = '' }: { id: string; name?: string }): ClientStatus {
+        if (id === '') { throw new Error('xsync.attach: a virtual member needs an id.'); }
+        if (this.clients.some((client) => client.id === id) === true) { throw new Error(`xsync.attach: "${id}" is already in this room.`); }
+        const client: ClientStatus = { id, name, virtual: true };
+        this.clients.push(client);
+        this.announce('sync.connect', id);
+        return client;
+    }
+
+    // Removes a virtual member. A real client leaves by disconnecting its socket, so it is refused here.
+    detach(id: string): boolean {
+        const client = this.clients.find((entry) => entry.id === id);
+        if (client === undefined || client.virtual !== true) { return false; }
+        this.clients = this.clients.filter((entry) => entry !== client);
+        this.announce('sync.disconnect', id);
+        return true;
     }
 
     static rooms = new WeakMap<Unit, RoomIO>();   // root unit → the RoomIO that booted it, stamped by the boot hook

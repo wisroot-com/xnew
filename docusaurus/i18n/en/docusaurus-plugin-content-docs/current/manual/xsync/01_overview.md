@@ -115,6 +115,10 @@ xsync.boot({ io, client, room }, (u) => {
 });
 ```
 
+:::info The root is a protect boundary
+A booted root is `xnew.protect()`ed. One Node process usually holds several rooms, and a keyless `xnew.find` or a `'+event'` must not reach into the units of another one (event delivery has always been per-room). Units inside a room are likewise not findable from outside it.
+:::
+
 :::info Lobbies and rooms are not part of xsync
 `xsync` provides only the sync facade — boot, state, emit and so on. "Gathering place" wiring (room listings, room creation) is assembled in your application with socket.io directly; `examples/1_xnew/sync/multiplay/server.js` is a worked example.
 :::
@@ -132,6 +136,22 @@ xsync.session.myself     // { id, name } yourself (client only)
 - `clients` is readable on both sides. The server updates it as connections are accepted; the client receives it over the `status` channel.
 - `myself` is **client-only** — reading it on the server throws, since the server has no "self".
 - When the roster changes, `sync.status` fires on both sides.
+- A member with no socket behind it (`xsync.attach`, below) appears in this list too, as `{ id, name, virtual: true }`.
+
+### Virtual members — `xsync.attach` / `xsync.detach` / `xsync.dispatch`
+
+On the server only, you can put a member with **no socket behind it** on the roster (a seat the server itself plays, for instance).
+
+```js
+xsync.attach({ id: 'cpu:1', name: 'CPU 1' });   // join the roster (fires 'sync.connect')
+xsync.dispatch('play', 'cpu:1', { card: 7 });   // act as that member: one message, as if it had sent it
+xsync.detach('cpu:1');                          // leave the roster (fires 'sync.disconnect')
+```
+
+- To the tree it is indistinguishable from a member who arrived over the wire: it lands in `session.clients`, `sync.connect` / `sync.disconnect` fire on both sides, and the `status` channel puts it in every client's roster. Existing games seat it, name it and log it with the code they already have.
+- The wire skips it. **No projection (`sync`) is sent to it**, and no message can arrive from it. State made private to its id with `xsync.visibility` therefore never reaches anyone's wire (the server reads it straight from the sync tree).
+- `xsync.dispatch` delivers one message to this room as if that member had sent it, so it enters through the same handler — and the same validation — as a human's move. The reserved namespace (`sync.`) and any id that is not a virtual member are refused.
+- All three are server-side only (calling them on a client throws). A real client cannot be detached; it leaves by disconnecting.
 
 ---
 

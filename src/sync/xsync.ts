@@ -64,6 +64,39 @@ export const xsync = {
             roomio.emit('emitToServer', { type, syncId, data: props, to: to?.map((client) => client.id) });
         }
     },
+    // Adds a roster entry that no socket stands behind (a seat played by the server itself). The room and its
+    // games see it through session.clients and 'sync.connect' exactly like a member who arrived over the wire,
+    // while the wire skips it: nothing is projected to it, and nothing can arrive from it — the server acts for
+    // it with xsync.dispatch. Server side only.
+    attach(client: { id: string, name?: string }): ClientStatus {
+        if (getSide() !== 'server') {
+            throw new Error('xsync.attach is only available on the server side.');
+        }
+        return RoomIO.of(Unit.currentUnit).attach(client);
+    },
+    // Removes a virtual member; true when one was removed (a real client leaves by disconnecting its socket).
+    detach(id: string): boolean {
+        if (getSide() !== 'server') {
+            throw new Error('xsync.detach is only available on the server side.');
+        }
+        return RoomIO.of(Unit.currentUnit).detach(id);
+    },
+    // Acts for a virtual member: dispatches `type` on this room as if that member had sent it, so a move the
+    // server decided enters through the same handler — and the same validation — as one that came off the wire.
+    dispatch(type: string, id: string, props: Record<string, any> = {}): void {
+        if (getSide() !== 'server') {
+            throw new Error('xsync.dispatch is only available on the server side.');
+        }
+        if (type.startsWith('sync.') === true) {
+            throw new Error(`xsync.dispatch: "sync." is the library's own namespace, only boot may dispatch it [${type}]`);
+        }
+        const roomio = RoomIO.of(Unit.currentUnit);
+        // a real member's action must always have come from that member's socket, so only virtual ids are actable
+        if (roomio.clients.find((client) => client.id === id)?.virtual !== true) {
+            throw new Error(`xsync.dispatch: "${id}" is not a virtual member of this room.`);
+        }
+        roomio.dispatch(type, id, props);
+    },
     // one root component only: listeners for sync.* must live inside it, so compose with xnew.extend rather than a second argument.
     boot<C extends ComponentFn<any, any>>(options: BootOptions, Component: C, props?: PropsOf<C>): Unit {
         // the root (and its body) exists once RoomIO is built; the channels only wire onto it

@@ -152,13 +152,16 @@ describe('event channel (socket.io transport)', () => {
             world = unit;
             // ハンドラ内で生成した Child は、登録元(World)の子として作られなければならない。
             unit.on('join', ({ id }: any) => xnew(Child, { key: id, clientId: id }));
+            // boot したルームは protect 境界なので、外（engineRoot スコープ）からの find では見えない。
+            // defines はこの unit のスコープで走るため、部屋の内側から引ける。
+            return { childOf: (id: string) => xnew.find(Child, { key: id })[0] };
         }
-        bootServer({ io: hub.io }, World);
+        const root = bootServer({ io: hub.io }, World) as Unit & { childOf(id: string): Unit };
 
         // 同じ hub の生 client が join を送ると server の on('join') が発火する（id=clientId）。
         hub.connect('c1').emit('emitToServer', { type: 'join' });
 
-        const child = xnew.find(Child, { key: 'c1' })[0];
+        const child = root.childOf('c1');
         expect(child).toBeDefined();
         expect(child.parent).toBe(world);   // stale な currentUnit でなく World の子
     });

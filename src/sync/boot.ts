@@ -70,7 +70,9 @@ export function bootServer(roomio: RoomIO): Unit {
 
     // emit only when the client's projection changed — the wire goes quiet between changes, so each delivery means "changed" on the client.
     const lastEmits = new Map<string, string>();
-    root.on('update', () => roomio.clients.forEach((client) => {
+    // a virtual member (xsync.attach) has no socket: nothing is projected for it, so state made private to it
+    // with a visibility predicate never reaches anyone's wire.
+    root.on('update', () => roomio.clients.filter((client) => client.virtual !== true).forEach((client) => {
         const tree = captureStateTree(client.id);
         const json = JSON.stringify(tree);
         if (lastEmits.get(client.id) !== json) {
@@ -85,15 +87,11 @@ export function bootServer(roomio: RoomIO): Unit {
         const query = socket.handshake?.query;
         if (query?.roomId !== room.id) return;
         socket.join(room.id);
-        // connect / disconnect are mirrors: dispatch here, relay to the other members (socket.to excludes the sender, who dispatches from its own socket events), then refresh the roster.
-        const announce = (type: string): void => {
-            roomio.dispatch(type, socket.id);
-            socket.to(room.id).emit('emitToClients', { type, syncId: null, id: socket.id, data: {} });
-            roomio.emit('status', { clients: roomio.clients });
-            roomio.dispatch('sync.status', undefined);
-        };
+        // connect / disconnect are mirrors: RoomIO.announce dispatches here, relays to the other members
+        // (the sender is excluded, since it dispatches from its own socket events) and refreshes the roster.
+        // xsync.attach / xsync.detach take the same path for a member that has no socket at all.
         roomio.clients.push({ id: socket.id, name: query?.clientName ?? '' });
-        announce('sync.connect');
+        roomio.announce('sync.connect', socket.id, socket);
         socket.on('emitToServer', (p: any) => {
             const message = envelope(p);
             if (message === null) { return; }   // a rejected envelope is dropped, never dispatched
@@ -108,7 +106,7 @@ export function bootServer(roomio: RoomIO): Unit {
         socket.on('disconnect', () => {
             roomio.clients = roomio.clients.filter((c) => c.id !== socket.id);
             lastEmits.delete(socket.id);
-            announce('sync.disconnect');
+            roomio.announce('sync.disconnect', socket.id, socket);
         });
     });
     return root;

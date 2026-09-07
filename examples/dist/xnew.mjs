@@ -1196,7 +1196,7 @@ function bootServer(roomio) {
         return nodes;
     };
     const lastEmits = new Map();
-    root.on('update', () => roomio.clients.forEach((client) => {
+    root.on('update', () => roomio.clients.filter((client) => client.virtual !== true).forEach((client) => {
         const tree = captureStateTree(client.id);
         const json = JSON.stringify(tree);
         if (lastEmits.get(client.id) !== json) {
@@ -1210,14 +1210,8 @@ function bootServer(roomio) {
         if ((query === null || query === void 0 ? void 0 : query.roomId) !== room.id)
             return;
         socket.join(room.id);
-        const announce = (type) => {
-            roomio.dispatch(type, socket.id);
-            socket.to(room.id).emit('emitToClients', { type, syncId: null, id: socket.id, data: {} });
-            roomio.emit('status', { clients: roomio.clients });
-            roomio.dispatch('sync.status', undefined);
-        };
         roomio.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
-        announce('sync.connect');
+        roomio.announce('sync.connect', socket.id, socket);
         socket.on('emitToServer', (p) => {
             const message = envelope(p);
             if (message === null) {
@@ -1236,7 +1230,7 @@ function bootServer(roomio) {
         socket.on('disconnect', () => {
             roomio.clients = roomio.clients.filter((c) => c.id !== socket.id);
             lastEmits.delete(socket.id);
-            announce('sync.disconnect');
+            roomio.announce('sync.disconnect', socket.id, socket);
         });
     });
     return root;
@@ -1308,6 +1302,7 @@ class RoomIO {
         this.room = room;
         this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true }) : null;
         this.root = new Unit(Unit.currentUnit, Component, Object.assign(Object.assign({}, props), { _hook: (unit) => { unit._.sync.root = unit; RoomIO.rooms.set(unit, this); } }));
+        this.root._.protected = true;
         if (this.socket !== null) {
             this.root.on('finalize', () => this.socket.disconnect());
         }
@@ -1317,7 +1312,7 @@ class RoomIO {
             this.socket.emit(type, data);
         }
         else {
-            const targets = clients === undefined ? [this.room.id] : [clients].flat().map((client) => client.id);
+            const targets = clients === undefined ? [this.room.id] : [clients].flat().filter((client) => client.virtual !== true).map((client) => client.id);
             targets.forEach((target) => this.io.to(target).emit(type, data));
         }
     }
@@ -1339,6 +1334,33 @@ class RoomIO {
         const wire = (_a = this.socket) !== null && _a !== void 0 ? _a : this.io;
         wire.on(type, listener);
         this.root.on('finalize', () => wire.off(type, listener));
+    }
+    announce(type, id, sender = null) {
+        this.dispatch(type, id);
+        (sender !== null && sender !== void 0 ? sender : this.io).to(this.room.id).emit('emitToClients', { type, syncId: null, id, data: {} });
+        this.emit('status', { clients: this.clients });
+        this.dispatch('sync.status', undefined);
+    }
+    attach({ id, name = '' }) {
+        if (id === '') {
+            throw new Error('xsync.attach: a virtual member needs an id.');
+        }
+        if (this.clients.some((client) => client.id === id) === true) {
+            throw new Error(`xsync.attach: "${id}" is already in this room.`);
+        }
+        const client = { id, name, virtual: true };
+        this.clients.push(client);
+        this.announce('sync.connect', id);
+        return client;
+    }
+    detach(id) {
+        const client = this.clients.find((entry) => entry.id === id);
+        if (client === undefined || client.virtual !== true) {
+            return false;
+        }
+        this.clients = this.clients.filter((entry) => entry !== client);
+        this.announce('sync.disconnect', id);
+        return true;
     }
     static of(unit) {
         const root = unit._.sync.root;
@@ -1405,6 +1427,32 @@ const xsync = {
         else {
             roomio.emit('emitToServer', { type, syncId, data: props, to: to === null || to === void 0 ? void 0 : to.map((client) => client.id) });
         }
+    },
+    attach(client) {
+        if (getSide() !== 'server') {
+            throw new Error('xsync.attach is only available on the server side.');
+        }
+        return RoomIO.of(Unit.currentUnit).attach(client);
+    },
+    detach(id) {
+        if (getSide() !== 'server') {
+            throw new Error('xsync.detach is only available on the server side.');
+        }
+        return RoomIO.of(Unit.currentUnit).detach(id);
+    },
+    dispatch(type, id, props = {}) {
+        var _a;
+        if (getSide() !== 'server') {
+            throw new Error('xsync.dispatch is only available on the server side.');
+        }
+        if (type.startsWith('sync.') === true) {
+            throw new Error(`xsync.dispatch: "sync." is the library's own namespace, only boot may dispatch it [${type}]`);
+        }
+        const roomio = RoomIO.of(Unit.currentUnit);
+        if (((_a = roomio.clients.find((client) => client.id === id)) === null || _a === void 0 ? void 0 : _a.virtual) !== true) {
+            throw new Error(`xsync.dispatch: "${id}" is not a virtual member of this room.`);
+        }
+        roomio.dispatch(type, id, props);
     },
     boot(options, Component, props) {
         const roomio = new RoomIO(options, Component, props);
