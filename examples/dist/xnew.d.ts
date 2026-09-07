@@ -37,6 +37,13 @@ interface ListenerEntry {
     execute: Function;
     owner: Unit;
 }
+interface SyncData {
+    root: Unit | null;
+    id: number | null;
+    state: Record<string, any>;
+    registry: Record<string, Function>;
+    visibility: ((clientId: string) => boolean) | null;
+}
 type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends [void] ? {} : Exclude<R, void | undefined>) : {};
 type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
@@ -45,8 +52,6 @@ declare class Unit {
     _: {
         parent: Unit | null;
         children: Unit[];
-        inherited: Record<string, any>;
-        own: Record<string, any>;
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
         standalone: boolean;
@@ -67,6 +72,7 @@ declare class Unit {
         listeners: MapSet<string, ListenerEntry>;
         events: EventBinder;
         key: any;
+        sync: SyncData;
     };
     constructor(parent: Unit | null, ...args: any[]);
     get parent(): Unit | null;

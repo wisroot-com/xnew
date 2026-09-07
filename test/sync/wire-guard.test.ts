@@ -1,5 +1,4 @@
 import { Unit } from '../../src/core/unit';
-import { syncData } from '../../src/sync/xsync';
 import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
@@ -105,7 +104,7 @@ describe('xsync client envelope validation', () => {
         bootServer({ io: hub.io }, function Server() {
             xsync.server(() => {
                 asServer(() => xnew(function Node(unit: Unit) {
-                    syncData(unit).id = 10;
+                    (unit)._.sync.id = 10;
                     unit.on('-move', () => got.push('moved'));
                 }));
             });

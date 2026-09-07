@@ -1,5 +1,4 @@
 import { Unit } from '../../src/core/unit';
-import { syncData } from '../../src/sync/xsync';
 import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, asServer } from './io-mock';
 
@@ -74,7 +73,7 @@ describe('captureStateTree', () => {
         hub.connect();
         asServer(() => Unit.update(Unit.engineRoot));
         const first = hub.lastSync()[0];
-        syncData(server._.children[0]).state!.position = 9;
+        (server._.children[0])._.sync.state!.position = 9;
         asServer(() => Unit.update(Unit.engineRoot));
         const second = hub.lastSync()[0];
         expect(second.id).toBe(first.id);

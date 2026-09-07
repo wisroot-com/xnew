@@ -2,41 +2,41 @@
 // io-mock — in-memory socket.io-shaped transport + mode helpers for sync tests
 //
 // src no longer ships an in-memory transport (loopback was removed with the browser-only run model),
-// and boot now auto-detects mode from the runtime (Node=server / browser=client). Tests run in one
+// and boot now auto-detects the side from the runtime (Node=server / browser=client). Tests run in one
 // jsdom process yet must exercise BOTH sides, so this fixture provides:
 //   - ioMock(): socket.io-shaped objects that boot uses directly (an `io` + `connect()` clients),
 //     wired in-memory. Pass `io` to the server boot and `connect()` to a client boot; clientId
 //     auto-numbers as 'c1', 'c2', ...
-//   - bootServer/bootClient(): force the boot mode (jsdom would otherwise always detect 'client').
+//   - bootServer/bootClient(): force the boot side (jsdom would otherwise always detect 'client').
 //
 // - ioMock() : { io, connect(id?) } — server-side io + client-socket factory, wired in-memory
 // - bootServer(opts, Component, props?) / bootClient(opts, Component, props?) : xsync.boot with the mode forced
 //----------------------------------------------------------------------------------------------------
 
 import { xnew, xsync } from '../../src/index';
-import { setEnvironment } from '../../src/sync/environment';
+import { setSide } from '../../src/sync/side';
 
 type Handler = (...args: any[]) => void;
 
-//---- environment override（テスト専用の人間工学） --------------------------------------------------
-// src は setEnvironment（書き）/ getEnvironment（読み・内部）だけを持つ。ネスト対応の一時上書きは
+//---- side override（テスト専用の人間工学） ---------------------------------------------------------
+// src は setSide（書き）/ getSide（読み・内部）だけを持つ。ネスト対応の一時上書きは
 // ここで組む。src への書き手はテストだけなので、直前値をこのモジュール内でミラーして復元する。
 type Env = 'server' | 'client';
 let currentOverride: Env | null = null;
 
-function applyEnvironment(env: Env | null): void {
+function applySide(env: Env | null): void {
     currentOverride = env;
-    setEnvironment(env);
+    setSide(env);
 }
 
-/** fn 実行中だけ env へ上書きし、終了時に直前の override（null 含む）へ戻す（ネスト可）。 */
-function withEnvironment<T>(env: Env, fn: () => T): T {
+/** fn 実行中だけ side へ上書きし、終了時に直前の override（null 含む）へ戻す（ネスト可）。 */
+function withSide<T>(env: Env, fn: () => T): T {
     const previous = currentOverride;
-    applyEnvironment(env);
+    applySide(env);
     try {
         return fn();
     } finally {
-        applyEnvironment(previous);
+        applySide(previous);
     }
 }
 
@@ -78,7 +78,7 @@ export function ioMock(): IoMock {
     // server→client: 該当 client の on(event) を発火する。client プロセスが受信する状況なので、
     // ハンドラ（boot の on('sync')→apply など）は client 環境で走らせる（server 環境のテスト中に server の
     // 自動 broadcast が同期的に client へ届くケースで、replica が client として構築されるように）。
-    const deliverToClient = (conn: Conn, event: string, payload: any): void => withEnvironment('client', () => {
+    const deliverToClient = (conn: Conn, event: string, payload: any): void => withSide('client', () => {
         conn.clientHandlers.get(event)?.forEach((h) => h(payload));
     });
 
@@ -133,7 +133,7 @@ export function ioMock(): IoMock {
             id: clientId,
             // client→server: the server processes inbound wire events under the server env (a relay
             // handler may fan out with xsync.emit, whose server branch needs it), mirroring deliverToClient's client wrap.
-            emit(event: string, payload?: any): void { withEnvironment('server', () => conn.serverHandlers.get(event)?.forEach((h) => h(payload))); },
+            emit(event: string, payload?: any): void { withSide('server', () => conn.serverHandlers.get(event)?.forEach((h) => h(payload))); },
             on(event: string, handler: Handler): void {
                 let set = conn.clientHandlers.get(event);
                 if (set === undefined) { set = new Set(); conn.clientHandlers.set(event, set); }
@@ -167,16 +167,16 @@ export function ioMock(): IoMock {
 // 各々の env で別々に tick する（例: channel.test の cycle）。apply は src 側で常に client 環境を強制する。
 
 /** fn を server 環境で実行する。 */
-export function asServer<T>(fn: () => T): T { return withEnvironment('server', fn); }
+export function asServer<T>(fn: () => T): T { return withSide('server', fn); }
 
 /** fn を client 環境で実行する。 */
-export function asClient<T>(fn: () => T): T { return withEnvironment('client', fn); }
+export function asClient<T>(fn: () => T): T { return withSide('client', fn); }
 
 /** server 環境で非同期 fn を実行する（fake timer の flush 中に server spawn が走る場合用。完了まで env を保持）。 */
 export async function asServerAsync<T>(fn: () => Promise<T>): Promise<T> {
     const previous = currentOverride;
-    applyEnvironment('server');
-    try { return await fn(); } finally { applyEnvironment(previous); }
+    applySide('server');
+    try { return await fn(); } finally { applySide(previous); }
 }
 
 /** xsync.boot を server 環境で呼ぶ（room 未指定なら既定 ROOM を補う）。 */

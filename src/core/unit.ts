@@ -19,6 +19,9 @@ interface Snapshot { unit: Unit; context: Context; element: DomElement; Componen
 // one entry per on() call: keyed by the pair, so two units may share one handler function
 interface ListenerEntry { listener: Function; execute: Function; owner: Unit; }
 
+// xsync node record (see src/sync): every unit carries one; root is the sync root it lives under (null outside one) and is inherited, the rest is per-unit.
+export interface SyncData { root: Unit | null; id: number | null; state: Record<string, any>; registry: Record<string, Function>; visibility: ((clientId: string) => boolean) | null; }
+
 // Component function type; the returned defines are merged into the xnew(...) return value (Unit & A).
 export type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 
@@ -43,8 +46,6 @@ export class Unit {
     public _: {
         parent: Unit | null;
         children: Unit[];
-        inherited: Record<string, any>;   // library-internal keyed values, each key propagated from the parent unless the reserved _inherited prop overrides it (not a user-facing API)
-        own: Record<string, any>;         // library-internal keyed values, per-unit only — seeded by the reserved _own prop, never propagated (not a user-facing API)
 
         phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
         protected: boolean;
@@ -65,6 +66,7 @@ export class Unit {
         events: EventBinder;
 
         key: any;   // reserved prop for find(key) (global unique assumed)
+        sync: SyncData;   // reserved slot for xsync; the root and any node seed are stamped from outside via the _hook prop, descendants inherit the root
     };
 
     constructor(parent: Unit | null, ...args: any[]) {
@@ -83,9 +85,6 @@ export class Unit {
 
         this._ = {
             parent,
-            // shared with the parent unless the _inherited prop forks it below
-            inherited: parent?._.inherited ?? {},
-            own: {},
             phase: 'invoked',
             protected: false,
             standalone: true,
@@ -102,6 +101,7 @@ export class Unit {
             systems: { update: [], finalize: [] },
             events: new EventBinder(),
             key: null,
+            sync: { root: parent?._.sync.root ?? null, id: null, state: {}, registry: {}, visibility: null },
         };
 
         let targeted = false;
@@ -136,12 +136,9 @@ export class Unit {
 
         this._.key = (props as any)?.key ?? null;
 
-        // reserved library-internal props, applied before the component body so it and its descendants see them from birth
-        if ((props as any)?._inherited !== undefined) {
-            this._.inherited = { ...this._.inherited, ...(props as any)._inherited };
-        }
-        if ((props as any)?._own !== undefined) {
-            this._.own = (props as any)._own;
+        // reserved library-internal prop: lets the layer that created this unit stamp it (see src/sync) before the component body runs, so the body and its descendants see the result from birth
+        if (typeof (props as any)?._hook === 'function') {
+            (props as any)._hook(this);
         }
 
         const backup = Unit.currentUnit;

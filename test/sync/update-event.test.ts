@@ -1,6 +1,6 @@
 import { Unit } from '../../src/core/unit';
 import { xnew, xsync } from '../../src/index';
-import { SyncNode, syncData } from '../../src/sync/xsync';
+import { SyncNode } from '../../src/sync/boot';
 import { ioMock, bootServer, bootClient, asServer } from './io-mock';
 
 // 変更検知: server は client ごとの投影 JSON が前回と同じなら 'sync' を emit しない。
@@ -21,7 +21,7 @@ describe('server skips unchanged frames', () => {
         asServer(() => Unit.update(Unit.engineRoot));
         asServer(() => Unit.update(Unit.engineRoot));   // 無変化 → emit されない
         expect(hub.syncCountFor('c1')).toBe(1);
-        syncData(server._.children[0]).state.value = 9;
+        (server._.children[0])._.sync.state.value = 9;
         asServer(() => Unit.update(Unit.engineRoot));
         expect(hub.syncCountFor('c1')).toBe(2);
     });
@@ -56,7 +56,7 @@ describe('client dispatches sync.update', () => {
         const calls: number[] = [];
         const view = bootClient({ socket }, function View(unit: Unit) {
             xsync.register({ Box });
-            unit.on('sync.update', () => { calls.push(syncData(view._.children[0]).state.value); });
+            unit.on('sync.update', () => { calls.push((view._.children[0])._.sync.state.value); });
         });
         socket.fire('sync', [{ id: 1, name: 'Box', parent: null, state: { value: 7 } }] as SyncNode[]);
         expect(calls).toEqual([7]);                     // 適用後に発火（state は反映済み）

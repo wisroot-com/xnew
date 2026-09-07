@@ -489,8 +489,6 @@ class Unit {
         }
         this._ = {
             parent,
-            inherited: (_c = parent === null || parent === void 0 ? void 0 : parent._.inherited) !== null && _c !== void 0 ? _c : {},
-            own: {},
             phase: 'invoked',
             protected: false,
             standalone: true,
@@ -507,6 +505,7 @@ class Unit {
             systems: { update: [], finalize: [] },
             events: new EventBinder(),
             key: null,
+            sync: { root: (_c = parent === null || parent === void 0 ? void 0 : parent._.sync.root) !== null && _c !== void 0 ? _c : null, id: null, state: {}, registry: {}, visibility: null },
         };
         let targeted = false;
         if (isDomElement(args[0])) {
@@ -536,11 +535,8 @@ class Unit {
             baseComponent = (unit) => { };
         }
         this._.key = (_d = props === null || props === void 0 ? void 0 : props.key) !== null && _d !== void 0 ? _d : null;
-        if ((props === null || props === void 0 ? void 0 : props._inherited) !== undefined) {
-            this._.inherited = Object.assign(Object.assign({}, this._.inherited), props._inherited);
-        }
-        if ((props === null || props === void 0 ? void 0 : props._own) !== undefined) {
-            this._.own = props._own;
+        if (typeof (props === null || props === void 0 ? void 0 : props._hook) === 'function') {
+            props._hook(this);
         }
         const backup = Unit.currentUnit;
         Unit.currentUnit = this;
@@ -1146,7 +1142,7 @@ Object.defineProperty(xnew, 'standalone', {
     },
 });
 
-function getEnvironment() {
+function getSide() {
     return ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
 }
 
@@ -1156,8 +1152,8 @@ class RoomIO {
         this.clients = [];
         this.io = io;
         this.room = room;
-        this.socket = getEnvironment() === 'client' ? io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true }) : null;
-        this.root = new Unit(Unit.current, Component, Object.assign(Object.assign({}, props), { _inherited: { syncRoot: this } }));
+        this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true }) : null;
+        this.root = new Unit(Unit.current, Component, Object.assign(Object.assign({}, props), { _hook: (unit) => { unit._.sync.root = unit; RoomIO.rooms.set(unit, this); } }));
         if (this.socket !== null) {
             this.root.on('finalize', () => this.socket.disconnect());
         }
@@ -1179,19 +1175,16 @@ class RoomIO {
     }
     static of(unit, required) {
         var _a;
-        const roomio = (_a = unit._.inherited.syncRoot) !== null && _a !== void 0 ? _a : null;
+        const root = unit._.sync.root;
+        const roomio = root === null ? null : (_a = RoomIO.rooms.get(root)) !== null && _a !== void 0 ? _a : null;
         if (required === true && roomio === null) {
             throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, Component).');
         }
         return roomio;
     }
 }
+RoomIO.rooms = new WeakMap();
 
-function syncData(unit) {
-    var _a;
-    var _b;
-    return (_a = (_b = unit._.own).syncData) !== null && _a !== void 0 ? _a : (_b.syncData = { id: null, state: {}, registry: {}, visibility: null });
-}
 const RESERVED_PREFIX = 'sync.';
 function envelope(p, trusted = false) {
     const type = typeof (p === null || p === void 0 ? void 0 : p.type) === 'string' ? p.type : '';
@@ -1208,21 +1201,19 @@ function dispatch(roomio, type, id, data = {}, syncId) {
             return;
         if (RoomIO.of(unit) !== roomio)
             return;
-        if (type[0] === '-' && syncData(unit).id !== syncId)
+        if (type[0] === '-' && unit._.sync.id !== syncId)
             return;
         [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => entry.execute(Object.assign({ id }, data)));
     });
 }
-function bootServer(options, Component, props) {
-    const { room } = options;
-    const roomio = new RoomIO(options, Component, props);
-    const root = roomio.root;
+function bootServer(roomio) {
+    const { room, root } = roomio;
     let nextId = 1;
     const captureStateTree = (clientId) => {
         const nodes = [];
         const walk = (unit, parent) => {
-            var _a, _b, _c, _d;
-            const registry = (_c = (_b = (_a = unit._.parent) === null || _a === void 0 ? void 0 : _a._.own.syncData) === null || _b === void 0 ? void 0 : _b.registry) !== null && _c !== void 0 ? _c : {};
+            var _a, _b, _c;
+            const registry = (_b = (_a = unit._.parent) === null || _a === void 0 ? void 0 : _a._.sync.registry) !== null && _b !== void 0 ? _b : {};
             const names = Object.keys(registry);
             let name = undefined;
             for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
@@ -1232,10 +1223,10 @@ function bootServer(options, Component, props) {
                 unit._.children.forEach((child) => walk(child, parent));
             }
             else {
-                const data = syncData(unit);
+                const data = unit._.sync;
                 const visible = data.visibility === null || data.visibility(clientId) === true;
                 if (visible === true) {
-                    (_d = data.id) !== null && _d !== void 0 ? _d : (data.id = nextId++);
+                    (_c = data.id) !== null && _c !== void 0 ? _c : (data.id = nextId++);
                     nodes.push({ id: data.id, name, parent, state: Object.assign({}, data.state) });
                     unit._.children.forEach((child) => walk(child, data.id));
                 }
@@ -1290,9 +1281,8 @@ function bootServer(options, Component, props) {
     });
     return root;
 }
-function bootClient(options, Component, props) {
-    const roomio = new RoomIO(options, Component, props);
-    const root = roomio.root;
+function bootClient(roomio) {
+    const { root } = roomio;
     const reconcileMap = new Map();
     let lastTree = '';
     roomio.on('sync', (tree) => {
@@ -1303,7 +1293,7 @@ function bootClient(options, Component, props) {
             for (const node of tree) {
                 const existing = reconcileMap.get(node.id);
                 if (existing !== undefined) {
-                    const state = syncData(existing).state;
+                    const state = existing._.sync.state;
                     for (const key of Object.keys(state)) {
                         if ((key in node.state) === false) {
                             delete state[key];
@@ -1313,11 +1303,11 @@ function bootClient(options, Component, props) {
                     continue;
                 }
                 const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
-                const Component = nodeParent && syncData(nodeParent).registry[node.name];
+                const Component = nodeParent && nodeParent._.sync.registry[node.name];
                 if (!Component) {
                     continue;
                 }
-                const unit = new Unit(nodeParent, Component, { _own: { syncData: { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null } } });
+                const unit = new Unit(nodeParent, Component, { _hook: (unit) => { unit._.sync.id = node.id; Object.assign(unit._.sync.state, node.state); } });
                 reconcileMap.set(node.id, unit);
             }
             for (const [id, unit] of reconcileMap) {
@@ -1345,31 +1335,36 @@ function bootClient(options, Component, props) {
     roomio.on('notfound', (payload) => dispatch(roomio, 'sync.notfound', roomio.socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
     return root;
 }
+function boot(options, Component, props) {
+    const roomio = new RoomIO(options, Component, props);
+    return getSide() === 'server' ? bootServer(roomio) : bootClient(roomio);
+}
+
 const xsync = {
     server(callback, props) {
-        return getEnvironment() === 'server' ? Unit.extend(Unit.current, callback, props) : {};
+        return getSide() === 'server' ? Unit.extend(Unit.current, callback, props) : {};
     },
     client(callback, props) {
-        return getEnvironment() === 'client' ? Unit.extend(Unit.current, callback, props) : {};
+        return getSide() === 'client' ? Unit.extend(Unit.current, callback, props) : {};
     },
     state(initial = {}) {
-        const data = syncData(Unit.current);
+        const state = Unit.current._.sync.state;
         for (const key of Object.keys(initial)) {
-            if (!(key in data.state)) {
-                data.state[key] = initial[key];
+            if (!(key in state)) {
+                state[key] = initial[key];
             }
         }
-        return data.state;
+        return state;
     },
     register(Components) {
         const unit = Unit.current;
         if (unit._.phase !== 'invoked') {
             throw new Error('xsync.register must be called during component initialization.');
         }
-        Object.assign(syncData(unit).registry, Components);
+        Object.assign(unit._.sync.registry, Components);
     },
     visibility(target) {
-        syncData(Unit.current).visibility = target;
+        Unit.current._.sync.visibility = target;
     },
     get session() {
         const roomio = RoomIO.of(Unit.current, true);
@@ -1378,7 +1373,7 @@ const xsync = {
             get clients() { return roomio.clients; },
             get myself() {
                 var _a;
-                if (getEnvironment() === 'server') {
+                if (getSide() === 'server') {
                     throw new Error('xsync.session.myself is only available on the client side.');
                 }
                 const socket = roomio.socket;
@@ -1388,12 +1383,12 @@ const xsync = {
     },
     emit(type, props = {}, clients) {
         const roomio = RoomIO.of(Unit.current, true);
-        const syncId = syncData(Unit.current).id;
+        const syncId = Unit.current._.sync.id;
         const to = clients === undefined ? undefined : [clients].flat();
         if (to !== undefined && to.length === 0) {
             return;
         }
-        if (getEnvironment() === 'server') {
+        if (getSide() === 'server') {
             roomio.emit('emitToClients', { type, syncId, id: undefined, data: props }, to);
         }
         else {
@@ -1401,7 +1396,7 @@ const xsync = {
         }
     },
     boot(options, Component, props) {
-        return getEnvironment() === 'server' ? bootServer(options, Component, props) : bootClient(options, Component, props);
+        return boot(options, Component, props);
     },
 };
 

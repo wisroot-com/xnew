@@ -1,5 +1,4 @@
 import { Unit } from '../../src/core/unit';
-import { syncData } from '../../src/sync/xsync';
 import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
@@ -49,7 +48,7 @@ describe('sync.emit', () => {
     it("emit ('-type'): only the server unit sharing the sender's syncId receives it", () => {
         const hits: string[] = [];
         function Tagged(unit: Unit, props: { tag?: string; syncId?: number } = {}) {
-            syncData(unit).id = props.syncId ?? null;
+            (unit)._.sync.id = props.syncId ?? null;
             xsync.server(() => { unit.on('-move', ({ x }: any) => hits.push(`${props.tag}:${x}`)); });
         }
         bootServer({ io: hub.io }, function Server() {
@@ -57,7 +56,7 @@ describe('sync.emit', () => {
         });
         const client = bootClient({ socket: hub.connect() }, function Client(unit: Unit) {
             xsync.client(() => {
-                syncData(unit).id = 10;
+                (unit)._.sync.id = 10;
                 return { move() { xsync.emit('-move', { x: 1 }); } };
             });
         });

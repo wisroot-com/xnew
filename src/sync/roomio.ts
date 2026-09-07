@@ -1,10 +1,10 @@
 //----------------------------------------------------------------------------------------------------
 // RoomIO — the sync root unit plus the io it was booted with (client side: the socket it creates from io)
-// boot hangs it on the root's inherited.syncRoot, so every descendant resolves the same room from birth.
+// the root unit is stamped through the reserved _hook prop, so every descendant resolves the same room from birth.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit } from '../core/unit';
-import { getEnvironment } from './environment';
+import { getSide } from './side';
 
 export interface ClientStatus { id: string; name: string; }
 export interface RoomStatus { id: string; name: string; count: number; }
@@ -21,9 +21,9 @@ export class RoomIO {
         this.io = io;
         this.room = room;
         // the handshake query must stay flat strings (socket.io stringifies values).
-        this.socket = getEnvironment() === 'client' ? io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true }) : null;
-        // the reserved _inherited prop rides the props slot, so the root and its whole subtree resolve this room from birth
-        this.root = new Unit(Unit.current, Component, { ...props, _inherited: { syncRoot: this } });
+        this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true }) : null;
+        // the hook runs before the root's body, so a xsync.session / xsync.emit inside it already resolves this room
+        this.root = new Unit(Unit.current, Component, { ...props, _hook: (unit: Unit) => { unit._.sync.root = unit; RoomIO.rooms.set(unit, this); } });
         if (this.socket !== null) {
             this.root.on('finalize', () => this.socket.disconnect());
         }
@@ -47,10 +47,13 @@ export class RoomIO {
         this.root.on('finalize', () => wire.off(type, listener));
     }
 
+    static rooms = new WeakMap<Unit, RoomIO>();   // root unit → the RoomIO that booted it, stamped by the boot hook
+
     static of(unit: Unit): RoomIO | null;
     static of(unit: Unit, required: true): RoomIO;
     static of(unit: Unit, required?: true): RoomIO | null {
-        const roomio: RoomIO | null = unit._.inherited.syncRoot ?? null;
+        const root = unit._.sync.root;
+        const roomio: RoomIO | null = root === null ? null : RoomIO.rooms.get(root) ?? null;
         if (required === true && roomio === null) {
             throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, Component).');
         }

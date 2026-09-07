@@ -1,5 +1,4 @@
 import { Unit } from '../../src/core/unit';
-import { syncData } from '../../src/sync/xsync';
 import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
@@ -34,11 +33,11 @@ describe('server/client mirror (server/client blocks)', () => {
 
         cycle();
         const replicaMover = client._.children[0];
-        expect(syncData(replicaMover).state!.position).toBe(1);
+        expect((replicaMover)._.sync.state!.position).toBe(1);
         expect((replicaMover.current as HTMLElement).style.left).toBe('1px');   // client block render consumed synced state
 
         cycle();
-        expect(syncData(replicaMover).state!.position).toBe(2);
+        expect((replicaMover)._.sync.state!.position).toBe(2);
         expect((replicaMover.current as HTMLElement).style.left).toBe('2px');
         expect(client._.children.length).toBe(1);
     });
@@ -69,7 +68,7 @@ describe('server/client mirror (server/client blocks)', () => {
         // client Main の下に replica Mover が生成され、boot を包んだ既存 view 要素の配下に mount される。
         const replicaMover = client._.children[0];
         expect(replicaMover).toBeDefined();
-        expect(syncData(replicaMover).state!.position).toBe(1);
+        expect((replicaMover)._.sync.state!.position).toBe(1);
         expect(view.contains(replicaMover.current as Node)).toBe(true);
         expect((replicaMover.current as HTMLElement).style.left).toBe('1px');
     });

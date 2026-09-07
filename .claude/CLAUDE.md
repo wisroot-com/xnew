@@ -29,7 +29,7 @@ Integrations for games and interactive apps.
 ## Directory Layout
 
 - `src/core/` — `xnew` core: `unit`, event, time, map, env, dom
-- `src/sync/` — networking layer (exported as `xsync`): `xsync.ts` (shared state + boot + facade) plus `roomio.ts` (`RoomIO`: the root unit + the io it was booted with — the client socket is created from it here — the room / roster, and the wire pair `emit(type, data, clients?)` / `on(type, listener)`). Lobby/room "gathering place" wiring is not built in — callers assemble it from the facade (see `examples/*/server.js` + `index.js`).
+- `src/sync/` — networking layer (exported as `xsync`): `xsync.ts` (the facade only) plus `boot.ts` (the transport / channel wiring behind `xsync.boot`) and `roomio.ts` (`RoomIO`: the root unit + the io it was booted with — the client socket is created from it here — the room / roster, and the wire pair `emit(type, data, clients?)` / `on(type, listener)`). Lobby/room "gathering place" wiring is not built in — callers assemble it from the facade (see `examples/*/server.js` + `index.js`).
 - `src/audio/` — audio layer (exported as `xaudio`): a facade `xaudio.ts` (`load` / `synthesizer` / `volume`) over the AudioTrack / Synthesizer components and the shared master bus (`master.ts`)
 - `src/basics/` — built-in basic components (exported as `xbasics`); one component per file, grouped by category: `stage/`, `element/`, `widget/`
 - `src/icons/` — heroicons icon set (exported as `xicons`); path data lives in one generated `data.ts` table, `xicons.ts` builds a component per entry from it (shared `<svg>` shell included); path data verbatim from heroicons (MIT — `license.txt`)
