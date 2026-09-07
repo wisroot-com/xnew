@@ -99,6 +99,35 @@ describe('basics Panel', () => {
             expect((second.container as HTMLElement).style.display).not.toBe('none');
         });
 
+        test('the tab accessor switches tabs from code and fires the same \'-change\'', () => {
+            const { host, panel } = newPanel();
+            const values: string[] = [];
+            panel.on('-change', ({ value }: { value: string }) => values.push(value));
+            const left = panel.group({ tab: 'left' }, (group: any) => group.button({ name: 'a' }));
+            const right = panel.group({ tab: 'right' }, (group: any) => group.button({ name: 'b' }));
+
+            jest.advanceTimersByTime(1);
+            tabButton(host, 'right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect(panel.tab).toBe('right');
+
+            panel.tab = 'left';
+            expect((left.container as HTMLElement).style.display).not.toBe('none');
+            expect((right.container as HTMLElement).style.display).toBe('none');
+            expect(panel.tab).toBe('left');
+            expect(values).toEqual(['right', 'left']);
+        });
+
+        test('the tab accessor ignores a name no group declared', () => {
+            const { panel } = newPanel();
+            const left = panel.group({ tab: 'left' }, (group: any) => group.button({ name: 'a' }));
+            const right = panel.group({ tab: 'right' }, (group: any) => group.button({ name: 'b' }));
+
+            panel.tab = 'nowhere';
+            expect(panel.tab).toBe('left');
+            expect((left.container as HTMLElement).style.display).not.toBe('none');
+            expect((right.container as HTMLElement).style.display).toBe('none');
+        });
+
         test("picking a tab fires '-change' on the panel", () => {
             const { host, panel } = newPanel();
             const values: string[] = [];

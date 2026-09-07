@@ -58,6 +58,13 @@ export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: P
     const tabs = xnew(Tabs, { notify });
 
     return {
+        // the same word as group({ tab }): reading gives the active caption, writing switches as a press does (an unknown name is ignored)
+        get tab() {
+            return tabs.active;
+        },
+        set tab(name: string) {
+            tabs.select(name);
+        },
         // every row takes `key` so xnew.find can reach it later; it rides along to the inner control, so find by that control's component
         group({ name, open, params, key, tab }: PanelOptions, inner: Function) {
             const group = xnew((unit: xnew.Unit) => {
@@ -129,18 +136,28 @@ function Tabs(unit: xnew.Unit, { notify }: { notify: (name: string) => void }) {
         });
     }
 
+    // one path for both the button and a code-driven switch, so either notifies the same way
+    function select(name: string) {
+        if (tabs.some((tab) => tab.name === name) === false) {
+            return;
+        }
+        active = name;
+        paint();
+        apply();
+        notify(name);
+    }
+
     return {
+        select,
+        get active() {
+            return active;
+        },
         // groups declaring the same name share one button, and the first name declared starts active
         add(name: string, group: xnew.Unit) {
             let tab = tabs.find((tab) => tab.name === name);
             if (tab === undefined) {
                 const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', name);
-                button.on('click', () => {
-                    active = name;
-                    paint();
-                    apply();
-                    notify(name);
-                });
+                button.on('click', () => select(name));
                 tab = { name, button, groups: [] };
                 tabs.push(tab);
                 strip.style.display = 'flex';

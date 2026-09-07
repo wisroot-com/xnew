@@ -3269,6 +3269,12 @@ function Panel(unit, { name, open, params, nested = false }) {
     const notify = xnew.scope((name) => xnew.emit('-change', { value: name }));
     const tabs = xnew(Tabs, { notify });
     return {
+        get tab() {
+            return tabs.active;
+        },
+        set tab(name) {
+            tabs.select(name);
+        },
         group({ name, open, params, key, tab }, inner) {
             const group = xnew((unit) => {
                 xnew.extend(Panel, { name, open, params: params !== null && params !== void 0 ? params : object, nested: true });
@@ -3336,17 +3342,25 @@ function Tabs(unit, { notify }) {
             button.current.style.opacity = on ? '1' : '0.55';
         });
     }
+    function select(name) {
+        if (tabs.some((tab) => tab.name === name) === false) {
+            return;
+        }
+        active = name;
+        paint();
+        apply();
+        notify(name);
+    }
     return {
+        select,
+        get active() {
+            return active;
+        },
         add(name, group) {
             let tab = tabs.find((tab) => tab.name === name);
             if (tab === undefined) {
                 const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', name);
-                button.on('click', () => {
-                    active = name;
-                    paint();
-                    apply();
-                    notify(name);
-                });
+                button.on('click', () => select(name));
                 tab = { name, button, groups: [] };
                 tabs.push(tab);
                 strip.style.display = 'flex';
