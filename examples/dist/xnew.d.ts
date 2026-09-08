@@ -507,17 +507,20 @@ declare function VirtualPad(unit: xnew.Unit, { type, className, style }?: {
 interface PanelOptions {
     name?: string;
     open?: boolean;
-    params?: Record<string, any>;
     key?: any;
 }
-declare function Panel(unit: xnew.Unit, { name, open, params }: PanelOptions): {
+declare function Panel(unit: xnew.Unit, { name, open, className, style }?: PanelOptions & {
+    className?: string;
+    style?: string;
+}): void;
+declare function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions): {
     tabs({ names }?: {
         names?: Record<string, string>;
     }): Unit & {
         select: (key: string) => void;
         readonly active: string;
     };
-    group({ name, open, params, key }: PanelOptions, inner: Function): Unit;
+    group({ name, open, key }: PanelOptions, inner?: (group: xnew.Unit) => void): Unit;
     button({ name, key }?: {
         name?: string;
         key?: any;
@@ -581,6 +584,7 @@ declare const xbasics: {
     Overlay: typeof Overlay;
     VirtualPad: typeof VirtualPad;
     Panel: typeof Panel;
+    PanelGroup: typeof PanelGroup;
     VolumeController: typeof VolumeController;
 };
 

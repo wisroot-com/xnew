@@ -253,19 +253,17 @@ function Renderer(unit) {
 
 function GUIPanel(unit) {
   const rpp = xnew.context(Renderer).renderPixelatedPass;
-  const params = { pixelSize: rpp.pixelSize, normalEdgeStrength: rpp.normalEdgeStrength, depthEdgeStrength: rpp.depthEdgeStrength, };
 
-  xnew.nest('<div class="absolute text-sm w-48 top-2 right-2 p-1 bg-white border rounded shadow-lg">');
+  const panel = xnew(xbasics.Panel, { name: 'GUI', open: true, className: 'absolute text-sm w-48 top-2 right-2 bg-white shadow-lg' });
 
-  const panel = xnew(xbasics.Panel, { name: 'GUI', open: true, params });
-
-  panel.range({ name: 'pixelSize', min: 1, max: 16, step: 1 }).on('input', ({ value }) => {
+  // each row starts from the pass's current setting and writes straight back to it
+  panel.range({ name: 'pixelSize', value: rpp.pixelSize, min: 1, max: 16, step: 1 }).on('input', ({ value }) => {
     rpp.setPixelSize(value);
   });
-  panel.range({ name: 'normalEdgeStrength', min: 0, max: 2, step: 0.1 }).on('input', ({ value }) => {
+  panel.range({ name: 'normalEdgeStrength', value: rpp.normalEdgeStrength, min: 0, max: 2, step: 0.1 }).on('input', ({ value }) => {
     rpp.normalEdgeStrength = value;
   });
-  panel.range({ name: 'depthEdgeStrength', min: 0, max: 1, step: 0.1 }).on('input', ({ value }) => {
+  panel.range({ name: 'depthEdgeStrength', value: rpp.depthEdgeStrength, min: 0, max: 1, step: 0.1 }).on('input', ({ value }) => {
     rpp.depthEdgeStrength = value;
   });
 }

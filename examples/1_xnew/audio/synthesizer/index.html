@@ -298,68 +298,78 @@
       }
     }
 
+    const PANEL = 'w-full border-0';
+
     function PanelBody(unit, { tab }) {
       xnew.nest('<div class="text-sm border border-stone-300 rounded-lg bg-white text-stone-700 shadow-sm overflow-hidden">');
 
       if (tab === 'oscillator') {
         xnew(WaveSelect, { target: state.oscillator });
-        const panel = xnew(xbasics.Panel);
+        // the card around it already draws the frame, so the panel drops its own border and fills the width
+        const panel = xnew(xbasics.Panel, { className: PANEL });
         toggleGroup(panel, 'pitch envelope', state.pitch, (sub) => {
-          sub.range({ name: 'amount', min: -24, max: 24, step: 1 }).on('input', emitParams);
-          envelopeRows(sub);
+          row(sub, state.pitch, 'range', 'amount', { min: -24, max: 24, step: 1 });
+          envelopeRows(sub, state.pitch);
         });
         toggleGroup(panel, 'LFO', state.lfo, (sub) => {
           xnew(WaveSelect, { target: state.lfo });
-          sub.range({ name: 'amount', min: 0, max: 12, step: 0.5 }).on('input', emitParams);
-          sub.range({ name: 'rate', min: 1, max: 20, step: 1 }).on('input', emitParams);
+          row(sub, state.lfo, 'range', 'amount', { min: 0, max: 12, step: 0.5 });
+          row(sub, state.lfo, 'range', 'rate', { min: 1, max: 20, step: 1 });
         });
       } else if (tab === 'filter') {
-        const panel = xnew(xbasics.Panel, { params: state.filter });
+        const panel = xnew(xbasics.Panel, { className: PANEL });
         toggleSection(panel, state.filter, (sub) => {
-          sub.listbox({ name: 'type', items: ['lowpass', 'highpass', 'bandpass'] }).on('-change', emitParams);
-          sub.range({ name: 'cutoff', min: 100, max: 8000, step: 100 }).on('input', emitParams);
+          row(sub, state.filter, 'listbox', 'type', { items: ['lowpass', 'highpass', 'bandpass'] });
+          row(sub, state.filter, 'range', 'cutoff', { min: 100, max: 8000, step: 100 });
         });
       } else if (tab === 'amp') {
         xnew(EnvelopeCurve, { env: state.amp });
-        const panel = xnew(xbasics.Panel, { params: state.amp });
-        panel.range({ name: 'amount', min: 0, max: 1, step: 0.05 }).on('input', emitParams);
-        envelopeRows(panel);
+        const panel = xnew(xbasics.Panel, { className: PANEL });
+        row(panel, state.amp, 'range', 'amount', { min: 0, max: 1, step: 0.05 });
+        envelopeRows(panel, state.amp);
       } else if (tab === 'reverb') {
-        const panel = xnew(xbasics.Panel, { params: state.reverb });
+        const panel = xnew(xbasics.Panel, { className: PANEL });
         toggleSection(panel, state.reverb, (sub) => {
-          sub.range({ name: 'time', min: 100, max: 2000, step: 100 }).on('input', emitParams);
-          sub.range({ name: 'mix', min: 0, max: 1, step: 0.05 }).on('input', emitParams);
+          row(sub, state.reverb, 'range', 'time', { min: 100, max: 2000, step: 100 });
+          row(sub, state.reverb, 'range', 'mix', { min: 0, max: 1, step: 0.05 });
         });
       }
     }
 
+    // one row bound to one key of a state bag: it starts from the stored value and writes its edit back
+    function row(group, params, kind, name, options = {}) {
+      const unit = group[kind]({ name, value: params[name], ...options });
+
+      unit.on('input -change', ({ value }) => {
+        params[name] = value;
+        emitParams();
+      });
+      return unit;
+    }
+
     // named group with an 'enabled' checkbox that opens / closes its parameter rows
     function toggleGroup(panel, name, params, inner) {
-      panel.group({ name, params, open: params.enabled }, (group) => {
-        const enabled = group.checkbox({ name: 'enabled' });
+      panel.group({ name, open: params.enabled }, (group) => {
+        // row() already stores the flag and re-applies; this listener only moves the gate
+        const enabled = row(group, params, 'checkbox', 'enabled');
         const sub = group.group({ open: params.enabled }, inner);
-        enabled.on('input', ({ value }) => {
-          value ? sub.gate.open() : sub.gate.close();
-          emitParams();
-        });
+        enabled.on('input', ({ value }) => value ? sub.gate.open() : sub.gate.close());
       });
     }
 
     // an 'enabled' checkbox and its parameter rows filling the whole tab (no group header)
     function toggleSection(panel, params, inner) {
-      const enabled = panel.checkbox({ name: 'enabled' });
-      const sub = panel.group({ open: params.enabled, params }, inner);
-      enabled.on('input', ({ value }) => {
-        value ? sub.gate.open() : sub.gate.close();
-        emitParams();
-      });
+      const enabled = row(panel, params, 'checkbox', 'enabled');
+      const sub = panel.group({ open: params.enabled }, inner);
+
+      enabled.on('input', ({ value }) => value ? sub.gate.open() : sub.gate.close());
     }
 
-    function envelopeRows(group) {
-      group.range({ name: 'attack', min: 0, max: 1000, step: 10 }).on('input', emitParams);
-      group.range({ name: 'decay', min: 0, max: 1000, step: 10 }).on('input', emitParams);
-      group.range({ name: 'sustain', min: 0, max: 1, step: 0.05 }).on('input', emitParams);
-      group.range({ name: 'release', min: 0, max: 1000, step: 10 }).on('input', emitParams);
+    function envelopeRows(group, env) {
+      row(group, env, 'range', 'attack', { min: 0, max: 1000, step: 10 });
+      row(group, env, 'range', 'decay', { min: 0, max: 1000, step: 10 });
+      row(group, env, 'range', 'sustain', { min: 0, max: 1, step: 0.05 });
+      row(group, env, 'range', 'release', { min: 0, max: 1000, step: 10 });
     }
 
     function WaveSelect(unit, { target }) {

@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
-import { Panel } from '../../../src/basics/widget/Panel';
+import { Panel, PanelGroup } from '../../../src/basics/widget/Panel';
 import { Button } from '../../../src/basics/element/Button';
 import { InputRange } from '../../../src/basics/element/InputRange';
 import { InputCheckbox } from '../../../src/basics/element/InputCheckbox';
@@ -153,6 +153,15 @@ describe('basics Panel', () => {
             expect(xnew.find(Listbox, { key: 'color-list' }).length).toBe(1);
         });
 
+        test('a group key reaches the group unit through PanelGroup, so a host outside can find it', () => {
+            const host = document.createElement('div');
+            const panel: any = xnew(host, Panel, { key: 'panel' });
+            const messages = panel.group({ key: 'messages' }, (group: any) => group.button({ name: 'one' }));
+
+            expect(xnew.find(PanelGroup, { key: 'panel' })[0]).toBe(panel);
+            expect(xnew.find(PanelGroup, { ancestor: panel, key: 'messages' })[0]).toBe(messages);
+        });
+
         test('a group key reaches the group unit itself, so its own components find it', () => {
             const { panel } = newPanel();
             const group = panel.group({ name: 'settings', open: true, key: 'settings-group' }, (group: any) => {
@@ -163,10 +172,25 @@ describe('basics Panel', () => {
         });
     });
 
+    describe('frame', () => {
+        test('the panel owns its frame element, and className / style land on it', () => {
+            const host = document.createElement('div');
+            const panel: any = xnew(host, Panel, { className: 'w-56 bg-white', style: 'max-height: 20em;' });
+            const frame = panel.container as HTMLElement;
+
+            expect(host.firstElementChild).toBe(frame);
+            expect(frame.className).toContain('w-56 bg-white');
+            expect(frame.getAttribute('style')).toContain('max-height: 20em;');
+            expect(frame.contains(panel.current)).toBe(true);
+        });
+    });
+
     describe('group', () => {
         test('builds the rows of its inner callback inside the created group', () => {
             const { host, panel } = newPanel();
+            // the callback is handed the group unit with the row API already on it
             panel.group({ name: 'settings', open: true }, (group: any) => {
+                expect(group.gate).not.toBe(undefined);
                 group.button({ name: 'one' });
                 xnew('<p>', 'two');
             });
@@ -186,18 +210,25 @@ describe('basics Panel', () => {
             expect(wrapper.contains(group.current)).toBe(true);
         });
 
-        test('groups nest, and a nested group shares the outer params object', () => {
-            const params: Record<string, any> = {};
+        test('groups nest, and a row reports its edits through its own event', () => {
             const host = document.createElement('div');
-            const panel: any = xnew(host, Panel, { params });
+            const panel: any = xnew(host, Panel);
+            const received: boolean[] = [];
             panel.group({ name: 'outer', open: true }, (group: any) => {
                 group.group({ name: 'inner', open: true }, (subgroup: any) => {
-                    subgroup.checkbox({ name: 'flag', value: true });
+                    subgroup.checkbox({ name: 'flag', value: true })
+                        .on('input', ({ value }: { value: boolean }) => received.push(value));
                 });
             });
-            expect(params.flag).toBe(true);
             expect(host.textContent).toContain('outer');
             expect(host.textContent).toContain('inner');
+
+            jest.advanceTimersByTime(0);
+            const input = host.querySelector('input[type="checkbox"]') as HTMLInputElement;
+            expect(input.checked).toBe(true);
+            input.checked = false;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            expect(received).toEqual([false]);
         });
     });
 });

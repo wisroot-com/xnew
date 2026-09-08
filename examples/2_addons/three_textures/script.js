@@ -230,8 +230,7 @@ function buildMaterial(state, bags) {
 //----------------------------------------------------------------------------------------------------
 
 function ControlPanel(unit, { state, bags }) {
-  xnew.nest('<div class="absolute top-4 right-4 w-56 max-h-[calc(100vh-2rem)] text-sm border border-stone-600 rounded-lg overflow-hidden shadow-lg bg-stone-800/95 text-stone-100">');
-  const panel = xnew(xbasics.Panel);
+  const panel = xnew(xbasics.Panel, { className: 'absolute top-4 right-4 w-56 max-h-[calc(100vh-2rem)] text-sm border-stone-600 shadow-lg bg-stone-800/95 text-stone-100' });
 
   panel.listbox({ name: 'texture', value: state.texture, items: Object.keys(TEXTURES) }).on('-change', ({ value }) => {
     state.texture = value;
@@ -262,16 +261,17 @@ function ControlPanel(unit, { state, bags }) {
   });
 }
 
+// rows are seeded from the texture's bag and write their edits back into it (syncUniforms reads the bag every frame)
 function buildGroup(panel, state, bags) {
   const texture = TEXTURES[state.texture];
   const params = bags[state.texture];
-  return panel.group({ name: state.texture, open: true, params }, (f) => {
+  return panel.group({ name: state.texture, open: true }, (f) => {
     for (const [name, value] of Object.entries(params)) {
       if (typeof value === 'string') {
-        f.color({ name, value });
+        f.color({ name, value }).on('-change', ({ value }) => params[name] = value);
       } else {
         const { min, max } = texture.ranges[name] ?? {};
-        f.range({ name, value, min, max });
+        f.range({ name, value, min, max }).on('input', ({ value }) => params[name] = value);
       }
     }
   });

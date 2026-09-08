@@ -93,8 +93,7 @@ function TextureView(unit, { texture, params, channel }) {
 //----------------------------------------------------------------------------------------------------
 
 function ControlPanel(unit, { state, bags }) {
-  xnew.nest('<div class="w-56 max-h-[calc(100vh-3rem)] text-sm border border-stone-600 rounded-lg overflow-hidden shadow-lg bg-stone-800 text-stone-100">');
-  const panel = xnew(xbasics.Panel);
+  const panel = xnew(xbasics.Panel, { className: 'w-56 max-h-[calc(100vh-3rem)] text-sm border-stone-600 shadow-lg bg-stone-800 text-stone-100' });
 
   panel.listbox({ name: 'texture', value: state.texture, items: Object.keys(TEXTURES) }).on('-change', ({ value }) => {
     state.texture = value;
@@ -109,16 +108,17 @@ function ControlPanel(unit, { state, bags }) {
   });
 }
 
+// rows are seeded from the texture's bag and write their edits back into it (the view reads the bag every frame)
 function buildGroup(panel, state, bags) {
   const component = TEXTURES[state.texture];
   const params = bags[state.texture];
-  return panel.group({ name: state.texture, open: true, params }, (f) => {
+  return panel.group({ name: state.texture, open: true }, (f) => {
     for (const [name, value] of Object.entries(component.presets.standard)) {
       if (Array.isArray(value)) {
-        f.color({ name, value: params[name] });
+        f.color({ name, value: params[name] }).on('-change', ({ value }) => params[name] = value);
       } else {
         const { min, max } = component.ranges[name];
-        f.range({ name, value: params[name], min, max });
+        f.range({ name, value: params[name], min, max }).on('input', ({ value }) => params[name] = value);
       }
     }
   });

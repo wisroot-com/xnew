@@ -18,7 +18,7 @@
   <script type="module">
     import { xnew, xbasics } from '@mulsense/xnew';
 
-    // Each screen setting is a Scene: the Panel writes params and emits '+screen',
+    // Each screen setting is a Scene: the panel rows write params and emit '+screen',
     // and the current scene swaps itself (Scene.change) for the newly selected variant.
     const params = { type: 'contain', resolution: '400 x 300', pixelated: false };
     const screens = { normal: Normal, fit: Fit, contain: Contain, cover: Cover };
@@ -87,14 +87,22 @@
     }
 
     function ControlPanel(unit) {
-      xnew.nest('<div class="absolute top-2 right-2 w-48 max-h-[calc(100vh-1rem)] text-sm border rounded-lg overflow-hidden shadow-lg bg-gray-100 text-green-900">');
-      const panel = xnew(xbasics.Panel, { params });
+      const panel = xnew(xbasics.Panel, { className: 'absolute top-2 right-2 max-h-[calc(100vh-1rem)] text-sm shadow-lg bg-gray-100 text-green-900' });
 
-      // rows write through to params; '+screen' then asks the current scene to rebuild
+      // each row starts from params and writes its edit back there; '+screen' then asks the current scene to rebuild
       panel.group({ name: 'screen', open: true }, (group) => {
-        group.listbox({ name: 'type', items: ['normal', 'fit', 'contain', 'cover'] }).on('-change', () => xnew.emit('+screen'));
-        group.listbox({ name: 'resolution', items: ['400 x 300', '160 x 120', '600 x 240'] }).on('-change', () => xnew.emit('+screen'));
-        group.checkbox({ name: 'pixelated' }).on('input', () => xnew.emit('+screen'));
+        group.listbox({ name: 'type', value: params.type, items: ['normal', 'fit', 'contain', 'cover'] }).on('-change', ({ value }) => {
+          params.type = value;
+          xnew.emit('+screen');
+        });
+        group.listbox({ name: 'resolution', value: params.resolution, items: ['400 x 300', '160 x 120', '600 x 240'] }).on('-change', ({ value }) => {
+          params.resolution = value;
+          xnew.emit('+screen');
+        });
+        group.checkbox({ name: 'pixelated', value: params.pixelated }).on('input', ({ value }) => {
+          params.pixelated = value;
+          xnew.emit('+screen');
+        });
       });
     }
   </script>

@@ -3302,15 +3302,22 @@ for (const name of Object.keys(iconData)) {
 }
 const xicons = icons;
 
-function Panel(unit, { name, open, params }) {
-    const css = xnew.css({
-        scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
+function Panel(unit, { name, open, className = '', style = '' } = {}) {
+    const css = xnew.css('base', {
+        container: `
+            box-sizing: border-box;
+            width: 12em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;
+            max-height: inherit;
+            padding: 0 0.25em;
+            border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 0.25em;
+            overflow-y: auto; scrollbar-width: thin;
+            scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;
+        `,
     });
-    xnew.nest(`<div class="${css.scroll}" style="box-sizing: border-box; max-height: inherit;">`);
-    return xnew.extend(Group, { name, open, params });
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    xnew.extend(PanelGroup, { name, open });
 }
-function Group(unit, { name, open, params }) {
-    const object = params !== null && params !== void 0 ? params : {};
+function PanelGroup(unit, { name, open }) {
     xnew.nest('<div>');
     if (open !== undefined) {
         const gate = xnew(Gate, { open, duration: 200 });
@@ -3330,42 +3337,27 @@ function Group(unit, { name, open, params }) {
         tabs({ names = {} } = {}) {
             return xnew(Tabs, { names });
         },
-        group({ name, open, params, key }, inner) {
+        group({ name, open, key }, inner) {
             return xnew((unit) => {
-                xnew.extend(Group, { name, open, params: params !== null && params !== void 0 ? params : object });
-                inner(unit);
+                xnew.extend(PanelGroup, { name, open });
+                inner === null || inner === void 0 ? void 0 : inner(unit);
             }, { key });
         },
         button({ name = '', key } = {}) {
             return xnew(Button, { text: name, key, style: 'width: 100%;' });
         },
         listbox({ name = '', value, items = [], key } = {}) {
-            var _a, _b;
-            object[name] = (_b = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : items[0]) !== null && _b !== void 0 ? _b : '';
-            const box = xnew(List, { name, value: object[name], items, key });
-            box.on('-change', ({ value }) => object[name] = value);
-            return box;
+            var _a;
+            return xnew(List, { name, value: (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '', items, key });
         },
         range({ name = '', value, min = 0, max = 100, step, key } = {}) {
-            var _a;
-            object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : min;
-            const range = xnew(Range, { name, value: object[name], min, max, step, key });
-            range.on('input', ({ value }) => object[name] = value);
-            return range;
+            return xnew(Range, { name, value: value !== null && value !== void 0 ? value : min, min, max, step, key });
         },
-        checkbox({ name = '', value, key } = {}) {
-            var _a;
-            object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : false;
-            const checkbox = xnew(Checkbox, { name, value: object[name], key });
-            checkbox.on('input', ({ value }) => object[name] = value);
-            return checkbox;
+        checkbox({ name = '', value = false, key } = {}) {
+            return xnew(Checkbox, { name, value, key });
         },
-        color({ name = '', value, key } = {}) {
-            var _a;
-            object[name] = (_a = value !== null && value !== void 0 ? value : object[name]) !== null && _a !== void 0 ? _a : '#ffffff';
-            const color = xnew(Color, { name, value: object[name], key });
-            color.on('-change', ({ value }) => object[name] = value);
-            return color;
+        color({ name = '', value = '#ffffff', key } = {}) {
+            return xnew(Color, { name, value, key });
         },
         separator() {
             xnew(Separator);
@@ -3374,42 +3366,47 @@ function Group(unit, { name, open, params }) {
 }
 function Tabs(unit, { names }) {
     var _a;
-    xnew.nest('<div style="display: flex; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-bottom: 0.25em;">');
+    const css = xnew.css('base', {
+        strip: `
+            display: flex;
+            border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+            margin-bottom: 0.25em;
+        `,
+        tab: `
+            flex: 1; min-width: 0; height: 2em; padding: 0 0.25em;
+            border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+            background: transparent; color: inherit; font: inherit; cursor: pointer;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            opacity: 0.55;
+            &[data-active] { border-bottom-color: currentColor; font-weight: 600; opacity: 1; }
+        `,
+    });
+    xnew.nest({ tag: 'div', className: css.strip });
     const panel = unit.parent;
     const keys = Object.keys(names);
-    const buttons = keys.map((key) => {
-        const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', names[key]);
-        button.on('click', () => select(key));
-        return { key, button };
-    });
     let active = (_a = keys[0]) !== null && _a !== void 0 ? _a : '';
+    const tabs = keys.map((key) => {
+        const tab = xnew({ tag: 'button', type: 'button', className: css.tab }, names[key]);
+        tab.on('click', () => select(key));
+        return tab;
+    });
     function apply() {
-        keys.forEach((key) => {
-            xnew.find(Group, { parent: panel, key }).forEach((group) => {
-                if (group.container !== null) {
-                    group.container.style.display = key === active ? '' : 'none';
+        keys.forEach((key, index) => {
+            tabs[index].current.toggleAttribute('data-active', key === active);
+            xnew.find(PanelGroup, { parent: panel, key }).forEach(({ container }) => {
+                if (container !== null) {
+                    container.style.display = key === active ? '' : 'none';
                 }
             });
         });
     }
-    function paint() {
-        buttons.forEach(({ key, button }) => {
-            const on = key === active;
-            button.current.style.borderBottomColor = on ? 'currentColor' : 'transparent';
-            button.current.style.fontWeight = on ? '600' : '400';
-            button.current.style.opacity = on ? '1' : '0.55';
-        });
-    }
     function select(key) {
-        if (keys.includes(key) === false) {
-            return;
+        if (keys.includes(key) === true) {
+            active = key;
+            apply();
+            xnew.emit('-change', { value: key });
         }
-        active = key;
-        paint();
-        apply();
-        xnew.emit('-change', { value: key });
     }
-    paint();
     apply();
     panel === null || panel === void 0 ? void 0 : panel.on('childattach', apply);
     return {
@@ -3566,6 +3563,7 @@ const xbasics = {
     Overlay,
     VirtualPad,
     Panel,
+    PanelGroup,
     VolumeController,
 };
 

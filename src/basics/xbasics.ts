@@ -21,7 +21,7 @@ import { Accordion } from './widget/Accordion';
 import { ColorPicker } from './widget/ColorPicker';
 import { Overlay } from './widget/Overlay';
 import { VirtualPad } from './widget/VirtualPad';
-import { Panel } from './widget/Panel';
+import { Panel, PanelGroup } from './widget/Panel';
 import { VolumeController } from './widget/VolumeController';
 
 export const xbasics = {
@@ -47,5 +47,6 @@ export const xbasics = {
     Overlay,
     VirtualPad,
     Panel,
+    PanelGroup,
     VolumeController,
 };

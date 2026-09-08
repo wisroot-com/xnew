@@ -166,27 +166,21 @@ function Controller(unit) {
 
 function Panel(panel) {
   const render = xnew.context(Renderer);
-  const params = {
-    threshold: render.bloom.threshold,
-    strength: render.bloom.strength,
-    radius: render.bloom.radius,
-    exposure: xthree.renderer.toneMappingExposure
-  };
-  xnew.nest('<div class="absolute text-sm w-48 top-2 right-2 p-1 bg-white border rounded shadow-lg">');
 
-  xnew.extend(xbasics.Panel, { name: 'GUI', open: true, params });
+  xnew.extend(xbasics.Panel, { name: 'GUI', open: true, className: 'absolute text-sm w-48 top-2 right-2 bg-white shadow-lg' });
 
-  panel.range({ name: 'threshold', min: 0, max: 1, step: 0.01 }).on('input', ({ value }) => {
+  // each row starts from the renderer's current setting and writes straight back to it
+  panel.range({ name: 'threshold', value: render.bloom.threshold, min: 0, max: 1, step: 0.01 }).on('input', ({ value }) => {
     render.bloom.threshold = value;
   });
-  panel.range({ name: 'strength', min: 0, max: 3, step: 0.01 }).on('input', ({ value }) => {
+  panel.range({ name: 'strength', value: render.bloom.strength, min: 0, max: 3, step: 0.01 }).on('input', ({ value }) => {
     render.bloom.strength = value;
     render.mix.material.uniforms.bloomStrength.value = render.bloom.strength;
   });
-  panel.range({ name: 'radius', min: 0, max: 1, step: 0.01 }).on('input', ({ value }) => {
+  panel.range({ name: 'radius', value: render.bloom.radius, min: 0, max: 1, step: 0.01 }).on('input', ({ value }) => {
     render.bloom.radius = value;
   });
-  panel.range({ name: 'exposure', min: 0.1, max: 2, step: 0.1 }).on('input', ({ value }) => {
+  panel.range({ name: 'exposure', value: xthree.renderer.toneMappingExposure, min: 0.1, max: 2, step: 0.1 }).on('input', ({ value }) => {
     xthree.renderer.toneMappingExposure = Math.pow(value, 4.0);
   });
 }
