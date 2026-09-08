@@ -2328,45 +2328,6 @@ function Knob() {
     xnew.nest({ tag: 'div', className: css.container });
 }
 
-function InputRadio(unit, _a = {}) {
-    var { value = '', name = '', checked = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "name", "checked", "className", "style"]);
-    const css = xnew.css('base', {
-        container: `
-            padding: 0.25em 0.5em;
-            flex: 1 1 0;
-            display: flex; align-items: center; justify-content: center;
-            white-space: nowrap;
-            cursor: pointer; user-select: none;
-            & + & { border-left: 1px solid currentColor; }
-            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
-            &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
-        `,
-        input: `
-            width: 0; height: 0; margin: 0; opacity: 0;
-        `,
-    });
-    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style }, value);
-    const input = xnew(Object.assign({ tag: 'input', type: 'radio', name, value, checked, className: css.input }, others));
-    return {
-        get value() {
-            return input.current.value;
-        },
-        get checked() {
-            return input.current.checked;
-        },
-        set checked(current) {
-            const element = input.current;
-            element.checked = current;
-            if (current === true) {
-                dispatchCommit(element, element.value);
-            }
-        },
-        get input() {
-            return input.current;
-        },
-    };
-}
-
 function Gate(unit, { open = true, duration = 0, easing = 'ease' } = {}) {
     let value = open ? 1.0 : 0.0;
     if (open === true) {
@@ -2617,6 +2578,107 @@ function ListboxItem(unit, _a = {}) {
         },
         check(current) {
             unit.current.toggleAttribute('data-checked', current);
+        },
+    };
+}
+
+let serial = 0;
+function InputRadioGroup(unit, _a = {}) {
+    var { value, items = [], name, className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "name", "className", "style"]);
+    const css = xnew.css('base', {
+        container: `
+            display: inline-flex; align-items: stretch;
+            max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em;
+            margin: 0.125em 0;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            overflow: hidden;
+        `,
+    });
+    const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    const shared = name !== null && name !== void 0 ? name : `xnew-radio-${serial++}`;
+    const rows = [];
+    function apply(value) {
+        for (const row of rows) {
+            row.check(row.value === value);
+        }
+    }
+    if (value !== undefined) {
+        xnew.timeout(() => apply(value));
+    }
+    xnew.standalone(() => {
+        for (const item of items) {
+            const def = itemDef(item);
+            xnew(InputRadio, Object.assign(Object.assign({}, def), { checked: def.value === value }));
+        }
+    });
+    return {
+        get name() {
+            return shared;
+        },
+        get value() {
+            var _a, _b;
+            return (_b = (_a = rows.find((row) => row.checked)) === null || _a === void 0 ? void 0 : _a.value) !== null && _b !== void 0 ? _b : '';
+        },
+        set value(value) {
+            apply(value);
+            dispatchCommit(container, value);
+        },
+        register(row) {
+            rows.push(row);
+            row.on('destroy', () => rows.splice(rows.indexOf(row), 1));
+        },
+    };
+}
+function InputRadio(unit, _a = {}) {
+    var { value = '', label, name, checked = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "label", "name", "checked", "className", "style"]);
+    const group = xnew.context(InputRadioGroup);
+    const css = xnew.css('base', {
+        container: `
+            padding: 0.25em 0.5em;
+            flex: 1 1 0;
+            display: flex; align-items: center; justify-content: center;
+            white-space: nowrap;
+            cursor: pointer; user-select: none;
+            & + & { border-left: 1px solid currentColor; }
+            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
+        `,
+        input: `
+            width: 0; height: 0; margin: 0; opacity: 0;
+        `,
+    });
+    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
+    const input = xnew(Object.assign({ tag: 'input', type: 'radio', name: name !== null && name !== void 0 ? name : group === null || group === void 0 ? void 0 : group.name, value, checked, className: css.input }, others));
+    group === null || group === void 0 ? void 0 : group.register(unit);
+    if (group !== undefined) {
+        unit.on('input change', ({ event }) => event.stopPropagation());
+        input.on('change', () => group.value = value);
+    }
+    xnew.standalone(() => {
+        xnew({ tag: 'span' }, label !== null && label !== void 0 ? label : value);
+    });
+    return {
+        get value() {
+            return input.current.value;
+        },
+        get label() {
+            return label;
+        },
+        get checked() {
+            return input.current.checked;
+        },
+        set checked(current) {
+            const element = input.current;
+            element.checked = current;
+            if (current === true) {
+                dispatchCommit(element, element.value);
+            }
+        },
+        check(current) {
+            input.current.checked = current;
+        },
+        get input() {
+            return input.current;
         },
     };
 }
@@ -3707,6 +3769,7 @@ const xbasics = {
     InputNumber,
     InputSwitch,
     InputRadio,
+    InputRadioGroup,
     Listbox,
     ListboxButton,
     ListboxMenu,

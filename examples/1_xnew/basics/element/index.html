@@ -113,17 +113,16 @@
 
     function MyInputRadio(unit) {
       xnew.nest('<div>');
-      xnew('<div class="mb-1">', 'InputRadio');
+      xnew('<div class="mb-1">', 'InputRadioGroup');
       xnew.nest('<div class="flex gap-4 items-center">');
-      xnew('<div class="h-8 w-56 flex border rounded overflow-hidden">', () => {
-        xnew(xbasics.InputRadio, { name: 'level1', value: 'low' });
-        xnew(xbasics.InputRadio, { name: 'level1', value: 'mid', checked: true });
-        xnew(xbasics.InputRadio, { name: 'level1', value: 'high' });
-      });
-      xnew('<div class="h-8 w-56 flex border rounded-full overflow-hidden">', () => {
-        xnew(xbasics.InputRadio, { name: 'level2', value: 'low', style: 'font-weight: bold;' });
-        xnew(xbasics.InputRadio, { name: 'level2', value: 'mid', style: 'font-weight: bold;' });
-        xnew(xbasics.InputRadio, { name: 'level2', value: 'high', checked: true, style: 'font-weight: bold;' });
+      // the group owns the frame and the shared name, so a whole strip is one call
+      xnew(xbasics.InputRadioGroup, { value: 'mid', items: ['low', 'mid', 'high'], style: 'width: 14rem;' });
+      // composed: extend the group onto this unit and nest the segments by hand (labels may differ from values)
+      xnew(() => {
+        xnew.extend(xbasics.InputRadioGroup, { value: 'high', style: 'width: 14rem; border-radius: 9999px;' });
+        xnew(xbasics.InputRadio, { value: 'low', label: 'Low', style: 'font-weight: bold;' });
+        xnew(xbasics.InputRadio, { value: 'mid', label: 'Mid', style: 'font-weight: bold;' });
+        xnew(xbasics.InputRadio, { value: 'high', label: 'High', style: 'font-weight: bold;' });
       });
     }
 

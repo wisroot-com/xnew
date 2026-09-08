@@ -352,8 +352,13 @@ the rule, then one line of why.
   so NaN on an empty field), boolean (InputCheckbox / InputSwitch), hex string (ColorPicker), selected
   item (Listbox). Two deliberate exceptions: **InputRadio's `.value` is read-only** (a segment's value is
   its identity, fixed at creation — its mutable state is `.checked` get/set, and there is no group-level
-  value getter; read it off the checked segment). Its value events carry the **chosen value string**, never
-  the boolean, and `.checked = false` announces nothing — a native radio behaves exactly so (2026-09).
+  value getter — `InputRadioGroup` is that layer (2026-09): it owns the frame, generates the shared `name`
+  when none is given (an empty `name` groups nothing in HTML, so a forgotten one silently broke exclusivity),
+  and its `.value` is the pick. A grouped segment stops its own value events and hands the pick to
+  `group.value`, exactly as a ListboxItem hands its press to the Listbox; alone, a segment still announces
+  for itself). Its value events carry the **chosen value string**, never the boolean, and `.checked = false`
+  announces nothing — a native radio behaves exactly so (2026-09). `.check(current)` is the silent setter
+  the group writes through, named as on ListboxItem.
 
 - **When a component's setter can express everything a `select()`-style action method did, drop the method —
   one write path, not two (2026-09).** Listbox's `select(value)` define had exactly one caller (ListboxItem's

@@ -14,7 +14,7 @@ import { InputCheckbox } from './element/InputCheckbox';
 import { InputText } from './element/InputText';
 import { InputNumber } from './element/InputNumber';
 import { InputSwitch } from './element/InputSwitch';
-import { InputRadio } from './element/InputRadio';
+import { InputRadio, InputRadioGroup } from './element/InputRadio';
 import { Listbox, ListboxButton, ListboxMenu, ListboxItem } from './element/Listbox';
 import { ColorPicker } from './element/ColorPicker';
 import { Gate } from './widget/Gate';
@@ -37,6 +37,7 @@ export const xbasics = {
     InputNumber,
     InputSwitch,
     InputRadio,
+    InputRadioGroup,
     Listbox,
     ListboxButton,
     ListboxMenu,

@@ -395,19 +395,6 @@ declare function InputSwitch(unit: xnew.Unit, { value, className, style, ...othe
     readonly input: HTMLInputElement;
 };
 
-declare function InputRadio(unit: xnew.Unit, { value, name, checked, className, style, ...others }?: {
-    value?: string;
-    name?: string;
-    checked?: boolean;
-    className?: string;
-    style?: string;
-    [key: string]: any;
-}): {
-    readonly value: string;
-    checked: boolean;
-    readonly input: HTMLInputElement;
-};
-
 type ItemDef<T = string> = T | {
     value: T;
     label?: string;
@@ -446,6 +433,34 @@ declare function ListboxItem(unit: xnew.Unit, { value, label, className, style, 
     readonly value: string;
     readonly label: string | undefined;
     check(current: boolean): void;
+};
+
+declare function InputRadioGroup(unit: xnew.Unit, { value, items, name, className, style, ...others }?: {
+    value?: string;
+    items?: ItemDef[];
+    name?: string;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    readonly name: string;
+    value: string;
+    register(row: xnew.Unit): void;
+};
+declare function InputRadio(unit: xnew.Unit, { value, label, name, checked, className, style, ...others }?: {
+    value?: string;
+    label?: string;
+    name?: string;
+    checked?: boolean;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    readonly value: string;
+    readonly label: string | undefined;
+    checked: boolean;
+    check(current: boolean): void;
+    readonly input: HTMLInputElement;
 };
 
 declare function ColorPicker(unit: xnew.Unit, { value, presets, alpha, className, style, ...others }?: {
@@ -563,6 +578,7 @@ declare const xbasics: {
     InputNumber: typeof InputNumber;
     InputSwitch: typeof InputSwitch;
     InputRadio: typeof InputRadio;
+    InputRadioGroup: typeof InputRadioGroup;
     Listbox: typeof Listbox;
     ListboxButton: typeof ListboxButton;
     ListboxMenu: typeof ListboxMenu;

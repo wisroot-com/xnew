@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
-import { InputRadio } from '../../../src/basics/element/InputRadio';
+import { InputRadio, InputRadioGroup } from '../../../src/basics/element/InputRadio';
 
 describe('basics InputRadio', () => {
     beforeEach(() => {
@@ -129,5 +129,123 @@ describe('basics InputRadio', () => {
 
         expect(unit.input).toBe(partsOf(unit).input);
         expect(unit.input.checked).toBe(true);
+    });
+});
+
+describe('basics InputRadioGroup', () => {
+    beforeEach(() => {
+        jest.useFakeTimers();
+        Unit.reset();
+    });
+    afterEach(() => {
+        Unit.engineRoot?.destroy();
+        jest.useRealTimers();
+    });
+
+    function inputsOf(unit: xnew.Unit): HTMLInputElement[] {
+        return Array.from(unit.current.querySelectorAll('input')) as HTMLInputElement[];
+    }
+
+    function record(unit: xnew.Unit): Array<[string, unknown]> {
+        const seen: Array<[string, unknown]> = [];
+        unit.on('input change', ({ event, value }: { event: Event, value: unknown }) => seen.push([event.type, value]));
+        jest.advanceTimersByTime(0);
+        return seen;
+    }
+
+    it('draws one framed segment per item, picking the one matching value from tick 0', () => {
+        const unit = xnew(InputRadioGroup, { value: 'mid', items: ['low', 'mid', 'high'] });
+        jest.advanceTimersByTime(0);
+
+        expect(inputsOf(unit).map((input) => input.value)).toEqual(['low', 'mid', 'high']);
+        expect(inputsOf(unit).map((input) => input.checked)).toEqual([false, true, false]);
+        expect(unit.value).toBe('mid');
+    });
+
+    it('takes each segment label from an item def, falling back to its value', () => {
+        const unit = xnew(InputRadioGroup, { items: [{ value: 'low', label: '低' }, 'mid'] });
+        jest.advanceTimersByTime(0);
+
+        expect(unit.current.textContent).toBe('低mid');
+    });
+
+    // an empty name groups nothing in HTML, so a group that is handed none must still make one up
+    it('shares one generated name across its segments, and a different one per group', () => {
+        const first = xnew(InputRadioGroup, { items: ['a', 'b'] });
+        const second = xnew(InputRadioGroup, { items: ['a', 'b'] });
+        jest.advanceTimersByTime(0);
+
+        const names = inputsOf(first).map((input) => input.name);
+        expect(names[0]).not.toBe('');
+        expect(names).toEqual([names[0], names[0]]);
+        expect(inputsOf(second)[0].name).not.toBe(names[0]);
+    });
+
+    it('keeps an explicit name over the generated one', () => {
+        const unit = xnew(InputRadioGroup, { name: 'level', items: ['a', 'b'] });
+        jest.advanceTimersByTime(0);
+
+        expect(inputsOf(unit).map((input) => input.name)).toEqual(['level', 'level']);
+    });
+
+    it('reads and writes the pick through .value, firing the native input + change pair on the group', () => {
+        const unit = xnew(InputRadioGroup, { value: 'low', items: ['low', 'mid', 'high'] });
+        const seen = record(unit);
+
+        unit.value = 'high';
+
+        expect(unit.value).toBe('high');
+        expect(inputsOf(unit).map((input) => input.checked)).toEqual([false, false, true]);
+        expect(seen).toEqual([['input', 'high'], ['change', 'high']]);
+    });
+
+    // the segment's own events stay inside: a host sees exactly one pair, from the group
+    it('announces a segment press as the group own value event', () => {
+        const unit = xnew(InputRadioGroup, { value: 'low', items: ['low', 'mid', 'high'] });
+        const seen = record(unit);
+
+        inputsOf(unit)[2].click();
+
+        expect(unit.value).toBe('high');
+        expect(seen).toEqual([['input', 'high'], ['change', 'high']]);
+    });
+
+    it('reads an unselected group as an empty string', () => {
+        const unit = xnew(InputRadioGroup, { items: ['low', 'mid'] });
+        jest.advanceTimersByTime(0);
+
+        expect(unit.value).toBe('');
+    });
+
+    it('applies a composed value to segments the caller nested itself', () => {
+        let group!: xnew.Unit;
+        xnew(() => {
+            group = xnew(() => {
+                xnew.extend(InputRadioGroup, { value: 'mid' });
+                xnew(InputRadio, { value: 'low' });
+                xnew(InputRadio, { value: 'mid' });
+            });
+        });
+        jest.advanceTimersByTime(0);
+
+        expect(group.value).toBe('mid');
+        expect(inputsOf(group).map((input) => input.checked)).toEqual([false, true]);
+    });
+
+    it('drops a destroyed segment from the registry, leaving later writes untouched by it', () => {
+        let segments!: xnew.Unit[];
+        let group!: xnew.Unit;
+        xnew(() => {
+            group = xnew(() => {
+                xnew.extend(InputRadioGroup, { value: 'low' });
+                segments = [xnew(InputRadio, { value: 'low' }), xnew(InputRadio, { value: 'mid' })];
+            });
+        });
+        jest.advanceTimersByTime(0);
+
+        segments[0].destroy();
+
+        expect(() => { group.value = 'mid'; }).not.toThrow();
+        expect(group.value).toBe('mid');
     });
 });
