@@ -1,5 +1,6 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
+import { Gate } from '../../../src/basics/widget/Gate';
 import { Overlay } from '../../../src/basics/widget/Overlay';
 
 describe('basics Overlay', () => {
@@ -20,7 +21,7 @@ describe('basics Overlay', () => {
     }
 
     it('nests a full-viewport backdrop and ends on it when no anchor is given', () => {
-        const overlay = xnew(Overlay, {});
+        const overlay = xnew(Overlay, { gate: xnew(Gate) });
         const backdrop = overlay.current as HTMLElement;
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
@@ -33,7 +34,7 @@ describe('basics Overlay', () => {
         const anchor = document.createElement('div');
         mockRect(anchor, { left: 10, top: 20, width: 100, height: 40 });
 
-        const overlay = xnew(Overlay, { anchor });
+        const overlay = xnew(Overlay, { gate: xnew(Gate), anchor });
         const box = overlay.current as HTMLElement; // the body ends on the tether box
 
         // the tether carries its positioning inline (no CSS class)
@@ -61,7 +62,7 @@ describe('basics Overlay', () => {
         const anchor = document.createElement('div');
         mockRect(anchor, { left: 0, top: 0, width: 10, height: 10 });
 
-        const overlay = xnew(Overlay, { anchor });
+        const overlay = xnew(Overlay, { gate: xnew(Gate), anchor });
         const box = overlay.current as HTMLElement;
         let destroyed = false;
         overlay.on('destroy', () => { destroyed = true; });
@@ -77,7 +78,7 @@ describe('basics Overlay', () => {
     });
 
     it('is click-through while fully closed and interactive once opened', () => {
-        const overlay = xnew(Overlay, { gate: { open: false, duration: 200 } });
+        const overlay = xnew(Overlay, { gate: xnew(Gate, { open: false, duration: 200 }) });
         const backdrop = overlay.current as HTMLElement;
 
         // the deferred initial emit lands the closed state: transparent; while closed the backdrop is

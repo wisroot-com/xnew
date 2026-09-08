@@ -2387,9 +2387,8 @@ function Gate(unit, { open = true, duration = 0, easing = 'ease' } = {}) {
     };
 }
 
-function Overlay(unit, _a = {}) {
-    var { gate = {}, anchor, className = '', style = '' } = _a, others = __rest(_a, ["gate", "anchor", "className", "style"]);
-    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate);
+function Overlay(unit, _a) {
+    var { gate, anchor, className = '', style = '' } = _a, others = __rest(_a, ["gate", "anchor", "className", "style"]);
     const css = xnew.css('base', {
         container: `
                 position: fixed; inset: 0; z-index: 1000;
@@ -3020,9 +3019,8 @@ function ColorPicker(unit, _a = {}) {
     };
 }
 
-function Accordion(unit, _a = {}) {
-    var { gate = {}, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
-    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate);
+function Accordion(unit, _a) {
+    var { gate, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             overflow: hidden;
@@ -3691,15 +3689,16 @@ function Color(unit, { name = '', value = '#ffffff' }) {
     };
 }
 function ColorPopup(unit, { anchor, value, commit }) {
-    xnew.extend(Overlay, { gate: { open: false, duration: 100 }, anchor });
-    unit.gate.on('-closed', () => unit.destroy());
+    const gate = xnew(Gate, { open: false, duration: 100 });
+    xnew.extend(Overlay, { gate, anchor });
+    gate.on('-closed', () => unit.destroy());
     xnew.nest('<div style="position: absolute; top: 100%; right: 0; padding: 0.25em 0;">');
-    unit.on('pointerdown.outside', () => unit.gate.close());
+    unit.on('pointerdown.outside', () => gate.close());
     xnew(ColorPicker, { value }).on('input change', ({ event, value }) => {
         event.stopPropagation();
         commit(value, event.type === 'change');
     });
-    unit.gate.open();
+    gate.open();
 }
 function List(unit, _a) {
     var { name = '', value, items = [] } = _a, others = __rest(_a, ["name", "value", "items"]);

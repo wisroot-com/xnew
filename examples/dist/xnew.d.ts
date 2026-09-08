@@ -498,8 +498,8 @@ declare function Gate(unit: xnew.Unit, { open, duration, easing }?: GateProps): 
     close(): void;
 };
 
-declare function Accordion(unit: xnew.Unit, { gate, className, style, ...others }?: {
-    gate?: GateProps | xnew.Unit;
+declare function Accordion(unit: xnew.Unit, { gate, className, style, ...others }: {
+    gate: xnew.Unit;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -507,8 +507,8 @@ declare function Accordion(unit: xnew.Unit, { gate, className, style, ...others 
     readonly gate: Unit;
 };
 
-declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...others }?: {
-    gate?: GateProps | xnew.Unit;
+declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...others }: {
+    gate: xnew.Unit;
     anchor?: HTMLElement;
     className?: string;
     style?: string;

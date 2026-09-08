@@ -258,13 +258,14 @@ function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: strin
 
 function ColorPopup(unit: xnew.Unit, { anchor, value, commit }: { anchor: HTMLElement, value: string, commit: (value: string, settled: boolean) => void }) {
     // Overlay backdrop blocks the page and tracks the swatch rect; close destroys this unit
-    xnew.extend(Overlay, { gate: { open: false, duration: 100 }, anchor });
-    unit.gate.on('-closed', () => unit.destroy());
+    const gate = xnew(Gate, { open: false, duration: 100 });
+    xnew.extend(Overlay, { gate, anchor });
+    gate.on('-closed', () => unit.destroy());
 
     // the picker hangs just below the tracked swatch box, right-aligned
     xnew.nest('<div style="position: absolute; top: 100%; right: 0; padding: 0.25em 0;">');
     // close on a press outside (not click, so a drag released outside the picker cannot close it)
-    unit.on('pointerdown.outside', () => unit.gate.close());
+    unit.on('pointerdown.outside', () => gate.close());
 
     // the picker hangs inside the row, so its own events would read as the row's; the row re-fires them
     // as its own, keeping the native split (dragging the bars streams input, releasing settles it)
@@ -273,7 +274,7 @@ function ColorPopup(unit: xnew.Unit, { anchor, value, commit }: { anchor: HTMLEl
         commit(value, event.type === 'change');
     });
 
-    unit.gate.open();
+    gate.open();
 }
 
 function List(unit: xnew.Unit, { name = '', value, items = [], ...others }: { name?: string, value?: string, items?: ItemDef[], [key: string]: any }) {

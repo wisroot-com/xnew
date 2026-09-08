@@ -1,18 +1,15 @@
 //----------------------------------------------------------------------------------------------------
-// Overlay — full-viewport backdrop that fades in/out with its Gate
-// `gate` is Gate props (new child Gate) or an existing Gate unit reused, exposed as `gate`; `anchor`
-// tracks an element's rect. Fully closed the backdrop is click-through, so it can stay mounted.
+// Overlay — full-viewport backdrop that fades in/out with a Gate
+// `gate` is the Gate unit to ride — the caller owns it — and is re-exposed as `gate`; `anchor` tracks
+// an element's rect. Fully closed the backdrop is click-through, so it can stay mounted.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Gate, GateProps } from './Gate';
 
 export function Overlay(unit: xnew.Unit,
-    { gate = {}, anchor, className = '', style = '', ...others }:
-    { gate?: GateProps | xnew.Unit, anchor?: HTMLElement, className?: string, style?: string, [key: string]: any } = {}
+    { gate, anchor, className = '', style = '', ...others }:
+    { gate: xnew.Unit, anchor?: HTMLElement, className?: string, style?: string, [key: string]: any }
 ) {
-    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate);
-
     const css = xnew.css('base', {
         container: `
                 position: fixed; inset: 0; z-index: 1000;

@@ -1,18 +1,15 @@
 //----------------------------------------------------------------------------------------------------
 // Accordion — collapses height + opacity to follow a Gate's progress value
-// `gate` is either Gate props (a new child Gate is created) or an existing Gate unit to reuse; the
-// Gate is exposed as `gate` and drives via '-transition' emitted on its own unit.
+// `gate` is the Gate unit to ride — the caller owns it, so several layers can animate off one Gate.
+// It is re-exposed as `gate`, and drives through '-transition' emitted on its own unit.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Gate, GateProps } from './Gate';
 
 export function Accordion(unit: xnew.Unit,
-    { gate = {}, className = '', style = '', ...others }:
-    { gate?: GateProps | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
+    { gate, className = '', style = '', ...others }:
+    { gate: xnew.Unit, className?: string, style?: string, [key: string]: any }
 ) {
-    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate);
-
     const css = xnew.css('base', {
         container: `
             overflow: hidden;

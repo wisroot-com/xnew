@@ -103,18 +103,20 @@
     }
 
     function MyModal(unit) {
-      xnew.extend(xbasics.Overlay, { gate: { open: false, duration: 200 }, className: 'bg-black/10' });
-      unit.gate.on('-closed', () => unit.destroy());
-      unit.gate.open();
+      // the caller owns the Gate and hands it to Overlay, so the same one can drive other layers too
+      const gate = xnew(xbasics.Gate, { open: false, duration: 200 });
+      xnew.extend(xbasics.Overlay, { gate, className: 'bg-black/10' });
+      gate.on('-closed', () => unit.destroy());
+      gate.open();
 
       xnew.nest('<div class="absolute inset-0 m-auto w-max h-max">');
       xnew.nest('<div class="m-auto w-[300px] max-w-[80%] border rounded-lg bg-white">');
       // close on a press outside the dialog box (click.outside excludes the current element's subtree)
-      unit.on('click.outside', () => unit.gate.close());
+      unit.on('click.outside', () => gate.close());
 
       xnew('<div class="p-2 flex justify-between">', () => {
         xnew('<span>', 'Title');
-        xnew('<button class="cursor-pointer hover:opacity-50">', 'Close').on('click', () => unit.gate.close());
+        xnew('<button class="cursor-pointer hover:opacity-50">', 'Close').on('click', () => gate.close());
       });
 
       xnew('<div class="p-2 border-t">', Contents);
@@ -123,18 +125,19 @@
     function MyMenu(unit, { anchor }) {
       // Overlay covers the page with a backdrop (so the button can't be re-triggered) and, via anchor,
       // gives a box tracking the button's rect; destroy this unit once the gate reports closed
-      xnew.extend(xbasics.Overlay, { gate: { open: false, duration: 200 }, anchor });
-      unit.gate.on('-closed', () => unit.destroy());
+      const gate = xnew(xbasics.Gate, { open: false, duration: 200 });
+      xnew.extend(xbasics.Overlay, { gate, anchor });
+      gate.on('-closed', () => unit.destroy());
 
-      // the dropdown hangs just below the tracked box; Accordion shares the Gate so both animate together
+      // the dropdown hangs just below the tracked box; Accordion rides the same Gate so both animate together
       xnew.nest('<div class="absolute top-full right-0 py-2">');
       // close on a press outside the dropdown (click.outside excludes the current element's subtree)
-      unit.on('click.outside', () => unit.gate.close());
-      xnew.extend(xbasics.Accordion, { gate: unit.gate });
+      unit.on('click.outside', () => gate.close());
+      xnew.extend(xbasics.Accordion, { gate });
       xnew.nest('<div class="w-[300px] border rounded-lg bg-white">');
       xnew('<div class="p-2">', Contents);
 
-      unit.gate.open();
+      gate.open();
     }
 
     function Contents(unit) {

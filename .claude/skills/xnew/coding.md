@@ -585,8 +585,12 @@ the rule, then one line of why.
   props)` and pass the SAME unit into each — don't rely on `xnew.context` or a merged control surface.**
   A deferred callback runs in the SCOPE SNAPSHOT from when it was scheduled, so `xnew.context(X)` inside it
   cannot see a component extended onto the unit AFTER the callback was scheduled (bit `InputSelectMenu`,
-  extended before the `Accordion`). `Accordion` / `Overlay` take `gate: props | unit` — props ⇒ they create
-  a child `xnew(Gate, props)`; a unit ⇒ they reuse it — and expose it as `.gate`. **Listbox does NOT (2026-09):**
+  extended before the `Accordion`). **`Accordion` / `Overlay` take `gate` as a Gate UNIT, and it is required
+  (2026-09):** the props form (`gate: { open, duration }`, which had them build a child Gate) is gone, so
+  the caller always owns the Gate — `const gate = xnew(Gate, { … })` then `xnew.extend(Overlay, { gate })`.
+  That is what a shared Gate looked like anyway (Panel's collapsible, ListboxMenu, the widget example's
+  menu all hand one in), and it removes the branch where a component silently owned a Gate nobody else
+  could reach. Both still re-expose it as `.gate`. **Listbox does NOT take one at all (2026-09):**
   it takes plain `duration` / `easing` and OWNS the Gate it builds (still exposed as `.gate`, which is what
   ListboxButton / ListboxMenu / an outer Accordion ride), so nothing outside can hand it a contradictory `open`. A child Gate emits
   `-transition` / `-closed` on its OWN unit, so subscribe on `accordion.gate.on(...)`, not the host unit.
