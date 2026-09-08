@@ -16,7 +16,7 @@ export function Button(unit: xnew.Unit,
             padding: 0 0.5em; margin: 0.125em;
             cursor: pointer; user-select: none;
             border: 1px solid currentColor; border-radius: 0.25em;
-            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &:active { filter: brightness(0.5); }
         `,
     });
