@@ -1888,23 +1888,10 @@ function Screen(unit, { width = 800, height = 600, fit = 'contain' } = {}) {
 }
 
 function Scene(unit) {
-    let leaving = false;
     return {
         change(Component, props) {
-            if (leaving === false) {
-                leaving = true;
-                const timer = typeof unit.leave === 'function' ? unit.leave() : undefined;
-                if (timer && typeof timer.timeout === 'function') {
-                    timer.timeout(destroy);
-                }
-                else {
-                    destroy();
-                }
-                function destroy() {
-                    xnew(unit.parent, Component, props);
-                    unit.destroy();
-                }
-            }
+            xnew(unit.parent, Component, props);
+            unit.destroy();
         },
         add(Component, props) {
             return xnew(unit, Component, props);

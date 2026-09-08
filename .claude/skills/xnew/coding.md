@@ -228,12 +228,12 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   label form and no SceneList lookup table (both removed 2026-07). From a
   descendant, use `xnew.context(xbasics.Scene).change/add(...)`. Scenes are
   recreated from props; they do not preserve state across moves.
-- **Scene leave protocol (out-in): a scene opts into an exit transition by returning a
-  `leave()` define; entrance effects need no protocol (do them in the component body).**
-  `change` calls the unit's own `leave()` and waits for its return value — return the
-  timer from `xnew.transition(...)` directly, or nothing (immediate) — then mounts the
-  next scene and destroys itself. While a leave is pending, further `change` calls on
-  that scene are ignored (per-scene guard).
+- **`change` only swaps units** — mount next, destroy self, nothing else. There is no
+  `leave()` protocol and no re-entry guard (both removed 2026-09). **Transitions, in and
+  out, are the caller's job:** entrance effects go in the component body, exit effects run
+  before the swap —
+  `xnew.transition(fade, 400).timeout(() => unit.change(Next))` — and the caller
+  guards its own re-entry (a flag) if the trigger can fire twice.
 
 ## 11. sync — multiplayer (server ↔ client)
 

@@ -105,6 +105,12 @@
 
     // ---- scenes ------------------------------------------------------------------------------------
 
+    // Scene.change only swaps units, so the exit transition is ours: fade this scene out, swap when it ends.
+    function fadeOut(unit, duration, Component, props) {
+      xnew.transition(({ value }) => unit.current.style.opacity = `${1 - value}`, duration)
+        .timeout(() => unit.change(Component, props));
+    }
+
     function Title(unit) {
       xnew.extend(xbasics.Scene);
       xnew.nest('<div class="absolute inset-0 bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 flex flex-col items-center justify-center gap-6 cursor-pointer select-none" style="opacity:0;">');
@@ -112,8 +118,13 @@
       xnew('<div class="text-6xl">', '🚉');
       xnew('<h1 class="text-4xl font-bold tracking-[0.3em]">', 'まよなかステーション');
       xnew('<p class="text-slate-400 animate-pulse">', 'click to start');
-      unit.on('pointerdown', () => unit.change(NovelScene));
-      return { leave() { return xnew.transition(({ value }) => unit.current.style.opacity = `${1 - value}`, 400); } };
+      let leaving = false; // the fade owns the input from the first click on
+      unit.on('pointerdown', () => {
+        if (leaving === false) {
+          leaving = true;
+          fadeOut(unit, 400, NovelScene);
+        }
+      });
     }
 
     // the scenario player: executes tokens until something asks to pause (click-wait, timed wait,
@@ -195,7 +206,7 @@
             index++;
           } else if (token.verb === 'end') {
             stopped = true;
-            unit.change(Title);
+            fadeOut(unit, 600, Title);
             break;
           } else {
             index++; // unknown command: skip
@@ -222,7 +233,6 @@
           stopped = false;
           run();
         },
-        leave() { return xnew.transition(({ value }) => unit.current.style.opacity = `${1 - value}`, 600); },
       };
     }
 

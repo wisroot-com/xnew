@@ -49,48 +49,23 @@ describe('basics Scene', () => {
         });
     });
 
-    describe('leave protocol (out-in) and re-entry guard', () => {
-        const leavingScene = (log: string[], name: string, wait: () => any) => (unit: xnew.Unit) => {
-            xnew.extend(Scene);
-            log.push(`${name}:in`);
-            unit.on('destroy', () => log.push(`${name}:out`));
-            return { leave() { log.push(`${name}:leave`); return wait(); } };
-        };
-
-        it('waits for the leave timer before swapping', () => {
+    describe('exit transitions belong to the caller', () => {
+        it('swaps only when the caller transition finishes, and ignores a leave() define', () => {
             const { log, track } = lifecycle();
             const values: number[] = [];
             const host = xnew('<div>');
-            const first = xnew(host, leavingScene(log, 'A', () => xnew.transition(({ value }: any) => values.push(value), 300)));
+            const first = xnew(host, (unit: xnew.Unit) => {
+                xnew.extend(Scene);
+                track('A')(unit);
+                return { leave() { log.push('A:leave'); } }; // no longer part of the protocol
+            });
 
-            first.change(track('B'));
-            expect(log).toEqual(['A:in', 'A:leave']); // A still alive, B not mounted
+            xnew.transition(({ value }: any) => values.push(value), 300).timeout(() => first.change(track('B')));
+            expect(log).toEqual(['A:in']); // A still alive, B not mounted
 
             jest.advanceTimersByTime(301);
-            expect(log).toEqual(['A:in', 'A:leave', 'B:in', 'A:out']);
-            expect(values[values.length - 1]).toBe(1); // leave transition ran to completion
-        });
-
-        it('ignores further change calls while a leave is pending', () => {
-            const { log, track } = lifecycle();
-            const host = xnew('<div>');
-            const first = xnew(host, leavingScene(log, 'A', () => xnew.transition(() => {}, 200)));
-
-            first.change(track('B'));
-            first.change(track('C')); // during leave → ignored
-
-            jest.advanceTimersByTime(201);
-            expect(log).toEqual(['A:in', 'A:leave', 'B:in', 'A:out']);
-        });
-
-        it('swaps immediately when leave() returns nothing', () => {
-            const { log, track } = lifecycle();
-            const host = xnew('<div>');
-            const first = xnew(host, leavingScene(log, 'A', () => undefined));
-
-            first.change(track('B'));
-
-            expect(log).toEqual(['A:in', 'A:leave', 'B:in', 'A:out']);
+            expect(log).toEqual(['A:in', 'B:in', 'A:out']);
+            expect(values[values.length - 1]).toBe(1); // the caller's transition ran to completion
         });
     });
 
