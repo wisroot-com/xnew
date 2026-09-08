@@ -6,9 +6,10 @@
 
 import { xnew } from '../../core/xnew';
 
+export type GateProps = { open?: boolean, duration?: number, easing?: string };
+
 export function Gate(unit: xnew.Unit,
-    { open = true, duration = 0, easing = 'ease' }:
-    { open?: boolean, duration?: number, easing?: string }
+    { open = true, duration = 0, easing = 'ease' }: GateProps = {}
 ) {
     let value = open ? 1.0 : 0.0;
 

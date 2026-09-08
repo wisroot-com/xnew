@@ -355,13 +355,22 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, 
     readonly input: HTMLInputElement;
 };
 
+type GateProps = {
+    open?: boolean;
+    duration?: number;
+    easing?: string;
+};
+declare function Gate(unit: xnew.Unit, { open, duration, easing }?: GateProps): {
+    readonly value: number;
+    readonly state: "opening" | "closing" | "opened" | "closed";
+    toggle(): void;
+    open(): void;
+    close(): void;
+};
+
 declare function InputCheckbox(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
     value?: boolean;
-    gate?: {
-        open?: boolean;
-        duration?: number;
-        easing?: string;
-    } | xnew.Unit;
+    gate?: GateProps | xnew.Unit;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -393,11 +402,7 @@ declare function InputNumber(unit: xnew.Unit, { value, className, style, ...othe
 
 declare function InputSwitch(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
     value?: boolean;
-    gate?: {
-        open?: boolean;
-        duration?: number;
-        easing?: string;
-    } | xnew.Unit;
+    gate?: GateProps | xnew.Unit;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -427,11 +432,7 @@ type ItemDef<T = string> = T | {
 declare function Listbox(unit: xnew.Unit, { value, items, gate, className, style, ...others }?: {
     value?: string;
     items?: ItemDef[];
-    gate?: {
-        open?: boolean;
-        duration?: number;
-        easing?: string;
-    } | xnew.Unit;
+    gate?: GateProps | xnew.Unit;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -474,24 +475,8 @@ declare function ColorPicker(unit: xnew.Unit, { value, presets, alpha, className
     value: string;
 };
 
-declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
-    open?: boolean;
-    duration?: number;
-    easing?: string;
-}): {
-    readonly value: number;
-    readonly state: "opening" | "closing" | "opened" | "closed";
-    toggle(): void;
-    open(): void;
-    close(): void;
-};
-
 declare function Accordion(unit: xnew.Unit, { gate, className, style, ...others }?: {
-    gate?: {
-        open?: boolean;
-        duration?: number;
-        easing?: string;
-    } | xnew.Unit;
+    gate?: GateProps | xnew.Unit;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -500,11 +485,7 @@ declare function Accordion(unit: xnew.Unit, { gate, className, style, ...others 
 };
 
 declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...others }?: {
-    gate?: {
-        open?: boolean;
-        duration?: number;
-        easing?: string;
-    } | xnew.Unit;
+    gate?: GateProps | xnew.Unit;
     anchor?: HTMLElement;
     className?: string;
     style?: string;

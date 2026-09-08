@@ -5,11 +5,11 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Gate } from './Gate';
+import { Gate, GateProps } from './Gate';
 
 export function Accordion(unit: xnew.Unit,
     { gate = {}, className = '', style = '', ...others }:
-    { gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
+    { gate?: GateProps | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate);
 

@@ -106,7 +106,7 @@ describe('basics Panel', () => {
             expect((group.container as HTMLElement).style.display).not.toBe('none');
         });
 
-        test("select() switches from code and fires '-change' on the strip, like a press does", () => {
+        test("a .value set switches from code and fires '-change' on the strip, like a press does", () => {
             const { host, panel } = newPanel();
             const values: string[] = [];
             const tabs = panel.tabs({ items: ITEMS });
@@ -119,7 +119,7 @@ describe('basics Panel', () => {
             tabButton(host, 'Right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
             expect(tabs.value).toBe('right');
 
-            tabs.select('left');
+            tabs.value = 'left';
             expect((left.container as HTMLElement).style.display).not.toBe('none');
             expect((right.container as HTMLElement).style.display).toBe('none');
             expect(tabs.value).toBe('left');
@@ -163,13 +163,13 @@ describe('basics Panel', () => {
             expect((two.container as HTMLElement).style.display).not.toBe('none');
         });
 
-        test('select() ignores a key the strip does not name', () => {
+        test('a .value set ignores a key the strip does not name', () => {
             const { panel } = newPanel();
             const tabs = panel.tabs({ items: ITEMS });
             const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
             const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
 
-            tabs.select('nowhere');
+            tabs.value = 'nowhere';
             expect(tabs.value).toBe('left');
             expect((left.container as HTMLElement).style.display).not.toBe('none');
             expect((right.container as HTMLElement).style.display).toBe('none');
@@ -214,21 +214,11 @@ describe('basics Panel', () => {
             expect(listbox.value).toBe('b');
         });
 
-        test("a tabs .value set switches the strip without emitting '-change'", () => {
+        test('tabs has no select(): .value is the only write path', () => {
             const { panel } = newPanel();
-            const values: string[] = [];
             const tabs = panel.tabs({ items: ['left', 'right'] });
-            const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
-            const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
-            tabs.on('-change', ({ value }: { value: string }) => values.push(value));
-            jest.advanceTimersByTime(1);
 
-            tabs.value = 'right';
-
-            expect(tabs.value).toBe('right');
-            expect((left.container as HTMLElement).style.display).toBe('none');
-            expect((right.container as HTMLElement).style.display).not.toBe('none');
-            expect(values).toEqual([]);
+            expect(tabs.select).toBe(undefined);
         });
     });
 

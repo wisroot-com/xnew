@@ -7,7 +7,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Gate } from '../widget/Gate';
+import { Gate, GateProps } from '../widget/Gate';
 import { Overlay } from '../widget/Overlay';
 
 //----------------------------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ export function itemDef<T>(item: ItemDef<T>): { value: T, label?: string } {
 
 export function Listbox(unit: xnew.Unit,
     { value, items = [], gate, className = '', style = '', ...others }:
-    { value?: string, items?: ItemDef[], gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
+    { value?: string, items?: ItemDef[], gate?: GateProps | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `

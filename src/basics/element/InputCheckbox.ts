@@ -6,11 +6,11 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { Gate } from '../widget/Gate';
+import { Gate, GateProps } from '../widget/Gate';
 
 export function InputCheckbox(unit: xnew.Unit,
     { value = false, gate, className = '', style = '', ...others }:
-    { value?: boolean, gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
+    { value?: boolean, gate?: GateProps | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `

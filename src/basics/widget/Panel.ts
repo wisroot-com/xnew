@@ -2,7 +2,7 @@
 // Panel — stackable form-style settings panel with a builder API; a row reports its edits through
 // its own events ('input' / '-change'), so the host decides what to do with them.
 // Every value-bearing row (range / checkbox / color / listbox / tabs) reads and writes through `.value`,
-// delegating to the control it owns; a `.value` set never emits '-change' (only a user edit does).
+// delegating to the control it owns; on listbox / tabs a set announces on '-change' just like a press does.
 // The frame (size / border / scrollport) is the panel's own; className / style tune it from outside.
 //----------------------------------------------------------------------------------------------------
 
@@ -144,19 +144,11 @@ function Tabs(unit: xnew.Unit, { items, value }: { items: ItemDef<any>[], value?
         });
     }
 
-    // moves the strip without announcing it; `select` adds the notification on top
-    function move(key: any): boolean {
-        if (keys.includes(key) === false) {
-            return false;
-        }
-        active = key;
-        apply();
-        return true;
-    }
-
-    // one path for both the button and a code-driven switch, so either notifies the same way
+    // one path for both the button and a host assignment through `.value`, so either notifies the same way
     function select(key: any) {
-        if (move(key) === true) {
+        if (keys.includes(key) === true) {
+            active = key;
+            apply();
             xnew.emit('-change', { value: key });
         }
     }
@@ -167,13 +159,12 @@ function Tabs(unit: xnew.Unit, { items, value }: { items: ItemDef<any>[], value?
     panel?.on('childattach', apply);
 
     return {
-        select,
         get value() {
             return active;
         },
-        // a programmatic set is not a user press, so it switches without emitting -change (as in Listbox)
+        // the one write path: a tab press and a host assignment are the same act, so both announce (as in Listbox)
         set value(key: any) {
-            move(key);
+            select(key);
         },
     };
 }
