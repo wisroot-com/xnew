@@ -2376,6 +2376,9 @@ function Overlay(unit, _a = {}) {
     };
 }
 
+function itemDef(item) {
+    return (item !== null && typeof item === 'object' && 'value' in item) ? item : { value: item };
+}
 function Listbox(unit, _a = {}) {
     var { value, items = [], gate, className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "gate", "className", "style"]);
     const css = xnew.css('base', {
@@ -2395,7 +2398,7 @@ function Listbox(unit, _a = {}) {
         xnew(() => {
             xnew.extend(ListboxMenu);
             for (const item of items) {
-                xnew(ListboxItem, typeof item === 'string' ? { value: item } : item);
+                xnew(ListboxItem, itemDef(item));
             }
         });
     }
@@ -2538,29 +2541,6 @@ function ListboxItem(unit, _a = {}) {
         },
         check(current) {
             unit.current.toggleAttribute('data-checked', current);
-        },
-    };
-}
-
-function Accordion(unit, _a = {}) {
-    var { gate = {}, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
-    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate);
-    const css = xnew.css('base', {
-        container: `
-            overflow: hidden;
-            box-sizing: border-box;
-        `,
-    });
-    xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
-    apply(gate.value);
-    gate.on('-transition', ({ value }) => apply(value));
-    function apply(value) {
-        unit.current.style.height = value < 1.0 ? unit.current.scrollHeight * value + 'px' : 'auto';
-        unit.current.style.opacity = value.toString();
-    }
-    return {
-        get gate() {
-            return gate;
         },
     };
 }
@@ -2874,6 +2854,29 @@ function formatHex({ r, g, b, a }) {
     const hex = (n) => n.toString(16).padStart(2, '0');
     const base = `#${hex(r)}${hex(g)}${hex(b)}`;
     return a < 1 ? `${base}${hex(Math.round(a * 255))}` : base;
+}
+
+function Accordion(unit, _a = {}) {
+    var { gate = {}, className = '', style = '' } = _a, others = __rest(_a, ["gate", "className", "style"]);
+    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate);
+    const css = xnew.css('base', {
+        container: `
+            overflow: hidden;
+            box-sizing: border-box;
+        `,
+    });
+    xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    apply(gate.value);
+    gate.on('-transition', ({ value }) => apply(value));
+    function apply(value) {
+        unit.current.style.height = value < 1.0 ? unit.current.scrollHeight * value + 'px' : 'auto';
+        unit.current.style.opacity = value.toString();
+    }
+    return {
+        get gate() {
+            return gate;
+        },
+    };
 }
 
 function VirtualPad(unit, { type = 'analog', className = '', style = '' } = {}) {
@@ -3366,8 +3369,8 @@ function PanelGroup(unit, { name, open }) {
         xnew.extend(Accordion, { gate });
     }
     return {
-        tabs({ names = {} } = {}) {
-            return xnew(Tabs, { names });
+        tabs({ items = [], value } = {}) {
+            return xnew(Tabs, { items, value });
         },
         group({ name, open, key }, inner) {
             return xnew((unit) => {
@@ -3379,8 +3382,7 @@ function PanelGroup(unit, { name, open }) {
             return xnew(Button, { text: name, key, style: 'width: 100%;' });
         },
         listbox({ name = '', value, items = [], key } = {}) {
-            var _a;
-            return xnew(List, { name, value: (_a = value !== null && value !== void 0 ? value : items[0]) !== null && _a !== void 0 ? _a : '', items, key });
+            return xnew(List, { name, value: value !== null && value !== void 0 ? value : (items.length > 0 ? itemDef(items[0]).value : ''), items, key });
         },
         range({ name = '', value, min = 0, max = 100, step, key } = {}) {
             return xnew(Range, { name, value: value !== null && value !== void 0 ? value : min, min, max, step, key });
@@ -3396,7 +3398,7 @@ function PanelGroup(unit, { name, open }) {
         }
     };
 }
-function Tabs(unit, { names }) {
+function Tabs(unit, { items, value }) {
     var _a;
     const css = xnew.css('base', {
         strip: `
@@ -3415,11 +3417,13 @@ function Tabs(unit, { names }) {
     });
     xnew.nest({ tag: 'div', className: css.strip });
     const panel = unit.parent;
-    const keys = Object.keys(names);
-    let active = (_a = keys[0]) !== null && _a !== void 0 ? _a : '';
-    const tabs = keys.map((key) => {
-        const tab = xnew({ tag: 'button', type: 'button', className: css.tab }, names[key]);
-        tab.on('click', () => select(key));
+    const defs = items.map((item) => itemDef(item));
+    const keys = defs.map((def) => def.value);
+    let active = (_a = value !== null && value !== void 0 ? value : keys[0]) !== null && _a !== void 0 ? _a : '';
+    const tabs = defs.map((def) => {
+        var _a;
+        const tab = xnew({ tag: 'button', type: 'button', className: css.tab }, (_a = def.label) !== null && _a !== void 0 ? _a : String(def.value));
+        tab.on('click', () => select(def.value));
         return tab;
     });
     function apply() {
@@ -3514,7 +3518,7 @@ function List(unit, _a) {
     });
     xnew(() => {
         xnew.extend(ListboxMenu);
-        items.forEach((item) => xnew(ListboxItem, { value: item }));
+        items.forEach((item) => xnew(ListboxItem, itemDef(item)));
     });
 }
 
@@ -3589,9 +3593,9 @@ const xbasics = {
     ListboxButton,
     ListboxMenu,
     ListboxItem,
+    ColorPicker,
     Gate,
     Accordion,
-    ColorPicker,
     Overlay,
     VirtualPad,
     Panel,

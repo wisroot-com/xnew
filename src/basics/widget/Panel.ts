@@ -9,11 +9,11 @@ import { xicons } from '../../icons/xicons';
 import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
 import { InputCheckbox } from '../element/InputCheckbox';
-import { Listbox, ListboxButton, ListboxMenu, ListboxItem } from '../element/Listbox';
+import { Listbox, ListboxButton, ListboxMenu, ListboxItem, ItemDef, itemDef } from '../element/Listbox';
 import { Accordion } from './Accordion';
 import { Gate } from './Gate';
 import { Overlay } from './Overlay';
-import { ColorPicker } from './ColorPicker';
+import { ColorPicker } from '../element/ColorPicker';
 
 // `key` is only read by group(); the rest are shared by Panel and PanelGroup
 interface PanelOptions { name?: string; open?: boolean; key?: any; }
@@ -67,9 +67,9 @@ export function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions) {
     }
 
     return {
-        // a tab strip over the groups of this panel: names maps a group key to its button caption, and the first key starts active
-        tabs({ names = {} }: { names?: Record<string, string> } = {}) {
-            return xnew(Tabs, { names });
+        // a tab strip over the groups of this panel: an item's value is the group key it switches, and `value` picks the tab that starts active
+        tabs({ items = [], value }: { items?: ItemDef<any>[], value?: any } = {}) {
+            return xnew(Tabs, { items, value });
         },
         // every row takes `key` so xnew.find can reach it later; it rides along to the inner control, so find by that control's component
         group({ name, open, key }: PanelOptions, inner?: (group: xnew.Unit) => void) {
@@ -81,8 +81,8 @@ export function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions) {
         button({ name = '', key }: { name?: string, key?: any } = {}) {
             return xnew(Button, { text: name, key, style: 'width: 100%;' });
         },
-        listbox({ name = '', value, items = [], key }: { name?: string, value?: string, items?: string[], key?: any } = {}) {
-            return xnew(List, { name, value: value ?? items[0] ?? '', items, key });
+        listbox({ name = '', value, items = [], key }: { name?: string, value?: string, items?: ItemDef[], key?: any } = {}) {
+            return xnew(List, { name, value: value ?? (items.length > 0 ? itemDef(items[0]).value : ''), items, key });
         },
         range({ name = '', value, min = 0, max = 100, step, key }: { name?: string, value?: number, min?: number, max?: number, step?: number, key?: any } = {}) {
             return xnew(Range, { name, value: value ?? min, min, max, step, key });
@@ -99,8 +99,8 @@ export function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions) {
     };
 }
 
-// underline strip switching the sibling groups of one panel; a group whose key no tab names stays visible whichever tab is on
-function Tabs(unit: xnew.Unit, { names }: { names: Record<string, string> }) {
+// underline strip switching the sibling groups of one panel; a group no tab item names stays visible whichever tab is on
+function Tabs(unit: xnew.Unit, { items, value }: { items: ItemDef<any>[], value?: any }) {
     const css = xnew.css('base', {
         strip: `
             display: flex;
@@ -120,12 +120,13 @@ function Tabs(unit: xnew.Unit, { names }: { names: Record<string, string> }) {
 
     // the groups a tab names are this strip's siblings, so the panel above holds both
     const panel = unit.parent as xnew.Unit;
-    const keys = Object.keys(names);
-    let active = keys[0] ?? '';
+    const defs = items.map((item) => itemDef(item));
+    const keys = defs.map((def) => def.value);
+    let active = value ?? keys[0] ?? '';
 
-    const tabs = keys.map((key) => {
-        const tab = xnew({ tag: 'button', type: 'button', className: css.tab }, names[key]);
-        tab.on('click', () => select(key));
+    const tabs = defs.map((def) => {
+        const tab = xnew({ tag: 'button', type: 'button', className: css.tab }, def.label ?? String(def.value));
+        tab.on('click', () => select(def.value));
         return tab;
     });
 
@@ -142,7 +143,7 @@ function Tabs(unit: xnew.Unit, { names }: { names: Record<string, string> }) {
     }
 
     // one path for both the button and a code-driven switch, so either notifies the same way
-    function select(key: string) {
+    function select(key: any) {
         if (keys.includes(key) === true) {
             active = key;
             apply();
@@ -235,7 +236,7 @@ function ColorPopup(unit: xnew.Unit, { anchor, value, commit }: { anchor: HTMLEl
     unit.gate.open();
 }
 
-function List(unit: xnew.Unit, { name = '', value, items = [], ...others }: { name?: string, value?: string, items?: string[], [key: string]: any }) {
+function List(unit: xnew.Unit, { name = '', value, items = [], ...others }: { name?: string, value?: string, items?: ItemDef[], [key: string]: any }) {
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
 
@@ -247,6 +248,6 @@ function List(unit: xnew.Unit, { name = '', value, items = [], ...others }: { na
     });
     xnew(() => {
         xnew.extend(ListboxMenu);
-        items.forEach((item: string) => xnew(ListboxItem, { value: item }));
+        items.forEach((item: ItemDef) => xnew(ListboxItem, itemDef(item)));
     });
 }

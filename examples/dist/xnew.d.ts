@@ -411,13 +411,13 @@ declare function InputRadio(unit: xnew.Unit, { value, name, checked, className, 
     readonly input: HTMLInputElement;
 };
 
-type ListboxItemDef = string | {
-    value: string;
+type ItemDef<T = string> = T | {
+    value: T;
     label?: string;
 };
 declare function Listbox(unit: xnew.Unit, { value, items, gate, className, style, ...others }?: {
     value?: string;
-    items?: ListboxItemDef[];
+    items?: ItemDef[];
     gate?: {
         open?: boolean;
         duration?: number;
@@ -449,6 +449,17 @@ declare function ListboxItem(unit: xnew.Unit, { value, label, className, style, 
     check(current: boolean): void;
 };
 
+declare function ColorPicker(unit: xnew.Unit, { value, presets, alpha, className, style, ...others }?: {
+    value?: string;
+    presets?: string[];
+    alpha?: boolean;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    value: string;
+};
+
 declare function Gate(unit: xnew.Unit, { open, duration, easing }: {
     open?: boolean;
     duration?: number;
@@ -472,17 +483,6 @@ declare function Accordion(unit: xnew.Unit, { gate, className, style, ...others 
     [key: string]: any;
 }): {
     readonly gate: Unit;
-};
-
-declare function ColorPicker(unit: xnew.Unit, { value, presets, alpha, className, style, ...others }?: {
-    value?: string;
-    presets?: string[];
-    alpha?: boolean;
-    className?: string;
-    style?: string;
-    [key: string]: any;
-}): {
-    value: string;
 };
 
 declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...others }?: {
@@ -515,11 +515,12 @@ declare function Panel(unit: xnew.Unit, { name, open, className, style }?: Panel
     style?: string;
 }): void;
 declare function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions): {
-    tabs({ names }?: {
-        names?: Record<string, string>;
+    tabs({ items, value }?: {
+        items?: ItemDef<any>[];
+        value?: any;
     }): Unit & {
-        select: (key: string) => void;
-        readonly active: string;
+        select: (key: any) => void;
+        readonly active: any;
     };
     group({ name, open, key }: PanelOptions, inner?: (group: xnew.Unit) => void): Unit;
     button({ name, key }?: {
@@ -529,7 +530,7 @@ declare function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions): {
     listbox({ name, value, items, key }?: {
         name?: string;
         value?: string;
-        items?: string[];
+        items?: ItemDef[];
         key?: any;
     }): Unit;
     range({ name, value, min, max, step, key }?: {
@@ -579,9 +580,9 @@ declare const xbasics: {
     ListboxButton: typeof ListboxButton;
     ListboxMenu: typeof ListboxMenu;
     ListboxItem: typeof ListboxItem;
+    ColorPicker: typeof ColorPicker;
     Gate: typeof Gate;
     Accordion: typeof Accordion;
-    ColorPicker: typeof ColorPicker;
     Overlay: typeof Overlay;
     VirtualPad: typeof VirtualPad;
     Panel: typeof Panel;

@@ -14,12 +14,17 @@ import { Overlay } from '../widget/Overlay';
 // Standalone it builds the default trigger + option list out of `items`; composed, the caller nests its own.
 //----------------------------------------------------------------------------------------------------
 
-// a row is either the bare value, or a value with its own display label
-export type ListboxItemDef = string | { value: string, label?: string };
+// a row / tab is either the bare value, or a value with its own display label (shared with Panel)
+export type ItemDef<T = string> = T | { value: T, label?: string };
+
+// normalizes both forms to { value, label }, so callers only ever branch here
+export function itemDef<T>(item: ItemDef<T>): { value: T, label?: string } {
+    return (item !== null && typeof item === 'object' && 'value' in (item as object)) ? item as { value: T, label?: string } : { value: item as T };
+}
 
 export function Listbox(unit: xnew.Unit,
     { value, items = [], gate, className = '', style = '', ...others }:
-    { value?: string, items?: ListboxItemDef[], gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
+    { value?: string, items?: ItemDef[], gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `
@@ -44,7 +49,7 @@ export function Listbox(unit: xnew.Unit,
         xnew(() => {
             xnew.extend(ListboxMenu);
             for (const item of items) {
-                xnew(ListboxItem, typeof item === 'string' ? { value: item } : item);
+                xnew(ListboxItem, itemDef(item));
             }
         });
     }

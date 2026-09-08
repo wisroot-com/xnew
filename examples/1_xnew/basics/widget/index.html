@@ -153,8 +153,8 @@
         className: 'absolute top-2 right-2 max-h-[calc(100vh-1rem)] text-sm shadow-lg bg-gray-100 text-green-900',
       });
 
-      // the strip is a row of its own: names maps a sibling group's key to its caption, and the first key starts active
-      const tabs = panel.tabs({ names: { style: 'style', params: 'params' } });
+      // the strip is a row of its own: an item's value is the sibling group's key it switches, and the first item starts active
+      const tabs = panel.tabs({ items: ['style', 'params'] });
       tabs.on('-change', ({ value }) => xnew.emit('+console', { text: `${value} tab selected` }));
 
       panel.group({ key: 'style' }, (tab) => {

@@ -47,11 +47,11 @@ describe('basics Panel', () => {
             return [...host.querySelectorAll('button')].find((button) => button.textContent === name) as HTMLElement;
         }
 
-        const NAMES = { left: 'Left', right: 'Right' };
+        const ITEMS = [{ value: 'left', label: 'Left' }, { value: 'right', label: 'Right' }];
 
-        test('the strip switches the sibling groups its names key, the first one starting active', () => {
+        test('the strip switches the sibling groups its item value names, the first one starting active', () => {
             const { host, panel } = newPanel();
-            panel.tabs({ names: NAMES });
+            panel.tabs({ items: ITEMS });
             const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
             const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
 
@@ -68,7 +68,7 @@ describe('basics Panel', () => {
             const { host, panel } = newPanel();
             const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
             const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
-            panel.tabs({ names: NAMES });
+            panel.tabs({ items: ITEMS });
 
             expect((left.container as HTMLElement).style.display).not.toBe('none');
             expect((right.container as HTMLElement).style.display).toBe('none');
@@ -78,9 +78,9 @@ describe('basics Panel', () => {
             expect((right.container as HTMLElement).style.display).not.toBe('none');
         });
 
-        test('leaves rows and groups no tab names alone', () => {
+        test('leaves rows and groups no tab item names alone', () => {
             const { host, panel } = newPanel();
-            panel.tabs({ names: NAMES });
+            panel.tabs({ items: ITEMS });
             panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
             const row = panel.range({ name: 'a' });
             const plain = panel.group({}, (group: any) => group.button({ name: 'c' }));
@@ -93,7 +93,7 @@ describe('basics Panel', () => {
 
         test('a collapsible group switches as a whole, header included', () => {
             const { host, panel } = newPanel();
-            panel.tabs({ names: NAMES });
+            panel.tabs({ items: ITEMS });
             panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
             const group = panel.group({ name: 'folder', open: true, key: 'right' }, (group: any) => {
                 group.button({ name: 'inside' });
@@ -109,7 +109,7 @@ describe('basics Panel', () => {
         test("select() switches from code and fires '-change' on the strip, like a press does", () => {
             const { host, panel } = newPanel();
             const values: string[] = [];
-            const tabs = panel.tabs({ names: NAMES });
+            const tabs = panel.tabs({ items: ITEMS });
             const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
             const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
 
@@ -126,9 +126,46 @@ describe('basics Panel', () => {
             expect(values).toEqual(['right', 'left']);
         });
 
+        // items take the same shape as a Listbox's: a bare string is both the group key and the caption
+        test('a bare string item is the group key and its own caption', () => {
+            const { host, panel } = newPanel();
+            panel.tabs({ items: ['left', 'right'] });
+            const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
+            const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
+
+            jest.advanceTimersByTime(1);
+            tabButton(host, 'right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect((left.container as HTMLElement).style.display).toBe('none');
+            expect((right.container as HTMLElement).style.display).not.toBe('none');
+        });
+
+        test('value picks the tab that starts active instead of the first item', () => {
+            const { panel } = newPanel();
+            const tabs = panel.tabs({ items: ITEMS, value: 'right' });
+            const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
+            const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
+
+            expect(tabs.active).toBe('right');
+            expect((left.container as HTMLElement).style.display).toBe('none');
+            expect((right.container as HTMLElement).style.display).not.toBe('none');
+        });
+
+        // a group key is any value, so a tab item must be able to carry a non-string one
+        test('a non-string group key switches through its item value', () => {
+            const { host, panel } = newPanel();
+            panel.tabs({ items: [{ value: 1, label: 'One' }, { value: 2, label: 'Two' }] });
+            const one = panel.group({ key: 1 }, (group: any) => group.button({ name: 'a' }));
+            const two = panel.group({ key: 2 }, (group: any) => group.button({ name: 'b' }));
+
+            jest.advanceTimersByTime(1);
+            tabButton(host, 'Two').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect((one.container as HTMLElement).style.display).toBe('none');
+            expect((two.container as HTMLElement).style.display).not.toBe('none');
+        });
+
         test('select() ignores a key the strip does not name', () => {
             const { panel } = newPanel();
-            const tabs = panel.tabs({ names: NAMES });
+            const tabs = panel.tabs({ items: ITEMS });
             const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
             const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
 
@@ -136,6 +173,18 @@ describe('basics Panel', () => {
             expect(tabs.active).toBe('left');
             expect((left.container as HTMLElement).style.display).not.toBe('none');
             expect((right.container as HTMLElement).style.display).toBe('none');
+        });
+    });
+
+    describe('listbox row', () => {
+        test('takes the same items as a Listbox, showing the label while the value stays underneath', () => {
+            const { host, panel } = newPanel();
+            const row = panel.listbox({ name: 'fruit', items: [{ value: 'apple', label: 'りんご' }, 'banana'] });
+            jest.advanceTimersByTime(1);
+
+            expect(row.value).toBe('apple');
+            expect(host.textContent).toContain('りんご');
+            expect(host.textContent).not.toContain('apple');
         });
     });
 
