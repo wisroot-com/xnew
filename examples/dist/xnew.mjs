@@ -517,14 +517,11 @@ class Unit {
             key: null,
             sync: { root: (_c = parent === null || parent === void 0 ? void 0 : parent._.sync.root) !== null && _c !== void 0 ? _c : null, id: null, state: {}, registry: {}, visibility: null },
         };
-        let targeted = false;
         if (isDomElement(args[0])) {
             this._.currentElement = args.shift();
-            targeted = true;
         }
         else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
             Unit.nest(this, args.shift());
-            targeted = true;
         }
         const Component = args.shift();
         let props;
@@ -536,8 +533,8 @@ class Unit {
             baseComponent = Component;
         }
         else if (typeof Component === 'string' || typeof Component === 'number') {
-            if (targeted === false) {
-                throw new Error(`xnew: text content needs a target element [${Component}]`);
+            if (this._.nestElements.length === 0) {
+                throw new Error(`xnew: text content needs a nested element [${Component}]`);
             }
             baseComponent = textComponent(Component);
         }
@@ -545,8 +542,8 @@ class Unit {
             baseComponent = (unit) => { };
         }
         this._.key = (_d = props === null || props === void 0 ? void 0 : props.key) !== null && _d !== void 0 ? _d : null;
-        if (typeof (props === null || props === void 0 ? void 0 : props._hook) === 'function') {
-            props._hook(this);
+        if (typeof (props === null || props === void 0 ? void 0 : props.preinit) === 'function') {
+            props.preinit(this);
         }
         const backup = Unit.currentUnit;
         Unit.currentUnit = this;
@@ -1261,7 +1258,7 @@ function bootClient(roomio) {
                 if (!Component) {
                     continue;
                 }
-                const unit = new Unit(nodeParent, Component, { _hook: (unit) => { unit._.sync.id = node.id; Object.assign(unit._.sync.state, node.state); } });
+                const unit = new Unit(nodeParent, Component, { preinit: (unit) => { unit._.sync.id = node.id; Object.assign(unit._.sync.state, node.state); } });
                 reconcileMap.set(node.id, unit);
             }
             for (const [id, unit] of reconcileMap) {
@@ -1301,7 +1298,7 @@ class RoomIO {
         this.io = io;
         this.room = room;
         this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true }) : null;
-        this.root = new Unit(Unit.currentUnit, Component, Object.assign(Object.assign({}, props), { _hook: (unit) => { unit._.sync.root = unit; RoomIO.rooms.set(unit, this); } }));
+        this.root = new Unit(Unit.currentUnit, Component, Object.assign(Object.assign({}, props), { preinit: (unit) => { unit._.sync.root = unit; RoomIO.rooms.set(unit, this); } }));
         this.root._.protected = true;
         if (this.socket !== null) {
             this.root.on('finalize', () => this.socket.disconnect());
