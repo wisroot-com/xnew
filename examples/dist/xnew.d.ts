@@ -465,9 +465,8 @@ declare function InputRadio(unit: xnew.Unit, { value, label, name, checked, disa
     readonly input: HTMLInputElement;
 };
 
-declare function ColorPicker(unit: xnew.Unit, { value, presets, alpha, disabled, className, style, ...others }?: {
+declare function ColorPicker(unit: xnew.Unit, { value, alpha, disabled, className, style, ...others }?: {
     value?: string;
-    presets?: string[];
     alpha?: boolean;
     disabled?: boolean;
     className?: string;

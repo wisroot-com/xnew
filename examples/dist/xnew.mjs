@@ -2749,14 +2749,10 @@ function hasHexAlpha(text) {
     return length === 4 || length === 8;
 }
 
-const PRESETS = [
-    '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321', '#417505', '#BD10E0', '#9013FE',
-    '#4A90E2', '#50E3C2', '#B8E986',
-];
 const CHECKERBOARD = 'conic-gradient(#ccc 0% 25%, #fff 25% 50%, #ccc 50% 75%, #fff 75% 100%)';
 function ColorPicker(unit, _a = {}) {
     var _b;
-    var { value = '#4A90E2', presets = PRESETS, alpha = true, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "presets", "alpha", "disabled", "className", "style"]);
+    var { value = '#4A90E2', alpha = true, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "alpha", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-block;
@@ -2779,7 +2775,7 @@ function ColorPicker(unit, _a = {}) {
             transform: translate(-2px, -2px);
             pointer-events: none;
         `,
-        controls: `display: flex; padding-top: 4px;`,
+        controls: `display: flex; padding-top: 8px;`,
         bars: `flex: 1 1 0;`,
         bar: `position: relative; height: 10px; touch-action: none;`,
         hue: `background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);`,
@@ -2819,16 +2815,6 @@ function ColorPicker(unit, _a = {}) {
         fieldLabel: `
             padding-top: 3px;
             font-size: 11px; text-align: center; opacity: 0.7;
-        `,
-        presets: `
-            display: flex; gap: 3px;
-            margin: 8px 0 4px;
-        `,
-        preset: `
-            flex: 1 1 0; height: 16px;
-            border-radius: 3px;
-            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
-            cursor: pointer;
         `,
     });
     let hsva = rgbaToHsva((_b = parseHex(value)) !== null && _b !== void 0 ? _b : { r: 74, g: 144, b: 226, a: 1 });
@@ -2872,20 +2858,6 @@ function ColorPicker(unit, _a = {}) {
         });
         zone.on('dragend', () => notify('change'));
     });
-    if (presets.length > 0) {
-        xnew(() => {
-            xnew.nest({ tag: 'div', className: css.presets });
-            for (const preset of presets) {
-                const rgba = parseHex(preset);
-                if (rgba !== null) {
-                    xnew((swatch) => {
-                        xnew.nest({ tag: 'div', className: css.preset, style: `background: ${formatHex(rgba)};`, title: preset });
-                        swatch.on('click', () => apply(rgbaToHsva(rgba), 'commit'));
-                    });
-                }
-            }
-        });
-    }
     xnew(() => {
         xnew.nest({ tag: 'div', className: css.controls });
         xnew(() => {

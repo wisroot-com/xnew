@@ -19,7 +19,7 @@ describe('basics ColorPicker', () => {
         }) as DOMRect;
     }
 
-    // container children: [saturation, presets, controls, fields]
+    // container children: [saturation, controls, fields]
     function containerOf(unit: xnew.Unit): HTMLElement {
         return unit.current as HTMLElement;
     }
@@ -28,21 +28,17 @@ describe('basics ColorPicker', () => {
         return containerOf(unit).children[0] as HTMLElement;
     }
 
-    function presetsOf(unit: xnew.Unit): HTMLElement {
-        return containerOf(unit).children[1] as HTMLElement;
-    }
-
     // controls row children: [swatch, bars]
     function swatchOf(unit: xnew.Unit): HTMLElement {
-        return containerOf(unit).children[2].children[0] as HTMLElement;
+        return containerOf(unit).children[1].children[0] as HTMLElement;
     }
 
     function barsOf(unit: xnew.Unit): HTMLElement {
-        return containerOf(unit).children[2].children[1] as HTMLElement;
+        return containerOf(unit).children[1].children[1] as HTMLElement;
     }
 
     function inputsOf(unit: xnew.Unit): HTMLInputElement[] {
-        return [...(containerOf(unit).children[3] as HTMLElement).querySelectorAll('input')];
+        return [...(containerOf(unit).children[2] as HTMLElement).querySelectorAll('input')];
     }
 
     function pointerdown(element: Element, clientX: number, clientY: number): void {
@@ -61,14 +57,13 @@ describe('basics ColorPicker', () => {
         return seen;
     }
 
-    it('builds the sketch layout: saturation, presets, swatch + hue / alpha bars, fields', () => {
+    it('builds the sketch layout: saturation, swatch + hue / alpha bars, fields', () => {
         const unit = xnew(ColorPicker);
 
-        expect(containerOf(unit).children).toHaveLength(4);
+        expect(containerOf(unit).children).toHaveLength(3);
         expect(barsOf(unit).children).toHaveLength(2);
         expect(swatchOf(unit).tagName).toBe('DIV');
         expect(inputsOf(unit)).toHaveLength(5);
-        expect(presetsOf(unit).children).toHaveLength(11);
     });
 
     it('shows the initial value in the hex / RGBA fields and exposes it via .value', () => {
@@ -102,15 +97,7 @@ describe('basics ColorPicker', () => {
         expect(seen).toEqual([['input', '#804040'], ['change', '#804040']]);
     });
 
-    it('fires the input + change pair for a preset click, with no drag involved', () => {
-        const unit = xnew(ColorPicker, { value: '#ff0000' });
-        const seen = record(unit);
-
-        (presetsOf(unit).children[0] as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-        expect(seen).toEqual([['input', '#d0021b'], ['change', '#d0021b']]);
-    });
-
+    // a typed field is a one-step commit, so it fires the pair at once — no drag involved
     it('keeps half-typed field text inside: only the committed color surfaces', () => {
         const unit = xnew(ColorPicker, { value: '#ff0000' });
         const hex = inputsOf(unit)[0];
@@ -207,22 +194,6 @@ describe('basics ColorPicker', () => {
 
         // the field's own change is stopped, so its raw '00ff00' never surfaces — only the picker's hex
         expect(received).toEqual(['#00ff00']);
-    });
-
-    it('applies a preset color on click', () => {
-        const unit = xnew(ColorPicker, { value: '#ff0000' });
-        const preset = presetsOf(unit).children[0] as HTMLElement;
-        jest.advanceTimersByTime(0);
-
-        preset.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-        expect(unit.value).toBe('#d0021b');
-    });
-
-    it('omits the presets section when presets is empty', () => {
-        const unit = xnew(ColorPicker, { presets: [] });
-
-        expect(containerOf(unit).children).toHaveLength(3);
     });
 
     it('drops the alpha bar and A field and stays opaque when alpha is false', () => {

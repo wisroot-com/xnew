@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------
-// ColorPicker — Sketch-style color picker: saturation map + preset row + hue / alpha bars + hex / RGBA fields
+// ColorPicker — Sketch-style color picker: saturation map + hue / alpha bars + hex / RGBA fields
 // Color state is held as HSVA in JS (no native control); hosts read / write `.value` (hex string)
 // and observe edits like a native input: `input` streams while a bar is dragged, `change` once it settles.
 // The chrome follows the theme (currentColor + surfaceColor); only the color space itself is fixed rgb.
@@ -10,16 +10,11 @@ import { dispatchChange, dispatchCommit, dispatchInput, surfaceColor } from '../
 import { Hsva, formatHex, hasHexAlpha, hsvaToRgba, parseHex, rgbaToHsva } from '../../utils/color';
 import { clamp } from '../../utils/math';
 
-const PRESETS = [
-    '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321', '#417505', '#BD10E0', '#9013FE',
-    '#4A90E2', '#50E3C2', '#B8E986',
-];
-
 const CHECKERBOARD = 'conic-gradient(#ccc 0% 25%, #fff 25% 50%, #ccc 50% 75%, #fff 75% 100%)';
 
 export function ColorPicker(unit: xnew.Unit,
-    { value = '#4A90E2', presets = PRESETS, alpha = true, disabled = false, className = '', style = '', ...others }:
-    { value?: string, presets?: string[], alpha?: boolean, disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
+    { value = '#4A90E2', alpha = true, disabled = false, className = '', style = '', ...others }:
+    { value?: string, alpha?: boolean, disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `
@@ -43,7 +38,7 @@ export function ColorPicker(unit: xnew.Unit,
             transform: translate(-2px, -2px);
             pointer-events: none;
         `,
-        controls: `display: flex; padding-top: 4px;`,
+        controls: `display: flex; padding-top: 8px;`,
         bars: `flex: 1 1 0;`,
         bar: `position: relative; height: 10px; touch-action: none;`,
         hue: `background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);`,
@@ -83,17 +78,6 @@ export function ColorPicker(unit: xnew.Unit,
         fieldLabel: `
             padding-top: 3px;
             font-size: 11px; text-align: center; opacity: 0.7;
-        `,
-        // 4px bottom margin + the controls row's 4px top padding = the same 8px gap as above
-        presets: `
-            display: flex; gap: 3px;
-            margin: 8px 0 4px;
-        `,
-        preset: `
-            flex: 1 1 0; height: 16px;
-            border-radius: 3px;
-            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
-            cursor: pointer;
         `,
     });
 
@@ -143,22 +127,6 @@ export function ColorPicker(unit: xnew.Unit,
         });
         zone.on('dragend', () => notify('change'));
     });
-
-    // one preset swatch row under the saturation map
-    if (presets.length > 0) {
-        xnew(() => {
-            xnew.nest({ tag: 'div', className: css.presets });
-            for (const preset of presets) {
-                const rgba = parseHex(preset);
-                if (rgba !== null) {
-                    xnew((swatch: xnew.Unit) => {
-                        xnew.nest({ tag: 'div', className: css.preset, style: `background: ${formatHex(rgba)};`, title: preset });
-                        swatch.on('click', () => apply(rgbaToHsva(rgba), 'commit'));
-                    });
-                }
-            }
-        });
-    }
 
     // the preview swatch beside the hue / alpha bars
     xnew(() => {

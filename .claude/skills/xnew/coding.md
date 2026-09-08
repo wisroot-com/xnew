@@ -468,7 +468,7 @@ the rule, then one line of why.
 - **The `input` / `change` split follows the native pair exactly: `input` every time the value moves,
   `change` once it settles, and BOTH — input first — for an edit that commits in one step (2026-09).**
   `utils/dom` exports the three matching helpers: `dispatchInput` / `dispatchChange` / `dispatchCommit`.
-  So ColorPicker streams `input` while a bar is dragged and fires `change` on `dragend`; a preset click, a
+  So ColorPicker streams `input` while a bar is dragged and fires `change` on `dragend`; a
   typed field and a Listbox / Tabs selection are one-step commits and fire both; **and every `.value`
   setter across basics fires the pair**, so a programmatic set is indistinguishable from a user edit. Two
   traps this creates: (1) a control's own native sub-inputs now leak BOTH events, so a wrapper must stop
