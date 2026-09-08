@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // RoomIO — the sync root unit plus the io it was booted with (client side: the socket it creates from io)
-// the root unit is stamped through the reserved _hook prop, so every descendant resolves the same room from birth.
+// the root unit is stamped through the reserved preinit prop, so every descendant resolves the same room from birth.
 //----------------------------------------------------------------------------------------------------
 
 import { Unit } from '../core/unit';
@@ -24,8 +24,8 @@ export class RoomIO {
         this.room = room;
         // the handshake query must stay flat strings (socket.io stringifies values).
         this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true }) : null;
-        // the hook runs before the root's body, so a xsync.session / xsync.emit inside it already resolves this room
-        this.root = new Unit(Unit.currentUnit, Component, { ...props, _hook: (unit: Unit) => { unit._.sync.root = unit; RoomIO.rooms.set(unit, this); } });
+        // preinit runs before the root's body, so a xsync.session / xsync.emit inside it already resolves this room
+        this.root = new Unit(Unit.currentUnit, Component, { ...props, preinit: (unit: Unit) => { unit._.sync.root = unit; RoomIO.rooms.set(unit, this); } });
         // A booted room is a protection boundary: one Node process holds many rooms, and they all share the
         // same Component functions, so an unscoped xnew.find / '+event' would otherwise reach into the others.
         this.root._.protected = true;
@@ -95,7 +95,7 @@ export class RoomIO {
         return true;
     }
 
-    static rooms = new WeakMap<Unit, RoomIO>();   // root unit → the RoomIO that booted it, stamped by the boot hook
+    static rooms = new WeakMap<Unit, RoomIO>();   // root unit → the RoomIO that booted it, stamped by the boot preinit
 
     // the room this unit belongs to; every caller needs the real thing, so a unit outside a booted root is an error
     static of(unit: Unit): RoomIO {

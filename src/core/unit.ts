@@ -71,7 +71,7 @@ export class Unit {
         events: EventBinder;
 
         key: any;   // reserved prop for find(key) (global unique assumed)
-        sync: SyncData;   // reserved slot for xsync; the root and any node seed are stamped from outside via the _hook prop, descendants inherit the root
+        sync: SyncData;   // reserved slot for xsync; the root and any node seed are stamped from outside via the preinit prop, descendants inherit the root
     };
 
     constructor(parent: Unit | null, ...args: any[]) {
@@ -143,8 +143,8 @@ export class Unit {
         this._.key = (props as any)?.key ?? null;
 
         // reserved library-internal prop: lets the layer that created this unit stamp it (see src/sync) before the component body runs, so the body and its descendants see the result from birth
-        if (typeof (props as any)?._hook === 'function') {
-            (props as any)._hook(this);
+        if (typeof (props as any)?.preinit === 'function') {
+            (props as any).preinit(this);
         }
 
         const backup = Unit.currentUnit;

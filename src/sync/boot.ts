@@ -139,8 +139,8 @@ export function bootClient(roomio: RoomIO): Unit {
                 const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
                 const Component = nodeParent && nodeParent._.sync.registry[node.name];
                 if (!Component) { continue; }
-                // the hook stamps the node before the body runs, so its xsync.state sees the server state and the fixed id
-                const unit = new Unit(nodeParent, Component, { _hook: (unit: Unit) => { unit._.sync.id = node.id; Object.assign(unit._.sync.state, node.state); } });
+                // preinit stamps the node before the body runs, so its xsync.state sees the server state and the fixed id
+                const unit = new Unit(nodeParent, Component, { preinit: (unit: Unit) => { unit._.sync.id = node.id; Object.assign(unit._.sync.state, node.state); } });
                 reconcileMap.set(node.id, unit);
             }
             for (const [id, unit] of reconcileMap) {   // deleting the visited entry mid-iteration is spec-safe for Map
