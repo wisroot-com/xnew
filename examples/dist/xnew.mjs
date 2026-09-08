@@ -1956,7 +1956,7 @@ function Button(unit, _a = {}) {
     const css = xnew.css('base', {
         container: `
             min-width: 6em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em;
-            padding: 0 0.5em; margin: 0.125em;
+            padding: 0 0.5em; margin: 0.125em 0;
             cursor: pointer; user-select: none;
             border: 1px solid currentColor; border-radius: 0.25em;
             &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
@@ -2025,7 +2025,7 @@ function InputRange(unit, _a = {}) {
     const css = xnew.css('base', {
         container: `
             display: inline-block;
-            position: relative; margin: 0.125em;
+            position: relative; margin: 0.125em 0;
             box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 40%, transparent);
             border-radius: 0.25em;
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
@@ -2180,7 +2180,7 @@ function InputCheckbox(unit, _a = {}) {
     const css = xnew.css('base', {
         container: `
             display: inline-block;
-            width: 1.5em; height: 1.5em; margin: 0.125em;
+            width: 1.5em; height: 1.5em; margin: 0.125em 0;
             position: relative;
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: pointer; user-select: none;
@@ -2491,7 +2491,7 @@ function ListboxButton(unit, _a = {}) {
     const css = xnew.css('base', {
         container: `
             display: inline-flex; align-items: center;
-            width: 10em; max-width: 100%; height: 1.8em;
+            width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
             padding: 0 0.5em;
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: pointer; user-select: none;

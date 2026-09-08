@@ -17,7 +17,7 @@ export function InputRange(unit: xnew.Unit,
     const css = xnew.css('base', {
         container: `
             display: inline-block;
-            position: relative; margin: 0.125em;
+            position: relative; margin: 0.125em 0;
             box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 40%, transparent);
             border-radius: 0.25em;
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }

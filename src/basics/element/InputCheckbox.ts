@@ -14,7 +14,7 @@ export function InputCheckbox(unit: xnew.Unit,
     const css = xnew.css('base', {
         container: `
             display: inline-block;
-            width: 1.5em; height: 1.5em; margin: 0.125em;
+            width: 1.5em; height: 1.5em; margin: 0.125em 0;
             position: relative;
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: pointer; user-select: none;

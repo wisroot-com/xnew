@@ -131,6 +131,14 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   InputCheckbox / InputRange / InputSwitch `unit.current` IS the container (input / knob / meter are
   children) — for the others it ends on the innermost nested part, so read `unit.container` (or capture
   the element right after nesting it) when the component needs it later.
+- **Box metrics across `basics/element` (2026-09): the container margin is vertical-only
+  (`margin: 0.125em 0`), and a stretchable box always spells its limit as all three of
+  `max-width: -webkit-fill-available; -moz-available; stretch`.** Horizontal spacing belongs to the caller
+  (the examples lay controls out with `flex gap-*`), so a side margin would double it — Button /
+  InputCheckbox / InputRange used to carry one and no rule explained which components did. The heights are
+  deliberately three values, not one: **1.8em** for an input row (Button, InputText, InputNumber,
+  InputRange, ListboxButton, InputRadioGroup), **1.5em** for a small toggle (InputCheckbox, InputSwitch),
+  **2em** for a menu row a finger presses (ListboxItem). `metrics.test.ts` holds all of it.
 - **One tint scale across every `basics/element` (2026-09): hover 10%, selected 20%, selected while
   hovered 30%, structural lines (frame ring, scrollbar) 40%** — all `color-mix(in srgb, currentColor N%,
   transparent)`. The 30% step exists because hover and selected both used to be 20%, which made a selected

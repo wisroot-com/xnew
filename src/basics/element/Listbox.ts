@@ -141,7 +141,7 @@ export function ListboxButton(unit: xnew.Unit,
     const css = xnew.css('base', {
         container: `
             display: inline-flex; align-items: center;
-            width: 10em; max-width: 100%; height: 1.8em;
+            width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
             padding: 0 0.5em;
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: pointer; user-select: none;
