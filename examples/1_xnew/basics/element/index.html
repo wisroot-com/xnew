@@ -124,6 +124,9 @@
       xnew.nest('<div>');
       xnew('<div class="mb-1">', 'Listbox');
       xnew.nest('<div class="flex gap-4 items-center">');
+      // items だけ渡せば Listbox が既定のトリガ + 一覧を自前で組む（{ value, label } でラベルを分けられる）
+      xnew(xbasics.Listbox, { items: ['apple', 'banana', 'cherry'] });
+      xnew(xbasics.Listbox, { items: [{ value: 'apple', label: 'りんご' }, { value: 'banana', label: 'ばなな' }], value: 'banana' });
       xnew(() => {
         xnew.extend(xbasics.Listbox);
         xnew(() => {

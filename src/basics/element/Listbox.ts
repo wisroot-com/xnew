@@ -1,7 +1,8 @@
 //----------------------------------------------------------------------------------------------------
 // Listbox — a styleable select: Listbox (state + fit-to-content host) + ListboxButton (framed trigger + label) + ListboxMenu (floating list) + ListboxItem (row)
 // The native <select> popup can't be styled, so selection is held in JS (no native control at all).
-// Hosts read the current value with `.value` and observe changes with `.on('-change', ({ value }) => …)`.
+// Standalone, `xnew(Listbox, { items })` draws the whole control; a trailing compose fn replaces that
+// default with hand-built parts (xnew.standalone gate). `.value` reads it, `-change` reports edits.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -9,12 +10,16 @@ import { Gate } from '../widget/Gate';
 import { Overlay } from '../widget/Overlay';
 
 //----------------------------------------------------------------------------------------------------
-// Listbox — the selection state and the fit-to-content host (no frame; ListboxButton draws the trigger)
+// Listbox — the fit-to-content host (no frame; ListboxButton draws the trigger)
+// Standalone it builds the default trigger + option list out of `items`; composed, the caller nests its own.
 //----------------------------------------------------------------------------------------------------
 
+// a row is either the bare value, or a value with its own display label
+export type ListboxItemDef = string | { value: string, label?: string };
+
 export function Listbox(unit: xnew.Unit,
-    { value, gate, className = '', style = '', ...others }:
-    { value?: string, gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
+    { value, items = [], gate, className = '', style = '', ...others }:
+    { value?: string, items?: ListboxItemDef[], gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `
@@ -24,18 +29,51 @@ export function Listbox(unit: xnew.Unit,
         `,
     });
 
-    let selected = value ?? '';
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
+
+    // a component's defines land on the unit only after it returns, so the state goes on first through its
+    // own component — that is what lets the default UI below already reach `.gate` / `.register` / `.bind`
+    xnew.extend(ListboxState, { value, gate });
+
+    // default trigger + option list, drawn only when standalone so a caller can compose its own instead
+    if (xnew.standalone === true) {
+        xnew(() => {
+            xnew.extend(ListboxButton);
+            xnew(ListboxChevron);
+        });
+        xnew(() => {
+            xnew.extend(ListboxMenu);
+            for (const item of items) {
+                xnew(ListboxItem, typeof item === 'string' ? { value: item } : item);
+            }
+        });
+    }
+}
+
+//----------------------------------------------------------------------------------------------------
+// ListboxState — the selection state itself: the value, the shared Gate, and the item / label registries
+//----------------------------------------------------------------------------------------------------
+
+function ListboxState(unit: xnew.Unit,
+    { value, gate }:
+    { value?: string, gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit } = {}
+) {
+    let selected = value ?? '';
 
     const items: xnew.Unit[] = [];
     const labels: HTMLElement[] = [];
 
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate ?? { open: false, duration: 0 });
 
+    // the trigger shows the selected row's label, falling back to the value itself when it has none
+    function text(value: string): string {
+        return items.find((item) => item.value === value)?.label ?? value;
+    }
+
     function apply(value: string) {
         selected = value;
         for (const label of labels) {
-            label.textContent = selected;
+            label.textContent = text(selected);
         }
         for (const item of items) {
             item.check(item.value === selected);
@@ -57,7 +95,7 @@ export function Listbox(unit: xnew.Unit,
         },
         bind(label: HTMLElement) {
             labels.push(label);
-            label.textContent = selected;
+            label.textContent = text(selected);
         },
         select(value: string) {
             apply(value);
@@ -65,6 +103,23 @@ export function Listbox(unit: xnew.Unit,
             gate.close();
         },
     };
+}
+
+//----------------------------------------------------------------------------------------------------
+// ListboxChevron — the default trigger marker drawn beside the label when the Listbox builds its own UI
+// (a local svg rather than xicons, so using a Listbox never drags the whole icon table into a bundle)
+//----------------------------------------------------------------------------------------------------
+
+function ListboxChevron() {
+    const css = xnew.css('base', {
+        container: `
+            flex: none; width: 0.9em; height: 0.9em; margin-left: 0.25em;
+            fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+        `,
+    });
+
+    xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.container });
+    xnew('<path d="M2.5 4.5 6 8 9.5 4.5"/>');
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -150,12 +205,12 @@ export function ListboxMenu(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListboxItem — one option row of a Listbox; a trailing text / function supplies the row content, empty falls back to the value
+// ListboxItem — one option row of a Listbox; a trailing text / function supplies the row content, empty falls back to `label` / the value
 //----------------------------------------------------------------------------------------------------
 
 export function ListboxItem(unit: xnew.Unit,
-    { value = '', className = '', style = '', ...others }:
-    { value?: string, className?: string, style?: string, [key: string]: any } = {}
+    { value = '', label, className = '', style = '', ...others }:
+    { value?: string, label?: string, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const listbox = xnew.context(Listbox);
     listbox.register(unit);
@@ -176,14 +231,17 @@ export function ListboxItem(unit: xnew.Unit,
         event.stopPropagation();
         listbox.select(value);
     });
-    // fall back to the value as text when the row is used standalone (no content composed into it)
+    // fall back to the label (or the value) as text when the row is used standalone (no content composed into it)
     if (xnew.standalone === true) {
-        unit.current.textContent = value;
+        unit.current.textContent = label ?? value;
     }
 
     return {
         get value() {
             return value;
+        },
+        get label() {
+            return label;
         },
         check(current: boolean) {
             unit.current.toggleAttribute('data-checked', current);

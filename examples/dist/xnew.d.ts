@@ -411,8 +411,13 @@ declare function InputRadio(unit: xnew.Unit, { value, name, checked, className, 
     readonly input: HTMLInputElement;
 };
 
-declare function Listbox(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
+type ListboxItemDef = string | {
+    value: string;
+    label?: string;
+};
+declare function Listbox(unit: xnew.Unit, { value, items, gate, className, style, ...others }?: {
     value?: string;
+    items?: ListboxItemDef[];
     gate?: {
         open?: boolean;
         duration?: number;
@@ -421,13 +426,7 @@ declare function Listbox(unit: xnew.Unit, { value, gate, className, style, ...ot
     className?: string;
     style?: string;
     [key: string]: any;
-}): {
-    readonly value: string;
-    readonly gate: Unit;
-    register(item: xnew.Unit): void;
-    bind(label: HTMLElement): void;
-    select(value: string): void;
-};
+}): void;
 declare function ListboxButton(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
     style?: string;
@@ -438,13 +437,15 @@ declare function ListboxMenu(unit: xnew.Unit, { className, style, ...others }?: 
     style?: string;
     [key: string]: any;
 }): void;
-declare function ListboxItem(unit: xnew.Unit, { value, className, style, ...others }?: {
+declare function ListboxItem(unit: xnew.Unit, { value, label, className, style, ...others }?: {
     value?: string;
+    label?: string;
     className?: string;
     style?: string;
     [key: string]: any;
 }): {
     readonly value: string;
+    readonly label: string | undefined;
     check(current: boolean): void;
 };
 

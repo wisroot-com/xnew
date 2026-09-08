@@ -2377,7 +2377,7 @@ function Overlay(unit, _a = {}) {
 }
 
 function Listbox(unit, _a = {}) {
-    var { value, gate, className = '', style = '' } = _a, others = __rest(_a, ["value", "gate", "className", "style"]);
+    var { value, items = [], gate, className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "gate", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-flex;
@@ -2385,15 +2385,34 @@ function Listbox(unit, _a = {}) {
             margin: 0.125em 0;
         `,
     });
-    let selected = value !== null && value !== void 0 ? value : '';
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    xnew.extend(ListboxState, { value, gate });
+    if (xnew.standalone === true) {
+        xnew(() => {
+            xnew.extend(ListboxButton);
+            xnew(ListboxChevron);
+        });
+        xnew(() => {
+            xnew.extend(ListboxMenu);
+            for (const item of items) {
+                xnew(ListboxItem, typeof item === 'string' ? { value: item } : item);
+            }
+        });
+    }
+}
+function ListboxState(unit, { value, gate } = {}) {
+    let selected = value !== null && value !== void 0 ? value : '';
     const items = [];
     const labels = [];
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: false, duration: 0 });
+    function text(value) {
+        var _a, _b;
+        return (_b = (_a = items.find((item) => item.value === value)) === null || _a === void 0 ? void 0 : _a.label) !== null && _b !== void 0 ? _b : value;
+    }
     function apply(value) {
         selected = value;
         for (const label of labels) {
-            label.textContent = selected;
+            label.textContent = text(selected);
         }
         for (const item of items) {
             item.check(item.value === selected);
@@ -2412,7 +2431,7 @@ function Listbox(unit, _a = {}) {
         },
         bind(label) {
             labels.push(label);
-            label.textContent = selected;
+            label.textContent = text(selected);
         },
         select(value) {
             apply(value);
@@ -2420,6 +2439,16 @@ function Listbox(unit, _a = {}) {
             gate.close();
         },
     };
+}
+function ListboxChevron() {
+    const css = xnew.css('base', {
+        container: `
+            flex: none; width: 0.9em; height: 0.9em; margin-left: 0.25em;
+            fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+        `,
+    });
+    xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.container });
+    xnew('<path d="M2.5 4.5 6 8 9.5 4.5"/>');
 }
 function ListboxButton(unit, _a = {}) {
     var { className = '', style = '' } = _a, others = __rest(_a, ["className", "style"]);
@@ -2479,7 +2508,7 @@ function ListboxMenu(unit, _a = {}) {
     }
 }
 function ListboxItem(unit, _a = {}) {
-    var { value = '', className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
+    var { value = '', label, className = '', style = '' } = _a, others = __rest(_a, ["value", "label", "className", "style"]);
     const listbox = xnew.context(Listbox);
     listbox.register(unit);
     const css = xnew.css('base', {
@@ -2498,11 +2527,14 @@ function ListboxItem(unit, _a = {}) {
         listbox.select(value);
     });
     if (xnew.standalone === true) {
-        unit.current.textContent = value;
+        unit.current.textContent = label !== null && label !== void 0 ? label : value;
     }
     return {
         get value() {
             return value;
+        },
+        get label() {
+            return label;
         },
         check(current) {
             unit.current.toggleAttribute('data-checked', current);

@@ -47,6 +47,12 @@ describe('basics Listbox', () => {
         return Array.from(menu.querySelectorAll(':scope > div')) as HTMLElement[];
     }
 
+    // the default UI hangs under the host: backdrop -> anchor tether -> menu -> rows
+    function defaultRowsOf(box: xnew.Unit): HTMLElement[] {
+        const menu = (box.current as HTMLElement).lastElementChild!.firstElementChild!.firstElementChild as HTMLElement;
+        return rowsOf(menu);
+    }
+
     // the backdrop is Overlay's fixed container: menu -> anchor tether -> backdrop
     function backdropOf(menu: HTMLElement): HTMLElement {
         return menu.parentElement!.parentElement as HTMLElement;
@@ -289,6 +295,64 @@ describe('basics Listbox', () => {
         open(button);
         expect(menu.style.backgroundColor).toBe('rgb(1, 2, 3)');
         host.remove();
+    });
+
+    // standalone: `xnew(Listbox, { items })` draws the trigger + option list itself
+    it('builds the whole control from items when used standalone', () => {
+        let box!: xnew.Unit;
+        xnew(() => {
+            box = xnew(Listbox, { items: ['low', 'mid', 'high'], value: 'mid' });
+        });
+        jest.advanceTimersByTime(0);
+
+        const trigger = box.current.firstElementChild as HTMLElement;
+        const label = trigger.firstElementChild as HTMLElement;
+        // the trigger carries the label plus the default chevron
+        expect(label.textContent).toBe('mid');
+        expect(trigger.querySelector('svg')).not.toBe(null);
+
+        const received: string[] = [];
+        box.on('-change', ({ value }: { value: string }) => received.push(value));
+
+        trigger.dispatchEvent(new Event('click', { bubbles: true }));
+        jest.advanceTimersByTime(0);
+        const rows = defaultRowsOf(box);
+        expect(rows.map((r) => r.textContent)).toEqual(['low', 'mid', 'high']);
+        expect(rows.map((r) => r.hasAttribute('data-checked'))).toEqual([false, true, false]);
+
+        rows[2].dispatchEvent(new Event('click', { bubbles: true }));
+        expect(received).toEqual(['high']);
+        expect(box.value).toBe('high');
+        expect(label.textContent).toBe('high');
+    });
+
+    it('shows the item label on the trigger and the row, keeping the value underneath', () => {
+        let box!: xnew.Unit;
+        xnew(() => {
+            box = xnew(Listbox, { items: [{ value: 'apple', label: 'りんご' }, { value: 'banana', label: 'ばなな' }] });
+        });
+        jest.advanceTimersByTime(0);
+
+        const trigger = box.current.firstElementChild as HTMLElement;
+        expect(box.value).toBe('apple');
+        expect((trigger.firstElementChild as HTMLElement).textContent).toBe('りんご');
+
+        trigger.dispatchEvent(new Event('click', { bubbles: true }));
+        jest.advanceTimersByTime(0);
+        const rows = defaultRowsOf(box);
+        expect(rows.map((r) => r.textContent)).toEqual(['りんご', 'ばなな']);
+
+        rows[1].dispatchEvent(new Event('click', { bubbles: true }));
+        expect(box.value).toBe('banana');
+        expect((trigger.firstElementChild as HTMLElement).textContent).toBe('ばなな');
+    });
+
+    it('leaves the default UI out when the caller composes its own parts', () => {
+        const { box } = build({}, ['low', 'mid']);
+        jest.advanceTimersByTime(0);
+
+        // only the composed trigger + menu are there: no second trigger, and no default chevron on it
+        expect((box.current.firstElementChild as HTMLElement).querySelector('svg')).toBe(null);
     });
 
     it('closes the option list on a click on the backdrop', () => {
