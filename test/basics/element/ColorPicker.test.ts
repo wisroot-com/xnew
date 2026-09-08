@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
-import { ColorPicker } from '../../../src/basics/widget/ColorPicker';
+import { ColorPicker } from '../../../src/basics/element/ColorPicker';
 
 describe('basics ColorPicker', () => {
     beforeEach(() => {

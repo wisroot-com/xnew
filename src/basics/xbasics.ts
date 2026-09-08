@@ -16,9 +16,9 @@ import { InputNumber } from './element/InputNumber';
 import { InputSwitch } from './element/InputSwitch';
 import { InputRadio } from './element/InputRadio';
 import { Listbox, ListboxButton, ListboxMenu, ListboxItem } from './element/Listbox';
+import { ColorPicker } from './element/ColorPicker';
 import { Gate } from './widget/Gate';
 import { Accordion } from './widget/Accordion';
-import { ColorPicker } from './widget/ColorPicker';
 import { Overlay } from './widget/Overlay';
 import { VirtualPad } from './widget/VirtualPad';
 import { Panel, PanelGroup } from './widget/Panel';
@@ -41,9 +41,9 @@ export const xbasics = {
     ListboxButton,
     ListboxMenu,
     ListboxItem,
+    ColorPicker,
     Gate,
     Accordion,
-    ColorPicker,
     Overlay,
     VirtualPad,
     Panel,
