@@ -1,4 +1,4 @@
-import { EventBinder, isDOMElement } from '../../src/utils/dom';
+import { EventBinder, dispatchChange, isDOMElement } from '../../src/utils/dom';
 
 //----------------------------------------------------------------------------------------------------
 // dom — DOMElement type guard (isDOMElement) + EventBinder (DOM event binding).
@@ -213,6 +213,53 @@ describe('EventBinder', () => {
 
             expect(listener).toHaveBeenCalledWith({ event, value: 42 });
             input.remove();
+        });
+
+        it('takes the value from detail for a control dispatching its own change', () => {
+            const box = document.createElement('div');
+            document.body.appendChild(box);
+
+            const listener = jest.fn();
+            binder.add(box, 'change', listener);
+            jest.runOnlyPendingTimers();
+
+            dispatchChange(box, '#00ff00');
+
+            expect(listener).toHaveBeenCalledWith({ event: expect.anything(), value: '#00ff00' });
+            box.remove();
+        });
+
+        // the value rides in detail rather than on the target, so an ancestor listener still reads it
+        it('carries the dispatched value up to an ancestor listener', () => {
+            const outer = document.createElement('div');
+            const inner = document.createElement('div');
+            outer.appendChild(inner);
+            document.body.appendChild(outer);
+
+            const listener = jest.fn();
+            binder.add(outer, 'change', listener);
+            jest.runOnlyPendingTimers();
+
+            dispatchChange(inner, 7);
+
+            expect(listener).toHaveBeenCalledWith({ event: expect.anything(), value: 7 });
+            outer.remove();
+        });
+
+        it('passes a dispatched value of any type through untouched', () => {
+            const box = document.createElement('div');
+            document.body.appendChild(box);
+
+            const values: unknown[] = [];
+            binder.add(box, 'change', ({ value }: { value: unknown }) => values.push(value));
+            jest.runOnlyPendingTimers();
+
+            dispatchChange(box, false);
+            dispatchChange(box, null);
+            dispatchChange(box, { id: 1 });
+
+            expect(values).toEqual([false, null, { id: 1 }]);
+            box.remove();
         });
     });
 

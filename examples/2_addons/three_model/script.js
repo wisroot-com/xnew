@@ -162,7 +162,7 @@ function Panel(unit) {
 
   const panel = xnew(xbasics.Panel, { name: 'GUI', open: true, className: 'fixed text-sm w-36 top-2 right-2 bg-white shadow-lg' });
 
-  panel.listbox({ name: 'action', value: 'idle', items: model.actions('base') }).on('-change', ({ value }) => {
+  panel.listbox({ name: 'action', value: 'idle', items: model.actions('base') }).on('change', ({ value }) => {
     model.crossfade(value);
   });
 

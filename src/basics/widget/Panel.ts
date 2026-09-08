@@ -1,12 +1,14 @@
 //----------------------------------------------------------------------------------------------------
 // Panel — stackable form-style settings panel with a builder API; a row reports its edits through
-// its own events ('input' / '-change'), so the host decides what to do with them.
+// its own events ('input' / 'change'), so the host decides what to do with them.
 // Every value-bearing row (range / checkbox / color / listbox / tabs) reads and writes through `.value`,
-// delegating to the control it owns; on listbox / tabs a set announces on '-change' just like a press does.
+// delegating to the control it owns, and reporting like a native input: `input` while a value moves,
+// `change` once it settles, and both together for a click, a typed entry or a `.value` set.
 // The frame (size / border / scrollport) is the panel's own; className / style tune it from outside.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { dispatchChange, dispatchCommit, dispatchInput } from '../../utils/dom';
 import { xicons } from '../../icons/xicons';
 import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
@@ -118,7 +120,7 @@ function Tabs(unit: xnew.Unit, { items, value }: { items: ItemDef<any>[], value?
             &[data-active] { border-bottom-color: currentColor; font-weight: 600; opacity: 1; }
         `,
     });
-    xnew.nest({ tag: 'div', className: css.strip });
+    const strip = xnew.nest({ tag: 'div', className: css.strip }) as HTMLElement;
 
     // the groups a tab names are this strip's siblings, so the panel above holds both
     const panel = unit.parent as xnew.Unit;
@@ -149,7 +151,7 @@ function Tabs(unit: xnew.Unit, { items, value }: { items: ItemDef<any>[], value?
         if (keys.includes(key) === true) {
             active = key;
             apply();
-            xnew.emit('-change', { value: key });
+            dispatchCommit(strip, key);
         }
     }
 
@@ -209,15 +211,13 @@ function Checkbox(unit: xnew.Unit, { name = '', ...others }: { name?: string, [k
 }
 
 function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: string, value?: string, key?: any }) {
-    xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
+    const row = xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`) as HTMLElement;
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
 
     let current = value;
     const swatch = xnew({ tag: 'button', type: 'button', style: 'height: 2em; flex: 1; max-width: 60%; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer;' });
     swatch.current.style.background = current;
 
-    // '-change' must fire on this row unit, while commits arrive from the popup's scope
-    const notify = xnew.scope(() => xnew.emit('-change', { value: current }));
 
     let popup: xnew.Unit | null = null;
     swatch.on('click', ({ event }: { event: PointerEvent }) => {
@@ -226,10 +226,15 @@ function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: strin
             popup = xnew(ColorPopup, {
                 anchor: swatch.current as HTMLElement,
                 value: current,
-                commit(next: string) {
+                // the element is captured, so this needs no xnew.scope even though it runs in the popup's scope
+                commit(next: string, settled: boolean) {
                     current = next;
                     swatch.current.style.background = next;
-                    notify();
+                    if (settled === true) {
+                        dispatchChange(row, next);
+                    } else {
+                        dispatchInput(row, next);
+                    }
                 },
             });
             popup.on('destroy', () => popup = null);
@@ -243,15 +248,15 @@ function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: strin
         get value() {
             return current;
         },
-        // only the swatch moves; `-change` stays reserved for edits made in the picker
         set value(text: string) {
             current = text;
             swatch.current.style.background = text;
+            dispatchCommit(row, text);
         },
     };
 }
 
-function ColorPopup(unit: xnew.Unit, { anchor, value, commit }: { anchor: HTMLElement, value: string, commit: (value: string) => void }) {
+function ColorPopup(unit: xnew.Unit, { anchor, value, commit }: { anchor: HTMLElement, value: string, commit: (value: string, settled: boolean) => void }) {
     // Overlay backdrop blocks the page and tracks the swatch rect; close destroys this unit
     xnew.extend(Overlay, { gate: { open: false, duration: 100 }, anchor });
     unit.gate.on('-closed', () => unit.destroy());
@@ -261,7 +266,12 @@ function ColorPopup(unit: xnew.Unit, { anchor, value, commit }: { anchor: HTMLEl
     // close on a press outside (not click, so a drag released outside the picker cannot close it)
     unit.on('pointerdown.outside', () => unit.gate.close());
 
-    xnew(ColorPicker, { value }).on('-change', ({ value }: { value: string }) => commit(value));
+    // the picker hangs inside the row, so its own events would read as the row's; the row re-fires them
+    // as its own, keeping the native split (dragging the bars streams input, releasing settles it)
+    xnew(ColorPicker, { value }).on('input change', ({ event, value }: { event: Event, value: string }) => {
+        event.stopPropagation();
+        commit(value, event.type === 'change');
+    });
 
     unit.gate.open();
 }
@@ -270,7 +280,7 @@ function List(unit: xnew.Unit, { name = '', value, items = [], ...others }: { na
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
 
-    // Listbox extends onto this unit (so its '-change' fires here); the button draws the trigger, the floating list nests in
+    // Listbox extends onto this unit (so its 'change' fires here); the button draws the trigger, the floating list nests in
     xnew.extend(Listbox, { value, ...others, style: 'max-width: 60%;' });
     xnew(() => {
         xnew.extend(ListboxButton, { style: 'height: 2em;' });

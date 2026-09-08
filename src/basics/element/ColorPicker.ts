@@ -1,10 +1,12 @@
 //----------------------------------------------------------------------------------------------------
 // ColorPicker — Sketch-style color picker: saturation map + preset row + hue / alpha bars + hex / RGBA fields
 // Color state is held as HSVA in JS (no native control); hosts read / write `.value` (hex string)
-// and observe user edits with `.on('-change', ({ value }) => …)`; native field noise never bubbles out.
+// and observe edits like a native input: `input` streams while a bar is dragged, `change` once it settles,
+// and both fire together for a click / typed field / `.value` set. Internal field noise never bubbles out.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { dispatchChange, dispatchCommit, dispatchInput } from '../../utils/dom';
 import { Hsva, formatHex, hasHexAlpha, hsvaToRgba, parseHex, rgbaToHsva } from '../../utils/color';
 import { clamp } from '../../utils/math';
 
@@ -98,13 +100,20 @@ export function ColorPicker(unit: xnew.Unit,
         hsva = { ...hsva, a: 1 };
     }
 
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others }) as HTMLElement;
     unit.on('pointerdown', ({ event }: { event: PointerEvent }) => event.stopPropagation());
 
-    // '-change' must fire on the picker unit, while apply() runs in the drag zones' scopes
-    const notify = xnew.scope(function () {
-        xnew.emit('-change', { value: formatHex(hsvaToRgba(hsva)) });
-    });
+    // the element is captured, so these need no xnew.scope even though apply() runs in the drag zones' scopes
+    function notify(kind: 'input' | 'change' | 'commit') {
+        const hex = formatHex(hsvaToRgba(hsva));
+        if (kind === 'input') {
+            dispatchInput(container, hex);
+        } else if (kind === 'change') {
+            dispatchChange(container, hex);
+        } else {
+            dispatchCommit(container, hex);
+        }
+    }
 
     let saturationElement: HTMLElement;
     let circleElement: HTMLElement;
@@ -127,8 +136,9 @@ export function ColorPicker(unit: xnew.Unit,
             // a picker hidden mid-drag reports a 0 rect: apply() clamps out-of-range offsets, but a 0 / 0 NaN would slip through it into hsva
             const x = rect.width > 0 ? position.x / rect.width : 0;
             const y = rect.height > 0 ? position.y / rect.height : 0;
-            apply({ ...hsva, s: x, v: 1 - y }, true);
+            apply({ ...hsva, s: x, v: 1 - y }, 'input');
         });
+        zone.on('dragend', () => notify('change'));
     });
 
     // one preset swatch row under the saturation map
@@ -140,7 +150,7 @@ export function ColorPicker(unit: xnew.Unit,
                 if (rgba !== null) {
                     xnew((swatch: xnew.Unit) => {
                         xnew.nest({ tag: 'div', className: css.preset, style: `background: ${formatHex(rgba)};`, title: preset });
-                        swatch.on('click', () => apply(rgbaToHsva(rgba), true));
+                        swatch.on('click', () => apply(rgbaToHsva(rgba), 'commit'));
                     });
                 }
             }
@@ -162,8 +172,9 @@ export function ColorPicker(unit: xnew.Unit,
                 zone.on('dragstart dragmove', ({ position }: { position: { x: number, y: number } }) => {
                     const rect = zone.current.getBoundingClientRect();
                     const x = rect.width > 0 ? position.x / rect.width : 0;
-                    apply({ ...hsva, h: x * 360 }, true);
+                    apply({ ...hsva, h: x * 360 }, 'input');
                 });
+                zone.on('dragend', () => notify('change'));
             });
             if (alpha === true) {
                 xnew((zone: xnew.Unit) => {
@@ -173,8 +184,9 @@ export function ColorPicker(unit: xnew.Unit,
                     zone.on('dragstart dragmove', ({ position }: { position: { x: number, y: number } }) => {
                         const rect = zone.current.getBoundingClientRect();
                         const x = rect.width > 0 ? position.x / rect.width : 0;
-                        apply({ ...hsva, a: x }, true);
+                        apply({ ...hsva, a: x }, 'input');
                     });
+                    zone.on('dragend', () => notify('change'));
                 });
             }
         });
@@ -196,7 +208,9 @@ export function ColorPicker(unit: xnew.Unit,
         xnew.nest({ tag: 'div', className: css.field });
         const input = xnew({ tag: 'input', type: 'text', spellcheck: false, className: css.fieldInput }).current as HTMLInputElement;
         xnew({ tag: 'div', className: css.fieldLabel, textContent: label });
-        // keep the native change inside the picker so hosts only see the canonical '-change'
+        // keep the fields' own events inside the picker so hosts only see the picker's canonical pair:
+        // half-typed text is not a color, so partial input never surfaces as the picker's value
+        sub.on('input', ({ event }: { event: Event }) => event.stopPropagation());
         sub.on('change', ({ event, value }: { event: Event, value: string }) => {
             event.stopPropagation();
             commit(String(value));
@@ -215,7 +229,7 @@ export function ColorPicker(unit: xnew.Unit,
         } else {
             // 3 / 6-digit hex keeps the current alpha; only 4 / 8-digit text carries its own
             const merged = hasHexAlpha(text) === true ? rgba : { ...rgba, a: hsva.a };
-            apply(rgbaToHsva(merged), true);
+            apply(rgbaToHsva(merged), 'commit');
         }
     }
 
@@ -224,7 +238,7 @@ export function ColorPicker(unit: xnew.Unit,
         if (Number.isNaN(parsed) === true) {
             render();
         } else {
-            apply(rgbaToHsva({ ...hsvaToRgba(hsva), [key]: clamp(parsed, 0, 255) }), true);
+            apply(rgbaToHsva({ ...hsvaToRgba(hsva), [key]: clamp(parsed, 0, 255) }), 'commit');
         }
     }
 
@@ -233,11 +247,11 @@ export function ColorPicker(unit: xnew.Unit,
         if (Number.isNaN(parsed) === true) {
             render();
         } else {
-            apply({ ...hsva, a: clamp(parsed, 0, 100) / 100 }, true);
+            apply({ ...hsva, a: clamp(parsed, 0, 100) / 100 }, 'commit');
         }
     }
 
-    function apply(next: Hsva, emit: boolean) {
+    function apply(next: Hsva, kind: 'none' | 'input' | 'change' | 'commit') {
         hsva = {
             h: clamp(next.h, 0, 360),
             s: clamp(next.s, 0, 1),
@@ -245,8 +259,8 @@ export function ColorPicker(unit: xnew.Unit,
             a: alpha === true ? clamp(next.a, 0, 1) : 1,
         };
         render();
-        if (emit === true) {
-            notify();
+        if (kind !== 'none') {
+            notify(kind);
         }
     }
 
@@ -279,7 +293,7 @@ export function ColorPicker(unit: xnew.Unit,
         set value(text: string) {
             const rgba = parseHex(text);
             if (rgba !== null) {
-                apply(rgbaToHsva(rgba), false);
+                apply(rgbaToHsva(rgba), 'commit');
             }
         },
     };

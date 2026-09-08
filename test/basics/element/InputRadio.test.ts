@@ -19,6 +19,14 @@ describe('basics InputRadio', () => {
         return { label, input: label.querySelector('input') as HTMLInputElement };
     }
 
+    // every value event a host would see, tagged by type, in order
+    function record(unit: xnew.Unit): Array<[string, unknown]> {
+        const seen: Array<[string, unknown]> = [];
+        unit.on('input change', ({ event, value }: { event: Event, value: unknown }) => seen.push([event.type, value]));
+        jest.advanceTimersByTime(0);
+        return seen;
+    }
+
     it('renders a label wrapping a hidden radio, with the value as its text', () => {
         const unit = xnew(InputRadio, { value: 'low', name: 'level' });
         const { label, input } = partsOf(unit);
@@ -66,6 +74,15 @@ describe('basics InputRadio', () => {
         expect(label.className).toContain('seg');
         expect(label.getAttribute('style')).toContain('font-weight: bold;');
         expect(input.disabled).toBe(true);
+    });
+
+    it('fires the native input + change pair on a .checked set', () => {
+        const unit = xnew(InputRadio, { value: 'low', name: 'level' });
+        const seen = record(unit);
+
+        unit.checked = true;
+
+        expect(seen).toEqual([['input', true], ['change', true]]);
     });
 
     it('reads this segment own value through .value', () => {

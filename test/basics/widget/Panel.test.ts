@@ -106,14 +106,14 @@ describe('basics Panel', () => {
             expect((group.container as HTMLElement).style.display).not.toBe('none');
         });
 
-        test("a .value set switches from code and fires '-change' on the strip, like a press does", () => {
+        test("a .value set switches from code and fires 'change' on the strip, like a press does", () => {
             const { host, panel } = newPanel();
             const values: string[] = [];
             const tabs = panel.tabs({ items: ITEMS });
             const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
             const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
 
-            tabs.on('-change', ({ value }: { value: string }) => values.push(value));
+            tabs.on('change', ({ value }: { value: string }) => values.push(value));
 
             jest.advanceTimersByTime(1);
             tabButton(host, 'Right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -212,6 +212,38 @@ describe('basics Panel', () => {
             expect(color.value).toBe('#abcdef');
             expect((color.current as HTMLElement).querySelector('button')!.style.background).toBe('rgb(171, 205, 239)');
             expect(listbox.value).toBe('b');
+        });
+
+        // 'change' bubbles like the native event, so one listener on the panel covers every row
+        test("every row's change reaches a single listener on the panel itself", () => {
+            const { panel } = newPanel();
+            const received: unknown[] = [];
+            panel.on('change', ({ value }: { value: unknown }) => received.push(value));
+            const range = panel.range({ name: 'r', value: 0 });
+            const checkbox = panel.checkbox({ name: 'c', value: false });
+            const listbox = panel.listbox({ name: 'l', items: ['a', 'b'] });
+            const color = panel.color({ name: 'k', value: '#000000' });
+            jest.advanceTimersByTime(1);
+
+            listbox.value = 'b';
+            color.value = '#ffffff';
+            range.value = 40;
+            checkbox.value = true;
+
+            expect(received).toEqual(['b', '#ffffff', 40, true]);
+        });
+
+        // a set is a committed edit, so it fires the native pair — input first, then change
+        test('a .value set fires input then change, in that order', () => {
+            const { panel } = newPanel();
+            const seen: Array<[string, unknown]> = [];
+            panel.on('input change', ({ event, value }: { event: Event, value: unknown }) => seen.push([event.type, value]));
+            const listbox = panel.listbox({ name: 'l', items: ['a', 'b'] });
+            jest.advanceTimersByTime(1);
+
+            listbox.value = 'b';
+
+            expect(seen).toEqual([['input', 'b'], ['change', 'b']]);
         });
 
         test('tabs has no select(): .value is the only write path', () => {

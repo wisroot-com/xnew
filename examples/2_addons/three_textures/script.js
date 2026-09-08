@@ -232,15 +232,15 @@ function buildMaterial(state, bags) {
 function ControlPanel(unit, { state, bags }) {
   const panel = xnew(xbasics.Panel, { className: 'absolute top-4 right-4 w-56 max-h-[calc(100vh-2rem)] text-sm border-stone-600 shadow-lg bg-stone-800/95 text-stone-100' });
 
-  panel.listbox({ name: 'texture', value: state.texture, items: Object.keys(TEXTURES) }).on('-change', ({ value }) => {
+  panel.listbox({ name: 'texture', value: state.texture, items: Object.keys(TEXTURES) }).on('change', ({ value }) => {
     state.texture = value;
     xnew.emit('+texture', { type: value });
   });
-  panel.listbox({ name: 'display', value: state.display, items: ['shader', 'baked', 'inject', 'color', 'normal'] }).on('-change', ({ value }) => {
+  panel.listbox({ name: 'display', value: state.display, items: ['shader', 'baked', 'inject', 'color', 'normal'] }).on('change', ({ value }) => {
     state.display = value;
     xnew.emit('+display', { type: value });
   });
-  panel.listbox({ name: 'model', value: state.model, items: Object.keys(GEOMETRIES) }).on('-change', ({ value }) => {
+  panel.listbox({ name: 'model', value: state.model, items: Object.keys(GEOMETRIES) }).on('change', ({ value }) => {
     state.model = value;
     xnew.emit('+model', { type: value });
   });
@@ -268,7 +268,7 @@ function buildGroup(panel, state, bags) {
   return panel.group({ name: state.texture, open: true }, (f) => {
     for (const [name, value] of Object.entries(params)) {
       if (typeof value === 'string') {
-        f.color({ name, value }).on('-change', ({ value }) => params[name] = value);
+        f.color({ name, value }).on('change', ({ value }) => params[name] = value);
       } else {
         const { min, max } = texture.ranges[name] ?? {};
         f.range({ name, value, min, max }).on('input', ({ value }) => params[name] = value);

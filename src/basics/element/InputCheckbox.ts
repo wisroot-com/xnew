@@ -2,10 +2,12 @@
 // InputCheckbox — framed check box backed by a hidden native <input type="checkbox">
 // Holds a Gate for the checked state and exposes it as `gate`; the invisible native input captures
 // interaction. unit.current is the container (not the input), so a trailing compose fn nests inside it.
-// Hosts read / write the checked boolean through `.value`, which drives the Gate (never write `.input.checked`).
+// Hosts read / write the checked boolean through `.value`, which drives the Gate and fires the native
+// `input` + `change` pair (never write `.input.checked` — it fires nothing and bypasses the Gate).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { dispatchCommit } from '../../utils/dom';
 import { Gate, GateProps } from '../widget/Gate';
 
 export function InputCheckbox(unit: xnew.Unit,
@@ -26,7 +28,7 @@ export function InputCheckbox(unit: xnew.Unit,
         `,
     });
 
-    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
+    const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style }) as HTMLElement;
 
     const input = xnew({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
 
@@ -42,7 +44,9 @@ export function InputCheckbox(unit: xnew.Unit,
     gate.on('-closed', () => apply(false));
     apply(gate.state === 'opened' || gate.state === 'opening');
 
-    unit.on('input', ({ value }: { value: boolean }) => value ? gate.open() : gate.close());
+    // bound to the input, not the container: the setter dispatches on the container, so its own event
+    // cannot re-enter here and drive the Gate a second time
+    input.on('input', ({ value }: { value: boolean }) => value ? gate.open() : gate.close());
 
     xnew.standalone(() => {
         xnew(CheckMark);
@@ -52,13 +56,16 @@ export function InputCheckbox(unit: xnew.Unit,
         get value() {
             return (input.current as HTMLInputElement).checked;
         },
-        // routed through the Gate, so a programmatic set keeps data-checked and the composed mark in step
+        // routed through the Gate, so a programmatic set keeps data-checked and the composed mark in step;
+        // the input is flipped up front because the Gate only reports a close once its transition ends
         set value(checked: boolean) {
+            (input.current as HTMLInputElement).checked = checked;
             if (checked === true) {
                 gate.open();
             } else {
                 gate.close();
             }
+            dispatchCommit(container, checked);
         },
         get input() {
             return input.current as HTMLInputElement;

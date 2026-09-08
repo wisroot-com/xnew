@@ -95,7 +95,7 @@ function TextureView(unit, { texture, params, channel }) {
 function ControlPanel(unit, { state, bags }) {
   const panel = xnew(xbasics.Panel, { className: 'w-56 max-h-[calc(100vh-3rem)] text-sm border-stone-600 shadow-lg bg-stone-800 text-stone-100' });
 
-  panel.listbox({ name: 'texture', value: state.texture, items: Object.keys(TEXTURES) }).on('-change', ({ value }) => {
+  panel.listbox({ name: 'texture', value: state.texture, items: Object.keys(TEXTURES) }).on('change', ({ value }) => {
     state.texture = value;
     xnew.emit('+texture', { type: value });
   });
@@ -115,7 +115,7 @@ function buildGroup(panel, state, bags) {
   return panel.group({ name: state.texture, open: true }, (f) => {
     for (const [name, value] of Object.entries(component.presets.standard)) {
       if (Array.isArray(value)) {
-        f.color({ name, value: params[name] }).on('-change', ({ value }) => params[name] = value);
+        f.color({ name, value: params[name] }).on('change', ({ value }) => params[name] = value);
       } else {
         const { min, max } = component.ranges[name];
         f.range({ name, value: params[name], min, max }).on('input', ({ value }) => params[name] = value);

@@ -30,6 +30,14 @@ describe('basics InputRange', () => {
         return containerOf(unit).querySelectorAll('div')[1] as HTMLElement;
     }
 
+    // every value event a host would see, tagged by type, in order
+    function record(unit: xnew.Unit): Array<[string, unknown]> {
+        const seen: Array<[string, unknown]> = [];
+        unit.on('input change', ({ event, value }: { event: Event, value: unknown }) => seen.push([event.type, value]));
+        jest.advanceTimersByTime(0);
+        return seen;
+    }
+
     it('nests a hidden native range input with the given attributes', () => {
         const unit = xnew(InputRange, { value: 30, min: 10, max: 50, step: 5 });
         const input = inputOf(unit);
@@ -163,6 +171,15 @@ describe('basics InputRange', () => {
 
         expect(containerOf(unit).querySelectorAll('div')).toHaveLength(0);
         expect(inputOf(unit).tagName).toBe('INPUT');
+    });
+
+    it('fires the native input + change pair on a .value set', () => {
+        const unit = xnew(InputRange, { value: 0 });
+        const seen = record(unit);
+
+        unit.value = 60;
+
+        expect(seen).toEqual([['input', 60], ['change', 60]]);
     });
 
     it('reads and writes the number through .value, keeping the meter and status in step', () => {

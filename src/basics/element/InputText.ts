@@ -1,10 +1,12 @@
 //----------------------------------------------------------------------------------------------------
 // InputText — native text field wrapped in a framed container
 // The container owns the border / spacing and routes clicks to the inner transparent <input>.
-// Hosts read / write the string through `.value`; `.input` is the escape hatch to the raw element.
+// Hosts read / write the string through `.value` (a set fires the native `input` + `change` pair);
+// `.input` is the escape hatch to the raw element.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { dispatchCommit } from '../../utils/dom';
 
 export function InputText(unit: xnew.Unit,
     { value, className = '', style = '', ...others }:
@@ -40,7 +42,9 @@ export function InputText(unit: xnew.Unit,
             return (input.current as HTMLInputElement).value;
         },
         set value(text: string) {
-            (input.current as HTMLInputElement).value = text;
+            const element = input.current as HTMLInputElement;
+            element.value = text;
+            dispatchCommit(element, text);
         },
         get input() {
             return input.current as HTMLInputElement;

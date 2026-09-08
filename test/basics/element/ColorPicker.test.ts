@@ -49,6 +49,18 @@ describe('basics ColorPicker', () => {
         element.dispatchEvent(new MouseEvent('pointerdown', { clientX, clientY, bubbles: true }));
     }
 
+    function pointerup(element: Element, clientX: number, clientY: number): void {
+        element.dispatchEvent(new MouseEvent('pointerup', { clientX, clientY, bubbles: true }));
+    }
+
+    // every value event a host would see, tagged by type, in order
+    function record(unit: xnew.Unit): Array<[string, string]> {
+        const seen: Array<[string, string]> = [];
+        unit.on('input change', ({ event, value }: { event: Event, value: string }) => seen.push([event.type, value]));
+        jest.advanceTimersByTime(0);
+        return seen;
+    }
+
     it('builds the sketch layout: saturation, presets, swatch + hue / alpha bars, fields', () => {
         const unit = xnew(ColorPicker);
 
@@ -71,19 +83,48 @@ describe('basics ColorPicker', () => {
         expect(a.value).toBe('100');
     });
 
-    it('updates saturation / value from a press on the saturation map and emits -change', () => {
+    // native semantics: a drag streams `input`, and `change` lands once on release
+    it('streams input while the saturation map is dragged and settles with change on release', () => {
         const unit = xnew(ColorPicker, { value: '#ff0000' });
         const saturation = saturationOf(unit);
         mockRect(saturation, { width: 200, height: 150 });
-
-        const received: string[] = [];
-        unit.on('-change', ({ value }: { value: string }) => received.push(value));
-        jest.advanceTimersByTime(0);
+        const seen = record(unit);
 
         pointerdown(saturation, 100, 75);
 
         expect(unit.value).toBe('#804040');
-        expect(received).toEqual(['#804040']);
+        expect(seen).toEqual([['input', '#804040']]);
+
+        // the drag's window-level pointerup binds a tick after the pointerdown that started it
+        jest.advanceTimersByTime(0);
+        pointerup(saturation, 100, 75);
+
+        expect(seen).toEqual([['input', '#804040'], ['change', '#804040']]);
+    });
+
+    it('fires the input + change pair for a preset click, with no drag involved', () => {
+        const unit = xnew(ColorPicker, { value: '#ff0000' });
+        const seen = record(unit);
+
+        (presetsOf(unit).children[0] as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        expect(seen).toEqual([['input', '#d0021b'], ['change', '#d0021b']]);
+    });
+
+    it('keeps half-typed field text inside: only the committed color surfaces', () => {
+        const unit = xnew(ColorPicker, { value: '#ff0000' });
+        const hex = inputsOf(unit)[0];
+        const seen = record(unit);
+
+        hex.value = '00ff0';
+        hex.dispatchEvent(new Event('input', { bubbles: true }));
+
+        expect(seen).toEqual([]);
+
+        hex.value = '00ff00';
+        hex.dispatchEvent(new Event('change', { bubbles: true }));
+
+        expect(seen).toEqual([['input', '#00ff00'], ['change', '#00ff00']]);
     });
 
     it('places the saturation circle from the current color', () => {
@@ -153,21 +194,19 @@ describe('basics ColorPicker', () => {
         expect(unit.value).toBe('#ffff00');
     });
 
-    it('keeps native change events inside; hosts only see -change', () => {
+    it('keeps the internal field change inside, so a host sees one canonical change', () => {
         const unit = xnew(ColorPicker, { value: '#ff0000' });
         const hex = inputsOf(unit)[0];
 
-        const nativeChanges: unknown[] = [];
-        const customChanges: string[] = [];
-        unit.on('change', ({ value }: { value: unknown }) => nativeChanges.push(value));
-        unit.on('-change', ({ value }: { value: string }) => customChanges.push(value));
+        const received: unknown[] = [];
+        unit.on('change', ({ value }: { value: unknown }) => received.push(value));
         jest.advanceTimersByTime(0);
 
         hex.value = '00ff00';
         hex.dispatchEvent(new Event('change', { bubbles: true }));
 
-        expect(nativeChanges).toEqual([]);
-        expect(customChanges).toEqual(['#00ff00']);
+        // the field's own change is stopped, so its raw '00ff00' never surfaces — only the picker's hex
+        expect(received).toEqual(['#00ff00']);
     });
 
     it('applies a preset color on click', () => {
@@ -194,11 +233,11 @@ describe('basics ColorPicker', () => {
         expect(unit.value).toBe('#ff0000');
     });
 
-    it('accepts a programmatic value set without emitting -change', () => {
+    it('accepts a programmatic value set without emitting change', () => {
         const unit = xnew(ColorPicker, { value: '#ff0000' });
 
         const received: string[] = [];
-        unit.on('-change', ({ value }: { value: string }) => received.push(value));
+        unit.on('change', ({ value }: { value: string }) => received.push(value));
 
         unit.value = '#123456';
 

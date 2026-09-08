@@ -134,11 +134,11 @@ describe('basics Listbox', () => {
         expect(backdropOf(menu).style.pointerEvents).toBe('none');
     });
 
-    it('selects an option by press: updates the label and value, emits -change, and closes', () => {
+    it('selects an option by press: updates the label and value, emits change, and closes', () => {
         const { box, button, menu } = build({}, ['low', 'mid', 'high']);
 
         const received: string[] = [];
-        box.on('-change', ({ value }: { value: string }) => received.push(value));
+        box.on('change', ({ value }: { value: string }) => received.push(value));
 
         open(button);
         rowsOf(menu)[2].dispatchEvent(new Event('click', { bubbles: true }));
@@ -151,11 +151,11 @@ describe('basics Listbox', () => {
         expect(isOpen(button)).toBe(false);
     });
 
-    it('moves the selection through a .value set: label, marks, -change and the close', () => {
+    it('moves the selection through a .value set: label, marks, change and the close', () => {
         const { box, button, menu } = build({}, ['low', 'mid', 'high']);
 
         const received: string[] = [];
-        box.on('-change', ({ value }: { value: string }) => received.push(value));
+        box.on('change', ({ value }: { value: string }) => received.push(value));
 
         open(button);
         box.value = 'high';
@@ -173,7 +173,7 @@ describe('basics Listbox', () => {
         const { box } = build({}, ['low', 'mid', 'high']);
 
         const received: string[] = [];
-        box.on('-change', ({ value }: { value: string }) => received.push(value));
+        box.on('change', ({ value }: { value: string }) => received.push(value));
         jest.advanceTimersByTime(1);
 
         expect(box.value).toBe('low');
@@ -356,7 +356,7 @@ describe('basics Listbox', () => {
         expect(trigger.querySelector('svg')).not.toBe(null);
 
         const received: string[] = [];
-        box.on('-change', ({ value }: { value: string }) => received.push(value));
+        box.on('change', ({ value }: { value: string }) => received.push(value));
 
         trigger.dispatchEvent(new Event('click', { bubbles: true }));
         jest.advanceTimersByTime(0);

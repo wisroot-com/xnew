@@ -156,17 +156,49 @@ function defineEvent(types: string[], factory: (props: EventProps) => Function):
 
 defineEvent(['change', 'input'], (props: EventProps) => {
     return attach(props.element, props.type, (event: any) => {
-        let value: any = null;
-        if (event.target.type === 'checkbox') {
-            value = event.target.checked;
-        } else if (event.target.type === 'range' || event.target.type === 'number') {
-            value = parseFloat(event.target.value);
-        } else {
-            value = event.target.value;
-        }
-        props.listener({ event, value });
+        props.listener({ event, value: changedValue(event) });
     }, props.options);
 });
+
+// A control with no native element carries its own value in `detail` (see dispatchChange); everything else
+// reads it off the form control the event came from, which is why an ancestor listener still gets the value.
+function changedValue(event: any): any {
+    const detail = event.detail;
+    if (detail !== null && typeof detail === 'object' && 'value' in detail) {
+        return detail.value;
+    } else if (event.target.type === 'checkbox') {
+        return event.target.checked;
+    } else if (event.target.type === 'range' || event.target.type === 'number') {
+        return parseFloat(event.target.value);
+    } else {
+        return event.target.value;
+    }
+}
+
+// Fires one native value event on `element`, carrying the value in `detail` (see changedValue), so a host
+// listens to a control built out of plain elements exactly as it would to a native input. These bubble like
+// the native events, so a wrapper that must not leak a nested control's edits stops propagation itself.
+// The split follows the native pair: `input` every time the value moves, `change` once it settles.
+function dispatchValue(element: DOMElement, type: string, value: any): void {
+    element.dispatchEvent(new CustomEvent(type, { detail: { value }, bubbles: true }));
+}
+
+// The value moved but has not settled — a drag in progress, where a native control streams `input`.
+export function dispatchInput(element: DOMElement, value: any): void {
+    dispatchValue(element, 'input', value);
+}
+
+// The value settled — the end of a drag, where a native control fires `change` alone (the last `input` already went out).
+export function dispatchChange(element: DOMElement, value: any): void {
+    dispatchValue(element, 'change', value);
+}
+
+// A committed edit in one step — a click, a typed entry, a `.value` assignment. A native control fires
+// `input` then `change` for these, so both go out, in that order.
+export function dispatchCommit(element: DOMElement, value: any): void {
+    dispatchValue(element, 'input', value);
+    dispatchValue(element, 'change', value);
+}
 
 defineEvent(['click', 'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout'], (props: EventProps) => {
     return attach(props.element, props.type, (event: any) => {

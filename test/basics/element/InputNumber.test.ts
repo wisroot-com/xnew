@@ -12,6 +12,14 @@ describe('basics InputNumber', () => {
         jest.useRealTimers();
     });
 
+    // every value event a host would see, tagged by type, in order
+    function record(unit: xnew.Unit): Array<[string, unknown]> {
+        const seen: Array<[string, unknown]> = [];
+        unit.on('input change', ({ event, value }: { event: Event, value: unknown }) => seen.push([event.type, value]));
+        jest.advanceTimersByTime(0);
+        return seen;
+    }
+
     it('nests a native number input inside a container with the given attributes', () => {
         const unit = xnew(InputNumber, { value: 30, min: 10, max: 50, step: 5, name: 'count' });
         const container = unit.current as HTMLElement;
@@ -36,6 +44,15 @@ describe('basics InputNumber', () => {
         expect(input.hasAttribute('max')).toBe(false);
         expect(input.hasAttribute('step')).toBe(false);
         expect(input.hasAttribute('name')).toBe(false);
+    });
+
+    it('fires the native input + change pair on a .value set', () => {
+        const unit = xnew(InputNumber, { value: 30 });
+        const seen = record(unit);
+
+        unit.value = 42;
+
+        expect(seen).toEqual([['input', 42], ['change', 42]]);
     });
 
     it('reads and writes the number through .value', () => {

@@ -3,10 +3,12 @@
 // The native <select> popup can't be styled, so selection is held in JS (no native control at all).
 // Standalone, `xnew(Listbox, { items })` draws the whole control; a trailing compose fn replaces that
 // default with hand-built parts (xnew.standalone gate). `.value` is the single read / write path — a row press
-// and a host assignment both go through its setter, which emits `-change` and closes the menu.
+// and a host assignment both go through its setter, which fires the native `input` + `change` pair
+// (a selection settles at once, as on a native <select>) and closes the menu.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { dispatchCommit } from '../../utils/dom';
 import { Gate, GateProps } from '../widget/Gate';
 import { Overlay } from '../widget/Overlay';
 
@@ -35,7 +37,7 @@ export function Listbox(unit: xnew.Unit,
         `,
     });
 
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others }) as HTMLElement;
 
     // `items` is known right here, so the default lands synchronously and `.value` reads true from tick 0;
     // the composed path (the caller builds the rows) has none, and falls back to the deferred adoption below
@@ -88,7 +90,7 @@ export function Listbox(unit: xnew.Unit,
         // (the deferred default adoption above calls `apply` directly, so it stays silent)
         set value(value: string) {
             apply(value);
-            xnew.emit('-change', { value });
+            dispatchCommit(container, value);
             gateUnit.close();
         },
         get gate() {

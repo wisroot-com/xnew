@@ -91,11 +91,11 @@
 
       // each row starts from params and writes its edit back there; '+screen' then asks the current scene to rebuild
       panel.group({ name: 'screen', open: true }, (group) => {
-        group.listbox({ name: 'type', value: params.type, items: ['normal', 'fit', 'contain', 'cover'] }).on('-change', ({ value }) => {
+        group.listbox({ name: 'type', value: params.type, items: ['normal', 'fit', 'contain', 'cover'] }).on('change', ({ value }) => {
           params.type = value;
           xnew.emit('+screen');
         });
-        group.listbox({ name: 'resolution', value: params.resolution, items: ['400 x 300', '160 x 120', '600 x 240'] }).on('-change', ({ value }) => {
+        group.listbox({ name: 'resolution', value: params.resolution, items: ['400 x 300', '160 x 120', '600 x 240'] }).on('change', ({ value }) => {
           params.resolution = value;
           xnew.emit('+screen');
         });

@@ -12,6 +12,14 @@ describe('basics InputText', () => {
         jest.useRealTimers();
     });
 
+    // every value event a host would see, tagged by type, in order
+    function record(unit: xnew.Unit): Array<[string, unknown]> {
+        const seen: Array<[string, unknown]> = [];
+        unit.on('input change', ({ event, value }: { event: Event, value: unknown }) => seen.push([event.type, value]));
+        jest.advanceTimersByTime(0);
+        return seen;
+    }
+
     it('nests a native text input inside a container with the given value and placeholder', () => {
         const unit = xnew(InputText, { value: 'hello', placeholder: 'type here' });
         const container = unit.current as HTMLElement;
@@ -29,6 +37,15 @@ describe('basics InputText', () => {
         const input = unit.current.querySelector('input') as HTMLInputElement;
 
         expect(input.value).toBe('<b>"a" & \'b\'</b>');
+    });
+
+    it('fires the native input + change pair on a .value set', () => {
+        const unit = xnew(InputText, { value: 'hello' });
+        const seen = record(unit);
+
+        unit.value = 'world';
+
+        expect(seen).toEqual([['input', 'world'], ['change', 'world']]);
     });
 
     it('reads and writes the string through .value', () => {

@@ -7,6 +7,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
+import { dispatchCommit } from '../../utils/dom';
 
 export function InputRadio(unit: xnew.Unit,
     { value = '', name = '', checked = false, className = '', style = '', ...others }:
@@ -39,7 +40,9 @@ export function InputRadio(unit: xnew.Unit,
             return (input.current as HTMLInputElement).checked;
         },
         set checked(current: boolean) {
-            (input.current as HTMLInputElement).checked = current;
+            const element = input.current as HTMLInputElement;
+            element.checked = current;
+            dispatchCommit(element, current);
         },
         get input() {
             return input.current as HTMLInputElement;

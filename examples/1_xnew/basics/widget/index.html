@@ -78,7 +78,7 @@
         const label = xnew('<div class="text-sm">', picker.value);
         box.current.style.background = picker.value;
 
-        picker.on('-change', ({ value }) => {
+        picker.on('change', ({ value }) => {
           box.current.style.background = value;
           label.current.textContent = value;
           xnew.emit('+console', { text: `color changed to ${value}` });
@@ -155,7 +155,7 @@
 
       // the strip is a row of its own: an item's value is the sibling group's key it switches, and the first item starts active
       const tabs = panel.tabs({ items: ['style', 'params'] });
-      tabs.on('-change', ({ value }) => xnew.emit('+console', { text: `${value} tab selected` }));
+      tabs.on('change', ({ value }) => xnew.emit('+console', { text: `${value} tab selected` }));
 
       panel.group({ key: 'style' }, (tab) => {
         tab.group({ name: 'background', open: true }, (group) => {
@@ -173,8 +173,8 @@
           group.separator();
         });
 
-        tab.listbox({ name: 'color', items: ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta', 'brown', 'gray', 'black', 'white'] }).on('-change', ({ value }) => xnew.emit('+console', { text: `color changed to ${value}` }));
-        tab.color({ name: 'tint', value: '#4a90e2' }).on('-change', ({ value }) => xnew.emit('+console', { text: `tint changed to ${value}` }));
+        tab.listbox({ name: 'color', items: ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta', 'brown', 'gray', 'black', 'white'] }).on('change', ({ value }) => xnew.emit('+console', { text: `color changed to ${value}` }));
+        tab.color({ name: 'tint', value: '#4a90e2' }).on('change', ({ value }) => xnew.emit('+console', { text: `tint changed to ${value}` }));
       });
 
       panel.group({ key: 'params' }, (tab) => {

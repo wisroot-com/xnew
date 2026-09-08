@@ -353,12 +353,42 @@ the rule, then one line of why.
 - **When a component's setter can express everything a `select()`-style action method did, drop the method —
   one write path, not two (2026-09).** Listbox's `select(value)` define had exactly one caller (ListboxItem's
   click) and did `apply` + `xnew.emit('-change')` + `gate.close()`; that IS the setter now, and the row
-  press writes `listbox.value = value` like any host would. Consequence to keep in mind: **Listbox's
-  `.value` setter announces** (`-change`) and closes the menu, so a host mirroring `-change` back into
-  `.value` loops — guard it. The deferred default adoption stays silent by calling the internal `apply`
-  directly, never the setter. ColorPicker's and Panel's Color / Tabs setters are still silent, with
-  `Tabs.select()` kept as the notifying action (a live caller in xnew-gamelab uses it) — that split is
-  unresolved, not a rule.
+  press writes `listbox.value = value` like any host would. Panel's `Tabs.select()` went the same way: the
+  tab press and a host assignment both run one local `select` behind the setter, and the define is gone
+  (its one outside caller, xnew-gamelab's panel, moved to `tabs.value = …`). Consequence to keep in mind:
+  **the Listbox and Tabs `.value` setters announce** — Listbox's also closes the menu — so a host mirroring
+  `change` back into `.value` recurses; guard it. Listbox's deferred default adoption stays silent by
+  calling the internal `apply` directly, never the setter. ColorPicker and Panel's Color row are the
+  remaining silent setters (they have no action method to fold in, so folding would be a pure behavior
+  change) — that split is unresolved, not a rule.
+
+- **A control built out of plain elements reports edits with a real bubbling DOM `change`, not a custom
+  `-change` — `dispatchChange(element, value)` from `utils/dom` (2026-09).** The custom event was the last
+  thing keeping Listbox / ColorPicker / Panel's rows from being read like an `<input>`: a host had to know
+  which controls were native (`on('input')` / `on('change')`) and which were not (`on('-change')`). Now
+  every basics control answers to `unit.on('change', ({ value }) => …)`. The value rides in
+  `CustomEvent.detail.value` because these have no form control to read it off, and `utils/dom`'s
+  change / input factory prefers `detail.value` when present — which is also what lets an ANCESTOR listener
+  read it (one `panel.on('change')` covers every row). Consequences: it BUBBLES, unlike `-change`, so a
+  wrapper that must not leak a nested control's event stops propagation in its own handler and re-fires its
+  own — ColorPicker already did this for its hex / RGB fields, and Panel's Color row now does it for the
+  picker in its popup. Dispatching needs no `xnew.scope`: capture the element right after `xnew.nest`
+  and the notifier works from any scope (that removed two `xnew.scope` wrappers).
+
+- **The `input` / `change` split follows the native pair exactly: `input` every time the value moves,
+  `change` once it settles, and BOTH — input first — for an edit that commits in one step (2026-09).**
+  `utils/dom` exports the three matching helpers: `dispatchInput` / `dispatchChange` / `dispatchCommit`.
+  So ColorPicker streams `input` while a bar is dragged and fires `change` on `dragend`; a preset click, a
+  typed field and a Listbox / Tabs selection are one-step commits and fire both; **and every `.value`
+  setter across basics fires the pair**, so a programmatic set is indistinguishable from a user edit. Two
+  traps this creates: (1) a control's own native sub-inputs now leak BOTH events, so a wrapper must stop
+  both — ColorPicker stops `input` as well as `change` on its hex / RGB fields, since half-typed text is
+  not a color; (2) dispatching an `input` that the component itself listens for re-enters its own handler.
+  InputCheckbox / InputSwitch hit this: their Gate driver moved from `unit.on('input')` (the container) to
+  `input.on('input')` (the hidden input) so the setter, which dispatches on the container, cannot drive the
+  Gate twice — `Gate.move` is NOT idempotent once a transition has finished (`moving` is back to 0, so a
+  second `open()` re-emits `-open` / `-opened`). Those setters also flip `input.checked` up front, because
+  the Gate only reports a close after its transition, and `.value` must read true immediately.
 
 - **A default that a component can compute from its own props must be applied synchronously in the body,
   not in a deferred `xnew.timeout` — a caller reads `.value` right after `xnew(...)`, not a tick later
@@ -393,8 +423,8 @@ the rule, then one line of why.
   while `panel.color()` / `panel.listbox()` did, because the first two do `xnew(InputRange, …)` (a child)
   and the last builds via `xnew.extend(Listbox, …)`. The fix is `const range = xnew(InputRange, …); return
   { get value() { return range.value; }, set value(v) { range.value = v; } }` — NOT an extend, which would
-  cost InputRange its meter / status and InputCheckbox its mark. Tabs' `active` getter was renamed to
-  `.value` (get/set) in the same pass, so every value-bearing row answers to one name.
+  cost InputRange its meter / status and InputCheckbox its mark. Tabs' `active` getter became `.value`
+  (get/set) in the same pass, so every value-bearing row answers to one name.
 
 - **Never let a `+event` listener mount a unit that itself listens for that same `+event` (e.g.
   `unit.on('+x', () => unit.change(Next))` where `Next` registers `'+x'` too) — put the ONE listener on a

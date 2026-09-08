@@ -107,6 +107,24 @@ class MapMap extends Map {
     }
 }
 
+function clamp(value, low, high) {
+    return Math.min(Math.max(value, low), high);
+}
+function ease(p, easing) {
+    switch (easing) {
+        case 'ease-out':
+            return Math.pow(1.0 - Math.pow(1.0 - p, 2.0), 0.5);
+        case 'ease-in':
+            return Math.pow(1.0 - Math.pow(1.0 - p, 0.5), 2.0);
+        case 'ease':
+            return ((s) => s * s * (3 - 2 * s))(p ** 0.7);
+        case 'ease-in-out':
+            return p * p * (3 - 2 * p);
+        default:
+            return p;
+    }
+}
+
 class Ticker {
     constructor(callback, fps = 60, unref = false) {
         this.cancel = null;
@@ -159,20 +177,6 @@ class Ticker {
             this.cancel();
             this.cancel = null;
         }
-    }
-}
-function ease(p, easing) {
-    switch (easing) {
-        case 'ease-out':
-            return Math.pow(1.0 - Math.pow(1.0 - p, 2.0), 0.5);
-        case 'ease-in':
-            return Math.pow(1.0 - Math.pow(1.0 - p, 0.5), 2.0);
-        case 'ease':
-            return ((s) => s * s * (3 - 2 * s))(p ** 0.7);
-        case 'ease-in-out':
-            return p * p * (3 - 2 * p);
-        default:
-            return p;
     }
 }
 class Timer {
@@ -239,11 +243,11 @@ class Timer {
     }
 }
 
-function isDomElement(value) {
+function isDOMElement(value) {
     return (typeof HTMLElement !== 'undefined' && value instanceof HTMLElement) || (typeof SVGElement !== 'undefined' && value instanceof SVGElement);
 }
 function isElementDef(value) {
-    return typeof value === 'object' && value !== null && isDomElement(value) === false && typeof value.tag === 'string';
+    return typeof value === 'object' && value !== null && isDOMElement(value) === false && typeof value.tag === 'string';
 }
 function createElement(parent, tag) {
     let text;
@@ -330,12 +334,12 @@ class EventBinder {
         const props = { element, type, listener, options };
         const factory = factories.get(type);
         const keyboard = type.match(/^(window|document)\.(keydown|keyup)(?:\.([A-Za-z0-9]+))?$/);
-        let finalize;
+        let cleanup;
         if (factory !== undefined) {
-            finalize = factory(props);
+            cleanup = factory(props);
         }
         else if (keyboard !== null) {
-            finalize = keyboardEvent(keyboard, props);
+            cleanup = keyboardEvent(keyboard, props);
         }
         else {
             let target = element;
@@ -348,14 +352,14 @@ class EventBinder {
                 target = document;
                 name = type.substring('document.'.length);
             }
-            finalize = attach(target, name, (event) => listener({ event }), options);
+            cleanup = attach(target, name, (event) => listener({ event }), options);
         }
-        this.map.set(type, listener, finalize);
+        this.map.set(type, listener, cleanup);
     }
     remove(type, listener) {
-        const finalize = this.map.get(type, listener);
-        if (finalize) {
-            finalize();
+        const cleanup = this.map.get(type, listener);
+        if (cleanup) {
+            cleanup();
             this.map.delete(type, listener);
         }
     }
@@ -365,19 +369,37 @@ function defineEvent(types, factory) {
 }
 defineEvent(['change', 'input'], (props) => {
     return attach(props.element, props.type, (event) => {
-        let value = null;
-        if (event.target.type === 'checkbox') {
-            value = event.target.checked;
-        }
-        else if (event.target.type === 'range' || event.target.type === 'number') {
-            value = parseFloat(event.target.value);
-        }
-        else {
-            value = event.target.value;
-        }
-        props.listener({ event, value });
+        props.listener({ event, value: changedValue(event) });
     }, props.options);
 });
+function changedValue(event) {
+    const detail = event.detail;
+    if (detail !== null && typeof detail === 'object' && 'value' in detail) {
+        return detail.value;
+    }
+    else if (event.target.type === 'checkbox') {
+        return event.target.checked;
+    }
+    else if (event.target.type === 'range' || event.target.type === 'number') {
+        return parseFloat(event.target.value);
+    }
+    else {
+        return event.target.value;
+    }
+}
+function dispatchValue(element, type, value) {
+    element.dispatchEvent(new CustomEvent(type, { detail: { value }, bubbles: true }));
+}
+function dispatchInput(element, value) {
+    dispatchValue(element, 'input', value);
+}
+function dispatchChange(element, value) {
+    dispatchValue(element, 'change', value);
+}
+function dispatchCommit(element, value) {
+    dispatchValue(element, 'input', value);
+    dispatchValue(element, 'change', value);
+}
 defineEvent(['click', 'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout'], (props) => {
     return attach(props.element, props.type, (event) => {
         props.listener({ event, position: getPointerPosition(props.element, event) });
@@ -401,10 +423,10 @@ defineEvent(['resize'], (props) => {
     return () => observer.unobserve(props.element);
 });
 defineEvent(['dragstart', 'dragmove', 'dragend'], (props) => {
-    let finalizers = [];
-    const remove = () => { finalizers.forEach((finalize) => finalize()); finalizers = []; };
+    let cleanups = [];
+    const remove = () => { cleanups.forEach((cleanup) => cleanup()); cleanups = []; };
     const pointerdown = attach(props.element, 'pointerdown', (event) => {
-        if (finalizers.length === 0) {
+        if (cleanups.length === 0) {
             const id = event.pointerId;
             let previous = getPointerPosition(props.element, event);
             const track = (kind) => (event) => {
@@ -420,7 +442,7 @@ defineEvent(['dragstart', 'dragmove', 'dragend'], (props) => {
                     }
                 }
             };
-            finalizers = [
+            cleanups = [
                 attach(window, 'pointermove', track('dragmove'), props.options),
                 attach(window, 'pointerup', track('dragend'), props.options),
                 attach(window, 'pointercancel', track('dragend'), props.options),
@@ -454,8 +476,8 @@ defineEvent(['window.keydown.arrow', 'window.keyup.arrow', 'window.keydown.wasd'
             }
         }
     }, props.options);
-    const finalizers = [bind('keydown'), bind('keyup')];
-    return () => finalizers.forEach((finalize) => finalize());
+    const cleanups = [bind('keydown'), bind('keyup')];
+    return () => cleanups.forEach((cleanup) => cleanup());
 });
 function keyboardEvent(matched, props) {
     const [, scope, variant, rawKey] = matched;
@@ -477,12 +499,13 @@ function keyboardEvent(matched, props) {
     }, props.options);
 }
 
+const SYSTEM_TYPES = ['update', 'destroy', 'childattach', 'childdetach'];
 function textComponent(content) {
     return (unit) => { unit.current.textContent = content.toString(); };
 }
 class Unit {
-    constructor({ parent, inherited, own }, ...args) {
-        var _a, _b, _c;
+    constructor(parent, ...args) {
+        var _a, _b, _c, _d;
         parent === null || parent === void 0 ? void 0 : parent._.children.push(this);
         const baseContext = (_a = parent === null || parent === void 0 ? void 0 : parent._.currentContext) !== null && _a !== void 0 ? _a : { previous: null };
         let baseElement;
@@ -497,11 +520,11 @@ class Unit {
         }
         this._ = {
             parent,
-            inherited: inherited === undefined ? ((_c = parent === null || parent === void 0 ? void 0 : parent._.inherited) !== null && _c !== void 0 ? _c : {}) : Object.assign(Object.assign({}, parent === null || parent === void 0 ? void 0 : parent._.inherited), inherited),
-            own: own !== null && own !== void 0 ? own : {},
             phase: 'invoked',
+            attached: false,
             protected: false,
             standalone: true,
+            standalonePending: null,
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
@@ -512,19 +535,16 @@ class Unit {
             Components: [],
             listeners: new MapSet(),
             defines: {},
-            systems: { update: [], finalize: [] },
+            systems: { update: [], destroy: [], childattach: [], childdetach: [] },
             events: new EventBinder(),
             key: null,
+            sync: { root: (_c = parent === null || parent === void 0 ? void 0 : parent._.sync.root) !== null && _c !== void 0 ? _c : null, id: null, state: {}, registry: {}, visibility: null },
         };
-        Unit.initialize(this, ...args);
-    }
-    static initialize(unit, ...args) {
-        var _a;
-        if (isDomElement(args[0])) {
-            unit._.currentElement = args.shift();
+        if (isDOMElement(args[0])) {
+            this._.currentElement = args.shift();
         }
         else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
-            Unit.nest(unit, args.shift());
+            Unit.nest(this, args.shift());
         }
         const Component = args.shift();
         let props;
@@ -536,20 +556,30 @@ class Unit {
             baseComponent = Component;
         }
         else if (typeof Component === 'string' || typeof Component === 'number') {
+            if (this._.nestElements.length === 0) {
+                throw new Error(`xnew: text content needs a nested element [${Component}]`);
+            }
             baseComponent = textComponent(Component);
         }
         else {
             baseComponent = (unit) => { };
         }
-        unit._.key = (_a = props === null || props === void 0 ? void 0 : props.key) !== null && _a !== void 0 ? _a : null;
-        const backup = Unit.currentUnit;
-        Unit.currentUnit = unit;
-        Unit.extend(unit, baseComponent, props);
-        if (unit._.phase === 'invoked') {
-            unit._.phase = 'initialized';
+        this._.key = (_d = props === null || props === void 0 ? void 0 : props.key) !== null && _d !== void 0 ? _d : null;
+        if (typeof (props === null || props === void 0 ? void 0 : props.preinit) === 'function') {
+            props.preinit(this);
         }
-        unit._.lastSnapshot = Unit.snapshot(unit);
+        const backup = Unit.currentUnit;
+        Unit.currentUnit = this;
+        Unit.extend(this, baseComponent, props);
+        if (this._.phase === 'invoked') {
+            this._.phase = 'active';
+        }
+        this._.lastSnapshot = Unit.snapshot(this);
         Unit.currentUnit = backup;
+        if (parent !== null && this._.phase !== 'destroyed') {
+            this._.attached = true;
+            [...parent._.systems.childattach].forEach((entry) => entry.execute({ child: this }));
+        }
     }
     get parent() {
         return this._.parent;
@@ -561,20 +591,20 @@ class Unit {
         var _a;
         return (_a = this._.nestElements[0]) !== null && _a !== void 0 ? _a : null;
     }
-    finalize() {
+    destroy() {
         var _a, _b;
-        if (this._.phase !== 'finalized' && this._.phase !== 'finalizing') {
-            this._.phase = 'finalizing';
-            [...this._.children].reverse().forEach((child) => child.finalize());
-            [...this._.systems.finalize].reverse().forEach(({ execute }) => execute());
+        if (this._.phase !== 'destroyed' && this._.phase !== 'destroying') {
+            this._.phase = 'destroying';
+            [...this._.children].reverse().forEach((child) => child.destroy());
+            [...this._.systems.destroy].reverse().forEach(({ execute }) => execute());
             (_a = Unit.owner2targets.get(this)) === null || _a === void 0 ? void 0 : _a.forEach((target) => {
-                [...target._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(target, this, type));
+                [...target._.listeners.keys(), ...SYSTEM_TYPES].forEach((type) => Unit.off(target, this, type));
                 Unit.target2owners.delete(target, this);
             });
             Unit.owner2targets.delete(this);
             (_b = Unit.target2owners.get(this)) === null || _b === void 0 ? void 0 : _b.forEach((owner) => Unit.owner2targets.delete(owner, this));
             Unit.target2owners.delete(this);
-            [...this._.listeners.keys(), 'update', 'finalize'].forEach((type) => Unit.off(this, null, type));
+            [...this._.listeners.keys(), ...SYSTEM_TYPES].forEach((type) => Unit.off(this, null, type));
             [...this._.nestElements].reverse().forEach((element) => element.remove());
             this._.Components.forEach((Component) => Unit.component2units.delete(Component, this));
             const contexts = Unit.unit2Contexts.get(this);
@@ -594,10 +624,14 @@ class Unit {
             this._.currentContext = { previous: null };
             Object.keys(this._.defines).forEach((key) => delete this[key]);
             this._.defines = {};
-            if (this._.parent) {
-                this._.parent._.children = this._.parent._.children.filter((u) => u !== this);
+            const parent = this._.parent;
+            if (parent !== null) {
+                parent._.children = parent._.children.filter((u) => u !== this);
             }
-            this._.phase = 'finalized';
+            this._.phase = 'destroyed';
+            if (parent !== null && this._.attached === true) {
+                [...parent._.systems.childdetach].forEach((entry) => entry.execute({ child: this }));
+            }
         }
     }
     static nest(unit, tag, textContent) {
@@ -613,15 +647,15 @@ class Unit {
         var _a;
         const backupComponent = unit._.currentComponent;
         const backupStandalone = unit._.standalone;
+        const backupPending = unit._.standalonePending;
         unit._.standalone = backupComponent === null;
         unit._.currentComponent = Component;
+        unit._.standalonePending = [];
         if (unit._.parent !== null) {
             Unit.addContext(unit._.parent, unit, Component, unit);
         }
         Unit.addContext(unit, unit, Component, unit);
         const defines = (_a = Component(unit, props !== null && props !== void 0 ? props : {})) !== null && _a !== void 0 ? _a : {};
-        unit._.currentComponent = backupComponent;
-        unit._.standalone = backupStandalone;
         Unit.component2units.add(Component, unit);
         unit._.Components.push(Component);
         Object.keys(defines).forEach((key) => {
@@ -646,33 +680,34 @@ class Unit {
             Object.defineProperty(unit._.defines, key, wrapper);
             Object.defineProperty(unit, key, wrapper);
         });
+        const pending = unit._.standalonePending;
+        for (let index = 0; index < pending.length; index++) {
+            pending[index]();
+        }
+        unit._.currentComponent = backupComponent;
+        unit._.standalone = backupStandalone;
+        unit._.standalonePending = backupPending;
         let clone = {};
         Object.defineProperties(clone, Object.getOwnPropertyDescriptors(unit._.defines));
         return clone;
     }
     static update(unit, delta = 0) {
-        if (unit._.phase === 'initialized') {
+        if (unit._.phase === 'active') {
             unit._.children.forEach((child) => Unit.update(child, delta));
             [...unit._.systems.update].forEach((entry) => entry.execute({ count: entry.count++, delta }));
         }
     }
-    static get current() {
-        if (Unit.engineRoot === undefined) {
-            Unit.reset();
-        }
-        return Unit.currentUnit;
-    }
     static reset() {
         var _a;
-        (_a = Unit.engineRoot) === null || _a === void 0 ? void 0 : _a.finalize();
-        Unit.currentUnit = Unit.engineRoot = new Unit({ parent: null });
+        (_a = Unit.engineRoot) === null || _a === void 0 ? void 0 : _a.destroy();
+        Unit.currentUnit = Unit.engineRoot = new Unit(null);
         const ticker = new Ticker((delta) => {
             Unit.update(Unit.engineRoot, delta);
-        });
-        Unit.engineRoot.on('finalize', () => ticker.clear());
+        }, 60, true);
+        Unit.engineRoot.on('destroy', () => ticker.clear());
     }
     static scope(snapshot, func, ...args) {
-        if (snapshot.unit._.phase === 'finalized') {
+        if (snapshot.unit._.phase === 'destroyed') {
             return;
         }
         const currentUnit = Unit.currentUnit;
@@ -758,7 +793,7 @@ class Unit {
         });
     }
     off(type, listener) {
-        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), 'update', 'finalize'];
+        const types = typeof type === 'string' ? type.trim().split(/\s+/) : [...this._.listeners.keys(), ...SYSTEM_TYPES];
         types.forEach((type) => Unit.off(this, Unit.currentUnit, type, listener));
     }
     static on(unit, type, listener, options) {
@@ -767,7 +802,7 @@ class Unit {
         const execute = (props = {}) => {
             Unit.scope(snapshot, listener, Object.assign({ type }, props));
         };
-        if (type === 'update' || type === 'finalize') {
+        if (SYSTEM_TYPES.includes(type)) {
             unit._.systems[type].push({ listener, execute, count: 0, owner });
         }
         else if (Unit.registered(unit, type, listener, owner) === false) {
@@ -789,8 +824,9 @@ class Unit {
     static off(unit, owner, type, listener) {
         var _a;
         const match = (lis, own) => (owner === null || own === owner) && (listener === undefined || lis === listener);
-        if (type === 'update' || type === 'finalize') {
-            unit._.systems[type] = unit._.systems[type].filter((entry) => match(entry.listener, entry.owner) === false);
+        if (SYSTEM_TYPES.includes(type)) {
+            const system = type;
+            unit._.systems[system] = unit._.systems[system].filter((entry) => match(entry.listener, entry.owner) === false);
         }
         else {
             [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => {
@@ -806,19 +842,27 @@ class Unit {
             }
         }
     }
-    static emit(unit, type, props = {}) {
-        var _a, _b;
-        if (type[0] === '+') {
-            const ancestors = Unit.ancestors(unit);
-            [...((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((target) => {
-                var _a;
-                if (Unit.isVisible(target, unit, ancestors)) {
-                    [...((_a = target._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => entry.execute(props));
+    static dispatch(type, props, accept) {
+        var _a;
+        [...((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((unit) => {
+            var _a;
+            if (unit._.phase === 'destroying' || unit._.phase === 'destroyed') {
+                return;
+            }
+            [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => {
+                if (accept(unit, entry) === true) {
+                    entry.execute(props);
                 }
             });
+        });
+    }
+    static emit(unit, type, props = {}) {
+        if (type[0] === '+') {
+            const ancestors = Unit.ancestors(unit);
+            Unit.dispatch(type, props, (_, entry) => Unit.isVisible(entry.owner, unit, ancestors));
         }
         else if (type[0] === '-') {
-            [...((_b = unit._.listeners.get(type)) !== null && _b !== void 0 ? _b : [])].forEach((entry) => entry.execute(props));
+            Unit.dispatch(type, props, (target) => target === unit);
         }
     }
 }
@@ -827,6 +871,9 @@ Unit.component2units = new MapSet();
 Unit.type2units = new MapSet();
 Unit.owner2targets = new MapSet();
 Unit.target2owners = new MapSet();
+(() => {
+    Unit.reset();
+})();
 class UnitPromise {
     constructor(promise, key) {
         this.promise = promise;
@@ -835,7 +882,8 @@ class UnitPromise {
     chain(method, callback) {
         const snapshot = Unit.snapshot(Unit.currentUnit);
         this.promise = this.promise[method]((...args) => {
-            const result = Unit.scope(snapshot, callback, ...args);
+            const cleanupAfterDestroy = method !== 'then' && snapshot.unit._.phase === 'destroyed';
+            const result = cleanupAfterDestroy === true ? callback(...args) : Unit.scope(snapshot, callback, ...args);
             return result instanceof UnitPromise ? result.promise : result;
         });
         return this;
@@ -873,7 +921,7 @@ class UnitTimer {
     clear() {
         var _a;
         this.queue = [];
-        (_a = this.unit) === null || _a === void 0 ? void 0 : _a.finalize();
+        (_a = this.unit) === null || _a === void 0 ? void 0 : _a.destroy();
         this.unit = null;
     }
     timeout(timeout, duration = 0) {
@@ -893,14 +941,14 @@ class UnitTimer {
             function onTimeout() {
                 if (timeout)
                     Unit.scope(snapshot, timeout, { count: counter });
-                if (unit._.phase === 'finalized') {
+                if (unit._.phase === 'destroyed') {
                     return;
                 }
                 if (iterations <= 0 || counter < iterations - 1) {
                     current = new Timer(onTimeout, onTransition, duration, easing);
                 }
                 else {
-                    unit.finalize();
+                    unit.destroy();
                 }
                 counter++;
             }
@@ -908,9 +956,9 @@ class UnitTimer {
                 if (transition)
                     Unit.scope(snapshot, transition, { value });
             }
-            unit.on('finalize', () => current.clear());
+            unit.on('destroy', () => current.clear());
         };
-        if (this.unit === null || this.unit._.phase === 'finalized') {
+        if (this.unit === null || this.unit._.phase === 'destroyed') {
             this.start(Component);
         }
         else {
@@ -919,10 +967,10 @@ class UnitTimer {
         return this;
     }
     start(Component) {
-        this.unit = new Unit({ parent: Unit.currentUnit }, Component);
-        this.unit.on('finalize', () => {
+        this.unit = new Unit(Unit.currentUnit, Component);
+        this.unit.on('destroy', () => {
             const owner = Unit.currentUnit;
-            if (this.queue.length > 0 && owner._.phase !== 'finalizing' && owner._.phase !== 'finalized') {
+            if (this.queue.length > 0 && owner._.phase !== 'destroying' && owner._.phase !== 'destroyed') {
                 this.start(this.queue.shift());
             }
             else {
@@ -932,164 +980,187 @@ class UnitTimer {
     }
 }
 
-const registry = new Map();
-let counter = 0;
-const localName = /^[A-Za-z][A-Za-z0-9_-]*$/;
-const layerName = /^[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*)*$/;
-const atRules = ['@keyframes', '@property', '@counter-style', '@font-face'];
-function generatedName(def, prefix, name) {
-    if (typeof def === 'object' && def.rule === '@property') {
-        return `--${prefix}${name}`;
-    }
-    else {
-        return `${prefix}${name}`;
-    }
-}
-function resolveBody(key, source, names) {
-    var _a;
-    let out = '';
-    let depth = 0;
-    let i = 0;
-    while (i < source.length) {
-        const c = source[i];
-        if (c === '/' && source[i + 1] === '*') {
-            const end = source.indexOf('*/', i + 2);
-            const next = end === -1 ? source.length : end + 2;
-            out += source.slice(i, next);
-            i = next;
-        }
-        else if (c === '"' || c === "'") {
-            let j = i + 1;
-            while (j < source.length && source[j] !== c) {
-                j += source[j] === '\\' ? 2 : 1;
-            }
-            const next = Math.min(j + 1, source.length);
-            out += source.slice(i, next);
-            i = next;
-        }
-        else if (c === '$' && /[A-Za-z]/.test((_a = source[i + 1]) !== null && _a !== void 0 ? _a : '')) {
-            const ref = source.slice(i + 1).match(/^[A-Za-z][A-Za-z0-9_-]*/)[0];
-            if (Object.prototype.hasOwnProperty.call(names, ref) === false) {
-                throw new Error(`xnew.css: unknown reference "$${ref}" in "${key}".`);
-            }
-            out += names[ref];
-            i += 1 + ref.length;
+class ScopedCSS {
+    constructor(layer, defs) {
+        var _a;
+        this.key = null;
+        this.entry = null;
+        if (((_a = globalThis.document) === null || _a === void 0 ? void 0 : _a.head) === undefined) {
+            this.names = Object.fromEntries(Object.entries(defs).map(([name, def]) => [name, ScopedCSS.generatedName(def, '', name)]));
         }
         else {
-            if (c === '{') {
-                depth++;
+            const key = JSON.stringify([layer, defs]);
+            let entry = ScopedCSS.registry.get(key);
+            if (entry === undefined) {
+                const { names, text } = ScopedCSS.build(layer, defs, ScopedCSS.counter++);
+                const style = document.createElement('style');
+                style.textContent = text;
+                document.head.appendChild(style);
+                entry = { names, refs: 0, style };
+                ScopedCSS.registry.set(key, entry);
             }
-            else if (c === '}') {
-                depth--;
-            }
-            if (depth < 0) {
-                throw new Error(`xnew.css: unbalanced braces in "${key}".`);
-            }
-            out += c;
-            i++;
+            entry.refs++;
+            this.key = key;
+            this.entry = entry;
+            this.names = entry.names;
         }
     }
-    if (depth !== 0) {
-        throw new Error(`xnew.css: unbalanced braces in "${key}".`);
-    }
-    return out;
-}
-function applyCss(unit, layer, defs) {
-    var _a;
-    if (((_a = globalThis.document) === null || _a === void 0 ? void 0 : _a.head) === undefined) {
-        return Object.fromEntries(Object.entries(defs).map(([name, def]) => [name, generatedName(def, '', name)]));
-    }
-    else {
-        const key = JSON.stringify([layer, defs]);
-        let entry = registry.get(key);
-        if (entry === undefined) {
-            if (layer !== undefined && layerName.test(layer) === false) {
-                throw new Error(`xnew.css: invalid layer "${layer}".`);
+    release() {
+        if (this.entry !== null) {
+            const entry = this.entry;
+            this.entry = null;
+            entry.refs--;
+            if (entry.refs === 0) {
+                entry.style.remove();
+                ScopedCSS.registry.delete(this.key);
             }
-            const id = counter++;
-            const names = {};
-            for (const [name, def] of Object.entries(defs)) {
-                if (localName.test(name) === false) {
-                    throw new Error(`xnew.css: invalid local name "${name}".`);
-                }
-                else if (typeof def === 'object' && atRules.includes(def.rule) === false) {
-                    throw new Error(`xnew.css: unsupported rule "${def.rule}" in "${name}".`);
-                }
-                else if (typeof def === 'object' && Array.isArray(def.body) === true && def.rule !== '@font-face') {
-                    throw new Error(`xnew.css: only @font-face may take multiple bodies ("${name}").`);
-                }
-                else {
-                    names[name] = generatedName(def, `xnew${id}-`, name);
-                }
-            }
-            const blocks = Object.entries(defs).map(([name, def]) => {
-                if (typeof def === 'string') {
-                    if (/^@(keyframes|property|counter-style|font-face)\b/.test(def.trim()) === true) {
-                        throw new Error(`xnew.css: write "${name}" as { rule: '@…', body: '…' }.`);
-                    }
-                    return `.${names[name]} {\n${resolveBody(name, def, names)}\n}`;
-                }
-                else if (def.rule === '@font-face') {
-                    const bodies = Array.isArray(def.body) ? def.body : [def.body];
-                    return bodies.map((body) => `@font-face {\nfont-family: ${names[name]};\n${resolveBody(name, body, names)}\n}`).join('\n');
-                }
-                else {
-                    return `${def.rule} ${names[name]} {\n${resolveBody(name, def.body, names)}\n}`;
-                }
-            }).join('\n');
-            const text = layer === undefined ? blocks : `@layer ${layer} {\n${blocks}\n}`;
-            const style = document.createElement('style');
-            style.textContent = text;
-            document.head.appendChild(style);
-            entry = { names, refs: 0, style };
-            registry.set(key, entry);
         }
-        const held = entry;
-        held.refs++;
-        unit.on('destroy', () => {
-            held.refs--;
-            if (held.refs === 0) {
-                held.style.remove();
-                registry.delete(key);
+    }
+    static generatedName(def, prefix, name) {
+        if (typeof def === 'object' && def.rule === '@property') {
+            return `--${prefix}${name}`;
+        }
+        else {
+            return `${prefix}${name}`;
+        }
+    }
+    static resolveBody(key, source, names) {
+        var _a;
+        let out = '';
+        let depth = 0;
+        let i = 0;
+        while (i < source.length) {
+            const c = source[i];
+            if (c === '/' && source[i + 1] === '*') {
+                const end = source.indexOf('*/', i + 2);
+                const next = end === -1 ? source.length : end + 2;
+                out += source.slice(i, next);
+                i = next;
             }
-        });
-        return held.names;
+            else if (c === '"' || c === "'") {
+                let j = i + 1;
+                while (j < source.length && source[j] !== c) {
+                    j += source[j] === '\\' ? 2 : 1;
+                }
+                const next = Math.min(j + 1, source.length);
+                out += source.slice(i, next);
+                i = next;
+            }
+            else if (c === '$' && /[A-Za-z]/.test((_a = source[i + 1]) !== null && _a !== void 0 ? _a : '')) {
+                const ref = source.slice(i + 1).match(/^[A-Za-z][A-Za-z0-9_-]*/)[0];
+                if (Object.prototype.hasOwnProperty.call(names, ref) === false) {
+                    throw new Error(`xnew.css: unknown reference "$${ref}" in "${key}".`);
+                }
+                out += names[ref];
+                i += 1 + ref.length;
+            }
+            else {
+                if (c === '{') {
+                    depth++;
+                }
+                else if (c === '}') {
+                    depth--;
+                }
+                if (depth < 0) {
+                    throw new Error(`xnew.css: unbalanced braces in "${key}".`);
+                }
+                out += c;
+                i++;
+            }
+        }
+        if (depth !== 0) {
+            throw new Error(`xnew.css: unbalanced braces in "${key}".`);
+        }
+        return out;
+    }
+    static build(layer, defs, id) {
+        if (layer !== undefined && ScopedCSS.layerName.test(layer) === false) {
+            throw new Error(`xnew.css: invalid layer "${layer}".`);
+        }
+        const names = {};
+        for (const [name, def] of Object.entries(defs)) {
+            if (ScopedCSS.localName.test(name) === false) {
+                throw new Error(`xnew.css: invalid local name "${name}".`);
+            }
+            else if (typeof def === 'object' && ScopedCSS.atRules.includes(def.rule) === false) {
+                throw new Error(`xnew.css: unsupported rule "${def.rule}" in "${name}".`);
+            }
+            else if (typeof def === 'object' && Array.isArray(def.body) === true && def.rule !== '@font-face') {
+                throw new Error(`xnew.css: only @font-face may take multiple bodies ("${name}").`);
+            }
+            else {
+                names[name] = ScopedCSS.generatedName(def, `xnew${id}-`, name);
+            }
+        }
+        const blocks = Object.entries(defs).map(([name, def]) => {
+            if (typeof def === 'string') {
+                if (/^@(keyframes|property|counter-style|font-face)\b/.test(def.trim()) === true) {
+                    throw new Error(`xnew.css: write "${name}" as { rule: '@…', body: '…' }.`);
+                }
+                return `.${names[name]} {\n${ScopedCSS.resolveBody(name, def, names)}\n}`;
+            }
+            else if (def.rule === '@font-face') {
+                const bodies = Array.isArray(def.body) ? def.body : [def.body];
+                return bodies.map((body) => `@font-face {\nfont-family: ${names[name]};\n${ScopedCSS.resolveBody(name, body, names)}\n}`).join('\n');
+            }
+            else {
+                return `${def.rule} ${names[name]} {\n${ScopedCSS.resolveBody(name, def.body, names)}\n}`;
+            }
+        }).join('\n');
+        const text = layer === undefined ? blocks : `@layer ${layer} {\n${blocks}\n}`;
+        return { names, text };
     }
 }
+ScopedCSS.registry = new Map();
+ScopedCSS.counter = 0;
+ScopedCSS.localName = /^[A-Za-z][A-Za-z0-9_-]*$/;
+ScopedCSS.layerName = /^[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*)*$/;
+ScopedCSS.atRules = ['@keyframes', '@property', '@counter-style', '@font-face'];
 
 const xnew = Object.assign((function (...args) {
     var _a;
     if (args[0] instanceof Unit) {
         const parent = args.shift();
         const snapshot = (_a = parent._.lastSnapshot) !== null && _a !== void 0 ? _a : Unit.snapshot(parent);
-        return Unit.scope(snapshot, () => new Unit({ parent }, ...args));
+        return Unit.scope(snapshot, () => new Unit(parent, ...args));
     }
     else {
-        return new Unit({ parent: Unit.current }, ...args);
+        return new Unit(Unit.currentUnit, ...args);
     }
 }), {
     nest(tag, textContent) {
-        if (Unit.current._.phase !== 'invoked') {
+        if (Unit.currentUnit._.phase !== 'invoked') {
             throw new Error('xnew.nest can not be called after initialized.');
         }
-        return Unit.nest(Unit.current, tag, textContent);
+        return Unit.nest(Unit.currentUnit, tag, textContent);
     },
-    extend(Component, props) {
-        if (Unit.current._.phase !== 'invoked') {
+    extend(Component, ...args) {
+        if (Unit.currentUnit._.phase !== 'invoked') {
             throw new Error('xnew.extend can not be called after initialized.');
         }
-        if (Unit.current._.Components.includes(Component) === true) {
+        if (Unit.currentUnit._.Components.includes(Component) === true) {
             console.warn('Component is already extended in this unit:', Component);
         }
-        return Unit.extend(Unit.current, Component, props);
+        return Unit.extend(Unit.currentUnit, Component, args[0]);
+    },
+    standalone(callback) {
+        var _a;
+        if (Unit.currentUnit._.phase !== 'invoked') {
+            throw new Error('xnew.standalone can not be called after initialized.');
+        }
+        if (Unit.currentUnit._.standalone === true) {
+            (_a = Unit.currentUnit._.standalonePending) === null || _a === void 0 ? void 0 : _a.push(callback);
+        }
     },
     css: (function (layerOrDefs, maybeDefs) {
         const layer = typeof layerOrDefs === 'string' ? layerOrDefs : undefined;
         const defs = typeof layerOrDefs === 'string' ? maybeDefs : layerOrDefs;
-        return applyCss(Unit.current, layer, defs);
+        const scoped = new ScopedCSS(layer, defs);
+        Unit.currentUnit.on('destroy', () => scoped.release());
+        return scoped.names;
     }),
     context(Component) {
-        return Unit.getContext(Unit.current, Component);
+        return Unit.getContext(Unit.currentUnit, Component);
     },
     promise: (function (keyOrPromise, maybePromise) {
         const key = typeof keyOrPromise === 'string' ? keyOrPromise : undefined;
@@ -1108,11 +1179,11 @@ const xnew = Object.assign((function (...args) {
             source = new Promise(xnew.scope(promise));
         }
         const unitPromise = new UnitPromise(source, key);
-        Unit.current._.promises.push(unitPromise);
+        Unit.currentUnit._.promises.push(unitPromise);
         return unitPromise;
     }),
     scope(callback) {
-        const snapshot = Unit.snapshot(Unit.current);
+        const snapshot = Unit.snapshot(Unit.currentUnit);
         return (...args) => Unit.scope(snapshot, callback, ...args);
     },
     find(Component, options) {
@@ -1122,7 +1193,7 @@ const xnew = Object.assign((function (...args) {
         if (type[0] !== '+' && type[0] !== '-') {
             throw new Error(`xnew.emit: a custom event type must start with "+" (broadcast) or "-" (own unit) [${type}]`);
         }
-        return Unit.emit(Unit.current, type, props);
+        return Unit.emit(Unit.currentUnit, type, props);
     },
     timeout(callback, duration = 0) {
         return new UnitTimer().timeout(callback, duration);
@@ -1134,78 +1205,39 @@ const xnew = Object.assign((function (...args) {
         return new UnitTimer().transition(transition, duration, easing);
     },
     protect() {
-        Unit.current._.protected = true;
+        Unit.currentUnit._.protected = true;
     },
     isUnit(value) {
         return value instanceof Unit;
     },
 });
-Object.defineProperty(xnew, 'standalone', {
-    get() {
-        return Unit.current._.standalone;
-    },
-});
 
-function getEnvironment() {
-    return ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
-}
-
-function syncRoot(unit, required) {
-    var _a;
-    const root = (_a = unit._.inherited.syncRoot) !== null && _a !== void 0 ? _a : null;
-    if (required === true && root === null) {
-        throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, ...).');
-    }
-    return root;
-}
-function syncData(unit) {
-    var _a;
-    var _b;
-    return (_a = (_b = unit._.own).syncData) !== null && _a !== void 0 ? _a : (_b.syncData = { id: null, state: {}, registry: {}, visibility: null });
-}
 const RESERVED_PREFIX = 'sync.';
-function clientEventType(type) {
-    if (typeof type === 'string' && type.length > 0 && type.startsWith(RESERVED_PREFIX) === false) {
-        return type;
-    }
-    else {
+function envelope(p, trusted = false) {
+    const type = typeof (p === null || p === void 0 ? void 0 : p.type) === 'string' ? p.type : '';
+    if (type === '' || (trusted === false && type.startsWith(RESERVED_PREFIX) === true)) {
         return null;
     }
+    return { type, syncId: typeof (p === null || p === void 0 ? void 0 : p.syncId) === 'number' ? p.syncId : null, data: typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {} };
 }
-function dispatch(info, type, id, data = {}, syncId) {
-    var _a;
-    [...((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((unit) => {
-        var _a;
-        if (unit._.phase === 'finalized' || unit._.phase === 'finalizing')
-            return;
-        if (syncRoot(unit) !== info)
-            return;
-        if (type[0] === '-' && syncData(unit).id !== syncId)
-            return;
-        [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => entry.execute(Object.assign({ id }, data)));
-    });
-}
-function bootServer(options, args) {
-    const { io, room } = options;
-    const info = { io, room, clients: [] };
-    const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
+function bootServer(roomio) {
+    const { room, root } = roomio;
     let nextId = 1;
     const captureStateTree = (clientId) => {
         const nodes = [];
         const walk = (unit, parent) => {
             var _a, _b, _c;
+            const registry = (_b = (_a = unit._.parent) === null || _a === void 0 ? void 0 : _a._.sync.registry) !== null && _b !== void 0 ? _b : {};
+            const names = Object.keys(registry);
             let name = undefined;
-            const registry = (_b = (_a = unit._.parent) === null || _a === void 0 ? void 0 : _a._.own.syncData) === null || _b === void 0 ? void 0 : _b.registry;
-            if (registry !== undefined) {
-                for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
-                    name = Object.keys(registry).find((key) => registry[key] === unit._.Components[i]);
-                }
+            for (let i = unit._.Components.length - 1; i >= 0 && name === undefined; i--) {
+                name = names.find((key) => registry[key] === unit._.Components[i]);
             }
             if (name === undefined) {
                 unit._.children.forEach((child) => walk(child, parent));
             }
             else {
-                const data = syncData(unit);
+                const data = unit._.sync;
                 const visible = data.visibility === null || data.visibility(clientId) === true;
                 if (visible === true) {
                     (_c = data.id) !== null && _c !== void 0 ? _c : (data.id = nextId++);
@@ -1218,164 +1250,263 @@ function bootServer(options, args) {
         return nodes;
     };
     const lastEmits = new Map();
-    root.on('update', () => info.clients.forEach((client) => {
+    root.on('update', () => roomio.clients.filter((client) => client.cpu !== true).forEach((client) => {
         const tree = captureStateTree(client.id);
         const json = JSON.stringify(tree);
         if (lastEmits.get(client.id) !== json) {
             lastEmits.set(client.id, json);
-            io.to(client.id).emit('sync', tree);
+            roomio.emit('sync', tree, client);
         }
     }));
-    const connection = (socket) => {
+    roomio.on('connection', (socket) => {
         var _a, _b;
         const query = (_a = socket.handshake) === null || _a === void 0 ? void 0 : _a.query;
         if ((query === null || query === void 0 ? void 0 : query.roomId) !== room.id)
             return;
         socket.join(room.id);
-        info.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
-        dispatch(info, 'sync.connect', socket.id);
-        socket.to(room.id).emit('emitToClients', { type: 'sync.connect', syncId: null, id: socket.id, data: {} });
-        io.to(room.id).emit('status', { clients: info.clients });
-        dispatch(info, 'sync.statusupdate', undefined);
+        roomio.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
+        roomio.announce('sync.connect', socket.id, socket);
         socket.on('emitToServer', (p) => {
-            const type = clientEventType(p === null || p === void 0 ? void 0 : p.type);
-            if (type !== null) {
-                const data = typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {};
-                dispatch(info, type, socket.id, data, typeof (p === null || p === void 0 ? void 0 : p.syncId) === 'number' ? p.syncId : null);
+            const message = envelope(p);
+            if (message === null) {
+                return;
+            }
+            if (Array.isArray(p === null || p === void 0 ? void 0 : p.to)) {
+                const to = roomio.clients.filter((client) => p.to.includes(client.id));
+                if (to.length > 0) {
+                    roomio.emit('emitToClients', Object.assign(Object.assign({}, message), { id: socket.id }), to);
+                }
+            }
+            else {
+                roomio.dispatch(message.type, socket.id, message.data, message.syncId);
             }
         });
         socket.on('disconnect', () => {
-            info.clients = info.clients.filter((c) => c.id !== socket.id);
+            roomio.clients = roomio.clients.filter((c) => c.id !== socket.id);
             lastEmits.delete(socket.id);
-            dispatch(info, 'sync.disconnect', socket.id);
-            socket.to(room.id).emit('emitToClients', { type: 'sync.disconnect', syncId: null, id: socket.id, data: {} });
-            io.to(room.id).emit('status', { clients: info.clients });
-            dispatch(info, 'sync.statusupdate', undefined);
+            roomio.announce('sync.disconnect', socket.id, socket);
         });
-    };
-    io.on('connection', connection);
-    root.on('finalize', () => io.off('connection', connection));
+    });
     return root;
 }
-function bootClient(options, args) {
-    var _a;
-    const { io, room, client } = options;
-    const socket = io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true });
-    const info = { socket, room, clients: [] };
-    const root = new Unit({ parent: Unit.current, inherited: { syncRoot: info } }, ...args);
+function bootClient(roomio) {
+    const { root } = roomio;
     const reconcileMap = new Map();
-    let lastTree = '';
-    socket.on('sync', (tree) => {
-        const json = JSON.stringify(tree);
-        if (json !== lastTree) {
-            lastTree = json;
-            const incoming = new Set(tree.map((node) => node.id));
-            for (const node of tree) {
-                const existing = reconcileMap.get(node.id);
-                if (existing !== undefined) {
-                    const state = syncData(existing).state;
-                    for (const key of Object.keys(state)) {
-                        if ((key in node.state) === false) {
-                            delete state[key];
-                        }
+    roomio.on('sync', (tree) => {
+        const incoming = new Set(tree.map((node) => node.id));
+        for (const node of tree) {
+            const existing = reconcileMap.get(node.id);
+            if (existing !== undefined) {
+                const state = existing._.sync.state;
+                for (const key of Object.keys(state)) {
+                    if ((key in node.state) === false) {
+                        delete state[key];
                     }
-                    Object.assign(state, node.state);
-                    continue;
                 }
-                const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
-                const Component = nodeParent && syncData(nodeParent).registry[node.name];
-                if (!Component) {
-                    continue;
-                }
-                const unit = new Unit({ parent: nodeParent, own: { syncData: { id: node.id, state: Object.assign({}, node.state), registry: {}, visibility: null } } }, Component);
-                reconcileMap.set(node.id, unit);
+                Object.assign(state, node.state);
+                continue;
             }
-            for (const [id, unit] of reconcileMap) {
-                if (!incoming.has(id)) {
-                    unit.finalize();
-                    reconcileMap.delete(id);
-                }
+            const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
+            const Component = nodeParent && nodeParent._.sync.registry[node.name];
+            if (!Component) {
+                continue;
             }
-            dispatch(info, 'sync.update', undefined);
+            const unit = new Unit(nodeParent, Component, { preinit: (unit) => { unit._.sync.id = node.id; Object.assign(unit._.sync.state, node.state); } });
+            reconcileMap.set(node.id, unit);
         }
+        for (const [id, unit] of reconcileMap) {
+            if (!incoming.has(id)) {
+                unit.destroy();
+                reconcileMap.delete(id);
+            }
+        }
+        roomio.dispatch('sync.update', undefined);
     });
-    socket.on('status', (status) => {
+    roomio.on('status', (status) => {
         var _a;
-        info.clients = (_a = status === null || status === void 0 ? void 0 : status.clients) !== null && _a !== void 0 ? _a : [];
-        dispatch(info, 'sync.statusupdate', undefined);
+        roomio.clients = (_a = status === null || status === void 0 ? void 0 : status.clients) !== null && _a !== void 0 ? _a : [];
+        roomio.dispatch('sync.status', undefined);
     });
-    socket.on('emitToClients', (p) => {
-        if (typeof (p === null || p === void 0 ? void 0 : p.type) === 'string' && p.type.length > 0) {
-            const data = typeof (p === null || p === void 0 ? void 0 : p.data) === 'object' && p.data !== null ? p.data : {};
-            dispatch(info, p.type, p === null || p === void 0 ? void 0 : p.id, data, typeof (p === null || p === void 0 ? void 0 : p.syncId) === 'number' ? p.syncId : null);
+    roomio.on('emitToClients', (p) => {
+        const message = envelope(p, true);
+        if (message !== null) {
+            roomio.dispatch(message.type, p === null || p === void 0 ? void 0 : p.id, message.data, message.syncId);
         }
     });
-    socket.on('connect', () => dispatch(info, 'sync.connect', socket.id));
-    socket.on('disconnect', () => dispatch(info, 'sync.disconnect', socket.id));
-    socket.on('notfound', (payload) => dispatch(info, 'sync.notfound', socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
-    root.on('finalize', () => socket.disconnect());
+    roomio.on('connect', () => roomio.dispatch('sync.connect', roomio.socket.id));
+    roomio.on('disconnect', () => roomio.dispatch('sync.disconnect', roomio.socket.id));
+    roomio.on('notfound', (payload) => roomio.dispatch('sync.notfound', roomio.socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
     return root;
 }
+
+function getSide() {
+    return ((typeof window === 'undefined' || typeof window.document === 'undefined') ? 'server' : 'client');
+}
+
+class RoomIO {
+    constructor({ io, room, client }, Component, props) {
+        var _a;
+        this.clients = [];
+        this.io = io;
+        this.room = room;
+        this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true }) : null;
+        this.root = new Unit(Unit.currentUnit, Component, Object.assign(Object.assign({}, props), { preinit: (unit) => {
+                unit._.sync.root = unit;
+                unit._.protected = true;
+                RoomIO.rooms.set(unit, this);
+            } }));
+        if (this.socket !== null) {
+            this.root.on('destroy', () => this.socket.disconnect());
+        }
+    }
+    emit(type, data, clients) {
+        if (clients === undefined && this.socket !== null) {
+            this.socket.emit(type, data);
+        }
+        else {
+            const targets = clients === undefined ? [this.room.id] : [clients].flat().filter((client) => client.cpu !== true).map((client) => client.id);
+            targets.forEach((target) => this.io.to(target).emit(type, data));
+        }
+    }
+    dispatch(type, id, data = {}, syncId) {
+        Unit.dispatch(type, Object.assign({ id }, data), (unit) => {
+            if (unit._.sync.root !== this.root)
+                return false;
+            if (type[0] === '-' && unit._.sync.id !== syncId)
+                return false;
+            return true;
+        });
+    }
+    on(type, listener) {
+        var _a;
+        const wire = (_a = this.socket) !== null && _a !== void 0 ? _a : this.io;
+        wire.on(type, listener);
+        this.root.on('destroy', () => wire.off(type, listener));
+    }
+    announce(type, id, sender = null) {
+        this.dispatch(type, id);
+        (sender !== null && sender !== void 0 ? sender : this.io).to(this.room.id).emit('emitToClients', { type, syncId: null, id, data: {} });
+        this.emit('status', { clients: this.clients });
+        this.dispatch('sync.status', undefined);
+    }
+    joinCpu({ id, name = '' }) {
+        if (id === '') {
+            throw new Error('xsync.cpu.join: a CPU member needs an id.');
+        }
+        if (this.clients.some((client) => client.id === id) === true) {
+            throw new Error(`xsync.cpu.join: "${id}" is already in this room.`);
+        }
+        const client = { id, name, cpu: true };
+        this.clients.push(client);
+        this.announce('sync.connect', id);
+        return client;
+    }
+    leaveCpu(id) {
+        const client = this.clients.find((entry) => entry.id === id);
+        if (client === undefined || client.cpu !== true) {
+            return false;
+        }
+        this.clients = this.clients.filter((entry) => entry !== client);
+        this.announce('sync.disconnect', id);
+        return true;
+    }
+    static of(unit) {
+        const root = unit._.sync.root;
+        const roomio = root === null ? undefined : RoomIO.rooms.get(root);
+        if (roomio === undefined) {
+            throw new Error('no socket bound to this root; create it with xsync.boot({ io, room } | { io, client, room }, Component).');
+        }
+        return roomio;
+    }
+}
+RoomIO.rooms = new WeakMap();
+
 const xsync = {
-    server(callback, props) {
-        return getEnvironment() === 'server' ? Unit.extend(Unit.current, callback, props) : {};
+    server(callback, ...args) {
+        return getSide() === 'server' ? Unit.extend(Unit.currentUnit, callback, args[0]) : {};
     },
-    client(callback, props) {
-        return getEnvironment() === 'client' ? Unit.extend(Unit.current, callback, props) : {};
+    client(callback, ...args) {
+        return getSide() === 'client' ? Unit.extend(Unit.currentUnit, callback, args[0]) : {};
     },
     state(initial = {}) {
-        const data = syncData(Unit.current);
+        const state = Unit.currentUnit._.sync.state;
         for (const key of Object.keys(initial)) {
-            if (!(key in data.state)) {
-                data.state[key] = initial[key];
+            if (!(key in state)) {
+                state[key] = initial[key];
             }
         }
-        return data.state;
+        return state;
     },
     register(Components) {
-        const unit = Unit.current;
+        const unit = Unit.currentUnit;
         if (unit._.phase !== 'invoked') {
             throw new Error('xsync.register must be called during component initialization.');
         }
-        Object.assign(syncData(unit).registry, Components);
+        Object.assign(unit._.sync.registry, Components);
     },
     visibility(target) {
-        syncData(Unit.current).visibility = target;
+        Unit.currentUnit._.sync.visibility = target;
     },
     get session() {
-        const info = syncRoot(Unit.current, true);
+        const roomio = RoomIO.of(Unit.currentUnit);
         return {
-            get room() { return info.room; },
-            get clients() { return info.clients; },
+            get room() { return roomio.room; },
+            get clients() { return roomio.clients; },
             get myself() {
                 var _a;
-                if (getEnvironment() === 'server') {
+                if (getSide() === 'server') {
                     throw new Error('xsync.session.myself is only available on the client side.');
                 }
-                const client = info;
-                return (_a = client.clients.find((c) => c.id === client.socket.id)) !== null && _a !== void 0 ? _a : { id: client.socket.id, name: '' };
+                const socket = roomio.socket;
+                return (_a = roomio.clients.find((c) => c.id === socket.id)) !== null && _a !== void 0 ? _a : { id: socket.id, name: '' };
             },
         };
     },
-    emitToServer(type, props = {}) {
-        const info = syncRoot(Unit.current, true);
-        if (getEnvironment() === 'server') {
-            Unit.emit(Unit.current, type, props);
+    emit(type, props = {}, clients) {
+        const roomio = RoomIO.of(Unit.currentUnit);
+        const syncId = Unit.currentUnit._.sync.id;
+        const to = clients === undefined ? undefined : [clients].flat();
+        if (to !== undefined && to.length === 0) {
+            return;
+        }
+        if (getSide() === 'server') {
+            roomio.emit('emitToClients', { type, syncId, id: undefined, data: props }, to);
         }
         else {
-            info.socket.emit('emitToServer', { type, syncId: syncData(Unit.current).id, data: props });
+            roomio.emit('emitToServer', { type, syncId, data: props, to: to === null || to === void 0 ? void 0 : to.map((client) => client.id) });
         }
     },
-    emitToClients(type, props = {}, ids) {
-        if (getEnvironment() !== 'server') {
-            throw new Error('xsync.emitToClients is server-only; from a client use xsync.emitToServer and relay from a server handler.');
-        }
-        const { io, room } = syncRoot(Unit.current, true);
-        const envelope = { type, syncId: syncData(Unit.current).id, id: undefined, data: props };
-        ((ids === null || ids === void 0 ? void 0 : ids.length) ? ids : [room.id]).forEach((target) => io.to(target).emit('emitToClients', envelope));
+    cpu: {
+        join(client) {
+            if (getSide() !== 'server') {
+                throw new Error('xsync.cpu.join is only available on the server side.');
+            }
+            return RoomIO.of(Unit.currentUnit).joinCpu(client);
+        },
+        leave(id) {
+            if (getSide() !== 'server') {
+                throw new Error('xsync.cpu.leave is only available on the server side.');
+            }
+            return RoomIO.of(Unit.currentUnit).leaveCpu(id);
+        },
+        dispatch(type, id, props = {}) {
+            var _a;
+            if (getSide() !== 'server') {
+                throw new Error('xsync.cpu.dispatch is only available on the server side.');
+            }
+            if (type.startsWith('sync.') === true) {
+                throw new Error(`xsync.cpu.dispatch: "sync." is the library's own namespace, only boot may dispatch it [${type}]`);
+            }
+            const roomio = RoomIO.of(Unit.currentUnit);
+            if (((_a = roomio.clients.find((client) => client.id === id)) === null || _a === void 0 ? void 0 : _a.cpu) !== true) {
+                throw new Error(`xsync.cpu.dispatch: "${id}" is not a CPU member of this room.`);
+            }
+            roomio.dispatch(type, id, props);
+        },
     },
-    boot(options, ...args) {
-        return getEnvironment() === 'server' ? bootServer(options, args) : bootClient(options, args);
+    boot(options, Component, ...args) {
+        const roomio = new RoomIO(options, Component, args[0]);
+        return getSide() === 'server' ? bootServer(roomio) : bootClient(roomio);
     },
 };
 
@@ -1775,23 +1906,10 @@ function Screen(unit, { width = 800, height = 600, fit = 'contain' } = {}) {
 }
 
 function Scene(unit) {
-    let leaving = false;
     return {
         change(Component, props) {
-            if (leaving === false) {
-                leaving = true;
-                const timer = typeof unit.leave === 'function' ? unit.leave() : undefined;
-                if (timer && typeof timer.timeout === 'function') {
-                    timer.timeout(destroy);
-                }
-                else {
-                    destroy();
-                }
-                function destroy() {
-                    xnew(unit.parent, Component, props);
-                    unit.destroy();
-                }
-            }
+            xnew(unit.parent, Component, props);
+            unit.destroy();
         },
         add(Component, props) {
             return xnew(unit, Component, props);
@@ -1939,7 +2057,7 @@ function InputRange(unit, _a = {}) {
         set value(number) {
             const element = input.current;
             element.value = String(number);
-            element.dispatchEvent(new Event('input', { bubbles: true }));
+            dispatchCommit(element, number);
         },
         get input() {
             return input.current;
@@ -2026,7 +2144,7 @@ function InputRangeStatus(unit, { value = 0, vertical = false } = {}) {
     });
 }
 
-function Gate(unit, { open = true, duration = 0, easing = 'ease' }) {
+function Gate(unit, { open = true, duration = 0, easing = 'ease' } = {}) {
     let value = open ? 1.0 : 0.0;
     if (open === true) {
         xnew.emit('-open');
@@ -2094,7 +2212,7 @@ function InputCheckbox(unit, _a = {}) {
             width: 0; height: 0; margin: 0; opacity: 0;
         `,
     });
-    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
+    const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
     const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
     function apply(checked) {
@@ -2104,7 +2222,7 @@ function InputCheckbox(unit, _a = {}) {
     gate.on('-open', () => apply(true));
     gate.on('-closed', () => apply(false));
     apply(gate.state === 'opened' || gate.state === 'opening');
-    unit.on('input', ({ value }) => value ? gate.open() : gate.close());
+    input.on('input', ({ value }) => value ? gate.open() : gate.close());
     xnew.standalone(() => {
         xnew(CheckMark);
     });
@@ -2113,12 +2231,14 @@ function InputCheckbox(unit, _a = {}) {
             return input.current.checked;
         },
         set value(checked) {
+            input.current.checked = checked;
             if (checked === true) {
                 gate.open();
             }
             else {
                 gate.close();
             }
+            dispatchCommit(container, checked);
         },
         get input() {
             return input.current;
@@ -2169,7 +2289,9 @@ function InputText(unit, _a = {}) {
             return input.current.value;
         },
         set value(text) {
-            input.current.value = text;
+            const element = input.current;
+            element.value = text;
+            dispatchCommit(element, text);
         },
         get input() {
             return input.current;
@@ -2207,7 +2329,9 @@ function InputNumber(unit, _a = {}) {
             return input.current.valueAsNumber;
         },
         set value(number) {
-            input.current.value = String(number);
+            const element = input.current;
+            element.value = String(number);
+            dispatchCommit(element, number);
         },
         get input() {
             return input.current;
@@ -2230,7 +2354,7 @@ function InputSwitch(unit, _a = {}) {
             width: 0; height: 0; margin: 0; opacity: 0;
         `,
     });
-    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
+    const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
     const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
     gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
     function apply(checked) {
@@ -2240,7 +2364,7 @@ function InputSwitch(unit, _a = {}) {
     gate.on('-open', () => apply(true));
     gate.on('-closed', () => apply(false));
     apply(gate.state === 'opened' || gate.state === 'opening');
-    unit.on('input', ({ value }) => value ? gate.open() : gate.close());
+    input.on('input', ({ value }) => value ? gate.open() : gate.close());
     xnew.standalone(() => {
         xnew(Knob);
     });
@@ -2249,12 +2373,14 @@ function InputSwitch(unit, _a = {}) {
             return input.current.checked;
         },
         set value(checked) {
+            input.current.checked = checked;
             if (checked === true) {
                 gate.open();
             }
             else {
                 gate.close();
             }
+            dispatchCommit(container, checked);
         },
         get input() {
             return input.current;
@@ -2304,7 +2430,9 @@ function InputRadio(unit, _a = {}) {
             return input.current.checked;
         },
         set checked(current) {
-            input.current.checked = current;
+            const element = input.current;
+            element.checked = current;
+            dispatchCommit(element, current);
         },
         get input() {
             return input.current;
@@ -2357,7 +2485,7 @@ function Listbox(unit, _a = {}) {
             margin: 0.125em 0;
         `,
     });
-    xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     let selected = value !== null && value !== void 0 ? value : (items.length > 0 ? itemDef(items[0]).value : '');
     const rows = [];
     const labels = [];
@@ -2394,7 +2522,7 @@ function Listbox(unit, _a = {}) {
         },
         set value(value) {
             apply(value);
-            xnew.emit('-change', { value });
+            dispatchCommit(container, value);
             gateUnit.close();
         },
         get gate() {
@@ -2569,10 +2697,6 @@ function hasHexAlpha(text) {
     return length === 4 || length === 8;
 }
 
-function clamp(value, low, high) {
-    return Math.min(Math.max(value, low), high);
-}
-
 const PRESETS = [
     '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321', '#417505', '#BD10E0', '#9013FE',
     '#4A90E2', '#50E3C2', '#B8E986',
@@ -2657,11 +2781,20 @@ function ColorPicker(unit, _a = {}) {
     if (alpha === false) {
         hsva = Object.assign(Object.assign({}, hsva), { a: 1 });
     }
-    xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     unit.on('pointerdown', ({ event }) => event.stopPropagation());
-    const notify = xnew.scope(function () {
-        xnew.emit('-change', { value: formatHex(hsvaToRgba(hsva)) });
-    });
+    function notify(kind) {
+        const hex = formatHex(hsvaToRgba(hsva));
+        if (kind === 'input') {
+            dispatchInput(container, hex);
+        }
+        else if (kind === 'change') {
+            dispatchChange(container, hex);
+        }
+        else {
+            dispatchCommit(container, hex);
+        }
+    }
     let saturationElement;
     let circleElement;
     let huePointer;
@@ -2680,8 +2813,9 @@ function ColorPicker(unit, _a = {}) {
             const rect = zone.current.getBoundingClientRect();
             const x = rect.width > 0 ? position.x / rect.width : 0;
             const y = rect.height > 0 ? position.y / rect.height : 0;
-            apply(Object.assign(Object.assign({}, hsva), { s: x, v: 1 - y }), true);
+            apply(Object.assign(Object.assign({}, hsva), { s: x, v: 1 - y }), 'input');
         });
+        zone.on('dragend', () => notify('change'));
     });
     if (presets.length > 0) {
         xnew(() => {
@@ -2691,7 +2825,7 @@ function ColorPicker(unit, _a = {}) {
                 if (rgba !== null) {
                     xnew((swatch) => {
                         xnew.nest({ tag: 'div', className: css.preset, style: `background: ${formatHex(rgba)};`, title: preset });
-                        swatch.on('click', () => apply(rgbaToHsva(rgba), true));
+                        swatch.on('click', () => apply(rgbaToHsva(rgba), 'commit'));
                     });
                 }
             }
@@ -2711,8 +2845,9 @@ function ColorPicker(unit, _a = {}) {
                 zone.on('dragstart dragmove', ({ position }) => {
                     const rect = zone.current.getBoundingClientRect();
                     const x = rect.width > 0 ? position.x / rect.width : 0;
-                    apply(Object.assign(Object.assign({}, hsva), { h: x * 360 }), true);
+                    apply(Object.assign(Object.assign({}, hsva), { h: x * 360 }), 'input');
                 });
+                zone.on('dragend', () => notify('change'));
             });
             if (alpha === true) {
                 xnew((zone) => {
@@ -2722,8 +2857,9 @@ function ColorPicker(unit, _a = {}) {
                     zone.on('dragstart dragmove', ({ position }) => {
                         const rect = zone.current.getBoundingClientRect();
                         const x = rect.width > 0 ? position.x / rect.width : 0;
-                        apply(Object.assign(Object.assign({}, hsva), { a: x }), true);
+                        apply(Object.assign(Object.assign({}, hsva), { a: x }), 'input');
                     });
+                    zone.on('dragend', () => notify('change'));
                 });
             }
         });
@@ -2742,6 +2878,7 @@ function ColorPicker(unit, _a = {}) {
         xnew.nest({ tag: 'div', className: css.field });
         const input = xnew({ tag: 'input', type: 'text', spellcheck: false, className: css.fieldInput }).current;
         xnew({ tag: 'div', className: css.fieldLabel, textContent: label });
+        sub.on('input', ({ event }) => event.stopPropagation());
         sub.on('change', ({ event, value }) => {
             event.stopPropagation();
             commit(String(value));
@@ -2759,7 +2896,7 @@ function ColorPicker(unit, _a = {}) {
         }
         else {
             const merged = hasHexAlpha(text) === true ? rgba : Object.assign(Object.assign({}, rgba), { a: hsva.a });
-            apply(rgbaToHsva(merged), true);
+            apply(rgbaToHsva(merged), 'commit');
         }
     }
     function commitChannel(key, text) {
@@ -2768,7 +2905,7 @@ function ColorPicker(unit, _a = {}) {
             render();
         }
         else {
-            apply(rgbaToHsva(Object.assign(Object.assign({}, hsvaToRgba(hsva)), { [key]: clamp(parsed, 0, 255) })), true);
+            apply(rgbaToHsva(Object.assign(Object.assign({}, hsvaToRgba(hsva)), { [key]: clamp(parsed, 0, 255) })), 'commit');
         }
     }
     function commitAlpha(text) {
@@ -2777,10 +2914,10 @@ function ColorPicker(unit, _a = {}) {
             render();
         }
         else {
-            apply(Object.assign(Object.assign({}, hsva), { a: clamp(parsed, 0, 100) / 100 }), true);
+            apply(Object.assign(Object.assign({}, hsva), { a: clamp(parsed, 0, 100) / 100 }), 'commit');
         }
     }
-    function apply(next, emit) {
+    function apply(next, kind) {
         hsva = {
             h: clamp(next.h, 0, 360),
             s: clamp(next.s, 0, 1),
@@ -2788,8 +2925,8 @@ function ColorPicker(unit, _a = {}) {
             a: alpha === true ? clamp(next.a, 0, 1) : 1,
         };
         render();
-        if (emit === true) {
-            notify();
+        if (kind !== 'none') {
+            notify(kind);
         }
     }
     function render() {
@@ -2819,7 +2956,7 @@ function ColorPicker(unit, _a = {}) {
         set value(text) {
             const rgba = parseHex(text);
             if (rgba !== null) {
-                apply(rgbaToHsva(rgba), false);
+                apply(rgbaToHsva(rgba), 'commit');
             }
         },
     };
@@ -3384,7 +3521,7 @@ function Tabs(unit, { items, value }) {
             &[data-active] { border-bottom-color: currentColor; font-weight: 600; opacity: 1; }
         `,
     });
-    xnew.nest({ tag: 'div', className: css.strip });
+    const strip = xnew.nest({ tag: 'div', className: css.strip });
     const panel = unit.parent;
     const defs = items.map((item) => itemDef(item));
     const keys = defs.map((def) => def.value);
@@ -3405,28 +3542,21 @@ function Tabs(unit, { items, value }) {
             });
         });
     }
-    function move(key) {
-        if (keys.includes(key) === false) {
-            return false;
-        }
-        active = key;
-        apply();
-        return true;
-    }
     function select(key) {
-        if (move(key) === true) {
-            xnew.emit('-change', { value: key });
+        if (keys.includes(key) === true) {
+            active = key;
+            apply();
+            dispatchCommit(strip, key);
         }
     }
     apply();
     panel === null || panel === void 0 ? void 0 : panel.on('childattach', apply);
     return {
-        select,
         get value() {
             return active;
         },
         set value(key) {
-            move(key);
+            select(key);
         },
     };
 }
@@ -3462,12 +3592,11 @@ function Checkbox(unit, _a) {
     };
 }
 function Color(unit, { name = '', value = '#ffffff' }) {
-    xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
+    const row = xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
     let current = value;
     const swatch = xnew({ tag: 'button', type: 'button', style: 'height: 2em; flex: 1; max-width: 60%; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer;' });
     swatch.current.style.background = current;
-    const notify = xnew.scope(() => xnew.emit('-change', { value: current }));
     let popup = null;
     swatch.on('click', ({ event }) => {
         event.stopPropagation();
@@ -3475,10 +3604,15 @@ function Color(unit, { name = '', value = '#ffffff' }) {
             popup = xnew(ColorPopup, {
                 anchor: swatch.current,
                 value: current,
-                commit(next) {
+                commit(next, settled) {
                     current = next;
                     swatch.current.style.background = next;
-                    notify();
+                    if (settled === true) {
+                        dispatchChange(row, next);
+                    }
+                    else {
+                        dispatchInput(row, next);
+                    }
                 },
             });
             popup.on('destroy', () => popup = null);
@@ -3494,6 +3628,7 @@ function Color(unit, { name = '', value = '#ffffff' }) {
         set value(text) {
             current = text;
             swatch.current.style.background = text;
+            dispatchCommit(row, text);
         },
     };
 }
@@ -3502,7 +3637,10 @@ function ColorPopup(unit, { anchor, value, commit }) {
     unit.gate.on('-closed', () => unit.destroy());
     xnew.nest('<div style="position: absolute; top: 100%; right: 0; padding: 0.25em 0;">');
     unit.on('pointerdown.outside', () => unit.gate.close());
-    xnew(ColorPicker, { value }).on('-change', ({ value }) => commit(value));
+    xnew(ColorPicker, { value }).on('input change', ({ event, value }) => {
+        event.stopPropagation();
+        commit(value, event.type === 'change');
+    });
     unit.gate.open();
 }
 function List(unit, _a) {
