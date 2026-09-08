@@ -2056,8 +2056,8 @@ function InputRange(unit, _a = {}) {
         },
         set value(number) {
             const element = input.current;
-            element.value = String(number);
-            dispatchCommit(element, number);
+            element.value = String(clamp(number, min, max));
+            dispatchCommit(element, element.valueAsNumber);
         },
         get input() {
             return input.current;
@@ -2144,61 +2144,8 @@ function InputRangeStatus(unit, { value = 0, vertical = false } = {}) {
     });
 }
 
-function Gate(unit, { open = true, duration = 0, easing = 'ease' } = {}) {
-    let value = open ? 1.0 : 0.0;
-    if (open === true) {
-        xnew.emit('-open');
-        xnew.emit('-opened');
-    }
-    else {
-        xnew.emit('-close');
-        xnew.emit('-closed');
-    }
-    let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
-    let moving = 0;
-    function move(direction) {
-        if (direction === moving)
-            return;
-        xnew.emit(direction > 0 ? '-open' : '-close');
-        moving = direction;
-        const d = direction > 0 ? 1 - value : value;
-        timer.clear();
-        timer = xnew.transition(({ value: x }) => {
-            const remaining = x < 1.0 ? (1 - x) * d : 0.0;
-            value = direction > 0 ? 1.0 - remaining : remaining;
-            xnew.emit('-transition', { value });
-        }, duration * d, easing)
-            .timeout(() => {
-            moving = 0;
-            xnew.emit(direction > 0 ? '-opened' : '-closed');
-        });
-    }
-    return {
-        get value() {
-            return value;
-        },
-        get state() {
-            if (moving === 0) {
-                return value > 0 ? 'opened' : 'closed';
-            }
-            else {
-                return moving > 0 ? 'opening' : 'closing';
-            }
-        },
-        toggle() {
-            move((unit.state === 'opened' || unit.state === 'opening') ? -1 : +1);
-        },
-        open() {
-            move(+1);
-        },
-        close() {
-            move(-1);
-        },
-    };
-}
-
 function InputCheckbox(unit, _a = {}) {
-    var { value = false, gate, className = '', style = '' } = _a, others = __rest(_a, ["value", "gate", "className", "style"]);
+    var { value = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-block;
@@ -2214,15 +2161,12 @@ function InputCheckbox(unit, _a = {}) {
     });
     const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
     const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
-    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
     function apply(checked) {
         input.current.checked = checked;
-        unit.current.toggleAttribute('data-checked', checked);
+        container.toggleAttribute('data-checked', checked);
     }
-    gate.on('-open', () => apply(true));
-    gate.on('-closed', () => apply(false));
-    apply(gate.state === 'opened' || gate.state === 'opening');
-    input.on('input', ({ value }) => value ? gate.open() : gate.close());
+    apply(value);
+    input.on('input', ({ value }) => apply(value));
     xnew.standalone(() => {
         xnew(CheckMark);
     });
@@ -2231,20 +2175,11 @@ function InputCheckbox(unit, _a = {}) {
             return input.current.checked;
         },
         set value(checked) {
-            input.current.checked = checked;
-            if (checked === true) {
-                gate.open();
-            }
-            else {
-                gate.close();
-            }
+            apply(checked);
             dispatchCommit(container, checked);
         },
         get input() {
             return input.current;
-        },
-        get gate() {
-            return gate;
         },
     };
 }
@@ -2330,8 +2265,10 @@ function InputNumber(unit, _a = {}) {
         },
         set value(number) {
             const element = input.current;
-            element.value = String(number);
-            dispatchCommit(element, number);
+            const low = element.min !== '' ? Number(element.min) : -Infinity;
+            const high = element.max !== '' ? Number(element.max) : Infinity;
+            element.value = String(clamp(number, low, high));
+            dispatchCommit(element, element.valueAsNumber);
         },
         get input() {
             return input.current;
@@ -2340,7 +2277,7 @@ function InputNumber(unit, _a = {}) {
 }
 
 function InputSwitch(unit, _a = {}) {
-    var { value = false, gate, className = '', style = '' } = _a, others = __rest(_a, ["value", "gate", "className", "style"]);
+    var { value = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-block;
@@ -2356,15 +2293,12 @@ function InputSwitch(unit, _a = {}) {
     });
     const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
     const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
-    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: value, duration: 0 });
     function apply(checked) {
         input.current.checked = checked;
-        unit.current.toggleAttribute('data-checked', checked);
+        container.toggleAttribute('data-checked', checked);
     }
-    gate.on('-open', () => apply(true));
-    gate.on('-closed', () => apply(false));
-    apply(gate.state === 'opened' || gate.state === 'opening');
-    input.on('input', ({ value }) => value ? gate.open() : gate.close());
+    apply(value);
+    input.on('input', ({ value }) => apply(value));
     xnew.standalone(() => {
         xnew(Knob);
     });
@@ -2373,20 +2307,11 @@ function InputSwitch(unit, _a = {}) {
             return input.current.checked;
         },
         set value(checked) {
-            input.current.checked = checked;
-            if (checked === true) {
-                gate.open();
-            }
-            else {
-                gate.close();
-            }
+            apply(checked);
             dispatchCommit(container, checked);
         },
         get input() {
             return input.current;
-        },
-        get gate() {
-            return gate;
         },
     };
 }
@@ -2432,10 +2357,65 @@ function InputRadio(unit, _a = {}) {
         set checked(current) {
             const element = input.current;
             element.checked = current;
-            dispatchCommit(element, current);
+            if (current === true) {
+                dispatchCommit(element, element.value);
+            }
         },
         get input() {
             return input.current;
+        },
+    };
+}
+
+function Gate(unit, { open = true, duration = 0, easing = 'ease' } = {}) {
+    let value = open ? 1.0 : 0.0;
+    if (open === true) {
+        xnew.emit('-open');
+        xnew.emit('-opened');
+    }
+    else {
+        xnew.emit('-close');
+        xnew.emit('-closed');
+    }
+    let timer = xnew.timeout(() => xnew.emit('-transition', { value }));
+    let moving = 0;
+    function move(direction) {
+        if (direction === moving)
+            return;
+        xnew.emit(direction > 0 ? '-open' : '-close');
+        moving = direction;
+        const d = direction > 0 ? 1 - value : value;
+        timer.clear();
+        timer = xnew.transition(({ value: x }) => {
+            const remaining = x < 1.0 ? (1 - x) * d : 0.0;
+            value = direction > 0 ? 1.0 - remaining : remaining;
+            xnew.emit('-transition', { value });
+        }, duration * d, easing)
+            .timeout(() => {
+            moving = 0;
+            xnew.emit(direction > 0 ? '-opened' : '-closed');
+        });
+    }
+    return {
+        get value() {
+            return value;
+        },
+        get state() {
+            if (moving === 0) {
+                return value > 0 ? 'opened' : 'closed';
+            }
+            else {
+                return moving > 0 ? 'opening' : 'closing';
+            }
+        },
+        toggle() {
+            move((unit.state === 'opened' || unit.state === 'opening') ? -1 : +1);
+        },
+        open() {
+            move(+1);
+        },
+        close() {
+            move(-1);
         },
     };
 }
@@ -2477,7 +2457,7 @@ function itemDef(item) {
     return (item !== null && typeof item === 'object' && 'value' in item) ? item : { value: item };
 }
 function Listbox(unit, _a = {}) {
-    var { value, items = [], gate, className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "gate", "className", "style"]);
+    var { value, items = [], duration = 0, easing = 'ease', className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "duration", "easing", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-flex;
@@ -2489,7 +2469,7 @@ function Listbox(unit, _a = {}) {
     let selected = value !== null && value !== void 0 ? value : (items.length > 0 ? itemDef(items[0]).value : '');
     const rows = [];
     const labels = [];
-    const gateUnit = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: false, duration: 0 });
+    const gate = xnew(Gate, { open: false, duration, easing });
     function text(value) {
         var _a, _b;
         return (_b = (_a = rows.find((row) => row.value === value)) === null || _a === void 0 ? void 0 : _a.label) !== null && _b !== void 0 ? _b : value;
@@ -2497,7 +2477,7 @@ function Listbox(unit, _a = {}) {
     function apply(value) {
         selected = value;
         for (const label of labels) {
-            label.textContent = text(selected);
+            label.current.textContent = text(selected);
         }
         for (const row of rows) {
             row.check(row.value === selected);
@@ -2523,17 +2503,19 @@ function Listbox(unit, _a = {}) {
         set value(value) {
             apply(value);
             dispatchCommit(container, value);
-            gateUnit.close();
+            gate.close();
         },
         get gate() {
-            return gateUnit;
+            return gate;
         },
         register(row) {
             rows.push(row);
+            row.on('destroy', () => rows.splice(rows.indexOf(row), 1));
         },
         bind(label) {
             labels.push(label);
-            label.textContent = text(selected);
+            label.on('destroy', () => labels.splice(labels.indexOf(label), 1));
+            label.current.textContent = text(selected);
         },
     };
 }
@@ -2566,7 +2548,7 @@ function ListboxButton(unit, _a = {}) {
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     const label = xnew({ tag: 'div', className: css.label });
-    listbox.bind(label.current);
+    listbox.bind(label);
     unit.on('click', ({ event }) => {
         event.stopPropagation();
         listbox.gate.toggle();

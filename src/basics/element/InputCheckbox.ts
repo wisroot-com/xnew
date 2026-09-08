@@ -1,18 +1,15 @@
 //----------------------------------------------------------------------------------------------------
 // InputCheckbox — framed check box backed by a hidden native <input type="checkbox">
-// Holds a Gate for the checked state and exposes it as `gate`; the invisible native input captures
-// interaction. unit.current is the container (not the input), so a trailing compose fn nests inside it.
-// Hosts read / write the checked boolean through `.value`, which drives the Gate and fires the native
-// `input` + `change` pair (never write `.input.checked` — it fires nothing and bypasses the Gate).
+// unit.current is the container (not the input), so a trailing compose fn nests inside it and styles
+// itself off `data-checked`; write through `.value` (never `.input.checked` — it fires nothing).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 import { dispatchCommit } from '../../utils/dom';
-import { Gate, GateProps } from '../widget/Gate';
 
 export function InputCheckbox(unit: xnew.Unit,
-    { value = false, gate, className = '', style = '', ...others }:
-    { value?: boolean, gate?: GateProps | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
+    { value = false, className = '', style = '', ...others }:
+    { value?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `
@@ -32,21 +29,15 @@ export function InputCheckbox(unit: xnew.Unit,
 
     const input = xnew({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
 
-    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate ?? { open: value, duration: 0 });
-
     // the hidden input holds the state (read through `input`); the container attribute only drives the look
     function apply(checked: boolean) {
         (input.current as HTMLInputElement).checked = checked;
-        unit.current.toggleAttribute('data-checked', checked);
+        container.toggleAttribute('data-checked', checked);
     }
+    apply(value);
 
-    gate.on('-open', () => apply(true));
-    gate.on('-closed', () => apply(false));
-    apply(gate.state === 'opened' || gate.state === 'opening');
-
-    // bound to the input, not the container: the setter dispatches on the container, so its own event
-    // cannot re-enter here and drive the Gate a second time
-    input.on('input', ({ value }: { value: boolean }) => value ? gate.open() : gate.close());
+    // bound to the input, not the container: the setter dispatches on the container, so its own event cannot re-enter here
+    input.on('input', ({ value }: { value: boolean }) => apply(value));
 
     xnew.standalone(() => {
         xnew(CheckMark);
@@ -56,22 +47,13 @@ export function InputCheckbox(unit: xnew.Unit,
         get value() {
             return (input.current as HTMLInputElement).checked;
         },
-        // routed through the Gate, so a programmatic set keeps data-checked and the composed mark in step;
-        // the input is flipped up front because the Gate only reports a close once its transition ends
+        // announced on the container, which is also where a host listens, so a programmatic set reads like an interaction
         set value(checked: boolean) {
-            (input.current as HTMLInputElement).checked = checked;
-            if (checked === true) {
-                gate.open();
-            } else {
-                gate.close();
-            }
+            apply(checked);
             dispatchCommit(container, checked);
         },
         get input() {
             return input.current as HTMLInputElement;
-        },
-        get gate() {
-            return gate;
         },
     };
 }

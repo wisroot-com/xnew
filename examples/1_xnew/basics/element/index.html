@@ -74,11 +74,18 @@
       xnew.nest('<div class="flex gap-4 items-center">');
       xnew(xbasics.InputCheckbox, { value: true });
       xnew(xbasics.InputCheckbox, { value: true, style: 'border-radius: 50%;' });
-      // compose a custom mark: xnew.extend puts InputCheckbox on this unit, so the mark nests into the box and follows the checked gate
-      xnew((unit) => {
+      // compose a custom mark: xnew.extend puts InputCheckbox on this unit, so the mark nests into the box
+      // and fades itself off the container's data-checked, exactly like the default CheckMark
+      xnew(() => {
         xnew.extend(xbasics.InputCheckbox, { value: true });
-        const mark = xnew(xicons.Check, { mode: 'solid', style: 'position: absolute; inset: 0; width: 100%; height: 100%; color: red;' });
-        unit.gate.on('-transition', ({ value }) => mark.current.style.opacity = value);
+        const css = xnew.css({
+          mark: `
+            position: absolute; inset: 0; width: 100%; height: 100%; color: red;
+            opacity: 0; transition: opacity 0.2s;
+            [data-checked] > & { opacity: 1; }
+          `,
+        });
+        xnew(xicons.Check, { mode: 'solid', className: css.mark });
       });
     }
 
@@ -140,10 +147,10 @@
           xnew(xbasics.ListboxItem, { value: 'cherry' });
         });
       });
-      // the Listbox owns the Gate (duration 200): ListboxMenu opens / closes it, and the Accordion
-      // (after the menu, so its collapse box wraps the rows) rides the same box.gate to animate in step
+      // the Listbox owns the Gate, built from its own duration: ListboxButton opens / closes it, and the
+      // Accordion (after the menu, so its collapse box wraps the rows) rides the same box.gate to animate in step
       xnew((listbox) => {
-        xnew.extend(xbasics.Listbox, { value: 'banana', gate: { open: false, duration: 200 } });
+        xnew.extend(xbasics.Listbox, { value: 'banana', duration: 200 });
         xnew(() => {
           xnew.extend(xbasics.ListboxButton, { style: 'border-radius: 9999px;' });
           xnew(xicons.ChevronUpDown, { className: 'flex-none size-[0.9em]' });

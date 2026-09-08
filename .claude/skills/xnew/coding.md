@@ -339,16 +339,21 @@ the rule, then one line of why.
   type mirrors its own `value` prop — `.input` stays only as an escape hatch to the raw element, and is
   never the write path (2026-09).** Writing through `.input` skips the component's own bookkeeping and
   silently desyncs it: `input.value = 50` on InputRange left the meter / status stale (a plain assignment
-  fires no `input` event), and `input.checked = true` on InputCheckbox / InputSwitch bypassed the Gate, so
-  `data-checked` and the composed mark disagreed with the input. The `.value` setters route through the
+  fires no `input` event), and `input.checked = true` on InputCheckbox / InputSwitch left `data-checked`
+  and the composed mark disagreeing with the input. The `.value` setters route through the
   right channel instead — InputRange refires a bubbling `input` (so the parts follow, and host listeners
   hear a programmatic set too — deliberate, since the shared container IS the internal bus), and
-  InputCheckbox / InputSwitch call `gate.open()` / `gate.close()`. Types follow each component's own
+  InputCheckbox / InputSwitch run one `apply` (input + `data-checked` together) before announcing. A
+  numeric setter also **confines its argument and announces what the element actually stored** (2026-09):
+  InputRange clamps to `min` / `max` then re-reads `valueAsNumber` (so the step snap rides along),
+  InputNumber clamps against the `min` / `max` attributes (a native number field keeps an out-of-range
+  assignment, it only marks itself invalid) — listeners and `.value` can never disagree. Types follow each component's own
   `value` prop, NOT one blanket type: string (InputText), number (InputNumber / InputRange, `valueAsNumber`,
   so NaN on an empty field), boolean (InputCheckbox / InputSwitch), hex string (ColorPicker), selected
   item (Listbox). Two deliberate exceptions: **InputRadio's `.value` is read-only** (a segment's value is
   its identity, fixed at creation — its mutable state is `.checked` get/set, and there is no group-level
-  value getter; read it off the checked segment).
+  value getter; read it off the checked segment). Its value events carry the **chosen value string**, never
+  the boolean, and `.checked = false` announces nothing — a native radio behaves exactly so (2026-09).
 
 - **When a component's setter can express everything a `select()`-style action method did, drop the method —
   one write path, not two (2026-09).** Listbox's `select(value)` define had exactly one caller (ListboxItem's
@@ -404,7 +409,7 @@ the rule, then one line of why.
   is used on its own (not extended onto another); it is init-only and throws afterwards. The deferral is the
   point: a component that draws its own default UI usually has parts that read the host's defines through
   `xnew.context` (Listbox's ListboxButton / ListboxMenu / ListboxItem call `.bind` / `.register` / `.gate`
-  in their own bodies), and defines attach only once the component returns (§2) — a plain
+  in their own bodies — `.bind` / `.register` take the part's UNIT, and drop it again on its `destroy`), and defines attach only once the component returns (§2) — a plain
   `if (xnew.standalone === true)` block in the body ran too early and got `undefined`. Listbox used to work
   around this with a separate `ListboxState` component extended first; both that and the workaround are
   gone. Each `Unit.extend` invocation keeps its own queue, drained with an index loop so a callback may
@@ -495,16 +500,17 @@ the rule, then one line of why.
   `xnew(...)` inside them must be wrapped in `xnew.scope(...)` (§7) — otherwise `xsync.emit` throws
   `no socket bound to this root` (Unit.currentUnit isn't the sync node).
 
-- **InputCheckbox holds a Gate for its checked state and its `unit.current` is the CONTAINER, not the
-  hidden input (modeled on Listbox, 2026-07).** The `<input>` is nested as a *child unit*
+- **InputCheckbox's `unit.current` is the CONTAINER, not the hidden input (modeled on Listbox, 2026-07).**
+  The `<input>` is nested as a *child unit*
   (`xnew({ tag: 'input', … })`, no `xnew.nest`) so the container stays current — an outer component
-  then composes the mark INTO the box (`xnew((unit) => { xnew.extend(InputCheckbox); … unit.gate … xnew(xicons.Check) })`);
+  then composes the mark INTO the box (`xnew(() => { xnew.extend(InputCheckbox); … xnew(xicons.Check, { className: css.mark }) })`,
+  the mark styling itself off `[data-checked] > &`);
   left empty, a one-tick `xnew.timeout` fallback draws a default check svg (detect "caller composed
   something" by any container child that is not the input). The hidden input gets `z-index: 1` so composed
-  marks never steal its clicks. Native `input` bubbles up to the container where `unit.on('input', …)`
-  lives → toggles `gate.open()/close()`; `gate.on('-open'/'-closed')` toggles `data-checked` on the
-  container (set it once initially from `gate.state`, since the Gate's constructor emits the first `-open`
-  before you subscribe). Do NOT assume `unit.current` is the input here — that still holds for InputSwitch,
+  marks never steal its clicks. **InputCheckbox / InputSwitch hold NO Gate (2026-09):** the hidden input's
+  own `input` event drives one `apply` that flips the input and toggles `data-checked` on the container,
+  and every transition is CSS on the composed mark / knob — there is no `gate` prop and no `.gate` define
+  (the Gate only ever ran at duration 0 here, and its props merged badly with `value`). Do NOT assume `unit.current` is the input here — that still holds for InputSwitch,
   but InputCheckbox and InputRange diverged (their `unit.current` is the container; the input is a
   `xnew({ tag: 'input', … })` child, not an `xnew.nest`). InputRange follows the same compose gate:
   its default `InputRangeMeter` + `InputRangeStatus` are drawn only inside `xnew.standalone(() => …)`, so
@@ -556,7 +562,9 @@ the rule, then one line of why.
   A deferred callback runs in the SCOPE SNAPSHOT from when it was scheduled, so `xnew.context(X)` inside it
   cannot see a component extended onto the unit AFTER the callback was scheduled (bit `InputSelectMenu`,
   extended before the `Accordion`). `Accordion` / `Overlay` take `gate: props | unit` — props ⇒ they create
-  a child `xnew(Gate, props)`; a unit ⇒ they reuse it — and expose it as `.gate`. A child Gate emits
+  a child `xnew(Gate, props)`; a unit ⇒ they reuse it — and expose it as `.gate`. **Listbox does NOT (2026-09):**
+  it takes plain `duration` / `easing` and OWNS the Gate it builds (still exposed as `.gate`, which is what
+  ListboxButton / ListboxMenu / an outer Accordion ride), so nothing outside can hand it a contradictory `open`. A child Gate emits
   `-transition` / `-closed` on its OWN unit, so subscribe on `accordion.gate.on(...)`, not the host unit.
 - **The `Unit` class is NOT exposed as a runtime value; `xnew.Unit` is a TYPE only.** To discriminate a
   passed unit from a props object at runtime, use the `xnew.isUnit(x): x is xnew.Unit` type guard (narrows

@@ -418,13 +418,46 @@ describe('basics Listbox', () => {
         expect(isOpen(button)).toBe(true);
     });
 
+    // rows / labels are held in registries, so a part that goes away must drop out of them
+    it('drops a destroyed row from the registry, leaving later writes untouched by it', () => {
+        let rows!: xnew.Unit[];
+        let box!: xnew.Unit;
+        xnew(() => {
+            box = xnew(() => {
+                xnew.extend(Listbox, { value: 'a' });
+                xnew(ListboxButton);
+                xnew(() => {
+                    xnew.extend(ListboxMenu);
+                    rows = [xnew(ListboxItem, { value: 'a' }), xnew(ListboxItem, { value: 'b' })];
+                });
+            });
+        });
+        jest.advanceTimersByTime(0);
+
+        const survivor = rows[1].current as HTMLElement;
+        rows[0].destroy();
+
+        expect(() => { box.value = 'b'; }).not.toThrow();
+        expect(survivor.hasAttribute('data-checked')).toBe(true);
+    });
+
+    it('drops a destroyed trigger label from the registry, leaving later writes untouched by it', () => {
+        const { box, button } = build({ value: 'a' }, ['a', 'b']);
+        jest.advanceTimersByTime(0);
+
+        button.destroy();
+
+        expect(() => { box.value = 'b'; }).not.toThrow();
+        expect(box.value).toBe('b');
+    });
+
     it('drives the menu open / close with a shared Gate, animating an Accordion over the same unit', () => {
         let button!: xnew.Unit;
         let accordion!: HTMLElement;
         xnew(() => {
-            // the Listbox owns the Gate: the button opens / closes it, the Accordion (after the menu) rides box.gate
+            // the Listbox owns the Gate (built from `duration`): the button opens / closes it, the Accordion (after the menu) rides box.gate
             const box = xnew((b: xnew.Unit) => {
-                xnew.extend(Listbox, { gate: { open: false, duration: 200 } });
+                xnew.extend(Listbox, { duration: 200 });
                 button = xnew(ListboxButton);
                 xnew((m: xnew.Unit) => {
                     xnew.extend(ListboxMenu);

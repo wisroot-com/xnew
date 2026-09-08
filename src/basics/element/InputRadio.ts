@@ -39,10 +39,13 @@ export function InputRadio(unit: xnew.Unit,
         get checked() {
             return (input.current as HTMLInputElement).checked;
         },
+        // announced like a native pick: the value event carries the chosen value, and unchecking is silent (native fires nothing either)
         set checked(current: boolean) {
             const element = input.current as HTMLInputElement;
             element.checked = current;
-            dispatchCommit(element, current);
+            if (current === true) {
+                dispatchCommit(element, element.value);
+            }
         },
         get input() {
             return input.current as HTMLInputElement;

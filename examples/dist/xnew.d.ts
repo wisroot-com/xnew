@@ -355,29 +355,14 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, 
     readonly input: HTMLInputElement;
 };
 
-type GateProps = {
-    open?: boolean;
-    duration?: number;
-    easing?: string;
-};
-declare function Gate(unit: xnew.Unit, { open, duration, easing }?: GateProps): {
-    readonly value: number;
-    readonly state: "opening" | "closing" | "opened" | "closed";
-    toggle(): void;
-    open(): void;
-    close(): void;
-};
-
-declare function InputCheckbox(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
+declare function InputCheckbox(unit: xnew.Unit, { value, className, style, ...others }?: {
     value?: boolean;
-    gate?: GateProps | xnew.Unit;
     className?: string;
     style?: string;
     [key: string]: any;
 }): {
     value: boolean;
     readonly input: HTMLInputElement;
-    readonly gate: Unit;
 };
 
 declare function InputText(unit: xnew.Unit, { value, className, style, ...others }?: {
@@ -400,16 +385,14 @@ declare function InputNumber(unit: xnew.Unit, { value, className, style, ...othe
     readonly input: HTMLInputElement;
 };
 
-declare function InputSwitch(unit: xnew.Unit, { value, gate, className, style, ...others }?: {
+declare function InputSwitch(unit: xnew.Unit, { value, className, style, ...others }?: {
     value?: boolean;
-    gate?: GateProps | xnew.Unit;
     className?: string;
     style?: string;
     [key: string]: any;
 }): {
     value: boolean;
     readonly input: HTMLInputElement;
-    readonly gate: Unit;
 };
 
 declare function InputRadio(unit: xnew.Unit, { value, name, checked, className, style, ...others }?: {
@@ -429,10 +412,11 @@ type ItemDef<T = string> = T | {
     value: T;
     label?: string;
 };
-declare function Listbox(unit: xnew.Unit, { value, items, gate, className, style, ...others }?: {
+declare function Listbox(unit: xnew.Unit, { value, items, duration, easing, className, style, ...others }?: {
     value?: string;
     items?: ItemDef[];
-    gate?: GateProps | xnew.Unit;
+    duration?: number;
+    easing?: string;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -440,7 +424,7 @@ declare function Listbox(unit: xnew.Unit, { value, items, gate, className, style
     value: string;
     readonly gate: Unit;
     register(row: xnew.Unit): void;
-    bind(label: HTMLElement): void;
+    bind(label: xnew.Unit): void;
 };
 declare function ListboxButton(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
@@ -473,6 +457,19 @@ declare function ColorPicker(unit: xnew.Unit, { value, presets, alpha, className
     [key: string]: any;
 }): {
     value: string;
+};
+
+type GateProps = {
+    open?: boolean;
+    duration?: number;
+    easing?: string;
+};
+declare function Gate(unit: xnew.Unit, { open, duration, easing }?: GateProps): {
+    readonly value: number;
+    readonly state: "opening" | "closing" | "opened" | "closed";
+    toggle(): void;
+    open(): void;
+    close(): void;
 };
 
 declare function Accordion(unit: xnew.Unit, { gate, className, style, ...others }?: {

@@ -66,6 +66,25 @@ describe('basics InputNumber', () => {
         expect(unit.value).toBe(42);
     });
 
+    it('confines an out-of-range .value set to the min / max attributes, announcing the stored number', () => {
+        const unit = xnew(InputNumber, { value: 30, min: 10, max: 50 });
+        const seen = record(unit);
+
+        unit.value = 500;
+
+        expect(unit.value).toBe(50);
+        expect((unit.current.querySelector('input') as HTMLInputElement).value).toBe('50');
+        expect(seen).toEqual([['input', 50], ['change', 50]]);
+    });
+
+    it('leaves a .value set unbounded when no min / max is given', () => {
+        const unit = xnew(InputNumber, { value: 30 });
+
+        unit.value = 500;
+
+        expect(unit.value).toBe(500);
+    });
+
     it('reads .value as NaN while the field is empty', () => {
         expect(Number.isNaN(xnew(InputNumber).value)).toBe(true);
     });

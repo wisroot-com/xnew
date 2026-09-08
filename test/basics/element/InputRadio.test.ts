@@ -76,13 +76,30 @@ describe('basics InputRadio', () => {
         expect(input.disabled).toBe(true);
     });
 
-    it('fires the native input + change pair on a .checked set', () => {
+    // the same value a native pick delivers, so a host cannot tell the two apart
+    it('announces the chosen value on a .checked set, staying silent on an uncheck', () => {
         const unit = xnew(InputRadio, { value: 'low', name: 'level' });
         const seen = record(unit);
 
         unit.checked = true;
 
-        expect(seen).toEqual([['input', true], ['change', true]]);
+        expect(seen).toEqual([['input', 'low'], ['change', 'low']]);
+
+        unit.checked = false;
+
+        expect(seen).toEqual([['input', 'low'], ['change', 'low']]);
+    });
+
+    it('delivers the same value on a native pick as on a .checked set', () => {
+        const unit = xnew(InputRadio, { value: 'low', name: 'level' });
+        const seen = record(unit);
+
+        const input = unit.input as HTMLInputElement;
+        input.checked = true;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+
+        expect(seen).toEqual([['input', 'low'], ['change', 'low']]);
     });
 
     it('reads this segment own value through .value', () => {

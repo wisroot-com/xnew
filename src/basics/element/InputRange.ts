@@ -8,6 +8,7 @@
 
 import { xnew } from '../../core/xnew';
 import { dispatchCommit } from '../../utils/dom';
+import { clamp } from '../../utils/math';
 
 export function InputRange(unit: xnew.Unit,
     { value, min = 0, max = 100, step, vertical = false, className = '', style = '', ...others }:
@@ -52,11 +53,11 @@ export function InputRange(unit: xnew.Unit,
         get value() {
             return (input.current as HTMLInputElement).valueAsNumber;
         },
-        // the meter / status follow the bubbling native event, which a plain assignment never fires
+        // clamped, then read back off the element (which also snaps to the step grid), so the meter / status / listeners never disagree with `.value`
         set value(number: number) {
             const element = input.current as HTMLInputElement;
-            element.value = String(number);
-            dispatchCommit(element, number);
+            element.value = String(clamp(number, min, max));
+            dispatchCommit(element, element.valueAsNumber);
         },
         get input() {
             return input.current as HTMLInputElement;

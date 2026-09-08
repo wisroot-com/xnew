@@ -9,7 +9,7 @@
 
 import { xnew } from '../../core/xnew';
 import { dispatchCommit } from '../../utils/dom';
-import { Gate, GateProps } from '../widget/Gate';
+import { Gate } from '../widget/Gate';
 import { Overlay } from '../widget/Overlay';
 
 //----------------------------------------------------------------------------------------------------
@@ -26,8 +26,8 @@ export function itemDef<T>(item: ItemDef<T>): { value: T, label?: string } {
 }
 
 export function Listbox(unit: xnew.Unit,
-    { value, items = [], gate, className = '', style = '', ...others }:
-    { value?: string, items?: ItemDef[], gate?: GateProps | xnew.Unit, className?: string, style?: string, [key: string]: any } = {}
+    { value, items = [], duration = 0, easing = 'ease', className = '', style = '', ...others }:
+    { value?: string, items?: ItemDef[], duration?: number, easing?: string, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `
@@ -44,9 +44,10 @@ export function Listbox(unit: xnew.Unit,
     let selected = value ?? (items.length > 0 ? itemDef(items[0]).value : '');
 
     const rows: xnew.Unit[] = [];
-    const labels: HTMLElement[] = [];
+    const labels: xnew.Unit[] = [];
 
-    const gateUnit = xnew.isUnit(gate) ? gate : xnew(Gate, gate ?? { open: false, duration: 0 });
+    // the menu's Gate is owned here, never injected: the button toggles it and the setter closes it, so its closed start is fixed
+    const gate = xnew(Gate, { open: false, duration, easing });
 
     // the trigger shows the selected row's label, falling back to the value itself when it has none
     function text(value: string): string {
@@ -56,7 +57,7 @@ export function Listbox(unit: xnew.Unit,
     function apply(value: string) {
         selected = value;
         for (const label of labels) {
-            label.textContent = text(selected);
+            label.current.textContent = text(selected);
         }
         for (const row of rows) {
             row.check(row.value === selected);
@@ -91,17 +92,20 @@ export function Listbox(unit: xnew.Unit,
         set value(value: string) {
             apply(value);
             dispatchCommit(container, value);
-            gateUnit.close();
+            gate.close();
         },
         get gate() {
-            return gateUnit;
+            return gate;
         },
+        // both registries drop their entry when the part is destroyed, so a rebuilt menu leaves no stale unit behind
         register(row: xnew.Unit) {
             rows.push(row);
+            row.on('destroy', () => rows.splice(rows.indexOf(row), 1));
         },
-        bind(label: HTMLElement) {
+        bind(label: xnew.Unit) {
             labels.push(label);
-            label.textContent = text(selected);
+            label.on('destroy', () => labels.splice(labels.indexOf(label), 1));
+            label.current.textContent = text(selected);
         },
     };
 }
@@ -150,7 +154,7 @@ export function ListboxButton(unit: xnew.Unit,
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
     const label = xnew({ tag: 'div', className: css.label });
-    listbox.bind(label.current);
+    listbox.bind(label);
 
     // stop the opening click from bubbling to the document, or ListboxMenu's click.outside would self-close it
     unit.on('click', ({ event }: { event: PointerEvent }) => {
@@ -198,7 +202,7 @@ export function ListboxMenu(unit: xnew.Unit,
         for (let element = listbox.current.parentElement; element !== null; element = element.parentElement) {
             const color = getComputedStyle(element).backgroundColor;
             if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
-            return color;
+                return color;
             }
         }
         return 'Canvas';

@@ -8,6 +8,7 @@
 
 import { xnew } from '../../core/xnew';
 import { dispatchCommit } from '../../utils/dom';
+import { clamp } from '../../utils/math';
 
 export function InputNumber(unit: xnew.Unit,
     { value, className = '', style = '', ...others }:
@@ -45,10 +46,13 @@ export function InputNumber(unit: xnew.Unit,
         get value() {
             return (input.current as HTMLInputElement).valueAsNumber;
         },
+        // a native number field keeps an out-of-range assignment (it only marks itself invalid), so the bounds ride here, read back off the element
         set value(number: number) {
             const element = input.current as HTMLInputElement;
-            element.value = String(number);
-            dispatchCommit(element, number);
+            const low = element.min !== '' ? Number(element.min) : -Infinity;
+            const high = element.max !== '' ? Number(element.max) : Infinity;
+            element.value = String(clamp(number, low, high));
+            dispatchCommit(element, element.valueAsNumber);
         },
         get input() {
             return input.current as HTMLInputElement;

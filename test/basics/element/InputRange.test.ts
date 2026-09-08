@@ -196,6 +196,32 @@ describe('basics InputRange', () => {
         expect(statusOf(unit).textContent).toBe('75');
     });
 
+    it('confines an out-of-range .value set to min / max, announcing the stored number', () => {
+        const unit = xnew(InputRange, { value: 30, min: 0, max: 100, step: 1 });
+        const seen = record(unit);
+
+        unit.value = 500;
+
+        expect(unit.value).toBe(100);
+        expect(inputOf(unit).value).toBe('100');
+        expect(seen).toEqual([['input', 100], ['change', 100]]);
+
+        unit.value = -20;
+
+        expect(unit.value).toBe(0);
+        expect(seen).toEqual([['input', 100], ['change', 100], ['input', 0], ['change', 0]]);
+    });
+
+    it('keeps the meter and status on the clamped number', () => {
+        const unit = xnew(InputRange, { value: 30, min: 0, max: 100, step: 1 });
+        jest.advanceTimersByTime(0);
+
+        unit.value = 500;
+
+        expect(meterOf(unit).style.width).toBe('100%');
+        expect(statusOf(unit).textContent).toBe('100');
+    });
+
     // the meter / status listen on the shared container, so the refired event reaches host listeners too
     it('refires input to host listeners on a programmatic .value set', () => {
         const unit = xnew(InputRange, { value: 0 });

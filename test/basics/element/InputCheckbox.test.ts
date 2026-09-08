@@ -105,15 +105,15 @@ describe('basics InputCheckbox', () => {
         expect(unit.current.getAttribute('style')).toContain('border-radius: 50%;');
     });
 
-    it('exposes the checked-state gate, reflecting it in the native input', () => {
+    // the container attribute is the only state a composed mark can style itself against
+    it('keeps data-checked and the native input in step through a .value set', () => {
         const unit = xnew(InputCheckbox, { value: true });
 
-        expect(xnew.isUnit(unit.gate)).toBe(true);
-        expect(unit.gate.state).toBe('opened');
+        expect(unit.input.checked).toBe(true);
+        expect(unit.current.hasAttribute('data-checked')).toBe(true);
 
-        unit.gate.close();
-        jest.advanceTimersByTime(1);
-        expect(unit.gate.state).toBe('closed');
+        unit.value = false;
+
         expect(unit.input.checked).toBe(false);
         expect(unit.current.hasAttribute('data-checked')).toBe(false);
     });
