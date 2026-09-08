@@ -3,7 +3,7 @@
 // session, messaging, and boot. The channel wiring itself lives in boot.ts.
 //----------------------------------------------------------------------------------------------------
 
-import { Unit, ComponentFn, DefinesOf, PropsOf } from '../core/unit';
+import { Unit, ComponentFn, PropsOf } from '../core/unit';
 import { bootServer, bootClient } from './boot';
 import { getSide } from './side';
 import { RoomIO, BootOptions, ClientStatus, RoomStatus } from './roomio';
@@ -13,11 +13,11 @@ import { RoomIO, BootOptions, ClientStatus, RoomStatus } from './roomio';
 //----------------------------------------------------------------------------------------------------
 
 export const xsync = {
-    server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {} {
-        return getSide() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) as DefinesOf<C> : {};
+    server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): Record<string, any> {
+        return getSide() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) as Record<string, any> : {};
     },
-    client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {} {
-        return getSide() === 'client' ? Unit.extend(Unit.currentUnit, callback, props) as DefinesOf<C> : {};
+    client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): Record<string, any> {
+        return getSide() === 'client' ? Unit.extend(Unit.currentUnit, callback, props) as Record<string, any> : {};
     },
     state(initial: Record<string, any> = {}): Record<string, any> {
         const state = Unit.currentUnit._.sync.state;

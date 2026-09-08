@@ -2,14 +2,13 @@ import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
 
 //----------------------------------------------------------------------------------------------------
-// Typed defines (theme 2)
+// Defines (theme 2)
 //
-// xnew(Component) returns `Unit & DefinesOf<Component>`, and xnew.extend(Component) returns
-// `DefinesOf<Component>`. Unit carries a `[key: string]: any` index signature (defines are attached
-// at runtime and can't be tracked statically), so declared defines keep their types while undeclared
-// access on a unit resolves to `any` instead of erroring. The bare object returned by xnew.extend has
-// no Unit, so it stays strictly typed: undeclared access there is still a compile error (asserted with
-// a ts-expect-error directive below). These checks run under ts-jest, so a type regression fails the
+// Defines are attached onto the unit at runtime, so they are deliberately NOT tracked statically:
+// xnew(Component) returns a plain `Unit` and xnew.extend(Component) returns `Record<string, any>`.
+// Unit carries a `[key: string]: any` index signature, so any member access compiles and resolves to
+// `any` — declared or not. Props are the one thing that stays typed (PropsOf), which the last case
+// pins down with a ts-expect-error. These checks run under ts-jest, so a type regression fails the
 // build, and the runtime expectations confirm the defines are actually wired onto the unit.
 //----------------------------------------------------------------------------------------------------
 
@@ -21,7 +20,7 @@ function Counter(_unit: Unit, props: { start?: number }) {
     };
 }
 
-describe('typed defines', () => {
+describe('defines', () => {
     beforeEach(() => {
         Unit.reset();
     });
@@ -29,23 +28,22 @@ describe('typed defines', () => {
         Unit.engineRoot?.destroy();
     });
 
-    it('xnew(Component) merges typed defines onto the returned unit', () => {
+    it('xnew(Component) attaches the defines onto the returned unit', () => {
         xnew(() => {
             const counter = xnew(Counter, { start: 10 });
-            counter.inc();                          // typed method
-            expect(counter.value).toBe(11);         // typed getter
+            counter.inc();
+            expect(counter.value).toBe(11);
             expect(typeof counter.on).toBe('function'); // still a Unit
-            expect(counter.nope).toBeUndefined();   // undeclared access resolves to any (Unit index signature)
+            expect(counter.nope).toBeUndefined();       // undeclared access resolves to any (Unit index signature)
         });
     });
 
-    it('xnew.extend(Component) returns typed defines', () => {
+    it('xnew.extend(Component) returns the defines', () => {
         xnew(() => {
             const api = xnew.extend(Counter, { start: 5 });
             api.inc();
             expect(api.value).toBe(6);
-            // @ts-expect-error — undeclared define is a type error
-            api.nope;
+            expect(api.nope).toBeUndefined();           // untyped too — Record<string, any>
         });
     });
 
@@ -53,7 +51,14 @@ describe('typed defines', () => {
         xnew(() => {
             const plain = xnew((_unit: Unit) => { /* no defines */ });
             expect(typeof plain.destroy).toBe('function');
-            expect(plain.anything).toBeUndefined();   // bare Unit still allows any access via index signature
+            expect(plain.anything).toBeUndefined();
+        });
+    });
+
+    it('props stay typed even though defines do not', () => {
+        xnew(() => {
+            // @ts-expect-error — start is a number
+            xnew(Counter, { start: 'five' });
         });
     });
 });

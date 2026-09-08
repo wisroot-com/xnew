@@ -46,7 +46,6 @@ interface SyncData {
     visibility: ((clientId: string) => boolean) | null;
 }
 type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
-type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends [void] ? {} : Exclude<R, void | undefined>) : {};
 type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
 declare class Unit {
     [key: string]: any;
@@ -144,8 +143,8 @@ type CssDef = string | {
 };
 
 interface XnewBase {
-    <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
-    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
+    <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit;
+    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit;
     (target: DomElement | string | DomElementDef, content?: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
@@ -153,7 +152,7 @@ interface XnewBase {
 }
 declare const xnew: XnewBase & {
     nest(tag: string | DomElementDef, textContent?: string): HTMLElement | SVGElement;
-    extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C>;
+    extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Record<string, any>;
     css: {
         <T extends Record<string, CssDef>>(defs: T): Record<keyof T, string>;
         <T extends Record<string, CssDef>>(layer: string, defs: T): Record<keyof T, string>;
@@ -198,8 +197,8 @@ interface BootOptions {
 }
 
 declare const xsync: {
-    server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
-    client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): DefinesOf<C> | {};
+    server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): Record<string, any>;
+    client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): Record<string, any>;
     state(initial?: Record<string, any>): Record<string, any>;
     register(Components: Record<string, Function>): void;
     visibility(target: ((clientId: string) => boolean) | null): void;
@@ -518,10 +517,7 @@ declare function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions): {
     tabs({ items, value }?: {
         items?: ItemDef<any>[];
         value?: any;
-    }): Unit & {
-        select: (key: any) => void;
-        readonly active: any;
-    };
+    }): Unit;
     group({ name, open, key }: PanelOptions, inner?: (group: xnew.Unit) => void): Unit;
     button({ name, key }?: {
         name?: string;
@@ -550,9 +546,7 @@ declare function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions): {
         name?: string;
         value?: string;
         key?: any;
-    }): Unit & {
-        readonly value: string;
-    };
+    }): Unit;
     separator(): void;
 };
 

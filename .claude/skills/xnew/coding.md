@@ -303,16 +303,15 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 
 ## 12. TypeScript notes
 
-- `Unit` has an index signature `[key: string]: any`. Declared members keep their
-  types; **undeclared access (`unit.foo`) resolves to `any` and is NOT a typo
-  check.** This is the price of runtime-attached defines — rely on local typed
+- `Unit` has an index signature `[key: string]: any`, so **every member access
+  (`unit.foo`) compiles and resolves to `any` — it is NOT a typo check.**
+  This is the price of runtime-attached defines — rely on local typed
   closures for your own state.
-- `xnew(Component)` returns `Unit & DefinesOf<Component>` (defines typed via the
-  component's return type). `xnew.extend(Component)` returns a **bare**
-  `DefinesOf<Component>` (no `Unit`, so it stays strictly typed).
-- `DefinesOf` only sees the component **function's own return**. Defines added via
-  `sync.server` / `sync.client` / nested `extend` are NOT in `DefinesOf`, so
-  `xnew(Comp).thatDefine` is `any` (allowed via the index signature, not typed).
+- **Defines are not typed at all.** `xnew(Component)` returns a plain `Unit` and
+  `xnew.extend(Component)` returns `Record<string, any>`. Tracking runtime-attached
+  members statically was given up on, so `xnew(Comp).anyDefine` is `any` — declared
+  in the component's return or not.
+- **Props stay typed** (`PropsOf`): `xnew(Comp, props)` type-checks the props object.
 - `io` / `socket` are `any` (socket.io handles passed straight through). `conn`,
   `payload` in handlers are typically `any` — match the surrounding style.
 

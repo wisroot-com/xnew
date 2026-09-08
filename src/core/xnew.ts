@@ -4,14 +4,14 @@
 // ticker); each helper acts on the implicit Unit.currentUnit, thinly forwarding to Unit static methods.
 //----------------------------------------------------------------------------------------------------
 
-import { Unit, UnitPromise, UnitTimer, ComponentFn, DefinesOf, PropsOf } from './unit';
+import { Unit, UnitPromise, UnitTimer, ComponentFn, PropsOf } from './unit';
 import { DomElement, DomElementDef } from './dom';
 import { applyCss, CssDef } from './css';
 
-// Call signatures of xnew(...); passing a Component merges its defines into the return type.
+// Call signatures of xnew(...); a Component only types its props — defines are attached at runtime and reached through Unit's index signature.
 export interface XnewBase {
-    <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
-    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit & DefinesOf<C>;
+    <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit;
+    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit;
     (target: DomElement | string | DomElementDef, content?: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
@@ -40,15 +40,15 @@ export const xnew = Object.assign(
             return Unit.nest(Unit.currentUnit, tag, textContent);
         },
 
-        // Extends the current unit with another component; only during initialization. Returns the defines.
-        extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): DefinesOf<C> {
+        // Extends the current unit with another component; only during initialization. Returns the defines (untyped — see ComponentFn).
+        extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Record<string, any> {
             if (Unit.currentUnit._.phase !== 'invoked') {
                 throw new Error('xnew.extend can not be called after initialized.');
             }
             if (Unit.currentUnit._.Components.includes(Component) === true) {
                 console.warn('Component is already extended in this unit:', Component);
             }
-            return Unit.extend(Unit.currentUnit, Component, props) as DefinesOf<C>;
+            return Unit.extend(Unit.currentUnit, Component, props) as Record<string, any>;
         },
 
         // Registers pseudo-scoped CSS: each key is a local name, always renamed to a page-unique one (scoping is mandatory — invalid keys throw). A string value is a class declaration body wrapped as .xnewN-key { … } (native nesting works inside: &:hover, &[data-checked], @media, …); an at-rule value declares its kind as { rule: '@keyframes' | '@property' | '@counter-style' | '@font-face', body } and hangs the generated name on it ('@property' names become --xnewN-key; '@font-face' injects the name as font-family and body may be an array of faces). $key inside a body references another entry's generated name (unknown references throw; strings / comments pass through untouched, and a body cannot escape its braces). An optional layer (first arg) wraps the whole block in @layer (xbasics passes 'base'). Returns { key: generatedName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it is destroyed.

@@ -26,11 +26,8 @@ const SYSTEM_TYPES: SystemType[] = ['update', 'destroy', 'childattach', 'childde
 // xsync node record (see src/sync): every unit carries one; root is the sync root it lives under (null outside one) and is inherited, the rest is per-unit.
 export interface SyncData { root: Unit | null; id: number | null; state: Record<string, any>; registry: Record<string, Function>; visibility: ((clientId: string) => boolean) | null; }
 
-// Component function type; the returned defines are merged into the xnew(...) return value (Unit & A).
+// Component function type; the returned defines are attached onto the unit at runtime (see Unit.extend).
 export type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
-
-// Extract the defines type of a Component (void falls back to {}).
-export type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends [void] ? {} : Exclude<R, void | undefined>) : {};
 
 // Extract the props type of a Component ({} if absent).
 export type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
