@@ -2184,7 +2184,7 @@ function Toggle(unit, _a = {}) {
 }
 
 function InputCheckbox(unit, _a = {}) {
-    var { className = '' } = _a, others = __rest(_a, ["className"]);
+    var { value = false, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-block;
@@ -2199,7 +2199,7 @@ function InputCheckbox(unit, _a = {}) {
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
-    xnew.extend(Toggle, Object.assign({ className: `${css.container} ${className}` }, others));
+    xnew.extend(Toggle, Object.assign({ value, disabled, className: `${css.container} ${className}`, style }, others));
     xnew.standalone(() => {
         xnew(CheckMark);
     });
@@ -2302,7 +2302,7 @@ function InputNumber(unit, _a = {}) {
 }
 
 function InputSwitch(unit, _a = {}) {
-    var { className = '' } = _a, others = __rest(_a, ["className"]);
+    var { value = false, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-block;
@@ -2317,7 +2317,7 @@ function InputSwitch(unit, _a = {}) {
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
-    xnew.extend(Toggle, Object.assign({ className: `${css.container} ${className}` }, others));
+    xnew.extend(Toggle, Object.assign({ value, disabled, className: `${css.container} ${className}`, style }, others));
     xnew.standalone(() => {
         xnew(Knob);
     });

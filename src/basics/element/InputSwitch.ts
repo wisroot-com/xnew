@@ -8,7 +8,7 @@ import { xnew } from '../../core/xnew';
 import { Toggle } from './Toggle';
 
 export function InputSwitch(unit: xnew.Unit,
-    { className = '', ...others }:
+    { value = false, disabled = false, className = '', style = '', ...others }:
     { value?: boolean, disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
@@ -26,7 +26,7 @@ export function InputSwitch(unit: xnew.Unit,
         `,
     });
 
-    xnew.extend(Toggle, { className: `${css.container} ${className}`, ...others });
+    xnew.extend(Toggle, { value, disabled, className: `${css.container} ${className}`, style, ...others });
 
     xnew.standalone(() => {
         xnew(Knob);

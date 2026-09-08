@@ -357,7 +357,7 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, 
     readonly input: HTMLInputElement;
 };
 
-declare function InputCheckbox(unit: xnew.Unit, { className, ...others }?: {
+declare function InputCheckbox(unit: xnew.Unit, { value, disabled, className, style, ...others }?: {
     value?: boolean;
     disabled?: boolean;
     className?: string;
@@ -387,7 +387,7 @@ declare function InputNumber(unit: xnew.Unit, { value, disabled, className, styl
     readonly input: HTMLInputElement;
 };
 
-declare function InputSwitch(unit: xnew.Unit, { className, ...others }?: {
+declare function InputSwitch(unit: xnew.Unit, { value, disabled, className, style, ...others }?: {
     value?: boolean;
     disabled?: boolean;
     className?: string;
