@@ -28,7 +28,8 @@ Integrations for games and interactive apps.
 
 ## Directory Layout
 
-- `src/core/` — `xnew` core: `unit`, event, time, map, env, dom
+- `src/core/` — `xnew` core: `unit` (lifecycle / events / defines) and `xnew.ts` (the public facade)
+- `src/utils/` — layer-free helpers the core and components share: `dom` (element creation + event binding), `map` (MapSet / MapMap), `time` (Ticker / Timer), `math` (clamp / ease), `css` (pseudo-scoped CSS behind `xnew.css`; unit binding stays in `xnew.ts`), `color` (RGBA / HSVA conversions, hex parse / format)
 - `src/sync/` — networking layer (exported as `xsync`): `xsync.ts` (the facade only) plus `boot.ts` (the transport / channel wiring behind `xsync.boot`) and `roomio.ts` (`RoomIO`: the root unit + the io it was booted with — the client socket is created from it here — the room / roster, and the wire pair `emit(type, data, clients?)` / `on(type, listener)`). Lobby/room "gathering place" wiring is not built in — callers assemble it from the facade (see `examples/*/server.js` + `index.js`).
 - `src/audio/` — audio layer (exported as `xaudio`): a facade `xaudio.ts` (`load` / `synthesizer` / `volume`) over the AudioTrack / Synthesizer components and the shared master bus (`master.ts`)
 - `src/basics/` — built-in basic components (exported as `xbasics`); one component per file, grouped by category: `stage/`, `element/`, `widget/`

@@ -3,6 +3,8 @@
 // Timer auto-pauses on visibilitychange (browser only).
 //----------------------------------------------------------------------------------------------------
 
+import { ease } from './math';
+
 //----------------------------------------------------------------------------------------------------
 // ticker
 //----------------------------------------------------------------------------------------------------
@@ -69,22 +71,6 @@ export class Ticker {
 //----------------------------------------------------------------------------------------------------
 // timer
 //----------------------------------------------------------------------------------------------------
-
-// Maps a linear progress value in [0, 1] to an eased value, anchored at 0 and 1.
-function ease(p: number, easing?: string): number {
-    switch (easing) {
-        case 'ease-out':
-            return Math.pow(1.0 - Math.pow(1.0 - p, 2.0), 0.5);
-        case 'ease-in':
-            return Math.pow(1.0 - Math.pow(1.0 - p, 0.5), 2.0);
-        case 'ease':
-            return ((s) => s * s * (3 - 2 * s))(p ** 0.7);
-        case 'ease-in-out':
-            return p * p * (3 - 2 * p);
-        default:
-            return p;
-    }
-}
 
 export class Timer {
     private id: ReturnType<typeof setTimeout> | null = null;

@@ -5,9 +5,8 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-
-type Rgba = { r: number, g: number, b: number, a: number };
-type Hsva = { h: number, s: number, v: number, a: number };
+import { Hsva, formatHex, hasHexAlpha, hsvaToRgba, parseHex, rgbaToHsva } from '../../utils/color';
+import { clamp } from '../../utils/math';
 
 const PRESETS = [
     '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321', '#417505', '#BD10E0', '#9013FE',
@@ -125,7 +124,10 @@ export function ColorPicker(unit: xnew.Unit,
         circleElement = xnew({ tag: 'div', className: css.circle }).current as HTMLElement;
         zone.on('dragstart dragmove', ({ position }: { position: { x: number, y: number } }) => {
             const rect = zone.current.getBoundingClientRect();
-            apply({ ...hsva, s: ratio(position.x, rect.width), v: 1 - ratio(position.y, rect.height) }, true);
+            // a picker hidden mid-drag reports a 0 rect: apply() clamps out-of-range offsets, but a 0 / 0 NaN would slip through it into hsva
+            const x = rect.width > 0 ? position.x / rect.width : 0;
+            const y = rect.height > 0 ? position.y / rect.height : 0;
+            apply({ ...hsva, s: x, v: 1 - y }, true);
         });
     });
 
@@ -159,7 +161,8 @@ export function ColorPicker(unit: xnew.Unit,
                 huePointer = xnew({ tag: 'div', className: css.pointer }).current as HTMLElement;
                 zone.on('dragstart dragmove', ({ position }: { position: { x: number, y: number } }) => {
                     const rect = zone.current.getBoundingClientRect();
-                    apply({ ...hsva, h: ratio(position.x, rect.width) * 360 }, true);
+                    const x = rect.width > 0 ? position.x / rect.width : 0;
+                    apply({ ...hsva, h: x * 360 }, true);
                 });
             });
             if (alpha === true) {
@@ -169,7 +172,8 @@ export function ColorPicker(unit: xnew.Unit,
                     alphaPointer = xnew({ tag: 'div', className: css.pointer }).current as HTMLElement;
                     zone.on('dragstart dragmove', ({ position }: { position: { x: number, y: number } }) => {
                         const rect = zone.current.getBoundingClientRect();
-                        apply({ ...hsva, a: ratio(position.x, rect.width) }, true);
+                        const x = rect.width > 0 ? position.x / rect.width : 0;
+                        apply({ ...hsva, a: x }, true);
                     });
                 });
             }
@@ -209,9 +213,8 @@ export function ColorPicker(unit: xnew.Unit,
         if (rgba === null) {
             render();
         } else {
-            const stripped = text.trim().replace(/^#/, '');
             // 3 / 6-digit hex keeps the current alpha; only 4 / 8-digit text carries its own
-            const merged = (stripped.length === 4 || stripped.length === 8) ? rgba : { ...rgba, a: hsva.a };
+            const merged = hasHexAlpha(text) === true ? rgba : { ...rgba, a: hsva.a };
             apply(rgbaToHsva(merged), true);
         }
     }
@@ -237,9 +240,9 @@ export function ColorPicker(unit: xnew.Unit,
     function apply(next: Hsva, emit: boolean) {
         hsva = {
             h: clamp(next.h, 0, 360),
-            s: clamp01(next.s),
-            v: clamp01(next.v),
-            a: alpha === true ? clamp01(next.a) : 1,
+            s: clamp(next.s, 0, 1),
+            v: clamp(next.v, 0, 1),
+            a: alpha === true ? clamp(next.a, 0, 1) : 1,
         };
         render();
         if (emit === true) {
@@ -280,72 +283,4 @@ export function ColorPicker(unit: xnew.Unit,
             }
         },
     };
-}
-
-//----------------------------------------------------------------------------------------------------
-// color conversion helpers
-//----------------------------------------------------------------------------------------------------
-
-function clamp(value: number, low: number, high: number): number {
-    return Math.min(Math.max(value, low), high);
-}
-
-function clamp01(value: number): number {
-    return clamp(value, 0, 1);
-}
-
-function ratio(position: number, span: number): number {
-    return span > 0 ? clamp01(position / span) : 0;
-}
-
-function hsvaToRgba({ h, s, v, a }: Hsva): Rgba {
-    const f = (n: number) => {
-        const k = (n + h / 60) % 6;
-        return v - v * s * Math.max(0, Math.min(k, 4 - k, 1));
-    };
-    return { r: Math.round(f(5) * 255), g: Math.round(f(3) * 255), b: Math.round(f(1) * 255), a };
-}
-
-function rgbaToHsva({ r, g, b, a }: Rgba): Hsva {
-    const rf = r / 255;
-    const gf = g / 255;
-    const bf = b / 255;
-    const max = Math.max(rf, gf, bf);
-    const delta = max - Math.min(rf, gf, bf);
-    let h = 0;
-    if (delta === 0) {
-        h = 0;
-    } else if (max === rf) {
-        h = 60 * (((gf - bf) / delta) % 6);
-    } else if (max === gf) {
-        h = 60 * ((bf - rf) / delta + 2);
-    } else {
-        h = 60 * ((rf - gf) / delta + 4);
-    }
-    if (h < 0) {
-        h += 360;
-    }
-    return { h, s: max === 0 ? 0 : delta / max, v: max, a };
-}
-
-function parseHex(text: string): Rgba | null {
-    const stripped = text.trim().replace(/^#/, '').toLowerCase();
-    let expanded: string | null = null;
-    if (/^[0-9a-f]{3}$/.test(stripped) === true || /^[0-9a-f]{4}$/.test(stripped) === true) {
-        expanded = stripped.split('').map((c) => c + c).join('');
-    } else if (/^[0-9a-f]{6}$/.test(stripped) === true || /^[0-9a-f]{8}$/.test(stripped) === true) {
-        expanded = stripped;
-    }
-    if (expanded === null) {
-        return null;
-    } else {
-        const channel = (i: number) => Number.parseInt((expanded as string).substring(i, i + 2), 16);
-        return { r: channel(0), g: channel(2), b: channel(4), a: expanded.length === 8 ? channel(6) / 255 : 1 };
-    }
-}
-
-function formatHex({ r, g, b, a }: Rgba): string {
-    const hex = (n: number) => n.toString(16).padStart(2, '0');
-    const base = `#${hex(r)}${hex(g)}${hex(b)}`;
-    return a < 1 ? `${base}${hex(Math.round(a * 255))}` : base;
 }

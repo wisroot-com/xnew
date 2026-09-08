@@ -107,6 +107,24 @@ class MapMap extends Map {
     }
 }
 
+function clamp(value, low, high) {
+    return Math.min(Math.max(value, low), high);
+}
+function ease(p, easing) {
+    switch (easing) {
+        case 'ease-out':
+            return Math.pow(1.0 - Math.pow(1.0 - p, 2.0), 0.5);
+        case 'ease-in':
+            return Math.pow(1.0 - Math.pow(1.0 - p, 0.5), 2.0);
+        case 'ease':
+            return ((s) => s * s * (3 - 2 * s))(p ** 0.7);
+        case 'ease-in-out':
+            return p * p * (3 - 2 * p);
+        default:
+            return p;
+    }
+}
+
 class Ticker {
     constructor(callback, fps = 60, unref = false) {
         this.cancel = null;
@@ -159,20 +177,6 @@ class Ticker {
             this.cancel();
             this.cancel = null;
         }
-    }
-}
-function ease(p, easing) {
-    switch (easing) {
-        case 'ease-out':
-            return Math.pow(1.0 - Math.pow(1.0 - p, 2.0), 0.5);
-        case 'ease-in':
-            return Math.pow(1.0 - Math.pow(1.0 - p, 0.5), 2.0);
-        case 'ease':
-            return ((s) => s * s * (3 - 2 * s))(p ** 0.7);
-        case 'ease-in-out':
-            return p * p * (3 - 2 * p);
-        default:
-            return p;
     }
 }
 class Timer {
@@ -1012,50 +1016,54 @@ function resolveBody(key, source, names) {
     }
     return out;
 }
-function applyCss(unit, layer, defs) {
+function buildCss(layer, defs, id) {
+    if (layer !== undefined && layerName.test(layer) === false) {
+        throw new Error(`xnew.css: invalid layer "${layer}".`);
+    }
+    const names = {};
+    for (const [name, def] of Object.entries(defs)) {
+        if (localName.test(name) === false) {
+            throw new Error(`xnew.css: invalid local name "${name}".`);
+        }
+        else if (typeof def === 'object' && atRules.includes(def.rule) === false) {
+            throw new Error(`xnew.css: unsupported rule "${def.rule}" in "${name}".`);
+        }
+        else if (typeof def === 'object' && Array.isArray(def.body) === true && def.rule !== '@font-face') {
+            throw new Error(`xnew.css: only @font-face may take multiple bodies ("${name}").`);
+        }
+        else {
+            names[name] = generatedName(def, `xnew${id}-`, name);
+        }
+    }
+    const blocks = Object.entries(defs).map(([name, def]) => {
+        if (typeof def === 'string') {
+            if (/^@(keyframes|property|counter-style|font-face)\b/.test(def.trim()) === true) {
+                throw new Error(`xnew.css: write "${name}" as { rule: '@…', body: '…' }.`);
+            }
+            return `.${names[name]} {\n${resolveBody(name, def, names)}\n}`;
+        }
+        else if (def.rule === '@font-face') {
+            const bodies = Array.isArray(def.body) ? def.body : [def.body];
+            return bodies.map((body) => `@font-face {\nfont-family: ${names[name]};\n${resolveBody(name, body, names)}\n}`).join('\n');
+        }
+        else {
+            return `${def.rule} ${names[name]} {\n${resolveBody(name, def.body, names)}\n}`;
+        }
+    }).join('\n');
+    const text = layer === undefined ? blocks : `@layer ${layer} {\n${blocks}\n}`;
+    return { names, text };
+}
+function acquireCss(layer, defs) {
     var _a;
     if (((_a = globalThis.document) === null || _a === void 0 ? void 0 : _a.head) === undefined) {
-        return Object.fromEntries(Object.entries(defs).map(([name, def]) => [name, generatedName(def, '', name)]));
+        const names = Object.fromEntries(Object.entries(defs).map(([name, def]) => [name, generatedName(def, '', name)]));
+        return { names, release: () => { } };
     }
     else {
         const key = JSON.stringify([layer, defs]);
         let entry = registry.get(key);
         if (entry === undefined) {
-            if (layer !== undefined && layerName.test(layer) === false) {
-                throw new Error(`xnew.css: invalid layer "${layer}".`);
-            }
-            const id = counter++;
-            const names = {};
-            for (const [name, def] of Object.entries(defs)) {
-                if (localName.test(name) === false) {
-                    throw new Error(`xnew.css: invalid local name "${name}".`);
-                }
-                else if (typeof def === 'object' && atRules.includes(def.rule) === false) {
-                    throw new Error(`xnew.css: unsupported rule "${def.rule}" in "${name}".`);
-                }
-                else if (typeof def === 'object' && Array.isArray(def.body) === true && def.rule !== '@font-face') {
-                    throw new Error(`xnew.css: only @font-face may take multiple bodies ("${name}").`);
-                }
-                else {
-                    names[name] = generatedName(def, `xnew${id}-`, name);
-                }
-            }
-            const blocks = Object.entries(defs).map(([name, def]) => {
-                if (typeof def === 'string') {
-                    if (/^@(keyframes|property|counter-style|font-face)\b/.test(def.trim()) === true) {
-                        throw new Error(`xnew.css: write "${name}" as { rule: '@…', body: '…' }.`);
-                    }
-                    return `.${names[name]} {\n${resolveBody(name, def, names)}\n}`;
-                }
-                else if (def.rule === '@font-face') {
-                    const bodies = Array.isArray(def.body) ? def.body : [def.body];
-                    return bodies.map((body) => `@font-face {\nfont-family: ${names[name]};\n${resolveBody(name, body, names)}\n}`).join('\n');
-                }
-                else {
-                    return `${def.rule} ${names[name]} {\n${resolveBody(name, def.body, names)}\n}`;
-                }
-            }).join('\n');
-            const text = layer === undefined ? blocks : `@layer ${layer} {\n${blocks}\n}`;
+            const { names, text } = buildCss(layer, defs, counter++);
             const style = document.createElement('style');
             style.textContent = text;
             document.head.appendChild(style);
@@ -1064,14 +1072,20 @@ function applyCss(unit, layer, defs) {
         }
         const held = entry;
         held.refs++;
-        unit.on('destroy', () => {
-            held.refs--;
-            if (held.refs === 0) {
-                held.style.remove();
-                registry.delete(key);
-            }
-        });
-        return held.names;
+        let released = false;
+        return {
+            names: held.names,
+            release: () => {
+                if (released === false) {
+                    released = true;
+                    held.refs--;
+                    if (held.refs === 0) {
+                        held.style.remove();
+                        registry.delete(key);
+                    }
+                }
+            },
+        };
     }
 }
 
@@ -1104,7 +1118,9 @@ const xnew = Object.assign((function (...args) {
     css: (function (layerOrDefs, maybeDefs) {
         const layer = typeof layerOrDefs === 'string' ? layerOrDefs : undefined;
         const defs = typeof layerOrDefs === 'string' ? maybeDefs : layerOrDefs;
-        return applyCss(Unit.currentUnit, layer, defs);
+        const { names, release } = acquireCss(layer, defs);
+        Unit.currentUnit.on('destroy', release);
+        return names;
     }),
     context(Component) {
         return Unit.getContext(Unit.currentUnit, Component);
@@ -2594,6 +2610,64 @@ function ListboxItem(unit, _a = {}) {
     };
 }
 
+function hsvaToRgba({ h, s, v, a }) {
+    const f = (n) => {
+        const k = (n + h / 60) % 6;
+        return v - v * s * Math.max(0, Math.min(k, 4 - k, 1));
+    };
+    return { r: Math.round(f(5) * 255), g: Math.round(f(3) * 255), b: Math.round(f(1) * 255), a };
+}
+function rgbaToHsva({ r, g, b, a }) {
+    const rf = r / 255;
+    const gf = g / 255;
+    const bf = b / 255;
+    const max = Math.max(rf, gf, bf);
+    const delta = max - Math.min(rf, gf, bf);
+    let h = 0;
+    if (delta === 0) {
+        h = 0;
+    }
+    else if (max === rf) {
+        h = 60 * (((gf - bf) / delta) % 6);
+    }
+    else if (max === gf) {
+        h = 60 * ((bf - rf) / delta + 2);
+    }
+    else {
+        h = 60 * ((rf - gf) / delta + 4);
+    }
+    if (h < 0) {
+        h += 360;
+    }
+    return { h, s: max === 0 ? 0 : delta / max, v: max, a };
+}
+function parseHex(text) {
+    const stripped = text.trim().replace(/^#/, '').toLowerCase();
+    let expanded = null;
+    if (/^[0-9a-f]{3}$/.test(stripped) === true || /^[0-9a-f]{4}$/.test(stripped) === true) {
+        expanded = stripped.split('').map((c) => c + c).join('');
+    }
+    else if (/^[0-9a-f]{6}$/.test(stripped) === true || /^[0-9a-f]{8}$/.test(stripped) === true) {
+        expanded = stripped;
+    }
+    if (expanded === null) {
+        return null;
+    }
+    else {
+        const channel = (i) => Number.parseInt(expanded.substring(i, i + 2), 16);
+        return { r: channel(0), g: channel(2), b: channel(4), a: expanded.length === 8 ? channel(6) / 255 : 1 };
+    }
+}
+function formatHex({ r, g, b, a }) {
+    const hex = (n) => n.toString(16).padStart(2, '0');
+    const base = `#${hex(r)}${hex(g)}${hex(b)}`;
+    return a < 1 ? `${base}${hex(Math.round(a * 255))}` : base;
+}
+function hasHexAlpha(text) {
+    const length = text.trim().replace(/^#/, '').length;
+    return length === 4 || length === 8;
+}
+
 const PRESETS = [
     '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321', '#417505', '#BD10E0', '#9013FE',
     '#4A90E2', '#50E3C2', '#B8E986',
@@ -2699,7 +2773,9 @@ function ColorPicker(unit, _a = {}) {
         circleElement = xnew({ tag: 'div', className: css.circle }).current;
         zone.on('dragstart dragmove', ({ position }) => {
             const rect = zone.current.getBoundingClientRect();
-            apply(Object.assign(Object.assign({}, hsva), { s: ratio(position.x, rect.width), v: 1 - ratio(position.y, rect.height) }), true);
+            const x = rect.width > 0 ? position.x / rect.width : 0;
+            const y = rect.height > 0 ? position.y / rect.height : 0;
+            apply(Object.assign(Object.assign({}, hsva), { s: x, v: 1 - y }), true);
         });
     });
     if (presets.length > 0) {
@@ -2729,7 +2805,8 @@ function ColorPicker(unit, _a = {}) {
                 huePointer = xnew({ tag: 'div', className: css.pointer }).current;
                 zone.on('dragstart dragmove', ({ position }) => {
                     const rect = zone.current.getBoundingClientRect();
-                    apply(Object.assign(Object.assign({}, hsva), { h: ratio(position.x, rect.width) * 360 }), true);
+                    const x = rect.width > 0 ? position.x / rect.width : 0;
+                    apply(Object.assign(Object.assign({}, hsva), { h: x * 360 }), true);
                 });
             });
             if (alpha === true) {
@@ -2739,7 +2816,8 @@ function ColorPicker(unit, _a = {}) {
                     alphaPointer = xnew({ tag: 'div', className: css.pointer }).current;
                     zone.on('dragstart dragmove', ({ position }) => {
                         const rect = zone.current.getBoundingClientRect();
-                        apply(Object.assign(Object.assign({}, hsva), { a: ratio(position.x, rect.width) }), true);
+                        const x = rect.width > 0 ? position.x / rect.width : 0;
+                        apply(Object.assign(Object.assign({}, hsva), { a: x }), true);
                     });
                 });
             }
@@ -2775,8 +2853,7 @@ function ColorPicker(unit, _a = {}) {
             render();
         }
         else {
-            const stripped = text.trim().replace(/^#/, '');
-            const merged = (stripped.length === 4 || stripped.length === 8) ? rgba : Object.assign(Object.assign({}, rgba), { a: hsva.a });
+            const merged = hasHexAlpha(text) === true ? rgba : Object.assign(Object.assign({}, rgba), { a: hsva.a });
             apply(rgbaToHsva(merged), true);
         }
     }
@@ -2801,9 +2878,9 @@ function ColorPicker(unit, _a = {}) {
     function apply(next, emit) {
         hsva = {
             h: clamp(next.h, 0, 360),
-            s: clamp01(next.s),
-            v: clamp01(next.v),
-            a: alpha === true ? clamp01(next.a) : 1,
+            s: clamp(next.s, 0, 1),
+            v: clamp(next.v, 0, 1),
+            a: alpha === true ? clamp(next.a, 0, 1) : 1,
         };
         render();
         if (emit === true) {
@@ -2841,68 +2918,6 @@ function ColorPicker(unit, _a = {}) {
             }
         },
     };
-}
-function clamp(value, low, high) {
-    return Math.min(Math.max(value, low), high);
-}
-function clamp01(value) {
-    return clamp(value, 0, 1);
-}
-function ratio(position, span) {
-    return span > 0 ? clamp01(position / span) : 0;
-}
-function hsvaToRgba({ h, s, v, a }) {
-    const f = (n) => {
-        const k = (n + h / 60) % 6;
-        return v - v * s * Math.max(0, Math.min(k, 4 - k, 1));
-    };
-    return { r: Math.round(f(5) * 255), g: Math.round(f(3) * 255), b: Math.round(f(1) * 255), a };
-}
-function rgbaToHsva({ r, g, b, a }) {
-    const rf = r / 255;
-    const gf = g / 255;
-    const bf = b / 255;
-    const max = Math.max(rf, gf, bf);
-    const delta = max - Math.min(rf, gf, bf);
-    let h = 0;
-    if (delta === 0) {
-        h = 0;
-    }
-    else if (max === rf) {
-        h = 60 * (((gf - bf) / delta) % 6);
-    }
-    else if (max === gf) {
-        h = 60 * ((bf - rf) / delta + 2);
-    }
-    else {
-        h = 60 * ((rf - gf) / delta + 4);
-    }
-    if (h < 0) {
-        h += 360;
-    }
-    return { h, s: max === 0 ? 0 : delta / max, v: max, a };
-}
-function parseHex(text) {
-    const stripped = text.trim().replace(/^#/, '').toLowerCase();
-    let expanded = null;
-    if (/^[0-9a-f]{3}$/.test(stripped) === true || /^[0-9a-f]{4}$/.test(stripped) === true) {
-        expanded = stripped.split('').map((c) => c + c).join('');
-    }
-    else if (/^[0-9a-f]{6}$/.test(stripped) === true || /^[0-9a-f]{8}$/.test(stripped) === true) {
-        expanded = stripped;
-    }
-    if (expanded === null) {
-        return null;
-    }
-    else {
-        const channel = (i) => Number.parseInt(expanded.substring(i, i + 2), 16);
-        return { r: channel(0), g: channel(2), b: channel(4), a: expanded.length === 8 ? channel(6) / 255 : 1 };
-    }
-}
-function formatHex({ r, g, b, a }) {
-    const hex = (n) => n.toString(16).padStart(2, '0');
-    const base = `#${hex(r)}${hex(g)}${hex(b)}`;
-    return a < 1 ? `${base}${hex(Math.round(a * 255))}` : base;
 }
 
 function Accordion(unit, _a = {}) {

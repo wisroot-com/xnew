@@ -4,9 +4,9 @@
 // listeners record their owner, so a destroyed owner's listeners elsewhere detach automatically.
 //----------------------------------------------------------------------------------------------------
 
-import { MapSet } from './map';
-import { Ticker, Timer } from './time';
-import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, createElement } from './dom';
+import { MapSet } from '../utils/map';
+import { Ticker, Timer } from '../utils/time';
+import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, createElement } from '../utils/dom';
 
 //----------------------------------------------------------------------------------------------------
 // definitions

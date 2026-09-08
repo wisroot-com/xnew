@@ -1,4 +1,4 @@
-import { EventBinder, isDomElement } from '../../src/core/dom';
+import { EventBinder, isDomElement } from '../../src/utils/dom';
 
 //----------------------------------------------------------------------------------------------------
 // dom — DomElement type guard (isDomElement) + EventBinder (DOM event binding).

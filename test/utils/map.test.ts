@@ -1,4 +1,4 @@
-import { MapSet, MapMap } from '../../src/core/map';
+import { MapSet, MapMap } from '../../src/utils/map';
 
 describe('MapSet', () => {
     let mapSet: MapSet<string, number>;

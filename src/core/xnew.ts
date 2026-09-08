@@ -5,8 +5,8 @@
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, UnitPromise, UnitTimer, ComponentFn, PropsArg } from './unit';
-import { DomElement, DomElementDef } from './dom';
-import { applyCss, CssDef } from './css';
+import { DomElement, DomElementDef } from '../utils/dom';
+import { acquireCss, CssDef } from '../utils/css';
 
 // Call signatures of xnew(...); a Component only types its props (required unless every prop is optional) — defines are attached at runtime and reached through Unit's index signature.
 export interface XnewBase {
@@ -55,7 +55,10 @@ export const xnew = Object.assign(
         css: (function(layerOrDefs: string | Record<string, CssDef>, maybeDefs?: Record<string, CssDef>): Record<string, string> {
             const layer = typeof layerOrDefs === 'string' ? layerOrDefs : undefined;
             const defs = typeof layerOrDefs === 'string' ? maybeDefs! : layerOrDefs;
-            return applyCss(Unit.currentUnit, layer, defs);
+            // the stylesheet itself is shared and reference counted in utils/css; the unit only holds one reference
+            const { names, release } = acquireCss(layer, defs);
+            Unit.currentUnit.on('destroy', release);
+            return names;
         }) as {
             <T extends Record<string, CssDef>>(defs: T): Record<keyof T, string>;
             <T extends Record<string, CssDef>>(layer: string, defs: T): Record<keyof T, string>;

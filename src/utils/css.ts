@@ -1,10 +1,8 @@
 //----------------------------------------------------------------------------------------------------
 // css — pseudo-scoped CSS backing xnew.css (local names → unique generated names)
 // Scoping is emulated by renaming and made mandatory: a string def is a class body, an at-rule def
-// declares its kind as { rule, body } — either way every rule hangs off a renamed key.
+// declares its kind as { rule, body }; unit-free — acquireCss hands the lifetime back as release().
 //----------------------------------------------------------------------------------------------------
-
-import { Unit } from './unit';
 
 // string = class declaration body; at-rules declare their kind ('@font-face' may list one body per face)
 export type CssDef =
@@ -76,45 +74,53 @@ function resolveBody(key: string, source: string, names: Record<string, string>)
     return out;
 }
 
-export function applyCss(unit: Unit, layer: string | undefined, defs: Record<string, CssDef>): Record<string, string> {
+// validates the definitions and renders them into one stylesheet text, with the generated name per local key
+function buildCss(layer: string | undefined, defs: Record<string, CssDef>, id: number): { names: Record<string, string>, text: string } {
+    if (layer !== undefined && layerName.test(layer) === false) {
+        throw new Error(`xnew.css: invalid layer "${layer}".`);
+    }
+    const names: Record<string, string> = {};
+    for (const [name, def] of Object.entries(defs)) {
+        if (localName.test(name) === false) {
+            throw new Error(`xnew.css: invalid local name "${name}".`);
+        } else if (typeof def === 'object' && atRules.includes(def.rule) === false) {
+            throw new Error(`xnew.css: unsupported rule "${def.rule}" in "${name}".`);
+        } else if (typeof def === 'object' && Array.isArray(def.body) === true && def.rule !== '@font-face') {
+            throw new Error(`xnew.css: only @font-face may take multiple bodies ("${name}").`);
+        } else {
+            names[name] = generatedName(def, `xnew${id}-`, name);
+        }
+    }
+    const blocks = Object.entries(defs).map(([name, def]) => {
+        if (typeof def === 'string') {
+            // a string body is always wrapped in the class rule, where a definition at-rule would nest invalidly
+            if (/^@(keyframes|property|counter-style|font-face)\b/.test(def.trim()) === true) {
+                throw new Error(`xnew.css: write "${name}" as { rule: '@…', body: '…' }.`);
+            }
+            return `.${names[name]} {\n${resolveBody(name, def, names)}\n}`;
+        } else if (def.rule === '@font-face') {
+            // the scoped identity of a face is its family: the generated name is injected as the font-family descriptor
+            const bodies = Array.isArray(def.body) ? def.body : [def.body];
+            return bodies.map((body) => `@font-face {\nfont-family: ${names[name]};\n${resolveBody(name, body, names)}\n}`).join('\n');
+        } else {
+            return `${def.rule} ${names[name]} {\n${resolveBody(name, def.body, names)}\n}`;
+        }
+    }).join('\n');
+    const text = layer === undefined ? blocks : `@layer ${layer} {\n${blocks}\n}`;
+    return { names, text };
+}
+
+// Injects (or reuses) the <style> for these definitions and returns the generated names plus the
+// reference release; the last release removes the shared style. Outside the DOM only names are produced.
+export function acquireCss(layer: string | undefined, defs: Record<string, CssDef>): { names: Record<string, string>, release: () => void } {
     if (globalThis.document?.head === undefined) {
-        return Object.fromEntries(Object.entries(defs).map(([name, def]) => [name, generatedName(def, '', name)]));
+        const names = Object.fromEntries(Object.entries(defs).map(([name, def]) => [name, generatedName(def, '', name)]));
+        return { names, release: () => {} };
     } else {
         const key = JSON.stringify([layer, defs]);
         let entry = registry.get(key);
         if (entry === undefined) {
-            if (layer !== undefined && layerName.test(layer) === false) {
-                throw new Error(`xnew.css: invalid layer "${layer}".`);
-            }
-            const id = counter++;
-            const names: Record<string, string> = {};
-            for (const [name, def] of Object.entries(defs)) {
-                if (localName.test(name) === false) {
-                    throw new Error(`xnew.css: invalid local name "${name}".`);
-                } else if (typeof def === 'object' && atRules.includes(def.rule) === false) {
-                    throw new Error(`xnew.css: unsupported rule "${def.rule}" in "${name}".`);
-                } else if (typeof def === 'object' && Array.isArray(def.body) === true && def.rule !== '@font-face') {
-                    throw new Error(`xnew.css: only @font-face may take multiple bodies ("${name}").`);
-                } else {
-                    names[name] = generatedName(def, `xnew${id}-`, name);
-                }
-            }
-            const blocks = Object.entries(defs).map(([name, def]) => {
-                if (typeof def === 'string') {
-                    // a string body is always wrapped in the class rule, where a definition at-rule would nest invalidly
-                    if (/^@(keyframes|property|counter-style|font-face)\b/.test(def.trim()) === true) {
-                        throw new Error(`xnew.css: write "${name}" as { rule: '@…', body: '…' }.`);
-                    }
-                    return `.${names[name]} {\n${resolveBody(name, def, names)}\n}`;
-                } else if (def.rule === '@font-face') {
-                    // the scoped identity of a face is its family: the generated name is injected as the font-family descriptor
-                    const bodies = Array.isArray(def.body) ? def.body : [def.body];
-                    return bodies.map((body) => `@font-face {\nfont-family: ${names[name]};\n${resolveBody(name, body, names)}\n}`).join('\n');
-                } else {
-                    return `${def.rule} ${names[name]} {\n${resolveBody(name, def.body, names)}\n}`;
-                }
-            }).join('\n');
-            const text = layer === undefined ? blocks : `@layer ${layer} {\n${blocks}\n}`;
+            const { names, text } = buildCss(layer, defs, counter++);
 
             const style = document.createElement('style');
             style.textContent = text;
@@ -126,13 +132,19 @@ export function applyCss(unit: Unit, layer: string | undefined, defs: Record<str
 
         const held = entry;
         held.refs++;
-        unit.on('destroy', () => {
-            held.refs--;
-            if (held.refs === 0) {
-                held.style.remove();
-                registry.delete(key);
-            }
-        });
-        return held.names;
+        let released = false;
+        return {
+            names: held.names,
+            release: () => {
+                if (released === false) {
+                    released = true;
+                    held.refs--;
+                    if (held.refs === 0) {
+                        held.style.remove();
+                        registry.delete(key);
+                    }
+                }
+            },
+        };
     }
 }

@@ -1,4 +1,4 @@
-import { Ticker, Timer } from '../../src/core/time';
+import { Ticker, Timer } from '../../src/utils/time';
 
 describe('Ticker', () => {
     beforeEach(() => jest.useFakeTimers({ now: 0 }));
