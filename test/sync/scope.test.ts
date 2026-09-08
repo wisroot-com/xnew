@@ -5,7 +5,7 @@ import { ioMock, bootServer, bootClient, asServer } from './io-mock';
 describe('scoped registry isolation', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     // 同名 'Child' を 2 つの親がそれぞれ別の実体で登録する
     function ChildA(unit: Unit) { xsync.state({ kind: 'A' }); }

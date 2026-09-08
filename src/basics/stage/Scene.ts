@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // Scene — scene-swap navigator mixin (the unit swaps itself for the next scene)
-// `change` mounts the next component under unit.parent and finalizes this unit, so the mounted
+// `change` mounts the next component under unit.parent and destroys this unit, so the mounted
 // unit itself is the navigation state; an optional `leave()` define is awaited before the swap.
 //----------------------------------------------------------------------------------------------------
 
@@ -16,14 +16,14 @@ export function Scene(unit: xnew.Unit) {
 
                 const timer = typeof unit.leave === 'function' ? unit.leave() : undefined;
                 if (timer && typeof timer.timeout === 'function') {
-                    timer.timeout(finalize); // UnitTimer: chain onto the leave transition
+                    timer.timeout(destroy); // UnitTimer: chain onto the leave transition
                 } else {
-                    finalize();
+                    destroy();
                 }
 
-                function finalize() {
+                function destroy() {
                     xnew(unit.parent, Component, props);
-                    unit.finalize();
+                    unit.destroy();
                 }
             }
         },

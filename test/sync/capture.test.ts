@@ -11,7 +11,7 @@ function Player() {}
 describe('registry (scoped)', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     // component を server boot し、1 接続をつないで 1 度 update し、その client に emit された 'sync' ツリーを返す。
     // capture は接続 client ごとの投影になったため、記録を得るには client を 1 つつなぐ必要がある。
@@ -41,7 +41,7 @@ describe('registry (scoped)', () => {
 describe('captureStateTree', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     function World(unit: Unit) { xsync.register({ Child }); xsync.state({ tick: 0 }); xnew(Child); }
     function Child(unit: Unit) { xsync.state({ position: 5 }); }

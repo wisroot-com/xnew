@@ -5,7 +5,7 @@ import { ioMock, bootServer, bootClient } from './io-mock';
 describe('xsync.server / xsync.client', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     it('server mode runs server block, skips client block', () => {
         const serverRan = jest.fn(); const clientRan = jest.fn();

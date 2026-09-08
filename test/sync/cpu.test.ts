@@ -15,7 +15,7 @@ describe('CPU members (xsync.cpu.join / leave / dispatch)', () => {
     let plays: string[];
 
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); log = []; plays = []; });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     // 席ごとの持ち物。owner にだけ見える（CPU の分は誰の線にも乗らないことの確認に使う）
     function Hand(unit: Unit, { ownerId = '', card = 0 }: any = {}) {

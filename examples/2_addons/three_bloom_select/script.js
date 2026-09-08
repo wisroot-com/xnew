@@ -20,7 +20,7 @@ function Main(unit) {
   xnew.extend(xbasics.Screen, { width, height });
 
   // three setup
-  xthree.initialize({ canvas: unit.canvas });
+  xthree.init({ canvas: unit.canvas });
   xthree.camera.position.set(0, 0, 20);
   xthree.camera.lookAt(0, 0, 0);
   xthree.scene.background = new THREE.Color(0x151729);

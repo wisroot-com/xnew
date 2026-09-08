@@ -14,11 +14,11 @@ function Main(unit) {
 
   // three setup
   const camera = new THREE.OrthographicCamera(-10, +10, +10, -10, 0, 100);
-  xthree.initialize({ camera, canvas: new OffscreenCanvas(width, height) });
+  xthree.init({ camera, canvas: new OffscreenCanvas(width, height) });
   xthree.camera.position.set(0, 0, +100);
 
   // pixi setup
-  xpixi.initialize({ canvas: unit.canvas });
+  xpixi.init({ canvas: unit.canvas });
 
   xnew.promise(unit).then(() => {
     unit.on('update', () => {

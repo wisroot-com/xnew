@@ -10,7 +10,7 @@ function Main(unit) {
   xnew.extend(xbasics.Screen, { width: 800, height: 600 });
 
   // pixi setup
-  xpixi.initialize({ canvas: unit.canvas });
+  xpixi.init({ canvas: unit.canvas });
 
   xnew.promise(unit).then(() => {
     unit.on('update', () => {
@@ -23,7 +23,7 @@ function Main(unit) {
 
 function Contents(unit) {
   xnew.extend(xbasics.Scene);
-  xrapier2d.initialize({ gravity: { x: 0.0, y: 9.81 * 10 } });
+  xrapier2d.init({ gravity: { x: 0.0, y: 9.81 * 10 } });
 
   xnew.promise(unit).then(() => {
     unit.on('update', () => {
@@ -51,7 +51,7 @@ function Rectangle(self, { x, y, w, h, color = 0xFFFFFF, dynamic = true, options
   // Create a cuboid collider attached to the dynamic rigidBody
   const colliderDesc = RAPIER.ColliderDesc.cuboid(w / 2, h / 2);
   const collider = xrapier2d.world.createCollider(colliderDesc, rigidBody);
-  self.on('finalize', () => {
+  self.on('destroy', () => {
     xrapier2d.world.removeCollider(collider);
     xrapier2d.world.removeRigidBody(rigidBody);
   });

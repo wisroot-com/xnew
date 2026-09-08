@@ -8,7 +8,7 @@ describe('basics InputNumber', () => {
         Unit.reset();
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
         jest.useRealTimers();
     });
 

@@ -6,7 +6,7 @@ describe('xnew.scope', () => {
         Unit.reset();
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
     });
 
     it('captures the current unit scope into a callback', () => {
@@ -60,7 +60,7 @@ describe('xnew.scope', () => {
         expect(captured()).toBe('result-value');
     });
 
-    it('does not execute and returns undefined when the captured unit is finalized', () => {
+    it('does not execute and returns undefined when the captured unit is destroyed', () => {
         const inner = jest.fn(() => 'should-not-run');
         let captured!: (...args: any[]) => any;
         let target!: Unit;
@@ -69,7 +69,7 @@ describe('xnew.scope', () => {
             captured = xnew.scope(inner);
         });
 
-        target.finalize();
+        target.destroy();
 
         expect(captured()).toBeUndefined();
         expect(inner).not.toHaveBeenCalled();

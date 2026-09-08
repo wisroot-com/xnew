@@ -8,7 +8,7 @@ describe('basics InputRange', () => {
         Unit.reset();
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
         jest.useRealTimers();
     });
 

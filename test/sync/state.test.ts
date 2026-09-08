@@ -3,7 +3,7 @@ import { xnew, xsync } from '../../src/index';
 
 describe('xsync.state', () => {
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     it('registers synced state on the current unit and returns the same reference', () => {
         let state!: Record<string, any>;

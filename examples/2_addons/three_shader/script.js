@@ -46,7 +46,7 @@ function Main(unit) {
   xnew.extend(xbasics.Screen, { width, height });
 
   // three setup
-  xthree.initialize({ canvas: unit.canvas });
+  xthree.init({ canvas: unit.canvas });
   xthree.camera.position.set(0, 0, +100);
 
   xnew.promise(unit).then(() => {
@@ -85,7 +85,7 @@ function Cube(unit, { x, y, z, size }) {
     uniforms.uTime.value += 0.016;
   });
 
-  unit.on('finalize', () => {
+  unit.on('destroy', () => {
     geometry.dispose();
     material.dispose();
   });

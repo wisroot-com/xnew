@@ -1,6 +1,6 @@
 # xaudio.load
 
-`xaudio.load` creates a track that fetches and decodes an audio file and plays it back. It is driven by `play` / `pause` and mixes through the package's shared audio bus. The track's release is tied to a unit created under the current scope, so when the calling unit (e.g. a scene) is finalized, the Web Audio nodes it holds are released automatically.
+`xaudio.load` creates a track that fetches and decodes an audio file and plays it back. It is driven by `play` / `pause` and mixes through the package's shared audio bus. The track's release is tied to a unit created under the current scope, so when the calling unit (e.g. a scene) is destroyed, the Web Audio nodes it holds are released automatically.
 
 You don't have to worry about loading: calling `play()` before decoding finishes simply defers playback until the buffer is ready.
 

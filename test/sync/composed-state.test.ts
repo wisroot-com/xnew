@@ -31,7 +31,7 @@ describe('composed synced state (base + extend)', () => {
         hub = ioMock();
         clientReadAtConstruction = {};
     });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     it('hydrates every sync.state declaration from injected server state at construction time', () => {
         const server = bootServer({ io: hub.io }, function Server() { xsync.register({ Enemy }); xnew(Enemy); });

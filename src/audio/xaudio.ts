@@ -14,14 +14,14 @@ export const xaudio = {
         const track = new AudioTrack(props);
         xnew((unit: xnew.Unit) => {
             xnew.promise(track.promise);
-            unit.on('finalize', () => track.clear());
+            unit.on('destroy', () => track.clear());
         });
         return track;
     },
     synthesizer(props: SynthesizerOptions): Synthesizer {
         const synth = new Synthesizer(props);
         xnew((unit: xnew.Unit) => {
-            unit.on('finalize', () => synth.clear());
+            unit.on('destroy', () => synth.clear());
         });
         return synth;
     },

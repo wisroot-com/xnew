@@ -11,7 +11,7 @@ function Main(unit) {
   xnew.extend(xbasics.Screen, { width, height });
 
   // three setup
-  xthree.initialize({ canvas: unit.canvas });
+  xthree.init({ canvas: unit.canvas });
   xthree.renderer.shadowMap.enabled = true;
   xthree.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   xthree.camera.position.set(0, 50, 100);
@@ -26,7 +26,7 @@ function Main(unit) {
 }
 
 function Contents(unit) {
-  xrapier3d.initialize({ gravity: { x: 0.0, y: -9.81, z: 0.0 } });
+  xrapier3d.init({ gravity: { x: 0.0, y: -9.81, z: 0.0 } });
   xnew.promise(unit).then(() => {
     unit.on('update', () => {
       xrapier3d.world.timestep = 3 / 60;
@@ -133,7 +133,7 @@ function Player(unit, { x, y, z }) {
     }
   });
 
-  unit.on('finalize', () => {
+  unit.on('destroy', () => {
     xrapier3d.world.removeCharacterController(characterController);
     xrapier3d.world.removeCollider(collider);
     xrapier3d.world.removeRigidBody(rigidBody);
@@ -198,7 +198,7 @@ function Ground(unit, { x, y, z, width, height, depth }) {
   const colliderDesc = RAPIER.ColliderDesc.cuboid(width / 2, height / 2, depth / 2);
   const collider = xrapier3d.world.createCollider(colliderDesc, rigidBody);
 
-  unit.on('finalize', () => {
+  unit.on('destroy', () => {
     xrapier3d.world.removeCollider(collider);
     xrapier3d.world.removeRigidBody(rigidBody);
   });
@@ -223,7 +223,7 @@ function Cube(unit, { x, y, z, size }) {
     .setFriction(0.5);
   const collider = xrapier3d.world.createCollider(colliderDesc, rigidBody);
 
-  unit.on('finalize', () => {
+  unit.on('destroy', () => {
     xrapier3d.world.removeCollider(collider);
     xrapier3d.world.removeRigidBody(rigidBody);
   });

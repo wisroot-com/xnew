@@ -67,7 +67,7 @@ unit.off();            // remove all listeners you registered
 unit.off('click', fn); // an explicit listener is removed regardless of who registered it
 ```
 
-Each listener records which unit's scope registered it. Blanket removal without an explicit listener only targets **listeners registered by the calling unit**, so it never strips listeners another component registered for its own internals. When the registering unit is finalized, its listeners registered on other units are detached automatically.
+Each listener records which unit's scope registered it. Blanket removal without an explicit listener only targets **listeners registered by the calling unit**, so it never strips listeners another component registered for its own internals. When the registering unit is destroyed, its listeners registered on other units are detached automatically.
 
 ## Lifecycle events
 
@@ -76,7 +76,7 @@ The whole lifecycle is covered by four events. Subscribe only to the ones you ne
 | Event          | When it fires                          | Callback argument  |
 | -------------- | -------------------------------------- | ------------------ |
 | `update`       | every frame (roughly 60fps)            | `{ count, delta }` |
-| `finalize`     | when the unit is destroyed             |                    |
+| `destroy`     | when the unit is destroyed             |                    |
 | `childattach`  | when a child unit has been created     | `{ child }`        |
 | `childdetach`  | when a child unit has been destroyed   | `{ child }`        |
 
@@ -87,11 +87,11 @@ function AnimatedBox(unit) {
     angle++;
     unit.current.style.transform = `rotate(${angle}deg)`;
   });
-  unit.on('finalize', () => console.log('cleaned up'));
+  unit.on('destroy', () => console.log('cleaned up'));
 }
 ```
 
-`childattach` fires once the child's constructor is complete (its defines are in place), and `childdetach` once the child has been finalized (after it left the parent's child list). While the parent itself is being finalized, `childdetach` still fires for each child as it is destroyed.
+`childattach` fires once the child's constructor is complete (its defines are in place), and `childdetach` once the child has been destroyed (after it left the parent's child list). While the parent itself is being destroyed, `childdetach` still fires for each child as it is destroyed.
 
 ```js
 function Roster(unit) {
@@ -102,18 +102,18 @@ function Roster(unit) {
 
 ### Lifecycle control methods
 
-A unit starts automatically when it is created, and its `update` loop begins running. Use `finalize` to destroy it.
+A unit starts automatically when it is created, and its `update` loop begins running. Use `destroy` to destroy it.
 
-- `unit.finalize()` — destroy the unit and remove the elements it created from the DOM.
+- `unit.destroy()` — destroy the unit and remove the elements it created from the DOM.
 
 ```js
 const unit = xnew('<div>', 'Click to destroy');
-unit.on('click', () => unit.finalize());
+unit.on('click', () => unit.destroy());
 ```
 
 ### Execution order
 
-Events such as `update` fire on children **before** their parent (teardown via `finalize` is the reverse — children first).
+Events such as `update` fire on children **before** their parent (teardown via `destroy` is the reverse — children first).
 
 ```js
 function Parent(unit) {
@@ -191,7 +191,7 @@ console.log(counter.value); // 1
 
 These names are already used by the unit, so they cannot be used for custom properties.
 
-- `finalize`
+- `destroy`
 - `current`, `parent`, `promise`, `on`, `off`
 - `_` (internal)
 

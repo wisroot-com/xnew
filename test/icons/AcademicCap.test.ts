@@ -8,7 +8,7 @@ describe('icons xicons (AcademicCap)', () => {
         Unit.reset();
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
     });
 
     it('exposes a component per heroicons entry', () => {

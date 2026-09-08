@@ -61,13 +61,13 @@ function Lobby(unit) {
             }));
         });
         io.on('connection', connection);
-        unit.on('finalize', () => { io.off('connection', connection); rooms.clear(); });
+        unit.on('destroy', () => { io.off('connection', connection); rooms.clear(); });
     });
 }
 
 // ---- Room（server）: xsync.boot(Game) + 人数計数 + 空室掃除 ----
 //   このルーム宛ての connection を数え、room.count を更新して一覧へ反映する。無人になったら graceMs 後に
-//   台帳から外して自分を finalize する（putback 猶予つき）。status() で一覧行を公開する。
+//   台帳から外して自分を destroy する（putback 猶予つき）。status() で一覧行を公開する。
 function Room(unit, { io, room }) {
     xsync.server(() => {
         const graceMs = 3000;
@@ -90,14 +90,14 @@ function Room(unit, { io, room }) {
             }));
         });
         io.on('connection', connection);
-        unit.on('finalize', () => io.off('connection', connection));
+        unit.on('destroy', () => io.off('connection', connection));
 
         scheduleCleanup();
         function scheduleCleanup() {
             graceTimer?.clear();
             graceTimer = xnew.timeout(() => {
                 if (members.size > 0) { return; }
-                if (rooms.has(room.id)) { rooms.delete(room.id); broadcastRooms(); unit.finalize(); }
+                if (rooms.has(room.id)) { rooms.delete(room.id); broadcastRooms(); unit.destroy(); }
             }, graceMs);
         }
 

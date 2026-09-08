@@ -28,12 +28,12 @@ function Main(unit) {
   xnew.extend(xbasics.Screen, { width, height });
 
   // setup three 
-  xthree.initialize({ canvas: new OffscreenCanvas(width, height) });
+  xthree.init({ canvas: new OffscreenCanvas(width, height) });
   xthree.renderer.shadowMap.enabled = true;
   xthree.camera.position.set(0, 0, +10);
 
   // pixi setup
-  xpixi.initialize({ canvas: unit.canvas });
+  xpixi.init({ canvas: unit.canvas });
 
   xnew.promise(unit).then(() => {
     const texture = PIXI.Texture.from(xthree.canvas);
@@ -89,7 +89,7 @@ function TitleScene(unit) {
 function GameScene(unit) {
   xnew.extend(xbasics.Scene);
   
-  xmatter.initialize();
+  xmatter.init();
   unit.on('update', () => {
     Matter.Engine.update(xmatter.engine);
   });
@@ -114,7 +114,7 @@ function GameScene(unit) {
   // xnew.timeout(() => xnew.emit('+gameover'), 1100);
 
   unit.once('+gameover', () => {
-    playing.finalize();
+    playing.destroy();
     const gameover = xnew(GameOverText);
 
     // 背景が DOM(xbasics.Image) になり pixi extract では写らないため、html2canvas で画面ごと撮る。
@@ -232,7 +232,7 @@ function Queue(unit) {
   unit.on('+reload', () => {
     const position = coord2dTo3d(10, 70);
     const rotation = { x: 30 / 180 * Math.PI, y: 60 / 180 * Math.PI, z: 0 };
-    model.finalize();
+    model.destroy();
     model = xnew(Model, { position, rotation, id: balls[1], scale: 0.6 });
 
     balls.push(Math.floor(Math.random() * 3));
@@ -312,7 +312,7 @@ function Cursor(unit) {
   unit.on('+drop', () => {
     if (model !== null) {
       xnew.context(xbasics.Scene).add(ModelBall, { x: object.x, y: object.y + offset, id: model.id });
-      model.finalize();
+      model.destroy();
       model = null;
       xnew.emit('+reload');
     } 
@@ -348,7 +348,7 @@ function ModelBall(ball, { x, y, id = 0 }) {
     model.threeObject.rotation.z = -ball.pixiObject.rotation;
     if (ball.pixiObject.y > xpixi.canvas.height) {
       xnew.emit('+gameover');
-      ball.finalize();
+      ball.destroy();
       return;
     }
 
@@ -359,8 +359,8 @@ function ModelBall(ball, { x, y, id = 0 }) {
 
       if (dist < ball.radius + target.radius + 0.01) {
         xnew.context(xbasics.Scene).add(ModelBall, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, id: id + 1 });
-        ball.finalize();
-        target.finalize();
+        ball.destroy();
+        target.destroy();
         break;
       }
     }
@@ -398,14 +398,14 @@ function StarParticles(unit, { x, y }) {
       graphics.alpha = 1 - value;
     }, 1600);
   }
-  xnew.timeout(() => unit.finalize(), 1200);
+  xnew.timeout(() => unit.destroy(), 1200);
 }
 
 function Circle(unit, { x, y, radius, color = 0xFFFFFF, alpha = 1.0, options = {} }) {
   const object = xpixi.nest({ position: { x, y } });
   const pyshics = Matter.Bodies.circle(x, y, radius, options);
   Matter.Composite.add(xmatter.world, pyshics);
-  unit.on('finalize', () => Matter.Composite.remove(xmatter.world, pyshics));
+  unit.on('destroy', () => Matter.Composite.remove(xmatter.world, pyshics));
 
   const graphics = new PIXI.Graphics().circle(0, 0, radius).fill(color);
   xpixi.add(graphics);
@@ -435,7 +435,7 @@ function ScreenShot(unit) {
         link.href = cropped.toDataURL('image/png');
         link.click();
       });
-      unit.finalize();
+      unit.destroy();
     });
 }
 

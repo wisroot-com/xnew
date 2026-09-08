@@ -10,7 +10,7 @@ declare class UnitPromise {
 }
 
 declare const xrapier2d: {
-    initialize({ gravity }?: any): UnitPromise;
+    init({ gravity }?: any): UnitPromise;
     readonly world: any;
 };
 

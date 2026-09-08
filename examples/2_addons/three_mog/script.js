@@ -21,7 +21,7 @@ function Main(unit, { mogPath = '../../assets/rei.mog', vrmaPath = '../../assets
   // 2 体を横並びにするため、視野は 1 体分（0.5）より少し広げておく
   const view = 0.6;
   const camera = new THREE.OrthographicCamera(-view, +view, +view, -view, 0.1, 10);
-  xthree.initialize({ canvas: unit.canvas, camera });
+  xthree.init({ canvas: unit.canvas, camera });
   xthree.camera.position.set(0, 0.2, +2);
   xthree.renderer.shadowMap.enabled = true;
   xthree.scene.rotation.x = -60 / 180 * Math.PI

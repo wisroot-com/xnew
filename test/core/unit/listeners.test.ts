@@ -6,7 +6,7 @@ describe('Unit.on / Unit.off', () => {
         Unit.reset();
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
     });
 
     describe('on', () => {
@@ -65,7 +65,7 @@ describe('Unit.on / Unit.off', () => {
             expect(cb).toHaveBeenCalledTimes(2);
         });
 
-        it("keeps a shared handler alive for the other owner when one owner finalizes", () => {
+        it("keeps a shared handler alive for the other owner when one owner destroys", () => {
             const cb = jest.fn();
             let target!: Unit;
             let first!: Unit;
@@ -74,7 +74,7 @@ describe('Unit.on / Unit.off', () => {
                 first = xnew(() => target.on('-ping', cb));
                 xnew(() => target.on('-ping', cb));
             });
-            first.finalize();
+            first.destroy();
             Unit.emit(target, '-ping');
             expect(cb).toHaveBeenCalledTimes(1);
         });
@@ -93,8 +93,8 @@ describe('Unit.on / Unit.off', () => {
             expect(added).toHaveBeenCalledTimes(1);
         });
 
-        // a finalized target left in its owners' index would pin its whole _ bag (elements, children)
-        it('drops a finalized target from the owner index', () => {
+        // a destroyed target left in its owners' index would pin its whole _ bag (elements, children)
+        it('drops a destroyed target from the owner index', () => {
             let target!: Unit;
             let owner!: Unit;
             xnew(() => {
@@ -102,7 +102,7 @@ describe('Unit.on / Unit.off', () => {
                 owner = xnew(() => target.on('-ping', () => {}));
             });
             expect(Unit.owner2targets.get(owner)?.has(target)).toBe(true);
-            target.finalize();
+            target.destroy();
             expect(Unit.owner2targets.get(owner)?.has(target) ?? false).toBe(false);
         });
     });
@@ -246,22 +246,22 @@ describe('Unit.on / Unit.off', () => {
             expect(cb).toHaveBeenCalledTimes(1);
         });
 
-        it('finalizing the owner detaches its listeners from other units', () => {
+        it('destroying the owner detaches its listeners from other units', () => {
             const cb = jest.fn();
             const system = xnew((unit: Unit) => ({ ping() { xnew.emit('-ping'); } }));
             const subscriber = xnew((unit: Unit) => { system.on('-ping', cb); });
-            subscriber.finalize();
+            subscriber.destroy();
             expect(system._.listeners.has('-ping')).toBe(false);
             system.ping();
             expect(cb).not.toHaveBeenCalled();
         });
 
-        it('finalizing the owner clears its registry, even after the target is gone', () => {
+        it('destroying the owner clears its registry, even after the target is gone', () => {
             const cb = jest.fn();
             const target = xnew((unit: Unit) => {});
             const owner = xnew((unit: Unit) => { target.on('-ping', cb); });
-            target.finalize();
-            owner.finalize();
+            target.destroy();
+            owner.destroy();
             expect(Unit.owner2targets.has(owner)).toBe(false);
         });
 

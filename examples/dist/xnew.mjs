@@ -330,12 +330,12 @@ class EventBinder {
         const props = { element, type, listener, options };
         const factory = factories.get(type);
         const keyboard = type.match(/^(window|document)\.(keydown|keyup)(?:\.([A-Za-z0-9]+))?$/);
-        let finalize;
+        let cleanup;
         if (factory !== undefined) {
-            finalize = factory(props);
+            cleanup = factory(props);
         }
         else if (keyboard !== null) {
-            finalize = keyboardEvent(keyboard, props);
+            cleanup = keyboardEvent(keyboard, props);
         }
         else {
             let target = element;
@@ -348,14 +348,14 @@ class EventBinder {
                 target = document;
                 name = type.substring('document.'.length);
             }
-            finalize = attach(target, name, (event) => listener({ event }), options);
+            cleanup = attach(target, name, (event) => listener({ event }), options);
         }
-        this.map.set(type, listener, finalize);
+        this.map.set(type, listener, cleanup);
     }
     remove(type, listener) {
-        const finalize = this.map.get(type, listener);
-        if (finalize) {
-            finalize();
+        const cleanup = this.map.get(type, listener);
+        if (cleanup) {
+            cleanup();
             this.map.delete(type, listener);
         }
     }
@@ -401,10 +401,10 @@ defineEvent(['resize'], (props) => {
     return () => observer.unobserve(props.element);
 });
 defineEvent(['dragstart', 'dragmove', 'dragend'], (props) => {
-    let finalizers = [];
-    const remove = () => { finalizers.forEach((finalize) => finalize()); finalizers = []; };
+    let cleanups = [];
+    const remove = () => { cleanups.forEach((cleanup) => cleanup()); cleanups = []; };
     const pointerdown = attach(props.element, 'pointerdown', (event) => {
-        if (finalizers.length === 0) {
+        if (cleanups.length === 0) {
             const id = event.pointerId;
             let previous = getPointerPosition(props.element, event);
             const track = (kind) => (event) => {
@@ -420,7 +420,7 @@ defineEvent(['dragstart', 'dragmove', 'dragend'], (props) => {
                     }
                 }
             };
-            finalizers = [
+            cleanups = [
                 attach(window, 'pointermove', track('dragmove'), props.options),
                 attach(window, 'pointerup', track('dragend'), props.options),
                 attach(window, 'pointercancel', track('dragend'), props.options),
@@ -454,8 +454,8 @@ defineEvent(['window.keydown.arrow', 'window.keyup.arrow', 'window.keydown.wasd'
             }
         }
     }, props.options);
-    const finalizers = [bind('keydown'), bind('keyup')];
-    return () => finalizers.forEach((finalize) => finalize());
+    const cleanups = [bind('keydown'), bind('keyup')];
+    return () => cleanups.forEach((cleanup) => cleanup());
 });
 function keyboardEvent(matched, props) {
     const [, scope, variant, rawKey] = matched;
@@ -477,7 +477,7 @@ function keyboardEvent(matched, props) {
     }, props.options);
 }
 
-const SYSTEM_TYPES = ['update', 'finalize', 'childattach', 'childdetach'];
+const SYSTEM_TYPES = ['update', 'destroy', 'childattach', 'childdetach'];
 function textComponent(content) {
     return (unit) => { unit.current.textContent = content.toString(); };
 }
@@ -512,7 +512,7 @@ class Unit {
             Components: [],
             listeners: new MapSet(),
             defines: {},
-            systems: { update: [], finalize: [], childattach: [], childdetach: [] },
+            systems: { update: [], destroy: [], childattach: [], childdetach: [] },
             events: new EventBinder(),
             key: null,
             sync: { root: (_c = parent === null || parent === void 0 ? void 0 : parent._.sync.root) !== null && _c !== void 0 ? _c : null, id: null, state: {}, registry: {}, visibility: null },
@@ -553,7 +553,7 @@ class Unit {
         }
         this._.lastSnapshot = Unit.snapshot(this);
         Unit.currentUnit = backup;
-        if (parent !== null && this._.phase !== 'finalized') {
+        if (parent !== null && this._.phase !== 'destroyed') {
             this._.attached = true;
             [...parent._.systems.childattach].forEach((entry) => entry.execute({ child: this }));
         }
@@ -568,12 +568,12 @@ class Unit {
         var _a;
         return (_a = this._.nestElements[0]) !== null && _a !== void 0 ? _a : null;
     }
-    finalize() {
+    destroy() {
         var _a, _b;
-        if (this._.phase !== 'finalized' && this._.phase !== 'finalizing') {
-            this._.phase = 'finalizing';
-            [...this._.children].reverse().forEach((child) => child.finalize());
-            [...this._.systems.finalize].reverse().forEach(({ execute }) => execute());
+        if (this._.phase !== 'destroyed' && this._.phase !== 'destroying') {
+            this._.phase = 'destroying';
+            [...this._.children].reverse().forEach((child) => child.destroy());
+            [...this._.systems.destroy].reverse().forEach(({ execute }) => execute());
             (_a = Unit.owner2targets.get(this)) === null || _a === void 0 ? void 0 : _a.forEach((target) => {
                 [...target._.listeners.keys(), ...SYSTEM_TYPES].forEach((type) => Unit.off(target, this, type));
                 Unit.target2owners.delete(target, this);
@@ -605,7 +605,7 @@ class Unit {
             if (parent !== null) {
                 parent._.children = parent._.children.filter((u) => u !== this);
             }
-            this._.phase = 'finalized';
+            this._.phase = 'destroyed';
             if (parent !== null && this._.attached === true) {
                 [...parent._.systems.childdetach].forEach((entry) => entry.execute({ child: this }));
             }
@@ -669,15 +669,15 @@ class Unit {
     }
     static reset() {
         var _a;
-        (_a = Unit.engineRoot) === null || _a === void 0 ? void 0 : _a.finalize();
+        (_a = Unit.engineRoot) === null || _a === void 0 ? void 0 : _a.destroy();
         Unit.currentUnit = Unit.engineRoot = new Unit(null);
         const ticker = new Ticker((delta) => {
             Unit.update(Unit.engineRoot, delta);
         }, 60, true);
-        Unit.engineRoot.on('finalize', () => ticker.clear());
+        Unit.engineRoot.on('destroy', () => ticker.clear());
     }
     static scope(snapshot, func, ...args) {
-        if (snapshot.unit._.phase === 'finalized') {
+        if (snapshot.unit._.phase === 'destroyed') {
             return;
         }
         const currentUnit = Unit.currentUnit;
@@ -816,7 +816,7 @@ class Unit {
         var _a;
         [...((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((unit) => {
             var _a;
-            if (unit._.phase === 'finalizing' || unit._.phase === 'finalized') {
+            if (unit._.phase === 'destroying' || unit._.phase === 'destroyed') {
                 return;
             }
             [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => {
@@ -890,7 +890,7 @@ class UnitTimer {
     clear() {
         var _a;
         this.queue = [];
-        (_a = this.unit) === null || _a === void 0 ? void 0 : _a.finalize();
+        (_a = this.unit) === null || _a === void 0 ? void 0 : _a.destroy();
         this.unit = null;
     }
     timeout(timeout, duration = 0) {
@@ -910,14 +910,14 @@ class UnitTimer {
             function onTimeout() {
                 if (timeout)
                     Unit.scope(snapshot, timeout, { count: counter });
-                if (unit._.phase === 'finalized') {
+                if (unit._.phase === 'destroyed') {
                     return;
                 }
                 if (iterations <= 0 || counter < iterations - 1) {
                     current = new Timer(onTimeout, onTransition, duration, easing);
                 }
                 else {
-                    unit.finalize();
+                    unit.destroy();
                 }
                 counter++;
             }
@@ -925,9 +925,9 @@ class UnitTimer {
                 if (transition)
                     Unit.scope(snapshot, transition, { value });
             }
-            unit.on('finalize', () => current.clear());
+            unit.on('destroy', () => current.clear());
         };
-        if (this.unit === null || this.unit._.phase === 'finalized') {
+        if (this.unit === null || this.unit._.phase === 'destroyed') {
             this.start(Component);
         }
         else {
@@ -937,9 +937,9 @@ class UnitTimer {
     }
     start(Component) {
         this.unit = new Unit(Unit.currentUnit, Component);
-        this.unit.on('finalize', () => {
+        this.unit.on('destroy', () => {
             const owner = Unit.currentUnit;
-            if (this.queue.length > 0 && owner._.phase !== 'finalizing' && owner._.phase !== 'finalized') {
+            if (this.queue.length > 0 && owner._.phase !== 'destroying' && owner._.phase !== 'destroyed') {
                 this.start(this.queue.shift());
             }
             else {
@@ -1063,7 +1063,7 @@ function applyCss(unit, layer, defs) {
         }
         const held = entry;
         held.refs++;
-        unit.on('finalize', () => {
+        unit.on('destroy', () => {
             held.refs--;
             if (held.refs === 0) {
                 held.style.remove();
@@ -1267,7 +1267,7 @@ function bootClient(roomio) {
         }
         for (const [id, unit] of reconcileMap) {
             if (!incoming.has(id)) {
-                unit.finalize();
+                unit.destroy();
                 reconcileMap.delete(id);
             }
         }
@@ -1307,7 +1307,7 @@ class RoomIO {
                 RoomIO.rooms.set(unit, this);
             } }));
         if (this.socket !== null) {
-            this.root.on('finalize', () => this.socket.disconnect());
+            this.root.on('destroy', () => this.socket.disconnect());
         }
     }
     emit(type, data, clients) {
@@ -1332,7 +1332,7 @@ class RoomIO {
         var _a;
         const wire = (_a = this.socket) !== null && _a !== void 0 ? _a : this.io;
         wire.on(type, listener);
-        this.root.on('finalize', () => wire.off(type, listener));
+        this.root.on('destroy', () => wire.off(type, listener));
     }
     announce(type, id, sender = null) {
         this.dispatch(type, id);
@@ -1799,14 +1799,14 @@ const xaudio = {
         const track = new AudioTrack(props);
         xnew((unit) => {
             xnew.promise(track.promise);
-            unit.on('finalize', () => track.clear());
+            unit.on('destroy', () => track.clear());
         });
         return track;
     },
     synthesizer(props) {
         const synth = new Synthesizer(props);
         xnew((unit) => {
-            unit.on('finalize', () => synth.clear());
+            unit.on('destroy', () => synth.clear());
         });
         return synth;
     },
@@ -1864,14 +1864,14 @@ function Scene(unit) {
                 leaving = true;
                 const timer = typeof unit.leave === 'function' ? unit.leave() : undefined;
                 if (timer && typeof timer.timeout === 'function') {
-                    timer.timeout(finalize);
+                    timer.timeout(destroy);
                 }
                 else {
-                    finalize();
+                    destroy();
                 }
-                function finalize() {
+                function destroy() {
                     xnew(unit.parent, Component, props);
-                    unit.finalize();
+                    unit.destroy();
                 }
             }
         },
@@ -1954,7 +1954,7 @@ function Image(unit, _a) {
     else {
         apply(src);
     }
-    unit.on('finalize', () => {
+    unit.on('destroy', () => {
         if (objectURL !== null) {
             URL.revokeObjectURL(objectURL);
         }
@@ -3487,7 +3487,7 @@ function Color(unit, { name = '', value = '#ffffff' }) {
                     notify();
                 },
             });
-            popup.on('finalize', () => popup = null);
+            popup.on('destroy', () => popup = null);
         }
         else {
             popup.gate.close();
@@ -3501,7 +3501,7 @@ function Color(unit, { name = '', value = '#ffffff' }) {
 }
 function ColorPopup(unit, { anchor, value, commit }) {
     xnew.extend(Overlay, { gate: { open: false, duration: 100 }, anchor });
-    unit.gate.on('-closed', () => unit.finalize());
+    unit.gate.on('-closed', () => unit.destroy());
     xnew.nest('<div style="position: absolute; top: 100%; right: 0; padding: 0.25em 0;">');
     unit.on('pointerdown.outside', () => unit.gate.close());
     xnew(ColorPicker, { value }).on('-change', ({ value }) => commit(value));
@@ -3553,7 +3553,7 @@ function VolumeController(unit, { placement = 'left', className = '', style = ''
         let icon = xnew(SpeakerIcon, { muted: xaudio.volume === 0 });
         return {
             update() {
-                icon === null || icon === void 0 ? void 0 : icon.finalize();
+                icon === null || icon === void 0 ? void 0 : icon.destroy();
                 icon = xnew(SpeakerIcon, { muted: xaudio.volume === 0 });
             },
         };

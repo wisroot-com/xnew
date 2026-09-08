@@ -10,7 +10,7 @@ declare class UnitPromise {
 }
 
 declare const xmatter: {
-    initialize({}?: any): UnitPromise;
+    init({}?: any): UnitPromise;
     readonly engine: any;
     readonly world: any;
 };

@@ -3,7 +3,7 @@ import { xnew } from '../../../src/core/xnew';
 
 describe('xnew() creation', () => {
     beforeEach(() => { Unit.reset(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); });
 
     it('creates and returns a Unit from a component function', () => {
         const unit = xnew(() => {});
@@ -43,7 +43,7 @@ describe('xnew() creation', () => {
             const unit = freshXnew(() => {});
             expect(unit.parent).toBe(FreshUnit.engineRoot);
 
-            FreshUnit.engineRoot.finalize();
+            FreshUnit.engineRoot.destroy();
         });
     });
 

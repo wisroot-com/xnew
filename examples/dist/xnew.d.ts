@@ -37,7 +37,7 @@ interface ListenerEntry {
     execute: Function;
     owner: Unit;
 }
-type SystemType = 'update' | 'finalize' | 'childattach' | 'childdetach';
+type SystemType = 'update' | 'destroy' | 'childattach' | 'childdetach';
 interface SyncData {
     root: Unit | null;
     id: number | null;
@@ -53,7 +53,7 @@ declare class Unit {
     _: {
         parent: Unit | null;
         children: Unit[];
-        phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
+        phase: 'invoked' | 'initialized' | 'destroying' | 'destroyed';
         attached: boolean;
         protected: boolean;
         standalone: boolean;
@@ -80,7 +80,7 @@ declare class Unit {
     get parent(): Unit | null;
     get current(): DomElement;
     get container(): DomElement | null;
-    finalize(): void;
+    destroy(): void;
     static nest(unit: Unit, tag: string | DomElementDef, textContent?: string): DomElement;
     static extend(unit: Unit, Component: Function, props?: Object): {
         [key: string]: any;

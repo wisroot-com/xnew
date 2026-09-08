@@ -13,7 +13,7 @@ import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 describe('sync.emit', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     // ---- 宛先なし（1 ホップ） ----
 
@@ -66,7 +66,7 @@ describe('sync.emit', () => {
         expect(hits).toEqual(['A:1']);   // syncId=20 の B には届かない
     });
 
-    it('dispatch: a finalized server unit does not receive a late client message', () => {
+    it('dispatch: a destroyed server unit does not receive a late client message', () => {
         const hits: string[] = [];
         let target!: Unit;
         bootServer({ io: hub.io }, function Server() {
@@ -78,7 +78,7 @@ describe('sync.emit', () => {
             xsync.client(() => { return { fire() { xsync.emit('hit', {}); } }; });
         });
 
-        asServer(() => target.finalize());
+        asServer(() => target.destroy());
         asClient(() => (client as any).fire());
 
         expect(hits).toEqual([]);   // the dying unit's handler must not fire

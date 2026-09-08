@@ -20,7 +20,7 @@ export interface Transform {
     rotation?: { x: number, y: number, z?: number },
 }
 
-function initialize(
+function init(
     { canvas, camera = null }:
     { canvas: HTMLCanvasElement, camera?: THREE.Camera | null }
 ) {
@@ -73,7 +73,7 @@ export function Root(unit: xnew.Unit, { canvas, camera }: any) {
     const scene = new THREE.Scene();
 
     // release the renderer + WebGL context on tree teardown
-    unit.on('finalize', () => {
+    unit.on('destroy', () => {
         renderer.dispose();
         renderer.forceContextLoss?.();
     });
@@ -86,13 +86,13 @@ export function Root(unit: xnew.Unit, { canvas, camera }: any) {
     }
 }
 
-// shared by nest / add: attach to the current Three parent (root scene or nearest enclosing nest), detach (never dispose) on finalize
+// shared by nest / add: attach to the current Three parent (root scene or nearest enclosing nest), detached (never disposed) with the unit
 function attach(unit: xnew.Unit, object: any): void {
     const root = xnew.context(Root);
     const parent = xnew.context(Nest)?.threeObject ?? root.scene;
 
     parent.add(object);
-    unit.on('finalize', () => {
+    unit.on('destroy', () => {
         parent.remove(object);
     });
 }
@@ -115,7 +115,7 @@ function Add(unit: xnew.Unit, { object }: { object: any }) {
 //----------------------------------------------------------------------------------------------------
 
 export const xthree = {
-    initialize,
+    init,
     // create a group Object3D and move the current parent into it (stateful); options set its transform only — never an existing object.
     nest,
     // attach a display object to the current parent; the current parent stays unchanged

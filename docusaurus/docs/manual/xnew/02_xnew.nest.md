@@ -75,4 +75,4 @@ xnew(Card, {
 // </div>
 ```
 
-ネストされた要素は、親 unit の finalize 時にまとめて削除されます。
+ネストされた要素は、親 unit の destroy 時にまとめて削除されます。

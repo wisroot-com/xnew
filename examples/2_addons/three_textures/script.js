@@ -31,7 +31,7 @@ function Main(unit) {
   const [width, height] = [800, 600];
   xnew.extend(xbasics.Screen, { width, height });
 
-  xthree.initialize({ canvas: unit.canvas });
+  xthree.init({ canvas: unit.canvas });
   xthree.camera.position.set(0, 0, 4.2);
 
   const state = { texture: Object.keys(TEXTURES)[0], display: 'shader', model: Object.keys(GEOMETRIES)[0] };
@@ -160,7 +160,7 @@ function Model(unit, { state, bags }) {
     }
     syncUniforms(material, bags[state.texture]);
   });
-  unit.on('finalize', () => {
+  unit.on('destroy', () => {
     geometry.dispose();
     material.dispose();
   });
@@ -256,7 +256,7 @@ function ControlPanel(unit, { state, bags }) {
 
   let group = buildGroup(panel, state, bags);
   unit.on('+texture', () => {
-    group.finalize();
+    group.destroy();
     group = buildGroup(panel, state, bags);
   });
 }

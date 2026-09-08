@@ -8,7 +8,7 @@ import { ChatView } from './chat.js';
 //
 //   シーンは「サーバーが現在のシーンを synced child として 1 つだけ持ち、差し替える」ことで全員に
 //   同期される（phase はルーム全体で共有）。各シーンは自分宛ての '-event' を server で受け、
-//   xnew(unit.parent, Next) で次のシーンへ差し替えて自分を finalize する。client は今ある synced
+//   xnew(unit.parent, Next) で次のシーンへ差し替えて自分を destroy する。client は今ある synced
 //   child（= 現在のシーン）を描画するだけ。
 //
 //   - Game   : server/client 共通ルート（Room が boot）。server は最初のシーン Title を生成、
@@ -62,7 +62,7 @@ export function Game(unit) {
 function Title(unit) {
     xsync.server(() => {
         // 誰かの '-proceed' で Setup へ差し替える（最初の 1 件で遷移。Title は 1 つなので全員分が届く）。
-        unit.on('-proceed', () => { xnew(unit.parent, Setup); unit.finalize(); });
+        unit.on('-proceed', () => { xnew(unit.parent, Setup); unit.destroy(); });
     });
 
     xsync.client(() => {
@@ -92,7 +92,7 @@ function Setup(unit) {
         unit.on('-begin', () => {
             if (!state.slots.p1 || !state.slots.p2) { return; }
             xnew(unit.parent, World, { slots: { ...state.slots } });
-            unit.finalize();
+            unit.destroy();
         });
     });
 
@@ -138,7 +138,7 @@ export function World(unit, { slots } = {}) {
             const clientId = slots?.[slot];
             if (clientId) { xnew(Player, { key: clientId, clientId, slot }); }
         });
-        unit.on('sync.disconnect', ({ id }) => xnew.find(Player, { key: id })[0]?.finalize());   // 退室した自機を撤去
+        unit.on('sync.disconnect', ({ id }) => xnew.find(Player, { key: id })[0]?.destroy());   // 退室した自機を撤去
     });
 
     xsync.client(() => {

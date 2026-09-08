@@ -13,7 +13,7 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   and disposed as one.
 - A **component function** has the shape `function Foo(unit, props) { … }`. The
   first argument is always the unit; the second is the props object.
-- Lifecycle phases: `invoked → initialized → started ↔ stopped → finalizing → finalized`.
+- Lifecycle phases: `invoked → initialized → destroying → destroyed`.
   The component body runs during `invoked`. Some APIs are **init-only** (see §3).
 
 ## 2. Component functions & defines (the public API of a unit)
@@ -81,7 +81,7 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   wraps the whole block in `@layer` (invalid layer throws). The return value maps each key to
   its generated name (typed via `keyof`) to embed in tag strings
   (`xnew.nest(`<div class="${css.name}">`)`). Identical definitions share one ref-counted
-  `<style>`, removed when the last user unit finalizes; on the server (no DOM) keys map to
+  `<style>`, removed when the last user unit is destroyed; on the server (no DOM) keys map to
   themselves and nothing is injected.
   Calls without a `layer` argument stay unlayered (normal strength). **Every xnew.css call
   inside `src/basics/` must pass `'base'` as the layer argument** — component defaults are
@@ -158,19 +158,19 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   unit registered, so one unit cannot strip another component's internals (e.g.
   `system.off()` no longer breaks Accordion/Popup subscribed via `context`).
   `unit.off(type, listener)` with an explicit listener removes regardless of owner.
-  When a unit finalizes, its listeners registered on *other* units are detached
+  When a unit is destroyed, its listeners registered on *other* units are detached
   automatically (no stale cross-unit residue).
 
 ## 5. Lifecycle events
 
-- `unit.on('update' | 'finalize', cb)`. There is **no** `start`/`stop`/`render`
+- `unit.on('update' | 'destroy', cb)`. There is **no** `start`/`stop`/`render`
   event — a unit begins ticking (`update`) as soon as it is `initialized` and stops
-  only on `finalize` (no pause/resume state, no separate render pass). Lifecycle is
-  `invoked → initialized → finalizing → finalized`.
+  only on `destroy` (no pause/resume state, no separate render pass). Lifecycle is
+  `invoked → initialized → destroying → destroyed`.
 - `update` callbacks receive `{ count, delta }` (`delta` = ms since last frame;
-  `count` starts at 0 per listener). `finalize` gets `{ type }`.
-- **Do all teardown in `'finalize'`**: remove external listeners, disconnect
-  sockets, clear non-xnew timers. Children finalize before parents, in reverse.
+  `count` starts at 0 per listener). `destroy` gets `{ type }`.
+- **Do all teardown in `'destroy'`**: remove external listeners, disconnect
+  sockets, clear non-xnew timers. Children are destroyed before parents, in reverse.
 
 ## 6. Custom events — `+` (broadcast) and `-` (local)
 
@@ -199,7 +199,7 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 
 - `xnew.timeout(cb, ms)`, `xnew.interval(cb, ms, iterations=0)`,
   `xnew.transition(cb, ms, easing)`. They live under the unit (auto-cleared on
-  finalize) and run their callback in scope.
+  destroy) and run their callback in scope.
 - timeout/interval callbacks get `{ count }` (iteration count from 0); transition
   gets `{ value }` (0→1). Cancel with `clear()` on the returned timer. Prefer these
   over `setTimeout`/`setInterval` for anything tied to a unit's lifetime.
@@ -222,8 +222,8 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 - **Scene is the navigator; the mounted unit itself is the navigation state.**
   A scene component does `xnew.extend(xbasics.Scene)` to get:
   `unit.change(Component, props?)` — mount the next scene under `unit.parent` and
-  finalize this one (swappable scenes must share a parent container); and
-  `unit.add(Component, props)` — child under the scene unit, finalized together
+  destroy this one (swappable scenes must share a parent container); and
+  `unit.add(Component, props)` — child under the scene unit, destroyed together
   with it (returns the unit). Navigation is **by component** only — there is no
   label form and no SceneList lookup table (both removed 2026-07). From a
   descendant, use `xnew.context(xbasics.Scene).change/add(...)`. Scenes are
@@ -232,7 +232,7 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   `leave()` define; entrance effects need no protocol (do them in the component body).**
   `change` calls the unit's own `leave()` and waits for its return value — return the
   timer from `xnew.transition(...)` directly, or nothing (immediate) — then mounts the
-  next scene and finalizes itself. While a leave is pending, further `change` calls on
+  next scene and destroys itself. While a leave is pending, further `change` calls on
   that scene are ignored (per-scene guard).
 
 ## 11. sync — multiplayer (server ↔ client)
@@ -249,7 +249,7 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   component; compose with `xnew.extend` inside it. On the **client** side boot calls `io(...)` to
   create **and own** the socket, with a **flat string** handshake query
   (`io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true })`),
-  and disconnects it on finalize. Callers (e.g. an example's `Room` component) just boot —
+  and disconnects it on destroy. Callers (e.g. an example's `Room` component) just boot —
   they no longer touch the socket. `sync.state`, `sync.register` and `sync.emit`
   operate on the current sync root.
 - **Lifecycle events are `sync.connect` / `sync.disconnect` / `sync.notfound`, dispatched into
@@ -456,7 +456,7 @@ the rule, then one line of why.
   at `document` and fires only when the press target is NOT inside `unit.current` **as of registration
   time** — so register it right after nesting the content box you want to protect. DOM listeners attach
   via `setTimeout(0)`, so the same press that opened the popup can't self-close it. Cleaned up on
-  finalize like any listener. `Overlay` deliberately has NO built-in click-to-close (removed 2026-07);
+  destroy like any listener. `Overlay` deliberately has NO built-in click-to-close (removed 2026-07);
   the caller wires it (see `examples/1_xnew/basics/gate/index.html`).
 
 - **When two sibling components must share a driver unit (e.g. a Gate), create the driver with `xnew(Gate,
@@ -478,11 +478,11 @@ the rule, then one line of why.
   `unit.on('input')` silently missed. Fix: nest the emitter *inside* the body-ending element (moved the
   `<select>` into the menu) so its event bubbles up to where hosts listen.
 
-- **Anything registered on the shared `io` (server side) must be detached on `finalize` — including
+- **Anything registered on the shared `io` (server side) must be detached on `destroy` — including
   inside `sync.boot`.** Rooms are created and destroyed continuously, so a dead room that leaves its
   `io.on('connection')` behind grows the namespace's listener count without bound (MaxListenersExceededWarning
   at 10, then unbounded). `roomio.on(type, listener)` handles this for every wire subscription (it detaches
-  on root finalize), so boot never calls `io.on` / `socket.on` directly — and **every io / socket mock or
+  on root destroy), so boot never calls `io.on` / `socket.on` directly — and **every io / socket mock or
   stub therefore needs an `off`** (`io-mock`'s client socket and the hand-rolled socket in `channel.test` both have one).
   Note the count is legitimately `2 × live rooms` (boot + the caller's own counter), so a server hosting
   many rooms should raise `io.sockets.setMaxListeners(...)` rather than treat the warning as a leak.
@@ -593,7 +593,7 @@ the rule, then one line of why.
   throw at assembly (`uniformDeclarations`). Flows —
   `bake(options)` → ImageBitmap on ONE shared OffscreenCanvas (never one WebGL context per texture:
   browsers cap contexts), `renderer(canvas, options)` for a caller-owned live-preview canvas (caller
-  wires `unit.on('finalize', () => renderer.dispose())`), and passing the object to
+  wires `unit.on('destroy', () => renderer.dispose())`), and passing the object to
   `xthree.material.shader(texture, params)` (ShaderMaterial injection, fake fixed light) or
   `xthree.material.standard(texture, options)` (bakes internally → MeshStandardMaterial; there is NO
   separate `xthree.bake` — removed 2026-07-24; `inject: true` skips baking and patches the GLSL into
@@ -604,7 +604,7 @@ the rule, then one line of why.
   (`RoomIO`: holds the root unit, the given `io`, the `socket` it creates from it on the client, the
   `room` and the `clients` roster, plus the wire pair `emit(type, data, clients?)` — `clients` is a
   `ClientStatus` or an array of them, omitted means the whole room (server) / the server itself (client)
-  — and `on(type, listener)`, which detaches on root finalize;
+  — and `on(type, listener)`, which detaches on root destroy;
   it must never import from `xsync.ts`). `xsync`
   **is** the facade object literal (`export const xsync = { … }`) — there is no Lobby / Room component
   built in; lobby / room lifecycle is assembled by callers from the facade (see `examples/*/server.js` +
@@ -624,7 +624,7 @@ the rule, then one line of why.
   conditional dynamic import read the named key:
   `(await import('.../xmatter')).xmatter` — **not** `.default` (which is `undefined`
   and throws `Cannot read properties of undefined`). Bit the multiplay example whose
-  server-side `xmatter.initialize()` crashed on room boot, surfacing as the client
+  server-side `xmatter.init()` crashed on room boot, surfacing as the client
   immediately showing "切断". (`matter-js`/`voxelkit` *do* default-export — per-package.)
 
 - **`captureStateTree(clientId)` runs once per connected client (per-client projection, 2026-07).**
@@ -653,7 +653,7 @@ the rule, then one line of why.
 - **`RoomIO` (client) owns the socket — don't create it in callers or in boot.** Pass
   `{ io, client, room }` (`client` is `{ name }`); the RoomIO constructor does
   `io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true })` and disconnects it
-  on root finalize
+  on root destroy
   and the server reads `query.roomId` / `query.clientName`. Keep the query **flat
   strings** (socket.io stringifies query values, so a nested object would arrive as
   `[object Object]`). boot dispatches `sync.connect`/`sync.disconnect`/`sync.notfound` into the

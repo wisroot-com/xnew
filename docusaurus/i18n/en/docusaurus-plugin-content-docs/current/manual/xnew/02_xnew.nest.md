@@ -74,4 +74,4 @@ xnew(Card, {
 // </div>
 ```
 
-Nested elements are removed when the parent unit is finalized.
+Nested elements are removed when the parent unit is destroyed.

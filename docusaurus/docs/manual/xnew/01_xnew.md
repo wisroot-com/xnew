@@ -67,7 +67,7 @@ unit.off();               // 自分が登録したすべてのリスナーを解
 unit.off('click', fn);    // リスナーを明示すれば登録者に関係なく解除
 ```
 
-リスナーには「どの unit のスコープから登録されたか」が記録されます。リスナーを明示しない一括解除は**呼び出し元の unit が登録したものだけ**を対象とするため、他のコンポーネントが内部動作のために登録したリスナーを誤って消すことはありません。また、登録元の unit が finalize されると、他の unit に登録したリスナーも自動的に解除されます。
+リスナーには「どの unit のスコープから登録されたか」が記録されます。リスナーを明示しない一括解除は**呼び出し元の unit が登録したものだけ**を対象とするため、他のコンポーネントが内部動作のために登録したリスナーを誤って消すことはありません。また、登録元の unit が destroy されると、他の unit に登録したリスナーも自動的に解除されます。
 
 ## ライフサイクルイベント
 
@@ -76,7 +76,7 @@ unit.off('click', fn);    // リスナーを明示すれば登録者に関係な
 | イベント       | タイミング                                  | コールバック引数 |
 | -------------- | ------------------------------------------- | ---------------- |
 | `update`       | 毎フレーム（おおよそ 60fps）                | `{ count, delta }` |
-| `finalize`     | unit が破棄されるとき                       |                  |
+| `destroy`     | unit が破棄されるとき                       |                  |
 | `childattach`  | 子 unit の生成が完了したとき                | `{ child }`      |
 | `childdetach`  | 子 unit の破棄が完了したとき                | `{ child }`      |
 
@@ -87,11 +87,11 @@ function AnimatedBox(unit) {
     angle++;
     unit.current.style.transform = `rotate(${angle}deg)`;
   });
-  unit.on('finalize', () => console.log('cleaned up'));
+  unit.on('destroy', () => console.log('cleaned up'));
 }
 ```
 
-`childattach` は子のコンストラクタが完了した時点（defines も揃った状態）で、`childdetach` は子の finalize が完了した時点（`unit` の子リストから外れた後）で発火します。親自身が finalize されるときも、子が順に破棄されるのに合わせて `childdetach` が発火します。
+`childattach` は子のコンストラクタが完了した時点（defines も揃った状態）で、`childdetach` は子の destroy が完了した時点（`unit` の子リストから外れた後）で発火します。親自身が destroy されるときも、子が順に破棄されるのに合わせて `childdetach` が発火します。
 
 ```js
 function Roster(unit) {
@@ -102,18 +102,18 @@ function Roster(unit) {
 
 ### ライフサイクル制御メソッド
 
-unit は生成と同時に自動で開始され、`update` ループが回り始めます。破棄するときは `finalize` を使います。
+unit は生成と同時に自動で開始され、`update` ループが回り始めます。破棄するときは `destroy` を使います。
 
-- `unit.finalize()` — unit を破棄し、生成した要素を DOM から削除します。
+- `unit.destroy()` — unit を破棄し、生成した要素を DOM から削除します。
 
 ```js
 const unit = xnew('<div>', 'Click to destroy');
-unit.on('click', () => unit.finalize());
+unit.on('click', () => unit.destroy());
 ```
 
 ### 実行順序
 
-`update` などのイベントは、子が親より**先に**発火します（後片付けの `finalize` は逆に子が先）。
+`update` などのイベントは、子が親より**先に**発火します（後片付けの `destroy` は逆に子が先）。
 
 ```js
 function Parent(unit) {
@@ -191,7 +191,7 @@ console.log(counter.value); // 1
 
 次の名前は unit が既に使っているため、カスタムプロパティには使えません。
 
-- `finalize`
+- `destroy`
 - `current`, `parent`, `promise`, `on`, `off`
 - `_`（内部用）
 

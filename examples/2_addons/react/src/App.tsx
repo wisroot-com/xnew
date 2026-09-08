@@ -6,7 +6,7 @@ import { Main } from './scene';
 // App — React 側のアプリ本体。操作パネル（React）と xnew シーンを <XReact> で組み合わせる。
 //   - React → xnew : 色 / 停止を props で渡す（XReact が setProps に流す）。
 //   - xnew → React : 反射回数を onBounce で受けてカウンタを更新する。
-//   - 「シーンを破棄 / 生成」で mount/unmount を切り替え、finalize による後始末を確認できる。
+//   - 「シーンを破棄 / 生成」で mount/unmount を切り替え、destroy による後始末を確認できる。
 //----------------------------------------------------------------------------------------------------
 
 const COLORS: Record<string, string> = { 青: '#3b82f6', 赤: '#ef4444', 緑: '#22c55e', 紫: '#a855f7' };

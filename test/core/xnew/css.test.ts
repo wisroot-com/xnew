@@ -3,7 +3,7 @@ import { xnew } from '../../../src/core/xnew';
 
 describe('xnew.css', () => {
     beforeEach(() => { Unit.reset(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); });
 
     function styleElements(): HTMLStyleElement[] {
         return [...document.head.querySelectorAll('style')];
@@ -251,22 +251,22 @@ describe('xnew.css', () => {
         expect(b.frame).not.toBe(a.frame);
     });
 
-    it('removes the <style> only when the last unit using the definition finalizes', () => {
+    it('removes the <style> only when the last unit using the definition destroys', () => {
         const defs = { frame: 'color: red;' };
         const first = xnew(() => { xnew.css(defs); });
         const second = xnew(() => { xnew.css(defs); });
 
-        first.finalize();
+        first.destroy();
         expect(styleElements()).toHaveLength(1);
 
-        second.finalize();
+        second.destroy();
         expect(styleElements()).toHaveLength(0);
     });
 
     it('reuses the removed definition by injecting a fresh <style>', () => {
         const defs = { frame: 'color: red;' };
         const first = xnew(() => { xnew.css(defs); });
-        first.finalize();
+        first.destroy();
         expect(styleElements()).toHaveLength(0);
 
         xnew(() => { xnew.css(defs); });
@@ -282,7 +282,7 @@ describe('xnew.css', () => {
         expect(css.late).toMatch(/^xnew\d+-late$/);
         expect(styleElements()).toHaveLength(1);
 
-        unit.finalize();
+        unit.destroy();
         expect(styleElements()).toHaveLength(0);
     });
 });

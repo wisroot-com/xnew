@@ -62,7 +62,7 @@ TitleScene ──tap/Space──▶ StoryScene ──2ページ目のtap/Space�
 ```
 
 - シーンは `xnew.extend(xbasics.Scene)` を使い、`unit.change(NextScene, props)` で遷移
-  （兄弟として次を生成し自分を finalize）。`xnew.context(xbasics.Scene).add(Comp)` で子追加。
+  （兄弟として次を生成し自分を destroy）。`xnew.context(xbasics.Scene).add(Comp)` で子追加。
 - どのシーンも先頭で `xnew(Background)` を呼ぶので、遷移しても背景が連続して見える。
 - **進行入力はタップとスペースキー両対応**（Title 進行 / Story ページ送り / Result→Title）。
   各シーンで `unit.on('window.keydown', ...)` を `event.code==='Space' && !event.repeat` で拾う
@@ -94,7 +94,7 @@ TitleScene ──tap/Space──▶ StoryScene ──2ページ目のtap/Space�
 `BakedCharacters` → `Baking`（各キャラ）→ `Model`。重い VRM をリアルタイム描画せず、
 オフスクリーンで全フレームを焼いて `PIXI.Texture` 配列にし、`AnimatedSprite` で再生する。
 
-- `Baking`: `xthree.initialize({ camera, canvas: new OffscreenCanvas(BAKE_FRAME_SIZE×2) })` +
+- `Baking`: `xthree.init({ camera, canvas: new OffscreenCanvas(BAKE_FRAME_SIZE×2) })` +
   EffectComposer(RenderPass + SSAOPass + OutputPass)。毎 render tick で `batch` フレームずつ
   `composer.render()` → `transferToImageBitmap()` → **アトラス canvas に drawImage して即 `close()`**。
 - **アトラス方式（2026-06-13〜）**: キャラ1体 = アトラス1枚（個別テクスチャにしない）。
@@ -103,7 +103,7 @@ TitleScene ──tap/Space──▶ StoryScene ──2ページ目のtap/Space�
   GPU テクスチャは計5枚、ImageBitmap は保持ゼロ。source 共有でバッチ描画も効く。
 - **ベイク後の解放**: 完了時に `composer.dispose()` + `ssaoPass.dispose()` を呼び、`Assets`（内部で
   `BakedCharacters` を焼く保持コンポーネント）がテクスチャを取り込んでから `BakedCharacters` ごと
-  finalize する（xthree Root の finalize が renderer の dispose + forceContextLoss を行う。
+  destroy する（xthree Root の destroy が renderer の dispose + forceContextLoss を行う。
   クラッシュ対策の一部）。以後のテクスチャ参照は `xnew.context(Assets)` で引く。
 - **シームレスループ**: `t` を `[0, 3π)` を `BAKE_FRAMES` 等分。回転は `t=3π` で 2π の倍数に戻り、
   ボーンの `sin(t × 偶数)` も開始位相へ戻る。**ここを触るときはループ条件を壊さないこと**
@@ -186,11 +186,11 @@ TitleScene ──tap/Space──▶ StoryScene ──2ページ目のtap/Space�
   （例: `GameScene` で先に作った `ScoreManager`/`SoundFX`/`ShotEnergy` を Player 等が参照）。
   生成順に注意（参照される側を先に `xnew` する）。
 - **`xnew.find(Comp)`** はグローバル検索（全 Enemy など）。
-- **pixi 連携**: `xpixi.nest()` でグループ生成＆その階層へ移動、`xpixi.add(obj)` で要素追加。unit finalize に連動し
-  finalize で親から外して `destroy({children:true})`（テクスチャは温存）。
+- **pixi 連携**: `xpixi.nest()` でグループ生成＆その階層へ移動、`xpixi.add(obj)` で要素追加。unit destroy に連動し
+  destroy で親から外して `destroy({children:true})`（テクスチャは温存）。
   → 多数生成するエフェクトはこの破棄に乗るので、手動 destroy で**共有テクスチャを壊さない**。
 - **タイマー/トランジション**: `xnew.timeout(cb, ms)`, `xnew.interval(cb, ms)`（`.clear()`),
-  `xnew.transition(({value})=>{}, ms, easing).timeout(cb)`。いずれも現在の unit に紐づき finalize で停止。
+  `xnew.transition(({value})=>{}, ms, easing).timeout(cb)`。いずれも現在の unit に紐づき destroy で停止。
   easing は `'ease'` などが使える。
 - **イベント**: `xnew.emit('+name', data)` でグローバル配信、`unit.on('+name', ...)`。
   入力は `Controller` が `+move`/`+shot` を emit。`+shake` は CameraShake、`+wave` は色追従系が購読。

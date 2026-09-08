@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Unit — the lifecycle, ownership, and scoping primitive of xnew
 // A Unit bundles DOM, components, children, listeners, and promises into one disposable node;
-// listeners record their owner, so a finalized owner's listeners elsewhere detach automatically.
+// listeners record their owner, so a destroyed owner's listeners elsewhere detach automatically.
 //----------------------------------------------------------------------------------------------------
 
 import { MapSet } from './map';
@@ -20,8 +20,8 @@ interface Snapshot { unit: Unit; context: Context; element: DomElement; Componen
 interface ListenerEntry { listener: Function; execute: Function; owner: Unit; }
 
 // engine-dispatched lifecycle events: they live in _.systems, so they never reach addEventListener nor need the '+' / '-' prefix
-export type SystemType = 'update' | 'finalize' | 'childattach' | 'childdetach';
-const SYSTEM_TYPES: SystemType[] = ['update', 'finalize', 'childattach', 'childdetach'];
+export type SystemType = 'update' | 'destroy' | 'childattach' | 'childdetach';
+const SYSTEM_TYPES: SystemType[] = ['update', 'destroy', 'childattach', 'childdetach'];
 
 // xsync node record (see src/sync): every unit carries one; root is the sync root it lives under (null outside one) and is inherited, the rest is per-unit.
 export interface SyncData { root: Unit | null; id: number | null; state: Record<string, any>; registry: Record<string, Function>; visibility: ((clientId: string) => boolean) | null; }
@@ -51,7 +51,7 @@ export class Unit {
         parent: Unit | null;
         children: Unit[];
 
-        phase: 'invoked' | 'initialized' | 'finalizing' | 'finalized';
+        phase: 'invoked' | 'initialized' | 'destroying' | 'destroyed';
         attached: boolean;   // childattach has fired on the parent; keeps the childattach / childdetach pair balanced
         protected: boolean;
         standalone: boolean;
@@ -104,7 +104,7 @@ export class Unit {
             Components: [],
             listeners: new MapSet(),
             defines: {},
-            systems: { update: [], finalize: [], childattach: [], childdetach: [] },
+            systems: { update: [], destroy: [], childattach: [], childdetach: [] },
             events: new EventBinder(),
             key: null,
             sync: { root: parent?._.sync.root ?? null, id: null, state: {}, registry: {}, visibility: null },
@@ -154,8 +154,8 @@ export class Unit {
         this._.lastSnapshot = Unit.snapshot(this);
         Unit.currentUnit = backup;
 
-        // fired once the constructor is done, so listeners see a fully built child (a unit finalized inside its own component body never attaches, nor detaches); iterate a copy, since a listener may add / remove listeners mid-dispatch
-        if (parent !== null && this._.phase !== 'finalized') {
+        // fired once the constructor is done, so listeners see a fully built child (a unit destroyed inside its own component body never attaches, nor detaches); iterate a copy, since a listener may add / remove listeners mid-dispatch
+        if (parent !== null && this._.phase !== 'destroyed') {
             this._.attached = true;
             [...parent._.systems.childattach].forEach((entry) => entry.execute({ child: this }));
         }
@@ -175,12 +175,12 @@ export class Unit {
         return this._.nestElements[0] ?? null;
     }
 
-    public finalize(): void {
-        if (this._.phase !== 'finalized' && this._.phase !== 'finalizing') {
-            this._.phase = 'finalizing';
+    public destroy(): void {
+        if (this._.phase !== 'destroyed' && this._.phase !== 'destroying') {
+            this._.phase = 'destroying';
 
-            [...this._.children].reverse().forEach((child: Unit) => child.finalize());
-            [...this._.systems.finalize].reverse().forEach(({ execute }) => execute());
+            [...this._.children].reverse().forEach((child: Unit) => child.destroy());
+            [...this._.systems.destroy].reverse().forEach(({ execute }) => execute());
 
             // detach the listeners this unit registered on other units
             Unit.owner2targets.get(this)?.forEach((target) => {
@@ -189,7 +189,7 @@ export class Unit {
             });
             Unit.owner2targets.delete(this);
 
-            // and drop itself from every owner's target set — a finalized target left there pins its whole _ bag
+            // and drop itself from every owner's target set — a destroyed target left there pins its whole _ bag
             Unit.target2owners.get(this)?.forEach((owner) => Unit.owner2targets.delete(owner, this));
             Unit.target2owners.delete(this);
 
@@ -223,9 +223,9 @@ export class Unit {
             if (parent !== null) {
                 parent._.children = parent._.children.filter((u: Unit) => u !== this);
             }
-            this._.phase = 'finalized';
+            this._.phase = 'destroyed';
 
-            // fired after the child is fully finalized; it reaches the parent during the parent's own cascade too, since the parent clears its listeners only after its children
+            // fired after the child is fully destroyed; it reaches the parent during the parent's own cascade too, since the parent clears its listeners only after its children
             if (parent !== null && this._.attached === true) {
                 [...parent._.systems.childdetach].forEach((entry) => entry.execute({ child: this }));
             }
@@ -300,17 +300,17 @@ export class Unit {
     static currentUnit: Unit;
 
     static reset(): void {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
         Unit.currentUnit = Unit.engineRoot = new Unit(null);
         // unref'd: the root ticker starts at import time, so it must not keep a Node process alive on its own
         const ticker = new Ticker((delta: number) => {
             Unit.update(Unit.engineRoot, delta);
         }, 60, true);
-        Unit.engineRoot.on('finalize', () => ticker.clear());
+        Unit.engineRoot.on('destroy', () => ticker.clear());
     }
 
     static scope(snapshot: Snapshot, func: Function, ...args: any[]): any {
-        if (snapshot.unit._.phase === 'finalized') {
+        if (snapshot.unit._.phase === 'destroyed') {
             return;
         } 
         const currentUnit = Unit.currentUnit;
@@ -468,11 +468,11 @@ export class Unit {
     }
 
     // One pass over the listeners of `type`; `accept` is the only thing that varies between dispatch paths (see also RoomIO.dispatch).
-    // Iterate copies: a listener may add / remove listeners — or finalize units — mid-dispatch (as Unit.update does).
-    // A dying unit is skipped: an emit can reach it from a finalize cascade, or land late from a socket / timer.
+    // Iterate copies: a listener may add / remove listeners — or destroy units — mid-dispatch (as Unit.update does).
+    // A dying unit is skipped: an emit can reach it from a destroy cascade, or land late from a socket / timer.
     static dispatch(type: string, props: object, accept: (unit: Unit, entry: ListenerEntry) => boolean): void {
         [...(Unit.type2units.get(type) ?? [])].forEach((unit) => {
-            if (unit._.phase === 'finalizing' || unit._.phase === 'finalized') { return; }
+            if (unit._.phase === 'destroying' || unit._.phase === 'destroyed') { return; }
             [...(unit._.listeners.get(type) ?? [])].forEach((entry) => {
                 if (accept(unit, entry) === true) { entry.execute(props); }
             });
@@ -544,7 +544,7 @@ export class UnitTimer {
 
     public clear() {
         this.queue = [];
-        this.unit?.finalize();
+        this.unit?.destroy();
         this.unit = null;
     }
 
@@ -568,12 +568,12 @@ export class UnitTimer {
 
             function onTimeout() {
                 if (timeout) Unit.scope(snapshot, timeout, { count: counter });
-                // if the callback called timer.clear(), the unit is finalized — do not reschedule.
-                if (unit._.phase === 'finalized') { return; }
+                // if the callback called timer.clear(), the unit is destroyed — do not reschedule.
+                if (unit._.phase === 'destroyed') { return; }
                 if (iterations <= 0 || counter < iterations - 1) {
                     current = new Timer(onTimeout, onTransition, duration, easing);
                 } else {
-                    unit.finalize();
+                    unit.destroy();
                 }
                 counter++;
             }
@@ -581,11 +581,11 @@ export class UnitTimer {
                 if (transition) Unit.scope(snapshot, transition, { value });
             }
 
-            unit.on('finalize', () => current.clear());
+            unit.on('destroy', () => current.clear());
         };
 
-        // Run now if idle, otherwise queue behind the running task (each task starts the next queued one when it finalizes).
-        if (this.unit === null || this.unit._.phase === 'finalized') {
+        // Run now if idle, otherwise queue behind the running task (each task starts the next queued one when it is destroyed).
+        if (this.unit === null || this.unit._.phase === 'destroyed') {
             this.start(Component);
         } else {
             this.queue.push(Component);
@@ -595,10 +595,10 @@ export class UnitTimer {
 
     private start(Component: Function) {
         this.unit = new Unit(Unit.currentUnit, Component);
-        this.unit.on('finalize', () => {
-            // While the owner unit is finalizing, the next task would escape its child-finalize loop — drop the queue instead.
+        this.unit.on('destroy', () => {
+            // While the owner unit is destroying, the next task would escape its child-destroy loop — drop the queue instead.
             const owner = Unit.currentUnit;
-            if (this.queue.length > 0 && owner._.phase !== 'finalizing' && owner._.phase !== 'finalized') {
+            if (this.queue.length > 0 && owner._.phase !== 'destroying' && owner._.phase !== 'destroyed') {
                 this.start(this.queue.shift()!);
             } else {
                 this.queue = [];

@@ -11,7 +11,7 @@ import { ioMock, bootServer, bootClient, asServer } from './io-mock';
 describe('room status (session.clients / session.myself / sync.status)', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     it('server status.clients tracks members; sync.status fires on connect/disconnect', () => {
         const snapshots: string[][] = [];

@@ -69,7 +69,7 @@ function ViewHost(unit, { state, bags }) {
 
   let views = build(state.texture);
   unit.on('+texture', ({ type }) => {
-    views.forEach((view) => view.finalize());
+    views.forEach((view) => view.destroy());
     views = build(type);
   });
 
@@ -85,7 +85,7 @@ function TextureView(unit, { texture, params, channel }) {
   const canvas = xnew('<canvas width="512" height="512" style="display: block; width: 100%; height: auto;">').current;
   const renderer = texture.renderer(canvas, { channel, worldSize: WORLD_SIZES[texture.name] });
   unit.on('update', () => renderer.render(values(params)));
-  unit.on('finalize', () => renderer.dispose());
+  unit.on('destroy', () => renderer.dispose());
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ function ControlPanel(unit, { state, bags }) {
 
   let group = buildGroup(panel, state, bags);
   unit.on('+texture', () => {
-    group.finalize();
+    group.destroy();
     group = buildGroup(panel, state, bags);
   });
 }

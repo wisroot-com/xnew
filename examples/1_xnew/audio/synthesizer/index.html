@@ -285,7 +285,7 @@
       updateTabs();
 
       function rebuild() {
-        body.finalize();
+        body.destroy();
         body = xnew(unit, PanelBody, { tab: active });
         updateTabs();
       }

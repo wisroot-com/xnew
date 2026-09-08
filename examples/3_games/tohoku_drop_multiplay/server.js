@@ -58,7 +58,7 @@ function Lobby(unit) {
             }));
         });
         io.on('connection', connection);
-        unit.on('finalize', () => { io.off('connection', connection); rooms.clear(); });
+        unit.on('destroy', () => { io.off('connection', connection); rooms.clear(); });
     });
 }
 
@@ -85,14 +85,14 @@ function Room(unit, { io, room }) {
             }));
         });
         io.on('connection', connection);
-        unit.on('finalize', () => io.off('connection', connection));
+        unit.on('destroy', () => io.off('connection', connection));
 
         scheduleCleanup();
         function scheduleCleanup() {
             graceTimer?.clear();
             graceTimer = xnew.timeout(() => {
                 if (members.size > 0) { return; }
-                if (rooms.has(room.id)) { rooms.delete(room.id); broadcastRooms(); unit.finalize(); }
+                if (rooms.has(room.id)) { rooms.delete(room.id); broadcastRooms(); unit.destroy(); }
             }, graceMs);
         }
 

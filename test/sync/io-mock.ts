@@ -84,7 +84,7 @@ export function ioMock(): IoMock {
 
     const io = {
         on(event: string, cb: (socket: any) => void): void { if (event === 'connection') { connectionCb = cb; } },
-        // boot は finalize で自分の connection を外す。外れた後の connect() はどのハンドラにも届かない。
+        // boot は destroy で自分の connection を外す。外れた後の connect() はどのハンドラにも届かない。
         off(event: string, cb: (socket: any) => void): void {
             if (event === 'connection' && connectionCb === cb) { connectionCb = null; }
         },
@@ -139,7 +139,7 @@ export function ioMock(): IoMock {
                 if (set === undefined) { set = new Set(); conn.clientHandlers.set(event, set); }
                 set.add(handler);
             },
-            // boot detaches its socket handlers when the client root finalizes（socket.io の socket.off 相当）
+            // boot detaches its socket handlers when the client root destroys（socket.io の socket.off 相当）
             off(event: string, handler: Handler): void { conn.clientHandlers.get(event)?.delete(handler); },
             disconnect(): void { conns.delete(clientId); conn.serverHandlers.get('disconnect')?.forEach((h) => h()); },
             // server→client 受信を擬似発火: 自分の on(event) ハンドラ（boot の on('sync')→apply 等）を client 環境で呼ぶ。

@@ -74,7 +74,7 @@ function ThreeMain(unit) {
   const [width, height] = [1200, 800];
   xnew.extend(xbasics.Screen, { width, height, fit: 'cover' });
 
-  xthree.initialize({ canvas: unit.canvas });
+  xthree.init({ canvas: unit.canvas });
 
   unit.on('resize', () => {
     xthree.camera.fov = Math.atan2(unit.current.getBoundingClientRect().height / 2, perspective) * 2 * 180 / Math.PI;

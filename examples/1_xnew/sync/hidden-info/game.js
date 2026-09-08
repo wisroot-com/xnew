@@ -16,7 +16,7 @@ export function Game(unit) {
     xsync.server(() => {
         xnew(Board);
         unit.on('sync.connect', ({ id }) => xnew(PlayerView, { key: id, ownerId: id }));
-        unit.on('sync.disconnect', ({ id }) => xnew.find(PlayerView, { key: id })[0]?.finalize());
+        unit.on('sync.disconnect', ({ id }) => xnew.find(PlayerView, { key: id })[0]?.destroy());
     });
 
     // client: 説明文と、Board / PlayerView（届いたぶんだけ）の mount 先を用意する。

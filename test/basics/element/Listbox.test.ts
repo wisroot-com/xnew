@@ -9,7 +9,7 @@ describe('basics Listbox', () => {
         Unit.reset();
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
         jest.useRealTimers();
     });
 

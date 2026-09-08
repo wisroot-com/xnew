@@ -17,7 +17,7 @@ function Box(unit: Unit) {
 
 describe('applyStateTree create', () => {
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     function makeView() {
         const socket = ioMock().connect();
@@ -53,7 +53,7 @@ describe('applyStateTree state injection (client inits from server state)', () =
         observed = { ...state };   // 本体実行時点で見えている state のスナップショット
     }
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); observed = null; });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
     function makeView() {
         const socket = ioMock().connect();
         const view = bootClient({ socket }, function View() { xsync.register({ Probe }); });
@@ -77,7 +77,7 @@ describe('applyStateTree state injection (client inits from server state)', () =
 
 describe('applyStateTree update', () => {
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
     function makeView() {
         const socket = ioMock().connect();
         const view = bootClient({ socket }, function View() { xsync.register({ Box }); });
@@ -107,14 +107,14 @@ describe('applyStateTree update', () => {
 
 describe('applyStateTree remove', () => {
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
     function makeView() {
         const socket = ioMock().connect();
         const view = bootClient({ socket }, function View() { xsync.register({ Box }); });
         return { view, socket };
     }
 
-    it('finalizes replica units whose id disappears from the tree', () => {
+    it('destroys replica units whose id disappears from the tree', () => {
         const { view, socket } = makeView();
         socket.fire('sync', [
             { id: 1, name: 'Box', parent: null, state: {} },
@@ -125,6 +125,6 @@ describe('applyStateTree remove', () => {
         socket.fire('sync', [{ id: 1, name: 'Box', parent: null, state: {} }]);
         expect(view._.children.length).toBe(1);
         expect((view._.children[0])._.sync.id).toBe(1);
-        expect(removed._.phase).toBe('finalized');
+        expect(removed._.phase).toBe('destroyed');
     });
 });

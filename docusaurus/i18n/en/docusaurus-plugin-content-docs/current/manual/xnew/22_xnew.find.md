@@ -97,4 +97,4 @@ console.log('Total score:', totalScore); // 30
 - **Cleanup operations** — find and remove all instances of a component
 - **Statistics and monitoring** — count or analyze active components
 
-Only currently active units are returned; finalized units are excluded.
+Only currently active units are returned; destroyed units are excluded.

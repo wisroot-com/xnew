@@ -13,7 +13,7 @@ function Box(unit: Unit) {
 describe('server skips unchanged frames', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     it('emits sync only when the projection changed', () => {
         const server = bootServer({ io: hub.io }, function Root() { xsync.register({ Box }); xnew(Box); });
@@ -49,7 +49,7 @@ describe('server skips unchanged frames', () => {
 
 describe('client dispatches sync.update', () => {
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     it('fires after reconcile with the state already applied; a redelivered tree reconciles in place', () => {
         const socket = ioMock().connect();

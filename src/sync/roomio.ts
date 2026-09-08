@@ -36,7 +36,7 @@ export class RoomIO {
             },
         });
         if (this.socket !== null) {
-            this.root.on('finalize', () => this.socket.disconnect());
+            this.root.on('destroy', () => this.socket.disconnect());
         }
     }
 
@@ -62,11 +62,11 @@ export class RoomIO {
         });
     }
 
-    // listens on the own socket (client) or the io namespace (server); detached when the root finalizes, so a dead room leaves no listener on the shared io.
+    // listens on the own socket (client) or the io namespace (server); detached when the root is destroyed, so a dead room leaves no listener on the shared io.
     on(type: string, listener: (...args: any[]) => void): void {
         const wire = this.socket ?? this.io;
         wire.on(type, listener);
-        this.root.on('finalize', () => wire.off(type, listener));
+        this.root.on('destroy', () => wire.off(type, listener));
     }
 
     // Roster announcement (server side): dispatch here, relay to the other members, then re-broadcast the roster.

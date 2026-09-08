@@ -9,7 +9,7 @@ function Main(unit) {
   xnew.extend(xbasics.Screen, { width, height });
 
   // setup pixi
-  xpixi.initialize({ canvas: unit.canvas });
+  xpixi.init({ canvas: unit.canvas });
 
   xnew.promise(unit).then(() => {
     unit.on('update', () => {
@@ -145,7 +145,7 @@ function Player(unit) {
       if (enemy.distance(object) < 30) {
         enemy.clash(1);
         xnew.emit('+gameover');
-        unit.finalize();
+        unit.destroy();
         return;
       }
     }
@@ -168,9 +168,9 @@ function Shot(unit, { x, y }) {
   unit.on('update', () => {
     object.y -= 12;
 
-    // finalize when out of screen
+    // destroy when out of screen
     if (object.y < 0) {
-      unit.finalize();
+      unit.destroy();
       return;
     }
     
@@ -178,7 +178,7 @@ function Shot(unit, { x, y }) {
     for (const enemy of xnew.find(Enemy)) {
       if (enemy.distance(object) < 30) {
         enemy.clash(1);
-        unit.finalize();
+        unit.destroy();
         return;
       }
     }
@@ -211,7 +211,7 @@ function Enemy(unit) {
       }
       xnew.context(xbasics.Scene).add(CrashText, { x: object.x, y: object.y, score });
       xnew.emit('+scoreup', { score });
-      unit.finalize();
+      unit.destroy();
     },
     distance(target) {
       const dx = target.x - object.x;
@@ -236,7 +236,7 @@ function CrashText(unit, { x, y, score }) {
   object.position.set(x, y);
   object.anchor.set(0.5);
 
-  xnew.timeout(() => unit.finalize(), 1000); // remove after 1 second
+  xnew.timeout(() => unit.destroy(), 1000); // remove after 1 second
   let count = 0;
   unit.on('update', () => { // bounding
     object.y = y - 50 * Math.exp(-count / 20) * Math.abs(Math.sin(Math.PI * (count * 10) / 180));
@@ -252,7 +252,7 @@ function Crash(unit, { x, y, score }) {
   const a = Math.random() * 2 * Math.PI; // 0 ~ 2PI
   const velocity = { x: v * Math.cos(a), y: v * Math.sin(a)};
 
-  xnew.timeout(() => unit.finalize(), 800); // remove after 800ms
+  xnew.timeout(() => unit.destroy(), 800); // remove after 800ms
 
   let count = 0;
   unit.on('update', () => {
@@ -266,7 +266,7 @@ function Crash(unit, { x, y, score }) {
     for (const enemy of xnew.find(Enemy)) {
       if (enemy.distance(object) < 30) {
         enemy.clash(score * 2);
-        unit.finalize();
+        unit.destroy();
         return;
       }
     }

@@ -124,7 +124,7 @@ function injectStandard(texture, params, materialParams) {
     return standardMaterial;
 }
 
-function initialize({ canvas, camera = null }) {
+function init({ canvas, camera = null }) {
     return xnew.promise(xnew(Root, { canvas, camera }));
 }
 function nest(options) {
@@ -166,7 +166,7 @@ function Root(unit, { canvas, camera }) {
     renderer.setClearColor(0x000000, 0);
     camera = camera !== null && camera !== void 0 ? camera : new THREE.PerspectiveCamera(45, renderer.domElement.width / renderer.domElement.height);
     const scene = new THREE.Scene();
-    unit.on('finalize', () => {
+    unit.on('destroy', () => {
         var _a;
         renderer.dispose();
         (_a = renderer.forceContextLoss) === null || _a === void 0 ? void 0 : _a.call(renderer);
@@ -183,7 +183,7 @@ function attach(unit, object) {
     const root = xnew.context(Root);
     const parent = (_b = (_a = xnew.context(Nest)) === null || _a === void 0 ? void 0 : _a.threeObject) !== null && _b !== void 0 ? _b : root.scene;
     parent.add(object);
-    unit.on('finalize', () => {
+    unit.on('destroy', () => {
         parent.remove(object);
     });
 }
@@ -197,7 +197,7 @@ function Add(unit, { object }) {
     attach(unit, object);
 }
 const xthree = {
-    initialize,
+    init,
     nest,
     add,
     material,

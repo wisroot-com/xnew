@@ -7,16 +7,16 @@ describe('Unit lifecycle', () => {
         Unit.reset();
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
         jest.useRealTimers();
     });
 
-    it('emits finalize exactly once even when finalized twice', () => {
-        const onFinalize = jest.fn();
-        const unit = xnew((u: Unit) => u.on('finalize', onFinalize));
-        unit.finalize();
-        unit.finalize();
-        expect(onFinalize).toHaveBeenCalledTimes(1);
+    it('emits destroy exactly once even when destroyed twice', () => {
+        const onDestroy = jest.fn();
+        const unit = xnew((u: Unit) => u.on('destroy', onDestroy));
+        unit.destroy();
+        unit.destroy();
+        expect(onDestroy).toHaveBeenCalledTimes(1);
     });
 
     it('runs update listeners once the unit is initialized', async () => {
@@ -27,13 +27,13 @@ describe('Unit lifecycle', () => {
         expect(onUpdate).toHaveBeenCalled();
     });
 
-    it('stops running update listeners after finalize', async () => {
+    it('stops running update listeners after destroy', async () => {
         const onUpdate = jest.fn();
         const unit = xnew((u: Unit) => u.on('update', onUpdate));
         await jest.advanceTimersByTimeAsync(40);
         const calledBefore = onUpdate.mock.calls.length;
         expect(calledBefore).toBeGreaterThan(0);
-        unit.finalize();
+        unit.destroy();
         await jest.advanceTimersByTimeAsync(40);
         expect(onUpdate).toHaveBeenCalledTimes(calledBefore);
     });

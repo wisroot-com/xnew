@@ -11,7 +11,7 @@ import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 describe('xsync client envelope validation', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     it('drops a client envelope naming a reserved sync.* type', () => {
         const spoofed: any[] = [];

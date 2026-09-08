@@ -20,7 +20,7 @@ function Main(unit) {
   const aspect = width / height;
   
   // three setup
-  xthree.initialize({ canvas: unit.canvas, camera: new THREE.OrthographicCamera(-aspect, aspect, 1, -1, 0.0, 10) });
+  xthree.init({ canvas: unit.canvas, camera: new THREE.OrthographicCamera(-aspect, aspect, 1, -1, 0.0, 10) });
   xthree.camera.position.set(0, 4 * Math.tan(Math.PI / 6), +4);
   xthree.scene.background = new THREE.Color(0x151729);
   xthree.renderer.shadowMap.enabled = true;

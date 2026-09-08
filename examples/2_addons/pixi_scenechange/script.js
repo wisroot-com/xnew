@@ -8,7 +8,7 @@ function Main(unit) {
   xnew.extend(xbasics.Screen, { width: 800, height: 600 });
 
   // pixi setup
-  xpixi.initialize({ canvas: unit.canvas });
+  xpixi.init({ canvas: unit.canvas });
 
   xnew.promise(unit).then(() => {
     unit.on('update', () => {

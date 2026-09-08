@@ -122,7 +122,7 @@ function Main(unit) {
   const [width, height] = [800, 600];
   xnew.extend(xbasics.Screen, { width, height });
 
-  xpixi.initialize({ canvas: unit.canvas });
+  xpixi.init({ canvas: unit.canvas });
 
   xnew.promise(unit).then(() => {
     unit.on('update', () => xpixi.renderer.render(xpixi.scene));
@@ -148,7 +148,7 @@ function Assets(_unit) {
   xnew.promise(chars).then(() => {
     texturesList = chars.texturesList;
     playerTextures = chars.playerTextures;
-    chars.finalize();
+    chars.destroy();
   });
 
   return {
@@ -198,7 +198,7 @@ function disposeObject(object) {
 
 function BakedCharacters(unit) {
   const camera = new THREE.OrthographicCamera(-1, +1, +1, -1, 0.1, 10);
-  xthree.initialize({ camera, canvas: new OffscreenCanvas(BAKE_FRAME_SIZE, BAKE_FRAME_SIZE) });
+  xthree.init({ camera, canvas: new OffscreenCanvas(BAKE_FRAME_SIZE, BAKE_FRAME_SIZE) });
   xthree.camera.position.set(0, -0.1, 2.5);
 
   const composer = new EffectComposer(xthree.renderer);
@@ -409,7 +409,7 @@ function StoryScene(unit) {
       unit.change(GameScene);
       return;
     }
-    page.finalize();
+    page.destroy();
     index = next;
     page = xnew(pages[index]);
     xnew.timeout(() => { busy = false; }, 300); // 連打での飛ばし過ぎを防ぐ
@@ -564,7 +564,7 @@ function GameScene(unit) {
   });
 
   unit.once('+gameover', () => {
-    bgm.finalize(); // ゲームオーバーで BGM 停止
+    bgm.destroy(); // ゲームオーバーで BGM 停止
     const score = scoreManager.score;
     const wave = waveManager.wave;
     const kills = [...scoreManager.kills];
@@ -754,7 +754,7 @@ function WaveTransition(unit, { wave }) {
 
   xnew.transition(({ value }) => { unit.current.style.opacity = value; }, 450);
   xnew.timeout(() => {
-    xnew.transition(({ value }) => { unit.current.style.opacity = 1 - value; }, 450).timeout(() => unit.finalize());
+    xnew.transition(({ value }) => { unit.current.style.opacity = 1 - value; }, 450).timeout(() => unit.destroy());
   }, 2100);
 }
 
@@ -895,7 +895,7 @@ function WaveEnemyDisplay(unit) {
     xnew.transition(({ value }) => {
       next.sprite.alpha = value;
       if (old) old.sprite.alpha = 1 - value;
-    }, 400).timeout(() => { if (old) old.finalize(); });
+    }, 400).timeout(() => { if (old) old.destroy(); });
   });
 }
 
@@ -1307,11 +1307,11 @@ function Shot(unit, { x, y }) {
   unit.on('update', () => {
     object.y -= 8;
 
-    if (object.y < 0) { unit.finalize(); return; }
+    if (object.y < 0) { unit.destroy(); return; }
 
     // ショットは上方向。当たった敵を撃破して自身を消す。
     if (hitNearestEnemy(object, 30, (e) => e.clash(ENEMIES[e.id].score, { x: 0, y: -1 }))) {
-      unit.finalize();
+      unit.destroy();
     }
   });
 
@@ -1380,7 +1380,7 @@ function Enemy(unit, { id, x, y, invincible = false, knockback = null }) {
       if (fading) return;
       fading = true;
       vulnerable = false;
-      xnew.transition(({ value }) => { object.alpha = 1 - value; }, 500).timeout(() => unit.finalize());
+      xnew.transition(({ value }) => { object.alpha = 1 - value; }, 500).timeout(() => unit.destroy());
     },
 
     // direction: 当たった方向の単位ベクトル（弾の進行方向）。fromStar: 星チェーン由来か。
@@ -1422,7 +1422,7 @@ function Enemy(unit, { id, x, y, invincible = false, knockback = null }) {
       }
       scene.add(ScorePopup, { x: object.x, y: object.y, score });
       xnew.context(ScoreManager).add(score, id);
-      unit.finalize();
+      unit.destroy();
     },
   };
 }
@@ -1440,7 +1440,7 @@ function Star(unit, { x, y, score, angle = randAngle() }) {
   let vx = Math.cos(angle) * speed;
   let vy = Math.sin(angle) * speed;
 
-  xnew.timeout(() => unit.finalize(), 900);
+  xnew.timeout(() => unit.destroy(), 900);
 
   unit.on('update', ({ count }) => {
     object.x += vx;
@@ -1452,7 +1452,7 @@ function Star(unit, { x, y, score, angle = randAngle() }) {
       const len = Math.hypot(vx, vy) || 1;
       e.clash(score + 2, { x: vx / len, y: vy / len }, true);
     }, true);
-    if (hit) unit.finalize();
+    if (hit) unit.destroy();
   });
 }
 
@@ -1461,11 +1461,11 @@ function ScorePopup(unit, { x, y, score }) {
   object.position.set(x, y);
   object.anchor.set(0.5);
 
-  // 上へ 40px 浮かびながらフェードアウトし、終端で finalize（約1秒）。
+  // 上へ 40px 浮かびながらフェードアウトし、終端で destroy（約1秒）。
   xnew.transition(({ value: p }) => {
     object.y = y - 40 * p;
     object.alpha = 1 - p;
-  }, 1000).timeout(() => unit.finalize());
+  }, 1000).timeout(() => unit.destroy());
 }
 
 // 倒された敵のノックバック表現：薄れながら当たった方向へ飛んで消える
@@ -1487,11 +1487,11 @@ function EnemyCorpse(unit, { id, x, y, scale, frame = 0, direction, power }) {
     vy *= 0.86;
     object.rotation += spin;
     object.alpha = Math.max(0, 1 - count / DURATION); // 半透明に薄れる
-    if (count >= DURATION - 1) unit.finalize();
+    if (count >= DURATION - 1) unit.destroy();
   });
 }
 
-// 広がるフラッシュ + リングのバースト演出。(x,y) にコンテナを nest し duration フレーム後に finalize。
+// 広がるフラッシュ + リングのバースト演出。(x,y) にコンテナを nest し duration フレーム後に destroy。
 // flash/ring は { r, alpha, grow, fade(p) }（ring.width=線幅）。省略時は power から標準の撃破バーストを作る。
 function ExpandingBurst(unit, { x, y, duration = 16, power = 1, flash, ring }) {
   flash = flash ?? { r: 16 * power, alpha: 0.9, grow: 0.6, fade: (p) => 0.9 * (1 - p) };
@@ -1499,13 +1499,13 @@ function ExpandingBurst(unit, { x, y, duration = 16, power = 1, flash, ring }) {
   xpixi.nest({ position: { x, y } });
   const flashG = xpixi.add(new PIXI.Graphics().circle(0, 0, flash.r).fill({ color: 0xFFFFFF, alpha: flash.alpha }));
   const ringG = xpixi.add(new PIXI.Graphics().circle(0, 0, ring.r).stroke({ color: 0x66E0FF, width: ring.width, alpha: ring.alpha }));
-  // duration は従来どおりフレーム数指定。0→1 を duration フレーム相当の時間で動かし、終端で finalize。
+  // duration は従来どおりフレーム数指定。0→1 を duration フレーム相当の時間で動かし、終端で destroy。
   xnew.transition(({ value: p }) => {
     flashG.scale.set(1 + p * flash.grow);
     flashG.alpha = flash.fade(p);
     ringG.scale.set(1 + p * ring.grow);
     ringG.alpha = ring.fade(p);
-  }, duration * (1000 / 60)).timeout(() => unit.finalize());
+  }, duration * (1000 / 60)).timeout(() => unit.destroy());
 }
 
 // 自機被弾時の爆発エフェクト：白フラッシュ + 広がるリング + 飛び散る破片
@@ -1554,7 +1554,7 @@ function CameraShake(unit) {
       xpixi.scene.position.set(0, 0);
     }
   });
-  unit.on('finalize', () => xpixi.scene.position.set(0, 0));
+  unit.on('destroy', () => xpixi.scene.position.set(0, 0));
 }
 
 // ショットエネルギー：連射を抑制（満タンから2発、約2.4秒で全回復）。右下にサイバーな表示。
@@ -1701,7 +1701,7 @@ function ScreenShot(unit) {
         link.href = cropped.toDataURL('image/png');
         link.click();
       });
-      unit.finalize();
+      unit.destroy();
     });
 }
 

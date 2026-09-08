@@ -5,7 +5,7 @@ import { ioMock, bootServer, bootClient } from './io-mock';
 describe('xsync.boot({ socket, room }) — in-memory socket.io', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     it('boots server + client on a shared hub and auto-numbers clientId', () => {
         bootServer({ io: hub.io }, function Server() {});
@@ -27,7 +27,7 @@ describe('xsync.boot({ socket, room }) — in-memory socket.io', () => {
         expect(seen).toEqual(['cX']);
     });
 
-    it('detaches its io connection listener when the server root finalizes', () => {
+    it('detaches its io connection listener when the server root destroys', () => {
         // ルームは生成・消滅を繰り返すので、死んだ root の listener が io に残ってはいけない（listener リーク）。
         const seen: string[] = [];
         const root = bootServer({ io: hub.io }, function Server(unit: Unit) {
@@ -36,8 +36,8 @@ describe('xsync.boot({ socket, room }) — in-memory socket.io', () => {
         hub.connect('cX');
         expect(seen).toEqual(['cX']);
 
-        root.finalize();
-        hub.connect('cY');   // finalize 後の接続はもう届かない
+        root.destroy();
+        hub.connect('cY');   // destroy 後の接続はもう届かない
         expect(seen).toEqual(['cX']);
     });
 

@@ -26,7 +26,7 @@ describe('typed defines', () => {
         Unit.reset();
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
     });
 
     it('xnew(Component) merges typed defines onto the returned unit', () => {
@@ -52,7 +52,7 @@ describe('typed defines', () => {
     it('a component returning nothing yields a bare Unit', () => {
         xnew(() => {
             const plain = xnew((_unit: Unit) => { /* no defines */ });
-            expect(typeof plain.finalize).toBe('function');
+            expect(typeof plain.destroy).toBe('function');
             expect(plain.anything).toBeUndefined();   // bare Unit still allows any access via index signature
         });
     });

@@ -38,7 +38,7 @@ import { xthree } from '@mulsense/xnew/addons/xthree'
 
 ## コア API
 
-### `xthree.initialize({ canvas, camera? })`
+### `xthree.init({ canvas, camera? })`
 
 ルートコンポーネントで一度だけ呼び出し、WebGL レンダラーを生成します。呼び出し後、次のプロパティにアクセスできます。
 - `xthree.renderer` — `THREE.WebGLRenderer`
@@ -49,7 +49,7 @@ import { xthree } from '@mulsense/xnew/addons/xthree'
 ```js
 function Main(unit) {
   const canvas = xnew('<canvas width="800" height="600">');
-  xthree.initialize({
+  xthree.init({
     canvas: canvas.current,
     camera: new THREE.PerspectiveCamera(60, 800 / 600, 0.1, 1000),
   });

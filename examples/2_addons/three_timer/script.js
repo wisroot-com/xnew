@@ -9,7 +9,7 @@ function Main(unit) {
   xnew.extend(xbasics.Screen, { width, height });
 
   // three setup
-  xthree.initialize({ canvas: unit.canvas });
+  xthree.init({ canvas: unit.canvas });
   xthree.camera.position.set(0, 0, +100);
   xthree.scene.fog = new THREE.Fog(0xa0a0a0, 10, 300);
 
@@ -48,8 +48,8 @@ function Cube(unit) {
   velocity.y = Math.random() - 0.5;
   velocity.z = Math.random() - 0.5;
 
-  // finalize after 5000ms
-  xnew.timeout(() => unit.finalize(), 5000);
+  // destroy after 5000ms
+  xnew.timeout(() => unit.destroy(), 5000);
 
   unit.on('update', () => {
     object.position.x += velocity.x;

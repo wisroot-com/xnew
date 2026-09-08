@@ -44,7 +44,7 @@
     function Main(unit) {
       xnew.extend(xbasics.Screen, { width: CANVAS_W, height: CANVAS_H });
       const canvasEl = unit.canvas;
-      xpixi.initialize({ canvas: canvasEl });
+      xpixi.init({ canvas: canvasEl });
 
       xnew.promise(unit).then(() => {
         softTexture = makeSoftTexture();
@@ -420,7 +420,7 @@
         }
       });
 
-      xnew.timeout(() => unit.finalize(), 1500);
+      xnew.timeout(() => unit.destroy(), 1500);
     }
 
     //----------------------------------------------------------------------------------------------------

@@ -6,7 +6,7 @@ describe('xnew.emit', () => {
         Unit.reset();
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
     });
 
     describe('local (-)', () => {
@@ -83,14 +83,14 @@ describe('xnew.emit', () => {
         });
     });
 
-    // a listener may finalize other units mid-dispatch, and the target list was copied before that happened
+    // a listener may destroy other units mid-dispatch, and the target list was copied before that happened
     describe('dying units', () => {
-        it('skips a listener whose unit an earlier listener finalized', () => {
+        it('skips a listener whose unit an earlier listener destroyed', () => {
             const first = jest.fn();
             const second = jest.fn();
             xnew(() => {
                 let victim!: Unit;
-                xnew((a: Unit) => a.on('+ping', () => { first(); victim.finalize(); }));
+                xnew((a: Unit) => a.on('+ping', () => { first(); victim.destroy(); }));
                 victim = xnew((b: Unit) => b.on('+ping', second));
                 xnew(() => xnew.emit('+ping'));
             });
@@ -98,14 +98,14 @@ describe('xnew.emit', () => {
             expect(second).not.toHaveBeenCalled();
         });
 
-        it('does not fire a self emit on a unit that is finalizing', () => {
+        it('does not fire a self emit on a unit that is destroying', () => {
             const cb = jest.fn();
             xnew(() => {
                 const unit = xnew((u: Unit) => {
                     u.on('-ping', cb);
-                    u.on('finalize', () => xnew.emit('-ping'));
+                    u.on('destroy', () => xnew.emit('-ping'));
                 });
-                unit.finalize();
+                unit.destroy();
             });
             expect(cb).not.toHaveBeenCalled();
         });

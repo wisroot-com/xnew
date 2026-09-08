@@ -37,7 +37,7 @@ import { xpixi } from '@mulsense/xnew/addons/xpixi'
 
 ## Core API
 
-### `xpixi.initialize({ canvas })`
+### `xpixi.init({ canvas })`
 
 Call once in the root component to create the PixiJS renderer. After this you have access to:
 - `xpixi.renderer` — the PixiJS renderer
@@ -47,7 +47,7 @@ Call once in the root component to create the PixiJS renderer. After this you ha
 ```js
 function Main(unit) {
   const canvas = xnew('<canvas width="800" height="600">');
-  xpixi.initialize({ canvas: canvas.current });
+  xpixi.init({ canvas: canvas.current });
 
   unit.on('update', () => xpixi.renderer.render(xpixi.scene));
 }
@@ -69,7 +69,7 @@ function Enemy(unit) {
 
   unit.on('update', () => {
     object.y += 2; // move down each frame
-    if (object.y > 600) unit.finalize(); // auto-cleanup when off screen
+    if (object.y > 600) unit.destroy(); // auto-cleanup when off screen
   });
 }
 ```

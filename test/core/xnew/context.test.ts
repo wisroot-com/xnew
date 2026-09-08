@@ -3,7 +3,7 @@ import { xnew } from '../../../src/core/xnew';
 
 describe('xnew.context', () => {
     beforeEach(() => { Unit.reset(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); });
 
     it('finds an ancestor that extended the given component', () => {
         function Theme(_: Unit) {

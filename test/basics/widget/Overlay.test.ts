@@ -8,7 +8,7 @@ describe('basics Overlay', () => {
         Unit.reset();
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
         jest.useRealTimers();
     });
 
@@ -63,9 +63,9 @@ describe('basics Overlay', () => {
 
         const overlay = xnew(Overlay, { anchor });
         const box = overlay.current as HTMLElement;
-        let finalized = false;
-        overlay.on('finalize', () => { finalized = true; });
-        overlay.gate.on('-closed', () => overlay.finalize());
+        let destroyed = false;
+        overlay.on('destroy', () => { destroyed = true; });
+        overlay.gate.on('-closed', () => overlay.destroy());
 
         overlay.gate.open();
         jest.advanceTimersByTime(1000);
@@ -73,7 +73,7 @@ describe('basics Overlay', () => {
         // a press anywhere on the overlay never closes it on its own — the caller wires close (see the gate example)
         box.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         jest.advanceTimersByTime(1000);
-        expect(finalized).toBe(false);
+        expect(destroyed).toBe(false);
     });
 
     it('is click-through while fully closed and interactive once opened', () => {

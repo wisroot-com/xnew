@@ -17,7 +17,7 @@ jest.mock('pixi.js', () => {
     return {
         Container,
         autoDetectRenderer: () => Promise.resolve(renderer),
-        __renderer: renderer, // finalize テストで destroy を spy するため共有 renderer を公開
+        __renderer: renderer, // destroy テストで destroy を spy するため共有 renderer を公開
     };
 });
 
@@ -37,7 +37,7 @@ test('nest: 親ユニットの nest が子ユニットの nest の親になる�
     let group, child, scene;
 
     xnew(() => {
-        xpixi.initialize({ canvas });
+        xpixi.init({ canvas });
         scene = xpixi.scene;
         xnew(() => {
             group = xpixi.nest();
@@ -54,7 +54,7 @@ test('nest: 同一ユニットで2回呼ぶと2回目は1回目の子になる�
     let a, b, scene;
 
     xnew(() => {
-        xpixi.initialize({ canvas });
+        xpixi.init({ canvas });
         scene = xpixi.scene;
         a = xpixi.nest();
         b = xpixi.nest();
@@ -71,7 +71,7 @@ test('add: 現在の親に追加するが親を変えない（同一ユニット
     let scene;
 
     xnew(() => {
-        xpixi.initialize({ canvas });
+        xpixi.init({ canvas });
         scene = xpixi.scene;
         xpixi.add(a);
         xpixi.add(b);
@@ -87,7 +87,7 @@ test('add: nest の中の add は nest の親に入り、後続の nest を汚�
     let group, nested;
 
     xnew(() => {
-        xpixi.initialize({ canvas });
+        xpixi.init({ canvas });
         xnew(() => {
             group = xpixi.nest();
             xnew(() => { xpixi.add(added); });
@@ -104,7 +104,7 @@ test('nest: options で新しいグループの transform を設定できる（p
     let group;
 
     xnew(() => {
-        xpixi.initialize({ canvas });
+        xpixi.init({ canvas });
         group = xpixi.nest({ position: { x: 10, y: 20 }, scale: 2, rotation: 0.5 });
     });
 
@@ -120,7 +120,7 @@ test('nest: scale はオブジェクトで x / y 別々に指定できる', () =
     let group;
 
     xnew(() => {
-        xpixi.initialize({ canvas });
+        xpixi.init({ canvas });
         group = xpixi.nest({ scale: { x: 3, y: 4 } });
     });
 
@@ -128,30 +128,30 @@ test('nest: scale はオブジェクトで x / y 別々に指定できる', () =
     expect(group.scale.y).toBe(4);
 });
 
-test('finalize: ユニット破棄で親から外れる', () => {
+test('destroy: ユニット破棄で親から外れる', () => {
     const canvas = setup();
     const obj = new PIXI.Container();
     let scene;
     let child;
 
     xnew(() => {
-        xpixi.initialize({ canvas });
+        xpixi.init({ canvas });
         scene = xpixi.scene;
         child = xnew(() => { xpixi.add(obj); });
     });
 
     expect(obj.parent).toBe(scene);
-    child.finalize();
+    child.destroy();
     expect(obj.parent).toBe(null);
 });
 
-test('finalize: ユニット破棄でも renderer が destroy される（自動解放）', async () => {
+test('destroy: ユニット破棄でも renderer が destroy される（自動解放）', async () => {
     const canvas = setup();
     const destroySpy = jest.spyOn(PIXI.__renderer, 'destroy');
 
-    const root = xnew(() => { xpixi.initialize({ canvas }); });
+    const root = xnew(() => { xpixi.init({ canvas }); });
     await flush(); // renderer 解決を待つ
-    root.finalize();
+    root.destroy();
 
     expect(destroySpy).toHaveBeenCalled();
     destroySpy.mockRestore();

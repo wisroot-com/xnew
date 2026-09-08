@@ -68,7 +68,7 @@ flowchart LR
 
 ## シーン遷移の条件
 
-ボールが画面下まで落ちると `+gameover` イベントが発火し、`playing` を finalize して
+ボールが画面下まで落ちると `+gameover` イベントが発火し、`playing` を destroy して
 スコア画像を撮影。約 2 秒後（`xnew.timeout`）に `ResultScene` へ遷移する（撮影画像を渡す）。
 
 ---
@@ -108,5 +108,5 @@ flowchart LR
 
 - `Cursor` は `+drop` で `ModelBall` をシーンに追加し、`+reload` を発火して次の玉へ。
 - `ModelBall` は `Circle`（matter-js の物理ボディ）を `extend` しており、同じ id 同士が接触すると
-  両者を finalize し、`id+1` の `ModelBall` を生成する（合体）。落下しきると `+gameover` を発火。
+  両者を destroy し、`id+1` の `ModelBall` を生成する（合体）。落下しきると `+gameover` を発火。
 - `Model` は voxelkit → VRM で読み込んだ 3D キャラ。Three.js 側に毎フレームアニメーションを与える。

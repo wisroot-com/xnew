@@ -49,7 +49,7 @@
       const slot = xnew('<div class="flex items-center justify-center h-8">');
       let icon = xnew(slot, xicons[name], { mode, className: 'size-6' });
       cell.on('+mode', ({ mode }) => {
-        icon.finalize();
+        icon.destroy();
         icon = xnew(slot, xicons[name], { mode, className: 'size-6' });
       });
 

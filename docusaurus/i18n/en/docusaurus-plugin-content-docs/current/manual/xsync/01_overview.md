@@ -98,7 +98,7 @@ xsync.boot({ io, client, room }, Game);
 | `room` | `{ id, name, count }` | The room to join. `id` separates socket.io rooms |
 | `client` | `{ name }` | Client side only. Display name; travels in the handshake query |
 
-On the client, `boot` **creates and owns the socket itself**. Callers must not create one (that would open a second connection). When the unit `boot` created is finalized, the socket is disconnected automatically.
+On the client, `boot` **creates and owns the socket itself**. Callers must not create one (that would open a second connection). When the unit `boot` created is destroyed, the socket is disconnected automatically.
 
 ```js
 // what boot does internally (client)
@@ -220,8 +220,8 @@ The client **reconciles** each arriving tree.
 | --- | --- |
 | A sync node is created | Look the component up in the `register` table and create a replica unit |
 | State changed | Update the existing replica's state **in place** (the unit is not rebuilt) |
-| A sync node was finalized | Finalize the matching replica |
-| A node became invisible (see visibility below) | Treated as a deletion (the replica is finalized) |
+| A sync node was destroyed | Destroy the matching replica |
+| A node became invisible (see visibility below) | Treated as a deletion (the replica is destroyed) |
 
 State updates rewrite keys rather than swapping the object, so it is safe to capture the reference from `xsync.state` in a closure.
 
@@ -386,7 +386,7 @@ xsync.visibility(null);        // back to public
 ```
 
 - Sync nodes are **public** by default. A node that never declares visibility reaches everyone.
-- A client the predicate rejects sees the node **as if it did not exist**: nothing arrives, so no replica is created (an existing one is finalized).
+- A client the predicate rejects sees the node **as if it did not exist**: nothing arrives, so no replica is created (an existing one is destroyed).
 - **The whole subtree is excluded with it.** Sending a child whose parent is hidden would leave the parent id dangling.
 - The predicate is **re-evaluated on every capture**, so closing over a flag and flipping it is all a dynamic reveal takes (`revealed` above).
 
@@ -406,7 +406,7 @@ The typical shape is one node per client, declared visible only to its owner (a 
 ```js
 xsync.server(() => {
   unit.on('sync.connect', ({ id }) => xnew(PlayerView, { key: id, ownerId: id }));
-  unit.on('sync.disconnect', ({ id }) => xnew.find(PlayerView, { key: id })[0]?.finalize());
+  unit.on('sync.disconnect', ({ id }) => xnew.find(PlayerView, { key: id })[0]?.destroy());
 });
 ```
 

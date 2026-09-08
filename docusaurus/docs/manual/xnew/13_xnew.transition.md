@@ -61,7 +61,7 @@ xnew('<div>', (unit) => {
 
 ## 自動クリーンアップ
 
-unit が finalize されると、その unit に紐づくすべての transition が自動でキャンセルされます。
+unit が destroy されると、その unit に紐づくすべての transition が自動でキャンセルされます。
 
 ```js
 const unit = xnew((unit) => {
@@ -70,8 +70,8 @@ const unit = xnew((unit) => {
   }, 5000, 'linear');
 });
 
-// Finalize after 2 seconds - transition automatically stops
+// Destroy after 2 seconds - transition automatically stops
 xnew.timeout(() => {
-  unit.finalize();
+  unit.destroy();
 }, 2000);
 ```

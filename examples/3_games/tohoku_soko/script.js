@@ -30,14 +30,14 @@ function Main(unit) {
   // three setup
   const size = xnew.context(GameData).GRID / 2;
   const camera = new THREE.OrthographicCamera(-size, +size, +size, -size, 0, 100);
-  xthree.initialize({ canvas: new OffscreenCanvas(480, 480), camera });
+  xthree.init({ canvas: new OffscreenCanvas(480, 480), camera });
   xthree.renderer.shadowMap.enabled = true;
   xthree.camera.position.set(0, 0, +10);
   xthree.scene.rotation.x = -40 / 180 * Math.PI;
   xthree.scene.fog = new THREE.Fog(0x000000, 10, 18);
 
   // pixi setup
-  xpixi.initialize({ canvas: unit.canvas });
+  xpixi.init({ canvas: unit.canvas });
 
   xnew.promise(unit).then(() => {
     const texture = PIXI.Texture.from(xthree.canvas);
@@ -56,7 +56,7 @@ function Main(unit) {
 
     unit.on('+main', ({ NextScene, props }) => {
       xnew(Fade, { fadeout: 300, fadein: 300 }).on('-fadeout', () => {
-        scene.finalize();
+        scene.destroy();
         scene = xnew(NextScene, props);
       });
     });
@@ -82,7 +82,7 @@ function Fade(unit, { fadein, fadeout }) {
     }
     timer.timeout(() => {
       xnew.emit('-fadein')
-      unit.finalize();
+      unit.destroy();
     });
   }); 
   internal.on('-fadeout', () => xnew.emit('-fadeout'));
@@ -112,7 +112,7 @@ function StoryScene(unit, { id, next = false }) {
     stream.on('-next', () => {
       if (index + 1 < story.length) {
         index++;
-        stream.finalize();
+        stream.destroy();
         action();
       } else if (next === false) {
         xnew.emit('+main', { NextScene: GameScene, props: { id } });
@@ -488,7 +488,7 @@ function RightBlock(unit, { id }) {
     const canvas = xnew(`<canvas width="${width}" height="${height}" class="size-full align-bottom">`);
 
     const camera = new THREE.OrthographicCamera(-1, +1, +1, -1, 0, 100);
-    xthree.initialize({ canvas: canvas.current, camera });
+    xthree.init({ canvas: canvas.current, camera });
     xthree.renderer.shadowMap.enabled = true;
     xthree.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     xthree.camera.position.set(0, 0, +10);

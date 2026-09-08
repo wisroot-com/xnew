@@ -8,7 +8,7 @@ import { ioMock, bootServer, bootClient } from './io-mock';
 describe('xsync.server / xsync.client by environment', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     it('server environment runs server blocks for the root and nested units', () => {
         const ran: string[] = [];
@@ -36,7 +36,7 @@ describe('xsync.server / xsync.client by environment', () => {
 describe('xsync.boot', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     it('creates and returns the root unit', () => {
         const unit = bootServer({ io: hub.io }, (_: Unit) => {});

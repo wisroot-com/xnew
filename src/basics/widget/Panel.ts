@@ -207,7 +207,7 @@ function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: strin
                     notify();
                 },
             });
-            popup.on('finalize', () => popup = null);
+            popup.on('destroy', () => popup = null);
         } else {
             // a re-press lands outside the popup, so it is already closing; just make it explicit
             popup.gate.close();
@@ -222,9 +222,9 @@ function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: strin
 }
 
 function ColorPopup(unit: xnew.Unit, { anchor, value, commit }: { anchor: HTMLElement, value: string, commit: (value: string) => void }) {
-    // Overlay backdrop blocks the page and tracks the swatch rect; close finalizes this unit
+    // Overlay backdrop blocks the page and tracks the swatch rect; close destroys this unit
     xnew.extend(Overlay, { gate: { open: false, duration: 100 }, anchor });
-    unit.gate.on('-closed', () => unit.finalize());
+    unit.gate.on('-closed', () => unit.destroy());
 
     // the picker hangs just below the tracked swatch box, right-aligned
     xnew.nest('<div style="position: absolute; top: 100%; right: 0; padding: 0.25em 0;">');

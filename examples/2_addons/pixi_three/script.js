@@ -11,11 +11,11 @@ function Main(unit) {
   xnew.extend(xbasics.Screen, { width, height });
 
   // three setup
-  xthree.initialize({ canvas: new OffscreenCanvas(width, height) });
+  xthree.init({ canvas: new OffscreenCanvas(width, height) });
   xthree.camera.position.set(0, 0, +100);
 
   // pixi setup
-  xpixi.initialize({ canvas: unit.canvas });
+  xpixi.init({ canvas: unit.canvas });
 
   xnew.promise(unit).then(() => {
     const texture = PIXI.Texture.from(xthree.canvas);

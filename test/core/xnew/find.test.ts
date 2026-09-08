@@ -3,7 +3,7 @@ import { xnew } from '../../../src/core/xnew';
 
 describe('xnew.find', () => {
     beforeEach(() => { Unit.reset(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); });
 
     it('returns every unit registered under the given component', () => {
         function A(_: Unit) {}
@@ -20,11 +20,11 @@ describe('xnew.find', () => {
         expect(xnew.find(Absent)).toEqual([]);
     });
 
-    it('drops a unit from the index after finalize', () => {
+    it('drops a unit from the index after destroy', () => {
         function A(_: Unit) {}
         const unit = xnew(A);
         expect(xnew.find(A)).toContain(unit);
-        unit.finalize();
+        unit.destroy();
         expect(xnew.find(A)).not.toContain(unit);
     });
 

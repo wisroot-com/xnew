@@ -1,6 +1,6 @@
 # xnew.timeout
 
-`xnew.timeout` is `setTimeout` extended for xnew. The timeout is automatically cancelled when the owning unit is finalized, so you don't need to stash the ID and call `clearTimeout`.
+`xnew.timeout` is `setTimeout` extended for xnew. The timeout is automatically cancelled when the owning unit is destroyed, so you don't need to stash the ID and call `clearTimeout`.
 
 ## Usage
 
@@ -60,7 +60,7 @@ xnew('<button>', (unit) => {
 
 ## Automatic Cleanup
 
-When a unit is finalized, all its timeouts are automatically cleared:
+When a unit is destroyed, all its timeouts are automatically cleared:
 
 ```js
 const unit = xnew((unit) => {
@@ -68,9 +68,9 @@ const unit = xnew((unit) => {
     console.log('This will never execute');
   }, 5000);
 
-  // Finalize after 1 second
+  // Destroy after 1 second
   xnew.timeout(() => {
-    unit.finalize(); // Automatically clears the 5-second timeout
+    unit.destroy(); // Automatically clears the 5-second timeout
   }, 1000);
 });
 ```

@@ -4,13 +4,13 @@ import { Scene } from '../../../src/basics/stage/Scene';
 
 describe('basics Scene', () => {
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     const lifecycle = () => {
         const log: string[] = [];
         const track = (name: string) => (unit: xnew.Unit) => {
             log.push(`${name}:in`);
-            unit.on('finalize', () => log.push(`${name}:out`));
+            unit.on('destroy', () => log.push(`${name}:out`));
         };
         return { log, track };
     };
@@ -53,7 +53,7 @@ describe('basics Scene', () => {
         const leavingScene = (log: string[], name: string, wait: () => any) => (unit: xnew.Unit) => {
             xnew.extend(Scene);
             log.push(`${name}:in`);
-            unit.on('finalize', () => log.push(`${name}:out`));
+            unit.on('destroy', () => log.push(`${name}:out`));
             return { leave() { log.push(`${name}:leave`); return wait(); } };
         };
 
@@ -95,7 +95,7 @@ describe('basics Scene', () => {
     });
 
     describe('add', () => {
-        it('mounts a child under the scene unit, finalized together on a swap', () => {
+        it('mounts a child under the scene unit, destroyed together on a swap', () => {
             const { log, track } = lifecycle();
             const host = xnew('<div>');
             const first = xnew(host, scenePage(track, 'A'));

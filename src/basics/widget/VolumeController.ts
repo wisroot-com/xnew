@@ -55,7 +55,7 @@ export function VolumeController(unit: xnew.Unit,
         let icon = xnew(SpeakerIcon, { muted: xaudio.volume === 0 });
         return {
             update() {
-                icon?.finalize();
+                icon?.destroy();
                 icon = xnew(SpeakerIcon, { muted: xaudio.volume === 0 });
             },
         };

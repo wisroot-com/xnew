@@ -88,7 +88,7 @@ interface Transform {
         z?: number;
     };
 }
-declare function initialize({ canvas, camera }: {
+declare function init({ canvas, camera }: {
     canvas: HTMLCanvasElement;
     camera?: THREE.Camera | null;
 }): UnitPromise;
@@ -102,7 +102,7 @@ declare function Root(unit: xnew.Unit, { canvas, camera }: any): {
     readonly scene: THREE.Scene;
 };
 declare const xthree: {
-    initialize: typeof initialize;
+    init: typeof init;
     nest: typeof nest;
     add: typeof add;
     material: {

@@ -2,7 +2,7 @@ import { xnew } from '@mulsense/xnew';
 import * as PIXI from 'pixi.js';
 
 const xpixi = {
-    initialize({ canvas }) {
+    init({ canvas }) {
         return xnew.promise(xnew(Root, { canvas }));
     },
     nest(options) {
@@ -51,14 +51,14 @@ const xpixi = {
 };
 function Root(unit, { canvas }) {
     let renderer = null;
-    let finalized = false;
+    let destroyed = false;
     const source = PIXI.autoDetectRenderer({
         width: canvas.width, height: canvas.height, view: canvas,
         antialias: true, backgroundAlpha: 0,
     });
     xnew.promise(source);
     source.then((value) => {
-        if (finalized === true) {
+        if (destroyed === true) {
             value.destroy();
         }
         else {
@@ -66,8 +66,8 @@ function Root(unit, { canvas }) {
         }
     });
     const scene = new PIXI.Container();
-    unit.on('finalize', () => {
-        finalized = true;
+    unit.on('destroy', () => {
+        destroyed = true;
         renderer === null || renderer === void 0 ? void 0 : renderer.destroy();
         renderer = null;
     });
@@ -91,7 +91,7 @@ function attach(unit, object) {
     const root = xnew.context(Root);
     const parent = (_b = (_a = xnew.context(Nest)) === null || _a === void 0 ? void 0 : _a.pixiObject) !== null && _b !== void 0 ? _b : root.scene;
     parent.addChild(object);
-    unit.on('finalize', () => removeObject(object));
+    unit.on('destroy', () => removeObject(object));
 }
 function Nest(unit, { object }) {
     attach(unit, object);

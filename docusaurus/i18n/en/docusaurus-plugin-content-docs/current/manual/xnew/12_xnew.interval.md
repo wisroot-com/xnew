@@ -1,6 +1,6 @@
 # xnew.interval
 
-`xnew.interval` is `setInterval` with automatic cleanup. The interval stops on its own when the owning unit is finalized — no need to stash the ID and call `clearInterval` manually.
+`xnew.interval` is `setInterval` with automatic cleanup. The interval stops on its own when the owning unit is destroyed — no need to stash the ID and call `clearInterval` manually.
 
 ## Usage
 
@@ -54,17 +54,17 @@ xnew('<div>', (unit) => {
 
 ## Automatic Cleanup
 
-When a unit is finalized, all its intervals are automatically cleared:
+When a unit is destroyed, all its intervals are automatically cleared:
 
 ```js
 const unit = xnew((unit) => {
   xnew.interval(() => {
-    console.log('This will stop when unit is finalized');
+    console.log('This will stop when unit is destroyed');
   }, 1000);
 });
 
-// Finalize after 5 seconds - interval automatically stops
+// Destroy after 5 seconds - interval automatically stops
 xnew.timeout(() => {
-  unit.finalize();
+  unit.destroy();
 }, 5000);
 ```

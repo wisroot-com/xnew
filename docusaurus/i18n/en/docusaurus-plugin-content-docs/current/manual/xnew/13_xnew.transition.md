@@ -61,7 +61,7 @@ xnew('<div>', (unit) => {
 
 ## Automatic Cleanup
 
-When a unit is finalized, all its transitions are automatically cleared:
+When a unit is destroyed, all its transitions are automatically cleared:
 
 ```js
 const unit = xnew((unit) => {
@@ -70,8 +70,8 @@ const unit = xnew((unit) => {
   }, 5000, 'linear');
 });
 
-// Finalize after 2 seconds - transition automatically stops
+// Destroy after 2 seconds - transition automatically stops
 xnew.timeout(() => {
-  unit.finalize();
+  unit.destroy();
 }, 2000);
 ```

@@ -15,7 +15,7 @@ function Main(unit) {
   const [width, height] = [800, 600];
   xnew.extend(xbasics.Screen, { width, height });
 
-  xpixi.initialize({ canvas: unit.canvas });
+  xpixi.init({ canvas: unit.canvas });
 
   xnew.promise(unit).then(() => {
     unit.on('update', () => xpixi.renderer.render(xpixi.scene));
@@ -42,7 +42,7 @@ function BakedCharacters(unit) {
 
 function PreRender(unit, { url }) {
   const camera = new THREE.OrthographicCamera(-1, +1, +1, -1, 0.1, 10);
-  xthree.initialize({ camera, canvas: new OffscreenCanvas(128, 128) });
+  xthree.init({ camera, canvas: new OffscreenCanvas(128, 128) });
   xthree.camera.position.set(0, -0.1, 2.5);
 
   xnew(() => {
@@ -87,7 +87,7 @@ function PreRender(unit, { url }) {
     textures.push(PIXI.Texture.from(xthree.canvas.transferToImageBitmap()));
   }, BAKE_FRAMES).then(() => {
     resolve(textures);
-    unit.finalize();
+    unit.destroy();
   }));
 }
 

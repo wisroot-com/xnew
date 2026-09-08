@@ -166,7 +166,7 @@
             const watcher = xnew(() => {});
             watcher.on('update', () => {
               if (dialog.completed) {
-                watcher.finalize();
+                watcher.destroy();
                 xnew(unit, Choices, { items });
               }
             });
@@ -247,7 +247,7 @@
             const old = current;
             current = xnew(unit, BG, BGS[next]);
             if (old !== null) {
-              xnew.timeout(() => old.finalize(), 600); // remove once the new layer covers it
+              xnew.timeout(() => old.destroy(), 600); // remove once the new layer covers it
             }
           }
         },
@@ -281,7 +281,7 @@
           const slot = slots[pos];
           if (slot !== undefined && chara !== undefined && slot.id !== id) {
             slot.id = id;
-            slot.content?.finalize();
+            slot.content?.destroy();
             slot.content = xnew(slot.el, () => {
               xnew('<div class="text-8xl drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">', chara.face);
               xnew('<div class="text-xs tracking-widest text-white/60">', chara.label);
@@ -294,7 +294,7 @@
           for (const slot of Object.values(slots)) {
             if (slot.id === id) {
               slot.id = null;
-              slot.content?.finalize();
+              slot.content?.destroy();
               slot.content = null;
               slot.el.current.style.opacity = '0';
             }
@@ -318,12 +318,12 @@
           if (append === true && current !== null) {
             current.append(parts);
           } else {
-            current?.finalize();
+            current?.destroy();
             current = xnew(unit, Script, { name, parts });
           }
         },
         clear() {
-          current?.finalize();
+          current?.destroy();
           current = null;
         },
         get completed() { return current === null || current.completed; },
@@ -355,7 +355,7 @@
         },
         append(parts) {
           done = done + stream.current + '\n';
-          stream.finalize();
+          stream.destroy();
           stream = xnew(Typewriter, { parts, speed: 40 });
         },
       };
@@ -414,7 +414,7 @@
         xnew.transition(({ value }) => button.current.style.opacity = `${value}`, 300);
         button.on('click', () => {
           const scene = xnew.context(NovelScene);
-          unit.finalize();
+          unit.destroy();
           scene.select(to);
         });
       }

@@ -18,7 +18,7 @@ describe('basics Image', () => {
         URL.revokeObjectURL = revokeObjectURL;
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
         jest.useRealTimers();
         URL.createObjectURL = originalCreate;
         URL.revokeObjectURL = originalRevoke;
@@ -70,16 +70,16 @@ describe('basics Image', () => {
         expect(createObjectURL).not.toHaveBeenCalled();
     });
 
-    it('revokes the object URL on finalize', () => {
+    it('revokes the object URL on destroy', () => {
         const unit = xnew(Image, { src: new Blob(['x']) });
-        unit.finalize();
+        unit.destroy();
 
         expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock');
     });
 
     it('does not revoke when the src was a plain string', () => {
         const unit = xnew(Image, { src: './a.png' });
-        unit.finalize();
+        unit.destroy();
 
         expect(revokeObjectURL).not.toHaveBeenCalled();
     });

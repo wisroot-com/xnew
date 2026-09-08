@@ -1,14 +1,14 @@
 //----------------------------------------------------------------------------------------------------
 // xpixi — PixiJS 8 integration: ties the Pixi scene graph to the xnew unit tree
 // nest() makes a group Container and moves the current parent into it (stateful); add(obj) attaches
-// a leaf without moving. Objects are removed/destroyed on finalize (textures kept — may be shared).
+// a leaf without moving. Objects are removed and destroyed with their unit (textures kept — may be shared).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '@mulsense/xnew';
 import * as PIXI from 'pixi.js'
 
 export const xpixi = {
-    initialize(
+    init(
         { canvas }:
         { canvas: HTMLCanvasElement }
     ) {
@@ -65,16 +65,16 @@ export const xpixi = {
 
 function Root(unit: xnew.Unit, { canvas }: { canvas: HTMLCanvasElement }) {
     let renderer: PIXI.Renderer | null = null;
-    let finalized = false;
+    let destroyed = false;
 
-    // watch the raw promise (the scope-guarded xnew.promise chain is skipped after finalize) so a renderer landing post-finalize is destroyed
+    // watch the raw promise (the scope-guarded xnew.promise chain is skipped once the unit is destroyed) so a renderer landing after that is destroyed too
     const source = PIXI.autoDetectRenderer({
         width: canvas.width, height: canvas.height, view: canvas,
         antialias: true, backgroundAlpha: 0,
     });
     xnew.promise(source);
     source.then((value: any) => {
-        if (finalized === true) {
+        if (destroyed === true) {
             value.destroy();
         } else {
             renderer = value;
@@ -83,8 +83,8 @@ function Root(unit: xnew.Unit, { canvas }: { canvas: HTMLCanvasElement }) {
 
     const scene = new PIXI.Container();
 
-    unit.on('finalize', () => {
-        finalized = true;
+    unit.on('destroy', () => {
+        destroyed = true;
         renderer?.destroy();
         renderer = null;
     });
@@ -106,13 +106,13 @@ function removeObject(object: any): void {
     object.destroy({ children: true });
 }
 
-// shared by nest / add: attach to the current Pixi parent (root scene or nearest enclosing nest), remove and destroy on finalize
+// shared by nest / add: attach to the current Pixi parent (root scene or nearest enclosing nest), removed and destroyed with the unit
 function attach(unit: xnew.Unit, object: any): void {
     const root = xnew.context(Root);
     const parent = xnew.context(Nest)?.pixiObject ?? root.scene;
 
     parent.addChild(object);
-    unit.on('finalize', () => removeObject(object));
+    unit.on('destroy', () => removeObject(object));
 }
 
 // exposes pixiObject so descendant units (and later nests) resolve this object as their parent

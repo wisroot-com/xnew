@@ -54,7 +54,7 @@ export function Game(unit) {
 
     // server: matter エンジンと皿、共有状態 Status を用意する（描画はしない）。
     xsync.server(() => {
-        xmatter.initialize();   // この unit 配下に matter Root（以降の子は context で engine/world を引ける）
+        xmatter.init();   // この unit 配下に matter Root（以降の子は context で engine/world を引ける）
         unit.on('update', () => Matter.Engine.update(xmatter.engine));
 
         // 皿（受け）の静的ボディ。見た目は client が同じジオメトリで描く。
@@ -71,11 +71,11 @@ export function Game(unit) {
     xsync.client(() => {
         xnew.extend(xbasics.Screen, { width: WIDTH, height: HEIGHT });
 
-        xthree.initialize({ canvas: new OffscreenCanvas(WIDTH, HEIGHT) });
+        xthree.init({ canvas: new OffscreenCanvas(WIDTH, HEIGHT) });
         xthree.renderer.shadowMap.enabled = true;
         xthree.camera.position.set(0, 0, 10);
 
-        xpixi.initialize({ canvas: unit.canvas });
+        xpixi.init({ canvas: unit.canvas });
 
         xnew.promise(unit).then(() => {
             unit.on('update', () => xthree.renderer.render(xthree.scene, xthree.camera));
@@ -222,7 +222,7 @@ function Ball(unit, { x = 0, y = 0, id = 0 } = {}) {
         const radius = ballRadius(state.id);
         const body = Matter.Bodies.circle(state.x, state.y, radius, { restitution: 0.1, friction: 0.5 });
         Matter.Composite.add(xmatter.world, body);
-        unit.on('finalize', () => Matter.Composite.remove(xmatter.world, body));
+        unit.on('destroy', () => Matter.Composite.remove(xmatter.world, body));
 
         unit.on('update', () => {
             state.x = body.position.x;
@@ -232,7 +232,7 @@ function Ball(unit, { x = 0, y = 0, id = 0 } = {}) {
             // あふれ: 画面下へ抜けたら現在手番から減点して撤去。
             if (body.position.y > HEIGHT + radius) {
                 xnew.context(Status)?.addScore(-points(state.id));
-                unit.finalize();
+                unit.destroy();
                 return;
             }
 
@@ -244,8 +244,8 @@ function Ball(unit, { x = 0, y = 0, id = 0 } = {}) {
                     if (dist < radius + ballRadius(other.id)) {
                         xnew(unit.parent, Ball, { x: (state.x + other.x) / 2, y: (state.y + other.y) / 2, id: state.id + 1 });
                         xnew.context(Status)?.addScore(points(state.id + 1));
-                        other.finalize();
-                        unit.finalize();
+                        other.destroy();
+                        unit.destroy();
                         return;
                     }
                 }
@@ -300,11 +300,11 @@ function Cursor(unit, { player, color }) {
         if (aiming && dropId !== undefined) {
             if (currentId !== dropId) {   // 構え玉が変わったら作り直す
                 currentId = dropId;
-                model?.finalize();
+                model?.destroy();
                 model = xnew(Model, { id: dropId, scale: 0.5 });
             }
         } else if (model !== null) {
-            model.finalize();
+            model.destroy();
             model = null;
             currentId = -1;
         }
@@ -384,7 +384,7 @@ function QueuePreview(unit, { player }) {
         key = nextKey;
         anim?.clear();
         anim = null;
-        model?.finalize();
+        model?.destroy();
         model = null;
         if (!playing) { return; }
 

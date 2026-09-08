@@ -20,7 +20,7 @@ function Mover(unit: Unit) {
 describe('server/client mirror (server/client blocks)', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     it('mirrors server state into the client subtree and renders it', () => {
         const server = bootServer({ io: hub.io }, function Server() { xsync.register({ Mover }); xnew(Mover); });
@@ -80,7 +80,7 @@ describe('server/client mirror (server/client blocks)', () => {
             xsync.server(() => {
                 unit.on('update', () => {
                     if (!spawned) { child = xnew(Mover) as unknown as Unit; spawned = true; }
-                    else if (child) { child.finalize(); child = null; }
+                    else if (child) { child.destroy(); child = null; }
                 });
             });
         }

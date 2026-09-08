@@ -15,7 +15,7 @@ describe('room isolation (a booted root is a protect boundary)', () => {
     let pings: string[];
 
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); pings = []; });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     function Player(unit: Unit) {}
 

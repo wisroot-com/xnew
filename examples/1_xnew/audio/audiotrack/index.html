@@ -25,7 +25,7 @@
       // xaudio.load fetches + decodes the file and is load-aware: calling play() before the buffer
       // finishes loading just defers playback. play() resumes from the last pause position
       // (or 0 on first call); play({ offset: 0 }) restarts from the beginning. The track is released
-      // when this unit finalizes.
+      // when this unit destroys.
       const music = xaudio.load({ url: '../../../assets/b096.mp3' });
       xnew(Button, { name: 'play' }).on('click', () => {
         music.play({ fade: 1000 });

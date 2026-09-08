@@ -11,7 +11,7 @@ function Main(unit) {
   const canvas = xnew(`<canvas width="${width}" height="${height}" class="size-full align-bottom">`);
 
   // pixi setup
-  xpixi.initialize({ canvas: unit.canvas });
+  xpixi.init({ canvas: unit.canvas });
 
   xnew.promise(unit).then(() => {
     unit.on('update', () => {
@@ -31,7 +31,7 @@ function Contents(unit) {
 }
 
 function SubScreen(unit, { width, height, color }) {
-  xpixi.initialize({ canvas: new OffscreenCanvas(width, height) });
+  xpixi.init({ canvas: new OffscreenCanvas(width, height) });
   const texture = PIXI.Texture.from(xpixi.canvas);
 
   xnew.promise(unit).then(() => {

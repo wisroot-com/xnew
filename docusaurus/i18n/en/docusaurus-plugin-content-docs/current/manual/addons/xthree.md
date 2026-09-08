@@ -38,7 +38,7 @@ import { xthree } from '@mulsense/xnew/addons/xthree'
 
 ## Core API
 
-### `xthree.initialize({ canvas, camera? })`
+### `xthree.init({ canvas, camera? })`
 
 Call once in the root component to create the WebGL renderer. After this you have access to:
 - `xthree.renderer` — the `THREE.WebGLRenderer`
@@ -49,7 +49,7 @@ Call once in the root component to create the WebGL renderer. After this you hav
 ```js
 function Main(unit) {
   const canvas = xnew('<canvas width="800" height="600">');
-  xthree.initialize({
+  xthree.init({
     canvas: canvas.current,
     camera: new THREE.PerspectiveCamera(60, 800 / 600, 0.1, 1000),
   });

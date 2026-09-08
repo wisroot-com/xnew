@@ -7,7 +7,7 @@ describe('UnitPromise', () => {
         Unit.reset();
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
         jest.useRealTimers();
     });
 
@@ -67,13 +67,13 @@ describe('UnitPromise', () => {
         expect(onFinally).toHaveBeenCalledTimes(1);
     });
 
-    it('does not run the callback if the unit was finalized before the promise settles', async () => {
+    it('does not run the callback if the unit was destroyed before the promise settles', async () => {
         const resolved = jest.fn();
         const unit = xnew(() => {
             xnew.promise(Promise.resolve(7)).then(() => resolved());
         });
 
-        unit.finalize();
+        unit.destroy();
 
         await jest.advanceTimersByTimeAsync(0);
 

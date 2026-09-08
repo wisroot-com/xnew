@@ -3,7 +3,7 @@ import { xnew } from '../../../src/core/xnew';
 
 describe('Unit element hosting', () => {
     beforeEach(() => { Unit.reset(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); });
 
     describe('default host element', () => {
         it('defaults the element to document.body for a root-level unit', () => {
@@ -209,21 +209,21 @@ describe('Unit element hosting', () => {
         });
     });
 
-    describe('finalize cleanup', () => {
-        it('removes owned nested elements on finalize', () => {
+    describe('destroy cleanup', () => {
+        it('removes owned nested elements on destroy', () => {
             const unit = xnew(() => { xnew.nest('<div id="owned">'); });
             expect(document.getElementById('owned')).not.toBeNull();
-            unit.finalize();
+            unit.destroy();
             expect(document.getElementById('owned')).toBeNull();
         });
 
-        it('keeps an externally provided base element on finalize', () => {
+        it('keeps an externally provided base element on destroy', () => {
             const ext = document.createElement('div');
             ext.id = 'external';
             document.body.appendChild(ext);
             const unit = xnew(ext, () => { xnew.nest('<div id="inner">'); });
             expect(document.getElementById('inner')).not.toBeNull();
-            unit.finalize();
+            unit.destroy();
             expect(document.getElementById('inner')).toBeNull();
             expect(document.getElementById('external')).toBe(ext);
             ext.remove();

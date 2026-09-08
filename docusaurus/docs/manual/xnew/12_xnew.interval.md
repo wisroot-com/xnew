@@ -54,17 +54,17 @@ xnew('<div>', (unit) => {
 
 ## 自動クリーンアップ
 
-unit が finalize されると、その unit に紐づくすべての interval が自動でキャンセルされます。
+unit が destroy されると、その unit に紐づくすべての interval が自動でキャンセルされます。
 
 ```js
 const unit = xnew((unit) => {
   xnew.interval(() => {
-    console.log('This will stop when unit is finalized');
+    console.log('This will stop when unit is destroyed');
   }, 1000);
 });
 
-// Finalize after 5 seconds - interval automatically stops
+// Destroy after 5 seconds - interval automatically stops
 xnew.timeout(() => {
-  unit.finalize();
+  unit.destroy();
 }, 5000);
 ```

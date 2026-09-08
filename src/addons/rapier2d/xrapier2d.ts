@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // xrapier2d — Rapier 2D (compat build) integration
-// `initialize` awaits RAPIER.init() (the compat build loads its WASM lazily) then creates a World;
+// `xrapier2d.init()` awaits RAPIER.init() (the compat build loads its WASM lazily) then creates a World;
 // children read it via xnew.context(Root), and the getter returns null until init completes.
 //----------------------------------------------------------------------------------------------------
 
@@ -8,7 +8,7 @@ import { xnew } from '@mulsense/xnew';
 import RAPIER from '@dimforge/rapier2d-compat';
 
 export const xrapier2d = {
-    initialize ({ gravity = { x: 0.0, y: -9.81 } }: any = {}) {
+    init ({ gravity = { x: 0.0, y: -9.81 } }: any = {}) {
         return xnew.promise(xnew(Root, { gravity }));
     },
     get world() {
@@ -23,8 +23,8 @@ function Root(unit: xnew.Unit, { gravity }: any) {
         world = new RAPIER.World(gravity);
     });
 
-    // free the WASM-backed world on tree teardown (the init callback is scope-skipped after finalize, so no world is created if it finalizes first)
-    unit.on('finalize', () => {
+    // free the WASM-backed world on tree teardown (the init callback is scope-skipped after destroy, so no world is created if the unit is destroyed first)
+    unit.on('destroy', () => {
         world?.free();
         world = null;
     });

@@ -12,7 +12,7 @@ declare class UnitPromise {
 }
 
 declare const xpixi: {
-    initialize({ canvas }: {
+    init({ canvas }: {
         canvas: HTMLCanvasElement;
     }): UnitPromise;
     nest(options?: {

@@ -10,7 +10,7 @@ import { ioMock, bootServer, asServer } from './io-mock';
 describe('xsync.visibility (per-client projection)', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     // the last 'sync' tree captured for a given client id (io.to(clientId).emit).
     const syncFor = (clientId: string): any[] => hub.lastSyncFor(clientId) ?? [];

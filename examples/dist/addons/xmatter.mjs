@@ -2,7 +2,7 @@ import { xnew } from '@mulsense/xnew';
 import Matter from 'matter-js';
 
 const xmatter = {
-    initialize({} = {}) {
+    init({} = {}) {
         return xnew.promise(xnew(Root, {}));
     },
     get engine() {
@@ -16,7 +16,7 @@ const xmatter = {
 };
 function Root(unit, {}) {
     const engine = Matter.Engine.create();
-    unit.on('finalize', () => {
+    unit.on('destroy', () => {
         Matter.World.clear(engine.world, false);
         Matter.Engine.clear(engine);
     });

@@ -126,7 +126,7 @@ export function applyCss(unit: Unit, layer: string | undefined, defs: Record<str
 
         const held = entry;
         held.refs++;
-        unit.on('finalize', () => {
+        unit.on('destroy', () => {
             held.refs--;
             if (held.refs === 0) {
                 held.style.remove();

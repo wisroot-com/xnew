@@ -14,7 +14,7 @@ import { Game } from './game.js';
 
 // App — #app を要素に持つコンテナ。ステータス表示(setStatus)を公開し、最初のシーンを mount する。
 //   各シーン（Lobby/Game）はこの App の子として相互にスワップする（Scene.change が unit.parent の下へ
-//   次シーンを mount → finalize するため、共通の親が要る。シーンを直接 #app に張ると親が engineRoot に
+//   次シーンを mount → destroy するため、共通の親が要る。シーンを直接 #app に張ると親が engineRoot に
 //   なり #app の外へ出てしまう）。シーンからは xnew.context(App).setStatus(...) で表示を更新する。
 function App() {
     const statusEl = document.getElementById('status');
@@ -46,7 +46,7 @@ function Lobby(unit, { io }) {
     for (const event of ['connect', 'disconnect', 'statusupdate', 'roomcreated', 'roomrejected']) {
         socket.on(event, xnew.scope((payload) => xnew.emit('-' + event, payload ?? {})));
     }
-    unit.on('finalize', () => socket.disconnect());
+    unit.on('destroy', () => socket.disconnect());
     const createRoom = (name) => socket.emit('roomcreate', { name });
 
     let rooms = [];
@@ -77,10 +77,10 @@ function Lobby(unit, { io }) {
     const listEl = xnew('<ul class="flex flex-col gap-2">');
     const hintEl = xnew('<p class="m-0 text-xs text-gray-400">', 'ルームを作成 / 入室して、別タブでも同じルームに入ると互いの自機が見えます。');
 
-    // 一覧は受信のたびに作り直す（前回ぶんの行 unit を finalize → 再生成。innerHTML クリア不要）。
+    // 一覧は受信のたびに作り直す（前回ぶんの行 unit を destroy → 再生成。innerHTML クリア不要）。
     let rowsUnit = null;
     function render() {
-        rowsUnit?.finalize();
+        rowsUnit?.destroy();
         rowsUnit = xnew(listEl, () => {
             if (rooms.length === 0) {
                 xnew('<li class="text-sm text-gray-400 py-2">', 'まだルームがありません。上から作成してください。');
@@ -123,7 +123,7 @@ function Room(unit, { io, client, room }) {
     back.on('click', () => unit.change(Lobby, { io: window.io }));
     xnew.nest('<div class="flex gap-4">');   // シーンの mount 先（Game の client が Title/Setup/World を nest する）
 
-    // xsync.boot が socket を io から生成・所有し（query に roomId/clientName を載せる）、finalize で切断する。
+    // xsync.boot が socket を io から生成・所有し（query に roomId/clientName を載せる）、destroy で切断する。
     // sync.connect/sync.disconnect/sync.notfound は root 配下へ届くので、root コンポーネントの中に listener を置く。
     // シーン遷移（change）は呼び出し側の責務なので Scene をここで extend する。
     xnew.extend(xbasics.Scene);

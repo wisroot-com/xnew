@@ -60,7 +60,7 @@ xnew('<button>', (unit) => {
 
 ## 自動クリーンアップ
 
-unit が finalize されると、その unit に紐づくすべての timeout が自動でキャンセルされます。
+unit が destroy されると、その unit に紐づくすべての timeout が自動でキャンセルされます。
 
 ```js
 const unit = xnew((unit) => {
@@ -68,9 +68,9 @@ const unit = xnew((unit) => {
     console.log('This will never execute');
   }, 5000);
 
-  // Finalize after 1 second
+  // Destroy after 1 second
   xnew.timeout(() => {
-    unit.finalize(); // Automatically clears the 5-second timeout
+    unit.destroy(); // Automatically clears the 5-second timeout
   }, 1000);
 });
 ```

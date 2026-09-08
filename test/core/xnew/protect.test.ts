@@ -33,7 +33,7 @@ describe('xnew.protect', () => {
         Unit.reset();
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
     });
 
     it('is idempotent when called multiple times', () => {

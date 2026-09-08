@@ -11,7 +11,7 @@ function Enemy(unit: Unit, props: any = {}) {
     const state = xsync.state({ x: props.x ?? 0 });
     xsync.server(() => {
         unit.on('update', () => { state.x += 1; });          // 所定方向へ移動
-        xnew.timeout(() => unit.finalize(), 1000);           // 一定時間で消滅
+        xnew.timeout(() => unit.destroy(), 1000);           // 一定時間で消滅
     });
     xsync.client(() => {
         const el = xnew.nest('<div>');
@@ -37,7 +37,7 @@ describe('2-level spawn hierarchy (Mover -> Enemy)', () => {
         Unit.reset();
         hub = ioMock();
     });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     it('captures Enemy as a child of Mover and mirrors the 2-level tree on the replica', async () => {
         const server = bootServer({ io: hub.io }, function Root() { xsync.register({ Mover }); xnew(Mover); });
@@ -73,10 +73,10 @@ describe('2-level spawn hierarchy (Mover -> Enemy)', () => {
         const firstEnemy = replicaMover._.children[0];
         const firstId = (firstEnemy)._.sync.id;
 
-        await asServerAsync(() => jest.advanceTimersByTimeAsync(1000));   // 最初の Enemy の寿命経過 → server 側 finalize
+        await asServerAsync(() => jest.advanceTimersByTimeAsync(1000));   // 最初の Enemy の寿命経過 → server 側 destroy
         asServer(() => Unit.update(server));                   // capture + 'sync' → client apply
         // 最初の Enemy は replica からも消える（interval で別の Enemy は spawn され続ける）
-        expect(firstEnemy._.phase).toBe('finalized');
+        expect(firstEnemy._.phase).toBe('destroyed');
         expect(replicaMover._.children.some(c => (c)._.sync.id === firstId)).toBe(false);
     });
 });

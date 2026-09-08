@@ -19,12 +19,12 @@ function Embed<P>({ Component, props, className, style }: EmbedProps<P>): ReactE
     const propsRef = useRef(props);
     propsRef.current = props;
 
-    // mount once / finalize on unmount (remount if Component changes)
+    // mount once / destroy on unmount (remount if Component changes)
     useEffect(() => {
         const unit = xnew(hostRef.current!, Component as any, propsRef.current as any);
         unitRef.current = unit;
         return () => {
-            unit.finalize();
+            unit.destroy();
             unitRef.current = null;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps

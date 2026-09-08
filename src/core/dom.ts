@@ -116,11 +116,11 @@ export class EventBinder {
         const factory = factories.get(type);
         const keyboard = type.match(/^(window|document)\.(keydown|keyup)(?:\.([A-Za-z0-9]+))?$/);
 
-        let finalize: Function;
+        let cleanup: Function;
         if (factory !== undefined) {
-            finalize = factory(props);
+            cleanup = factory(props);
         } else if (keyboard !== null) {
-            finalize = keyboardEvent(keyboard, props);
+            cleanup = keyboardEvent(keyboard, props);
         } else {
             let target: Window | Document | DomElement = element;
             let name = type;
@@ -131,15 +131,15 @@ export class EventBinder {
                 target = document;
                 name = type.substring('document.'.length);
             }
-            finalize = attach(target, name, (event: Event) => listener({ event }), options);
+            cleanup = attach(target, name, (event: Event) => listener({ event }), options);
         }
-        this.map.set(type, listener, finalize);
+        this.map.set(type, listener, cleanup);
     }
 
     public remove(type: string, listener: Function): void {
-        const finalize = this.map.get(type, listener);
-        if (finalize) {
-            finalize();
+        const cleanup = this.map.get(type, listener);
+        if (cleanup) {
+            cleanup();
             this.map.delete(type, listener);
         }
     }
@@ -195,11 +195,11 @@ defineEvent(['resize'], (props: EventProps) => {
 });
 
 defineEvent(['dragstart', 'dragmove', 'dragend'], (props: EventProps) => {
-    let finalizers: Function[] = [];
-    const remove = () => { finalizers.forEach((finalize) => finalize()); finalizers = []; };
+    let cleanups: Function[] = [];
+    const remove = () => { cleanups.forEach((cleanup) => cleanup()); cleanups = []; };
 
     const pointerdown = attach(props.element, 'pointerdown', (event: any) => {
-        if (finalizers.length === 0) { // ignore other pointers while a drag is active
+        if (cleanups.length === 0) { // ignore other pointers while a drag is active
             const id = event.pointerId;
             let previous = getPointerPosition(props.element, event);
 
@@ -217,7 +217,7 @@ defineEvent(['dragstart', 'dragmove', 'dragend'], (props: EventProps) => {
                 }
             };
 
-            finalizers = [
+            cleanups = [
                 attach(window, 'pointermove', track('dragmove'), props.options),
                 attach(window, 'pointerup', track('dragend'), props.options),
                 attach(window, 'pointercancel', track('dragend'), props.options),
@@ -255,8 +255,8 @@ defineEvent(['window.keydown.arrow', 'window.keyup.arrow', 'window.keydown.wasd'
         }
     }, props.options);
 
-    const finalizers = [bind('keydown'), bind('keyup')];
-    return () => finalizers.forEach((finalize) => finalize());
+    const cleanups = [bind('keydown'), bind('keyup')];
+    return () => cleanups.forEach((cleanup) => cleanup());
 });
 
 //----------------------------------------------------------------------------------------------------

@@ -11,7 +11,7 @@ function Main(unit) {
   xnew.extend(xbasics.Screen, { width, height });
 
   // three setup
-  xthree.initialize({ canvas: unit.canvas });
+  xthree.init({ canvas: unit.canvas });
   xthree.renderer.shadowMap.enabled = true;
   xthree.camera.position.set(1, 2, 3);
 
@@ -142,10 +142,10 @@ function Model(unit, { url }) {
         next.time = 0;
         current.crossFadeTo(next, duration, true);
       } else {
-        mixer.addEventListener('loop', finalize);
-        function finalize(event) {
+        mixer.addEventListener('loop', destroy);
+        function destroy(event) {
           if (event.action === current) {
-            mixer.removeEventListener('loop', finalize);
+            mixer.removeEventListener('loop', destroy);
             unit.activate(next, 1);
             next.time = 0;
             current.crossFadeTo(next, duration, true);

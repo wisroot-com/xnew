@@ -24,7 +24,7 @@ test('nest: 親ユニットの nest が子ユニットの nest の親になる�
     let group, mesh, scene;
 
     xnew(() => {
-        xthree.initialize({ canvas });
+        xthree.init({ canvas });
         scene = xthree.scene;
         xnew(() => {                  // 親ユニット
             group = xthree.nest();
@@ -43,7 +43,7 @@ test('nest: 同一ユニットで2回呼ぶと2回目は1回目の子になる�
     let a, b, scene;
 
     xnew(() => {
-        xthree.initialize({ canvas });
+        xthree.init({ canvas });
         scene = xthree.scene;
         a = xthree.nest();
         b = xthree.nest();
@@ -60,7 +60,7 @@ test('add: 現在の親に追加するが親を変えない（同一ユニット
     let scene;
 
     xnew(() => {
-        xthree.initialize({ canvas });
+        xthree.init({ canvas });
         scene = xthree.scene;
         xthree.add(a);
         xthree.add(b);
@@ -76,7 +76,7 @@ test('add: nest の中の add は nest の親に入り、後続の nest を汚�
     let group, nested;
 
     xnew(() => {
-        xthree.initialize({ canvas });
+        xthree.init({ canvas });
         xnew(() => {
             group = xthree.nest();
             xnew(() => { xthree.add(added); });   // group の子になる
@@ -93,7 +93,7 @@ test('nest: options で新しいグループの transform を設定できる（p
     let group;
 
     xnew(() => {
-        xthree.initialize({ canvas });
+        xthree.init({ canvas });
         group = xthree.nest({
             position: { x: 1, y: 2, z: 3 },
             scale: 2,
@@ -112,40 +112,40 @@ test('nest: options で新しいグループの transform を設定できる（p
     expect(group.rotation.z).toBe(0); // z 省略時は 0
 });
 
-test('finalize: ユニット破棄で親から外れる', () => {
+test('destroy: ユニット破棄で親から外れる', () => {
     const canvas = setup();
     const obj = new THREE.Object3D();
     let scene;
     let child;
 
     xnew(() => {
-        xthree.initialize({ canvas });
+        xthree.init({ canvas });
         scene = xthree.scene;
         child = xnew(() => { xthree.add(obj); });
     });
 
     expect(obj.parent).toBe(scene);
-    child.finalize();
+    child.destroy();
     expect(obj.parent).toBe(null);
 });
 
-test('finalize: ユニット破棄で renderer が dispose / forceContextLoss される（自動解放）', () => {
+test('destroy: ユニット破棄で renderer が dispose / forceContextLoss される（自動解放）', () => {
     const canvas = setup();
     let disposeSpy;
     let lossSpy;
 
     const root = xnew(() => {
-        xthree.initialize({ canvas });
+        xthree.init({ canvas });
         disposeSpy = jest.spyOn(xthree.renderer, 'dispose');
         lossSpy = jest.spyOn(xthree.renderer, 'forceContextLoss');
     });
-    root.finalize();
+    root.destroy();
 
     expect(disposeSpy).toHaveBeenCalled();
     expect(lossSpy).toHaveBeenCalled();
 });
 
-test('finalize: ユニット破棄では dispose しない（共有リソース保護）', () => {
+test('destroy: ユニット破棄では dispose しない（共有リソース保護）', () => {
     const canvas = setup();
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
 
@@ -154,10 +154,10 @@ test('finalize: ユニット破棄では dispose しない（共有リソース�
 
     let child;
     xnew(() => {
-        xthree.initialize({ canvas });
+        xthree.init({ canvas });
         child = xnew(() => { xthree.add(mesh); });
     });
-    child.finalize();
+    child.destroy();
 
     expect(mesh.parent).toBe(null);
     expect(geoSpy).not.toHaveBeenCalled();

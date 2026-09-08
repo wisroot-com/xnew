@@ -10,7 +10,7 @@ function Embed({ Component, props, className, style }) {
         const unit = xnew(hostRef.current, Component, propsRef.current);
         unitRef.current = unit;
         return () => {
-            unit.finalize();
+            unit.destroy();
             unitRef.current = null;
         };
     }, [Component]);

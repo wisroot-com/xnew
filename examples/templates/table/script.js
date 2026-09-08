@@ -26,7 +26,7 @@ function Main(unit, { size = SCREEN_SIZE } = {}) {
     xnew.extend(xbasics.Screen, { width: size, height: size, fit: 'cover' });
 
     const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
-    xthree.initialize({ canvas: unit.canvas, camera });
+    xthree.init({ canvas: unit.canvas, camera });
     xthree.renderer.shadowMap.enabled = true;
     xthree.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 

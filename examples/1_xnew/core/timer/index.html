@@ -28,10 +28,10 @@
       box.style.left = (Math.random() * 512 - 15) + 'px';
       box.style.top = (Math.random() * 256 - 15) + 'px';
 
-      // fade in -> fade out -> finalize
+      // fade in -> fade out -> destroy
       xnew.transition(({ value }) => box.style.opacity = value, 1000)
       .transition(({ value }) => box.style.opacity = 1.0 - value, 1000)
-      .timeout(() => unit.finalize());
+      .timeout(() => unit.destroy());
 
       let count = 0;
       unit.on('update', () => {

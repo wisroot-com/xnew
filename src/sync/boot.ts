@@ -140,7 +140,7 @@ export function bootClient(roomio: RoomIO): Unit {
             reconcileMap.set(node.id, unit);
         }
         for (const [id, unit] of reconcileMap) {   // deleting the visited entry mid-iteration is spec-safe for Map
-            if (!incoming.has(id)) { unit.finalize(); reconcileMap.delete(id); }
+            if (!incoming.has(id)) { unit.destroy(); reconcileMap.delete(id); }
         }
         roomio.dispatch('sync.update', undefined);   // after reconcile, so handlers read the applied state (fresh replicas included)
     });

@@ -98,7 +98,7 @@ xsync.boot({ io, client, room }, Game);
 | `room` | `{ id, name, count }` | 参加するルーム。`id` で socket.io の room を分けます |
 | `client` | `{ name }` | クライアント側のみ。表示名。ハンドシェイクの query に載ります |
 
-クライアント側の `boot` は **socket を自分で生成して所有します**。呼び出し側で socket を作る必要はありません（作ると二重接続になります）。`boot` が作った unit が finalize されると socket は自動的に切断されます。
+クライアント側の `boot` は **socket を自分で生成して所有します**。呼び出し側で socket を作る必要はありません（作ると二重接続になります）。`boot` が作った unit が destroy されると socket は自動的に切断されます。
 
 ```js
 // boot が内部で行っていること（クライアント）
@@ -220,8 +220,8 @@ export function Player(unit, { slot = '' } = {}) {
 | --- | --- |
 | 同期ノードが生成された | `register` の表からコンポーネントを引き、レプリカ unit を生成 |
 | state が変わった | 既存のレプリカの state を **その場で更新**（unit は作り直さない） |
-| 同期ノードが finalize された | 対応するレプリカを finalize |
-| ノードが不可視になった（後述の可視性） | 削除と同じ扱い（レプリカが finalize される） |
+| 同期ノードが destroy された | 対応するレプリカを destroy |
+| ノードが不可視になった（後述の可視性） | 削除と同じ扱い（レプリカが destroy される） |
 
 state の更新はオブジェクトを差し替えず、キー単位で書き換えます。そのため `xsync.state` で受け取った参照をクロージャに閉じ込めたままにできます。
 
@@ -386,7 +386,7 @@ xsync.visibility(null);        // 公開に戻す
 ```
 
 - 既定では同期ノードは **公開** です。`visibility` を宣言しないノードは全員に届きます。
-- 述語が `false` を返したクライアントには、そのノードが **存在しないものとして** 扱われます。届かないので、そのクライアントにはレプリカが作られません（すでにあれば finalize されます）。
+- 述語が `false` を返したクライアントには、そのノードが **存在しないものとして** 扱われます。届かないので、そのクライアントにはレプリカが作られません（すでにあれば destroy されます）。
 - **子孫もまとめて除外されます。** 親が隠れているのに子だけ送ると、親 ID の解決先が無くなってしまうためです。
 - 述語は **投影を作るたびに再評価されます**。フラグを閉じ込めておけば、それを立てるだけで動的に公開へ切り替わります（上の例の `revealed`）。
 
@@ -406,7 +406,7 @@ server ── captureStateTree('clientA') ──▶ clientA  … A の PlayerVie
 ```js
 xsync.server(() => {
   unit.on('sync.connect', ({ id }) => xnew(PlayerView, { key: id, ownerId: id }));
-  unit.on('sync.disconnect', ({ id }) => xnew.find(PlayerView, { key: id })[0]?.finalize());
+  unit.on('sync.disconnect', ({ id }) => xnew.find(PlayerView, { key: id })[0]?.destroy());
 });
 ```
 

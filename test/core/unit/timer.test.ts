@@ -7,7 +7,7 @@ describe('UnitTimer', () => {
         Unit.reset();
     });
     afterEach(() => {
-        Unit.engineRoot?.finalize();
+        Unit.engineRoot?.destroy();
         jest.useRealTimers();
     });
 
@@ -105,7 +105,7 @@ describe('UnitTimer', () => {
             expect(second).toHaveBeenCalledTimes(1);
         });
 
-        it('does not start a queued timeout under a finalizing parent', () => {
+        it('does not start a queued timeout under a destroying parent', () => {
             const second = jest.fn();
             let parent!: Unit;
             xnew((unit: Unit) => {
@@ -113,14 +113,14 @@ describe('UnitTimer', () => {
                 xnew.timeout(() => {}, 100).timeout(second, 100);
             });
 
-            parent.finalize();
+            parent.destroy();
 
             expect(parent._.children.length).toBe(0);
             jest.advanceTimersByTime(1000);
             expect(second).not.toHaveBeenCalled();
         });
 
-        it('does not leak a queued infinite interval when the parent is finalized', () => {
+        it('does not leak a queued infinite interval when the parent is destroyed', () => {
             const cb = jest.fn();
             let parent!: Unit;
             xnew((unit: Unit) => {
@@ -129,7 +129,7 @@ describe('UnitTimer', () => {
             });
             const running = jest.getTimerCount();
 
-            parent.finalize();
+            parent.destroy();
 
             // the running task's timers are cleared and no queued task is started
             expect(jest.getTimerCount()).toBeLessThan(running);

@@ -30,7 +30,7 @@ function Lobby(unit, { io }) {
     for (const event of ['connect', 'disconnect', 'statusupdate', 'roomcreated', 'roomrejected']) {
         socket.on(event, xnew.scope((payload) => xnew.emit('-' + event, payload ?? {})));
     }
-    unit.on('finalize', () => socket.disconnect());
+    unit.on('destroy', () => socket.disconnect());
     const createRoom = (name) => socket.emit('roomcreate', { name });
 
     let rooms = [];
@@ -52,7 +52,7 @@ function Lobby(unit, { io }) {
 
     let rowsUnit = null;
     function render() {
-        rowsUnit?.finalize();
+        rowsUnit?.destroy();
         rowsUnit = xnew(listEl, () => {
             if (rooms.length === 0) {
                 xnew('<li class="text-sm text-gray-400 py-2">', 'まだルームがありません。上から作成してください。');

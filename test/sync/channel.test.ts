@@ -13,7 +13,7 @@ import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 describe('event channel (socket.io transport)', () => {
     let hub: ReturnType<typeof ioMock>;
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); hub = ioMock(); });
-    afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
+    afterEach(() => { Unit.engineRoot?.destroy(); jest.useRealTimers(); });
 
     it('boot({ socket, room }): wires the transport and auto-generates clientId', () => {
         const received: Array<[string, any]> = [];
@@ -83,7 +83,7 @@ describe('event channel (socket.io transport)', () => {
                         if (!players.has(clientId)) { players.set(clientId, xnew(Player, { clientId }) as unknown as Unit); }
                     }
                     for (const [clientId, player] of [...players.entries()]) {
-                        if (!connected.has(clientId)) { player.finalize(); players.delete(clientId); }
+                        if (!connected.has(clientId)) { player.destroy(); players.delete(clientId); }
                     }
                 });
             });
@@ -212,7 +212,7 @@ describe('event channel (socket.io transport)', () => {
             id: 'c1',
             emit: () => {},
             on: (event: string, h: Function) => { if (!handlers.has(event)) { handlers.set(event, new Set()); } handlers.get(event)!.add(h); },
-            off: (event: string, h: Function) => { handlers.get(event)?.delete(h); },   // boot detaches on root finalize
+            off: (event: string, h: Function) => { handlers.get(event)?.delete(h); },   // boot detaches on root destroy
             disconnect: () => {},
         };
         const fire = (event: string, payload?: any) => handlers.get(event)?.forEach((h) => (h as Function)(payload));
