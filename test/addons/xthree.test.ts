@@ -166,8 +166,8 @@ test('destroy: ユニット破棄では dispose しない（共有リソース�
 
 // glsl テンプレートのトークン（XTEX_ / //#include <...>）が解決されずに残るとコンパイルが落ちる。
 // ヘッダーコメント内にトークンを書いて誤置換した実績があるので固定する。
-test('material.shader: glsl テンプレートのトークンが解決される', () => {
-    const material = xthree.material.shader(xtextures.wood, { scale: 5 });
+test("material('shader'): glsl テンプレートのトークンが解決される", () => {
+    const material = xthree.material(xtextures.wood, { type: 'shader', params: { scale: 5 } });
 
     expect(material.fragmentShader).not.toContain('XTEX_');
     expect(material.fragmentShader).not.toContain('#include <');
@@ -180,8 +180,8 @@ test('material.shader: glsl テンプレートのトークンが解決される'
 });
 
 // 接線フレームは両経路で同一でなければならない（frame.glsl に一本化した不変条件）。
-test('material.standard({ inject: true }): frame / texture glsl が standard シェーダーに注入される', () => {
-    const material = xthree.material.standard(xtextures.wood, { inject: true, params: { scale: 5 } });
+test("material('inject'): frame / texture glsl が standard シェーダーに注入される", () => {
+    const material = xthree.material(xtextures.wood, { type: 'inject', params: { scale: 5 } });
     const shader = {
         vertexShader: '#include <common>\n#include <begin_vertex>\n',
         fragmentShader: '#include <common>\n#include <map_fragment>\n#include <normal_fragment_maps>\n',

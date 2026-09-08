@@ -1,7 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // material — build a three material from an xtextures texture object, in the three ways compared in
-// docs/xtextures-three-materials.md. The GLSL lives in ./glsl/*.glsl; resolveGlsl() splices the
-// texture's own source and entry name in, so every texture-specific name goes through one place.
+// docs/xtextures-three-materials.md. One entry point: material(texture, options), where options.type
+// picks the path ('bake' when omitted, the right answer for most of a scene) and the rest of options
+// configures it. The GLSL lives in ./glsl/*.glsl; resolveGlsl() splices the texture's own source and
+// entry name in, so every texture-specific name goes through one place.
 //----------------------------------------------------------------------------------------------------
 
 import * as THREE from 'three';
@@ -11,11 +13,23 @@ import shaderVertexGlsl from './glsl/shader-vertex.glsl';
 import shaderFragmentGlsl from './glsl/shader-fragment.glsl';
 
 //----------------------------------------------------------------------------------------------------
-// options
+// options — one interface per type, discriminated by type; params (texture parameters) is the only
+// key all three share
 //----------------------------------------------------------------------------------------------------
 
-// the bake path's own options: the first four reach texture.bake(), repeat wraps the maps it produces
-export interface StandardBakeOptions {
+export type MaterialType = 'shader' | 'bake' | 'inject';
+
+// 'shader': a self-contained ShaderMaterial with a material-local fixed light — scene lights /
+// shadows do NOT apply, so nothing but the texture parameters is configurable
+export interface ShaderMaterialOptions {
+    type: 'shader';
+    params?: TexturePreset;
+}
+
+// 'bake' (the default): the four bake keys reach texture.bake(), repeat wraps the maps it produces;
+// every other key is handed to MeshStandardMaterial verbatim
+export interface BakeMaterialOptions extends THREE.MeshStandardMaterialParameters {
+    type?: 'bake';
     params?: TexturePreset;
     size?: { width: number, height: number };
     worldSize?: number;
@@ -23,14 +37,39 @@ export interface StandardBakeOptions {
     repeat?: { x: number, y: number };
 }
 
-// every key not listed here (or in StandardBakeOptions) is handed to MeshStandardMaterial verbatim
-export interface StandardOptions extends THREE.MeshStandardMaterialParameters, StandardBakeOptions {
-    // true: skip baking and patch the texture glsl into three's standard shader instead
-    inject?: boolean;
+// 'inject': no bake keys — the glsl is evaluated per-fragment; every other key goes to MeshStandardMaterial
+export interface InjectMaterialOptions extends THREE.MeshStandardMaterialParameters {
+    type: 'inject';
+    params?: TexturePreset;
 }
 
-// only the inject path carries uniforms — the bake path has the parameters burned into its maps
-export type StandardMaterial = THREE.MeshStandardMaterial & { uniforms?: Record<string, THREE.IUniform> };
+export type MaterialOptions = ShaderMaterialOptions | BakeMaterialOptions | InjectMaterialOptions;
+
+// the inject path carries uniforms like a ShaderMaterial does — the bake path has them burned into its maps
+export type InjectMaterial = THREE.MeshStandardMaterial & { uniforms: Record<string, THREE.IUniform> };
+
+//----------------------------------------------------------------------------------------------------
+// material — the public surface; options.type picks one of the three paths below ('bake' by default)
+//----------------------------------------------------------------------------------------------------
+
+export function material(texture: Texture, options: ShaderMaterialOptions): THREE.ShaderMaterial;
+export function material(texture: Texture, options: InjectMaterialOptions): InjectMaterial;
+export function material(texture: Texture, options?: BakeMaterialOptions): THREE.MeshStandardMaterial;
+export function material(texture: Texture, options: MaterialOptions = {}): THREE.Material {
+    const type = options.type ?? 'bake';
+    if (type === 'shader') {
+        const { params = {} } = options as ShaderMaterialOptions;
+        return shaderMaterial(texture, params);
+    } else if (type === 'bake') {
+        const { type: _, params = {}, size, worldSize, tile, repeat, ...materialParams } = options as BakeMaterialOptions;
+        return bakeMaterial(texture, { params, size, worldSize, tile, repeat }, materialParams);
+    } else if (type === 'inject') {
+        const { type: _, params = {}, ...materialParams } = options as InjectMaterialOptions;
+        return injectMaterial(texture, params, materialParams);
+    } else {
+        throw new Error(`xthree.material: unknown type "${type}" (expected 'shader' | 'bake' | 'inject')`);
+    }
+}
 
 //----------------------------------------------------------------------------------------------------
 // glsl / uniform resolution — the one place a texture-specific name enters a shader
@@ -55,13 +94,11 @@ function resolveUniforms(texture: Texture, params: TexturePreset): Record<string
 }
 
 //----------------------------------------------------------------------------------------------------
-// material — the public surface; standard() picks between the bake and inject paths below
+// shader path — the texture's GLSL shades the mesh in object space with a material-local fixed light,
+// so scene lights / shadows do NOT apply
 //----------------------------------------------------------------------------------------------------
 
-export const material = { shader, standard };
-
-// the texture's GLSL shades the mesh in object space with a material-local fixed light — scene lights / shadows do NOT apply
-export function shader(texture: Texture, params: TexturePreset = {}): THREE.ShaderMaterial {
+function shaderMaterial(texture: Texture, params: TexturePreset): THREE.ShaderMaterial {
     return new THREE.ShaderMaterial({
         uniforms: resolveUniforms(texture, params),
         vertexShader: shaderVertexGlsl,
@@ -69,21 +106,14 @@ export function shader(texture: Texture, params: TexturePreset = {}): THREE.Shad
     });
 }
 
-export function standard(texture: Texture, options: StandardOptions = {}): StandardMaterial {
-    const { params = {}, size, worldSize, tile, repeat, inject, ...materialParams } = options;
-    if (inject === true) {
-        return injectStandard(texture, params, materialParams);
-    } else {
-        return bakeStandard(texture, { params, size, worldSize, tile, repeat }, materialParams);
-    }
-}
-
 //----------------------------------------------------------------------------------------------------
 // bake path — color / normal become real maps, so scene lights / shadows / env maps / mipmaps all apply
 //----------------------------------------------------------------------------------------------------
 
-function bakeStandard(texture: Texture, bakeOptions: StandardBakeOptions, materialParams: THREE.MeshStandardMaterialParameters): StandardMaterial {
-    const { params, size, worldSize, tile, repeat } = bakeOptions;
+type BakeParams = Pick<BakeMaterialOptions, 'params' | 'size' | 'worldSize' | 'tile' | 'repeat'>;
+
+function bakeMaterial(texture: Texture, bakeParams: BakeParams, materialParams: THREE.MeshStandardMaterialParameters): THREE.MeshStandardMaterial {
+    const { params, size, worldSize, tile, repeat } = bakeParams;
 
     function bake(channel: 'color' | 'normal'): THREE.CanvasTexture {
         const map = new THREE.CanvasTexture(texture.bake({ params, size, worldSize, tile, channel }));
@@ -138,10 +168,10 @@ normal = normalize(normalMatrix * XTEX_Normal(vXtexPos, xtexN, xtexTangent(xtexN
 // albedo / normal are computed per-fragment in object space (solid look, no UV, no bake) while the full
 // PBR pipeline still applies. Depends on three's internal chunk names — the one three-version-sensitive
 // spot in this addon.
-function injectStandard(texture: Texture, params: TexturePreset, materialParams: THREE.MeshStandardMaterialParameters): StandardMaterial {
+function injectMaterial(texture: Texture, params: TexturePreset, materialParams: THREE.MeshStandardMaterialParameters): InjectMaterial {
     const uniforms = resolveUniforms(texture, params);
 
-    const standardMaterial: StandardMaterial = new THREE.MeshStandardMaterial(materialParams);
+    const standardMaterial = new THREE.MeshStandardMaterial(materialParams) as InjectMaterial;
     standardMaterial.onBeforeCompile = (shader) => {
         Object.assign(shader.uniforms, uniforms);
         shader.vertexShader = shader.vertexShader

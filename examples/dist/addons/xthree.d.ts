@@ -1,5 +1,16 @@
 import * as THREE from 'three';
 
+declare class UnitPromise {
+    private promise;
+    key?: string | undefined;
+    constructor(promise: Promise<any>, key?: string | undefined);
+    private chain;
+    then(callback: Function): UnitPromise;
+    catch(callback: Function): UnitPromise;
+    finally(callback: Function): UnitPromise;
+    static collect(promises: UnitPromise[]): Promise<Record<string, any>>;
+}
+
 interface TextureRange {
     min: number;
     max: number;
@@ -37,7 +48,12 @@ interface Texture extends TextureSource {
     renderer(canvas: HTMLCanvasElement, options?: RendererOptions): TextureRenderer;
 }
 
-interface StandardBakeOptions {
+interface ShaderMaterialOptions {
+    type: 'shader';
+    params?: TexturePreset;
+}
+interface BakeMaterialOptions extends THREE.MeshStandardMaterialParameters {
+    type?: 'bake';
     params?: TexturePreset;
     size?: {
         width: number;
@@ -50,25 +66,16 @@ interface StandardBakeOptions {
         y: number;
     };
 }
-interface StandardOptions extends THREE.MeshStandardMaterialParameters, StandardBakeOptions {
-    inject?: boolean;
+interface InjectMaterialOptions extends THREE.MeshStandardMaterialParameters {
+    type: 'inject';
+    params?: TexturePreset;
 }
-type StandardMaterial = THREE.MeshStandardMaterial & {
-    uniforms?: Record<string, THREE.IUniform>;
+type InjectMaterial = THREE.MeshStandardMaterial & {
+    uniforms: Record<string, THREE.IUniform>;
 };
-declare function shader(texture: Texture, params?: TexturePreset): THREE.ShaderMaterial;
-declare function standard(texture: Texture, options?: StandardOptions): StandardMaterial;
-
-declare class UnitPromise {
-    private promise;
-    key?: string | undefined;
-    constructor(promise: Promise<any>, key?: string | undefined);
-    private chain;
-    then(callback: Function): UnitPromise;
-    catch(callback: Function): UnitPromise;
-    finally(callback: Function): UnitPromise;
-    static collect(promises: UnitPromise[]): Promise<Record<string, any>>;
-}
+declare function material(texture: Texture, options: ShaderMaterialOptions): THREE.ShaderMaterial;
+declare function material(texture: Texture, options: InjectMaterialOptions): InjectMaterial;
+declare function material(texture: Texture, options?: BakeMaterialOptions): THREE.MeshStandardMaterial;
 
 interface Transform {
     position?: {
@@ -94,10 +101,7 @@ declare const xthree: {
     }): UnitPromise;
     nest(transform?: Transform): THREE.Group;
     add(object: any): any;
-    material: {
-        shader: typeof shader;
-        standard: typeof standard;
-    };
+    material: typeof material;
     readonly renderer: any;
     readonly camera: THREE.Camera;
     readonly scene: THREE.Scene;

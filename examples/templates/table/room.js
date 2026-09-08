@@ -68,7 +68,7 @@ function Floor(unit) {
 //----------------------------------------------------------------------------------------------------
 
 function Mat(unit, { x, z, aspect, turned, seed }) {
-    const material = xthree.material.standard(xtextures.tatami, {
+    const material = xthree.material(xtextures.tatami, {
         params: { scale: MAT, aspect, seed },
         worldSize: MAT,                                  // scale と同じ = 畳ちょうど 1 枚ぶんを焼く
         size: { width: 512 * aspect, height: 512 },      // 長辺ぶん横に伸ばして解像度を合わせる
@@ -89,12 +89,12 @@ function Chabudai(unit) {
     const group = xthree.nest();
 
     // 天板: 縁を丸めた円盤（側面=横木目 / 天面=年輪 / 底面=無地）。天面・側面とも同じ木目パラメータで焼く
-    const sideMaterial = xthree.material.standard(xtextures.wood, {          // 側面（横長 canvas で木目が横に流れる）
+    const sideMaterial = xthree.material(xtextures.wood, {          // 側面（横長 canvas で木目が横に流れる）
         size: { width: 512, height: 64 }, worldSize: 1.5, params: WOOD_PARAMS,
         tile: true, repeat: { x: 3, y: 1 },   // 周方向に 3 回シームレスにタイルして木目を細かく
         roughness: 0.65,
     });
-    const faceMaterial = xthree.material.standard(xtextures.wood, {          // 天面
+    const faceMaterial = xthree.material(xtextures.wood, {          // 天面
         size: { width: 512, height: 512 }, worldSize: 1.5, params: WOOD_PARAMS,
         roughness: 0.55,
     });
@@ -137,7 +137,7 @@ function Chabudai(unit) {
     top.add(back);
 
     // 脚: 天板の下、外向きに少し開いた 4 本。木目の傾きを保ったまま +90° して縦木目にする
-    const legMaterial = xthree.material.standard(xtextures.wood, {
+    const legMaterial = xthree.material(xtextures.wood, {
         size: { width: 128, height: 256 }, worldSize: 1, params: { ...WOOD_PARAMS, angle: WOOD_PARAMS.angle + 90 },
         roughness: 0.6,
     });

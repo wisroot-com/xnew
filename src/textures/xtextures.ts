@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // xtextures — procedural textures (shader-first). Each entry is a plain texture object: the complete
-// GLSL source (injectable into adapters like xthree.material.shader()) plus the two usage flows —
+// GLSL source (injectable into adapters like xthree.material(texture, { type: 'shader' })) plus the two usage flows —
 // bake() to an ImageBitmap on one shared OffscreenCanvas, and renderer() for a caller-owned canvas.
 //----------------------------------------------------------------------------------------------------
 

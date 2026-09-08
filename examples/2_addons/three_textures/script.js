@@ -177,13 +177,13 @@ function buildMaterial(state, bags) {
   const texture = TEXTURES[state.texture];
   const params = values(bags[state.texture]);
   if (state.display === 'shader') {
-    return xthree.material.shader(texture, params);
+    return xthree.material(texture, { type: 'shader', params });
   } else if (state.display === 'baked') {
     // the mat quad is one cell of object space, so its baked map has to cover exactly one cell too
     const worldSize = state.model === 'mat' ? params.scale : undefined;
-    return xthree.material.standard(texture, { params, worldSize, size: { width: 1024, height: 1024 }, roughness: 0.6 });
+    return xthree.material(texture, { params, worldSize, size: { width: 1024, height: 1024 }, roughness: 0.6 });
   } else if (state.display === 'inject') {
-    return xthree.material.standard(texture, { inject: true, params, roughness: 0.6 });
+    return xthree.material(texture, { type: 'inject', params, roughness: 0.6 });
   }
 
   // channel entry-function names inside the glsl are derived from the texture name

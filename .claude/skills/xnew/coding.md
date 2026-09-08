@@ -595,12 +595,19 @@ the rule, then one line of why.
   `bake(options)` → ImageBitmap on ONE shared OffscreenCanvas (never one WebGL context per texture:
   browsers cap contexts), `renderer(canvas, options)` for a caller-owned live-preview canvas (caller
   wires `unit.on('destroy', () => renderer.dispose())`), and passing the object to
-  `xthree.material.shader(texture, params)` (ShaderMaterial injection, fake fixed light) or
-  `xthree.material.standard(texture, options)` (bakes internally → MeshStandardMaterial; there is NO
-  separate `xthree.bake` — removed 2026-07-24; `inject: true` skips baking and patches the GLSL into
-  the standard shader via onBeforeCompile — full PBR + live `material.uniforms`, but the one
-  three-chunk-dependent spot; method comparison lives in docs/xtextures-three-materials.md). Both
-  material fns take a REQUIRED second argument. Don't re-wrap textures as xnew components.
+  `xthree.material(texture, options)` — ONE entry point (unified 2026-09-08; there are no
+  `.shader` / `.standard` members any more, and no separate `xthree.bake` — removed 2026-07-24).
+  `options.type` picks the path: `'bake'` (**the default** — bakes color / normal internally →
+  MeshStandardMaterial), `'shader'` (ShaderMaterial injection, fake fixed light, scene lights /
+  shadows do NOT apply) or `'inject'` (patches the GLSL into the standard shader via
+  onBeforeCompile — full PBR + live `material.uniforms`, but the one three-chunk-dependent spot).
+  The texture parameters live in `options.params` (never mix `type` into `params` — that bag is
+  uniform keys); `'bake'` also takes `size` / `worldSize` / `tile` / `repeat`, and `'bake'` /
+  `'inject'` hand every other key to MeshStandardMaterial. Only `texture` is REQUIRED —
+  `xthree.material(xtextures.wood)` is a valid baked material. The three overloads return
+  ShaderMaterial / MeshStandardMaterial / MeshStandardMaterial & { uniforms } respectively, so
+  `uniforms` does not typecheck on a baked one. Method comparison lives in
+  docs/xtextures-three-materials.md. Don't re-wrap textures as xnew components.
   The networking layer is `src/sync/xsync.ts` (shared state + boot + facade) plus `src/sync/roomio.ts`
   (`RoomIO`: holds the root unit, the given `io`, the `socket` it creates from it on the client, the
   `room` and the `clients` roster, plus the wire pair `emit(type, data, clients?)` — `clients` is a

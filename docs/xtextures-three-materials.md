@@ -1,11 +1,12 @@
 # xtextures × three.js — 3 つのマテリアル方式の比較
 
 > xtextures のプロシージャルテクスチャを three.js のメッシュに貼る方法は 3 つある。
+> どれも入口は `xthree.material(texture, options)` ひとつで、`options.type` で選ぶ（省略時は `'bake'`）。
 > それぞれ何を得て何を捨てるかが違う。使い分けの判断基準としてここにまとめる。
 
 ## 3 方式
 
-| | `material.shader()`<br>ShaderMaterial 注入 | `material.standard()`<br>ベイク | `material.standard({ inject: true })`<br>onBeforeCompile 注入 |
+| | `{ type: 'shader' }`<br>ShaderMaterial 注入 | `{ type: 'bake' }`（既定）<br>ベイク | `{ type: 'inject' }`<br>onBeforeCompile 注入 |
 |---|---|---|---|
 | 仕組み | 自前 ShaderMaterial に GLSL を注入 | color / normal を画像に焼いて map / normalMap に | standard の生成シェーダーに GLSL をパッチ |
 | ライティング | ❌ 固定方向の偽ライト（シーンの光源・影は無効） | ✅ 完全（影・環境マップ・トーンマッピング） | ✅ 完全（影・環境マップ・トーンマッピング） |
@@ -19,9 +20,9 @@
 
 ## 使い分けの目安
 
-- **ゲームシーンの大半 → ベイク（`standard()`）。** 安くて安定、影も mipmap も効く。
+- **ゲームシーンの大半 → ベイク（`type` 省略）。** 既定がこれなのはそのため。 安くて安定、影も mipmap も効く。
   床・壁・大量のオブジェクトは迷わずこれ。タイルが要るなら `tile: true` + `repeat`。
-- **パラメータ調整 UI・UV のない形状のライブプレビュー → `shader()`。**
+- **パラメータ調整 UI・UV のない形状のライブプレビュー → `'shader'`。**
   ライティングが偽物なので、最終形の見た目確認には使わない。
 - **inject が本当に効くのは「少数の主役」。** カメラが寄っても細部が潰れてほしくない
   ヒーローオブジェクト、UV 展開の面倒な形状に実ライティングで貼りたい場合、
@@ -36,7 +37,7 @@ inject の代償は 3 つ:
    文字列パッチなので、three のバージョンアップで壊れ得る。この addon で唯一
    three 内部に依存する箇所。
 
-## inject の実装メモ（src/addons/three/material.ts `injectStandard`）
+## inject の実装メモ（src/addons/three/material.ts `injectMaterial`）
 
 `MeshStandardMaterial.onBeforeCompile` で生成済みシェーダーを文字列パッチする:
 
@@ -44,7 +45,7 @@ inject の代償は 3 つ:
   position / normal）を宣言し、`#include <begin_vertex>` の後で代入。
 - **fragment**:
   - `#include <common>` の後にテクスチャ GLSL 一式 + 共有の接線フレーム（`glsl/frame.glsl` の
-    `xtexTangent`。`shader()` 経路と同じものを使う）+ varying + `uniform mat3 normalMatrix;` を注入。
+    `xtexTangent`。`'shader'` 経路と同じものを使う）+ varying + `uniform mat3 normalMatrix;` を注入。
     normalMatrix は three の vertex プレフィックスにしか宣言されないが、renderer は uniform を
     名前でアップロードするので fragment 側の宣言でも同じ値が届く。
   - `#include <map_fragment>` の後で `diffuseColor.rgb = sRGB→linear(xtex<Name>Color(vXtexPos))`。

@@ -41,6 +41,25 @@ var shaderVertexGlsl = "//------------------------------------------------------
 
 var shaderFragmentGlsl = "//----------------------------------------------------------------------------------------------------\n// xthree shader material — fragment stage: shade in object space with the material-local light.\n// The texture's own glsl and its entry-function prefix are spliced in by resolveGlsl (material.ts).\n//----------------------------------------------------------------------------------------------------\n\nvarying vec3 vXtexPos;\nvarying vec3 vXtexNormal;\nvarying vec3 vXtexLight;\n\n//#include <frame>\n//#include <texture>\n\nvoid main() {\n  vec3 nrm = normalize(vXtexNormal);\n  vec3 n = XTEX_Normal(vXtexPos, nrm, xtexTangent(nrm));\n  vec3 albedo = XTEX_Color(vXtexPos);\n  float diff = 0.55 + 0.45 * max(dot(n, normalize(vXtexLight)), 0.0);\n  gl_FragColor = vec4(albedo * diff, 1.0);\n}\n";
 
+function material(texture, options = {}) {
+    var _a;
+    const type = (_a = options.type) !== null && _a !== void 0 ? _a : 'bake';
+    if (type === 'shader') {
+        const { params = {} } = options;
+        return shaderMaterial(texture, params);
+    }
+    else if (type === 'bake') {
+        const _b = options, { type: _, params = {}, size, worldSize, tile, repeat } = _b, materialParams = __rest(_b, ["type", "params", "size", "worldSize", "tile", "repeat"]);
+        return bakeMaterial(texture, { params, size, worldSize, tile, repeat }, materialParams);
+    }
+    else if (type === 'inject') {
+        const _c = options, { type: _, params = {} } = _c, materialParams = __rest(_c, ["type", "params"]);
+        return injectMaterial(texture, params, materialParams);
+    }
+    else {
+        throw new Error(`xthree.material: unknown type "${type}" (expected 'shader' | 'bake' | 'inject')`);
+    }
+}
 function resolveGlsl(texture, source) {
     return source
         .replace(/XTEX_/g, texture.entry)
@@ -56,25 +75,15 @@ function resolveUniforms(texture, params) {
     }
     return uniforms;
 }
-const material = { shader, standard };
-function shader(texture, params = {}) {
+function shaderMaterial(texture, params) {
     return new THREE.ShaderMaterial({
         uniforms: resolveUniforms(texture, params),
         vertexShader: shaderVertexGlsl,
         fragmentShader: resolveGlsl(texture, shaderFragmentGlsl),
     });
 }
-function standard(texture, options = {}) {
-    const { params = {}, size, worldSize, tile, repeat, inject } = options, materialParams = __rest(options, ["params", "size", "worldSize", "tile", "repeat", "inject"]);
-    if (inject === true) {
-        return injectStandard(texture, params, materialParams);
-    }
-    else {
-        return bakeStandard(texture, { params, size, worldSize, tile, repeat }, materialParams);
-    }
-}
-function bakeStandard(texture, bakeOptions, materialParams) {
-    const { params, size, worldSize, tile, repeat } = bakeOptions;
+function bakeMaterial(texture, bakeParams, materialParams) {
+    const { params, size, worldSize, tile, repeat } = bakeParams;
     function bake(channel) {
         const map = new THREE.CanvasTexture(texture.bake({ params, size, worldSize, tile, channel }));
         map.colorSpace = channel === 'color' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
@@ -106,7 +115,7 @@ const INJECT_FRAGMENT_NORMAL = `{
 vec3 xtexN = normalize(vXtexNormal);
 normal = normalize(normalMatrix * XTEX_Normal(vXtexPos, xtexN, xtexTangent(xtexN))) * faceDirection;
 }`;
-function injectStandard(texture, params, materialParams) {
+function injectMaterial(texture, params, materialParams) {
     const uniforms = resolveUniforms(texture, params);
     const standardMaterial = new THREE.MeshStandardMaterial(materialParams);
     standardMaterial.onBeforeCompile = (shader) => {

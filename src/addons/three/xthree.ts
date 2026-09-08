@@ -56,7 +56,8 @@ export const xthree = {
         xnew(Add, { object });
         return object;
     },
-    // build a three material from an xtextures texture object (see material.ts)
+    // build a three material from an xtextures texture object: material(texture, options), where
+    // options.type is 'shader' | 'bake' | 'inject' ('bake' when omitted) — see material.ts
     material,
     get renderer() {
         return xnew.context(Root)?.renderer;
