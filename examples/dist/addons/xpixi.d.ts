@@ -11,21 +11,22 @@ declare class UnitPromise {
     static collect(promises: UnitPromise[]): Promise<Record<string, any>>;
 }
 
+interface Transform {
+    position?: {
+        x: number;
+        y: number;
+    };
+    scale?: number | {
+        x: number;
+        y: number;
+    };
+    rotation?: number;
+}
 declare const xpixi: {
     init({ canvas }: {
         canvas: HTMLCanvasElement;
     }): UnitPromise;
-    nest(options?: {
-        position?: {
-            x: number;
-            y: number;
-        };
-        scale?: number | {
-            x: number;
-            y: number;
-        };
-        rotation?: number;
-    }): PIXI.Container;
+    nest(transform?: Transform): PIXI.Container;
     add(object: any): any;
     readonly renderer: any;
     readonly scene: PIXI.Container;

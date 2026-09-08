@@ -124,43 +124,60 @@ function injectStandard(texture, params, materialParams) {
     return standardMaterial;
 }
 
-function init({ canvas, camera = null }) {
-    return xnew.promise(xnew(Root, { canvas, camera }));
-}
-function nest(options) {
-    const object = new THREE.Group();
-    if (options !== undefined) {
-        applyTransform(object, options);
-    }
-    xnew(Nest, { object });
-    xnew.extend(() => {
-        return {
-            get threeObject() { return object; }
-        };
-    });
-    return object;
-}
-function add(object) {
-    xnew(Add, { object });
-    return object;
-}
-function applyTransform(object, { position, scale, rotation }) {
-    var _a, _b, _c;
-    if (position !== undefined) {
-        object.position.set(position.x, position.y, (_a = position.z) !== null && _a !== void 0 ? _a : 0);
-    }
-    if (scale !== undefined) {
-        if (typeof scale === 'number') {
-            object.scale.set(scale, scale, scale);
+const xthree = {
+    init({ canvas, camera = null }) {
+        return xnew.promise(xnew(Root, { canvas, camera }));
+    },
+    nest(transform) {
+        var _a, _b, _c;
+        const object = new THREE.Group();
+        if (transform !== undefined) {
+            const { position, scale, rotation } = transform;
+            if (position !== undefined) {
+                object.position.set(position.x, position.y, (_a = position.z) !== null && _a !== void 0 ? _a : 0);
+            }
+            if (scale !== undefined) {
+                if (typeof scale === 'number') {
+                    object.scale.set(scale, scale, scale);
+                }
+                else {
+                    object.scale.set(scale.x, scale.y, (_b = scale.z) !== null && _b !== void 0 ? _b : 1);
+                }
+            }
+            if (rotation !== undefined) {
+                object.rotation.set(rotation.x, rotation.y, (_c = rotation.z) !== null && _c !== void 0 ? _c : 0);
+            }
         }
-        else {
-            object.scale.set(scale.x, scale.y, (_b = scale.z) !== null && _b !== void 0 ? _b : 1);
-        }
-    }
-    if (rotation !== undefined) {
-        object.rotation.set(rotation.x, rotation.y, (_c = rotation.z) !== null && _c !== void 0 ? _c : 0);
-    }
-}
+        xnew(Nest, { object });
+        xnew.extend(() => {
+            return {
+                get threeObject() { return object; }
+            };
+        });
+        return object;
+    },
+    add(object) {
+        xnew(Add, { object });
+        return object;
+    },
+    material,
+    get renderer() {
+        var _a;
+        return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.renderer;
+    },
+    get camera() {
+        var _a;
+        return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.camera;
+    },
+    get scene() {
+        var _a;
+        return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.scene;
+    },
+    get canvas() {
+        var _a;
+        return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.canvas;
+    },
+};
 function Root(unit, { canvas, camera }) {
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
     renderer.setClearColor(0x000000, 0);
@@ -196,27 +213,5 @@ function Nest(unit, { object }) {
 function Add(unit, { object }) {
     attach(unit, object);
 }
-const xthree = {
-    init,
-    nest,
-    add,
-    material,
-    get renderer() {
-        var _a;
-        return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.renderer;
-    },
-    get camera() {
-        var _a;
-        return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.camera;
-    },
-    get scene() {
-        var _a;
-        return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.scene;
-    },
-    get canvas() {
-        var _a;
-        return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.canvas;
-    },
-};
 
-export { Root, applyTransform, xthree };
+export { xthree };

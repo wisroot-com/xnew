@@ -7,24 +7,22 @@
 import { xnew } from '@mulsense/xnew';
 import * as PIXI from 'pixi.js'
 
+// the transform a group is placed with; 2D, so rotation is a single angle
+interface Transform {
+    position?: { x: number, y: number },
+    scale?: number | { x: number, y: number },
+    rotation?: number,
+}
+
 export const xpixi = {
-    init(
-        { canvas }:
-        { canvas: HTMLCanvasElement }
-    ) {
+    init({ canvas }: { canvas: HTMLCanvasElement }) {
         return xnew.promise(xnew(Root, { canvas }));
     },
-    // create a group Container and move the current parent into it (stateful); options set its transform only — never an existing object.
-    nest(
-        options?: {
-            position?: { x: number, y: number },
-            scale?: number | { x: number, y: number },
-            rotation?: number,
-        }
-    ): PIXI.Container {
+    // create a group Container and move the current parent into it (stateful); the transform applies to the new group only — never an existing object.
+    nest(transform?: Transform): PIXI.Container {
         const object = new PIXI.Container();
-        if (options !== undefined) {
-            const { position, scale, rotation } = options;
+        if (transform !== undefined) {
+            const { position, scale, rotation } = transform;
             if (position !== undefined) {
                 object.position.set(position.x, position.y);
             }

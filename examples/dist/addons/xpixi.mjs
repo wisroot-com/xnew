@@ -5,10 +5,10 @@ const xpixi = {
     init({ canvas }) {
         return xnew.promise(xnew(Root, { canvas }));
     },
-    nest(options) {
+    nest(transform) {
         const object = new PIXI.Container();
-        if (options !== undefined) {
-            const { position, scale, rotation } = options;
+        if (transform !== undefined) {
+            const { position, scale, rotation } = transform;
             if (position !== undefined) {
                 object.position.set(position.x, position.y);
             }

@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { xnew } from '@mulsense/xnew';
 
 interface TextureRange {
     min: number;
@@ -88,23 +87,13 @@ interface Transform {
         z?: number;
     };
 }
-declare function init({ canvas, camera }: {
-    canvas: HTMLCanvasElement;
-    camera?: THREE.Camera | null;
-}): UnitPromise;
-declare function nest(options?: Transform): THREE.Group;
-declare function add(object: any): any;
-declare function applyTransform(object: THREE.Object3D, { position, scale, rotation }: Transform): void;
-declare function Root(unit: xnew.Unit, { canvas, camera }: any): {
-    readonly canvas: any;
-    readonly camera: any;
-    readonly renderer: THREE.WebGLRenderer;
-    readonly scene: THREE.Scene;
-};
 declare const xthree: {
-    init: typeof init;
-    nest: typeof nest;
-    add: typeof add;
+    init({ canvas, camera }: {
+        canvas: HTMLCanvasElement;
+        camera?: THREE.Camera | null;
+    }): UnitPromise;
+    nest(transform?: Transform): THREE.Group;
+    add(object: any): any;
     material: {
         shader: typeof shader;
         standard: typeof standard;
@@ -115,5 +104,4 @@ declare const xthree: {
     readonly canvas: HTMLCanvasElement;
 };
 
-export { Root, applyTransform, xthree };
-export type { Transform };
+export { xthree };
