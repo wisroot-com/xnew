@@ -7,8 +7,8 @@
 import { xnew } from '../../core/xnew';
 
 export function Button(unit: xnew.Unit,
-    { text = '', className = '', style = '', ...others }:
-    { text?: string, className?: string, style?: string, [key: string]: any } = {}
+    { text = '', disabled = false, className = '', style = '', ...others }:
+    { text?: string, disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `
@@ -18,8 +18,9 @@ export function Button(unit: xnew.Unit,
             border: 1px solid currentColor; border-radius: 0.25em;
             &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &:active { filter: brightness(0.5); }
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
 
-    xnew.nest({ tag: 'button', type: 'button', className: `${css.container} ${className}`, style, ...others }, text);
+    xnew.nest({ tag: 'button', type: 'button', disabled, className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined, ...others }, text);
 }

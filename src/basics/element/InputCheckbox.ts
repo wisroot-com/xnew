@@ -8,8 +8,8 @@ import { xnew } from '../../core/xnew';
 import { dispatchCommit } from '../../utils/dom';
 
 export function InputCheckbox(unit: xnew.Unit,
-    { value = false, className = '', style = '', ...others }:
-    { value?: boolean, className?: string, style?: string, [key: string]: any } = {}
+    { value = false, disabled = false, className = '', style = '', ...others }:
+    { value?: boolean, disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `
@@ -19,15 +19,16 @@ export function InputCheckbox(unit: xnew.Unit,
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: pointer; user-select: none;
             &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `
             width: 0; height: 0; margin: 0; opacity: 0;
         `,
     });
 
-    const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style }) as HTMLElement;
+    const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined }) as HTMLElement;
 
-    const input = xnew({ tag: 'input', type: 'checkbox', checked: value, className: css.input, ...others });
+    const input = xnew({ tag: 'input', type: 'checkbox', checked: value, disabled, className: css.input, ...others });
 
     // the hidden input holds the state (read through `input`); the container attribute only drives the look
     function apply(checked: boolean) {

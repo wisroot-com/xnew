@@ -11,8 +11,8 @@ import { dispatchCommit } from '../../utils/dom';
 import { clamp } from '../../utils/math';
 
 export function InputRange(unit: xnew.Unit,
-    { value, min = 0, max = 100, step, vertical = false, className = '', style = '', ...others }:
-    { value?: number, min?: number, max?: number, step?: number, vertical?: boolean, className?: string, style?: string, [key: string]: any } = {}
+    { value, min = 0, max = 100, step, vertical = false, disabled = false, className = '', style = '', ...others }:
+    { value?: number, min?: number, max?: number, step?: number, vertical?: boolean, disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `
@@ -20,6 +20,7 @@ export function InputRange(unit: xnew.Unit,
             position: relative; margin: 0.125em;
             box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 40%, transparent);
             border-radius: 0.25em;
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         horizontal: `
             width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
@@ -36,13 +37,13 @@ export function InputRange(unit: xnew.Unit,
         `,
     });
 
-    xnew.nest({ tag: 'div', className: `${css.container} ${vertical ? css.vertical : css.horizontal} ${className}`, style });
+    xnew.nest({ tag: 'div', className: `${css.container} ${vertical ? css.vertical : css.horizontal} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
 
     const initial = value ?? min;
 
     // hidden native input for interaction (min / max / step before value, so value never clamps against defaults)
     const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
-    const input = xnew({ tag: 'input', type: 'range', min, max, step: step ?? autoStep(min, max), value: initial, className: css.input, style: direction, ...others });
+    const input = xnew({ tag: 'input', type: 'range', min, max, step: step ?? autoStep(min, max), value: initial, disabled, className: css.input, style: direction, ...others });
 
     xnew.standalone(() => {
         xnew(InputRangeMeter, { value: initial, min, max, vertical });

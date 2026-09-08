@@ -26,18 +26,19 @@ export function itemDef<T>(item: ItemDef<T>): { value: T, label?: string } {
 }
 
 export function Listbox(unit: xnew.Unit,
-    { value, items = [], duration = 0, easing = 'ease', className = '', style = '', ...others }:
-    { value?: string, items?: ItemDef[], duration?: number, easing?: string, className?: string, style?: string, [key: string]: any } = {}
+    { value, items = [], duration = 0, easing = 'ease', disabled = false, className = '', style = '', ...others }:
+    { value?: string, items?: ItemDef[], duration?: number, easing?: string, disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `
             display: inline-flex;
             max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;
             margin: 0.125em 0;
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
 
-    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others }) as HTMLElement;
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined, ...others }) as HTMLElement;
 
     // `items` is known right here, so the default lands synchronously and `.value` reads true from tick 0;
     // the composed path (the caller builds the rows) has none, and falls back to the deferred adoption below

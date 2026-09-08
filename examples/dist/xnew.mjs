@@ -1952,7 +1952,7 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
 };
 
 function Button(unit, _a = {}) {
-    var { text = '', className = '', style = '' } = _a, others = __rest(_a, ["text", "className", "style"]);
+    var { text = '', disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["text", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             min-width: 6em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em;
@@ -1961,9 +1961,10 @@ function Button(unit, _a = {}) {
             border: 1px solid currentColor; border-radius: 0.25em;
             &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &:active { filter: brightness(0.5); }
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
-    xnew.nest(Object.assign({ tag: 'button', type: 'button', className: `${css.container} ${className}`, style }, others), text);
+    xnew.nest(Object.assign({ tag: 'button', type: 'button', disabled, className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined }, others), text);
 }
 
 function Image(unit, _a) {
@@ -2020,13 +2021,14 @@ function SVGText(unit, _a = {}) {
 }
 
 function InputRange(unit, _a = {}) {
-    var { value, min = 0, max = 100, step, vertical = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "min", "max", "step", "vertical", "className", "style"]);
+    var { value, min = 0, max = 100, step, vertical = false, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "min", "max", "step", "vertical", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-block;
             position: relative; margin: 0.125em;
             box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 40%, transparent);
             border-radius: 0.25em;
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         horizontal: `
             width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
@@ -2042,10 +2044,10 @@ function InputRange(unit, _a = {}) {
             appearance: none;
         `,
     });
-    xnew.nest({ tag: 'div', className: `${css.container} ${vertical ? css.vertical : css.horizontal} ${className}`, style });
+    xnew.nest({ tag: 'div', className: `${css.container} ${vertical ? css.vertical : css.horizontal} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
     const initial = value !== null && value !== void 0 ? value : min;
     const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
-    const input = xnew(Object.assign({ tag: 'input', type: 'range', min, max, step: step !== null && step !== void 0 ? step : autoStep(min, max), value: initial, className: css.input, style: direction }, others));
+    const input = xnew(Object.assign({ tag: 'input', type: 'range', min, max, step: step !== null && step !== void 0 ? step : autoStep(min, max), value: initial, disabled, className: css.input, style: direction }, others));
     xnew.standalone(() => {
         xnew(InputRangeMeter, { value: initial, min, max, vertical });
         xnew(InputRangeStatus, { value: initial, vertical });
@@ -2145,7 +2147,7 @@ function InputRangeStatus(unit, { value = 0, vertical = false } = {}) {
 }
 
 function InputCheckbox(unit, _a = {}) {
-    var { value = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
+    var { value = false, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-block;
@@ -2154,13 +2156,14 @@ function InputCheckbox(unit, _a = {}) {
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: pointer; user-select: none;
             &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `
             width: 0; height: 0; margin: 0; opacity: 0;
         `,
     });
-    const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
-    const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
+    const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
+    const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, disabled, className: css.input }, others));
     function apply(checked) {
         input.current.checked = checked;
         container.toggleAttribute('data-checked', checked);
@@ -2198,7 +2201,7 @@ function CheckMark() {
 }
 
 function InputText(unit, _a = {}) {
-    var { value, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
+    var { value, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-flex; align-items: center;
@@ -2208,6 +2211,7 @@ function InputText(unit, _a = {}) {
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: text;
             &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `
             width: 100%; height: 100%;
@@ -2216,8 +2220,8 @@ function InputText(unit, _a = {}) {
             border: none; outline: none;
         `,
     });
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const input = xnew(Object.assign({ tag: 'input', type: 'text', value, className: css.input }, others));
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
+    const input = xnew(Object.assign({ tag: 'input', type: 'text', value, disabled, className: css.input }, others));
     unit.on('click', () => input.current.focus());
     return {
         get value() {
@@ -2235,7 +2239,7 @@ function InputText(unit, _a = {}) {
 }
 
 function InputNumber(unit, _a = {}) {
-    var { value, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
+    var { value, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-flex; align-items: center;
@@ -2245,6 +2249,7 @@ function InputNumber(unit, _a = {}) {
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: text;
             &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `
             width: 100%; height: 100%;
@@ -2256,8 +2261,8 @@ function InputNumber(unit, _a = {}) {
             &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
         `,
     });
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    const input = xnew(Object.assign({ tag: 'input', type: 'number', value, className: css.input }, others));
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
+    const input = xnew(Object.assign({ tag: 'input', type: 'number', value, disabled, className: css.input }, others));
     unit.on('click', () => input.current.focus());
     return {
         get value() {
@@ -2277,7 +2282,7 @@ function InputNumber(unit, _a = {}) {
 }
 
 function InputSwitch(unit, _a = {}) {
-    var { value = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "className", "style"]);
+    var { value = false, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-block;
@@ -2286,13 +2291,14 @@ function InputSwitch(unit, _a = {}) {
             border: 1px solid currentColor; border-radius: 1em;
             cursor: pointer; user-select: none;
             &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `
             width: 0; height: 0; margin: 0; opacity: 0;
         `,
     });
-    const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
-    const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, className: css.input }, others));
+    const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
+    const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, disabled, className: css.input }, others));
     function apply(checked) {
         input.current.checked = checked;
         container.toggleAttribute('data-checked', checked);
@@ -2418,15 +2424,16 @@ function itemDef(item) {
     return (item !== null && typeof item === 'object' && 'value' in item) ? item : { value: item };
 }
 function Listbox(unit, _a = {}) {
-    var { value, items = [], duration = 0, easing = 'ease', className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "duration", "easing", "className", "style"]);
+    var { value, items = [], duration = 0, easing = 'ease', disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "duration", "easing", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-flex;
             max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch;
             margin: 0.125em 0;
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
-    const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined }, others));
     let selected = value !== null && value !== void 0 ? value : (items.length > 0 ? itemDef(items[0]).value : '');
     const rows = [];
     const labels = [];
@@ -2584,7 +2591,7 @@ function ListboxItem(unit, _a = {}) {
 
 let serial = 0;
 function InputRadioGroup(unit, _a = {}) {
-    var { value, items = [], name, className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "name", "className", "style"]);
+    var { value, items = [], name, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "name", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-flex; align-items: stretch;
@@ -2592,9 +2599,10 @@ function InputRadioGroup(unit, _a = {}) {
             margin: 0.125em 0;
             border: 1px solid currentColor; border-radius: 0.25em;
             overflow: hidden;
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
-    const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined }, others));
     const shared = name !== null && name !== void 0 ? name : `xnew-radio-${serial++}`;
     const rows = [];
     function apply(value) {
@@ -2615,6 +2623,9 @@ function InputRadioGroup(unit, _a = {}) {
         get name() {
             return shared;
         },
+        get disabled() {
+            return disabled;
+        },
         get value() {
             var _a, _b;
             return (_b = (_a = rows.find((row) => row.checked)) === null || _a === void 0 ? void 0 : _a.value) !== null && _b !== void 0 ? _b : '';
@@ -2630,7 +2641,7 @@ function InputRadioGroup(unit, _a = {}) {
     };
 }
 function InputRadio(unit, _a = {}) {
-    var { value = '', label, name, checked = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "label", "name", "checked", "className", "style"]);
+    var { value = '', label, name, checked = false, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "label", "name", "checked", "disabled", "className", "style"]);
     const group = xnew.context(InputRadioGroup);
     const css = xnew.css('base', {
         container: `
@@ -2642,13 +2653,15 @@ function InputRadio(unit, _a = {}) {
             & + & { border-left: 1px solid currentColor; }
             &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
             &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `
             width: 0; height: 0; margin: 0; opacity: 0;
         `,
     });
-    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
-    const input = xnew(Object.assign({ tag: 'input', type: 'radio', name: name !== null && name !== void 0 ? name : group === null || group === void 0 ? void 0 : group.name, value, checked, className: css.input }, others));
+    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
+    const inert = disabled === true || (group === null || group === void 0 ? void 0 : group.disabled) === true;
+    const input = xnew(Object.assign({ tag: 'input', type: 'radio', name: name !== null && name !== void 0 ? name : group === null || group === void 0 ? void 0 : group.name, value, checked, disabled: inert, className: css.input }, others));
     group === null || group === void 0 ? void 0 : group.register(unit);
     if (group !== undefined) {
         unit.on('input change', ({ event }) => event.stopPropagation());
@@ -2748,7 +2761,7 @@ const PRESETS = [
 const CHECKERBOARD = 'conic-gradient(#ccc 0% 25%, #fff 25% 50%, #ccc 50% 75%, #fff 75% 100%)';
 function ColorPicker(unit, _a = {}) {
     var _b;
-    var { value = '#4A90E2', presets = PRESETS, alpha = true, className = '', style = '' } = _a, others = __rest(_a, ["value", "presets", "alpha", "className", "style"]);
+    var { value = '#4A90E2', presets = PRESETS, alpha = true, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "presets", "alpha", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-block;
@@ -2757,6 +2770,7 @@ function ColorPicker(unit, _a = {}) {
             background: #fff; border-radius: 4px;
             box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.15);
             user-select: none;
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         saturation: `
             position: relative; height: 150px;
@@ -2825,7 +2839,7 @@ function ColorPicker(unit, _a = {}) {
     if (alpha === false) {
         hsva = Object.assign(Object.assign({}, hsva), { a: 1 });
     }
-    const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined }, others));
     unit.on('pointerdown', ({ event }) => event.stopPropagation());
     function notify(kind) {
         const hex = formatHex(hsvaToRgba(hsva));
@@ -2920,7 +2934,7 @@ function ColorPicker(unit, _a = {}) {
     });
     function Field(sub, { label, commit }) {
         xnew.nest({ tag: 'div', className: css.field });
-        const input = xnew({ tag: 'input', type: 'text', spellcheck: false, className: css.fieldInput }).current;
+        const input = xnew({ tag: 'input', type: 'text', spellcheck: false, disabled, className: css.fieldInput }).current;
         xnew({ tag: 'div', className: css.fieldLabel, textContent: label });
         sub.on('input', ({ event }) => event.stopPropagation());
         sub.on('change', ({ event, value }) => {

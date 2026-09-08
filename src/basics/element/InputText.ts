@@ -9,8 +9,8 @@ import { xnew } from '../../core/xnew';
 import { dispatchCommit } from '../../utils/dom';
 
 export function InputText(unit: xnew.Unit,
-    { value, className = '', style = '', ...others }:
-    { value?: string, className?: string, style?: string, [key: string]: any } = {}
+    { value, disabled = false, className = '', style = '', ...others }:
+    { value?: string, disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `
@@ -21,6 +21,7 @@ export function InputText(unit: xnew.Unit,
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: text;
             &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `
             width: 100%; height: 100%;
@@ -30,9 +31,9 @@ export function InputText(unit: xnew.Unit,
         `,
     });
 
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
+    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
 
-    const input = xnew({ tag: 'input', type: 'text', value, className: css.input, ...others });
+    const input = xnew({ tag: 'input', type: 'text', value, disabled, className: css.input, ...others });
 
     // clicking the container padding routes focus to the inner input
     unit.on('click', () => input.current.focus());

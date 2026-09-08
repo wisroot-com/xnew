@@ -319,8 +319,9 @@ declare function Scene(unit: xnew.Unit): {
     add(Component: Function, props?: any): xnew.Unit;
 };
 
-declare function Button(unit: xnew.Unit, { text, className, style, ...others }?: {
+declare function Button(unit: xnew.Unit, { text, disabled, className, style, ...others }?: {
     text?: string;
+    disabled?: boolean;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -341,12 +342,13 @@ declare function SVGText(unit: xnew.Unit, { text, className, style, ...others }?
     [key: string]: any;
 }): void;
 
-declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, className, style, ...others }?: {
+declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, disabled, className, style, ...others }?: {
     value?: number;
     min?: number;
     max?: number;
     step?: number;
     vertical?: boolean;
+    disabled?: boolean;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -355,8 +357,9 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, 
     readonly input: HTMLInputElement;
 };
 
-declare function InputCheckbox(unit: xnew.Unit, { value, className, style, ...others }?: {
+declare function InputCheckbox(unit: xnew.Unit, { value, disabled, className, style, ...others }?: {
     value?: boolean;
+    disabled?: boolean;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -365,8 +368,9 @@ declare function InputCheckbox(unit: xnew.Unit, { value, className, style, ...ot
     readonly input: HTMLInputElement;
 };
 
-declare function InputText(unit: xnew.Unit, { value, className, style, ...others }?: {
+declare function InputText(unit: xnew.Unit, { value, disabled, className, style, ...others }?: {
     value?: string;
+    disabled?: boolean;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -375,8 +379,9 @@ declare function InputText(unit: xnew.Unit, { value, className, style, ...others
     readonly input: HTMLInputElement;
 };
 
-declare function InputNumber(unit: xnew.Unit, { value, className, style, ...others }?: {
+declare function InputNumber(unit: xnew.Unit, { value, disabled, className, style, ...others }?: {
     value?: number;
+    disabled?: boolean;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -385,8 +390,9 @@ declare function InputNumber(unit: xnew.Unit, { value, className, style, ...othe
     readonly input: HTMLInputElement;
 };
 
-declare function InputSwitch(unit: xnew.Unit, { value, className, style, ...others }?: {
+declare function InputSwitch(unit: xnew.Unit, { value, disabled, className, style, ...others }?: {
     value?: boolean;
+    disabled?: boolean;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -399,11 +405,12 @@ type ItemDef<T = string> = T | {
     value: T;
     label?: string;
 };
-declare function Listbox(unit: xnew.Unit, { value, items, duration, easing, className, style, ...others }?: {
+declare function Listbox(unit: xnew.Unit, { value, items, duration, easing, disabled, className, style, ...others }?: {
     value?: string;
     items?: ItemDef[];
     duration?: number;
     easing?: string;
+    disabled?: boolean;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -435,23 +442,26 @@ declare function ListboxItem(unit: xnew.Unit, { value, label, className, style, 
     check(current: boolean): void;
 };
 
-declare function InputRadioGroup(unit: xnew.Unit, { value, items, name, className, style, ...others }?: {
+declare function InputRadioGroup(unit: xnew.Unit, { value, items, name, disabled, className, style, ...others }?: {
     value?: string;
     items?: ItemDef[];
     name?: string;
+    disabled?: boolean;
     className?: string;
     style?: string;
     [key: string]: any;
 }): {
     readonly name: string;
+    readonly disabled: boolean;
     value: string;
     register(row: xnew.Unit): void;
 };
-declare function InputRadio(unit: xnew.Unit, { value, label, name, checked, className, style, ...others }?: {
+declare function InputRadio(unit: xnew.Unit, { value, label, name, checked, disabled, className, style, ...others }?: {
     value?: string;
     label?: string;
     name?: string;
     checked?: boolean;
+    disabled?: boolean;
     className?: string;
     style?: string;
     [key: string]: any;
@@ -463,10 +473,11 @@ declare function InputRadio(unit: xnew.Unit, { value, label, name, checked, clas
     readonly input: HTMLInputElement;
 };
 
-declare function ColorPicker(unit: xnew.Unit, { value, presets, alpha, className, style, ...others }?: {
+declare function ColorPicker(unit: xnew.Unit, { value, presets, alpha, disabled, className, style, ...others }?: {
     value?: string;
     presets?: string[];
     alpha?: boolean;
+    disabled?: boolean;
     className?: string;
     style?: string;
     [key: string]: any;

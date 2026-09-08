@@ -102,11 +102,22 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   it was removed 2026-07).** Every component nests its top element directly with an
   `@layer base` css entry, and the caller's `className` / `style` decorate that element:
   `xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style })`.
-  Single-element components (Button, Image, InputNumber, InputText, SVG, SVGText)
-  ALSO spread `...others` onto that element; multi-part form components (InputCheckbox / InputRadio /
+  **`...others` always lands on the component's LEADING element (2026-09):** the container for
+  single-element ones (Button, Image, Listbox, InputRadioGroup, ColorPicker, Accordion, Overlay), the
+  hidden native `<input>` for the form controls (InputText / InputNumber / InputRange / InputCheckbox /
+  InputSwitch / InputRadio), the inner `<text>` for SVGText — `min` / `placeholder` / `fontSize` only
+  mean anything there. `className` / `style` are the exception in the other direction: they always
+  decorate the container, so they and `others` deliberately land on different elements.
+  **`disabled` is the one prop that must reach BOTH**, and is therefore taken explicitly rather than
+  left to `others`: the container gets `data-disabled` (dimmed through one shared rule,
+  `&[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }`, in every component's
+  container css) and any focusable native child gets the real `disabled` — `pointer-events: none` alone
+  still lets Tab reach it. A grouping component passes its own `disabled` down (InputRadioGroup exposes
+  it as a define for the segments to read). `test/basics/element/disabled.test.ts` holds the whole
+  convention table; components with no notion of disabled (Image / SVGText) are out of it.
+  Multi-part form components (InputCheckbox / InputRadio /
   InputRange / InputSwitch / Listbox) carry the framed look (border / radius / state tints) ON the
-  container itself (frame merged in, 2026-07), and `value` / `name` / rest members go to the inner
-  hidden native input. State attributes (`data-checked` / `data-open`) toggle on the container; inner
+  container itself (frame merged in, 2026-07). State attributes (`data-checked` / `data-open`) toggle on the container; inner
   parts (knob / meter / status / mark) react via parent-keyed rules (`[data-checked] > & { … }`).
   No component exposes a `container` define (it would collide with the `unit.container` member); for
   InputCheckbox / InputRange / InputSwitch `unit.current` IS the container (input / knob / meter are

@@ -18,8 +18,8 @@ const PRESETS = [
 const CHECKERBOARD = 'conic-gradient(#ccc 0% 25%, #fff 25% 50%, #ccc 50% 75%, #fff 75% 100%)';
 
 export function ColorPicker(unit: xnew.Unit,
-    { value = '#4A90E2', presets = PRESETS, alpha = true, className = '', style = '', ...others }:
-    { value?: string, presets?: string[], alpha?: boolean, className?: string, style?: string, [key: string]: any } = {}
+    { value = '#4A90E2', presets = PRESETS, alpha = true, disabled = false, className = '', style = '', ...others }:
+    { value?: string, presets?: string[], alpha?: boolean, disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `
@@ -29,6 +29,7 @@ export function ColorPicker(unit: xnew.Unit,
             background: #fff; border-radius: 4px;
             box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.15);
             user-select: none;
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         saturation: `
             position: relative; height: 150px;
@@ -100,7 +101,7 @@ export function ColorPicker(unit: xnew.Unit,
         hsva = { ...hsva, a: 1 };
     }
 
-    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others }) as HTMLElement;
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined, ...others }) as HTMLElement;
     unit.on('pointerdown', ({ event }: { event: PointerEvent }) => event.stopPropagation());
 
     // the element is captured, so these need no xnew.scope even though apply() runs in the drag zones' scopes
@@ -206,7 +207,8 @@ export function ColorPicker(unit: xnew.Unit,
 
     function Field(sub: xnew.Unit, { label, commit }: { label: string, commit: (text: string) => void }) {
         xnew.nest({ tag: 'div', className: css.field });
-        const input = xnew({ tag: 'input', type: 'text', spellcheck: false, className: css.fieldInput }).current as HTMLInputElement;
+        // disabled too: pointer-events: none on the container still leaves these fields reachable by Tab
+        const input = xnew({ tag: 'input', type: 'text', spellcheck: false, disabled, className: css.fieldInput }).current as HTMLInputElement;
         xnew({ tag: 'div', className: css.fieldLabel, textContent: label });
         // keep the fields' own events inside the picker so hosts only see the picker's canonical pair:
         // half-typed text is not a color, so partial input never surfaces as the picker's value

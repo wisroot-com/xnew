@@ -17,8 +17,8 @@ import { ItemDef, itemDef } from './Listbox';
 let serial = 0;
 
 export function InputRadioGroup(unit: xnew.Unit,
-    { value, items = [], name, className = '', style = '', ...others }:
-    { value?: string, items?: ItemDef[], name?: string, className?: string, style?: string, [key: string]: any } = {}
+    { value, items = [], name, disabled = false, className = '', style = '', ...others }:
+    { value?: string, items?: ItemDef[], name?: string, disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `
@@ -27,10 +27,11 @@ export function InputRadioGroup(unit: xnew.Unit,
             margin: 0.125em 0;
             border: 1px solid currentColor; border-radius: 0.25em;
             overflow: hidden;
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
 
-    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others }) as HTMLElement;
+    const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined, ...others }) as HTMLElement;
 
     const shared = name ?? `xnew-radio-${serial++}`;
     const rows: xnew.Unit[] = [];
@@ -58,6 +59,10 @@ export function InputRadioGroup(unit: xnew.Unit,
         get name() {
             return shared;
         },
+        // read by the segments: pointer-events alone would still leave a disabled group reachable by Tab
+        get disabled() {
+            return disabled;
+        },
         get value() {
             return rows.find((row) => row.checked)?.value ?? '';
         },
@@ -79,8 +84,8 @@ export function InputRadioGroup(unit: xnew.Unit,
 //----------------------------------------------------------------------------------------------------
 
 export function InputRadio(unit: xnew.Unit,
-    { value = '', label, name, checked = false, className = '', style = '', ...others }:
-    { value?: string, label?: string, name?: string, checked?: boolean, className?: string, style?: string, [key: string]: any } = {}
+    { value = '', label, name, checked = false, disabled = false, className = '', style = '', ...others }:
+    { value?: string, label?: string, name?: string, checked?: boolean, disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const group = xnew.context(InputRadioGroup);
 
@@ -94,14 +99,18 @@ export function InputRadio(unit: xnew.Unit,
             & + & { border-left: 1px solid currentColor; }
             &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
             &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `
             width: 0; height: 0; margin: 0; opacity: 0;
         `,
     });
 
-    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style });
-    const input = xnew({ tag: 'input', type: 'radio', name: name ?? group?.name, value, checked, className: css.input, ...others });
+    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
+
+    // a disabled group disables every segment: the group's own tint already covers the look, so only the input follows
+    const inert = disabled === true || group?.disabled === true;
+    const input = xnew({ tag: 'input', type: 'radio', name: name ?? group?.name, value, checked, disabled: inert, className: css.input, ...others });
 
     group?.register(unit);
 
