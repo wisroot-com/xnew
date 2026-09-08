@@ -1301,8 +1301,11 @@ class RoomIO {
         this.io = io;
         this.room = room;
         this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true }) : null;
-        this.root = new Unit(Unit.currentUnit, Component, Object.assign(Object.assign({}, props), { preinit: (unit) => { unit._.sync.root = unit; RoomIO.rooms.set(unit, this); } }));
-        this.root._.protected = true;
+        this.root = new Unit(Unit.currentUnit, Component, Object.assign(Object.assign({}, props), { preinit: (unit) => {
+                unit._.sync.root = unit;
+                unit._.protected = true;
+                RoomIO.rooms.set(unit, this);
+            } }));
         if (this.socket !== null) {
             this.root.on('finalize', () => this.socket.disconnect());
         }
@@ -3381,9 +3384,6 @@ function Tabs(unit, { names }) {
     });
     let active = (_a = keys[0]) !== null && _a !== void 0 ? _a : '';
     function apply() {
-        if (panel === null) {
-            return;
-        }
         keys.forEach((key) => {
             xnew.find(Panel, { parent: panel, key }).forEach((group) => {
                 if (group.container !== null) {

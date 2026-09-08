@@ -101,7 +101,7 @@ function Tabs(unit: xnew.Unit, { names }: { names: Record<string, string> }) {
     xnew.nest('<div style="display: flex; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); margin-bottom: 0.25em;">');
 
     // the groups a tab names are this strip's siblings, so the panel above holds both
-    const panel = unit.parent;
+    const panel = unit.parent as xnew.Unit;
     const keys = Object.keys(names);
     const buttons = keys.map((key) => {
         const button = xnew('<button type="button" style="flex: 1; min-width: 0; height: 2em; padding: 0 0.25em; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: inherit; font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">', names[key]);
@@ -113,9 +113,6 @@ function Tabs(unit: xnew.Unit, { names }: { names: Record<string, string> }) {
     let active = keys[0] ?? '';
 
     function apply() {
-        if (panel === null) {
-            return;
-        }
         keys.forEach((key) => {
             xnew.find(Panel, { parent: panel, key }).forEach((group: xnew.Unit) => {
                 if (group.container !== null) {
