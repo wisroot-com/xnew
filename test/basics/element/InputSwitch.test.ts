@@ -98,7 +98,7 @@ describe('basics InputSwitch', () => {
         expect(seen).toEqual([['input', true], ['change', true]]);
     });
 
-    it('reads and writes the on/off state through .value, driving the Gate', () => {
+    it('reads and writes the on/off state through .value', () => {
         const unit = xnew(InputSwitch);
         jest.advanceTimersByTime(0);
 

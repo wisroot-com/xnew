@@ -524,6 +524,14 @@ the rule, then one line of why.
   `xnew(...)` inside them must be wrapped in `xnew.scope(...)` (§7) — otherwise `xsync.emit` throws
   `no socket bound to this root` (Unit.currentUnit isn't the sync node).
 
+- **InputCheckbox and InputSwitch share one core, `Toggle` (2026-09).** Everything but the look was
+  identical between them (hidden checkbox, `data-checked` mirror, `.value` / `.input`), and it had already
+  drifted once — their `margin` disagreed. `Toggle` holds that machinery and NO look of its own; each host
+  keeps only its container css and its default part, extends `Toggle` with `className: `${css.container}
+  ${className}``, and draws its mark / knob inside `xnew.standalone`. `Toggle` is not in `xbasics` — it is
+  a shared core, not a component to use. Its defines land on the host unit through `xnew.extend`, so
+  `.value` / `.input` still read as InputCheckbox's own, and the host's own `xnew.standalone` still fires
+  only when the HOST is used standalone (extending `Toggle` from inside does not count as being nested).
 - **InputCheckbox's `unit.current` is the CONTAINER, not the hidden input (modeled on Listbox, 2026-07).**
   The `<input>` is nested as a *child unit*
   (`xnew({ tag: 'input', … })`, no `xnew.nest`) so the container stays current — an outer component

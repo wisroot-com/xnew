@@ -1,14 +1,14 @@
 //----------------------------------------------------------------------------------------------------
-// InputSwitch — sliding on / off switch backed by a hidden native <input type="checkbox">
+// InputSwitch — sliding on / off switch; the state machinery is Toggle, this file is the track's look
 // unit.current is the container; standalone it draws the default Knob, else a compose fn styles itself
 // off `data-checked`; write through `.value` (never `.input.checked` — it fires nothing).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { dispatchCommit } from '../../utils/dom';
+import { Toggle } from './Toggle';
 
 export function InputSwitch(unit: xnew.Unit,
-    { value = false, disabled = false, className = '', style = '', ...others }:
+    { className = '', ...others }:
     { value?: boolean, disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
@@ -21,42 +21,13 @@ export function InputSwitch(unit: xnew.Unit,
             &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
-        input: `
-            width: 0; height: 0; margin: 0; opacity: 0;
-        `,
     });
 
-    const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined }) as HTMLElement;
-
-    const input = xnew({ tag: 'input', type: 'checkbox', checked: value, disabled, className: css.input, ...others });
-
-    // the hidden input holds the state (read through `input`); the container attribute only drives the look
-    function apply(checked: boolean) {
-        (input.current as HTMLInputElement).checked = checked;
-        container.toggleAttribute('data-checked', checked);
-    }
-    apply(value);
-
-    // the setter's own dispatch re-enters here, which is harmless: it re-applies the value already applied
-    input.on('input', ({ value }: { value: boolean }) => apply(value));
+    xnew.extend(Toggle, { className: `${css.container} ${className}`, ...others });
 
     xnew.standalone(() => {
         xnew(Knob);
     });
-
-    return {
-        get value() {
-            return (input.current as HTMLInputElement).checked;
-        },
-        // announced on the input, as a user's click would, so `event.target` reads the same either way
-        set value(checked: boolean) {
-            apply(checked);
-            dispatchCommit(input.current as HTMLInputElement, checked);
-        },
-        get input() {
-            return input.current as HTMLInputElement;
-        },
-    };
 }
 
 //----------------------------------------------------------------------------------------------------

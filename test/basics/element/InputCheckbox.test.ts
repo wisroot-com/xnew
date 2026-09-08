@@ -155,7 +155,7 @@ describe('basics InputCheckbox', () => {
         expect(seen).toEqual([['input', true], ['change', true]]);
     });
 
-    it('reads and writes the checked state through .value, driving the Gate', () => {
+    it('reads and writes the checked state through .value', () => {
         const unit = xnew(InputCheckbox);
         jest.advanceTimersByTime(0);
 

@@ -2146,23 +2146,14 @@ function InputRangeStatus(unit, { value = 0, vertical = false } = {}) {
     });
 }
 
-function InputCheckbox(unit, _a = {}) {
+function Toggle(unit, _a = {}) {
     var { value = false, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
     const css = xnew.css('base', {
-        container: `
-            display: inline-block;
-            width: 1.5em; height: 1.5em; margin: 0.125em;
-            position: relative;
-            border: 1px solid currentColor; border-radius: 0.25em;
-            cursor: pointer; user-select: none;
-            &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
-            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
-        `,
         input: `
             width: 0; height: 0; margin: 0; opacity: 0;
         `,
     });
-    const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
+    const container = xnew.nest({ tag: 'label', className, style, 'data-disabled': disabled === true ? '' : undefined });
     const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, disabled, className: css.input }, others));
     function apply(checked) {
         input.current.checked = checked;
@@ -2170,9 +2161,6 @@ function InputCheckbox(unit, _a = {}) {
     }
     apply(value);
     input.on('input', ({ value }) => apply(value));
-    xnew.standalone(() => {
-        xnew(CheckMark);
-    });
     return {
         get value() {
             return input.current.checked;
@@ -2185,6 +2173,25 @@ function InputCheckbox(unit, _a = {}) {
             return input.current;
         },
     };
+}
+
+function InputCheckbox(unit, _a = {}) {
+    var { className = '' } = _a, others = __rest(_a, ["className"]);
+    const css = xnew.css('base', {
+        container: `
+            display: inline-block;
+            width: 1.5em; height: 1.5em; margin: 0.125em;
+            position: relative;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            cursor: pointer; user-select: none;
+            &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
+        `,
+    });
+    xnew.extend(Toggle, Object.assign({ className: `${css.container} ${className}` }, others));
+    xnew.standalone(() => {
+        xnew(CheckMark);
+    });
 }
 function CheckMark() {
     const css = xnew.css('base', {
@@ -2282,7 +2289,7 @@ function InputNumber(unit, _a = {}) {
 }
 
 function InputSwitch(unit, _a = {}) {
-    var { value = false, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
+    var { className = '' } = _a, others = __rest(_a, ["className"]);
     const css = xnew.css('base', {
         container: `
             display: inline-block;
@@ -2293,33 +2300,11 @@ function InputSwitch(unit, _a = {}) {
             &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
-        input: `
-            width: 0; height: 0; margin: 0; opacity: 0;
-        `,
     });
-    const container = xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
-    const input = xnew(Object.assign({ tag: 'input', type: 'checkbox', checked: value, disabled, className: css.input }, others));
-    function apply(checked) {
-        input.current.checked = checked;
-        container.toggleAttribute('data-checked', checked);
-    }
-    apply(value);
-    input.on('input', ({ value }) => apply(value));
+    xnew.extend(Toggle, Object.assign({ className: `${css.container} ${className}` }, others));
     xnew.standalone(() => {
         xnew(Knob);
     });
-    return {
-        get value() {
-            return input.current.checked;
-        },
-        set value(checked) {
-            apply(checked);
-            dispatchCommit(input.current, checked);
-        },
-        get input() {
-            return input.current;
-        },
-    };
 }
 function Knob() {
     const css = xnew.css('base', {
