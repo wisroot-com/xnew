@@ -145,7 +145,7 @@ export function ListboxButton(unit: xnew.Unit,
             padding: 0 0.5em;
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: pointer; user-select: none;
-            &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:not([data-open]):hover { background: color-mix(in srgb, currentColor 10%, transparent); }
         `,
         label: `
             flex: 1 1 0; min-width: 0;
@@ -227,8 +227,9 @@ export function ListboxItem(unit: xnew.Unit,
             display: flex; align-items: center;
             white-space: nowrap;
             cursor: pointer; user-select: none;
-            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-checked]:hover { background: color-mix(in srgb, currentColor 30%, transparent); }
         `,
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });

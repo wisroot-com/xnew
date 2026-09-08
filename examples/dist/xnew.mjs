@@ -2184,7 +2184,9 @@ function InputCheckbox(unit, _a = {}) {
             position: relative;
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: pointer; user-select: none;
+            &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-checked]:hover { background: color-mix(in srgb, currentColor 30%, transparent); }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
@@ -2297,7 +2299,9 @@ function InputSwitch(unit, _a = {}) {
             position: relative;
             border: 1px solid currentColor; border-radius: 1em;
             cursor: pointer; user-select: none;
+            &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-checked]:hover { background: color-mix(in srgb, currentColor 30%, transparent); }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
@@ -2491,7 +2495,7 @@ function ListboxButton(unit, _a = {}) {
             padding: 0 0.5em;
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: pointer; user-select: none;
-            &:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:not([data-open]):hover { background: color-mix(in srgb, currentColor 10%, transparent); }
         `,
         label: `
             flex: 1 1 0; min-width: 0;
@@ -2548,8 +2552,9 @@ function ListboxItem(unit, _a = {}) {
             display: flex; align-items: center;
             white-space: nowrap;
             cursor: pointer; user-select: none;
-            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-checked]:hover { background: color-mix(in srgb, currentColor 30%, transparent); }
         `,
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
@@ -2635,8 +2640,9 @@ function InputRadio(unit, _a = {}) {
             white-space: nowrap;
             cursor: pointer; user-select: none;
             & + & { border-left: 1px solid currentColor; }
-            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:has(input:checked):hover { background: color-mix(in srgb, currentColor 30%, transparent); }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `

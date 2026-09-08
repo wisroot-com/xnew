@@ -191,7 +191,7 @@ describe('basics Listbox', () => {
     it('suppresses the trigger hover tint via data-open while the option list is open', () => {
         const { button } = build({}, ['low', 'mid']);
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
-        expect(styleText).toContain('&:not([data-open]):hover { background: color-mix(in srgb, currentColor 20%, transparent); }');
+        expect(styleText).toContain('&:not([data-open]):hover { background: color-mix(in srgb, currentColor 10%, transparent); }');
 
         expect(isOpen(button)).toBe(false);
         open(button);

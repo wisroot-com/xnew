@@ -131,6 +131,19 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   InputCheckbox / InputRange / InputSwitch `unit.current` IS the container (input / knob / meter are
   children) — for the others it ends on the innermost nested part, so read `unit.container` (or capture
   the element right after nesting it) when the component needs it later.
+- **One tint scale across every `basics/element` (2026-09): hover 10%, selected 20%, selected while
+  hovered 30%, structural lines (frame ring, scrollbar) 40%** — all `color-mix(in srgb, currentColor N%,
+  transparent)`. The 30% step exists because hover and selected both used to be 20%, which made a selected
+  radio segment or Listbox row unreadable under the pointer; every selectable part now carries BOTH rules.
+  `:focus-within` (InputText / InputNumber, 20%) is a different axis and stays out of the scale, as does
+  the InputRange meter fill. `tint.test.ts` enforces it by walking the stylesheet, so a new component with
+  a stray percentage fails there rather than in review.
+- **How a selected state is expressed depends on where the truth lives, and all three forms are correct
+  (2026-09):** `:has(input:checked)` when the native control already holds it — InputRadio uses this
+  because a radio's siblings are unchecked BY THE BROWSER, so a JS mirror would have nothing to run in a
+  segment used outside a group; `data-checked` toggled from JS when the component owns the state (Toggle,
+  ListboxItem); `data-active` on Panel's tabs, which is a different notion (the current tab, not a check).
+  Do not unify them — the `:has()` one is what keeps a lone InputRadio working.
 - **Basics components expose NO part-customization bag** (no `attributes` / `designs` prop — all
   removed 2026-07). A caller restyles only via `className` / `style` on the container, which reaches
   inner parts through inheritance — the frame border, the knob / meter background, and the state tint

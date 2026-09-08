@@ -97,8 +97,9 @@ export function InputRadio(unit: xnew.Unit,
             white-space: nowrap;
             cursor: pointer; user-select: none;
             & + & { border-left: 1px solid currentColor; }
-            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:has(input:checked):hover { background: color-mix(in srgb, currentColor 30%, transparent); }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `

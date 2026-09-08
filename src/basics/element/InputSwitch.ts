@@ -18,7 +18,9 @@ export function InputSwitch(unit: xnew.Unit,
             position: relative;
             border: 1px solid currentColor; border-radius: 1em;
             cursor: pointer; user-select: none;
+            &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-checked]:hover { background: color-mix(in srgb, currentColor 30%, transparent); }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
