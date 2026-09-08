@@ -184,7 +184,7 @@ declare namespace xnew {
 interface ClientStatus {
     id: string;
     name: string;
-    virtual?: boolean;
+    cpu?: boolean;
 }
 interface RoomStatus {
     id: string;
@@ -209,12 +209,14 @@ declare const xsync: {
         myself: ClientStatus;
     };
     emit(type: string, props?: Record<string, any>, clients?: ClientStatus | ClientStatus[]): void;
-    attach(client: {
-        id: string;
-        name?: string;
-    }): ClientStatus;
-    detach(id: string): boolean;
-    dispatch(type: string, id: string, props?: Record<string, any>): void;
+    cpu: {
+        join(client: {
+            id: string;
+            name?: string;
+        }): ClientStatus;
+        leave(id: string): boolean;
+        dispatch(type: string, id: string, props?: Record<string, any>): void;
+    };
     boot<C extends ComponentFn<any, any>>(options: BootOptions, Component: C, props?: PropsOf<C>): Unit;
 };
 

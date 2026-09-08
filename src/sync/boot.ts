@@ -70,9 +70,9 @@ export function bootServer(roomio: RoomIO): Unit {
 
     // emit only when the client's projection changed — the wire goes quiet between changes, so each delivery means "changed" on the client.
     const lastEmits = new Map<string, string>();
-    // a virtual member (xsync.attach) has no socket: nothing is projected for it, so state made private to it
+    // a CPU member (xsync.cpu.join) has no socket: nothing is projected for it, so state made private to it
     // with a visibility predicate never reaches anyone's wire.
-    root.on('update', () => roomio.clients.filter((client) => client.virtual !== true).forEach((client) => {
+    root.on('update', () => roomio.clients.filter((client) => client.cpu !== true).forEach((client) => {
         const tree = captureStateTree(client.id);
         const json = JSON.stringify(tree);
         if (lastEmits.get(client.id) !== json) {
@@ -89,7 +89,7 @@ export function bootServer(roomio: RoomIO): Unit {
         socket.join(room.id);
         // connect / disconnect are mirrors: RoomIO.announce dispatches here, relays to the other members
         // (the sender is excluded, since it dispatches from its own socket events) and refreshes the roster.
-        // xsync.attach / xsync.detach take the same path for a member that has no socket at all.
+        // xsync.cpu.join / xsync.cpu.leave take the same path for a member that has no socket at all.
         roomio.clients.push({ id: socket.id, name: query?.clientName ?? '' });
         roomio.announce('sync.connect', socket.id, socket);
         socket.on('emitToServer', (p: any) => {

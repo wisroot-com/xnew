@@ -3,13 +3,13 @@ import { xnew, xsync } from '../../src/index';
 import { ioMock, bootServer, bootClient, asServer, asClient } from './io-mock';
 
 //----------------------------------------------------------------------------------------------------
-// xsync.attach / detach / dispatch — 名簿にソケットの無いメンバーを置く。
+// xsync.cpu.join / leave / dispatch — 名簿にソケットの無いメンバー（CPU 席）を置く。
 //   置かれた側から見ると、線の向こうから来た人と区別が付かない（session.clients に載り、
 //   'sync.connect' が飛ぶ）が、線の側では素通しされる: 投影は送られず、そこからは何も届かない。
-//   その人のぶんを指すのはサーバー自身で、xsync.dispatch が「その人から届いた 1 通」を流す。
+//   その人のぶんを指すのはサーバー自身で、xsync.cpu.dispatch が「その人から届いた 1 通」を流す。
 //----------------------------------------------------------------------------------------------------
 
-describe('virtual members (xsync.attach / detach / dispatch)', () => {
+describe('CPU members (xsync.cpu.join / leave / dispatch)', () => {
     let hub: ReturnType<typeof ioMock>;
     let log: string[];
     let plays: string[];
@@ -33,9 +33,9 @@ describe('virtual members (xsync.attach / detach / dispatch)', () => {
             unit.on('play', ({ id, card }: any) => plays.push(`${id}:${card}`));
         });
         return {
-            add: (id: string, name?: string) => xsync.attach({ id, name }),
-            remove: (id: string) => xsync.detach(id),
-            act: (type: string, id: string, props?: any) => xsync.dispatch(type, id, props),
+            add: (id: string, name?: string) => xsync.cpu.join({ id, name }),
+            remove: (id: string) => xsync.cpu.leave(id),
+            act: (type: string, id: string, props?: any) => xsync.cpu.dispatch(type, id, props),
             roster: () => xsync.session.clients.map((client) => client.id),
         };
     }
@@ -49,16 +49,16 @@ describe('virtual members (xsync.attach / detach / dispatch)', () => {
 
     const boot = (): RoomUnit => bootServer({ io: hub.io }, Room) as RoomUnit;
 
-    it('attach puts the member on the roster and announces it like a connection', () => {
+    it('join puts the member on the roster and announces it like a connection', () => {
         const room = boot();
         const client = asServer(() => room.add('cpu1', 'CPU 1'));
 
-        expect(client).toEqual({ id: 'cpu1', name: 'CPU 1', virtual: true });
+        expect(client).toEqual({ id: 'cpu1', name: 'CPU 1', cpu: true });
         expect(asServer(() => room.roster())).toEqual(['cpu1']);
         expect(log).toEqual(['connect:cpu1']);
     });
 
-    it('detach takes it back off; a real client is refused (it leaves by disconnecting)', () => {
+    it('leave takes it back off; a real client is refused (it leaves by disconnecting)', () => {
         const room = boot();
         asServer(() => { room.add('cpu1'); hub.connect('c1'); });
 
@@ -81,7 +81,7 @@ describe('virtual members (xsync.attach / detach / dispatch)', () => {
 
     it('real clients see it in their own roster and get the connect relay', () => {
         const server = bootServer({ io: hub.io }, function Server(unit: Unit) {
-            return { add: (id: string, name?: string) => xsync.attach({ id, name }) };
+            return { add: (id: string, name?: string) => xsync.cpu.join({ id, name }) };
         }) as Unit & { add(id: string, name?: string): any };
         const seen: string[] = [];
         let roster: string[] = [];
@@ -117,22 +117,22 @@ describe('virtual members (xsync.attach / detach / dispatch)', () => {
         expect(plays).toEqual(['cpu1:7']);
     });
 
-    it('dispatch refuses the reserved namespace and anyone who is not a virtual member', () => {
+    it('dispatch refuses the reserved namespace and anyone who is not a CPU member', () => {
         const room = boot();
         asServer(() => { room.add('cpu1'); hub.connect('c1'); });
 
         expect(() => asServer(() => room.act('sync.connect', 'cpu1'))).toThrow(/namespace/);
-        expect(() => asServer(() => room.act('play', 'c1', { card: 1 }))).toThrow(/not a virtual member/);
-        expect(() => asServer(() => room.act('play', 'nobody', { card: 1 }))).toThrow(/not a virtual member/);
+        expect(() => asServer(() => room.act('play', 'c1', { card: 1 }))).toThrow(/not a CPU member/);
+        expect(() => asServer(() => room.act('play', 'nobody', { card: 1 }))).toThrow(/not a CPU member/);
         expect(plays).toEqual([]);
     });
 
     it('is server side only', () => {
         const client = bootClient({ socket: hub.connect('c1') }, function Client(unit: Unit) {
             return {
-                add: () => xsync.attach({ id: 'cpu1' }),
-                remove: () => xsync.detach('cpu1'),
-                act: () => xsync.dispatch('play', 'cpu1'),
+                add: () => xsync.cpu.join({ id: 'cpu1' }),
+                remove: () => xsync.cpu.leave('cpu1'),
+                act: () => xsync.cpu.dispatch('play', 'cpu1'),
             };
         }) as Unit & { add(): any, remove(): any, act(): any };
 

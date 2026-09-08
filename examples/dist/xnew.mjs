@@ -1201,7 +1201,7 @@ function bootServer(roomio) {
         return nodes;
     };
     const lastEmits = new Map();
-    root.on('update', () => roomio.clients.filter((client) => client.virtual !== true).forEach((client) => {
+    root.on('update', () => roomio.clients.filter((client) => client.cpu !== true).forEach((client) => {
         const tree = captureStateTree(client.id);
         const json = JSON.stringify(tree);
         if (lastEmits.get(client.id) !== json) {
@@ -1317,7 +1317,7 @@ class RoomIO {
             this.socket.emit(type, data);
         }
         else {
-            const targets = clients === undefined ? [this.room.id] : [clients].flat().filter((client) => client.virtual !== true).map((client) => client.id);
+            const targets = clients === undefined ? [this.room.id] : [clients].flat().filter((client) => client.cpu !== true).map((client) => client.id);
             targets.forEach((target) => this.io.to(target).emit(type, data));
         }
     }
@@ -1342,21 +1342,21 @@ class RoomIO {
         this.emit('status', { clients: this.clients });
         this.dispatch('sync.status', undefined);
     }
-    attach({ id, name = '' }) {
+    joinCpu({ id, name = '' }) {
         if (id === '') {
-            throw new Error('xsync.attach: a virtual member needs an id.');
+            throw new Error('xsync.cpu.join: a CPU member needs an id.');
         }
         if (this.clients.some((client) => client.id === id) === true) {
-            throw new Error(`xsync.attach: "${id}" is already in this room.`);
+            throw new Error(`xsync.cpu.join: "${id}" is already in this room.`);
         }
-        const client = { id, name, virtual: true };
+        const client = { id, name, cpu: true };
         this.clients.push(client);
         this.announce('sync.connect', id);
         return client;
     }
-    detach(id) {
+    leaveCpu(id) {
         const client = this.clients.find((entry) => entry.id === id);
-        if (client === undefined || client.virtual !== true) {
+        if (client === undefined || client.cpu !== true) {
             return false;
         }
         this.clients = this.clients.filter((entry) => entry !== client);
@@ -1429,31 +1429,33 @@ const xsync = {
             roomio.emit('emitToServer', { type, syncId, data: props, to: to === null || to === void 0 ? void 0 : to.map((client) => client.id) });
         }
     },
-    attach(client) {
-        if (getSide() !== 'server') {
-            throw new Error('xsync.attach is only available on the server side.');
-        }
-        return RoomIO.of(Unit.currentUnit).attach(client);
-    },
-    detach(id) {
-        if (getSide() !== 'server') {
-            throw new Error('xsync.detach is only available on the server side.');
-        }
-        return RoomIO.of(Unit.currentUnit).detach(id);
-    },
-    dispatch(type, id, props = {}) {
-        var _a;
-        if (getSide() !== 'server') {
-            throw new Error('xsync.dispatch is only available on the server side.');
-        }
-        if (type.startsWith('sync.') === true) {
-            throw new Error(`xsync.dispatch: "sync." is the library's own namespace, only boot may dispatch it [${type}]`);
-        }
-        const roomio = RoomIO.of(Unit.currentUnit);
-        if (((_a = roomio.clients.find((client) => client.id === id)) === null || _a === void 0 ? void 0 : _a.virtual) !== true) {
-            throw new Error(`xsync.dispatch: "${id}" is not a virtual member of this room.`);
-        }
-        roomio.dispatch(type, id, props);
+    cpu: {
+        join(client) {
+            if (getSide() !== 'server') {
+                throw new Error('xsync.cpu.join is only available on the server side.');
+            }
+            return RoomIO.of(Unit.currentUnit).joinCpu(client);
+        },
+        leave(id) {
+            if (getSide() !== 'server') {
+                throw new Error('xsync.cpu.leave is only available on the server side.');
+            }
+            return RoomIO.of(Unit.currentUnit).leaveCpu(id);
+        },
+        dispatch(type, id, props = {}) {
+            var _a;
+            if (getSide() !== 'server') {
+                throw new Error('xsync.cpu.dispatch is only available on the server side.');
+            }
+            if (type.startsWith('sync.') === true) {
+                throw new Error(`xsync.cpu.dispatch: "sync." is the library's own namespace, only boot may dispatch it [${type}]`);
+            }
+            const roomio = RoomIO.of(Unit.currentUnit);
+            if (((_a = roomio.clients.find((client) => client.id === id)) === null || _a === void 0 ? void 0 : _a.cpu) !== true) {
+                throw new Error(`xsync.cpu.dispatch: "${id}" is not a CPU member of this room.`);
+            }
+            roomio.dispatch(type, id, props);
+        },
     },
     boot(options, Component, props) {
         const roomio = new RoomIO(options, Component, props);
