@@ -31,6 +31,17 @@ describe('basics InputText', () => {
         expect(input.value).toBe('<b>"a" & \'b\'</b>');
     });
 
+    it('reads and writes the string through .value', () => {
+        const unit = xnew(InputText, { value: 'hello' });
+        const input = unit.current.querySelector('input') as HTMLInputElement;
+
+        expect(unit.value).toBe('hello');
+
+        unit.value = 'world';
+        expect(input.value).toBe('world');
+        expect(unit.value).toBe('world');
+    });
+
     it('exposes the inner input element through .input', () => {
         const unit = xnew(InputText, { value: 'hello' });
         const input = unit.current.querySelector('input') as HTMLInputElement;

@@ -137,6 +137,25 @@ describe('basics InputCheckbox', () => {
         expect(unit.current.querySelector('svg')).toBeNull();
     });
 
+    it('reads and writes the checked state through .value, driving the Gate', () => {
+        const unit = xnew(InputCheckbox);
+        jest.advanceTimersByTime(0);
+
+        expect(unit.value).toBe(false);
+
+        unit.value = true;
+        jest.advanceTimersByTime(0);
+        expect(unit.value).toBe(true);
+        expect(inputOf(unit).checked).toBe(true);
+        expect(unit.current.hasAttribute('data-checked')).toBe(true);
+
+        unit.value = false;
+        jest.advanceTimersByTime(1);
+        expect(unit.value).toBe(false);
+        expect(inputOf(unit).checked).toBe(false);
+        expect(unit.current.hasAttribute('data-checked')).toBe(false);
+    });
+
     it('exposes the hidden native checkbox through .input', () => {
         const unit = xnew(InputCheckbox, { value: true });
 

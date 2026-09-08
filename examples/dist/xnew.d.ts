@@ -349,6 +349,7 @@ declare function InputRange(unit: xnew.Unit, { value, min, max, step, vertical, 
     style?: string;
     [key: string]: any;
 }): {
+    value: number;
     readonly input: HTMLInputElement;
 };
 
@@ -363,6 +364,7 @@ declare function InputCheckbox(unit: xnew.Unit, { value, gate, className, style,
     style?: string;
     [key: string]: any;
 }): {
+    value: boolean;
     readonly input: HTMLInputElement;
     readonly gate: Unit;
 };
@@ -373,6 +375,7 @@ declare function InputText(unit: xnew.Unit, { value, className, style, ...others
     style?: string;
     [key: string]: any;
 }): {
+    value: string;
     readonly input: HTMLInputElement;
 };
 
@@ -382,6 +385,7 @@ declare function InputNumber(unit: xnew.Unit, { value, className, style, ...othe
     style?: string;
     [key: string]: any;
 }): {
+    value: number;
     readonly input: HTMLInputElement;
 };
 
@@ -396,6 +400,7 @@ declare function InputSwitch(unit: xnew.Unit, { value, gate, className, style, .
     style?: string;
     [key: string]: any;
 }): {
+    value: boolean;
     readonly input: HTMLInputElement;
     readonly gate: Unit;
 };
@@ -408,6 +413,8 @@ declare function InputRadio(unit: xnew.Unit, { value, name, checked, className, 
     style?: string;
     [key: string]: any;
 }): {
+    readonly value: string;
+    checked: boolean;
     readonly input: HTMLInputElement;
 };
 

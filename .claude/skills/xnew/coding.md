@@ -335,6 +335,60 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **Every value-bearing `basics/element` component exposes its state as a `.value` get/set define whose
+  type mirrors its own `value` prop — `.input` stays only as an escape hatch to the raw element, and is
+  never the write path (2026-09).** Writing through `.input` skips the component's own bookkeeping and
+  silently desyncs it: `input.value = 50` on InputRange left the meter / status stale (a plain assignment
+  fires no `input` event), and `input.checked = true` on InputCheckbox / InputSwitch bypassed the Gate, so
+  `data-checked` and the composed mark disagreed with the input. The `.value` setters route through the
+  right channel instead — InputRange refires a bubbling `input` (so the parts follow, and host listeners
+  hear a programmatic set too — deliberate, since the shared container IS the internal bus), and
+  InputCheckbox / InputSwitch call `gate.open()` / `gate.close()`. Types follow each component's own
+  `value` prop, NOT one blanket type: string (InputText), number (InputNumber / InputRange, `valueAsNumber`,
+  so NaN on an empty field), boolean (InputCheckbox / InputSwitch), hex string (ColorPicker), selected
+  item (Listbox). Two deliberate exceptions: **InputRadio's `.value` is read-only** (a segment's value is
+  its identity, fixed at creation — its mutable state is `.checked` get/set, and there is no group-level
+  value getter; read it off the checked segment).
+
+- **When a component's setter can express everything a `select()`-style action method did, drop the method —
+  one write path, not two (2026-09).** Listbox's `select(value)` define had exactly one caller (ListboxItem's
+  click) and did `apply` + `xnew.emit('-change')` + `gate.close()`; that IS the setter now, and the row
+  press writes `listbox.value = value` like any host would. Consequence to keep in mind: **Listbox's
+  `.value` setter announces** (`-change`) and closes the menu, so a host mirroring `-change` back into
+  `.value` loops — guard it. The deferred default adoption stays silent by calling the internal `apply`
+  directly, never the setter. ColorPicker's and Panel's Color / Tabs setters are still silent, with
+  `Tabs.select()` kept as the notifying action (a live caller in xnew-gamelab uses it) — that split is
+  unresolved, not a rule.
+
+- **A default that a component can compute from its own props must be applied synchronously in the body,
+  not in a deferred `xnew.timeout` — a caller reads `.value` right after `xnew(...)`, not a tick later
+  (2026-09).** `xnew(Listbox, { items })` left `.value === ''` for one tick because Listbox only
+  adopted the first item after every ListboxItem had registered itself. `items` is right there in the
+  standalone path, so `Listbox` now resolves `value ?? itemDef(items[0]).value` before extending the state;
+  the deferred adoption stays for the composed path, where the caller builds the rows and the component
+  genuinely cannot know them up front. Panel's `listbox()` builder resolves the same default for its own
+  path (it hand-builds the rows, so Listbox sees no `items`) — keep both.
+
+- **A helper component that exists ONLY to land defines before the body builds children should be an
+  INLINE `xnew.extend(() => ({ … }))`, not a named top-level component (2026-09).** Defines attach only
+  after a component returns (§2), so a component whose own body creates children that read those defines
+  (Listbox's ListboxButton / ListboxMenu / ListboxItem call `.bind` / `.register` / `.gate` synchronously)
+  must get them on the unit first. That was a separate `ListboxState` component; it is now an inline extend
+  in Listbox's body, holding the state in plain closures right above it. Inline is safe here because the
+  helper was never a context key (the parts resolve `xnew.context(Listbox)`, the outer component) and never
+  exported. The fresh function identity per call costs nothing: `Unit` destroy does
+  `component2units.delete(Component, this)` and `MapSet.delete` drops a key once its set empties. Keep a
+  NAMED component only when something resolves it — `xnew.context` / `xnew.find` / an export.
+
+- **A Panel row that owns its control as a CHILD unit must re-expose `.value` as a delegating define —
+  extending the control onto the row instead would flip `xnew.standalone` to false and silently drop the
+  control's default inner parts (2026-09).** `panel.range()` / `panel.checkbox()` had no `.value` at all
+  while `panel.color()` / `panel.listbox()` did, because the first two do `xnew(InputRange, …)` (a child)
+  and the last builds via `xnew.extend(Listbox, …)`. The fix is `const range = xnew(InputRange, …); return
+  { get value() { return range.value; }, set value(v) { range.value = v; } }` — NOT an extend, which would
+  cost InputRange its meter / status and InputCheckbox its mark. Tabs' `active` getter was renamed to
+  `.value` (get/set) in the same pass, so every value-bearing row answers to one name.
+
 - **Never let a `+event` listener mount a unit that itself listens for that same `+event` (e.g.
   `unit.on('+x', () => unit.change(Next))` where `Next` registers `'+x'` too) — put the ONE listener on a
   stable ancestor instead.** `Unit.emit` iterates `type2units` live, so a unit added during the emit also

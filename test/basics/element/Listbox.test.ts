@@ -75,6 +75,21 @@ describe('basics Listbox', () => {
         expect(labelOf(button).textContent).toBe('mid');
     });
 
+    it('reads the first item as .value from tick 0 when standalone (items are known up front)', () => {
+        const box = xnew(Listbox, { items: ['low', 'mid', 'high'] });
+
+        // no advanceTimersByTime: a caller reading right after xnew(...) must already see the default
+        expect(box.value).toBe('low');
+    });
+
+    it('keeps an explicit value over the first item', () => {
+        expect(xnew(Listbox, { value: 'high', items: ['low', 'mid', 'high'] }).value).toBe('high');
+    });
+
+    it('reads .value as an empty string when standalone with no items', () => {
+        expect(xnew(Listbox, { items: [] }).value).toBe('');
+    });
+
     it('defaults to the first item', () => {
         const { box, button } = build({}, ['low', 'mid', 'high']);
         // the default is adopted one tick later, once every item has registered its value
@@ -119,7 +134,7 @@ describe('basics Listbox', () => {
         expect(backdropOf(menu).style.pointerEvents).toBe('none');
     });
 
-    it('selects an option: updates the label and value, emits -change, and closes', () => {
+    it('selects an option by press: updates the label and value, emits -change, and closes', () => {
         const { box, button, menu } = build({}, ['low', 'mid', 'high']);
 
         const received: string[] = [];
@@ -134,6 +149,35 @@ describe('basics Listbox', () => {
         // data-open persists through the close animation and clears once the gate is fully closed
         jest.advanceTimersByTime(300);
         expect(isOpen(button)).toBe(false);
+    });
+
+    it('moves the selection through a .value set: label, marks, -change and the close', () => {
+        const { box, button, menu } = build({}, ['low', 'mid', 'high']);
+
+        const received: string[] = [];
+        box.on('-change', ({ value }: { value: string }) => received.push(value));
+
+        open(button);
+        box.value = 'high';
+
+        expect(box.value).toBe('high');
+        expect(labelOf(button).textContent).toBe('high');
+        expect(rowsOf(menu)[2].hasAttribute('data-checked')).toBe(true);
+        // the setter is the one write path, so a host assignment reports exactly like a row press
+        expect(received).toEqual(['high']);
+        jest.advanceTimersByTime(300);
+        expect(isOpen(button)).toBe(false);
+    });
+
+    it('adopts the default without reporting it as a change', () => {
+        const { box } = build({}, ['low', 'mid', 'high']);
+
+        const received: string[] = [];
+        box.on('-change', ({ value }: { value: string }) => received.push(value));
+        jest.advanceTimersByTime(1);
+
+        expect(box.value).toBe('low');
+        expect(received).toEqual([]);
     });
 
     it('marks the current value with data-checked in the option list', () => {

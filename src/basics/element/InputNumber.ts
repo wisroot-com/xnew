@@ -2,6 +2,7 @@
 // InputNumber — native number field wrapped in a framed container
 // The container owns the border / spacing and routes clicks to the inner transparent <input>;
 // the unstylable native spinner is hidden so the field matches the other Input* elements.
+// Hosts read / write the number through `.value` (NaN while the field is empty); `.input` is the raw element.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -39,6 +40,12 @@ export function InputNumber(unit: xnew.Unit,
     unit.on('click', () => input.current.focus());
 
     return {
+        get value() {
+            return (input.current as HTMLInputElement).valueAsNumber;
+        },
+        set value(number: number) {
+            (input.current as HTMLInputElement).value = String(number);
+        },
         get input() {
             return input.current as HTMLInputElement;
         },

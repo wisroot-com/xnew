@@ -1924,7 +1924,7 @@ function Button(unit, _a = {}) {
             padding: 0 0.5em; margin: 0.125em;
             cursor: pointer; user-select: none;
             border: 1px solid currentColor; border-radius: 0.25em;
-            &:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &:active { filter: brightness(0.5); }
         `,
     });
@@ -2016,6 +2016,14 @@ function InputRange(unit, _a = {}) {
         xnew(InputRangeStatus, { value: initial, vertical });
     }
     return {
+        get value() {
+            return input.current.valueAsNumber;
+        },
+        set value(number) {
+            const element = input.current;
+            element.value = String(number);
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+        },
         get input() {
             return input.current;
         },
@@ -2184,6 +2192,17 @@ function InputCheckbox(unit, _a = {}) {
         xnew(CheckMark);
     }
     return {
+        get value() {
+            return input.current.checked;
+        },
+        set value(checked) {
+            if (checked === true) {
+                gate.open();
+            }
+            else {
+                gate.close();
+            }
+        },
         get input() {
             return input.current;
         },
@@ -2229,6 +2248,12 @@ function InputText(unit, _a = {}) {
     const input = xnew(Object.assign({ tag: 'input', type: 'text', value, className: css.input }, others));
     unit.on('click', () => input.current.focus());
     return {
+        get value() {
+            return input.current.value;
+        },
+        set value(text) {
+            input.current.value = text;
+        },
         get input() {
             return input.current;
         },
@@ -2261,6 +2286,12 @@ function InputNumber(unit, _a = {}) {
     const input = xnew(Object.assign({ tag: 'input', type: 'number', value, className: css.input }, others));
     unit.on('click', () => input.current.focus());
     return {
+        get value() {
+            return input.current.valueAsNumber;
+        },
+        set value(number) {
+            input.current.value = String(number);
+        },
         get input() {
             return input.current;
         },
@@ -2297,6 +2328,17 @@ function InputSwitch(unit, _a = {}) {
         xnew(Knob);
     }
     return {
+        get value() {
+            return input.current.checked;
+        },
+        set value(checked) {
+            if (checked === true) {
+                gate.open();
+            }
+            else {
+                gate.close();
+            }
+        },
         get input() {
             return input.current;
         },
@@ -2338,6 +2380,15 @@ function InputRadio(unit, _a = {}) {
     xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style }, value);
     const input = xnew(Object.assign({ tag: 'input', type: 'radio', name, value, checked, className: css.input }, others));
     return {
+        get value() {
+            return input.current.value;
+        },
+        get checked() {
+            return input.current.checked;
+        },
+        set checked(current) {
+            input.current.checked = current;
+        },
         get input() {
             return input.current;
         },
@@ -2390,7 +2441,44 @@ function Listbox(unit, _a = {}) {
         `,
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
-    xnew.extend(ListboxState, { value, gate });
+    let selected = value !== null && value !== void 0 ? value : (items.length > 0 ? itemDef(items[0]).value : '');
+    const rows = [];
+    const labels = [];
+    const gateUnit = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: false, duration: 0 });
+    function text(value) {
+        var _a, _b;
+        return (_b = (_a = rows.find((row) => row.value === value)) === null || _a === void 0 ? void 0 : _a.label) !== null && _b !== void 0 ? _b : value;
+    }
+    function apply(value) {
+        selected = value;
+        for (const label of labels) {
+            label.textContent = text(selected);
+        }
+        for (const row of rows) {
+            row.check(row.value === selected);
+        }
+    }
+    xnew.timeout(() => apply(selected === '' && rows.length > 0 ? rows[0].value : selected));
+    xnew.extend(() => ({
+        get value() {
+            return selected;
+        },
+        set value(value) {
+            apply(value);
+            xnew.emit('-change', { value });
+            gateUnit.close();
+        },
+        get gate() {
+            return gateUnit;
+        },
+        register(row) {
+            rows.push(row);
+        },
+        bind(label) {
+            labels.push(label);
+            label.textContent = text(selected);
+        },
+    }));
     if (xnew.standalone === true) {
         xnew(() => {
             xnew.extend(ListboxButton);
@@ -2403,46 +2491,6 @@ function Listbox(unit, _a = {}) {
             }
         });
     }
-}
-function ListboxState(unit, { value, gate } = {}) {
-    let selected = value !== null && value !== void 0 ? value : '';
-    const items = [];
-    const labels = [];
-    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate !== null && gate !== void 0 ? gate : { open: false, duration: 0 });
-    function text(value) {
-        var _a, _b;
-        return (_b = (_a = items.find((item) => item.value === value)) === null || _a === void 0 ? void 0 : _a.label) !== null && _b !== void 0 ? _b : value;
-    }
-    function apply(value) {
-        selected = value;
-        for (const label of labels) {
-            label.textContent = text(selected);
-        }
-        for (const item of items) {
-            item.check(item.value === selected);
-        }
-    }
-    xnew.timeout(() => apply(selected === '' && items.length > 0 ? items[0].value : selected));
-    return {
-        get value() {
-            return selected;
-        },
-        get gate() {
-            return gate;
-        },
-        register(item) {
-            items.push(item);
-        },
-        bind(label) {
-            labels.push(label);
-            label.textContent = text(selected);
-        },
-        select(value) {
-            apply(value);
-            xnew.emit('-change', { value });
-            gate.close();
-        },
-    };
 }
 function ListboxChevron() {
     const css = xnew.css('base', {
@@ -2528,7 +2576,7 @@ function ListboxItem(unit, _a = {}) {
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     unit.on('click', ({ event }) => {
         event.stopPropagation();
-        listbox.select(value);
+        listbox.value = value;
     });
     if (xnew.standalone === true) {
         unit.current.textContent = label !== null && label !== void 0 ? label : value;
@@ -3437,10 +3485,16 @@ function Tabs(unit, { items, value }) {
             });
         });
     }
+    function move(key) {
+        if (keys.includes(key) === false) {
+            return false;
+        }
+        active = key;
+        apply();
+        return true;
+    }
     function select(key) {
-        if (keys.includes(key) === true) {
-            active = key;
-            apply();
+        if (move(key) === true) {
             xnew.emit('-change', { value: key });
         }
     }
@@ -3448,8 +3502,11 @@ function Tabs(unit, { items, value }) {
     panel === null || panel === void 0 ? void 0 : panel.on('childattach', apply);
     return {
         select,
-        get active() {
+        get value() {
             return active;
+        },
+        set value(key) {
+            move(key);
         },
     };
 }
@@ -3459,14 +3516,30 @@ function Separator(unit) {
 function Range(unit, _a) {
     var { name = '' } = _a, others = __rest(_a, ["name"]);
     xnew.nest(`<div style="display: flex; align-items: center; position: relative; cursor: pointer; user-select: none;">`);
-    xnew(InputRange, Object.assign(Object.assign({ name }, others), { style: 'width: 100%;' }));
+    const range = xnew(InputRange, Object.assign(Object.assign({ name }, others), { style: 'width: 100%;' }));
     xnew('<div style="position: absolute; left: 0.5em; pointer-events: none;">', name);
+    return {
+        get value() {
+            return range.value;
+        },
+        set value(number) {
+            range.value = number;
+        },
+    };
 }
 function Checkbox(unit, _a) {
     var { name = '' } = _a, others = __rest(_a, ["name"]);
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
-    xnew(InputCheckbox, Object.assign(Object.assign({ name }, others), { style: 'width: 1.25em; height: 1.25em;' }));
+    const checkbox = xnew(InputCheckbox, Object.assign(Object.assign({ name }, others), { style: 'width: 1.25em; height: 1.25em;' }));
+    return {
+        get value() {
+            return checkbox.value;
+        },
+        set value(checked) {
+            checkbox.value = checked;
+        },
+    };
 }
 function Color(unit, { name = '', value = '#ffffff' }) {
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
@@ -3497,6 +3570,10 @@ function Color(unit, { name = '', value = '#ffffff' }) {
     return {
         get value() {
             return current;
+        },
+        set value(text) {
+            current = text;
+            swatch.current.style.background = text;
         },
     };
 }

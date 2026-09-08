@@ -1,6 +1,8 @@
 //----------------------------------------------------------------------------------------------------
 // Panel — stackable form-style settings panel with a builder API; a row reports its edits through
 // its own events ('input' / '-change'), so the host decides what to do with them.
+// Every value-bearing row (range / checkbox / color / listbox / tabs) reads and writes through `.value`,
+// delegating to the control it owns; a `.value` set never emits '-change' (only a user edit does).
 // The frame (size / border / scrollport) is the panel's own; className / style tune it from outside.
 //----------------------------------------------------------------------------------------------------
 
@@ -142,11 +144,19 @@ function Tabs(unit: xnew.Unit, { items, value }: { items: ItemDef<any>[], value?
         });
     }
 
+    // moves the strip without announcing it; `select` adds the notification on top
+    function move(key: any): boolean {
+        if (keys.includes(key) === false) {
+            return false;
+        }
+        active = key;
+        apply();
+        return true;
+    }
+
     // one path for both the button and a code-driven switch, so either notifies the same way
     function select(key: any) {
-        if (keys.includes(key) === true) {
-            active = key;
-            apply();
+        if (move(key) === true) {
             xnew.emit('-change', { value: key });
         }
     }
@@ -158,8 +168,12 @@ function Tabs(unit: xnew.Unit, { items, value }: { items: ItemDef<any>[], value?
 
     return {
         select,
-        get active() {
+        get value() {
             return active;
+        },
+        // a programmatic set is not a user press, so it switches without emitting -change (as in Listbox)
+        set value(key: any) {
+            move(key);
         },
     };
 }
@@ -171,16 +185,36 @@ function Separator(unit: xnew.Unit) {
 function Range(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key: string]: any }) {
     xnew.nest(`<div style="display: flex; align-items: center; position: relative; cursor: pointer; user-select: none;">`);
 
-    xnew(InputRange, { name, ...others, style: 'width: 100%;' });
+    // a child unit rather than an extend, so InputRange stays standalone and keeps drawing its meter / status
+    const range = xnew(InputRange, { name, ...others, style: 'width: 100%;' });
 
     xnew('<div style="position: absolute; left: 0.5em; pointer-events: none;">', name);
+
+    return {
+        get value() {
+            return range.value;
+        },
+        set value(number: number) {
+            range.value = number;
+        },
+    };
 }
 
 function Checkbox(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key: string]: any }) {
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
     xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
 
-    xnew(InputCheckbox, { name, ...others, style: 'width: 1.25em; height: 1.25em;' });
+    // a child unit rather than an extend, so InputCheckbox stays standalone and keeps drawing its mark
+    const checkbox = xnew(InputCheckbox, { name, ...others, style: 'width: 1.25em; height: 1.25em;' });
+
+    return {
+        get value() {
+            return checkbox.value;
+        },
+        set value(checked: boolean) {
+            checkbox.value = checked;
+        },
+    };
 }
 
 function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: string, value?: string, key?: any }) {
@@ -217,6 +251,11 @@ function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: strin
     return {
         get value() {
             return current;
+        },
+        // only the swatch moves; `-change` stays reserved for edits made in the picker
+        set value(text: string) {
+            current = text;
+            swatch.current.style.background = text;
         },
     };
 }

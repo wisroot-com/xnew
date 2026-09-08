@@ -117,12 +117,12 @@ describe('basics Panel', () => {
 
             jest.advanceTimersByTime(1);
             tabButton(host, 'Right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
-            expect(tabs.active).toBe('right');
+            expect(tabs.value).toBe('right');
 
             tabs.select('left');
             expect((left.container as HTMLElement).style.display).not.toBe('none');
             expect((right.container as HTMLElement).style.display).toBe('none');
-            expect(tabs.active).toBe('left');
+            expect(tabs.value).toBe('left');
             expect(values).toEqual(['right', 'left']);
         });
 
@@ -145,7 +145,7 @@ describe('basics Panel', () => {
             const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
             const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
 
-            expect(tabs.active).toBe('right');
+            expect(tabs.value).toBe('right');
             expect((left.container as HTMLElement).style.display).toBe('none');
             expect((right.container as HTMLElement).style.display).not.toBe('none');
         });
@@ -170,9 +170,65 @@ describe('basics Panel', () => {
             const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
 
             tabs.select('nowhere');
-            expect(tabs.active).toBe('left');
+            expect(tabs.value).toBe('left');
             expect((left.container as HTMLElement).style.display).not.toBe('none');
             expect((right.container as HTMLElement).style.display).toBe('none');
+        });
+    });
+
+    describe('row .value', () => {
+        test('every value-bearing row reads its control through .value', () => {
+            const { panel } = newPanel();
+            const range = panel.range({ name: 'r', value: 30 });
+            const checkbox = panel.checkbox({ name: 'c', value: true });
+            const color = panel.color({ name: 'k', value: '#123456' });
+            const listbox = panel.listbox({ name: 'l', items: ['a', 'b'] });
+            jest.advanceTimersByTime(1);
+
+            expect(range.value).toBe(30);
+            expect(checkbox.value).toBe(true);
+            expect(color.value).toBe('#123456');
+            expect(listbox.value).toBe('a');
+        });
+
+        test('a .value set drives the control the row owns', () => {
+            const { panel } = newPanel();
+            const range = panel.range({ name: 'r', value: 30 });
+            const checkbox = panel.checkbox({ name: 'c', value: true });
+            const color = panel.color({ name: 'k', value: '#123456' });
+            const listbox = panel.listbox({ name: 'l', items: ['a', 'b'] });
+            jest.advanceTimersByTime(1);
+
+            range.value = 70;
+            checkbox.value = false;
+            color.value = '#abcdef';
+            listbox.value = 'b';
+            jest.advanceTimersByTime(1);
+
+            expect(range.value).toBe(70);
+            expect((range.current as HTMLElement).querySelector('input')!.value).toBe('70');
+            expect(checkbox.value).toBe(false);
+            expect((checkbox.current as HTMLElement).querySelector('input')!.checked).toBe(false);
+            expect(color.value).toBe('#abcdef');
+            expect((color.current as HTMLElement).querySelector('button')!.style.background).toBe('rgb(171, 205, 239)');
+            expect(listbox.value).toBe('b');
+        });
+
+        test("a tabs .value set switches the strip without emitting '-change'", () => {
+            const { panel } = newPanel();
+            const values: string[] = [];
+            const tabs = panel.tabs({ items: ['left', 'right'] });
+            const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
+            const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
+            tabs.on('-change', ({ value }: { value: string }) => values.push(value));
+            jest.advanceTimersByTime(1);
+
+            tabs.value = 'right';
+
+            expect(tabs.value).toBe('right');
+            expect((left.container as HTMLElement).style.display).toBe('none');
+            expect((right.container as HTMLElement).style.display).not.toBe('none');
+            expect(values).toEqual([]);
         });
     });
 

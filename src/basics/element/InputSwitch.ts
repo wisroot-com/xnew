@@ -2,6 +2,7 @@
 // InputSwitch — sliding on / off switch backed by a hidden native <input type="checkbox">
 // Holds a Gate for the on/off state and exposes it as `gate`; the invisible native input captures
 // interaction. unit.current is the container; used standalone it draws the default Knob, else a compose fn.
+// Hosts read / write the on/off boolean through `.value`, which drives the Gate (never write `.input.checked`).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -48,6 +49,17 @@ export function InputSwitch(unit: xnew.Unit,
     }
 
     return {
+        get value() {
+            return (input.current as HTMLInputElement).checked;
+        },
+        // routed through the Gate, so a programmatic set keeps data-checked and the composed mark in step
+        set value(checked: boolean) {
+            if (checked === true) {
+                gate.open();
+            } else {
+                gate.close();
+            }
+        },
         get input() {
             return input.current as HTMLInputElement;
         },

@@ -1,6 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // InputText — native text field wrapped in a framed container
 // The container owns the border / spacing and routes clicks to the inner transparent <input>.
+// Hosts read / write the string through `.value`; `.input` is the escape hatch to the raw element.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -35,6 +36,12 @@ export function InputText(unit: xnew.Unit,
     unit.on('click', () => input.current.focus());
 
     return {
+        get value() {
+            return (input.current as HTMLInputElement).value;
+        },
+        set value(text: string) {
+            (input.current as HTMLInputElement).value = text;
+        },
         get input() {
             return input.current as HTMLInputElement;
         },

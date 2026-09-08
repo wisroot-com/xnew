@@ -2,6 +2,8 @@
 // InputRadio — one exclusive radio segment: a <label> wrapping a hidden native <input type="radio">
 // Grouping is native: give sibling InputRadios a shared `name`. The checked tint is a pure CSS
 // :has(input:checked) rule, so there is no JS selection state to coordinate.
+// `.value` reads this segment's own value (fixed at creation); `.checked` is the mutable state — setting it
+// unchecks the group's siblings natively. There is no group-level value getter; read it off the checked segment.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -30,6 +32,15 @@ export function InputRadio(unit: xnew.Unit,
     const input = xnew({ tag: 'input', type: 'radio', name, value, checked, className: css.input, ...others });
 
     return {
+        get value() {
+            return (input.current as HTMLInputElement).value;
+        },
+        get checked() {
+            return (input.current as HTMLInputElement).checked;
+        },
+        set checked(current: boolean) {
+            (input.current as HTMLInputElement).checked = current;
+        },
         get input() {
             return input.current as HTMLInputElement;
         },

@@ -165,6 +165,33 @@ describe('basics InputRange', () => {
         expect(inputOf(unit).tagName).toBe('INPUT');
     });
 
+    it('reads and writes the number through .value, keeping the meter and status in step', () => {
+        const unit = xnew(InputRange, { value: 30, min: 0, max: 100 });
+        jest.advanceTimersByTime(0);
+
+        expect(unit.value).toBe(30);
+
+        unit.value = 75;
+
+        expect(unit.value).toBe(75);
+        expect(inputOf(unit).value).toBe('75');
+        expect(meterOf(unit).style.width).toBe('75%');
+        expect(statusOf(unit).textContent).toBe('75');
+    });
+
+    // the meter / status listen on the shared container, so the refired event reaches host listeners too
+    it('refires input to host listeners on a programmatic .value set', () => {
+        const unit = xnew(InputRange, { value: 0 });
+
+        const received: number[] = [];
+        unit.on('input', ({ value }: { value: number }) => received.push(value));
+        jest.advanceTimersByTime(0);
+
+        unit.value = 60;
+
+        expect(received).toEqual([60]);
+    });
+
     it('exposes the hidden native range through .input', () => {
         const unit = xnew(InputRange, { value: 30 });
 

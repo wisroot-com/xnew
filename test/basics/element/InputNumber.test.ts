@@ -38,6 +38,21 @@ describe('basics InputNumber', () => {
         expect(input.hasAttribute('name')).toBe(false);
     });
 
+    it('reads and writes the number through .value', () => {
+        const unit = xnew(InputNumber, { value: 30 });
+        const input = unit.current.querySelector('input') as HTMLInputElement;
+
+        expect(unit.value).toBe(30);
+
+        unit.value = 42;
+        expect(input.value).toBe('42');
+        expect(unit.value).toBe(42);
+    });
+
+    it('reads .value as NaN while the field is empty', () => {
+        expect(Number.isNaN(xnew(InputNumber).value)).toBe(true);
+    });
+
     it('exposes the inner input element through .input', () => {
         const unit = xnew(InputNumber, { value: 30 });
         const input = unit.current.querySelector('input') as HTMLInputElement;

@@ -2,7 +2,8 @@
 // Listbox — a styleable select: Listbox (state + fit-to-content host) + ListboxButton (framed trigger + label) + ListboxMenu (floating list) + ListboxItem (row)
 // The native <select> popup can't be styled, so selection is held in JS (no native control at all).
 // Standalone, `xnew(Listbox, { items })` draws the whole control; a trailing compose fn replaces that
-// default with hand-built parts (xnew.standalone gate). `.value` reads it, `-change` reports edits.
+// default with hand-built parts (xnew.standalone gate). `.value` is the single read / write path — a row press
+// and a host assignment both go through its setter, which emits `-change` and closes the menu.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -36,9 +37,57 @@ export function Listbox(unit: xnew.Unit,
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
 
-    // a component's defines land on the unit only after it returns, so the state goes on first through its
-    // own component — that is what lets the default UI below already reach `.gate` / `.register` / `.bind`
-    xnew.extend(ListboxState, { value, gate });
+    // `items` is known right here, so the default lands synchronously and `.value` reads true from tick 0;
+    // the composed path (the caller builds the rows) has none, and falls back to the deferred adoption below
+    let selected = value ?? (items.length > 0 ? itemDef(items[0]).value : '');
+
+    const rows: xnew.Unit[] = [];
+    const labels: HTMLElement[] = [];
+
+    const gateUnit = xnew.isUnit(gate) ? gate : xnew(Gate, gate ?? { open: false, duration: 0 });
+
+    // the trigger shows the selected row's label, falling back to the value itself when it has none
+    function text(value: string): string {
+        return rows.find((row) => row.value === value)?.label ?? value;
+    }
+
+    function apply(value: string) {
+        selected = value;
+        for (const label of labels) {
+            label.textContent = text(selected);
+        }
+        for (const row of rows) {
+            row.check(row.value === selected);
+        }
+    }
+
+    // once every row has registered, adopt the first as the default when none was given, and sync checked state either way
+    xnew.timeout(() => apply(selected === '' && rows.length > 0 ? rows[0].value : selected));
+
+    // a component's defines land on the unit only after it returns, so the state goes on through an inline
+    // extend first — that is what lets the default UI below already reach `.gate` / `.register` / `.bind`
+    xnew.extend(() => ({
+        get value() {
+            return selected;
+        },
+        // the one write path: a row press and a host assignment are the same act, so both announce and close
+        // (the deferred default adoption above calls `apply` directly, so it stays silent)
+        set value(value: string) {
+            apply(value);
+            xnew.emit('-change', { value });
+            gateUnit.close();
+        },
+        get gate() {
+            return gateUnit;
+        },
+        register(row: xnew.Unit) {
+            rows.push(row);
+        },
+        bind(label: HTMLElement) {
+            labels.push(label);
+            label.textContent = text(selected);
+        },
+    }));
 
     // default trigger + option list, drawn only when standalone so a caller can compose its own instead
     if (xnew.standalone === true) {
@@ -53,61 +102,6 @@ export function Listbox(unit: xnew.Unit,
             }
         });
     }
-}
-
-//----------------------------------------------------------------------------------------------------
-// ListboxState — the selection state itself: the value, the shared Gate, and the item / label registries
-//----------------------------------------------------------------------------------------------------
-
-function ListboxState(unit: xnew.Unit,
-    { value, gate }:
-    { value?: string, gate?: { open?: boolean, duration?: number, easing?: string } | xnew.Unit } = {}
-) {
-    let selected = value ?? '';
-
-    const items: xnew.Unit[] = [];
-    const labels: HTMLElement[] = [];
-
-    gate = xnew.isUnit(gate) ? gate : xnew(Gate, gate ?? { open: false, duration: 0 });
-
-    // the trigger shows the selected row's label, falling back to the value itself when it has none
-    function text(value: string): string {
-        return items.find((item) => item.value === value)?.label ?? value;
-    }
-
-    function apply(value: string) {
-        selected = value;
-        for (const label of labels) {
-            label.textContent = text(selected);
-        }
-        for (const item of items) {
-            item.check(item.value === selected);
-        }
-    }
-
-    // once every item has registered, adopt the first as the default when none was given, and sync checked state either way
-    xnew.timeout(() => apply(selected === '' && items.length > 0 ? items[0].value : selected));
-
-    return {
-        get value() {
-            return selected;
-        },
-        get gate() {
-            return gate;
-        },
-        register(item: xnew.Unit) {
-            items.push(item);
-        },
-        bind(label: HTMLElement) {
-            labels.push(label);
-            label.textContent = text(selected);
-        },
-        select(value: string) {
-            apply(value);
-            xnew.emit('-change', { value });
-            gate.close();
-        },
-    };
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -234,7 +228,7 @@ export function ListboxItem(unit: xnew.Unit,
 
     unit.on('click', ({ event }: { event: PointerEvent }) => {
         event.stopPropagation();
-        listbox.select(value);
+        listbox.value = value;
     });
     // fall back to the label (or the value) as text when the row is used standalone (no content composed into it)
     if (xnew.standalone === true) {

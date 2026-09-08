@@ -80,6 +80,25 @@ describe('basics InputSwitch', () => {
         expect(inputOf(unit).tagName).toBe('INPUT');
     });
 
+    it('reads and writes the on/off state through .value, driving the Gate', () => {
+        const unit = xnew(InputSwitch);
+        jest.advanceTimersByTime(0);
+
+        expect(unit.value).toBe(false);
+
+        unit.value = true;
+        jest.advanceTimersByTime(0);
+        expect(unit.value).toBe(true);
+        expect(inputOf(unit).checked).toBe(true);
+        expect(unit.current.hasAttribute('data-checked')).toBe(true);
+
+        unit.value = false;
+        jest.advanceTimersByTime(1);
+        expect(unit.value).toBe(false);
+        expect(inputOf(unit).checked).toBe(false);
+        expect(unit.current.hasAttribute('data-checked')).toBe(false);
+    });
+
     it('exposes the hidden native checkbox through .input', () => {
         const unit = xnew(InputSwitch, { value: true });
 

@@ -68,6 +68,28 @@ describe('basics InputRadio', () => {
         expect(input.disabled).toBe(true);
     });
 
+    it('reads this segment own value through .value', () => {
+        const unit = xnew(InputRadio, { value: 'low', name: 'level' });
+
+        expect(unit.value).toBe('low');
+    });
+
+    it('reads and writes the segment checked state through .checked, unchecking siblings', () => {
+        let first!: xnew.Unit;
+        let second!: xnew.Unit;
+        xnew('<div>', () => {
+            first = xnew(InputRadio, { name: 'g', value: 'a', checked: true });
+            second = xnew(InputRadio, { name: 'g', value: 'b' });
+        });
+
+        expect(first.checked).toBe(true);
+        expect(second.checked).toBe(false);
+
+        second.checked = true;
+        expect(second.checked).toBe(true);
+        expect(first.checked).toBe(false);
+    });
+
     it('exposes the hidden native radio through .input', () => {
         const unit = xnew(InputRadio, { value: 'low', name: 'level', checked: true });
 

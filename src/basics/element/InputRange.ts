@@ -2,6 +2,7 @@
 // InputRange — text-free gauge backed by a hidden native <input type="range">, horizontal or vertical (`vertical: true`)
 // unit.current is the container (frame ring + interaction input); used standalone, the default
 // InputRangeMeter + InputRangeStatus are drawn; a trailing compose fn replaces them (xnew.standalone gate).
+// Hosts read / write the number through `.value`, which refires `input` so the meter follows (never write `.input.value`).
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -46,6 +47,15 @@ export function InputRange(unit: xnew.Unit,
     }
 
     return {
+        get value() {
+            return (input.current as HTMLInputElement).valueAsNumber;
+        },
+        // the meter / status follow the bubbling native event, which a plain assignment never fires
+        set value(number: number) {
+            const element = input.current as HTMLInputElement;
+            element.value = String(number);
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+        },
         get input() {
             return input.current as HTMLInputElement;
         },
