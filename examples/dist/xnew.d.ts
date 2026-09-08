@@ -57,6 +57,7 @@ declare class Unit {
         attached: boolean;
         protected: boolean;
         standalone: boolean;
+        standalonePending: Function[] | null;
         promises: UnitPromise[];
         defines: Record<string, any>;
         systems: Record<SystemType, {
@@ -149,11 +150,12 @@ interface XnewBase {
     (target: DomElement | string | DomElementDef, content?: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
-    readonly standalone: boolean;
+    standalone(callback: () => void): void;
 }
 declare const xnew: XnewBase & {
     nest(tag: string | DomElementDef, textContent?: string): HTMLElement | SVGElement;
     extend<C extends ComponentFn<any, any>>(Component: C, ...args: PropsArg<C>): Record<string, any>;
+    standalone(callback: () => void): void;
     css: {
         <T extends Record<string, CssDef>>(defs: T): Record<keyof T, string>;
         <T extends Record<string, CssDef>>(layer: string, defs: T): Record<keyof T, string>;
@@ -433,7 +435,12 @@ declare function Listbox(unit: xnew.Unit, { value, items, gate, className, style
     className?: string;
     style?: string;
     [key: string]: any;
-}): void;
+}): {
+    value: string;
+    readonly gate: Unit;
+    register(row: xnew.Unit): void;
+    bind(label: HTMLElement): void;
+};
 declare function ListboxButton(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
     style?: string;

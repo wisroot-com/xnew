@@ -16,8 +16,8 @@ export interface XnewBase {
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
 
-    // True when the currently running component is used on its own — not extended onto another component.
-    readonly standalone: boolean;
+    // Runs `callback` when the current component is used on its own (not extended onto another), after its defines are on the unit.
+    standalone(callback: () => void): void;
 }
 
 export const xnew = Object.assign(
@@ -49,6 +49,16 @@ export const xnew = Object.assign(
                 console.warn('Component is already extended in this unit:', Component);
             }
             return Unit.extend(Unit.currentUnit, Component, args[0]) as Record<string, any>;
+        },
+
+        // Defers `callback` to just after this component's defines land on the unit, and only when the component is used on its own — not extended onto another; only during initialization. That is what lets a component's own default UI talk back to it (a part reading the host's defines through xnew.context), which a call in the body could not: defines attach only once the component returns.
+        standalone(callback: () => void): void {
+            if (Unit.currentUnit._.phase !== 'invoked') {
+                throw new Error('xnew.standalone can not be called after initialized.');
+            }
+            if (Unit.currentUnit._.standalone === true) {
+                (Unit.currentUnit._.standalonePending as Function[])?.push(callback);
+            }
         },
 
         // Registers pseudo-scoped CSS: each key is a local name, always renamed to a page-unique one (scoping is mandatory — invalid keys throw). A string value is a class declaration body wrapped as .xnewN-key { … } (native nesting works inside: &:hover, &[data-checked], @media, …); an at-rule value declares its kind as { rule: '@keyframes' | '@property' | '@counter-style' | '@font-face', body } and hangs the generated name on it ('@property' names become --xnewN-key; '@font-face' injects the name as font-family and body may be an array of faces). $key inside a body references another entry's generated name (unknown references throw; strings / comments pass through untouched, and a body cannot escape its braces). An optional layer (first arg) wraps the whole block in @layer (xbasics passes 'base'). Returns { key: generatedName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it is destroyed.
@@ -139,13 +149,6 @@ export const xnew = Object.assign(
 
     }
 );
-
-// A getter (not a plain member) so it reads Unit.currentUnit at access time; Object.assign would freeze the value.
-Object.defineProperty(xnew, 'standalone', {
-    get(): boolean {
-        return Unit.currentUnit._.standalone;
-    },
-});
 
 // Merges the type namespace onto the callable value (public types such as xnew.Unit).
 export namespace xnew {

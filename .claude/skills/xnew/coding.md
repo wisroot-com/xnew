@@ -119,7 +119,7 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   cohesively. For structural change, InputCheckbox / InputRange / InputSwitch let a caller replace
   their default inner content — the mark, the meter + status, the knob respectively — by extending
   them onto an outer component (`xnew(() => { xnew.extend(InputRange, props); … })`, gated on
-  `xnew.standalone === true`). Generated
+  `xnew.standalone(() => …)`). Generated
   class names are page-unique, so page CSS cannot target inner parts directly by design.
 - `xnew.nest(tagOrDef, textContent?)` creates a child element from a **tag string**
   (`'<div …>'`) or an **element definition object** — an existing element is rejected
@@ -369,16 +369,23 @@ the rule, then one line of why.
   genuinely cannot know them up front. Panel's `listbox()` builder resolves the same default for its own
   path (it hand-builds the rows, so Listbox sees no `items`) — keep both.
 
-- **A helper component that exists ONLY to land defines before the body builds children should be an
-  INLINE `xnew.extend(() => ({ … }))`, not a named top-level component (2026-09).** Defines attach only
-  after a component returns (§2), so a component whose own body creates children that read those defines
-  (Listbox's ListboxButton / ListboxMenu / ListboxItem call `.bind` / `.register` / `.gate` synchronously)
-  must get them on the unit first. That was a separate `ListboxState` component; it is now an inline extend
-  in Listbox's body, holding the state in plain closures right above it. Inline is safe here because the
-  helper was never a context key (the parts resolve `xnew.context(Listbox)`, the outer component) and never
-  exported. The fresh function identity per call costs nothing: `Unit` destroy does
-  `component2units.delete(Component, this)` and `MapSet.delete` drops a key once its set empties. Keep a
-  NAMED component only when something resolves it — `xnew.context` / `xnew.find` / an export.
+- **`xnew.standalone` is a FUNCTION, not a boolean: `xnew.standalone(() => { … })` (2026-09).** It defers
+  the callback to just after this component's defines land on the unit, and runs it only when the component
+  is used on its own (not extended onto another); it is init-only and throws afterwards. The deferral is the
+  point: a component that draws its own default UI usually has parts that read the host's defines through
+  `xnew.context` (Listbox's ListboxButton / ListboxMenu / ListboxItem call `.bind` / `.register` / `.gate`
+  in their own bodies), and defines attach only once the component returns (§2) — a plain
+  `if (xnew.standalone === true)` block in the body ran too early and got `undefined`. Listbox used to work
+  around this with a separate `ListboxState` component extended first; both that and the workaround are
+  gone. Each `Unit.extend` invocation keeps its own queue, drained with an index loop so a callback may
+  defer another, and the invocation's `currentComponent` / `standalone` are restored only after the drain —
+  so an `xnew.extend` from inside a callback still sees itself as nested, exactly as it would in the body.
+  There is no way to READ standalone-ness any more; if you need a value from it, compute it in the callback.
+
+- **Keep a component NAMED only when something resolves it — `xnew.context` / `xnew.find` / an export.**
+  A helper that exists purely to hold state or defines belongs in its host's body as plain closures.
+  `ListboxState` was neither a context key (the parts resolve `xnew.context(Listbox)`, the outer component)
+  nor exported, so it was deleted and its state inlined into Listbox.
 
 - **A Panel row that owns its control as a CHILD unit must re-expose `.value` as a delegating define —
   extending the control onto the row instead would flip `xnew.standalone` to false and silently drop the
@@ -470,7 +477,7 @@ the rule, then one line of why.
   before you subscribe). Do NOT assume `unit.current` is the input here — that still holds for InputSwitch,
   but InputCheckbox and InputRange diverged (their `unit.current` is the container; the input is a
   `xnew({ tag: 'input', … })` child, not an `xnew.nest`). InputRange follows the same compose gate:
-  its default `InputRangeMeter` + `InputRangeStatus` are drawn only when `xnew.standalone === true`, so
+  its default `InputRangeMeter` + `InputRangeStatus` are drawn only inside `xnew.standalone(() => …)`, so
   extending it onto an outer component replaces them with caller content.
 
 - **A basics component's `frame` ring may be merged INTO the `container` (user decision, 2026-07) —

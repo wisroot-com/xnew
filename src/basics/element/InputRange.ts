@@ -41,10 +41,10 @@ export function InputRange(unit: xnew.Unit,
     const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
     const input = xnew({ tag: 'input', type: 'range', min, max, step: step ?? autoStep(min, max), value: initial, className: css.input, style: direction, ...others });
 
-    if (xnew.standalone === true) {
+    xnew.standalone(() => {
         xnew(InputRangeMeter, { value: initial, min, max, vertical });
         xnew(InputRangeStatus, { value: initial, vertical });
-    }
+    });
 
     return {
         get value() {

@@ -64,9 +64,23 @@ export function Listbox(unit: xnew.Unit,
     // once every row has registered, adopt the first as the default when none was given, and sync checked state either way
     xnew.timeout(() => apply(selected === '' && rows.length > 0 ? rows[0].value : selected));
 
-    // a component's defines land on the unit only after it returns, so the state goes on through an inline
-    // extend first — that is what lets the default UI below already reach `.gate` / `.register` / `.bind`
-    xnew.extend(() => ({
+    // default trigger + option list, drawn only when standalone so a caller can compose its own instead;
+    // xnew.standalone runs it after the defines below are on the unit, which is what lets the parts
+    // reach `.gate` / `.register` / `.bind` from their own bodies
+    xnew.standalone(() => {
+        xnew(() => {
+            xnew.extend(ListboxButton);
+            xnew(ListboxChevron);
+        });
+        xnew(() => {
+            xnew.extend(ListboxMenu);
+            for (const item of items) {
+                xnew(ListboxItem, itemDef(item));
+            }
+        });
+    });
+
+    return {
         get value() {
             return selected;
         },
@@ -87,21 +101,7 @@ export function Listbox(unit: xnew.Unit,
             labels.push(label);
             label.textContent = text(selected);
         },
-    }));
-
-    // default trigger + option list, drawn only when standalone so a caller can compose its own instead
-    if (xnew.standalone === true) {
-        xnew(() => {
-            xnew.extend(ListboxButton);
-            xnew(ListboxChevron);
-        });
-        xnew(() => {
-            xnew.extend(ListboxMenu);
-            for (const item of items) {
-                xnew(ListboxItem, itemDef(item));
-            }
-        });
-    }
+    };
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -231,9 +231,9 @@ export function ListboxItem(unit: xnew.Unit,
         listbox.value = value;
     });
     // fall back to the label (or the value) as text when the row is used standalone (no content composed into it)
-    if (xnew.standalone === true) {
+    xnew.standalone(() => {
         unit.current.textContent = label ?? value;
-    }
+    });
 
     return {
         get value() {

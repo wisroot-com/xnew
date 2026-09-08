@@ -48,13 +48,13 @@ export function VirtualPad(unit: xnew.Unit,
     });
 
     // default UI, switched by type — drawn only when standalone so a caller can compose its own instead
-    if (xnew.standalone === true) {
+    xnew.standalone(() => {
         if (type === 'analog') {
             xnew(VirtualPadAnalog);
         } else {
             xnew(VirtualPadDPad);
         }
-    }
+    });
 }
 
 //----------------------------------------------------------------------------------------------------

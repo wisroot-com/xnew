@@ -55,6 +55,8 @@ export class Unit {
         attached: boolean;   // childattach has fired on the parent; keeps the childattach / childdetach pair balanced
         protected: boolean;
         standalone: boolean;
+        // callbacks xnew.standalone() deferred for the running Unit.extend, drained once its defines are attached
+        standalonePending: Function[] | null;
         promises: UnitPromise[];
         defines: Record<string, any>;
         systems: Record<SystemType, { listener: Function, execute: Function, count: number, owner: Unit }[]>;
@@ -94,6 +96,7 @@ export class Unit {
             attached: false,
             protected: false,
             standalone: true,
+            standalonePending: null,
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
@@ -245,9 +248,11 @@ export class Unit {
     static extend(unit: Unit, Component: Function, props?: Object): { [key: string]: any } {
         const backupComponent = unit._.currentComponent;
         const backupStandalone = unit._.standalone;
+        const backupPending = unit._.standalonePending;
         // standalone is scoped to this invocation (restored on exit) so a component's own inner xnew.extend never flips its value
         unit._.standalone = backupComponent === null;
         unit._.currentComponent = Component;
+        unit._.standalonePending = [];
 
         if (unit._.parent !== null) {
             Unit.addContext(unit._.parent, unit, Component, unit);
@@ -255,9 +260,6 @@ export class Unit {
         Unit.addContext(unit, unit, Component, unit);
 
         const defines = Component(unit, props ?? {}) ?? {};
-
-        unit._.currentComponent = backupComponent;
-        unit._.standalone = backupStandalone;
 
         Unit.component2units.add(Component, unit);
         unit._.Components.push(Component);
@@ -281,6 +283,18 @@ export class Unit {
             Object.defineProperty(unit._.defines, key, wrapper);
             Object.defineProperty(unit, key, wrapper);
         });
+
+        // the defines are on the unit now, so what the body deferred with xnew.standalone can finally read them
+        // (indexed, not for-of: a callback may defer another). The invocation's state is restored only after,
+        // so an xnew.extend from inside a callback still sees itself as nested, exactly as it would in the body.
+        const pending = unit._.standalonePending as Function[];
+        for (let index = 0; index < pending.length; index++) {
+            pending[index]();
+        }
+
+        unit._.currentComponent = backupComponent;
+        unit._.standalone = backupStandalone;
+        unit._.standalonePending = backupPending;
 
         let clone = {};
         Object.defineProperties(clone, Object.getOwnPropertyDescriptors(unit._.defines));

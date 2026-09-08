@@ -44,9 +44,9 @@ export function InputCheckbox(unit: xnew.Unit,
 
     unit.on('input', ({ value }: { value: boolean }) => value ? gate.open() : gate.close());
 
-    if (xnew.standalone === true) {
+    xnew.standalone(() => {
         xnew(CheckMark);
-    }
+    });
 
     return {
         get value() {

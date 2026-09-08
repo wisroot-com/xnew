@@ -506,6 +506,7 @@ class Unit {
             attached: false,
             protected: false,
             standalone: true,
+            standalonePending: null,
             currentElement: baseElement,
             currentContext: baseContext,
             currentComponent: null,
@@ -628,15 +629,15 @@ class Unit {
         var _a;
         const backupComponent = unit._.currentComponent;
         const backupStandalone = unit._.standalone;
+        const backupPending = unit._.standalonePending;
         unit._.standalone = backupComponent === null;
         unit._.currentComponent = Component;
+        unit._.standalonePending = [];
         if (unit._.parent !== null) {
             Unit.addContext(unit._.parent, unit, Component, unit);
         }
         Unit.addContext(unit, unit, Component, unit);
         const defines = (_a = Component(unit, props !== null && props !== void 0 ? props : {})) !== null && _a !== void 0 ? _a : {};
-        unit._.currentComponent = backupComponent;
-        unit._.standalone = backupStandalone;
         Unit.component2units.add(Component, unit);
         unit._.Components.push(Component);
         Object.keys(defines).forEach((key) => {
@@ -661,6 +662,13 @@ class Unit {
             Object.defineProperty(unit._.defines, key, wrapper);
             Object.defineProperty(unit, key, wrapper);
         });
+        const pending = unit._.standalonePending;
+        for (let index = 0; index < pending.length; index++) {
+            pending[index]();
+        }
+        unit._.currentComponent = backupComponent;
+        unit._.standalone = backupStandalone;
+        unit._.standalonePending = backupPending;
         let clone = {};
         Object.defineProperties(clone, Object.getOwnPropertyDescriptors(unit._.defines));
         return clone;
@@ -1115,6 +1123,15 @@ const xnew = Object.assign((function (...args) {
         }
         return Unit.extend(Unit.currentUnit, Component, args[0]);
     },
+    standalone(callback) {
+        var _a;
+        if (Unit.currentUnit._.phase !== 'invoked') {
+            throw new Error('xnew.standalone can not be called after initialized.');
+        }
+        if (Unit.currentUnit._.standalone === true) {
+            (_a = Unit.currentUnit._.standalonePending) === null || _a === void 0 ? void 0 : _a.push(callback);
+        }
+    },
     css: (function (layerOrDefs, maybeDefs) {
         const layer = typeof layerOrDefs === 'string' ? layerOrDefs : undefined;
         const defs = typeof layerOrDefs === 'string' ? maybeDefs : layerOrDefs;
@@ -1172,11 +1189,6 @@ const xnew = Object.assign((function (...args) {
     },
     isUnit(value) {
         return value instanceof Unit;
-    },
-});
-Object.defineProperty(xnew, 'standalone', {
-    get() {
-        return Unit.currentUnit._.standalone;
     },
 });
 
@@ -2027,10 +2039,10 @@ function InputRange(unit, _a = {}) {
     const initial = value !== null && value !== void 0 ? value : min;
     const direction = vertical ? 'writing-mode: vertical-lr; direction: rtl;' : '';
     const input = xnew(Object.assign({ tag: 'input', type: 'range', min, max, step: step !== null && step !== void 0 ? step : autoStep(min, max), value: initial, className: css.input, style: direction }, others));
-    if (xnew.standalone === true) {
+    xnew.standalone(() => {
         xnew(InputRangeMeter, { value: initial, min, max, vertical });
         xnew(InputRangeStatus, { value: initial, vertical });
-    }
+    });
     return {
         get value() {
             return input.current.valueAsNumber;
@@ -2204,9 +2216,9 @@ function InputCheckbox(unit, _a = {}) {
     gate.on('-closed', () => apply(false));
     apply(gate.state === 'opened' || gate.state === 'opening');
     unit.on('input', ({ value }) => value ? gate.open() : gate.close());
-    if (xnew.standalone === true) {
+    xnew.standalone(() => {
         xnew(CheckMark);
-    }
+    });
     return {
         get value() {
             return input.current.checked;
@@ -2340,9 +2352,9 @@ function InputSwitch(unit, _a = {}) {
     gate.on('-closed', () => apply(false));
     apply(gate.state === 'opened' || gate.state === 'opening');
     unit.on('input', ({ value }) => value ? gate.open() : gate.close());
-    if (xnew.standalone === true) {
+    xnew.standalone(() => {
         xnew(Knob);
-    }
+    });
     return {
         get value() {
             return input.current.checked;
@@ -2475,7 +2487,19 @@ function Listbox(unit, _a = {}) {
         }
     }
     xnew.timeout(() => apply(selected === '' && rows.length > 0 ? rows[0].value : selected));
-    xnew.extend(() => ({
+    xnew.standalone(() => {
+        xnew(() => {
+            xnew.extend(ListboxButton);
+            xnew(ListboxChevron);
+        });
+        xnew(() => {
+            xnew.extend(ListboxMenu);
+            for (const item of items) {
+                xnew(ListboxItem, itemDef(item));
+            }
+        });
+    });
+    return {
         get value() {
             return selected;
         },
@@ -2494,19 +2518,7 @@ function Listbox(unit, _a = {}) {
             labels.push(label);
             label.textContent = text(selected);
         },
-    }));
-    if (xnew.standalone === true) {
-        xnew(() => {
-            xnew.extend(ListboxButton);
-            xnew(ListboxChevron);
-        });
-        xnew(() => {
-            xnew.extend(ListboxMenu);
-            for (const item of items) {
-                xnew(ListboxItem, itemDef(item));
-            }
-        });
-    }
+    };
 }
 function ListboxChevron() {
     const css = xnew.css('base', {
@@ -2594,9 +2606,9 @@ function ListboxItem(unit, _a = {}) {
         event.stopPropagation();
         listbox.value = value;
     });
-    if (xnew.standalone === true) {
+    xnew.standalone(() => {
         unit.current.textContent = label !== null && label !== void 0 ? label : value;
-    }
+    });
     return {
         get value() {
             return value;
@@ -2979,14 +2991,14 @@ function VirtualPad(unit, { type = 'analog', className = '', style = '' } = {}) 
     unit.on('dragend', () => {
         xnew.emit('-up', { vector: { x: 0, y: 0 } });
     });
-    if (xnew.standalone === true) {
+    xnew.standalone(() => {
         if (type === 'analog') {
             xnew(VirtualPadAnalog);
         }
         else {
             xnew(VirtualPadDPad);
         }
-    }
+    });
 }
 function VirtualPadAnalog() {
     const pad = xnew.context(VirtualPad);
