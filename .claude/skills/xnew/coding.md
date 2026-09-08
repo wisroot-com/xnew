@@ -158,6 +158,15 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   deliberately three values, not one: **1.8em** for an input row (Button, InputText, InputNumber,
   InputRange, ListboxButton, InputRadioGroup), **1.5em** for a small toggle (InputCheckbox, InputSwitch),
   **2em** for a menu row a finger presses (ListboxItem). `metrics.test.ts` holds all of it.
+- **A numeric `.value` setter clamps, a color one ignores (2026-09).** InputNumber / InputRange confine an
+  out-of-range write and announce what was stored, but ColorPicker's setter drops text `parseHex` cannot
+  read, silently and with no value event: unlike a number there is no nearest valid color to fall back to
+  (`#zzz` has no sensible neighbour). Both are "normalize what you can" — they just differ in what can be
+  normalized. Pinned in ColorPicker's tests.
+- **A component with no look of its own gets NO `xnew.css` entry (2026-09).** Image used to declare an
+  empty `container` rule purely for symmetry, which emitted an empty generated class; it now passes the
+  caller's `className` straight through, and `undefined` when there is none, so no bare `class=""` is left
+  on the element either.
 - **Every operated box carries its own focus ring (2026-09):**
   `&:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }` — one
   identical line, the first half for a component that IS the control (Button), the second for the ones

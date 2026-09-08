@@ -83,4 +83,13 @@ describe('basics Image', () => {
 
         expect(revokeObjectURL).not.toHaveBeenCalled();
     });
+
+    // the img carries only what the caller gave it: there is no look of its own, so no css entry either
+    it('puts only the caller className on the img, with no empty generated class', () => {
+        const bare = xnew(Image, { src: 'a.png' });
+        const named = xnew(Image, { src: 'b.png', className: 'avatar' });
+
+        expect(bare.current.getAttribute('class')).toBe(null);
+        expect(named.current.getAttribute('class')).toBe('avatar');
+    });
 });

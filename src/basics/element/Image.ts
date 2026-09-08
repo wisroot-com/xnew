@@ -12,12 +12,8 @@ export function Image(unit: xnew.Unit,
     { src, className = '', style = '', ...others }:
     { src: ImageSource | Promise<ImageSource>, className?: string, style?: string, [key: string]: any }
 ) {
-    const css = xnew.css('base', {
-        container: `
-        `,
-    });
-
-    xnew.nest({ tag: 'img', className: `${css.container} ${className}`, style, ...others });
+    // no look of its own, so no css entry — and an empty className would still emit a bare class="" attribute
+    xnew.nest({ tag: 'img', className: className !== '' ? className : undefined, style, ...others });
     const element = unit.current as HTMLImageElement;
 
     let objectURL: string | null = null;

@@ -285,4 +285,24 @@ describe('basics ColorPicker', () => {
         expect(styleText).toContain('conic-gradient(#ccc 0% 25%, #fff 25% 50%');
         expect(styleText).toContain('box-shadow: 0 0 0 1.5px #fff');
     });
+
+    // unlike InputNumber / InputRange, which clamp an out-of-range write, there is no nearest valid color
+    // to fall back to — so an unparseable write is a no-op, and it stays silent (no value event either)
+    it('ignores an unparseable .value write, keeping the current color and announcing nothing', () => {
+        const unit = xnew(ColorPicker, { value: '#4A90E2' });
+        const seen: string[] = [];
+        unit.on('input change', ({ event }: { event: Event }) => seen.push(event.type));
+        jest.advanceTimersByTime(0);
+
+        unit.value = 'not a color';
+
+        expect(unit.value).toBe('#4a90e2');
+        expect(seen).toEqual([]);
+
+        // a parseable one still goes through, so the guard is not swallowing everything
+        unit.value = '#00ff00';
+
+        expect(unit.value).toBe('#00ff00');
+        expect(seen).toEqual(['input', 'change']);
+    });
 });

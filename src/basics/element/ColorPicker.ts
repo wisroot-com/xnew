@@ -255,7 +255,7 @@ export function ColorPicker(unit: xnew.Unit,
         }
     }
 
-    function apply(next: Hsva, kind: 'none' | 'input' | 'change' | 'commit') {
+    function apply(next: Hsva, kind: 'input' | 'change' | 'commit') {
         hsva = {
             h: clamp(next.h, 0, 360),
             s: clamp(next.s, 0, 1),
@@ -263,9 +263,7 @@ export function ColorPicker(unit: xnew.Unit,
             a: alpha === true ? clamp(next.a, 0, 1) : 1,
         };
         render();
-        if (kind !== 'none') {
-            notify(kind);
-        }
+        notify(kind);
     }
 
     function render() {
@@ -294,6 +292,7 @@ export function ColorPicker(unit: xnew.Unit,
         get value() {
             return formatHex(hsvaToRgba(hsva));
         },
+        // unparseable text is ignored, not clamped: unlike a number there is no nearest valid color to fall back to
         set value(text: string) {
             const rgba = parseHex(text);
             if (rgba !== null) {

@@ -1980,11 +1980,7 @@ function Button(unit, _a = {}) {
 
 function Image(unit, _a) {
     var { src, className = '', style = '' } = _a, others = __rest(_a, ["src", "className", "style"]);
-    const css = xnew.css('base', {
-        container: `
-        `,
-    });
-    xnew.nest(Object.assign({ tag: 'img', className: `${css.container} ${className}`, style }, others));
+    xnew.nest(Object.assign({ tag: 'img', className: className !== '' ? className : undefined, style }, others));
     const element = unit.current;
     let objectURL = null;
     function apply(value) {
@@ -2984,9 +2980,7 @@ function ColorPicker(unit, _a = {}) {
             a: alpha === true ? clamp(next.a, 0, 1) : 1,
         };
         render();
-        if (kind !== 'none') {
-            notify(kind);
-        }
+        notify(kind);
     }
     function render() {
         const rgba = hsvaToRgba(hsva);
