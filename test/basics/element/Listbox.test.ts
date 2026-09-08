@@ -62,10 +62,11 @@ describe('basics Listbox', () => {
         return triggerOf(button).hasAttribute('data-open');
     }
 
+    // the Listbox gate animates over its own fixed 200ms, so let the open settle before asserting on it
     function open(button: xnew.Unit): void {
         jest.advanceTimersByTime(0);
         triggerOf(button).dispatchEvent(new Event('click', { bubbles: true }));
-        jest.advanceTimersByTime(0);
+        jest.advanceTimersByTime(300);
     }
 
     it('holds the selection state with the initial value shown in the label', () => {
@@ -455,9 +456,9 @@ describe('basics Listbox', () => {
         let button!: xnew.Unit;
         let accordion!: HTMLElement;
         xnew(() => {
-            // the Listbox owns the Gate (built from `duration`): the button opens / closes it, the Accordion (after the menu) rides box.gate
+            // the Listbox owns the Gate (its own fixed 200ms): the button opens / closes it, the Accordion (after the menu) rides box.gate
             const box = xnew((b: xnew.Unit) => {
-                xnew.extend(Listbox, { duration: 200 });
+                xnew.extend(Listbox);
                 button = xnew(ListboxButton);
                 xnew((m: xnew.Unit) => {
                     xnew.extend(ListboxMenu);

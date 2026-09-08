@@ -26,8 +26,8 @@ export function itemDef<T>(item: ItemDef<T>): { value: T, label?: string } {
 }
 
 export function Listbox(unit: xnew.Unit,
-    { value, items = [], duration = 0, easing = 'ease', disabled = false, className = '', style = '', ...others }:
-    { value?: string, items?: ItemDef[], duration?: number, easing?: string, disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
+    { value, items = [], disabled = false, className = '', style = '', ...others }:
+    { value?: string, items?: ItemDef[], disabled?: boolean, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const css = xnew.css('base', {
         container: `
@@ -47,8 +47,9 @@ export function Listbox(unit: xnew.Unit,
     const rows: xnew.Unit[] = [];
     const labels: xnew.Unit[] = [];
 
-    // the menu's Gate is owned here, never injected: the button toggles it and the setter closes it, so its closed start is fixed
-    const gate = xnew(Gate, { open: false, duration, easing });
+    // the menu's Gate is owned here, never injected: the button toggles it and the setter closes it, so its closed start
+    // and its timing are both fixed — a popup opens at one speed, so callers get no knob to detune it
+    const gate = xnew(Gate, { open: false, duration: 200, easing: 'ease' });
 
     // the trigger shows the selected row's label, falling back to the value itself when it has none
     function text(value: string): string {

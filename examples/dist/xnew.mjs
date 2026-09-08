@@ -2424,7 +2424,7 @@ function itemDef(item) {
     return (item !== null && typeof item === 'object' && 'value' in item) ? item : { value: item };
 }
 function Listbox(unit, _a = {}) {
-    var { value, items = [], duration = 0, easing = 'ease', disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "duration", "easing", "disabled", "className", "style"]);
+    var { value, items = [], disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-flex;
@@ -2437,7 +2437,7 @@ function Listbox(unit, _a = {}) {
     let selected = value !== null && value !== void 0 ? value : (items.length > 0 ? itemDef(items[0]).value : '');
     const rows = [];
     const labels = [];
-    const gate = xnew(Gate, { open: false, duration, easing });
+    const gate = xnew(Gate, { open: false, duration: 200, easing: 'ease' });
     function text(value) {
         var _a, _b;
         return (_b = (_a = rows.find((row) => row.value === value)) === null || _a === void 0 ? void 0 : _a.label) !== null && _b !== void 0 ? _b : value;

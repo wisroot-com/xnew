@@ -399,11 +399,9 @@ type ItemDef<T = string> = T | {
     value: T;
     label?: string;
 };
-declare function Listbox(unit: xnew.Unit, { value, items, duration, easing, disabled, className, style, ...others }?: {
+declare function Listbox(unit: xnew.Unit, { value, items, disabled, className, style, ...others }?: {
     value?: string;
     items?: ItemDef[];
-    duration?: number;
-    easing?: string;
     disabled?: boolean;
     className?: string;
     style?: string;
