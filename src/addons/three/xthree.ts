@@ -76,7 +76,7 @@ export const xthree = {
 // scene graph
 //----------------------------------------------------------------------------------------------------
 
-function Root(unit: xnew.Unit, { canvas, camera }: any) {
+function Root(unit: xnew.Unit, { canvas, camera }: { canvas: HTMLCanvasElement, camera?: THREE.Camera | null }) {
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
     renderer.setClearColor(0x000000, 0);
 
