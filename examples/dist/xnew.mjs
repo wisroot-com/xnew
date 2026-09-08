@@ -962,123 +962,24 @@ class UnitTimer {
     }
 }
 
-const registry = new Map();
-let counter = 0;
-const localName = /^[A-Za-z][A-Za-z0-9_-]*$/;
-const layerName = /^[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*)*$/;
-const atRules = ['@keyframes', '@property', '@counter-style', '@font-face'];
-function generatedName(def, prefix, name) {
-    if (typeof def === 'object' && def.rule === '@property') {
-        return `--${prefix}${name}`;
-    }
-    else {
-        return `${prefix}${name}`;
-    }
-}
-function resolveBody(key, source, names) {
-    var _a;
-    let out = '';
-    let depth = 0;
-    let i = 0;
-    while (i < source.length) {
-        const c = source[i];
-        if (c === '/' && source[i + 1] === '*') {
-            const end = source.indexOf('*/', i + 2);
-            const next = end === -1 ? source.length : end + 2;
-            out += source.slice(i, next);
-            i = next;
-        }
-        else if (c === '"' || c === "'") {
-            let j = i + 1;
-            while (j < source.length && source[j] !== c) {
-                j += source[j] === '\\' ? 2 : 1;
-            }
-            const next = Math.min(j + 1, source.length);
-            out += source.slice(i, next);
-            i = next;
-        }
-        else if (c === '$' && /[A-Za-z]/.test((_a = source[i + 1]) !== null && _a !== void 0 ? _a : '')) {
-            const ref = source.slice(i + 1).match(/^[A-Za-z][A-Za-z0-9_-]*/)[0];
-            if (Object.prototype.hasOwnProperty.call(names, ref) === false) {
-                throw new Error(`xnew.css: unknown reference "$${ref}" in "${key}".`);
-            }
-            out += names[ref];
-            i += 1 + ref.length;
-        }
-        else {
-            if (c === '{') {
-                depth++;
-            }
-            else if (c === '}') {
-                depth--;
-            }
-            if (depth < 0) {
-                throw new Error(`xnew.css: unbalanced braces in "${key}".`);
-            }
-            out += c;
-            i++;
-        }
-    }
-    if (depth !== 0) {
-        throw new Error(`xnew.css: unbalanced braces in "${key}".`);
-    }
-    return out;
-}
-function buildCSS(layer, defs, id) {
-    if (layer !== undefined && layerName.test(layer) === false) {
-        throw new Error(`xnew.css: invalid layer "${layer}".`);
-    }
-    const names = {};
-    for (const [name, def] of Object.entries(defs)) {
-        if (localName.test(name) === false) {
-            throw new Error(`xnew.css: invalid local name "${name}".`);
-        }
-        else if (typeof def === 'object' && atRules.includes(def.rule) === false) {
-            throw new Error(`xnew.css: unsupported rule "${def.rule}" in "${name}".`);
-        }
-        else if (typeof def === 'object' && Array.isArray(def.body) === true && def.rule !== '@font-face') {
-            throw new Error(`xnew.css: only @font-face may take multiple bodies ("${name}").`);
-        }
-        else {
-            names[name] = generatedName(def, `xnew${id}-`, name);
-        }
-    }
-    const blocks = Object.entries(defs).map(([name, def]) => {
-        if (typeof def === 'string') {
-            if (/^@(keyframes|property|counter-style|font-face)\b/.test(def.trim()) === true) {
-                throw new Error(`xnew.css: write "${name}" as { rule: '@…', body: '…' }.`);
-            }
-            return `.${names[name]} {\n${resolveBody(name, def, names)}\n}`;
-        }
-        else if (def.rule === '@font-face') {
-            const bodies = Array.isArray(def.body) ? def.body : [def.body];
-            return bodies.map((body) => `@font-face {\nfont-family: ${names[name]};\n${resolveBody(name, body, names)}\n}`).join('\n');
-        }
-        else {
-            return `${def.rule} ${names[name]} {\n${resolveBody(name, def.body, names)}\n}`;
-        }
-    }).join('\n');
-    const text = layer === undefined ? blocks : `@layer ${layer} {\n${blocks}\n}`;
-    return { names, text };
-}
 class ScopedCSS {
     constructor(layer, defs) {
         var _a;
         this.key = null;
         this.entry = null;
         if (((_a = globalThis.document) === null || _a === void 0 ? void 0 : _a.head) === undefined) {
-            this.names = Object.fromEntries(Object.entries(defs).map(([name, def]) => [name, generatedName(def, '', name)]));
+            this.names = Object.fromEntries(Object.entries(defs).map(([name, def]) => [name, ScopedCSS.generatedName(def, '', name)]));
         }
         else {
             const key = JSON.stringify([layer, defs]);
-            let entry = registry.get(key);
+            let entry = ScopedCSS.registry.get(key);
             if (entry === undefined) {
-                const { names, text } = buildCSS(layer, defs, counter++);
+                const { names, text } = ScopedCSS.build(layer, defs, ScopedCSS.counter++);
                 const style = document.createElement('style');
                 style.textContent = text;
                 document.head.appendChild(style);
                 entry = { names, refs: 0, style };
-                registry.set(key, entry);
+                ScopedCSS.registry.set(key, entry);
             }
             entry.refs++;
             this.key = key;
@@ -1093,11 +994,110 @@ class ScopedCSS {
             entry.refs--;
             if (entry.refs === 0) {
                 entry.style.remove();
-                registry.delete(this.key);
+                ScopedCSS.registry.delete(this.key);
             }
         }
     }
+    static generatedName(def, prefix, name) {
+        if (typeof def === 'object' && def.rule === '@property') {
+            return `--${prefix}${name}`;
+        }
+        else {
+            return `${prefix}${name}`;
+        }
+    }
+    static resolveBody(key, source, names) {
+        var _a;
+        let out = '';
+        let depth = 0;
+        let i = 0;
+        while (i < source.length) {
+            const c = source[i];
+            if (c === '/' && source[i + 1] === '*') {
+                const end = source.indexOf('*/', i + 2);
+                const next = end === -1 ? source.length : end + 2;
+                out += source.slice(i, next);
+                i = next;
+            }
+            else if (c === '"' || c === "'") {
+                let j = i + 1;
+                while (j < source.length && source[j] !== c) {
+                    j += source[j] === '\\' ? 2 : 1;
+                }
+                const next = Math.min(j + 1, source.length);
+                out += source.slice(i, next);
+                i = next;
+            }
+            else if (c === '$' && /[A-Za-z]/.test((_a = source[i + 1]) !== null && _a !== void 0 ? _a : '')) {
+                const ref = source.slice(i + 1).match(/^[A-Za-z][A-Za-z0-9_-]*/)[0];
+                if (Object.prototype.hasOwnProperty.call(names, ref) === false) {
+                    throw new Error(`xnew.css: unknown reference "$${ref}" in "${key}".`);
+                }
+                out += names[ref];
+                i += 1 + ref.length;
+            }
+            else {
+                if (c === '{') {
+                    depth++;
+                }
+                else if (c === '}') {
+                    depth--;
+                }
+                if (depth < 0) {
+                    throw new Error(`xnew.css: unbalanced braces in "${key}".`);
+                }
+                out += c;
+                i++;
+            }
+        }
+        if (depth !== 0) {
+            throw new Error(`xnew.css: unbalanced braces in "${key}".`);
+        }
+        return out;
+    }
+    static build(layer, defs, id) {
+        if (layer !== undefined && ScopedCSS.layerName.test(layer) === false) {
+            throw new Error(`xnew.css: invalid layer "${layer}".`);
+        }
+        const names = {};
+        for (const [name, def] of Object.entries(defs)) {
+            if (ScopedCSS.localName.test(name) === false) {
+                throw new Error(`xnew.css: invalid local name "${name}".`);
+            }
+            else if (typeof def === 'object' && ScopedCSS.atRules.includes(def.rule) === false) {
+                throw new Error(`xnew.css: unsupported rule "${def.rule}" in "${name}".`);
+            }
+            else if (typeof def === 'object' && Array.isArray(def.body) === true && def.rule !== '@font-face') {
+                throw new Error(`xnew.css: only @font-face may take multiple bodies ("${name}").`);
+            }
+            else {
+                names[name] = ScopedCSS.generatedName(def, `xnew${id}-`, name);
+            }
+        }
+        const blocks = Object.entries(defs).map(([name, def]) => {
+            if (typeof def === 'string') {
+                if (/^@(keyframes|property|counter-style|font-face)\b/.test(def.trim()) === true) {
+                    throw new Error(`xnew.css: write "${name}" as { rule: '@…', body: '…' }.`);
+                }
+                return `.${names[name]} {\n${ScopedCSS.resolveBody(name, def, names)}\n}`;
+            }
+            else if (def.rule === '@font-face') {
+                const bodies = Array.isArray(def.body) ? def.body : [def.body];
+                return bodies.map((body) => `@font-face {\nfont-family: ${names[name]};\n${ScopedCSS.resolveBody(name, body, names)}\n}`).join('\n');
+            }
+            else {
+                return `${def.rule} ${names[name]} {\n${ScopedCSS.resolveBody(name, def.body, names)}\n}`;
+            }
+        }).join('\n');
+        const text = layer === undefined ? blocks : `@layer ${layer} {\n${blocks}\n}`;
+        return { names, text };
+    }
 }
+ScopedCSS.registry = new Map();
+ScopedCSS.counter = 0;
+ScopedCSS.localName = /^[A-Za-z][A-Za-z0-9_-]*$/;
+ScopedCSS.layerName = /^[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*)*$/;
+ScopedCSS.atRules = ['@keyframes', '@property', '@counter-style', '@font-face'];
 
 const xnew = Object.assign((function (...args) {
     var _a;
