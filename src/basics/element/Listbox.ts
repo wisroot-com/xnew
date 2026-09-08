@@ -146,6 +146,7 @@ export function ListboxButton(unit: xnew.Unit,
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: pointer; user-select: none;
             &:not([data-open]):hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
         `,
         label: `
             flex: 1 1 0; min-width: 0;

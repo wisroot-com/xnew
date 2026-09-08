@@ -158,6 +158,18 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   deliberately three values, not one: **1.8em** for an input row (Button, InputText, InputNumber,
   InputRange, ListboxButton, InputRadioGroup), **1.5em** for a small toggle (InputCheckbox, InputSwitch),
   **2em** for a menu row a finger presses (ListboxItem). `metrics.test.ts` holds all of it.
+- **Every operated box carries its own focus ring (2026-09):**
+  `&:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }` — one
+  identical line, the first half for a component that IS the control (Button), the second for the ones
+  wrapping a hidden input. It is needed because those inputs are hidden at width/height 0 and opacity 0, so
+  the BROWSER's own ring is drawn at zero size: reachable by Tab with nothing to see. It is an `outline`,
+  never a tint — a 20% tint would read exactly like the selected state. `:focus-visible` keeps it off a
+  plain mouse press. The ring goes on the box a keyboard user actually lands on, so InputRadio's SEGMENT
+  has it and the group does not, and ColorPicker's FIELDS have it and the panel does not (a second ring
+  around one that already exists). The `:focus-within` tint on InputText / InputNumber is a different thing
+  — "being edited", shown for mouse users too — and stays. `focus.test.ts` holds the table.
+  Still open, deliberately: Listbox and ColorPicker's panel have no `tabindex`, so a keyboard cannot reach
+  them at all; that is keyboard OPERATION (arrow-key selection, Enter / Space), a separate job.
 - **One tint scale across every `basics/element` (2026-09): hover 10%, selected 20%, selected while
   hovered 30%, structural lines (frame ring, scrollbar) 40%** — all `color-mix(in srgb, currentColor N%,
   transparent)`. The 30% step exists because hover and selected both used to be 20%, which made a selected

@@ -20,6 +20,7 @@ export function InputRange(unit: xnew.Unit,
             position: relative; margin: 0.125em 0;
             box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 40%, transparent);
             border-radius: 0.25em;
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         horizontal: `

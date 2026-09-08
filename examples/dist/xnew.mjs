@@ -1971,6 +1971,7 @@ function Button(unit, _a = {}) {
             border: 1px solid currentColor; border-radius: 0.25em;
             &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &:active { filter: brightness(0.5); }
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
@@ -2038,6 +2039,7 @@ function InputRange(unit, _a = {}) {
             position: relative; margin: 0.125em 0;
             box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 40%, transparent);
             border-radius: 0.25em;
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         horizontal: `
@@ -2197,6 +2199,7 @@ function InputCheckbox(unit, _a = {}) {
             &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             &[data-checked]:hover { background: color-mix(in srgb, currentColor 30%, transparent); }
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
@@ -2230,6 +2233,7 @@ function InputText(unit, _a = {}) {
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: text;
             &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `
@@ -2268,6 +2272,7 @@ function InputNumber(unit, _a = {}) {
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: text;
             &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `
@@ -2312,6 +2317,7 @@ function InputSwitch(unit, _a = {}) {
             &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
             &[data-checked]:hover { background: color-mix(in srgb, currentColor 30%, transparent); }
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
@@ -2506,6 +2512,7 @@ function ListboxButton(unit, _a = {}) {
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: pointer; user-select: none;
             &:not([data-open]):hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
         `,
         label: `
             flex: 1 1 0; min-width: 0;
@@ -2644,6 +2651,7 @@ function InputRadio(unit, _a = {}) {
             &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
             &:has(input:checked):hover { background: color-mix(in srgb, currentColor 30%, transparent); }
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `
@@ -2810,6 +2818,7 @@ function ColorPicker(unit, _a = {}) {
             background: transparent; color: inherit;
             font: inherit; font-size: 11px; text-align: center;
             user-select: text;
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
         `,
         fieldLabel: `
             padding-top: 3px;

@@ -100,6 +100,7 @@ export function InputRadio(unit: xnew.Unit,
             &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
             &:has(input:checked):hover { background: color-mix(in srgb, currentColor 30%, transparent); }
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `

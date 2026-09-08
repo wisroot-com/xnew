@@ -78,6 +78,7 @@ export function ColorPicker(unit: xnew.Unit,
             background: transparent; color: inherit;
             font: inherit; font-size: 11px; text-align: center;
             user-select: text;
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
         `,
         fieldLabel: `
             padding-top: 3px;

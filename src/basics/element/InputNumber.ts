@@ -23,6 +23,7 @@ export function InputNumber(unit: xnew.Unit,
             border: 1px solid currentColor; border-radius: 0.25em;
             cursor: text;
             &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
         input: `

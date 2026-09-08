@@ -30,6 +30,22 @@ describe('basics InputRange', () => {
         return containerOf(unit).querySelectorAll('div')[1] as HTMLElement;
     }
 
+    // a css rule body, counting braces: the nested `&:hover { … }` rules make a plain split unreliable
+    function ruleBody(styleText: string, name: string | undefined): string {
+        const start = styleText.indexOf('.' + name + ' {');
+        if (start < 0) {
+            return '';
+        }
+        let depth = 0;
+        for (let index = styleText.indexOf('{', start); index < styleText.length; index++) {
+            depth += styleText[index] === '{' ? 1 : styleText[index] === '}' ? -1 : 0;
+            if (depth === 0) {
+                return styleText.slice(start, index + 1);
+            }
+        }
+        return '';
+    }
+
     // every value event a host would see, tagged by type, in order
     function record(unit: xnew.Unit): Array<[string, unknown]> {
         const seen: Array<[string, unknown]> = [];
@@ -155,7 +171,7 @@ describe('basics InputRange', () => {
         const unit = xnew(InputRange, { value: 30 });
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
         const container = containerOf(unit).className.split(' ').find((name) => /^xnew\d+-container$/.test(name));
-        const rule = styleText.split('.' + container + ' {')[1].split('}')[0];
+        const rule = ruleBody(styleText, container);
 
         expect(rule).toContain('box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 40%, transparent);');
         expect(rule).not.toContain('border:');

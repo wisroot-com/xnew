@@ -18,6 +18,7 @@ export function Button(unit: xnew.Unit,
             border: 1px solid currentColor; border-radius: 0.25em;
             &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
             &:active { filter: brightness(0.5); }
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });

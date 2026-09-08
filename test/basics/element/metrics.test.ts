@@ -37,11 +37,27 @@ describe('basics element box metrics', () => {
         return [...document.head.querySelectorAll('style')].map((style) => style.textContent).join('\n');
     }
 
+    // a css rule body, counting braces: the nested `&:hover { … }` rules make a plain split unreliable
+    function ruleBody(styleText: string, name: string | undefined): string {
+        const start = styleText.indexOf('.' + name + ' {');
+        if (start < 0) {
+            return '';
+        }
+        let depth = 0;
+        for (let index = styleText.indexOf('{', start); index < styleText.length; index++) {
+            depth += styleText[index] === '{' ? 1 : styleText[index] === '}' ? -1 : 0;
+            if (depth === 0) {
+                return styleText.slice(start, index + 1);
+            }
+        }
+        return '';
+    }
+
     it.each(FRAMED)('$name keeps its margin vertical-only', ({ Component, props }) => {
         const unit = xnew(Component, props);
         jest.advanceTimersByTime(0);
         const container = (unit.current as HTMLElement).className.split(' ').find((name) => /^xnew\d+-container$/.test(name));
-        const rule = styleSheet().split('.' + container + ' {')[1]?.split('}')[0] ?? '';
+        const rule = ruleBody(styleSheet(), container);
 
         expect(rule).toContain('margin: 0.125em 0;');
     });
