@@ -108,6 +108,14 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   InputSwitch / InputRadio), the inner `<text>` for SVGText — `min` / `placeholder` / `fontSize` only
   mean anything there. `className` / `style` are the exception in the other direction: they always
   decorate the container, so they and `others` deliberately land on different elements.
+  **A `.value` set announces on that same leading element (2026-09)** — the hidden input where there is
+  one, the container where there is none — which is exactly where a user's own interaction fires, so a
+  host reading `event.target` cannot tell a programmatic write from a real one (`valueevent.test.ts` holds
+  that table). InputCheckbox / InputSwitch were the last exception: they announced on the container to keep
+  the setter's event out of their own input listener, and once the Gate went away that listener became a
+  plain idempotent `apply`, so the exception went too. Announcing on the inner element is also what lets a
+  wrapper swallow a part's notification and re-announce it as its own (InputRadioGroup does this to its
+  segments, as Listbox does to its rows).
   **`disabled` is the one prop that must reach BOTH**, and is therefore taken explicitly rather than
   left to `others`: the container gets `data-disabled` (dimmed through one shared rule,
   `&[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }`, in every component's

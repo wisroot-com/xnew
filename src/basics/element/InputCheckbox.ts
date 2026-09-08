@@ -37,7 +37,7 @@ export function InputCheckbox(unit: xnew.Unit,
     }
     apply(value);
 
-    // bound to the input, not the container: the setter dispatches on the container, so its own event cannot re-enter here
+    // the setter's own dispatch re-enters here, which is harmless: it re-applies the value already applied
     input.on('input', ({ value }: { value: boolean }) => apply(value));
 
     xnew.standalone(() => {
@@ -48,10 +48,10 @@ export function InputCheckbox(unit: xnew.Unit,
         get value() {
             return (input.current as HTMLInputElement).checked;
         },
-        // announced on the container, which is also where a host listens, so a programmatic set reads like an interaction
+        // announced on the input, as a user's click would, so `event.target` reads the same either way
         set value(checked: boolean) {
             apply(checked);
-            dispatchCommit(container, checked);
+            dispatchCommit(input.current as HTMLInputElement, checked);
         },
         get input() {
             return input.current as HTMLInputElement;

@@ -2179,7 +2179,7 @@ function InputCheckbox(unit, _a = {}) {
         },
         set value(checked) {
             apply(checked);
-            dispatchCommit(container, checked);
+            dispatchCommit(input.current, checked);
         },
         get input() {
             return input.current;
@@ -2314,7 +2314,7 @@ function InputSwitch(unit, _a = {}) {
         },
         set value(checked) {
             apply(checked);
-            dispatchCommit(container, checked);
+            dispatchCommit(input.current, checked);
         },
         get input() {
             return input.current;
