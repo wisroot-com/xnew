@@ -311,7 +311,9 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
   `xnew.extend(Component)` returns `Record<string, any>`. Tracking runtime-attached
   members statically was given up on, so `xnew(Comp).anyDefine` is `any` — declared
   in the component's return or not.
-- **Props stay typed** (`PropsOf`): `xnew(Comp, props)` type-checks the props object.
+- **Props stay typed** (`PropsOf` / `PropsArg`): `xnew(Comp, props)` type-checks the props
+  object, and the props argument is **required** unless every prop is optional — so
+  `xnew(Comp)` on a component that needs props is a compile error, not a runtime one.
 - `io` / `socket` are `any` (socket.io handles passed straight through). `conn`,
   `payload` in handlers are typically `any` — match the surrounding style.
 

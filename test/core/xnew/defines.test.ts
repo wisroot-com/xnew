@@ -61,4 +61,16 @@ describe('defines', () => {
             xnew(Counter, { start: 'five' });
         });
     });
+
+    it('props may be omitted only when every prop is optional', () => {
+        function Needs(_unit: Unit, props: { value: number }) { return { get value() { return props.value; } }; }
+
+        xnew(() => {
+            // @ts-expect-error — value is required, so the props argument is required too
+            xnew(Needs);
+            expect(xnew(Needs, { value: 1 }).value).toBe(1);
+            expect(xnew(Counter).value).toBe(0);              // every prop optional -> omittable
+            expect(typeof xnew((_unit: Unit) => { /* no props */ }).destroy).toBe('function');
+        });
+    });
 });

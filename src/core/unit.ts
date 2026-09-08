@@ -29,8 +29,11 @@ export interface SyncData { root: Unit | null; id: number | null; state: Record<
 // Component function type; the returned defines are attached onto the unit at runtime (see Unit.extend).
 export type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 
-// Extract the props type of a Component ({} if absent).
-export type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
+// Extract the props type of a Component ({} if absent); module-local — callers reach it through PropsArg.
+type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
+
+// The props slot of a xnew(...) call: optional when every prop is optional, required otherwise — so a component that needs props can't be created without them.
+export type PropsArg<C> = {} extends PropsOf<C> ? [props?: PropsOf<C>] : [props: PropsOf<C>];
 
 // Component that writes a text/number literal into the element; only reachable on a nested element (see the constructor).
 function textComponent(content: string | number): (unit: Unit) => void {

@@ -47,6 +47,7 @@ interface SyncData {
 }
 type ComponentFn<P extends object = any, A extends object = {}> = (unit: Unit, props: P) => A | void;
 type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
+type PropsArg<C> = {} extends PropsOf<C> ? [props?: PropsOf<C>] : [props: PropsOf<C>];
 declare class Unit {
     [key: string]: any;
     _: {
@@ -143,8 +144,8 @@ type CssDef = string | {
 };
 
 interface XnewBase {
-    <C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Unit;
-    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, props?: PropsOf<C>): Unit;
+    <C extends ComponentFn<any, any>>(Component: C, ...args: PropsArg<C>): Unit;
+    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, ...args: PropsArg<C>): Unit;
     (target: DomElement | string | DomElementDef, content?: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
@@ -152,7 +153,7 @@ interface XnewBase {
 }
 declare const xnew: XnewBase & {
     nest(tag: string | DomElementDef, textContent?: string): HTMLElement | SVGElement;
-    extend<C extends ComponentFn<any, any>>(Component: C, props?: PropsOf<C>): Record<string, any>;
+    extend<C extends ComponentFn<any, any>>(Component: C, ...args: PropsArg<C>): Record<string, any>;
     css: {
         <T extends Record<string, CssDef>>(defs: T): Record<keyof T, string>;
         <T extends Record<string, CssDef>>(layer: string, defs: T): Record<keyof T, string>;
@@ -197,8 +198,8 @@ interface BootOptions {
 }
 
 declare const xsync: {
-    server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): Record<string, any>;
-    client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): Record<string, any>;
+    server<C extends ComponentFn<any, any>>(callback: C, ...args: PropsArg<C>): Record<string, any>;
+    client<C extends ComponentFn<any, any>>(callback: C, ...args: PropsArg<C>): Record<string, any>;
     state(initial?: Record<string, any>): Record<string, any>;
     register(Components: Record<string, Function>): void;
     visibility(target: ((clientId: string) => boolean) | null): void;
@@ -216,7 +217,7 @@ declare const xsync: {
         leave(id: string): boolean;
         dispatch(type: string, id: string, props?: Record<string, any>): void;
     };
-    boot<C extends ComponentFn<any, any>>(options: BootOptions, Component: C, props?: PropsOf<C>): Unit;
+    boot<C extends ComponentFn<any, any>>(options: BootOptions, Component: C, ...args: PropsArg<C>): Unit;
 };
 
 declare class AudioTrack {

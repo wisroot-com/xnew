@@ -3,7 +3,7 @@
 // session, messaging, and boot. The channel wiring itself lives in boot.ts.
 //----------------------------------------------------------------------------------------------------
 
-import { Unit, ComponentFn, PropsOf } from '../core/unit';
+import { Unit, ComponentFn, PropsArg } from '../core/unit';
 import { bootServer, bootClient } from './boot';
 import { getSide } from './side';
 import { RoomIO, BootOptions, ClientStatus, RoomStatus } from './roomio';
@@ -13,11 +13,11 @@ import { RoomIO, BootOptions, ClientStatus, RoomStatus } from './roomio';
 //----------------------------------------------------------------------------------------------------
 
 export const xsync = {
-    server<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): Record<string, any> {
-        return getSide() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) as Record<string, any> : {};
+    server<C extends ComponentFn<any, any>>(callback: C, ...args: PropsArg<C>): Record<string, any> {
+        return getSide() === 'server' ? Unit.extend(Unit.currentUnit, callback, args[0]) as Record<string, any> : {};
     },
-    client<C extends ComponentFn<any, any>>(callback: C, props?: PropsOf<C>): Record<string, any> {
-        return getSide() === 'client' ? Unit.extend(Unit.currentUnit, callback, props) as Record<string, any> : {};
+    client<C extends ComponentFn<any, any>>(callback: C, ...args: PropsArg<C>): Record<string, any> {
+        return getSide() === 'client' ? Unit.extend(Unit.currentUnit, callback, args[0]) as Record<string, any> : {};
     },
     state(initial: Record<string, any> = {}): Record<string, any> {
         const state = Unit.currentUnit._.sync.state;
@@ -100,9 +100,9 @@ export const xsync = {
         },
     },
     // one root component only: listeners for sync.* must live inside it, so compose with xnew.extend rather than a second argument.
-    boot<C extends ComponentFn<any, any>>(options: BootOptions, Component: C, props?: PropsOf<C>): Unit {
+    boot<C extends ComponentFn<any, any>>(options: BootOptions, Component: C, ...args: PropsArg<C>): Unit {
         // the root (and its body) exists once RoomIO is built; the channels only wire onto it
-        const roomio = new RoomIO(options, Component, props);
+        const roomio = new RoomIO(options, Component, args[0]);
         return getSide() === 'server' ? bootServer(roomio) : bootClient(roomio);
     },
 };

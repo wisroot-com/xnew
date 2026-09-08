@@ -1091,14 +1091,14 @@ const xnew = Object.assign((function (...args) {
         }
         return Unit.nest(Unit.currentUnit, tag, textContent);
     },
-    extend(Component, props) {
+    extend(Component, ...args) {
         if (Unit.currentUnit._.phase !== 'invoked') {
             throw new Error('xnew.extend can not be called after initialized.');
         }
         if (Unit.currentUnit._.Components.includes(Component) === true) {
             console.warn('Component is already extended in this unit:', Component);
         }
-        return Unit.extend(Unit.currentUnit, Component, props);
+        return Unit.extend(Unit.currentUnit, Component, args[0]);
     },
     css: (function (layerOrDefs, maybeDefs) {
         const layer = typeof layerOrDefs === 'string' ? layerOrDefs : undefined;
@@ -1373,11 +1373,11 @@ class RoomIO {
 RoomIO.rooms = new WeakMap();
 
 const xsync = {
-    server(callback, props) {
-        return getSide() === 'server' ? Unit.extend(Unit.currentUnit, callback, props) : {};
+    server(callback, ...args) {
+        return getSide() === 'server' ? Unit.extend(Unit.currentUnit, callback, args[0]) : {};
     },
-    client(callback, props) {
-        return getSide() === 'client' ? Unit.extend(Unit.currentUnit, callback, props) : {};
+    client(callback, ...args) {
+        return getSide() === 'client' ? Unit.extend(Unit.currentUnit, callback, args[0]) : {};
     },
     state(initial = {}) {
         const state = Unit.currentUnit._.sync.state;
@@ -1455,8 +1455,8 @@ const xsync = {
             roomio.dispatch(type, id, props);
         },
     },
-    boot(options, Component, props) {
-        const roomio = new RoomIO(options, Component, props);
+    boot(options, Component, ...args) {
+        const roomio = new RoomIO(options, Component, args[0]);
         return getSide() === 'server' ? bootServer(roomio) : bootClient(roomio);
     },
 };
