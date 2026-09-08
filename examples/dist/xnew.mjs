@@ -1243,40 +1243,35 @@ function bootServer(roomio) {
 function bootClient(roomio) {
     const { root } = roomio;
     const reconcileMap = new Map();
-    let lastTree = '';
     roomio.on('sync', (tree) => {
-        const json = JSON.stringify(tree);
-        if (json !== lastTree) {
-            lastTree = json;
-            const incoming = new Set(tree.map((node) => node.id));
-            for (const node of tree) {
-                const existing = reconcileMap.get(node.id);
-                if (existing !== undefined) {
-                    const state = existing._.sync.state;
-                    for (const key of Object.keys(state)) {
-                        if ((key in node.state) === false) {
-                            delete state[key];
-                        }
+        const incoming = new Set(tree.map((node) => node.id));
+        for (const node of tree) {
+            const existing = reconcileMap.get(node.id);
+            if (existing !== undefined) {
+                const state = existing._.sync.state;
+                for (const key of Object.keys(state)) {
+                    if ((key in node.state) === false) {
+                        delete state[key];
                     }
-                    Object.assign(state, node.state);
-                    continue;
                 }
-                const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
-                const Component = nodeParent && nodeParent._.sync.registry[node.name];
-                if (!Component) {
-                    continue;
-                }
-                const unit = new Unit(nodeParent, Component, { preinit: (unit) => { unit._.sync.id = node.id; Object.assign(unit._.sync.state, node.state); } });
-                reconcileMap.set(node.id, unit);
+                Object.assign(state, node.state);
+                continue;
             }
-            for (const [id, unit] of reconcileMap) {
-                if (!incoming.has(id)) {
-                    unit.finalize();
-                    reconcileMap.delete(id);
-                }
+            const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
+            const Component = nodeParent && nodeParent._.sync.registry[node.name];
+            if (!Component) {
+                continue;
             }
-            roomio.dispatch('sync.update', undefined);
+            const unit = new Unit(nodeParent, Component, { preinit: (unit) => { unit._.sync.id = node.id; Object.assign(unit._.sync.state, node.state); } });
+            reconcileMap.set(node.id, unit);
         }
+        for (const [id, unit] of reconcileMap) {
+            if (!incoming.has(id)) {
+                unit.finalize();
+                reconcileMap.delete(id);
+            }
+        }
+        roomio.dispatch('sync.update', undefined);
     });
     roomio.on('status', (status) => {
         var _a;

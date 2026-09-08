@@ -118,37 +118,33 @@ export function bootClient(roomio: RoomIO): Unit {
     //---- state channel
 
     const reconcileMap = new Map<number, Unit>();   // node id → replica unit
-    // duplicate-frame guard: 'sync.update' must mean an actual change, even against a server that re-emits an unchanged tree
-    let lastTree = '';
+    // the server emits 'sync' only when that client's projection changed, so every delivery is an actual change: reconcile it as it arrives.
     roomio.on('sync', (tree: SyncNode[]) => {
-        const json = JSON.stringify(tree);
-        if (json !== lastTree) {
-            lastTree = json;
-            const incoming = new Set<number>(tree.map((node) => node.id));
-            for (const node of tree) {
-                const existing = reconcileMap.get(node.id);
-                if (existing !== undefined) {
-                    // reconcile in place (keep the identity bodies captured via xsync.state): drop stale keys, then assign the incoming ones.
-                    const state = existing._.sync.state;
-                    for (const key of Object.keys(state)) {
-                        if ((key in node.state) === false) { delete state[key]; }
-                    }
-                    Object.assign(state, node.state);
-                    continue;
+        const incoming = new Set<number>(tree.map((node) => node.id));
+        for (const node of tree) {
+            const existing = reconcileMap.get(node.id);
+            if (existing !== undefined) {
+                // reconcile in place (keep the identity bodies captured via xsync.state): drop stale keys, then assign the incoming ones.
+                const state = existing._.sync.state;
+                for (const key of Object.keys(state)) {
+                    if ((key in node.state) === false) { delete state[key]; }
                 }
-                const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
-                const Component = nodeParent && nodeParent._.sync.registry[node.name];
-                if (!Component) { continue; }
-                // preinit stamps the node before the body runs, so its xsync.state sees the server state and the fixed id
-                const unit = new Unit(nodeParent, Component, { preinit: (unit: Unit) => { unit._.sync.id = node.id; Object.assign(unit._.sync.state, node.state); } });
-                reconcileMap.set(node.id, unit);
+                Object.assign(state, node.state);
+                continue;
             }
-            for (const [id, unit] of reconcileMap) {   // deleting the visited entry mid-iteration is spec-safe for Map
-                if (!incoming.has(id)) { unit.finalize(); reconcileMap.delete(id); }
-            }
-            roomio.dispatch('sync.update', undefined);   // after reconcile, so handlers read the applied state (fresh replicas included)
+            const nodeParent = node.parent === null ? root : reconcileMap.get(node.parent);
+            const Component = nodeParent && nodeParent._.sync.registry[node.name];
+            if (!Component) { continue; }
+            // preinit stamps the node before the body runs, so its xsync.state sees the server state and the fixed id
+            const unit = new Unit(nodeParent, Component, { preinit: (unit: Unit) => { unit._.sync.id = node.id; Object.assign(unit._.sync.state, node.state); } });
+            reconcileMap.set(node.id, unit);
         }
+        for (const [id, unit] of reconcileMap) {   // deleting the visited entry mid-iteration is spec-safe for Map
+            if (!incoming.has(id)) { unit.finalize(); reconcileMap.delete(id); }
+        }
+        roomio.dispatch('sync.update', undefined);   // after reconcile, so handlers read the applied state (fresh replicas included)
     });
+
     //---- roster channel
     roomio.on('status', (status: { clients?: ClientStatus[] }) => {
         roomio.clients = status?.clients ?? [];

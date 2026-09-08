@@ -51,7 +51,7 @@ describe('client dispatches sync.update', () => {
     beforeEach(() => { jest.useFakeTimers({ now: 0 }); Unit.reset(); });
     afterEach(() => { Unit.engineRoot?.finalize(); jest.useRealTimers(); });
 
-    it('fires after reconcile with the state already applied; an identical tree does not fire', () => {
+    it('fires after reconcile with the state already applied; a redelivered tree reconciles in place', () => {
         const socket = ioMock().connect();
         const calls: number[] = [];
         const view = bootClient({ socket }, function View(unit: Unit) {
@@ -61,9 +61,12 @@ describe('client dispatches sync.update', () => {
         socket.fire('sync', [{ id: 1, name: 'Box', parent: null, state: { value: 7 } }] as SyncNode[]);
         expect(calls).toEqual([7]);                     // 適用後に発火（state は反映済み）
         socket.fire('sync', [{ id: 1, name: 'Box', parent: null, state: { value: 7 } }] as SyncNode[]);
-        expect(calls).toEqual([7]);                     // 同一ツリー → 発火しない
+        // 変化の判定はサーバ側（クライアントへの配信自体が「変わった」の意味）。
+        // 同じツリーが再送されたら、そのまま同じ replica に適用し直して発火する。
+        expect(calls).toEqual([7, 7]);
+        expect(view._.children.length).toBe(1);         // replica は増えない
         socket.fire('sync', [{ id: 1, name: 'Box', parent: null, state: { value: 8 } }] as SyncNode[]);
-        expect(calls).toEqual([7, 8]);
+        expect(calls).toEqual([7, 7, 8]);
     });
 
     it('fires when a node disappears from the tree', () => {
