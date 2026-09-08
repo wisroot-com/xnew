@@ -252,4 +252,37 @@ describe('basics ColorPicker', () => {
         expect(containerOf(unit).className).toContain('picker');
         expect(containerOf(unit).getAttribute('style')).toContain('width: 300px;');
     });
+
+    // the chrome follows the host's theme; only the color space itself may be a fixed rgb value
+    it('paints its chrome from currentColor and the surface behind it, not from fixed light colors', () => {
+        const host = document.createElement('div');
+        host.style.background = 'rgb(20, 20, 20)';
+        document.body.appendChild(host);
+        const unit = xnew(host, ColorPicker, {});
+        jest.advanceTimersByTime(0);
+        const container = unit.current as HTMLElement;
+        const name = container.className.split(' ').find((entry) => /^xnew\d+-container$/.test(entry));
+        const styleText = [...document.head.querySelectorAll('style')].map((style) => style.textContent).join('\n');
+        const rule = styleText.split('.' + name + ' {')[1].split('}')[0];
+
+        // the panel takes the ground it floats over, so a dark host does not leave a white box
+        expect(container.style.background).toBe('rgb(20, 20, 20)');
+        // the frame and the field chrome key on currentColor instead of #fff / #ccc / #333
+        expect(rule).toContain('color-mix(in srgb, currentColor 25%, transparent)');
+        expect(styleText).toContain('box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent);');
+        expect(styleText).toContain('background: transparent; color: inherit;');
+
+        host.remove();
+    });
+
+    // the saturation map, the hue bar, the transparency checkerboard and the two cursors ride on top of an
+    // arbitrary color, so their fixed values are the point — they must NOT be swapped for theme colors
+    it('keeps the color space and the cursors on fixed values', () => {
+        xnew(ColorPicker, {});
+        const styleText = [...document.head.querySelectorAll('style')].map((style) => style.textContent).join('\n');
+
+        expect(styleText).toContain('linear-gradient(to right, #f00 0%');
+        expect(styleText).toContain('conic-gradient(#ccc 0% 25%, #fff 25% 50%');
+        expect(styleText).toContain('box-shadow: 0 0 0 1.5px #fff');
+    });
 });

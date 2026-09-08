@@ -309,6 +309,16 @@ const svgCamelAttributes = new Set([
     'systemLanguage', 'tableValues', 'targetX', 'targetY', 'textLength', 'viewBox',
     'xChannelSelector', 'yChannelSelector', 'zoomAndPan',
 ]);
+function surfaceColor(element) {
+    var _a;
+    for (let current = (_a = element === null || element === void 0 ? void 0 : element.parentElement) !== null && _a !== void 0 ? _a : null; current !== null; current = current.parentElement) {
+        const color = getComputedStyle(current).backgroundColor;
+        if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
+            return color;
+        }
+    }
+    return 'Canvas';
+}
 const factories = new Map();
 function attach(target, type, execute, options) {
     let initialized = false;
@@ -2531,16 +2541,7 @@ function ListboxMenu(unit, _a = {}) {
             listbox.gate.close();
         }
     });
-    listbox.gate.on('-open', () => unit.current.style.background = surfaceColor());
-    function surfaceColor() {
-        for (let element = listbox.current.parentElement; element !== null; element = element.parentElement) {
-            const color = getComputedStyle(element).backgroundColor;
-            if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
-                return color;
-            }
-        }
-        return 'Canvas';
-    }
+    listbox.gate.on('-open', () => unit.current.style.background = surfaceColor(listbox.current));
 }
 function ListboxItem(unit, _a = {}) {
     var { value = '', label, className = '', style = '' } = _a, others = __rest(_a, ["value", "label", "className", "style"]);
@@ -2757,8 +2758,8 @@ function ColorPicker(unit, _a = {}) {
             display: inline-block;
             box-sizing: content-box; width: 200px;
             padding: 10px 10px 0;
-            background: #fff; border-radius: 4px;
-            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+            box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 25%, transparent), 0 8px 16px rgba(0, 0, 0, 0.15);
             user-select: none;
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
@@ -2805,14 +2806,14 @@ function ColorPicker(unit, _a = {}) {
             box-sizing: border-box; width: 100%;
             margin: 0; padding: 4px 0 3px;
             border: none; outline: none;
-            box-shadow: inset 0 0 0 1px #ccc;
-            background: #fff; color: #333;
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent);
+            background: transparent; color: inherit;
             font: inherit; font-size: 11px; text-align: center;
             user-select: text;
         `,
         fieldLabel: `
             padding-top: 3px;
-            font-size: 11px; text-align: center; color: #222;
+            font-size: 11px; text-align: center; opacity: 0.7;
         `,
         presets: `
             display: flex; gap: 3px;
@@ -2830,6 +2831,7 @@ function ColorPicker(unit, _a = {}) {
         hsva = Object.assign(Object.assign({}, hsva), { a: 1 });
     }
     const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined }, others));
+    container.style.background = surfaceColor(container);
     unit.on('pointerdown', ({ event }) => event.stopPropagation());
     function notify(kind) {
         const hex = formatHex(hsvaToRgba(hsva));

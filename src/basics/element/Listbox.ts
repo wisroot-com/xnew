@@ -8,7 +8,7 @@
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { dispatchCommit } from '../../utils/dom';
+import { dispatchCommit, surfaceColor } from '../../utils/dom';
 import { Gate } from '../widget/Gate';
 import { Overlay } from '../widget/Overlay';
 
@@ -197,17 +197,8 @@ export function ListboxMenu(unit: xnew.Unit,
         }
     });
 
-    listbox.gate.on('-open', () => unit.current.style.background = surfaceColor());
-
-    function surfaceColor() {
-        for (let element = listbox.current.parentElement; element !== null; element = element.parentElement) {
-            const color = getComputedStyle(element).backgroundColor;
-            if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
-                return color;
-            }
-        }
-        return 'Canvas';
-    }
+    // opaque only once open: a floating list has to hide what it covers
+    listbox.gate.on('-open', () => unit.current.style.background = surfaceColor(listbox.current));
 }
 
 //----------------------------------------------------------------------------------------------------

@@ -85,6 +85,19 @@ const svgCamelAttributes = new Set([
     'xChannelSelector', 'yChannelSelector', 'zoomAndPan',
 ]);
 
+// The nearest opaque background behind `element`, for a layer that must look solid over the page (a floating
+// menu, a picker panel). The walk is what makes it work at all: bare `Canvas` only follows the OS scheme
+// once a `color-scheme` is declared, which a host page usually has not, so it would read white in the dark.
+export function surfaceColor(element: DOMElement | null): string {
+    for (let current = element?.parentElement ?? null; current !== null; current = current.parentElement) {
+        const color = getComputedStyle(current).backgroundColor;
+        if (color !== '' && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
+            return color;
+        }
+    }
+    return 'Canvas';
+}
+
 interface EventProps { element: DOMElement; type: string; listener: Function; options?: boolean | AddEventListenerOptions }
 
 const factories = new Map<string, (props: EventProps) => Function>();

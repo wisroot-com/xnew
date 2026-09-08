@@ -1,12 +1,12 @@
 //----------------------------------------------------------------------------------------------------
 // ColorPicker — Sketch-style color picker: saturation map + preset row + hue / alpha bars + hex / RGBA fields
 // Color state is held as HSVA in JS (no native control); hosts read / write `.value` (hex string)
-// and observe edits like a native input: `input` streams while a bar is dragged, `change` once it settles,
-// and both fire together for a click / typed field / `.value` set. Internal field noise never bubbles out.
+// and observe edits like a native input: `input` streams while a bar is dragged, `change` once it settles.
+// The chrome follows the theme (currentColor + surfaceColor); only the color space itself is fixed rgb.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
-import { dispatchChange, dispatchCommit, dispatchInput } from '../../utils/dom';
+import { dispatchChange, dispatchCommit, dispatchInput, surfaceColor } from '../../utils/dom';
 import { Hsva, formatHex, hasHexAlpha, hsvaToRgba, parseHex, rgbaToHsva } from '../../utils/color';
 import { clamp } from '../../utils/math';
 
@@ -26,8 +26,8 @@ export function ColorPicker(unit: xnew.Unit,
             display: inline-block;
             box-sizing: content-box; width: 200px;
             padding: 10px 10px 0;
-            background: #fff; border-radius: 4px;
-            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+            box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 25%, transparent), 0 8px 16px rgba(0, 0, 0, 0.15);
             user-select: none;
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
@@ -74,14 +74,14 @@ export function ColorPicker(unit: xnew.Unit,
             box-sizing: border-box; width: 100%;
             margin: 0; padding: 4px 0 3px;
             border: none; outline: none;
-            box-shadow: inset 0 0 0 1px #ccc;
-            background: #fff; color: #333;
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent);
+            background: transparent; color: inherit;
             font: inherit; font-size: 11px; text-align: center;
             user-select: text;
         `,
         fieldLabel: `
             padding-top: 3px;
-            font-size: 11px; text-align: center; color: #222;
+            font-size: 11px; text-align: center; opacity: 0.7;
         `,
         // 4px bottom margin + the controls row's 4px top padding = the same 8px gap as above
         presets: `
@@ -102,6 +102,7 @@ export function ColorPicker(unit: xnew.Unit,
     }
 
     const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined, ...others }) as HTMLElement;
+    container.style.background = surfaceColor(container);
     unit.on('pointerdown', ({ event }: { event: PointerEvent }) => event.stopPropagation());
 
     // the element is captured, so these need no xnew.scope even though apply() runs in the drag zones' scopes

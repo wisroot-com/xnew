@@ -131,6 +131,18 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   InputCheckbox / InputRange / InputSwitch `unit.current` IS the container (input / knob / meter are
   children) — for the others it ends on the innermost nested part, so read `unit.container` (or capture
   the element right after nesting it) when the component needs it later.
+- **A `basics` component's chrome follows the theme; only a value's own appearance is fixed (2026-09).**
+  ColorPicker was the exception — `#fff` panel, `#ccc` field frames, `#333` text — so it stayed a white box
+  in the dark while every other component tracked `currentColor`. Its chrome now keys on `currentColor`
+  (frames as `color-mix`, text as `inherit`, labels dimmed with `opacity`) and its panel takes
+  `surfaceColor(container)`. What must NOT be themed is the color space itself: the saturation map, the hue
+  bar, the transparency checkerboard, and the two cursors (white ring + black shadow) sit on TOP of an
+  arbitrary user color, so their contrast is against that color, not against the page.
+- **`surfaceColor(element)` lives in `utils/dom` (2026-09)** — the nearest opaque background above an
+  element, for a layer that has to look solid over the page (ListboxMenu, ColorPicker). It walks ancestors
+  rather than just using the `Canvas` system color, because `Canvas` only follows the OS scheme once a
+  `color-scheme` is declared, which a host page usually has not — it would read white in the dark. `Canvas`
+  is the last-resort fallback.
 - **InputRange's frame is a `box-shadow`, not a `border`, and that is not a stray (2026-09).** Its
   container is `position: relative` and the meter / status ride it as `position: absolute; inset: 0`; a
   border would shrink the content box, so `inset: 0` would land INSIDE the frame and the meter could never
