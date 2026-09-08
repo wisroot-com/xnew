@@ -35,7 +35,7 @@ export type DefinesOf<C> = C extends (...args: any[]) => infer R ? ([R] extends 
 // Extract the props type of a Component ({} if absent).
 export type PropsOf<C> = C extends (unit: Unit, props: infer P, ...rest: any[]) => any ? P : {};
 
-// Component that writes a text/number literal into the element; only reachable with a target (see the constructor).
+// Component that writes a text/number literal into the element; only reachable on a nested element (see the constructor).
 function textComponent(content: string | number): (unit: Unit) => void {
     return (unit: Unit) => { unit.current.textContent = content.toString(); };
 }
@@ -110,13 +110,10 @@ export class Unit {
             sync: { root: parent?._.sync.root ?? null, id: null, state: {}, registry: {}, visibility: null },
         };
 
-        let targeted = false;
         if (isDomElement(args[0])) {
             this._.currentElement = args.shift() as DomElement;
-            targeted = true;
         } else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
             Unit.nest(this, args.shift() as string | DomElementDef);
-            targeted = true;
         }
 
         // xnew(Component, props?): pull off the component, then optional props.
@@ -131,9 +128,8 @@ export class Unit {
         if (typeof Component === 'function') {
             baseComponent = Component;
         } else if (typeof Component === 'string' || typeof Component === 'number') {
-            // without a target the literal would overwrite the borrowed parent element, wiping its children
-            if (targeted === false) {
-                throw new Error(`xnew: text content needs a target element [${Component}]`);
+            if (this._.nestElements.length === 0) {
+                throw new Error(`xnew: text content needs a nested element [${Component}]`);
             }
             baseComponent = textComponent(Component);
         } else {

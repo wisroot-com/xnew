@@ -65,7 +65,15 @@ describe('xnew() creation', () => {
     });
 
     it('rejects a bare number as text content', () => {
-        expect(() => (xnew as any)(42)).toThrow(/text content needs a target element/);
+        expect(() => (xnew as any)(42)).toThrow(/text content needs a nested element/);
+    });
+
+    // writing text would replace the element's whole content, so a borrowed target is refused too
+    it('rejects text content on an explicit DOM element target', () => {
+        const el = document.createElement('section');
+        el.appendChild(document.createElement('span'));
+        expect(() => (xnew as any)(el, 'text')).toThrow(/text content needs a nested element/);
+        expect(el.children.length).toBe(1);
     });
 
     it('writes text content onto an explicit target', () => {
