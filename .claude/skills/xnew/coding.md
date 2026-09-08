@@ -13,7 +13,7 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   and disposed as one.
 - A **component function** has the shape `function Foo(unit, props) { … }`. The
   first argument is always the unit; the second is the props object.
-- Lifecycle phases: `invoked → initialized → destroying → destroyed`.
+- Lifecycle phases: `invoked → active → destroying → destroyed`.
   The component body runs during `invoked`. Some APIs are **init-only** (see §3).
 
 ## 2. Component functions & defines (the public API of a unit)
@@ -164,9 +164,9 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
 ## 5. Lifecycle events
 
 - `unit.on('update' | 'destroy', cb)`. There is **no** `start`/`stop`/`render`
-  event — a unit begins ticking (`update`) as soon as it is `initialized` and stops
+  event — a unit begins ticking (`update`) as soon as it is `active` and stops
   only on `destroy` (no pause/resume state, no separate render pass). Lifecycle is
-  `invoked → initialized → destroying → destroyed`.
+  `invoked → active → destroying → destroyed`.
 - `update` callbacks receive `{ count, delta }` (`delta` = ms since last frame;
   `count` starts at 0 per listener). `destroy` gets `{ type }`.
 - **Do all teardown in `'destroy'`**: remove external listeners, disconnect

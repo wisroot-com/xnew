@@ -52,16 +52,16 @@ describe('Unit childattach / childdetach', () => {
     afterEach(() => { Unit.engineRoot?.destroy(); });
 
     it('fires childattach on the parent once the child constructor is complete', () => {
-        const attached: Array<{ child: Unit, initialized: boolean, defined: boolean }> = [];
+        const attached: Array<{ child: Unit, active: boolean, defined: boolean }> = [];
         let child!: Unit;
         const parent = xnew((u: Unit) => {
             u.on('childattach', ({ child }: any) => {
                 // コンストラクタ完了後なので、defines も phase も出来上がった姿で渡る。
-                attached.push({ child, initialized: child._.phase === 'initialized', defined: typeof child.hello === 'function' });
+                attached.push({ child, active: child._.phase === 'active', defined: typeof child.hello === 'function' });
             });
             child = xnew(() => ({ hello: () => 'hi' }));
         });
-        expect(attached).toEqual([{ child, initialized: true, defined: true }]);
+        expect(attached).toEqual([{ child, active: true, defined: true }]);
         parent.destroy();
     });
 

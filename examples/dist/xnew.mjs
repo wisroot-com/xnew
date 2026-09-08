@@ -549,7 +549,7 @@ class Unit {
         Unit.currentUnit = this;
         Unit.extend(this, baseComponent, props);
         if (this._.phase === 'invoked') {
-            this._.phase = 'initialized';
+            this._.phase = 'active';
         }
         this._.lastSnapshot = Unit.snapshot(this);
         Unit.currentUnit = backup;
@@ -662,7 +662,7 @@ class Unit {
         return clone;
     }
     static update(unit, delta = 0) {
-        if (unit._.phase === 'initialized') {
+        if (unit._.phase === 'active') {
             unit._.children.forEach((child) => Unit.update(child, delta));
             [...unit._.systems.update].forEach((entry) => entry.execute({ count: entry.count++, delta }));
         }

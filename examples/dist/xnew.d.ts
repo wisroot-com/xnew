@@ -53,7 +53,7 @@ declare class Unit {
     _: {
         parent: Unit | null;
         children: Unit[];
-        phase: 'invoked' | 'initialized' | 'destroying' | 'destroyed';
+        phase: 'invoked' | 'active' | 'destroying' | 'destroyed';
         attached: boolean;
         protected: boolean;
         standalone: boolean;

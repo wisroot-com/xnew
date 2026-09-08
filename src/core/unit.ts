@@ -51,7 +51,7 @@ export class Unit {
         parent: Unit | null;
         children: Unit[];
 
-        phase: 'invoked' | 'initialized' | 'destroying' | 'destroyed';
+        phase: 'invoked' | 'active' | 'destroying' | 'destroyed';
         attached: boolean;   // childattach has fired on the parent; keeps the childattach / childdetach pair balanced
         protected: boolean;
         standalone: boolean;
@@ -149,7 +149,7 @@ export class Unit {
         Unit.extend(this, baseComponent, props);
 
         if (this._.phase === 'invoked') {
-            this._.phase = 'initialized';
+            this._.phase = 'active';
         }
         this._.lastSnapshot = Unit.snapshot(this);
         Unit.currentUnit = backup;
@@ -287,9 +287,9 @@ export class Unit {
         return clone;
     }
 
-    // Drives only initialized units; listeners receive { count, delta } (count per registration, delta ms since the previous frame).
+    // Drives only active units; listeners receive { count, delta } (count per registration, delta ms since the previous frame).
     static update(unit: Unit, delta: number = 0): void {
-        if (unit._.phase === 'initialized') {
+        if (unit._.phase === 'active') {
             unit._.children.forEach((child: Unit) => Unit.update(child, delta));
             // iterate a copy: a listener may remove itself (once / off) mid-dispatch
             [...unit._.systems.update].forEach((entry) => entry.execute({ count: entry.count++, delta }));

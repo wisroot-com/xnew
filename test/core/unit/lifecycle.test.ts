@@ -19,7 +19,7 @@ describe('Unit lifecycle', () => {
         expect(onDestroy).toHaveBeenCalledTimes(1);
     });
 
-    it('runs update listeners once the unit is initialized', async () => {
+    it('runs update listeners once the unit is active', async () => {
         const onUpdate = jest.fn();
         xnew((u: Unit) => u.on('update', onUpdate));
         expect(onUpdate).not.toHaveBeenCalled();
