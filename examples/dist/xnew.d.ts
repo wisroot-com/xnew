@@ -509,9 +509,8 @@ interface PanelOptions {
     open?: boolean;
     params?: Record<string, any>;
     key?: any;
-    nested?: boolean;
 }
-declare function Panel(unit: xnew.Unit, { name, open, params, nested }: PanelOptions): {
+declare function Panel(unit: xnew.Unit, { name, open, params }: PanelOptions): {
     tabs({ names }?: {
         names?: Record<string, string>;
     }): Unit & {

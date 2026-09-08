@@ -5,6 +5,7 @@ import { Button } from '../../../src/basics/element/Button';
 import { InputRange } from '../../../src/basics/element/InputRange';
 import { InputCheckbox } from '../../../src/basics/element/InputCheckbox';
 import { Listbox } from '../../../src/basics/element/Listbox';
+import { Accordion } from '../../../src/basics/widget/Accordion';
 
 describe('basics Panel', () => {
     beforeEach(() => {
@@ -152,12 +153,12 @@ describe('basics Panel', () => {
             expect(xnew.find(Listbox, { key: 'color-list' }).length).toBe(1);
         });
 
-        test('a group key finds the group unit itself, since a group is a nested Panel', () => {
+        test('a group key reaches the group unit itself, so its own components find it', () => {
             const { panel } = newPanel();
             const group = panel.group({ name: 'settings', open: true, key: 'settings-group' }, (group: any) => {
                 group.button({ name: 'one', key: 'inner-button' });
             });
-            expect(xnew.find(Panel, { key: 'settings-group' })[0]).toBe(group);
+            expect(xnew.find(Accordion, { key: 'settings-group' })[0]).toBe(group);
             expect(xnew.find(Button, { key: 'inner-button', ancestor: group }).length).toBe(1);
         });
     });

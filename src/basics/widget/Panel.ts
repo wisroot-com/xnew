@@ -15,26 +15,32 @@ import { Gate } from './Gate';
 import { Overlay } from './Overlay';
 import { ColorPicker } from './ColorPicker';
 
-// nested is internal: group() marks its inner Panel so only the root creates the scroll container
-interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; key?: any; nested?: boolean; }
+// `key` is only read by group(); the rest are shared by Panel and Group
+interface PanelOptions { name?: string; open?: boolean; params?: Record<string, any>; key?: any; }
 
-export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: PanelOptions) {
+export function Panel(unit: xnew.Unit, { name, open, params }: PanelOptions) {
+    const css = xnew.css({
+        // transparent track lets the surface behind show through, so the scrollbar blends into any background
+        scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
+    });
+    // the scrollport borrows the host's cap through max-height: inherit, so the rows scroll inside the mount element
+    xnew.nest(`<div class="${css.scroll}" style="box-sizing: border-box; max-height: inherit;">`);
+
+    // the whole builder API lives in Group; Panel is only the scrollport wrapped around the outermost one
+    return xnew.extend(Group, { name, open, params });
+}
+
+//----------------------------------------------------------------------------------------------------
+// Group — one block of rows plus the builder API; internal, so both Panel and group() extend it
+//----------------------------------------------------------------------------------------------------
+
+function Group(unit: xnew.Unit, { name, open, params }: PanelOptions) {
     const object = params ?? {} as Record<string, any>;
 
-    if (nested === false) {
-        // own scrollport inheriting the host's max-height; the vertical padding sits outside it so the scrollbar clears the host's rounded corners
-        const css = xnew.css({
-            // transparent track lets the surface behind show through, so the scrollbar blends into any background
-            scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
-        });
-        xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
-        xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
-    }
-
-    // every panel wraps its own rows, so `container` is the handle a tab uses to show / hide it as a whole
+    // every group wraps its own rows, so `container` is the handle a tab uses to show / hide it as a whole
     xnew.nest('<div>');
 
-    // an `open` value (true / false) makes the panel collapsible; leaving it undefined keeps the rows always shown
+    // an `open` value (true / false) makes the group collapsible; leaving it undefined keeps the rows always shown
     if (open !== undefined) {
         const gate = xnew(Gate, { open, duration: 200 });
 
@@ -59,7 +65,7 @@ export function Panel(unit: xnew.Unit, { name, open, params, nested = false }: P
         // every row takes `key` so xnew.find can reach it later; it rides along to the inner control, so find by that control's component
         group({ name, open, params, key }: PanelOptions, inner: Function) {
             return xnew((unit: xnew.Unit) => {
-                xnew.extend(Panel, { name, open, params: params ?? object, nested: true });
+                xnew.extend(Group, { name, open, params: params ?? object });
                 inner(unit);
             }, { key });
         },
@@ -114,7 +120,7 @@ function Tabs(unit: xnew.Unit, { names }: { names: Record<string, string> }) {
 
     function apply() {
         keys.forEach((key) => {
-            xnew.find(Panel, { parent: panel, key }).forEach((group: xnew.Unit) => {
+            xnew.find(Group, { parent: panel, key }).forEach((group: xnew.Unit) => {
                 if (group.container !== null) {
                     group.container.style.display = key === active ? '' : 'none';
                 }

@@ -3302,15 +3302,15 @@ for (const name of Object.keys(iconData)) {
 }
 const xicons = icons;
 
-function Panel(unit, { name, open, params, nested = false }) {
+function Panel(unit, { name, open, params }) {
+    const css = xnew.css({
+        scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
+    });
+    xnew.nest(`<div class="${css.scroll}" style="box-sizing: border-box; max-height: inherit;">`);
+    return xnew.extend(Group, { name, open, params });
+}
+function Group(unit, { name, open, params }) {
     const object = params !== null && params !== void 0 ? params : {};
-    if (nested === false) {
-        const css = xnew.css({
-            scroll: 'overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 40%, transparent) transparent;',
-        });
-        xnew.nest('<div style="display: flex; flex-direction: column; box-sizing: border-box; max-height: inherit; padding: 0.5em 0;">');
-        xnew.nest(`<div class="${css.scroll}" style="min-height: 0; padding: 0 0.25em;">`);
-    }
     xnew.nest('<div>');
     if (open !== undefined) {
         const gate = xnew(Gate, { open, duration: 200 });
@@ -3332,7 +3332,7 @@ function Panel(unit, { name, open, params, nested = false }) {
         },
         group({ name, open, params, key }, inner) {
             return xnew((unit) => {
-                xnew.extend(Panel, { name, open, params: params !== null && params !== void 0 ? params : object, nested: true });
+                xnew.extend(Group, { name, open, params: params !== null && params !== void 0 ? params : object });
                 inner(unit);
             }, { key });
         },
@@ -3385,7 +3385,7 @@ function Tabs(unit, { names }) {
     let active = (_a = keys[0]) !== null && _a !== void 0 ? _a : '';
     function apply() {
         keys.forEach((key) => {
-            xnew.find(Panel, { parent: panel, key }).forEach((group) => {
+            xnew.find(Group, { parent: panel, key }).forEach((group) => {
                 if (group.container !== null) {
                     group.container.style.display = key === active ? '' : 'none';
                 }
