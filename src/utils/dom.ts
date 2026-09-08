@@ -6,9 +6,9 @@
 
 import { MapMap } from './map';
 
-export type DomElement = HTMLElement | SVGElement;
+export type DOMElement = HTMLElement | SVGElement;
 
-export function isDomElement(value: unknown): value is DomElement {
+export function isDOMElement(value: unknown): value is DOMElement {
     return (typeof HTMLElement !== 'undefined' && value instanceof HTMLElement) || (typeof SVGElement !== 'undefined' && value instanceof SVGElement);
 }
 
@@ -16,14 +16,14 @@ export function isDomElement(value: unknown): value is DomElement {
 // element definition object — the tag-string alternative for computed / conditional attributes
 //----------------------------------------------------------------------------------------------------
 
-export interface DomElementDef { tag: string; className?: string; style?: string; [key: string]: any; }
+export interface DOMElementDef { tag: string; className?: string; style?: string; [key: string]: any; }
 
-export function isElementDef(value: unknown): value is DomElementDef {
-    return typeof value === 'object' && value !== null && isDomElement(value) === false && typeof (value as { tag?: unknown }).tag === 'string';
+export function isElementDef(value: unknown): value is DOMElementDef {
+    return typeof value === 'object' && value !== null && isDOMElement(value) === false && typeof (value as { tag?: unknown }).tag === 'string';
 }
 
 // creates a child element under parent from a tag string / definition; object-form members are assigned after creation so arbitrary text cannot break the tag string (SVG always via setAttribute — its DOM properties are read-only).
-export function createElement(parent: DomElement, tag: string | DomElementDef): DomElement {
+export function createElement(parent: DOMElement, tag: string | DOMElementDef): DOMElement {
     let text: string;
     const members: [string, any][] = [];
     if (isElementDef(tag) === true) {
@@ -55,7 +55,7 @@ export function createElement(parent: DomElement, tag: string | DomElementDef): 
     }
 
     parent.insertAdjacentHTML('beforeend', text);
-    const element = parent.children[parent.children.length - 1] as DomElement;
+    const element = parent.children[parent.children.length - 1] as DOMElement;
 
     for (const [key, value] of members) {
         if (element instanceof SVGElement) {
@@ -85,11 +85,11 @@ const svgCamelAttributes = new Set([
     'xChannelSelector', 'yChannelSelector', 'zoomAndPan',
 ]);
 
-interface EventProps { element: DomElement; type: string; listener: Function; options?: boolean | AddEventListenerOptions }
+interface EventProps { element: DOMElement; type: string; listener: Function; options?: boolean | AddEventListenerOptions }
 
 const factories = new Map<string, (props: EventProps) => Function>();
 
-function attach(target: Window | Document | DomElement, type: string, execute: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): Function {
+function attach(target: Window | Document | DOMElement, type: string, execute: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): Function {
     let initialized = false;
     const id = setTimeout(() => { initialized = true; target.addEventListener(type, execute, options); }, 0);
 
@@ -103,7 +103,7 @@ function attach(target: Window | Document | DomElement, type: string, execute: E
     };
 }
 
-function getPointerPosition(element: DomElement, event: { clientX: number, clientY: number }): { x: number, y: number } {
+function getPointerPosition(element: DOMElement, event: { clientX: number, clientY: number }): { x: number, y: number } {
     const rect = element.getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
 }
@@ -111,7 +111,7 @@ function getPointerPosition(element: DomElement, event: { clientX: number, clien
 export class EventBinder {
     private map = new MapMap<string, Function, Function>();
 
-    public add(element: DomElement, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void {
+    public add(element: DOMElement, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void {
         const props: EventProps = { element, type, listener, options };
         const factory = factories.get(type);
         const keyboard = type.match(/^(window|document)\.(keydown|keyup)(?:\.([A-Za-z0-9]+))?$/);
@@ -122,7 +122,7 @@ export class EventBinder {
         } else if (keyboard !== null) {
             cleanup = keyboardEvent(keyboard, props);
         } else {
-            let target: Window | Document | DomElement = element;
+            let target: Window | Document | DOMElement = element;
             let name = type;
             if (type.startsWith('window.')) {
                 target = window;

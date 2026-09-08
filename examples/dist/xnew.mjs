@@ -243,11 +243,11 @@ class Timer {
     }
 }
 
-function isDomElement(value) {
+function isDOMElement(value) {
     return (typeof HTMLElement !== 'undefined' && value instanceof HTMLElement) || (typeof SVGElement !== 'undefined' && value instanceof SVGElement);
 }
 function isElementDef(value) {
-    return typeof value === 'object' && value !== null && isDomElement(value) === false && typeof value.tag === 'string';
+    return typeof value === 'object' && value !== null && isDOMElement(value) === false && typeof value.tag === 'string';
 }
 function createElement(parent, tag) {
     let text;
@@ -522,7 +522,7 @@ class Unit {
             key: null,
             sync: { root: (_c = parent === null || parent === void 0 ? void 0 : parent._.sync.root) !== null && _c !== void 0 ? _c : null, id: null, state: {}, registry: {}, visibility: null },
         };
-        if (isDomElement(args[0])) {
+        if (isDOMElement(args[0])) {
             this._.currentElement = args.shift();
         }
         else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
@@ -1024,7 +1024,7 @@ function resolveBody(key, source, names) {
     }
     return out;
 }
-function buildCss(layer, defs, id) {
+function buildCSS(layer, defs, id) {
     if (layer !== undefined && layerName.test(layer) === false) {
         throw new Error(`xnew.css: invalid layer "${layer}".`);
     }
@@ -1061,39 +1061,41 @@ function buildCss(layer, defs, id) {
     const text = layer === undefined ? blocks : `@layer ${layer} {\n${blocks}\n}`;
     return { names, text };
 }
-function acquireCss(layer, defs) {
-    var _a;
-    if (((_a = globalThis.document) === null || _a === void 0 ? void 0 : _a.head) === undefined) {
-        const names = Object.fromEntries(Object.entries(defs).map(([name, def]) => [name, generatedName(def, '', name)]));
-        return { names, release: () => { } };
-    }
-    else {
-        const key = JSON.stringify([layer, defs]);
-        let entry = registry.get(key);
-        if (entry === undefined) {
-            const { names, text } = buildCss(layer, defs, counter++);
-            const style = document.createElement('style');
-            style.textContent = text;
-            document.head.appendChild(style);
-            entry = { names, refs: 0, style };
-            registry.set(key, entry);
+class ScopedCSS {
+    constructor(layer, defs) {
+        var _a;
+        this.key = null;
+        this.entry = null;
+        if (((_a = globalThis.document) === null || _a === void 0 ? void 0 : _a.head) === undefined) {
+            this.names = Object.fromEntries(Object.entries(defs).map(([name, def]) => [name, generatedName(def, '', name)]));
         }
-        const held = entry;
-        held.refs++;
-        let released = false;
-        return {
-            names: held.names,
-            release: () => {
-                if (released === false) {
-                    released = true;
-                    held.refs--;
-                    if (held.refs === 0) {
-                        held.style.remove();
-                        registry.delete(key);
-                    }
-                }
-            },
-        };
+        else {
+            const key = JSON.stringify([layer, defs]);
+            let entry = registry.get(key);
+            if (entry === undefined) {
+                const { names, text } = buildCSS(layer, defs, counter++);
+                const style = document.createElement('style');
+                style.textContent = text;
+                document.head.appendChild(style);
+                entry = { names, refs: 0, style };
+                registry.set(key, entry);
+            }
+            entry.refs++;
+            this.key = key;
+            this.entry = entry;
+            this.names = entry.names;
+        }
+    }
+    release() {
+        if (this.entry !== null) {
+            const entry = this.entry;
+            this.entry = null;
+            entry.refs--;
+            if (entry.refs === 0) {
+                entry.style.remove();
+                registry.delete(this.key);
+            }
+        }
     }
 }
 
@@ -1135,9 +1137,9 @@ const xnew = Object.assign((function (...args) {
     css: (function (layerOrDefs, maybeDefs) {
         const layer = typeof layerOrDefs === 'string' ? layerOrDefs : undefined;
         const defs = typeof layerOrDefs === 'string' ? maybeDefs : layerOrDefs;
-        const { names, release } = acquireCss(layer, defs);
-        Unit.currentUnit.on('destroy', release);
-        return names;
+        const scoped = new ScopedCSS(layer, defs);
+        Unit.currentUnit.on('destroy', () => scoped.release());
+        return scoped.names;
     }),
     context(Component) {
         return Unit.getContext(Unit.currentUnit, Component);

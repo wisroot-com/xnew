@@ -1,18 +1,18 @@
 //----------------------------------------------------------------------------------------------------
 // css — pseudo-scoped CSS backing xnew.css (local names → unique generated names)
 // Scoping is emulated by renaming and made mandatory: a string def is a class body, an at-rule def
-// declares its kind as { rule, body }; unit-free — acquireCss hands the lifetime back as release().
+// declares its kind as { rule, body }; unit-free — a ScopedCSS instance hands the lifetime back as release().
 //----------------------------------------------------------------------------------------------------
 
 // string = class declaration body; at-rules declare their kind ('@font-face' may list one body per face)
-export type CssDef =
+export type CSSDef =
     | string
     | { rule: '@keyframes' | '@property' | '@counter-style', body: string }
     | { rule: '@font-face', body: string | string[] };
 
-interface CssEntry { names: Record<string, string>; refs: number; style: HTMLStyleElement; }
+interface CSSEntry { names: Record<string, string>; refs: number; style: HTMLStyleElement; }
 
-const registry = new Map<string, CssEntry>();
+const registry = new Map<string, CSSEntry>();
 let counter = 0;
 
 const localName = /^[A-Za-z][A-Za-z0-9_-]*$/;
@@ -20,7 +20,7 @@ const layerName = /^[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*)*$/;
 const atRules = ['@keyframes', '@property', '@counter-style', '@font-face'];
 
 // '@property' names must be dashed idents, so its generated name (and every $reference to it) carries '--'
-function generatedName(def: CssDef, prefix: string, name: string): string {
+function generatedName(def: CSSDef, prefix: string, name: string): string {
     if (typeof def === 'object' && def.rule === '@property') {
         return `--${prefix}${name}`;
     } else {
@@ -75,7 +75,7 @@ function resolveBody(key: string, source: string, names: Record<string, string>)
 }
 
 // validates the definitions and renders them into one stylesheet text, with the generated name per local key
-function buildCss(layer: string | undefined, defs: Record<string, CssDef>, id: number): { names: Record<string, string>, text: string } {
+function buildCSS(layer: string | undefined, defs: Record<string, CSSDef>, id: number): { names: Record<string, string>, text: string } {
     if (layer !== undefined && layerName.test(layer) === false) {
         throw new Error(`xnew.css: invalid layer "${layer}".`);
     }
@@ -110,41 +110,47 @@ function buildCss(layer: string | undefined, defs: Record<string, CssDef>, id: n
     return { names, text };
 }
 
-// Injects (or reuses) the <style> for these definitions and returns the generated names plus the
-// reference release; the last release removes the shared style. Outside the DOM only names are produced.
-export function acquireCss(layer: string | undefined, defs: Record<string, CssDef>): { names: Record<string, string>, release: () => void } {
-    if (globalThis.document?.head === undefined) {
-        const names = Object.fromEntries(Object.entries(defs).map(([name, def]) => [name, generatedName(def, '', name)]));
-        return { names, release: () => {} };
-    } else {
-        const key = JSON.stringify([layer, defs]);
-        let entry = registry.get(key);
-        if (entry === undefined) {
-            const { names, text } = buildCss(layer, defs, counter++);
+// One acquisition of a definition set: the generated names to embed, held until release(). The injected
+// <style> is shared between identical definitions and reference counted, so the last release removes it.
+// Outside the DOM nothing is injected and only the names are produced.
+export class ScopedCSS {
+    public readonly names: Record<string, string>;
+    private key: string | null = null;
+    private entry: CSSEntry | null = null;
 
-            const style = document.createElement('style');
-            style.textContent = text;
-            document.head.appendChild(style);
+    constructor(layer: string | undefined, defs: Record<string, CSSDef>) {
+        if (globalThis.document?.head === undefined) {
+            this.names = Object.fromEntries(Object.entries(defs).map(([name, def]) => [name, generatedName(def, '', name)]));
+        } else {
+            const key = JSON.stringify([layer, defs]);
+            let entry = registry.get(key);
+            if (entry === undefined) {
+                const { names, text } = buildCSS(layer, defs, counter++);
 
-            entry = { names, refs: 0, style };
-            registry.set(key, entry);
+                const style = document.createElement('style');
+                style.textContent = text;
+                document.head.appendChild(style);
+
+                entry = { names, refs: 0, style };
+                registry.set(key, entry);
+            }
+            entry.refs++;
+            this.key = key;
+            this.entry = entry;
+            this.names = entry.names;
         }
+    }
 
-        const held = entry;
-        held.refs++;
-        let released = false;
-        return {
-            names: held.names,
-            release: () => {
-                if (released === false) {
-                    released = true;
-                    held.refs--;
-                    if (held.refs === 0) {
-                        held.style.remove();
-                        registry.delete(key);
-                    }
-                }
-            },
-        };
+    // Drops this reference; repeated calls are ignored, so a release does not steal another holder's.
+    public release(): void {
+        if (this.entry !== null) {
+            const entry = this.entry;
+            this.entry = null;
+            entry.refs--;
+            if (entry.refs === 0) {
+                entry.style.remove();
+                registry.delete(this.key as string);
+            }
+        }
     }
 }

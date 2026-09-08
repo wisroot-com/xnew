@@ -1,7 +1,7 @@
-import { EventBinder, isDomElement } from '../../src/utils/dom';
+import { EventBinder, isDOMElement } from '../../src/utils/dom';
 
 //----------------------------------------------------------------------------------------------------
-// dom — DomElement type guard (isDomElement) + EventBinder (DOM event binding).
+// dom — DOMElement type guard (isDOMElement) + EventBinder (DOM event binding).
 //
 // Real public surface (verified against src/core/dom.ts):
 //   new EventBinder()                                   — no constructor args
@@ -487,40 +487,40 @@ describe('EventBinder', () => {
     it.todo('passes { event, position, delta } across a drag sequence (jsdom: PointerEvent.pointerId unsupported)');
 });
 
-describe('isDomElement', () => {
+describe('isDOMElement', () => {
     describe('returns true for DOM elements', () => {
         it('accepts an HTMLElement', () => {
-            expect(isDomElement(document.createElement('div'))).toBe(true);
+            expect(isDOMElement(document.createElement('div'))).toBe(true);
         });
         it('accepts HTML subclasses', () => {
-            expect(isDomElement(document.createElement('span'))).toBe(true);
-            expect(isDomElement(document.createElement('button'))).toBe(true);
+            expect(isDOMElement(document.createElement('span'))).toBe(true);
+            expect(isDOMElement(document.createElement('button'))).toBe(true);
         });
         it('accepts an SVGElement', () => {
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            expect(isDomElement(svg)).toBe(true);
+            expect(isDOMElement(svg)).toBe(true);
         });
         it('accepts SVG subclasses', () => {
             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            expect(isDomElement(circle)).toBe(true);
+            expect(isDOMElement(circle)).toBe(true);
         });
     });
 
     describe('returns false for non-elements', () => {
         it('rejects plain objects', () => {
-            expect(isDomElement({})).toBe(false);
+            expect(isDOMElement({})).toBe(false);
         });
         it('rejects null and undefined', () => {
-            expect(isDomElement(null)).toBe(false);
-            expect(isDomElement(undefined)).toBe(false);
+            expect(isDOMElement(null)).toBe(false);
+            expect(isDOMElement(undefined)).toBe(false);
         });
         it('rejects primitives', () => {
-            expect(isDomElement('div')).toBe(false);
-            expect(isDomElement(123)).toBe(false);
-            expect(isDomElement(true)).toBe(false);
+            expect(isDOMElement('div')).toBe(false);
+            expect(isDOMElement(123)).toBe(false);
+            expect(isDOMElement(true)).toBe(false);
         });
         it('rejects arrays', () => {
-            expect(isDomElement([document.createElement('div')])).toBe(false);
+            expect(isDOMElement([document.createElement('div')])).toBe(false);
         });
     });
 
@@ -529,8 +529,8 @@ describe('isDomElement', () => {
             const original = (globalThis as any).HTMLElement;
             (globalThis as any).HTMLElement = undefined;
             try {
-                expect(isDomElement({})).toBe(false);
-                expect(isDomElement(null)).toBe(false);
+                expect(isDOMElement({})).toBe(false);
+                expect(isDOMElement(null)).toBe(false);
             } finally {
                 (globalThis as any).HTMLElement = original;
             }
@@ -539,7 +539,7 @@ describe('isDomElement', () => {
             const original = (globalThis as any).SVGElement;
             (globalThis as any).SVGElement = undefined;
             try {
-                expect(isDomElement({})).toBe(false);
+                expect(isDOMElement({})).toBe(false);
             } finally {
                 (globalThis as any).SVGElement = original;
             }

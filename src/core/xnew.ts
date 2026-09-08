@@ -5,14 +5,14 @@
 //----------------------------------------------------------------------------------------------------
 
 import { Unit, UnitPromise, UnitTimer, ComponentFn, PropsArg } from './unit';
-import { DomElement, DomElementDef } from '../utils/dom';
-import { acquireCss, CssDef } from '../utils/css';
+import { DOMElement, DOMElementDef } from '../utils/dom';
+import { ScopedCSS, CSSDef } from '../utils/css';
 
 // Call signatures of xnew(...); a Component only types its props (required unless every prop is optional) — defines are attached at runtime and reached through Unit's index signature.
 export interface XnewBase {
     <C extends ComponentFn<any, any>>(Component: C, ...args: PropsArg<C>): Unit;
-    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, ...args: PropsArg<C>): Unit;
-    (target: DomElement | string | DomElementDef, content?: string | number): Unit;
+    <C extends ComponentFn<any, any>>(target: DOMElement | string | DOMElementDef, Component: C, ...args: PropsArg<C>): Unit;
+    (target: DOMElement | string | DOMElementDef, content?: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
 
@@ -33,7 +33,7 @@ export const xnew = Object.assign(
     }) as unknown as XnewBase,
     {
         // Nests a new child element created from a tag string like '<div>' or an element definition object { tag, className?, style?, …members } (with optional text content); only during initialization. In the object form, className / style are embedded (escaped) in the generated tag string; every other member is assigned onto the created element afterwards (property when it exists — value, placeholder, name, checked, … — else setAttribute), and undefined / null / false members are skipped so attributes can be conditional.
-        nest(tag: string | DomElementDef, textContent?: string): HTMLElement | SVGElement {
+        nest(tag: string | DOMElementDef, textContent?: string): HTMLElement | SVGElement {
             if (Unit.currentUnit._.phase !== 'invoked') {
                 throw new Error('xnew.nest can not be called after initialized.');
             }
@@ -62,16 +62,16 @@ export const xnew = Object.assign(
         },
 
         // Registers pseudo-scoped CSS: each key is a local name, always renamed to a page-unique one (scoping is mandatory — invalid keys throw). A string value is a class declaration body wrapped as .xnewN-key { … } (native nesting works inside: &:hover, &[data-checked], @media, …); an at-rule value declares its kind as { rule: '@keyframes' | '@property' | '@counter-style' | '@font-face', body } and hangs the generated name on it ('@property' names become --xnewN-key; '@font-face' injects the name as font-family and body may be an array of faces). $key inside a body references another entry's generated name (unknown references throw; strings / comments pass through untouched, and a body cannot escape its braces). An optional layer (first arg) wraps the whole block in @layer (xbasics passes 'base'). Returns { key: generatedName } to embed in tag strings; the injected <style> is shared per definition and removed when the last unit using it is destroyed.
-        css: (function(layerOrDefs: string | Record<string, CssDef>, maybeDefs?: Record<string, CssDef>): Record<string, string> {
+        css: (function(layerOrDefs: string | Record<string, CSSDef>, maybeDefs?: Record<string, CSSDef>): Record<string, string> {
             const layer = typeof layerOrDefs === 'string' ? layerOrDefs : undefined;
             const defs = typeof layerOrDefs === 'string' ? maybeDefs! : layerOrDefs;
             // the stylesheet itself is shared and reference counted in utils/css; the unit only holds one reference
-            const { names, release } = acquireCss(layer, defs);
-            Unit.currentUnit.on('destroy', release);
-            return names;
+            const scoped = new ScopedCSS(layer, defs);
+            Unit.currentUnit.on('destroy', () => scoped.release());
+            return scoped.names;
         }) as {
-            <T extends Record<string, CssDef>>(defs: T): Record<keyof T, string>;
-            <T extends Record<string, CssDef>>(layer: string, defs: T): Record<keyof T, string>;
+            <T extends Record<string, CSSDef>>(defs: T): Record<keyof T, string>;
+            <T extends Record<string, CSSDef>>(layer: string, defs: T): Record<keyof T, string>;
         },
 
         // Returns the nearest unit associated with the given component in the ancestor context chain.

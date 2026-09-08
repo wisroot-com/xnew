@@ -6,7 +6,7 @@
 
 import { MapSet } from '../utils/map';
 import { Ticker, Timer } from '../utils/time';
-import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, createElement } from '../utils/dom';
+import { EventBinder, isDOMElement, DOMElement, DOMElementDef, isElementDef, createElement } from '../utils/dom';
 
 //----------------------------------------------------------------------------------------------------
 // definitions
@@ -14,7 +14,7 @@ import { EventBinder, isDomElement, DomElement, DomElementDef, isElementDef, cre
 
 interface Context { previous: Context | null; Component?: Function; value?: any; }
 
-interface Snapshot { unit: Unit; context: Context; element: DomElement; Component: Function | null; }
+interface Snapshot { unit: Unit; context: Context; element: DOMElement; Component: Function | null; }
 
 // one entry per on() call: keyed by the pair, so two units may share one handler function
 interface ListenerEntry { listener: Function; execute: Function; owner: Unit; }
@@ -61,13 +61,13 @@ export class Unit {
         defines: Record<string, any>;
         systems: Record<SystemType, { listener: Function, execute: Function, count: number, owner: Unit }[]>;
 
-        currentElement: DomElement;
+        currentElement: DOMElement;
         currentContext: Context;
         currentComponent: Function | null;
 
         lastSnapshot: Snapshot | null;
 
-        nestElements: DomElement[];
+        nestElements: DOMElement[];
         Components: Function[];
         listeners: MapSet<string, ListenerEntry>;
         events: EventBinder;
@@ -81,13 +81,13 @@ export class Unit {
 
         const baseContext = parent?._.currentContext ?? { previous: null };
 
-        let baseElement: DomElement;
+        let baseElement: DOMElement;
         if (parent !== null) {
             baseElement = parent._.currentElement;
         } else if (globalThis.document?.body) {
             baseElement = globalThis.document.body;
         } else {
-            baseElement = null as unknown as DomElement;
+            baseElement = null as unknown as DOMElement;
         }
 
         this._ = {
@@ -113,10 +113,10 @@ export class Unit {
             sync: { root: parent?._.sync.root ?? null, id: null, state: {}, registry: {}, visibility: null },
         };
 
-        if (isDomElement(args[0])) {
-            this._.currentElement = args.shift() as DomElement;
+        if (isDOMElement(args[0])) {
+            this._.currentElement = args.shift() as DOMElement;
         } else if (typeof args[0] === 'string' || isElementDef(args[0]) === true) {
-            Unit.nest(this, args.shift() as string | DomElementDef);
+            Unit.nest(this, args.shift() as string | DOMElementDef);
         }
 
         // xnew(Component, props?): pull off the component, then optional props.
@@ -169,12 +169,12 @@ export class Unit {
     }
     
     // the element new children attach to: the innermost element the unit nested, or the one it was created on
-    public get current(): DomElement {
+    public get current(): DOMElement {
         return this._.currentElement;
     }
 
     // the unit's own outermost element: null when it nested none and merely borrows the element it was created on
-    public get container(): DomElement | null {
+    public get container(): DOMElement | null {
         return this._.nestElements[0] ?? null;
     }
 
@@ -235,7 +235,7 @@ export class Unit {
         }
     }
 
-    static nest(unit: Unit, tag: string | DomElementDef, textContent?: string): DomElement {
+    static nest(unit: Unit, tag: string | DOMElementDef, textContent?: string): DOMElement {
         const element = createElement(unit._.currentElement, tag);
         unit._.currentElement = element;
         if (textContent !== undefined) {

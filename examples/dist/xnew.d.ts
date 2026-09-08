@@ -8,8 +8,8 @@ declare class MapSet<Key, Value> extends Map<Key, Set<Value>> {
     delete(key: Key, value: Value): boolean;
 }
 
-type DomElement = HTMLElement | SVGElement;
-interface DomElementDef {
+type DOMElement = HTMLElement | SVGElement;
+interface DOMElementDef {
     tag: string;
     className?: string;
     style?: string;
@@ -17,7 +17,7 @@ interface DomElementDef {
 }
 declare class EventBinder {
     private map;
-    add(element: DomElement, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
+    add(element: DOMElement, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
     remove(type: string, listener: Function): void;
 }
 
@@ -29,7 +29,7 @@ interface Context {
 interface Snapshot {
     unit: Unit;
     context: Context;
-    element: DomElement;
+    element: DOMElement;
     Component: Function | null;
 }
 interface ListenerEntry {
@@ -66,11 +66,11 @@ declare class Unit {
             count: number;
             owner: Unit;
         }[]>;
-        currentElement: DomElement;
+        currentElement: DOMElement;
         currentContext: Context;
         currentComponent: Function | null;
         lastSnapshot: Snapshot | null;
-        nestElements: DomElement[];
+        nestElements: DOMElement[];
         Components: Function[];
         listeners: MapSet<string, ListenerEntry>;
         events: EventBinder;
@@ -79,10 +79,10 @@ declare class Unit {
     };
     constructor(parent: Unit | null, ...args: any[]);
     get parent(): Unit | null;
-    get current(): DomElement;
-    get container(): DomElement | null;
+    get current(): DOMElement;
+    get container(): DOMElement | null;
     destroy(): void;
-    static nest(unit: Unit, tag: string | DomElementDef, textContent?: string): DomElement;
+    static nest(unit: Unit, tag: string | DOMElementDef, textContent?: string): DOMElement;
     static extend(unit: Unit, Component: Function, props?: Object): {
         [key: string]: any;
     };
@@ -136,7 +136,7 @@ declare class UnitTimer {
     private start;
 }
 
-type CssDef = string | {
+type CSSDef = string | {
     rule: '@keyframes' | '@property' | '@counter-style';
     body: string;
 } | {
@@ -146,19 +146,19 @@ type CssDef = string | {
 
 interface XnewBase {
     <C extends ComponentFn<any, any>>(Component: C, ...args: PropsArg<C>): Unit;
-    <C extends ComponentFn<any, any>>(target: DomElement | string | DomElementDef, Component: C, ...args: PropsArg<C>): Unit;
-    (target: DomElement | string | DomElementDef, content?: string | number): Unit;
+    <C extends ComponentFn<any, any>>(target: DOMElement | string | DOMElementDef, Component: C, ...args: PropsArg<C>): Unit;
+    (target: DOMElement | string | DOMElementDef, content?: string | number): Unit;
     (parent: Unit | null, ...args: any[]): Unit;
     (): Unit;
     standalone(callback: () => void): void;
 }
 declare const xnew: XnewBase & {
-    nest(tag: string | DomElementDef, textContent?: string): HTMLElement | SVGElement;
+    nest(tag: string | DOMElementDef, textContent?: string): HTMLElement | SVGElement;
     extend<C extends ComponentFn<any, any>>(Component: C, ...args: PropsArg<C>): Record<string, any>;
     standalone(callback: () => void): void;
     css: {
-        <T extends Record<string, CssDef>>(defs: T): Record<keyof T, string>;
-        <T extends Record<string, CssDef>>(layer: string, defs: T): Record<keyof T, string>;
+        <T extends Record<string, CSSDef>>(defs: T): Record<keyof T, string>;
+        <T extends Record<string, CSSDef>>(layer: string, defs: T): Record<keyof T, string>;
     };
     context(Component: Function): any;
     promise: {
@@ -311,7 +311,7 @@ declare function Screen(unit: xnew.Unit, { width, height, fit }?: {
     height?: number;
     fit?: 'contain' | 'cover';
 }): {
-    readonly canvas: DomElement;
+    readonly canvas: DOMElement;
 };
 
 declare function Scene(unit: xnew.Unit): {
