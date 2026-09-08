@@ -149,12 +149,28 @@ describe('basics InputRange', () => {
         expect(inputOf(anonymous).hasAttribute('name')).toBe(false);
     });
 
-    it('marks the extent with a container frame ring fainter than the meter border', () => {
+    // the ring is a box-shadow rather than a border ON PURPOSE: a border would shrink the content box, and
+    // the meter (position: absolute; inset: 0) would then stop short of the extent it is supposed to fill
+    it('rings the extent with a box-shadow and no border, so the meter can fill the whole box', () => {
         const unit = xnew(InputRange, { value: 30 });
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+        const container = containerOf(unit).className.split(' ').find((name) => /^xnew\d+-container$/.test(name));
+        const rule = styleText.split('.' + container + ' {')[1].split('}')[0];
 
-        expect(containerOf(unit).className).toMatch(/xnew\d+-container/);
-        expect(styleText).toContain('box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 40%, transparent);');
+        expect(rule).toContain('box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 40%, transparent);');
+        expect(rule).not.toContain('border:');
+    });
+
+    // extent vs current value: the ring reads as the part not filled yet, so it must stay the fainter of the two
+    it('keeps the extent ring fainter than the meter border it contains', () => {
+        const unit = xnew(InputRange, { value: 30 });
+        const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+        const ring = Number(styleText.match(/box-shadow: inset 0 0 0 1px color-mix\(in srgb, currentColor (\d+)%/)![1]);
+
+        expect(meterOf(unit).className).toMatch(/xnew\d+-meter/);
+        // the meter draws its outline at full strength (a plain currentColor border)
+        expect(styleText).toContain('border: 1px solid currentColor; border-radius: 0.25em;');
+        expect(ring).toBeLessThan(100);
     });
 
     it('applies className and style to the container element', () => {

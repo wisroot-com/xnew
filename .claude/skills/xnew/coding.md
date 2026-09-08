@@ -131,6 +131,13 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   InputCheckbox / InputRange / InputSwitch `unit.current` IS the container (input / knob / meter are
   children) — for the others it ends on the innermost nested part, so read `unit.container` (or capture
   the element right after nesting it) when the component needs it later.
+- **InputRange's frame is a `box-shadow`, not a `border`, and that is not a stray (2026-09).** Its
+  container is `position: relative` and the meter / status ride it as `position: absolute; inset: 0`; a
+  border would shrink the content box, so `inset: 0` would land INSIDE the frame and the meter could never
+  fill the extent it represents. `box-shadow: inset` costs no layout, so the meter spans the whole box.
+  The ring is also deliberately fainter (40%) than the meter's own full-strength border: the ring reads as
+  the extent not filled yet, the meter's outline as the current value — that contrast is what makes the
+  value legible, so do NOT raise the ring to match the other components' borders without redoing the meter.
 - **Box metrics across `basics/element` (2026-09): the container margin is vertical-only
   (`margin: 0.125em 0`), and a stretchable box always spells its limit as all three of
   `max-width: -webkit-fill-available; -moz-available; stretch`.** Horizontal spacing belongs to the caller
