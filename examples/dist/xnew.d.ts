@@ -111,6 +111,7 @@ declare class Unit {
     static on(unit: Unit, type: string, listener: Function, options?: boolean | AddEventListenerOptions): void;
     static registered(unit: Unit, type: string, listener: Function, owner: Unit): boolean;
     static off(unit: Unit, owner: Unit | null, type: string, listener?: Function): void;
+    static dispatch(type: string, props: object, accept: (unit: Unit, entry: ListenerEntry) => boolean): void;
     static emit(unit: Unit, type: string, props?: object): void;
 }
 declare class UnitPromise {

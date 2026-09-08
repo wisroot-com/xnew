@@ -812,19 +812,27 @@ class Unit {
             }
         }
     }
-    static emit(unit, type, props = {}) {
-        var _a, _b;
-        if (type[0] === '+') {
-            const ancestors = Unit.ancestors(unit);
-            [...((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((target) => {
-                var _a;
-                if (Unit.isVisible(target, unit, ancestors)) {
-                    [...((_a = target._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => entry.execute(props));
+    static dispatch(type, props, accept) {
+        var _a;
+        [...((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((unit) => {
+            var _a;
+            if (unit._.phase === 'finalizing' || unit._.phase === 'finalized') {
+                return;
+            }
+            [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => {
+                if (accept(unit, entry) === true) {
+                    entry.execute(props);
                 }
             });
+        });
+    }
+    static emit(unit, type, props = {}) {
+        if (type[0] === '+') {
+            const ancestors = Unit.ancestors(unit);
+            Unit.dispatch(type, props, (_, entry) => Unit.isVisible(entry.owner, unit, ancestors));
         }
         else if (type[0] === '-') {
-            [...((_b = unit._.listeners.get(type)) !== null && _b !== void 0 ? _b : [])].forEach((entry) => entry.execute(props));
+            Unit.dispatch(type, props, (target) => target === unit);
         }
     }
 }
@@ -1314,16 +1322,12 @@ class RoomIO {
         }
     }
     dispatch(type, id, data = {}, syncId) {
-        var _a;
-        [...((_a = Unit.type2units.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((unit) => {
-            var _a;
-            if (unit._.phase === 'finalized' || unit._.phase === 'finalizing')
-                return;
+        Unit.dispatch(type, Object.assign({ id }, data), (unit) => {
             if (unit._.sync.root !== this.root)
-                return;
+                return false;
             if (type[0] === '-' && unit._.sync.id !== syncId)
-                return;
-            [...((_a = unit._.listeners.get(type)) !== null && _a !== void 0 ? _a : [])].forEach((entry) => entry.execute(Object.assign({ id }, data)));
+                return false;
+            return true;
         });
     }
     on(type, listener) {

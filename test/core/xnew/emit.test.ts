@@ -83,6 +83,34 @@ describe('xnew.emit', () => {
         });
     });
 
+    // a listener may finalize other units mid-dispatch, and the target list was copied before that happened
+    describe('dying units', () => {
+        it('skips a listener whose unit an earlier listener finalized', () => {
+            const first = jest.fn();
+            const second = jest.fn();
+            xnew(() => {
+                let victim!: Unit;
+                xnew((a: Unit) => a.on('+ping', () => { first(); victim.finalize(); }));
+                victim = xnew((b: Unit) => b.on('+ping', second));
+                xnew(() => xnew.emit('+ping'));
+            });
+            expect(first).toHaveBeenCalledTimes(1);
+            expect(second).not.toHaveBeenCalled();
+        });
+
+        it('does not fire a self emit on a unit that is finalizing', () => {
+            const cb = jest.fn();
+            xnew(() => {
+                const unit = xnew((u: Unit) => {
+                    u.on('-ping', cb);
+                    u.on('finalize', () => xnew.emit('-ping'));
+                });
+                unit.finalize();
+            });
+            expect(cb).not.toHaveBeenCalled();
+        });
+    });
+
     // an unprefixed type has no dispatch path at all, so a missing '-' must not fail silently
     describe('type prefix', () => {
         it('throws on a type with neither the + nor the - prefix', () => {

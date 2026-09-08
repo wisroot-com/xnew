@@ -467,17 +467,25 @@ export class Unit {
         }
     }
 
+    // One pass over the listeners of `type`; `accept` is the only thing that varies between dispatch paths (see also RoomIO.dispatch).
+    // Iterate copies: a listener may add / remove listeners — or finalize units — mid-dispatch (as Unit.update does).
+    // A dying unit is skipped: an emit can reach it from a finalize cascade, or land late from a socket / timer.
+    static dispatch(type: string, props: object, accept: (unit: Unit, entry: ListenerEntry) => boolean): void {
+        [...(Unit.type2units.get(type) ?? [])].forEach((unit) => {
+            if (unit._.phase === 'finalizing' || unit._.phase === 'finalized') { return; }
+            [...(unit._.listeners.get(type) ?? [])].forEach((entry) => {
+                if (accept(unit, entry) === true) { entry.execute(props); }
+            });
+        });
+    }
+
     static emit(unit: Unit, type: string, props: object = {}): void {
         if (type[0] === '+') {
             const ancestors = Unit.ancestors(unit);
-            // iterate copies: a listener may add / remove listeners mid-dispatch (as Unit.update does)
-            [...(Unit.type2units.get(type) ?? [])].forEach((target) => {
-                if (Unit.isVisible(target, unit, ancestors)) {
-                    [...(target._.listeners.get(type) ?? [])].forEach((entry) => entry.execute(props));
-                }
-            });
+            // judged on entry.owner, not the target: a listener registered from outside a protect boundary is the outside scope's own, so it fires even when it sits inside the subtree
+            Unit.dispatch(type, props, (_, entry) => Unit.isVisible(entry.owner, unit, ancestors));
         } else if (type[0] === '-') {
-            [...(unit._.listeners.get(type) ?? [])].forEach((entry) => entry.execute(props));
+            Unit.dispatch(type, props, (target) => target === unit);
         }
     }
 

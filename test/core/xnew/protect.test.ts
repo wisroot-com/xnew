@@ -9,15 +9,19 @@ import { xnew } from '../../../src/core/xnew';
 //
 //   - `current`   = Unit.currentUnit (the emitting unit)
 //   - `ancestors` = every ancestor of `current` (walking `_.parent`)
-//   - for each listener `unit` of `type`, walk up its own `_.parent` chain to the NEAREST protected
-//     unit `find`. Deliver only when:
-//         find === undefined            (no protected unit on the listener's chain), OR
-//         ancestors.includes(find)      (the protected boundary is an ancestor of the emitter), OR
-//         current === find              (the emitter IS the protected unit)
+//   - for each registered listener, walk up from `entry.owner` (the unit whose scope called `on` —
+//     NOT the unit the listener sits on) to the NEAREST protected unit `boundary`. Deliver only when:
+//         boundary === undefined            (no protected unit on the owner's chain), OR
+//         ancestors.includes(boundary)      (the protected boundary is an ancestor of the emitter), OR
+//         current === boundary              (the emitter IS the protected unit)
 //
-// Observable boundary: a protected unit blocks '+global' events from reaching listeners inside its
-// subtree WHEN the event is emitted from OUTSIDE that subtree. If the emitter sits inside (or is)
-// the protected subtree, delivery proceeds normally.
+// Walking the OWNER is what makes the wall sit around the subtree's own listeners rather than around
+// its units: a listener registered from outside still fires even when its target lives inside the
+// protected subtree, while a listener the subtree registered on itself stays blocked.
+//
+// Observable boundary: a protected unit blocks '+global' events from reaching listeners registered
+// inside its subtree WHEN the event is emitted from OUTSIDE that subtree. If the emitter sits inside
+// (or is) the protected subtree, delivery proceeds normally.
 //
 // Unit.find applies the SAME scope-dependent boundary: the DESCENDANTS of a protected unit are
 // excluded from xnew.find when the search runs from OUTSIDE the protected subtree, but are visible
@@ -73,6 +77,55 @@ describe('xnew.protect', () => {
                         void emitterUnit;
                         xnew.emit('+ping');
                     });
+                });
+            });
+            expect(cb).toHaveBeenCalledTimes(1);
+        });
+
+        it('blocks a listener the protected unit registered on itself in its own scope', () => {
+            const cb = jest.fn();
+            xnew(() => {
+                xnew((a: Unit) => {
+                    xnew.protect();
+                    a.on('+ping', cb);   // owner is `a` itself — inside the boundary
+                });
+                xnew((emitterUnit: Unit) => {
+                    void emitterUnit;
+                    xnew.emit('+ping');
+                });
+            });
+            expect(cb).not.toHaveBeenCalled();
+        });
+
+        it('delivers to a listener the outside scope registered on the protected unit', () => {
+            const cb = jest.fn();
+            xnew(() => {
+                let a!: Unit;
+                xnew(() => {
+                    a = xnew((unit: Unit) => { void unit; xnew.protect(); });
+                });
+                a.on('+ping', cb);   // owner is the root scope — outside the boundary
+                xnew((emitterUnit: Unit) => {
+                    void emitterUnit;
+                    xnew.emit('+ping');
+                });
+            });
+            expect(cb).toHaveBeenCalledTimes(1);
+        });
+
+        it('delivers to a listener the outside scope registered on a unit inside the protected subtree', () => {
+            const cb = jest.fn();
+            xnew(() => {
+                let child!: Unit;
+                xnew((a: Unit) => {
+                    void a;
+                    xnew.protect();
+                    child = xnew((unit: Unit) => { void unit; });
+                });
+                child.on('+ping', cb);   // owner is the root scope — outside the boundary
+                xnew((emitterUnit: Unit) => {
+                    void emitterUnit;
+                    xnew.emit('+ping');
                 });
             });
             expect(cb).toHaveBeenCalledTimes(1);

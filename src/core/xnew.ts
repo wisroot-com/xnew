@@ -124,7 +124,7 @@ export const xnew = Object.assign(
             return new UnitTimer().transition(transition, duration, easing);
         },
 
-        // Marks the current unit as a protection boundary: descendants are hidden from '+event' emit / find outside the subtree (the unit itself stays visible).
+        // Marks the current unit as a protection boundary: from outside, find hides its descendants (the unit itself stays visible) and a '+event' skips the listeners the subtree registered in its own scope — a listener the outside scope registered on a unit inside still fires, since the wall is around the subtree's listeners, not its units.
         protect(): void {
             Unit.currentUnit._.protected = true;
         },

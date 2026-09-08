@@ -47,14 +47,12 @@ export class RoomIO {
     }
 
     // fires `type` on every unit of this room that listens for it; a '-type' also has to match the emitter's sync node id.
+    // the sync node counterpart counts as "the emitter's own unit", so '-' scopes by sync id here rather than by unit identity as Unit.emit does.
     dispatch(type: string, id: string | undefined, data: Record<string, any> = {}, syncId?: number | null): void {
-        // iterate a copy: a handler may finalize units, which mutates both tables mid-dispatch
-        [...(Unit.type2units.get(type) ?? [])].forEach((unit) => {
-            // socket callbacks run outside the scope machinery: a message landing after / mid-finalize must not fire a dying unit's handler.
-            if (unit._.phase === 'finalized' || unit._.phase === 'finalizing') return;
-            if (unit._.sync.root !== this.root) return; // skip units of another root
-            if (type[0] === '-' && unit._.sync.id !== syncId) return; // skip units of another sync node
-            [...(unit._.listeners.get(type) ?? [])].forEach((entry) => entry.execute({ id, ...data }));
+        Unit.dispatch(type, { id, ...data }, (unit) => {
+            if (unit._.sync.root !== this.root) return false; // skip units of another root
+            if (type[0] === '-' && unit._.sync.id !== syncId) return false; // skip units of another sync node
+            return true;
         });
     }
 
