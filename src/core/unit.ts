@@ -506,11 +506,12 @@ export class Unit {
 export class UnitPromise {
     constructor(private promise: Promise<any>, public key?: string) {}
 
-    // then / catch / finally run the callback in the captured scope; a returned UnitPromise unwraps to its inner promise.
+    // then / catch / finally run in the captured scope (a returned UnitPromise unwraps); after destroy then is skipped as unfinished work, while catch / finally are cleanup and still run, outside the scope so nothing attaches to a dead unit
     private chain(method: 'then' | 'catch' | 'finally', callback: Function): UnitPromise {
         const snapshot = Unit.snapshot(Unit.currentUnit);
         this.promise = (this.promise[method] as Function)((...args: any[]) => {
-            const result = Unit.scope(snapshot, callback, ...args);
+            const cleanupAfterDestroy = method !== 'then' && snapshot.unit._.phase === 'destroyed';
+            const result = cleanupAfterDestroy === true ? callback(...args) : Unit.scope(snapshot, callback, ...args);
             return result instanceof UnitPromise ? result.promise : result;
         });
         return this;

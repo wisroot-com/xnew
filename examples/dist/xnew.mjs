@@ -852,7 +852,8 @@ class UnitPromise {
     chain(method, callback) {
         const snapshot = Unit.snapshot(Unit.currentUnit);
         this.promise = this.promise[method]((...args) => {
-            const result = Unit.scope(snapshot, callback, ...args);
+            const cleanupAfterDestroy = method !== 'then' && snapshot.unit._.phase === 'destroyed';
+            const result = cleanupAfterDestroy === true ? callback(...args) : Unit.scope(snapshot, callback, ...args);
             return result instanceof UnitPromise ? result.promise : result;
         });
         return this;
