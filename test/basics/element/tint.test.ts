@@ -26,7 +26,7 @@ describe('basics element tint scale', () => {
     }
 
     function buildEveryElement(): void {
-        xnew(Button, { text: 'go' });
+        xnew(Button, { label: 'go' });
         xnew(InputCheckbox);
         xnew(InputSwitch);
         xnew(InputRadioGroup, { items: ['a', 'b'] });

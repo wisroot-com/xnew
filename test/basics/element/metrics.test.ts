@@ -22,7 +22,7 @@ describe('basics element box metrics', () => {
     });
 
     const FRAMED = [
-        { name: 'Button', Component: Button, props: { text: 'go' } },
+        { name: 'Button', Component: Button, props: { label: 'go' } },
         { name: 'InputText', Component: InputText as any, props: undefined },
         { name: 'InputNumber', Component: InputNumber as any, props: undefined },
         { name: 'InputRange', Component: InputRange as any, props: undefined },

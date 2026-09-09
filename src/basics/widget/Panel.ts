@@ -77,7 +77,7 @@ export function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions) {
             }, { key });
         },
         button({ name = '', key }: { name?: string, key?: any } = {}) {
-            return xnew(Button, { text: name, key, style: 'width: 100%;' });
+            return xnew(Button, { label: name, key, style: 'width: 100%;' });
         },
         listbox({ name = '', value, items = [], key }: { name?: string, value?: string, items?: ItemDef[], key?: any } = {}) {
             return xnew(List, { name, value: value ?? (items.length > 0 ? itemDef(items[0]).value : ''), items, key });

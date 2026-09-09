@@ -1962,7 +1962,7 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
 };
 
 function Button(unit, _a = {}) {
-    var { text = '', disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["text", "disabled", "className", "style"]);
+    var { label = '', disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["label", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             min-width: 6em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em;
@@ -1975,7 +1975,7 @@ function Button(unit, _a = {}) {
             &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
         `,
     });
-    xnew.nest(Object.assign({ tag: 'button', type: 'button', disabled, className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined }, others), text);
+    xnew.nest(Object.assign({ tag: 'button', type: 'button', disabled, className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined }, others), label);
 }
 
 function Image(unit, _a) {
@@ -3025,13 +3025,13 @@ function ToggleBar(unit, _a) {
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     let turn;
-    xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.marker }, () => {
+    xnew({ tag: 'svg', viewBox: '0 0 24 24', className: css.marker }, () => {
         if (marker === 'plusminus') {
-            xnew({ tag: 'path', d: 'M2.5 6 9.5 6' });
-            turn = xnew({ tag: 'path', d: 'M6 2.5 6 9.5', className: css.turn });
+            xnew({ tag: 'path', d: 'M4.5 12h15' });
+            turn = xnew({ tag: 'path', d: 'M12 4.5v15', className: css.turn });
         }
         else {
-            turn = xnew({ tag: 'path', d: 'M4.5 2.5 8 6 4.5 9.5', className: css.turn });
+            turn = xnew({ tag: 'path', d: 'm8.25 4.5 7.5 7.5-7.5 7.5', className: css.turn });
         }
     });
     apply(gate.value);
@@ -3528,14 +3528,7 @@ function PanelGroup(unit, { name, open }) {
     if (open !== undefined) {
         const gate = xnew(Gate, { open, duration: 200 });
         if (name) {
-            xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header) => {
-                header.on('click', () => gate.toggle());
-                const chevron = xnew((unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
-                gate.on('-transition', ({ value }) => {
-                    chevron.current.style.transform = `rotate(${(value - 1) * 90}deg)`;
-                });
-                xnew('<div>', name);
-            });
+            xnew(ToggleBar, { gate, label: name });
         }
         xnew.extend(Accordion, { gate });
     }
@@ -3550,7 +3543,7 @@ function PanelGroup(unit, { name, open }) {
             }, { key });
         },
         button({ name = '', key } = {}) {
-            return xnew(Button, { text: name, key, style: 'width: 100%;' });
+            return xnew(Button, { label: name, key, style: 'width: 100%;' });
         },
         listbox({ name = '', value, items = [], key } = {}) {
             return xnew(List, { name, value: value !== null && value !== void 0 ? value : (items.length > 0 ? itemDef(items[0]).value : ''), items, key });

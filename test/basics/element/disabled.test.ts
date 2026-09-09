@@ -24,7 +24,7 @@ describe('basics element disabled convention', () => {
     });
 
     const CASES: Array<{ name: string, Component: any, props?: any, focusable: boolean }> = [
-        { name: 'Button', Component: Button, props: { text: 'go' }, focusable: false },
+        { name: 'Button', Component: Button, props: { label: 'go' }, focusable: false },
         { name: 'InputText', Component: InputText, focusable: true },
         { name: 'InputNumber', Component: InputNumber, focusable: true },
         { name: 'InputRange', Component: InputRange, focusable: true },

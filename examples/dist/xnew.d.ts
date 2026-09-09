@@ -319,8 +319,8 @@ declare function Scene(unit: xnew.Unit): {
     add(Component: Function, props?: any): xnew.Unit;
 };
 
-declare function Button(unit: xnew.Unit, { text, disabled, className, style, ...others }?: {
-    text?: string;
+declare function Button(unit: xnew.Unit, { label, disabled, className, style, ...others }?: {
+    label?: string;
     disabled?: boolean;
     className?: string;
     style?: string;

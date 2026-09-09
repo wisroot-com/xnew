@@ -48,10 +48,10 @@
       xnew.nest('<div>');
       xnew('<div class="mb-1">', 'Button');
       xnew.nest('<div class="flex gap-4 items-center">');
-      xnew(xbasics.Button, { text: 'default' });
-      xnew(xbasics.Button, { text: 'custom', className: 'custom' });
+      xnew(xbasics.Button, { label: 'default' });
+      xnew(xbasics.Button, { label: 'custom', className: 'custom' });
       // disabled works the same on every element: the container gets data-disabled and dims itself
-      xnew(xbasics.Button, { text: 'disabled', disabled: true });
+      xnew(xbasics.Button, { label: 'disabled', disabled: true });
     }
 
     function MyInputText(unit) {

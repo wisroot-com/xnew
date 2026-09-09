@@ -49,7 +49,7 @@ describe('basics element focus ring', () => {
     }
 
     const OPERATED = [
-        { name: 'Button', Component: Button as any, props: { text: 'go' } },
+        { name: 'Button', Component: Button as any, props: { label: 'go' } },
         { name: 'InputText', Component: InputText as any, props: undefined },
         { name: 'InputNumber', Component: InputNumber as any, props: undefined },
         { name: 'InputRange', Component: InputRange as any, props: undefined },
