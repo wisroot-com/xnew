@@ -20,11 +20,11 @@ function HtmlMain(unit) {
   targets.current.style.display = 'block';
 
   document.querySelectorAll('.target').forEach((element, index) => {
-    xnew(element, Plane, index);
+    xnew(element, Plane, { id: index });
   });
 }
 
-function Plane(unit, id) {
+function Plane(unit, { id }) {
   let opacity = id === state.id ? 0.80 : 0.20;
   unit.on('+planefade', () => {
     xnew.transition(({ value }) => {
@@ -44,10 +44,10 @@ function Plane(unit, id) {
 }
 
 function Event(unit) {
-  xnew(document.querySelector('.button.left'), Button, +1);
-  xnew(document.querySelector('.button.right'), Button, -1);
+  xnew(document.querySelector('.button.left'), Button, { direction: +1 });
+  xnew(document.querySelector('.button.right'), Button, { direction: -1 });
 
-  function Button(unit, direction) {
+  function Button(unit, { direction }) {
     unit.on('click', () => {
       if (state.moving === false) {
         state.id = (state.id + direction + 4) % 4;
@@ -97,19 +97,19 @@ function ThreeMain(unit) {
 }
 
 function ThreeContents(unit) {
-  xnew(DirectionaLight, 20, -50, 50, 0.1);
-  xnew(DirectionaLight, 20, 50, -10, 0.1);
-  xnew(AmbientLight, 0.05);
+  xnew(DirectionalLight, { intensity: 0.1, position: { x: 20, y: -50, z: 50 } });
+  xnew(DirectionalLight, { intensity: 0.1, position: { x: 20, y: 50, z: -10 } });
+  xnew(AmbientLight, { intensity: 0.05 });
   xnew(Room);
 }
 
-function DirectionaLight(unit, x, y, z, value) {
-  const object = xthree.add(new THREE.DirectionalLight(0xFFFFFF, value));
-  object.position.set(x, y, z);
+function DirectionalLight(unit, { color = 0xFFFFFF, intensity, position }) {
+  const object = xthree.add(new THREE.DirectionalLight(color, intensity));
+  object.position.set(position.x, position.y, position.z);
 }
 
-function AmbientLight(unit, value) {
-  const object = xthree.add(new THREE.AmbientLight(0xFFFFFF, value));
+function AmbientLight(unit, { color = 0xFFFFFF, intensity }) {
+  const object = xthree.add(new THREE.AmbientLight(color, intensity));
 }
 
 function Room(unit) {
