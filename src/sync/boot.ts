@@ -21,6 +21,7 @@ export interface SyncNode { id: number; name: string; parent: number | null; sta
 //   'emitToServer'  client→server  { type, syncId, data, to? }  message channel — dispatch `type` on the server, or relay it to the `to` clients (xsync.emit with a target)
 //   'emitToClients' server→client  { type, syncId, id, data }   message channel — dispatch `type` on the clients (also carries the lifecycle relay)
 //   connect / disconnect / notfound (socket-native)        lifecycle channel — dispatched as 'sync.connect' / 'sync.disconnect' / 'sync.notfound'
+//                                                          connect / disconnect carry the roster entry itself ({ id, name, cpu }), since the roster cannot be read for it at either end
 
 // 'sync.' is the library's own namespace: only bootServer / bootClient may dispatch it, never a client envelope.
 const RESERVED_PREFIX = 'sync.';
@@ -90,8 +91,9 @@ export function bootServer(roomio: RoomIO): Unit {
         // connect / disconnect are mirrors: RoomIO.announce dispatches here, relays to the other members
         // (the sender is excluded, since it dispatches from its own socket events) and refreshes the roster.
         // xsync.cpu.join / xsync.cpu.leave take the same path for a member that has no socket at all.
-        roomio.clients.push({ id: socket.id, name: query?.clientName ?? '' });
-        roomio.announce('sync.connect', socket.id, socket);
+        const client: ClientStatus = { id: socket.id, name: query?.clientName ?? '' };
+        roomio.clients.push(client);
+        roomio.announce('sync.connect', client, socket);
         socket.on('emitToServer', (p: any) => {
             const message = envelope(p);
             if (message === null) { return; }   // a rejected envelope is dropped, never dispatched
@@ -104,9 +106,11 @@ export function bootServer(roomio: RoomIO): Unit {
             }
         });
         socket.on('disconnect', () => {
+            // read before it leaves the roster: the leaver's name is nowhere to be found once it is off
+            const leaver = roomio.clients.find((c) => c.id === socket.id) ?? client;
             roomio.clients = roomio.clients.filter((c) => c.id !== socket.id);
             lastEmits.delete(socket.id);
-            roomio.announce('sync.disconnect', socket.id, socket);
+            roomio.announce('sync.disconnect', leaver, socket);
         });
     });
     return root;
@@ -158,8 +162,10 @@ export function bootClient(roomio: RoomIO): Unit {
     });
 
     //---- lifecycle channel: own events dispatch from the own socket; other members' arrive via the server relay
-    roomio.on('connect', () => roomio.dispatch('sync.connect', roomio.socket.id));
-    roomio.on('disconnect', () => roomio.dispatch('sync.disconnect', roomio.socket.id));
+    // the own events carry the handshook name: the roster is empty before the first 'status' and stale when the socket drops
+    const self = { name: roomio.clientName, cpu: false };
+    roomio.on('connect', () => roomio.dispatch('sync.connect', roomio.socket.id, self));
+    roomio.on('disconnect', () => roomio.dispatch('sync.disconnect', roomio.socket.id, self));
     roomio.on('notfound', (payload: any) => roomio.dispatch('sync.notfound', roomio.socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
 
     return root;

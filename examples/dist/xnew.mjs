@@ -1274,8 +1274,9 @@ function bootServer(roomio) {
         if ((query === null || query === void 0 ? void 0 : query.roomId) !== room.id)
             return;
         socket.join(room.id);
-        roomio.clients.push({ id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' });
-        roomio.announce('sync.connect', socket.id, socket);
+        const client = { id: socket.id, name: (_b = query === null || query === void 0 ? void 0 : query.clientName) !== null && _b !== void 0 ? _b : '' };
+        roomio.clients.push(client);
+        roomio.announce('sync.connect', client, socket);
         socket.on('emitToServer', (p) => {
             const message = envelope(p);
             if (message === null) {
@@ -1292,9 +1293,11 @@ function bootServer(roomio) {
             }
         });
         socket.on('disconnect', () => {
+            var _a;
+            const leaver = (_a = roomio.clients.find((c) => c.id === socket.id)) !== null && _a !== void 0 ? _a : client;
             roomio.clients = roomio.clients.filter((c) => c.id !== socket.id);
             lastEmits.delete(socket.id);
-            roomio.announce('sync.disconnect', socket.id, socket);
+            roomio.announce('sync.disconnect', leaver, socket);
         });
     });
     return root;
@@ -1343,8 +1346,9 @@ function bootClient(roomio) {
             roomio.dispatch(message.type, p === null || p === void 0 ? void 0 : p.id, message.data, message.syncId);
         }
     });
-    roomio.on('connect', () => roomio.dispatch('sync.connect', roomio.socket.id));
-    roomio.on('disconnect', () => roomio.dispatch('sync.disconnect', roomio.socket.id));
+    const self = { name: roomio.clientName, cpu: false };
+    roomio.on('connect', () => roomio.dispatch('sync.connect', roomio.socket.id, self));
+    roomio.on('disconnect', () => roomio.dispatch('sync.disconnect', roomio.socket.id, self));
     roomio.on('notfound', (payload) => roomio.dispatch('sync.notfound', roomio.socket.id, typeof payload === 'object' && payload !== null ? payload : {}));
     return root;
 }
@@ -1355,11 +1359,12 @@ function getSide() {
 
 class RoomIO {
     constructor({ io, room, client }, Component, props) {
-        var _a;
+        var _a, _b;
         this.clients = [];
         this.io = io;
         this.room = room;
-        this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '' }, forceNew: true }) : null;
+        this.clientName = (_a = client === null || client === void 0 ? void 0 : client.name) !== null && _a !== void 0 ? _a : '';
+        this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: (_b = client === null || client === void 0 ? void 0 : client.name) !== null && _b !== void 0 ? _b : '' }, forceNew: true }) : null;
         this.root = new Unit(Unit.currentUnit, Component, Object.assign(Object.assign({}, props), { preinit: (unit) => {
                 unit._.sync.root = unit;
                 unit._.protected = true;
@@ -1393,9 +1398,10 @@ class RoomIO {
         wire.on(type, listener);
         this.root.on('destroy', () => wire.off(type, listener));
     }
-    announce(type, id, sender = null) {
-        this.dispatch(type, id);
-        (sender !== null && sender !== void 0 ? sender : this.io).to(this.room.id).emit('emitToClients', { type, syncId: null, id, data: {} });
+    announce(type, client, sender = null) {
+        const data = { name: client.name, cpu: client.cpu === true };
+        this.dispatch(type, client.id, data);
+        (sender !== null && sender !== void 0 ? sender : this.io).to(this.room.id).emit('emitToClients', { type, syncId: null, id: client.id, data });
         this.emit('status', { clients: this.clients });
         this.dispatch('sync.status', undefined);
     }
@@ -1408,7 +1414,7 @@ class RoomIO {
         }
         const client = { id, name, cpu: true };
         this.clients.push(client);
-        this.announce('sync.connect', id);
+        this.announce('sync.connect', client);
         return client;
     }
     leaveCpu(id) {
@@ -1417,7 +1423,7 @@ class RoomIO {
             return false;
         }
         this.clients = this.clients.filter((entry) => entry !== client);
-        this.announce('sync.disconnect', id);
+        this.announce('sync.disconnect', client);
         return true;
     }
     static of(unit) {

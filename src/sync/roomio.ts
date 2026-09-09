@@ -15,6 +15,7 @@ export interface BootOptions { io: any; room: RoomStatus; client?: any; }   // c
 export class RoomIO {
     readonly io: any;
     readonly socket: any;           // client side only: the socket this room creates, owns and disconnects
+    readonly clientName: string;    // client side only: the name handshook with, so an own lifecycle event can carry it
     readonly room: RoomStatus;
     clients: ClientStatus[] = [];   // room roster; kept up to date by boot's status channel (and by cpu.join / cpu.leave)
     readonly root: Unit;
@@ -22,6 +23,7 @@ export class RoomIO {
     constructor({ io, room, client }: BootOptions, Component: Function, props?: object) {
         this.io = io;
         this.room = room;
+        this.clientName = client?.name ?? '';
         // the handshake query must stay flat strings (socket.io stringifies values).
         this.socket = getSide() === 'client' ? io({ query: { roomId: room.id, clientName: client?.name ?? '' }, forceNew: true }) : null;
         // preinit runs before the root's body, so a xsync.session / xsync.emit inside it already resolves this room.
@@ -72,9 +74,11 @@ export class RoomIO {
     // Roster announcement (server side): dispatch here, relay to the other members, then re-broadcast the roster.
     // `sender` is the socket the change came from — it is left out of the relay because it dispatches the same
     // event from its own socket. A CPU member has no sender, so the relay goes to the whole room.
-    announce(type: string, id: string, sender: any = null): void {
-        this.dispatch(type, id);
-        (sender ?? this.io).to(this.room.id).emit('emitToClients', { type, syncId: null, id, data: {} });
+    // The entry travels whole: a leaver is already off `clients` here, and on the far side the relay lands before 'status'.
+    announce(type: string, client: ClientStatus, sender: any = null): void {
+        const data = { name: client.name, cpu: client.cpu === true };
+        this.dispatch(type, client.id, data);
+        (sender ?? this.io).to(this.room.id).emit('emitToClients', { type, syncId: null, id: client.id, data });
         this.emit('status', { clients: this.clients });
         this.dispatch('sync.status', undefined);
     }
@@ -86,7 +90,7 @@ export class RoomIO {
         if (this.clients.some((client) => client.id === id) === true) { throw new Error(`xsync.cpu.join: "${id}" is already in this room.`); }
         const client: ClientStatus = { id, name, cpu: true };
         this.clients.push(client);
-        this.announce('sync.connect', id);
+        this.announce('sync.connect', client);
         return client;
     }
 
@@ -95,7 +99,7 @@ export class RoomIO {
         const client = this.clients.find((entry) => entry.id === id);
         if (client === undefined || client.cpu !== true) { return false; }
         this.clients = this.clients.filter((entry) => entry !== client);
-        this.announce('sync.disconnect', id);
+        this.announce('sync.disconnect', client);
         return true;
     }
 

@@ -55,7 +55,7 @@ export interface MockClientSocket {
 
 export interface IoMock {
     io: any;                                  // socket.io の io 相当（server 側）
-    connect(id?: string, roomId?: string): MockClientSocket;   // 1 接続ぶんの client socket を生成（roomId 省略時は既定 ROOM）
+    connect(id?: string, roomId?: string, clientName?: string): MockClientSocket;   // 1 接続ぶんの client socket を生成（roomId 省略時は既定 ROOM）
     captured: any[];                          // server boot が emit した 'sync' ツリーの記録（capture-only テスト用）
     lastSync(): any;                          // 直近に emit された 'sync' ツリー（capture は root.on('update') で走る）
     lastSyncFor(clientId: string): any;       // その client 宛て（io.to(clientId)）に直近 emit された 'sync' ツリー
@@ -103,7 +103,7 @@ export function ioMock(): IoMock {
         },
     };
 
-    function connect(id?: string, roomId: string = ROOM.id): MockClientSocket {
+    function connect(id?: string, roomId: string = ROOM.id, clientName: string = ''): MockClientSocket {
         const clientId = id ?? 'c' + (++seq);
         // socket.io と同様、各 socket は自分の id の room に自動 join 済み（io.to(clientId) で個別宛が届く）。
         const conn: Conn = { clientHandlers: new Map(), serverHandlers: new Map(), rooms: new Set([clientId]) };
@@ -112,7 +112,7 @@ export function ioMock(): IoMock {
         // server 側 socket（bootServer が on('emitToServer') / on('disconnect') を張る）。query.roomId で入室先を伝える。
         connectionCb?.({
             id: clientId,
-            handshake: { query: { roomId } },
+            handshake: { query: { roomId, clientName } },
             join(room: string): void { conn.rooms.add(room); },
             on(event: string, handler: Handler): void {
                 let set = conn.serverHandlers.get(event);
