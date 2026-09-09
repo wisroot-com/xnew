@@ -2333,6 +2333,115 @@ function InputNumber(unit, _a = {}) {
     };
 }
 
+let serial = 0;
+function InputRadioGroup(unit, _a = {}) {
+    var { value, items = [], name, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "name", "disabled", "className", "style"]);
+    const css = xnew.css('base', {
+        container: `
+            display: inline-flex; align-items: stretch;
+            max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em;
+            margin: 0.125em 0;
+            border: 1px solid currentColor; border-radius: 0.25em;
+            overflow: hidden;
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
+        `,
+    });
+    const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined }, others));
+    const shared = name !== null && name !== void 0 ? name : `xnew-radio-${serial++}`;
+    const rows = [];
+    function apply(value) {
+        for (const row of rows) {
+            row.check(row.value === value);
+        }
+    }
+    if (value !== undefined) {
+        xnew.timeout(() => apply(value));
+    }
+    xnew.standalone(() => {
+        for (const item of items) {
+            const def = typeof item === 'object' ? item : { value: item };
+            xnew(InputRadio, Object.assign(Object.assign({}, def), { checked: def.value === value }));
+        }
+    });
+    return {
+        get name() {
+            return shared;
+        },
+        get disabled() {
+            return disabled;
+        },
+        get value() {
+            var _a, _b;
+            return (_b = (_a = rows.find((row) => row.checked)) === null || _a === void 0 ? void 0 : _a.value) !== null && _b !== void 0 ? _b : '';
+        },
+        set value(value) {
+            apply(value);
+            dispatchCommit(container, value);
+        },
+        register(row) {
+            rows.push(row);
+            row.on('destroy', () => rows.splice(rows.indexOf(row), 1));
+        },
+    };
+}
+function InputRadio(unit, _a = {}) {
+    var { value = '', label, name, checked = false, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "label", "name", "checked", "disabled", "className", "style"]);
+    const group = xnew.context(InputRadioGroup);
+    const css = xnew.css('base', {
+        container: `
+            padding: 0.25em 0.5em;
+            flex: 1 1 0;
+            display: flex; align-items: center; justify-content: center;
+            white-space: nowrap;
+            cursor: pointer; user-select: none;
+            & + & { border-left: 1px solid currentColor; }
+            &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+            &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &:has(input:checked):hover { background: color-mix(in srgb, currentColor 30%, transparent); }
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
+        `,
+        input: `
+            width: 0; height: 0; margin: 0; opacity: 0;
+        `,
+    });
+    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
+    const inert = disabled === true || (group === null || group === void 0 ? void 0 : group.disabled) === true;
+    const input = xnew(Object.assign({ tag: 'input', type: 'radio', name: name !== null && name !== void 0 ? name : group === null || group === void 0 ? void 0 : group.name, value, checked, disabled: inert, className: css.input }, others));
+    group === null || group === void 0 ? void 0 : group.register(unit);
+    if (group !== undefined) {
+        unit.on('input change', ({ event }) => event.stopPropagation());
+        input.on('change', () => group.value = value);
+    }
+    xnew.standalone(() => {
+        xnew({ tag: 'span' }, label !== null && label !== void 0 ? label : value);
+    });
+    return {
+        get value() {
+            return input.current.value;
+        },
+        get label() {
+            return label;
+        },
+        get checked() {
+            return input.current.checked;
+        },
+        set checked(current) {
+            const element = input.current;
+            element.checked = current;
+            if (current === true) {
+                dispatchCommit(element, element.value);
+            }
+        },
+        check(current) {
+            input.current.checked = current;
+        },
+        get input() {
+            return input.current;
+        },
+    };
+}
+
 function Gate(unit, { open = true, duration = 0, easing = 'ease' } = {}) {
     let value = open ? 1.0 : 0.0;
     if (open === true) {
@@ -2418,9 +2527,6 @@ function Overlay(unit, _a) {
     };
 }
 
-function itemDef(item) {
-    return (item !== null && typeof item === 'object' && 'value' in item) ? item : { value: item };
-}
 function Listbox(unit, _a = {}) {
     var { value, items = [], disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "disabled", "className", "style"]);
     const css = xnew.css('base', {
@@ -2432,7 +2538,8 @@ function Listbox(unit, _a = {}) {
         `,
     });
     const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined }, others));
-    let selected = value !== null && value !== void 0 ? value : (items.length > 0 ? itemDef(items[0]).value : '');
+    const first = items[0];
+    let selected = value !== null && value !== void 0 ? value : (first === undefined ? '' : typeof first === 'object' ? first.value : first);
     const rows = [];
     const labels = [];
     const gate = xnew(Gate, { open: false, duration: 200, easing: 'ease' });
@@ -2458,7 +2565,7 @@ function Listbox(unit, _a = {}) {
         xnew(() => {
             xnew.extend(ListboxMenu);
             for (const item of items) {
-                xnew(ListboxItem, itemDef(item));
+                xnew(ListboxItem, typeof item === 'object' ? item : { value: item });
             }
         });
     });
@@ -2576,115 +2683,6 @@ function ListboxItem(unit, _a = {}) {
         },
         check(current) {
             unit.current.toggleAttribute('data-checked', current);
-        },
-    };
-}
-
-let serial = 0;
-function InputRadioGroup(unit, _a = {}) {
-    var { value, items = [], name, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "items", "name", "disabled", "className", "style"]);
-    const css = xnew.css('base', {
-        container: `
-            display: inline-flex; align-items: stretch;
-            max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; min-height: 1.8em;
-            margin: 0.125em 0;
-            border: 1px solid currentColor; border-radius: 0.25em;
-            overflow: hidden;
-            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
-        `,
-    });
-    const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined }, others));
-    const shared = name !== null && name !== void 0 ? name : `xnew-radio-${serial++}`;
-    const rows = [];
-    function apply(value) {
-        for (const row of rows) {
-            row.check(row.value === value);
-        }
-    }
-    if (value !== undefined) {
-        xnew.timeout(() => apply(value));
-    }
-    xnew.standalone(() => {
-        for (const item of items) {
-            const def = itemDef(item);
-            xnew(InputRadio, Object.assign(Object.assign({}, def), { checked: def.value === value }));
-        }
-    });
-    return {
-        get name() {
-            return shared;
-        },
-        get disabled() {
-            return disabled;
-        },
-        get value() {
-            var _a, _b;
-            return (_b = (_a = rows.find((row) => row.checked)) === null || _a === void 0 ? void 0 : _a.value) !== null && _b !== void 0 ? _b : '';
-        },
-        set value(value) {
-            apply(value);
-            dispatchCommit(container, value);
-        },
-        register(row) {
-            rows.push(row);
-            row.on('destroy', () => rows.splice(rows.indexOf(row), 1));
-        },
-    };
-}
-function InputRadio(unit, _a = {}) {
-    var { value = '', label, name, checked = false, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "label", "name", "checked", "disabled", "className", "style"]);
-    const group = xnew.context(InputRadioGroup);
-    const css = xnew.css('base', {
-        container: `
-            padding: 0.25em 0.5em;
-            flex: 1 1 0;
-            display: flex; align-items: center; justify-content: center;
-            white-space: nowrap;
-            cursor: pointer; user-select: none;
-            & + & { border-left: 1px solid currentColor; }
-            &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
-            &:has(input:checked) { background: color-mix(in srgb, currentColor 20%, transparent); }
-            &:has(input:checked):hover { background: color-mix(in srgb, currentColor 30%, transparent); }
-            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
-            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
-        `,
-        input: `
-            width: 0; height: 0; margin: 0; opacity: 0;
-        `,
-    });
-    xnew.nest({ tag: 'label', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
-    const inert = disabled === true || (group === null || group === void 0 ? void 0 : group.disabled) === true;
-    const input = xnew(Object.assign({ tag: 'input', type: 'radio', name: name !== null && name !== void 0 ? name : group === null || group === void 0 ? void 0 : group.name, value, checked, disabled: inert, className: css.input }, others));
-    group === null || group === void 0 ? void 0 : group.register(unit);
-    if (group !== undefined) {
-        unit.on('input change', ({ event }) => event.stopPropagation());
-        input.on('change', () => group.value = value);
-    }
-    xnew.standalone(() => {
-        xnew({ tag: 'span' }, label !== null && label !== void 0 ? label : value);
-    });
-    return {
-        get value() {
-            return input.current.value;
-        },
-        get label() {
-            return label;
-        },
-        get checked() {
-            return input.current.checked;
-        },
-        set checked(current) {
-            const element = input.current;
-            element.checked = current;
-            if (current === true) {
-                dispatchCommit(element, element.value);
-            }
-        },
-        check(current) {
-            input.current.checked = current;
-        },
-        get input() {
-            return input.current;
         },
     };
 }
@@ -3546,7 +3544,8 @@ function PanelGroup(unit, { label, open }) {
             return xnew(Button, { label, key, style: 'width: 100%;' });
         },
         listbox({ label = '', value, items = [], key } = {}) {
-            return xnew(List, { label, value: value !== null && value !== void 0 ? value : (items.length > 0 ? itemDef(items[0]).value : ''), items, key });
+            const first = items[0];
+            return xnew(List, { label, value: value !== null && value !== void 0 ? value : (first === undefined ? '' : typeof first === 'object' ? first.value : first), items, key });
         },
         range({ label = '', value, min = 0, max = 100, step, key } = {}) {
             return xnew(Range, { label, value: value !== null && value !== void 0 ? value : min, min, max, step, key });
@@ -3581,7 +3580,7 @@ function Tabs(unit, { items, value }) {
     });
     const strip = xnew.nest({ tag: 'div', className: css.strip });
     const panel = unit.parent;
-    const defs = items.map((item) => itemDef(item));
+    const defs = items.map((item) => (typeof item === 'object' ? item : { value: item }));
     const keys = defs.map((def) => def.value);
     let active = (_a = value !== null && value !== void 0 ? value : keys[0]) !== null && _a !== void 0 ? _a : '';
     const tabs = defs.map((def) => {
@@ -3713,7 +3712,7 @@ function List(unit, _a) {
     });
     xnew(() => {
         xnew.extend(ListboxMenu);
-        items.forEach((item) => xnew(ListboxItem, itemDef(item)));
+        items.forEach((item) => xnew(ListboxItem, typeof item === 'object' ? item : { value: item }));
     });
 }
 

@@ -6,7 +6,7 @@
 
 import { xnew } from '../../core/xnew';
 import { dispatchCommit } from '../../utils/dom';
-import { ItemDef, itemDef } from '../widget/Listbox';
+import { ItemDef } from '../../utils/item';
 
 //----------------------------------------------------------------------------------------------------
 // InputRadioGroup — the framed segment strip; `.value` is the single read / write path for the pick
@@ -50,7 +50,7 @@ export function InputRadioGroup(unit: xnew.Unit,
     // `items` is known right here, so the pick lands synchronously and `.value` reads true from tick 0
     xnew.standalone(() => {
         for (const item of items) {
-            const def = itemDef(item);
+            const def = typeof item === 'object' ? item : { value: item };
             xnew(InputRadio, { ...def, checked: def.value === value });
         }
     });

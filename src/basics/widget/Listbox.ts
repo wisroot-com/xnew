@@ -9,6 +9,7 @@
 
 import { xnew } from '../../core/xnew';
 import { dispatchCommit, surfaceColor } from '../../utils/dom';
+import { ItemDef } from '../../utils/item';
 import { Gate } from './Gate';
 import { Overlay } from './Overlay';
 
@@ -16,14 +17,6 @@ import { Overlay } from './Overlay';
 // Listbox — the fit-to-content host (no frame; ListboxButton draws the trigger)
 // Standalone it builds the default trigger + option list out of `items`; composed, the caller nests its own.
 //----------------------------------------------------------------------------------------------------
-
-// a row / tab is either the bare value, or a value with its own display label (shared with Panel)
-export type ItemDef<T = string> = T | { value: T, label?: string };
-
-// normalizes both forms to { value, label }, so callers only ever branch here
-export function itemDef<T>(item: ItemDef<T>): { value: T, label?: string } {
-    return (item !== null && typeof item === 'object' && 'value' in (item as object)) ? item as { value: T, label?: string } : { value: item as T };
-}
 
 export function Listbox(unit: xnew.Unit,
     { value, items = [], disabled = false, className = '', style = '', ...others }:
@@ -42,7 +35,8 @@ export function Listbox(unit: xnew.Unit,
 
     // `items` is known right here, so the default lands synchronously and `.value` reads true from tick 0;
     // the composed path (the caller builds the rows) has none, and falls back to the deferred adoption below
-    let selected = value ?? (items.length > 0 ? itemDef(items[0]).value : '');
+    const first = items[0];
+    let selected = value ?? (first === undefined ? '' : typeof first === 'object' ? first.value : first);
 
     const rows: xnew.Unit[] = [];
     const labels: xnew.Unit[] = [];
@@ -80,7 +74,7 @@ export function Listbox(unit: xnew.Unit,
         xnew(() => {
             xnew.extend(ListboxMenu);
             for (const item of items) {
-                xnew(ListboxItem, itemDef(item));
+                xnew(ListboxItem, typeof item === 'object' ? item : { value: item });
             }
         });
     });

@@ -398,6 +398,38 @@ type ItemDef<T = string> = T | {
     value: T;
     label?: string;
 };
+
+declare function InputRadioGroup(unit: xnew.Unit, { value, items, name, disabled, className, style, ...others }?: {
+    value?: string;
+    items?: ItemDef[];
+    name?: string;
+    disabled?: boolean;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    readonly name: string;
+    readonly disabled: boolean;
+    value: string;
+    register(row: xnew.Unit): void;
+};
+declare function InputRadio(unit: xnew.Unit, { value, label, name, checked, disabled, className, style, ...others }?: {
+    value?: string;
+    label?: string;
+    name?: string;
+    checked?: boolean;
+    disabled?: boolean;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    readonly value: string;
+    readonly label: string | undefined;
+    checked: boolean;
+    check(current: boolean): void;
+    readonly input: HTMLInputElement;
+};
+
 declare function Listbox(unit: xnew.Unit, { value, items, disabled, className, style, ...others }?: {
     value?: string;
     items?: ItemDef[];
@@ -431,37 +463,6 @@ declare function ListboxItem(unit: xnew.Unit, { value, label, className, style, 
     readonly value: string;
     readonly label: string | undefined;
     check(current: boolean): void;
-};
-
-declare function InputRadioGroup(unit: xnew.Unit, { value, items, name, disabled, className, style, ...others }?: {
-    value?: string;
-    items?: ItemDef[];
-    name?: string;
-    disabled?: boolean;
-    className?: string;
-    style?: string;
-    [key: string]: any;
-}): {
-    readonly name: string;
-    readonly disabled: boolean;
-    value: string;
-    register(row: xnew.Unit): void;
-};
-declare function InputRadio(unit: xnew.Unit, { value, label, name, checked, disabled, className, style, ...others }?: {
-    value?: string;
-    label?: string;
-    name?: string;
-    checked?: boolean;
-    disabled?: boolean;
-    className?: string;
-    style?: string;
-    [key: string]: any;
-}): {
-    readonly value: string;
-    readonly label: string | undefined;
-    checked: boolean;
-    check(current: boolean): void;
-    readonly input: HTMLInputElement;
 };
 
 declare function ColorPicker(unit: xnew.Unit, { value, alpha, disabled, className, style, ...others }?: {

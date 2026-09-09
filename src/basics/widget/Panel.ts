@@ -13,12 +13,13 @@ import { xicons } from '../../icons/xicons';
 import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
 import { InputCheckbox } from '../element/InputCheckbox';
-import { Listbox, ListboxButton, ListboxMenu, ListboxItem, ItemDef, itemDef } from './Listbox';
+import { Listbox, ListboxButton, ListboxMenu, ListboxItem } from './Listbox';
 import { Accordion } from './Accordion';
 import { Gate } from './Gate';
 import { ToggleBar } from './ToggleBar';
 import { Overlay } from './Overlay';
 import { ColorPicker } from './ColorPicker';
+import { ItemDef } from '../../utils/item';
 
 // `key` is only read by group(); the rest are shared by Panel and PanelGroup
 interface PanelOptions { label?: string; open?: boolean; key?: any; }
@@ -80,7 +81,8 @@ export function PanelGroup(unit: xnew.Unit, { label, open }: PanelOptions) {
             return xnew(Button, { label, key, style: 'width: 100%;' });
         },
         listbox({ label = '', value, items = [], key }: { label?: string, value?: string, items?: ItemDef[], key?: any } = {}) {
-            return xnew(List, { label, value: value ?? (items.length > 0 ? itemDef(items[0]).value : ''), items, key });
+            const first = items[0];
+            return xnew(List, { label, value: value ?? (first === undefined ? '' : typeof first === 'object' ? first.value : first), items, key });
         },
         range({ label = '', value, min = 0, max = 100, step, key }: { label?: string, value?: number, min?: number, max?: number, step?: number, key?: any } = {}) {
             return xnew(Range, { label, value: value ?? min, min, max, step, key });
@@ -118,7 +120,7 @@ function Tabs(unit: xnew.Unit, { items, value }: { items: ItemDef<any>[], value?
 
     // the groups a tab names are this strip's siblings, so the panel above holds both
     const panel = unit.parent as xnew.Unit;
-    const defs = items.map((item) => itemDef(item));
+    const defs = items.map((item) => (typeof item === 'object' ? item : { value: item }));
     const keys = defs.map((def) => def.value);
     let active = value ?? keys[0] ?? '';
 
@@ -283,6 +285,6 @@ function List(unit: xnew.Unit, { label = '', value, items = [], ...others }: { l
     });
     xnew(() => {
         xnew.extend(ListboxMenu);
-        items.forEach((item: ItemDef) => xnew(ListboxItem, itemDef(item)));
+        items.forEach((item: ItemDef) => xnew(ListboxItem, typeof item === 'object' ? item : { value: item }));
     });
 }
