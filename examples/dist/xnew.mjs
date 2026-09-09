@@ -2182,7 +2182,6 @@ function Toggle(unit, _a = {}) {
         },
     };
 }
-
 function InputCheckbox(unit, _a = {}) {
     var { value = false, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
     const css = xnew.css('base', {
@@ -2216,6 +2215,39 @@ function CheckMark() {
     });
     xnew.nest({ tag: 'svg', viewBox: '0 0 12 12', className: css.container });
     xnew('<path d="M2 6 5 9 10 3"/>');
+}
+function InputSwitch(unit, _a = {}) {
+    var { value = false, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
+    const css = xnew.css('base', {
+        container: `
+            display: inline-block;
+            width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
+            position: relative;
+            border: 1px solid currentColor; border-radius: 1em;
+            cursor: pointer; user-select: none;
+            &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+            &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
+            &[data-checked]:hover { background: color-mix(in srgb, currentColor 30%, transparent); }
+            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
+            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
+        `,
+    });
+    xnew.extend(Toggle, Object.assign({ value, disabled, className: `${css.container} ${className}`, style }, others));
+    xnew.standalone(() => {
+        xnew(Knob);
+    });
+}
+function Knob() {
+    const css = xnew.css('base', {
+        container: `
+            position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
+            aspect-ratio: 1 / 1; border-radius: 50%;
+            background: currentColor;
+            transition: left 0.15s, transform 0.15s;
+            [data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }
+        `,
+    });
+    xnew.nest({ tag: 'div', className: css.container });
 }
 
 function InputText(unit, _a = {}) {
@@ -2299,40 +2331,6 @@ function InputNumber(unit, _a = {}) {
             return input.current;
         },
     };
-}
-
-function InputSwitch(unit, _a = {}) {
-    var { value = false, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
-    const css = xnew.css('base', {
-        container: `
-            display: inline-block;
-            width: 3em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.5em; margin: 0.125em 0;
-            position: relative;
-            border: 1px solid currentColor; border-radius: 1em;
-            cursor: pointer; user-select: none;
-            &:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
-            &[data-checked] { background: color-mix(in srgb, currentColor 20%, transparent); }
-            &[data-checked]:hover { background: color-mix(in srgb, currentColor 30%, transparent); }
-            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
-            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
-        `,
-    });
-    xnew.extend(Toggle, Object.assign({ value, disabled, className: `${css.container} ${className}`, style }, others));
-    xnew.standalone(() => {
-        xnew(Knob);
-    });
-}
-function Knob() {
-    const css = xnew.css('base', {
-        container: `
-            position: absolute; top: 0.15em; bottom: 0.15em; left: 0.15em;
-            aspect-ratio: 1 / 1; border-radius: 50%;
-            background: currentColor;
-            transition: left 0.15s, transform 0.15s;
-            [data-checked] > & { left: calc(100% - 0.15em); transform: translateX(-100%); }
-        `,
-    });
-    xnew.nest({ tag: 'div', className: css.container });
 }
 
 function Gate(unit, { open = true, duration = 0, easing = 'ease' } = {}) {

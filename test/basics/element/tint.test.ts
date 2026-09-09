@@ -1,9 +1,8 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
 import { Button } from '../../../src/basics/element/Button';
-import { InputCheckbox } from '../../../src/basics/element/InputCheckbox';
+import { InputCheckbox, InputSwitch } from '../../../src/basics/element/InputCheckbox';
 import { InputRadio, InputRadioGroup } from '../../../src/basics/element/InputRadio';
-import { InputSwitch } from '../../../src/basics/element/InputSwitch';
 import { Listbox, ListboxButton, ListboxItem, ListboxMenu } from '../../../src/basics/element/Listbox';
 
 // One tint scale across every element: hover 10%, selected 20%, selected while hovered 30%. The last one

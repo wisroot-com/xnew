@@ -364,6 +364,13 @@ declare function InputCheckbox(unit: xnew.Unit, { value, disabled, className, st
     style?: string;
     [key: string]: any;
 }): void;
+declare function InputSwitch(unit: xnew.Unit, { value, disabled, className, style, ...others }?: {
+    value?: boolean;
+    disabled?: boolean;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): void;
 
 declare function InputText(unit: xnew.Unit, { value, disabled, className, style, ...others }?: {
     value?: string;
@@ -386,14 +393,6 @@ declare function InputNumber(unit: xnew.Unit, { value, disabled, className, styl
     value: number;
     readonly input: HTMLInputElement;
 };
-
-declare function InputSwitch(unit: xnew.Unit, { value, disabled, className, style, ...others }?: {
-    value?: boolean;
-    disabled?: boolean;
-    className?: string;
-    style?: string;
-    [key: string]: any;
-}): void;
 
 type ItemDef<T = string> = T | {
     value: T;

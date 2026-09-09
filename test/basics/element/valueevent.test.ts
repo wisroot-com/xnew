@@ -1,11 +1,10 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
 import { ColorPicker } from '../../../src/basics/element/ColorPicker';
-import { InputCheckbox } from '../../../src/basics/element/InputCheckbox';
+import { InputCheckbox, InputSwitch } from '../../../src/basics/element/InputCheckbox';
 import { InputNumber } from '../../../src/basics/element/InputNumber';
 import { InputRadio, InputRadioGroup } from '../../../src/basics/element/InputRadio';
 import { InputRange } from '../../../src/basics/element/InputRange';
-import { InputSwitch } from '../../../src/basics/element/InputSwitch';
 import { InputText } from '../../../src/basics/element/InputText';
 import { Listbox } from '../../../src/basics/element/Listbox';
 
