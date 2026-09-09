@@ -27,7 +27,7 @@ Recommended reading order.
 | --- | --- |
 | [stage](basics/stage/) | `Screen` settings (normal / fit / contain / cover) swapped by `Scene.change`, driven from a `Panel` |
 | [element](basics/element/) | `Button` / `Input*` form elements — `@layer base` defaults, overridable via className / style |
-| [widget](basics/widget/) | `ColorPicker` / `Panel` / `Gate` + `Accordion` / `Overlay` (accordion, modal, menu) / `VirtualPad` |
+| [widget](basics/widget/) | `ColorPicker` / `Panel` / `Gate` + `Accordion` / `ToggleBar` / `Overlay` (accordion, modal, menu) / `VirtualPad` |
 | [svg](basics/svg/) | `SVG` icon base, `SVGText` outlined labels |
 
 ## audio/ — export `xaudio`

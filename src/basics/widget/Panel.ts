@@ -16,6 +16,7 @@ import { InputCheckbox } from '../element/InputCheckbox';
 import { Listbox, ListboxButton, ListboxMenu, ListboxItem, ItemDef, itemDef } from '../element/Listbox';
 import { Accordion } from './Accordion';
 import { Gate } from './Gate';
+import { ToggleBar } from './ToggleBar';
 import { Overlay } from './Overlay';
 import { ColorPicker } from '../element/ColorPicker';
 
@@ -58,14 +59,7 @@ export function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions) {
         const gate = xnew(Gate, { open, duration: 200 });
 
         if (name) {
-            xnew(`<div style="height: 2em; display: flex; align-items: center; cursor: pointer; user-select: none;">`, (header: xnew.Unit) => {
-                header.on('click', () => gate.toggle());
-                const chevron = xnew((unit: xnew.Unit) => xnew.extend(xicons.ChevronDown, { style: 'width: 1em; height: 1em; margin-right: 0.25em;' }));
-                gate.on('-transition', ({ value }: { value: number }) => {
-                    chevron.current.style.transform = `rotate(${(value - 1) * 90}deg)`;
-                });
-                xnew('<div>', name);
-            });
+            xnew(ToggleBar, { gate, label: name });
         }
         xnew.extend(Accordion, { gate });
     }

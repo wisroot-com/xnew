@@ -21,6 +21,8 @@ export function ToggleBar(unit: xnew.Unit,
             min-height: 2em;
             cursor: pointer; user-select: none;
         `,
+        // the 24 viewBox and 1.5 stroke are the xicons geometry, so a bar's marker carries the same
+        // weight as the heroicons drawn beside it (a Panel row's chevron, say) at any font size
         marker: `
             flex: none; width: 0.9em; height: 0.9em; margin-right: 0.25em;
             fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
@@ -35,12 +37,13 @@ export function ToggleBar(unit: xnew.Unit,
 
     // a local svg rather than xicons, so a bar never drags the whole icon table into a bundle (as ListboxChevron does)
     let turn!: xnew.Unit;
-    xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.marker }, () => {
+    xnew({ tag: 'svg', viewBox: '0 0 24 24', className: css.marker }, () => {
         if (marker === 'plusminus') {
-            xnew({ tag: 'path', d: 'M2.5 6 9.5 6' });
-            turn = xnew({ tag: 'path', d: 'M6 2.5 6 9.5', className: css.turn });
+            // both strokes are the same length about the same centre, so the turned upright lands flat on the crossbar
+            xnew({ tag: 'path', d: 'M4.5 12h15' });
+            turn = xnew({ tag: 'path', d: 'M12 4.5v15', className: css.turn });
         } else {
-            turn = xnew({ tag: 'path', d: 'M4.5 2.5 8 6 4.5 9.5', className: css.turn });
+            turn = xnew({ tag: 'path', d: 'm8.25 4.5 7.5 7.5-7.5 7.5', className: css.turn });
         }
     });
 
