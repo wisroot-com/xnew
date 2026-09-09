@@ -3009,6 +3009,49 @@ function Accordion(unit, _a) {
     };
 }
 
+function ToggleBar(unit, _a) {
+    var { gate, label = '', marker = 'chevron', className = '', style = '' } = _a, others = __rest(_a, ["gate", "label", "marker", "className", "style"]);
+    const css = xnew.css('base', {
+        container: `
+            display: flex; align-items: center;
+            min-height: 2em;
+            cursor: pointer; user-select: none;
+        `,
+        marker: `
+            flex: none; width: 0.9em; height: 0.9em; margin-right: 0.25em;
+            fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+        `,
+        turn: `
+            transform-box: fill-box; transform-origin: center;
+        `,
+    });
+    xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    let turn;
+    xnew({ tag: 'svg', viewBox: '0 0 12 12', className: css.marker }, () => {
+        if (marker === 'plusminus') {
+            xnew({ tag: 'path', d: 'M2.5 6 9.5 6' });
+            turn = xnew({ tag: 'path', d: 'M6 2.5 6 9.5', className: css.turn });
+        }
+        else {
+            turn = xnew({ tag: 'path', d: 'M4.5 2.5 8 6 4.5 9.5', className: css.turn });
+        }
+    });
+    apply(gate.value);
+    gate.on('-transition', ({ value }) => apply(value));
+    function apply(value) {
+        turn.current.style.transform = `rotate(${value * 90}deg)`;
+    }
+    if (label !== '') {
+        xnew('<div>', label);
+    }
+    unit.on('click', () => gate.toggle());
+    return {
+        get gate() {
+            return gate;
+        },
+    };
+}
+
 function VirtualPad(unit, { type = 'analog', className = '', style = '' } = {}) {
     const css = xnew.css('base', {
         container: `
@@ -3758,6 +3801,7 @@ const xbasics = {
     ColorPicker,
     Gate,
     Accordion,
+    ToggleBar,
     Overlay,
     VirtualPad,
     Panel,

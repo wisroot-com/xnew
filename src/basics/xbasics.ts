@@ -19,6 +19,7 @@ import { Listbox, ListboxButton, ListboxMenu, ListboxItem } from './element/List
 import { ColorPicker } from './element/ColorPicker';
 import { Gate } from './widget/Gate';
 import { Accordion } from './widget/Accordion';
+import { ToggleBar } from './widget/ToggleBar';
 import { Overlay } from './widget/Overlay';
 import { VirtualPad } from './widget/VirtualPad';
 import { Panel, PanelGroup } from './widget/Panel';
@@ -45,6 +46,7 @@ export const xbasics = {
     ColorPicker,
     Gate,
     Accordion,
+    ToggleBar,
     Overlay,
     VirtualPad,
     Panel,

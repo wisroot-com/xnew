@@ -498,6 +498,18 @@ declare function Accordion(unit: xnew.Unit, { gate, className, style, ...others 
     readonly gate: Unit;
 };
 
+type ToggleBarMarker = 'chevron' | 'plusminus';
+declare function ToggleBar(unit: xnew.Unit, { gate, label, marker, className, style, ...others }: {
+    gate: xnew.Unit;
+    label?: string;
+    marker?: ToggleBarMarker;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}): {
+    readonly gate: Unit;
+};
+
 declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...others }: {
     gate: xnew.Unit;
     anchor?: HTMLElement;
@@ -588,6 +600,7 @@ declare const xbasics: {
     ColorPicker: typeof ColorPicker;
     Gate: typeof Gate;
     Accordion: typeof Accordion;
+    ToggleBar: typeof ToggleBar;
     Overlay: typeof Overlay;
     VirtualPad: typeof VirtualPad;
     Panel: typeof Panel;

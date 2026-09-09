@@ -16,7 +16,7 @@
 <body class="m-0 p-0 w-full h-screen overflow-hidden">
   <div id="main" class="relative w-full h-full"></div>
   <script type="module">
-    import { xnew, xbasics, xicons } from '@mulsense/xnew';
+    import { xnew, xbasics } from '@mulsense/xnew';
 
     xnew(document.querySelector('#main'), (unit) => {
       xnew.nest('<div class="p-2 flex flex-col items-start gap-y-2">');
@@ -90,12 +90,8 @@
       xnew.nest('<div class="w-64 border rounded-lg">');
 
       const gate = xnew(xbasics.Gate, { open: false, duration: 200 });
-      xnew('<div class="flex items-center select-none cursor-pointer">', (header) => {
-        const chevron = xnew((unit) => xnew.extend(xicons.ChevronRight, { className: 'size-4' }));
-        gate.on('-transition', ({ value }) => chevron.current.style.transform = `rotate(${value * 90}deg)`);
-        xnew('<div class="my-2">', 'accordion (click me!)');
-        header.on('click', () => gate.toggle());
-      });
+      // ToggleBar draws the pressable label row and turns its own marker as the gate moves
+      xnew(xbasics.ToggleBar, { gate, label: 'accordion (click me!)' });
 
       xnew.extend(xbasics.Accordion, { gate });
 
