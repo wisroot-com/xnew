@@ -333,6 +333,27 @@ declare function CPUAgent(unit: xnew.Unit, { turn, think, play, isAgent, delay, 
     attempts?: number;
 }): void;
 
+interface PinPoint {
+    x: number;
+    y: number;
+}
+interface PinProps {
+    point: () => PinPoint | null;
+    gap?: number;
+    frame?: HTMLElement;
+}
+declare function Pin(unit: xnew.Unit, { point, gap, frame }: PinProps): void;
+
+interface PlaneProps {
+    matrix: () => number[] | null;
+    fov: () => number;
+    frame?: HTMLElement;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}
+declare function Plane(unit: xnew.Unit, { matrix, fov, frame, className, style, ...others }: PlaneProps): void;
+
 declare function Button(unit: xnew.Unit, { label, disabled, className, style, ...others }?: {
     label?: string;
     disabled?: boolean;
@@ -532,27 +553,6 @@ declare function Popover(unit: xnew.Unit, { gate, anchor, className, style, ...o
     readonly gate: Unit;
 };
 
-interface PinPoint {
-    x: number;
-    y: number;
-}
-interface PinProps {
-    point: () => PinPoint | null;
-    gap?: number;
-    frame?: HTMLElement;
-}
-declare function Pin(unit: xnew.Unit, { point, gap, frame }: PinProps): void;
-
-interface PlaneProps {
-    matrix: () => number[] | null;
-    fov: () => number;
-    frame?: HTMLElement;
-    className?: string;
-    style?: string;
-    [key: string]: any;
-}
-declare function Plane(unit: xnew.Unit, { matrix, fov, frame, className, style, ...others }: PlaneProps): void;
-
 declare function VirtualPad(unit: xnew.Unit, { type, className, style }?: {
     type?: 'analog' | '4way' | '8way';
     className?: string;
@@ -617,6 +617,8 @@ declare const xbasics: {
     Screen: typeof Screen;
     Scene: typeof Scene;
     CPUAgent: typeof CPUAgent;
+    Pin: typeof Pin;
+    Plane: typeof Plane;
     Button: typeof Button;
     Image: typeof Image;
     SVGText: typeof SVGText;
@@ -636,8 +638,6 @@ declare const xbasics: {
     Accordion: typeof Accordion;
     ToggleBar: typeof ToggleBar;
     Popover: typeof Popover;
-    Pin: typeof Pin;
-    Plane: typeof Plane;
     VirtualPad: typeof VirtualPad;
     Panel: typeof Panel;
     PanelGroup: typeof PanelGroup;

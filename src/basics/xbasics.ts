@@ -7,6 +7,8 @@ import { Aspect } from './stage/Aspect';
 import { Screen } from './stage/Screen';
 import { Scene } from './stage/Scene';
 import { CPUAgent } from './stage/CPUAgent';
+import { Pin } from './stage/Pin';
+import { Plane } from './stage/Plane';
 import { Button } from './element/Button';
 import { Image } from './element/Image';
 import { SVGText } from './element/SVGText';
@@ -20,8 +22,6 @@ import { Gate } from './widget/Gate';
 import { Accordion } from './widget/Accordion';
 import { ToggleBar } from './widget/ToggleBar';
 import { Popover } from './widget/Popover';
-import { Pin } from './widget/Pin';
-import { Plane } from './widget/Plane';
 import { VirtualPad } from './widget/VirtualPad';
 import { Panel, PanelGroup } from './widget/Panel';
 import { VolumeController } from './widget/VolumeController';
@@ -31,6 +31,8 @@ export const xbasics = {
     Screen,
     Scene,
     CPUAgent,
+    Pin,
+    Plane,
     Button,
     Image,
     SVGText,
@@ -50,8 +52,6 @@ export const xbasics = {
     Accordion,
     ToggleBar,
     Popover,
-    Pin,
-    Plane,
     VirtualPad,
     Panel,
     PanelGroup,

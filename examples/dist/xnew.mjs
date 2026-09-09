@@ -1981,6 +1981,64 @@ function CPUAgent(unit, { turn, think, play, isAgent = () => true, delay = [600,
     });
 }
 
+const CENTER = { x: 0.5, y: 0.5 };
+function Pin(unit, { point, gap = 0, frame }) {
+    const css = xnew.css('base', {
+        pin: `
+                position: absolute; left: 0; top: 0;
+                display: flex; flex-direction: column; align-items: center;
+                transform: translate(-50%, -100%);
+                white-space: nowrap; pointer-events: none; user-select: none;
+            `,
+    });
+    xnew.nest({ tag: 'div', className: css.pin });
+    const element = unit.current;
+    let size = { width: 0, height: 0 };
+    let map = { x: 0, y: 0, width: 1, height: 1 };
+    function measure() {
+        const box = element.parentElement;
+        if (box === null || box.clientWidth === 0 || box.clientHeight === 0) {
+            return;
+        }
+        size = { width: element.offsetWidth / box.clientWidth, height: element.offsetHeight / box.clientHeight };
+        if (frame !== undefined && frame !== box) {
+            const outer = box.getBoundingClientRect();
+            const inner = frame.getBoundingClientRect();
+            map = {
+                x: (inner.left - outer.left) / outer.width, y: (inner.top - outer.top) / outer.height,
+                width: inner.width / outer.width, height: inner.height / outer.height,
+            };
+        }
+    }
+    measure();
+    unit.on('resize', measure);
+    unit.on('window.resize', measure);
+    function onBox(at) {
+        return at === null ? null : { x: map.x + at.x * map.width, y: map.y + at.y * map.height };
+    }
+    function spot() {
+        const from = onBox(point());
+        if (from === null) {
+            return null;
+        }
+        const limit = size.height + gap;
+        const drop = from.y >= limit ? 0 : Math.max(0, Math.min(1, (limit - from.y) / (CENTER.y - from.y)));
+        const x = from.x + (CENTER.x - from.x) * drop;
+        const y = from.y + (CENTER.y - from.y) * drop;
+        return { x: Math.min(1 - size.width / 2, Math.max(size.width / 2, x)), y: y - gap };
+    }
+    function follow() {
+        const at = spot();
+        element.style.visibility = at === null ? 'hidden' : 'visible';
+        if (at !== null) {
+            element.style.left = `${(at.x * 100).toFixed(3)}%`;
+            element.style.top = `${(at.y * 100).toFixed(3)}%`;
+        }
+    }
+    follow();
+    unit.on('update', follow);
+}
+
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
 
@@ -2014,6 +2072,50 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
     var e = new Error(message);
     return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
 };
+
+const FLIP = [1, -1, 1, 1, -1, 1, -1, -1, 1, -1, 1, 1, 1, -1, 1, 1];
+function fixed(value) {
+    return value.toFixed(6);
+}
+function Plane(unit, _a) {
+    var { matrix, fov, frame, className = '', style = '' } = _a, others = __rest(_a, ["matrix", "fov", "frame", "className", "style"]);
+    const css = xnew.css('base', {
+        plane: `
+                position: absolute; left: 0; top: 0;
+                transform-origin: 0 0;
+                user-select: none;
+            `,
+    });
+    xnew.nest(Object.assign({ tag: 'div', className: `${css.plane} ${className}`, style }, others));
+    const element = unit.current;
+    let height = 0;
+    function measure() {
+        const box = element.parentElement;
+        if (box === null || box.clientWidth === 0 || box.clientHeight === 0) {
+            return;
+        }
+        const outer = box.getBoundingClientRect();
+        const inner = frame !== undefined && frame !== box ? frame.getBoundingClientRect() : outer;
+        height = inner.height;
+        element.style.left = `${(((inner.left + inner.width / 2) - outer.left) / outer.width * 100).toFixed(3)}%`;
+        element.style.top = `${(((inner.top + inner.height / 2) - outer.top) / outer.height * 100).toFixed(3)}%`;
+    }
+    measure();
+    unit.on('resize', measure);
+    unit.on('window.resize', measure);
+    function place() {
+        const view = matrix();
+        const eye = height / 2 / Math.tan(fov() * Math.PI / 360);
+        const placeable = view !== null && view[14] < 0 && eye > 0 && Number.isFinite(eye);
+        element.style.visibility = placeable ? 'visible' : 'hidden';
+        if (placeable) {
+            const css = view.map((value, index) => fixed(value * FLIP[index])).join(',');
+            element.style.transform = `perspective(${fixed(eye)}px) translateZ(${fixed(eye)}px) matrix3d(${css}) translate(-50%, -50%)`;
+        }
+    }
+    place();
+    unit.on('update', place);
+}
 
 function Button(unit, _a = {}) {
     var { label = '', disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["label", "disabled", "className", "style"]);
@@ -3076,108 +3178,6 @@ function ToggleBar(unit, _a) {
     };
 }
 
-const CENTER = { x: 0.5, y: 0.5 };
-function Pin(unit, { point, gap = 0, frame }) {
-    const css = xnew.css('base', {
-        pin: `
-                position: absolute; left: 0; top: 0;
-                display: flex; flex-direction: column; align-items: center;
-                transform: translate(-50%, -100%);
-                white-space: nowrap; pointer-events: none; user-select: none;
-            `,
-    });
-    xnew.nest({ tag: 'div', className: css.pin });
-    const element = unit.current;
-    let size = { width: 0, height: 0 };
-    let map = { x: 0, y: 0, width: 1, height: 1 };
-    function measure() {
-        const box = element.parentElement;
-        if (box === null || box.clientWidth === 0 || box.clientHeight === 0) {
-            return;
-        }
-        size = { width: element.offsetWidth / box.clientWidth, height: element.offsetHeight / box.clientHeight };
-        if (frame !== undefined && frame !== box) {
-            const outer = box.getBoundingClientRect();
-            const inner = frame.getBoundingClientRect();
-            map = {
-                x: (inner.left - outer.left) / outer.width, y: (inner.top - outer.top) / outer.height,
-                width: inner.width / outer.width, height: inner.height / outer.height,
-            };
-        }
-    }
-    measure();
-    unit.on('resize', measure);
-    unit.on('window.resize', measure);
-    function onBox(at) {
-        return at === null ? null : { x: map.x + at.x * map.width, y: map.y + at.y * map.height };
-    }
-    function spot() {
-        const from = onBox(point());
-        if (from === null) {
-            return null;
-        }
-        const limit = size.height + gap;
-        const drop = from.y >= limit ? 0 : Math.max(0, Math.min(1, (limit - from.y) / (CENTER.y - from.y)));
-        const x = from.x + (CENTER.x - from.x) * drop;
-        const y = from.y + (CENTER.y - from.y) * drop;
-        return { x: Math.min(1 - size.width / 2, Math.max(size.width / 2, x)), y: y - gap };
-    }
-    function follow() {
-        const at = spot();
-        element.style.visibility = at === null ? 'hidden' : 'visible';
-        if (at !== null) {
-            element.style.left = `${(at.x * 100).toFixed(3)}%`;
-            element.style.top = `${(at.y * 100).toFixed(3)}%`;
-        }
-    }
-    follow();
-    unit.on('update', follow);
-}
-
-const FLIP = [1, -1, 1, 1, -1, 1, -1, -1, 1, -1, 1, 1, 1, -1, 1, 1];
-function fixed(value) {
-    return value.toFixed(6);
-}
-function Plane(unit, _a) {
-    var { matrix, fov, frame, className = '', style = '' } = _a, others = __rest(_a, ["matrix", "fov", "frame", "className", "style"]);
-    const css = xnew.css('base', {
-        plane: `
-                position: absolute; left: 0; top: 0;
-                transform-origin: 0 0;
-                user-select: none;
-            `,
-    });
-    xnew.nest(Object.assign({ tag: 'div', className: `${css.plane} ${className}`, style }, others));
-    const element = unit.current;
-    let height = 0;
-    function measure() {
-        const box = element.parentElement;
-        if (box === null || box.clientWidth === 0 || box.clientHeight === 0) {
-            return;
-        }
-        const outer = box.getBoundingClientRect();
-        const inner = frame !== undefined && frame !== box ? frame.getBoundingClientRect() : outer;
-        height = inner.height;
-        element.style.left = `${(((inner.left + inner.width / 2) - outer.left) / outer.width * 100).toFixed(3)}%`;
-        element.style.top = `${(((inner.top + inner.height / 2) - outer.top) / outer.height * 100).toFixed(3)}%`;
-    }
-    measure();
-    unit.on('resize', measure);
-    unit.on('window.resize', measure);
-    function place() {
-        const view = matrix();
-        const eye = height / 2 / Math.tan(fov() * Math.PI / 360);
-        const placeable = view !== null && view[14] < 0 && eye > 0 && Number.isFinite(eye);
-        element.style.visibility = placeable ? 'visible' : 'hidden';
-        if (placeable) {
-            const css = view.map((value, index) => fixed(value * FLIP[index])).join(',');
-            element.style.transform = `perspective(${fixed(eye)}px) translateZ(${fixed(eye)}px) matrix3d(${css}) translate(-50%, -50%)`;
-        }
-    }
-    place();
-    unit.on('update', place);
-}
-
 function VirtualPad(unit, { type = 'analog', className = '', style = '' } = {}) {
     const css = xnew.css('base', {
         container: `
@@ -3905,6 +3905,8 @@ const xbasics = {
     Screen,
     Scene,
     CPUAgent,
+    Pin,
+    Plane,
     Button,
     Image,
     SVGText,
@@ -3924,8 +3926,6 @@ const xbasics = {
     Accordion,
     ToggleBar,
     Popover,
-    Pin,
-    Plane,
     VirtualPad,
     Panel,
     PanelGroup,
