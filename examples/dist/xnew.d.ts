@@ -526,45 +526,45 @@ declare function VirtualPad(unit: xnew.Unit, { type, className, style }?: {
 }): void;
 
 interface PanelOptions {
-    name?: string;
+    label?: string;
     open?: boolean;
     key?: any;
 }
-declare function Panel(unit: xnew.Unit, { name, open, className, style }?: PanelOptions & {
+declare function Panel(unit: xnew.Unit, { label, open, className, style }?: PanelOptions & {
     className?: string;
     style?: string;
 }): void;
-declare function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions): {
+declare function PanelGroup(unit: xnew.Unit, { label, open }: PanelOptions): {
     tabs({ items, value }?: {
         items?: ItemDef<any>[];
         value?: any;
     }): Unit;
-    group({ name, open, key }: PanelOptions, inner?: (group: xnew.Unit) => void): Unit;
-    button({ name, key }?: {
-        name?: string;
+    group({ label, open, key }: PanelOptions, inner?: (group: xnew.Unit) => void): Unit;
+    button({ label, key }?: {
+        label?: string;
         key?: any;
     }): Unit;
-    listbox({ name, value, items, key }?: {
-        name?: string;
+    listbox({ label, value, items, key }?: {
+        label?: string;
         value?: string;
         items?: ItemDef[];
         key?: any;
     }): Unit;
-    range({ name, value, min, max, step, key }?: {
-        name?: string;
+    range({ label, value, min, max, step, key }?: {
+        label?: string;
         value?: number;
         min?: number;
         max?: number;
         step?: number;
         key?: any;
     }): Unit;
-    checkbox({ name, value, key }?: {
-        name?: string;
+    checkbox({ label, value, key }?: {
+        label?: string;
         value?: boolean;
         key?: any;
     }): Unit;
-    color({ name, value, key }?: {
-        name?: string;
+    color({ label, value, key }?: {
+        label?: string;
         value?: string;
         key?: any;
     }): Unit;

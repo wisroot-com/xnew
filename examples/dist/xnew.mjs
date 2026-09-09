@@ -3508,7 +3508,7 @@ for (const name of Object.keys(iconData)) {
 }
 const xicons = icons;
 
-function Panel(unit, { name, open, className = '', style = '' } = {}) {
+function Panel(unit, { label, open, className = '', style = '' } = {}) {
     const css = xnew.css('base', {
         container: `
             box-sizing: border-box;
@@ -3521,14 +3521,14 @@ function Panel(unit, { name, open, className = '', style = '' } = {}) {
         `,
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
-    xnew.extend(PanelGroup, { name, open });
+    xnew.extend(PanelGroup, { label, open });
 }
-function PanelGroup(unit, { name, open }) {
+function PanelGroup(unit, { label, open }) {
     xnew.nest('<div>');
     if (open !== undefined) {
         const gate = xnew(Gate, { open, duration: 200 });
-        if (name) {
-            xnew(ToggleBar, { gate, label: name });
+        if (label) {
+            xnew(ToggleBar, { gate, label });
         }
         xnew.extend(Accordion, { gate });
     }
@@ -3536,26 +3536,26 @@ function PanelGroup(unit, { name, open }) {
         tabs({ items = [], value } = {}) {
             return xnew(Tabs, { items, value });
         },
-        group({ name, open, key }, inner) {
+        group({ label, open, key }, inner) {
             return xnew((unit) => {
-                xnew.extend(PanelGroup, { name, open });
+                xnew.extend(PanelGroup, { label, open });
                 inner === null || inner === void 0 ? void 0 : inner(unit);
             }, { key });
         },
-        button({ name = '', key } = {}) {
-            return xnew(Button, { label: name, key, style: 'width: 100%;' });
+        button({ label = '', key } = {}) {
+            return xnew(Button, { label, key, style: 'width: 100%;' });
         },
-        listbox({ name = '', value, items = [], key } = {}) {
-            return xnew(List, { name, value: value !== null && value !== void 0 ? value : (items.length > 0 ? itemDef(items[0]).value : ''), items, key });
+        listbox({ label = '', value, items = [], key } = {}) {
+            return xnew(List, { label, value: value !== null && value !== void 0 ? value : (items.length > 0 ? itemDef(items[0]).value : ''), items, key });
         },
-        range({ name = '', value, min = 0, max = 100, step, key } = {}) {
-            return xnew(Range, { name, value: value !== null && value !== void 0 ? value : min, min, max, step, key });
+        range({ label = '', value, min = 0, max = 100, step, key } = {}) {
+            return xnew(Range, { label, value: value !== null && value !== void 0 ? value : min, min, max, step, key });
         },
-        checkbox({ name = '', value = false, key } = {}) {
-            return xnew(Checkbox, { name, value, key });
+        checkbox({ label = '', value = false, key } = {}) {
+            return xnew(Checkbox, { label, value, key });
         },
-        color({ name = '', value = '#ffffff', key } = {}) {
-            return xnew(Color, { name, value, key });
+        color({ label = '', value = '#ffffff', key } = {}) {
+            return xnew(Color, { label, value, key });
         },
         separator() {
             xnew(Separator);
@@ -3622,10 +3622,10 @@ function Separator(unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
 }
 function Range(unit, _a) {
-    var { name = '' } = _a, others = __rest(_a, ["name"]);
+    var { label = '' } = _a, others = __rest(_a, ["label"]);
     xnew.nest(`<div style="display: flex; align-items: center; position: relative; cursor: pointer; user-select: none;">`);
-    const range = xnew(InputRange, Object.assign(Object.assign({ name }, others), { style: 'width: 100%;' }));
-    xnew('<div style="position: absolute; left: 0.5em; pointer-events: none;">', name);
+    const range = xnew(InputRange, Object.assign(Object.assign({}, others), { style: 'width: 100%;' }));
+    xnew('<div style="position: absolute; left: 0.5em; pointer-events: none;">', label);
     return {
         get value() {
             return range.value;
@@ -3636,10 +3636,10 @@ function Range(unit, _a) {
     };
 }
 function Checkbox(unit, _a) {
-    var { name = '' } = _a, others = __rest(_a, ["name"]);
+    var { label = '' } = _a, others = __rest(_a, ["label"]);
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
-    xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
-    const checkbox = xnew(InputCheckbox, Object.assign(Object.assign({ name }, others), { style: 'width: 1.25em; height: 1.25em;' }));
+    xnew('<div style="flex: 1; margin-left: 0.25em;">', label);
+    const checkbox = xnew(InputCheckbox, Object.assign(Object.assign({}, others), { style: 'width: 1.25em; height: 1.25em;' }));
     return {
         get value() {
             return checkbox.value;
@@ -3649,9 +3649,9 @@ function Checkbox(unit, _a) {
         },
     };
 }
-function Color(unit, { name = '', value = '#ffffff' }) {
+function Color(unit, { label = '', value = '#ffffff' }) {
     const row = xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
-    xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
+    xnew('<div style="flex: 1; margin-left: 0.25em;">', label);
     let current = value;
     const swatch = xnew({ tag: 'button', type: 'button', style: 'height: 2em; flex: 1; max-width: 60%; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer;' });
     swatch.current.style.background = current;
@@ -3703,9 +3703,9 @@ function ColorPopup(unit, { anchor, value, commit }) {
     gate.open();
 }
 function List(unit, _a) {
-    var { name = '', value, items = [] } = _a, others = __rest(_a, ["name", "value", "items"]);
+    var { label = '', value, items = [] } = _a, others = __rest(_a, ["label", "value", "items"]);
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
-    xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
+    xnew('<div style="flex: 1; margin-left: 0.25em;">', label);
     xnew.extend(Listbox, Object.assign(Object.assign({ value }, others), { style: 'max-width: 60%;' }));
     xnew(() => {
         xnew.extend(ListboxButton, { style: 'height: 2em;' });

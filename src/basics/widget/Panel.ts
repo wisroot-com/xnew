@@ -21,10 +21,10 @@ import { Overlay } from './Overlay';
 import { ColorPicker } from '../element/ColorPicker';
 
 // `key` is only read by group(); the rest are shared by Panel and PanelGroup
-interface PanelOptions { name?: string; open?: boolean; key?: any; }
+interface PanelOptions { label?: string; open?: boolean; key?: any; }
 
 export function Panel(unit: xnew.Unit,
-    { name, open, className = '', style = '' }:
+    { label, open, className = '', style = '' }:
     PanelOptions & { className?: string, style?: string } = {}
 ) {
     const css = xnew.css('base', {
@@ -42,7 +42,7 @@ export function Panel(unit: xnew.Unit,
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style });
 
     // the whole builder API lives in PanelGroup; Panel is only the frame wrapped around the outermost one
-    xnew.extend(PanelGroup, { name, open });
+    xnew.extend(PanelGroup, { label, open });
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -50,7 +50,7 @@ export function Panel(unit: xnew.Unit,
 // Exported so a group made by group({ key }) stays reachable with xnew.find(PanelGroup, { key }).
 //----------------------------------------------------------------------------------------------------
 
-export function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions) {
+export function PanelGroup(unit: xnew.Unit, { label, open }: PanelOptions) {
     // every group wraps its own rows, so `container` is the handle a tab uses to show / hide it as a whole
     xnew.nest('<div>');
 
@@ -58,8 +58,8 @@ export function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions) {
     if (open !== undefined) {
         const gate = xnew(Gate, { open, duration: 200 });
 
-        if (name) {
-            xnew(ToggleBar, { gate, label: name });
+        if (label) {
+            xnew(ToggleBar, { gate, label });
         }
         xnew.extend(Accordion, { gate });
     }
@@ -70,26 +70,26 @@ export function PanelGroup(unit: xnew.Unit, { name, open }: PanelOptions) {
             return xnew(Tabs, { items, value });
         },
         // every row takes `key` so xnew.find can reach it later; it rides along to the inner control, so find by that control's component
-        group({ name, open, key }: PanelOptions, inner?: (group: xnew.Unit) => void) {
+        group({ label, open, key }: PanelOptions, inner?: (group: xnew.Unit) => void) {
             return xnew((unit: xnew.Unit) => {
-                xnew.extend(PanelGroup, { name, open });
+                xnew.extend(PanelGroup, { label, open });
                 inner?.(unit);
             }, { key });
         },
-        button({ name = '', key }: { name?: string, key?: any } = {}) {
-            return xnew(Button, { label: name, key, style: 'width: 100%;' });
+        button({ label = '', key }: { label?: string, key?: any } = {}) {
+            return xnew(Button, { label, key, style: 'width: 100%;' });
         },
-        listbox({ name = '', value, items = [], key }: { name?: string, value?: string, items?: ItemDef[], key?: any } = {}) {
-            return xnew(List, { name, value: value ?? (items.length > 0 ? itemDef(items[0]).value : ''), items, key });
+        listbox({ label = '', value, items = [], key }: { label?: string, value?: string, items?: ItemDef[], key?: any } = {}) {
+            return xnew(List, { label, value: value ?? (items.length > 0 ? itemDef(items[0]).value : ''), items, key });
         },
-        range({ name = '', value, min = 0, max = 100, step, key }: { name?: string, value?: number, min?: number, max?: number, step?: number, key?: any } = {}) {
-            return xnew(Range, { name, value: value ?? min, min, max, step, key });
+        range({ label = '', value, min = 0, max = 100, step, key }: { label?: string, value?: number, min?: number, max?: number, step?: number, key?: any } = {}) {
+            return xnew(Range, { label, value: value ?? min, min, max, step, key });
         },
-        checkbox({ name = '', value = false, key }: { name?: string, value?: boolean, key?: any } = {}) {
-            return xnew(Checkbox, { name, value, key });
+        checkbox({ label = '', value = false, key }: { label?: string, value?: boolean, key?: any } = {}) {
+            return xnew(Checkbox, { label, value, key });
         },
-        color({ name = '', value = '#ffffff', key }: { name?: string, value?: string, key?: any } = {}) {
-            return xnew(Color, { name, value, key });
+        color({ label = '', value = '#ffffff', key }: { label?: string, value?: string, key?: any } = {}) {
+            return xnew(Color, { label, value, key });
         },
         separator() {
             xnew(Separator);
@@ -169,13 +169,13 @@ function Separator(unit: xnew.Unit) {
     xnew.nest(`<div style="margin: 0.5em 0; border-top: 1px solid currentColor;">`);
 }
 
-function Range(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key: string]: any }) {
+function Range(unit: xnew.Unit, { label = '', ...others }: { label?: string, [key: string]: any }) {
     xnew.nest(`<div style="display: flex; align-items: center; position: relative; cursor: pointer; user-select: none;">`);
 
     // a child unit rather than an extend, so InputRange stays standalone and keeps drawing its meter / status
-    const range = xnew(InputRange, { name, ...others, style: 'width: 100%;' });
+    const range = xnew(InputRange, { ...others, style: 'width: 100%;' });
 
-    xnew('<div style="position: absolute; left: 0.5em; pointer-events: none;">', name);
+    xnew('<div style="position: absolute; left: 0.5em; pointer-events: none;">', label);
 
     return {
         get value() {
@@ -187,12 +187,12 @@ function Range(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key:
     };
 }
 
-function Checkbox(unit: xnew.Unit, { name = '', ...others }: { name?: string, [key: string]: any }) {
+function Checkbox(unit: xnew.Unit, { label = '', ...others }: { label?: string, [key: string]: any }) {
     xnew.nest(`<label style="display: flex; align-items: center; cursor: pointer; user-select: none; padding: 0.25em;">`);
-    xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
+    xnew('<div style="flex: 1; margin-left: 0.25em;">', label);
 
     // a child unit rather than an extend, so InputCheckbox stays standalone and keeps drawing its mark
-    const checkbox = xnew(InputCheckbox, { name, ...others, style: 'width: 1.25em; height: 1.25em;' });
+    const checkbox = xnew(InputCheckbox, { ...others, style: 'width: 1.25em; height: 1.25em;' });
 
     return {
         get value() {
@@ -204,9 +204,9 @@ function Checkbox(unit: xnew.Unit, { name = '', ...others }: { name?: string, [k
     };
 }
 
-function Color(unit: xnew.Unit, { name = '', value = '#ffffff' }: { name?: string, value?: string, key?: any }) {
+function Color(unit: xnew.Unit, { label = '', value = '#ffffff' }: { label?: string, value?: string, key?: any }) {
     const row = xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`) as HTMLElement;
-    xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
+    xnew('<div style="flex: 1; margin-left: 0.25em;">', label);
 
     let current = value;
     const swatch = xnew({ tag: 'button', type: 'button', style: 'height: 2em; flex: 1; max-width: 60%; border: 1px solid currentColor; border-radius: 0.25em; cursor: pointer;' });
@@ -271,9 +271,9 @@ function ColorPopup(unit: xnew.Unit, { anchor, value, commit }: { anchor: HTMLEl
     gate.open();
 }
 
-function List(unit: xnew.Unit, { name = '', value, items = [], ...others }: { name?: string, value?: string, items?: ItemDef[], [key: string]: any }) {
+function List(unit: xnew.Unit, { label = '', value, items = [], ...others }: { label?: string, value?: string, items?: ItemDef[], [key: string]: any }) {
     xnew.nest(`<div style="display: flex; align-items: center; padding: 0.25em;">`);
-    xnew('<div style="flex: 1; margin-left: 0.25em;">', name);
+    xnew('<div style="flex: 1; margin-left: 0.25em;">', label);
 
     // Listbox extends onto this unit (so its 'change' fires here); the button draws the trigger, the floating list nests in
     xnew.extend(Listbox, { value, ...others, style: 'max-width: 60%;' });

@@ -148,7 +148,7 @@
     function MyPanel(unit) {
       // the panel draws its own frame (width / border / scrollport); className and style only place and tint it
       const panel = xnew(xbasics.Panel, {
-        name: 'My Panel', open: true,
+        label: 'My Panel', open: true,
         className: 'absolute top-2 right-2 max-h-[calc(100vh-1rem)] text-sm shadow-lg bg-gray-100 text-green-900',
       });
 
@@ -157,14 +157,14 @@
       tabs.on('change', ({ value }) => xnew.emit('+console', { text: `${value} tab selected` }));
 
       panel.group({ key: 'style' }, (tab) => {
-        tab.group({ name: 'background', open: true }, (group) => {
+        tab.group({ label: 'background', open: true }, (group) => {
           const colors = {
             'light gray': { background: '#f3f4f6', color: '#14532d' },
             'dark gray':  { background: '#1f2937', color: '#d1d5db' },
             'dark navy':  { background: '#172554', color: '#bfdbfe' },
           };
           for (const [name, { background, color }] of Object.entries(colors)) {
-            group.button({ name }).on('click', () => {
+            group.button({ label: name }).on('click', () => {
               Object.assign(panel.container.style, { background, color });
               xnew.emit('+console', { text: `${name} button clicked` });
             });
@@ -172,16 +172,16 @@
           group.separator();
         });
 
-        tab.listbox({ name: 'color', items: ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta', 'brown', 'gray', 'black', 'white'] }).on('change', ({ value }) => xnew.emit('+console', { text: `color changed to ${value}` }));
-        tab.color({ name: 'tint', value: '#4a90e2' }).on('change', ({ value }) => xnew.emit('+console', { text: `tint changed to ${value}` }));
+        tab.listbox({ label: 'color', items: ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta', 'brown', 'gray', 'black', 'white'] }).on('change', ({ value }) => xnew.emit('+console', { text: `color changed to ${value}` }));
+        tab.color({ label: 'tint', value: '#4a90e2' }).on('change', ({ value }) => xnew.emit('+console', { text: `tint changed to ${value}` }));
       });
 
       panel.group({ key: 'params' }, (tab) => {
-        tab.range({ name: 'data', value: 20, min: 0, max: 60, step: 2 }).on('input', ({ value }) => xnew.emit('+console', { text: `data changed to ${value}` }));
-        tab.checkbox({ name: 'flag' }).on('input', ({ value }) => xnew.emit('+console', { text: `flag changed to ${value}` }));
+        tab.range({ label: 'data', value: 20, min: 0, max: 60, step: 2 }).on('input', ({ value }) => xnew.emit('+console', { text: `data changed to ${value}` }));
+        tab.checkbox({ label: 'flag' }).on('input', ({ value }) => xnew.emit('+console', { text: `flag changed to ${value}` }));
         tab.separator();
 
-        const show = tab.checkbox({ name: 'show' });
+        const show = tab.checkbox({ label: 'show' });
         const group = tab.group({ open: false }, () => {
           xnew('<p class="m-1">', 'hellow');
         });

@@ -25,8 +25,8 @@ describe('basics Panel', () => {
     describe('open', () => {
         test('an open value makes the panel collapsible, exposing its gate', () => {
             const host = document.createElement('div');
-            const panel: any = xnew(host, Panel, { name: 'GUI', open: true });
-            panel.button({ name: 'one' });
+            const panel: any = xnew(host, Panel, { label: 'GUI', open: true });
+            panel.button({ label: 'one' });
             expect(host.textContent).toContain('GUI');
             expect(panel.gate).not.toBe(undefined);
             expect((panel.current as HTMLElement).querySelector('button')).not.toBe(null);
@@ -34,8 +34,8 @@ describe('basics Panel', () => {
 
         test('leaving open undefined keeps the rows always shown, with no header and no gate', () => {
             const host = document.createElement('div');
-            const panel: any = xnew(host, Panel, { name: 'GUI' });
-            panel.button({ name: 'one' });
+            const panel: any = xnew(host, Panel, { label: 'GUI' });
+            panel.button({ label: 'one' });
             expect(host.textContent).not.toContain('GUI');
             expect(panel.gate).toBe(undefined);
             expect(host.querySelector('button')).not.toBe(null);
@@ -52,8 +52,8 @@ describe('basics Panel', () => {
         test('the strip switches the sibling groups its item value names, the first one starting active', () => {
             const { host, panel } = newPanel();
             panel.tabs({ items: ITEMS });
-            const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
-            const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
+            const left = panel.group({ key: 'left' }, (group: any) => group.button({ label: 'a' }));
+            const right = panel.group({ key: 'right' }, (group: any) => group.button({ label: 'b' }));
 
             expect((left.container as HTMLElement).style.display).not.toBe('none');
             expect((right.container as HTMLElement).style.display).toBe('none');
@@ -66,8 +66,8 @@ describe('basics Panel', () => {
 
         test('the strip can be built after its groups, so it goes wherever the caller wants it', () => {
             const { host, panel } = newPanel();
-            const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
-            const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
+            const left = panel.group({ key: 'left' }, (group: any) => group.button({ label: 'a' }));
+            const right = panel.group({ key: 'right' }, (group: any) => group.button({ label: 'b' }));
             panel.tabs({ items: ITEMS });
 
             expect((left.container as HTMLElement).style.display).not.toBe('none');
@@ -81,9 +81,9 @@ describe('basics Panel', () => {
         test('leaves rows and groups no tab item names alone', () => {
             const { host, panel } = newPanel();
             panel.tabs({ items: ITEMS });
-            panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
-            const row = panel.range({ name: 'a' });
-            const plain = panel.group({}, (group: any) => group.button({ name: 'c' }));
+            panel.group({ key: 'right' }, (group: any) => group.button({ label: 'b' }));
+            const row = panel.range({ label: 'a' });
+            const plain = panel.group({}, (group: any) => group.button({ label: 'c' }));
 
             jest.advanceTimersByTime(1);
             tabButton(host, 'Right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -94,9 +94,9 @@ describe('basics Panel', () => {
         test('a collapsible group switches as a whole, header included', () => {
             const { host, panel } = newPanel();
             panel.tabs({ items: ITEMS });
-            panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
-            const group = panel.group({ name: 'folder', open: true, key: 'right' }, (group: any) => {
-                group.button({ name: 'inside' });
+            panel.group({ key: 'left' }, (group: any) => group.button({ label: 'a' }));
+            const group = panel.group({ label: 'folder', open: true, key: 'right' }, (group: any) => {
+                group.button({ label: 'inside' });
             });
 
             expect((group.container as HTMLElement).style.display).toBe('none');
@@ -110,8 +110,8 @@ describe('basics Panel', () => {
             const { host, panel } = newPanel();
             const values: string[] = [];
             const tabs = panel.tabs({ items: ITEMS });
-            const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
-            const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
+            const left = panel.group({ key: 'left' }, (group: any) => group.button({ label: 'a' }));
+            const right = panel.group({ key: 'right' }, (group: any) => group.button({ label: 'b' }));
 
             tabs.on('change', ({ value }: { value: string }) => values.push(value));
 
@@ -130,8 +130,8 @@ describe('basics Panel', () => {
         test('a bare string item is the group key and its own caption', () => {
             const { host, panel } = newPanel();
             panel.tabs({ items: ['left', 'right'] });
-            const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
-            const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
+            const left = panel.group({ key: 'left' }, (group: any) => group.button({ label: 'a' }));
+            const right = panel.group({ key: 'right' }, (group: any) => group.button({ label: 'b' }));
 
             jest.advanceTimersByTime(1);
             tabButton(host, 'right').dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -142,8 +142,8 @@ describe('basics Panel', () => {
         test('value picks the tab that starts active instead of the first item', () => {
             const { panel } = newPanel();
             const tabs = panel.tabs({ items: ITEMS, value: 'right' });
-            const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
-            const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
+            const left = panel.group({ key: 'left' }, (group: any) => group.button({ label: 'a' }));
+            const right = panel.group({ key: 'right' }, (group: any) => group.button({ label: 'b' }));
 
             expect(tabs.value).toBe('right');
             expect((left.container as HTMLElement).style.display).toBe('none');
@@ -154,8 +154,8 @@ describe('basics Panel', () => {
         test('a non-string group key switches through its item value', () => {
             const { host, panel } = newPanel();
             panel.tabs({ items: [{ value: 1, label: 'One' }, { value: 2, label: 'Two' }] });
-            const one = panel.group({ key: 1 }, (group: any) => group.button({ name: 'a' }));
-            const two = panel.group({ key: 2 }, (group: any) => group.button({ name: 'b' }));
+            const one = panel.group({ key: 1 }, (group: any) => group.button({ label: 'a' }));
+            const two = panel.group({ key: 2 }, (group: any) => group.button({ label: 'b' }));
 
             jest.advanceTimersByTime(1);
             tabButton(host, 'Two').dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -166,8 +166,8 @@ describe('basics Panel', () => {
         test('a .value set ignores a key the strip does not name', () => {
             const { panel } = newPanel();
             const tabs = panel.tabs({ items: ITEMS });
-            const left = panel.group({ key: 'left' }, (group: any) => group.button({ name: 'a' }));
-            const right = panel.group({ key: 'right' }, (group: any) => group.button({ name: 'b' }));
+            const left = panel.group({ key: 'left' }, (group: any) => group.button({ label: 'a' }));
+            const right = panel.group({ key: 'right' }, (group: any) => group.button({ label: 'b' }));
 
             tabs.value = 'nowhere';
             expect(tabs.value).toBe('left');
@@ -179,10 +179,10 @@ describe('basics Panel', () => {
     describe('row .value', () => {
         test('every value-bearing row reads its control through .value', () => {
             const { panel } = newPanel();
-            const range = panel.range({ name: 'r', value: 30 });
-            const checkbox = panel.checkbox({ name: 'c', value: true });
-            const color = panel.color({ name: 'k', value: '#123456' });
-            const listbox = panel.listbox({ name: 'l', items: ['a', 'b'] });
+            const range = panel.range({ label: 'r', value: 30 });
+            const checkbox = panel.checkbox({ label: 'c', value: true });
+            const color = panel.color({ label: 'k', value: '#123456' });
+            const listbox = panel.listbox({ label: 'l', items: ['a', 'b'] });
             jest.advanceTimersByTime(1);
 
             expect(range.value).toBe(30);
@@ -193,10 +193,10 @@ describe('basics Panel', () => {
 
         test('a .value set drives the control the row owns', () => {
             const { panel } = newPanel();
-            const range = panel.range({ name: 'r', value: 30 });
-            const checkbox = panel.checkbox({ name: 'c', value: true });
-            const color = panel.color({ name: 'k', value: '#123456' });
-            const listbox = panel.listbox({ name: 'l', items: ['a', 'b'] });
+            const range = panel.range({ label: 'r', value: 30 });
+            const checkbox = panel.checkbox({ label: 'c', value: true });
+            const color = panel.color({ label: 'k', value: '#123456' });
+            const listbox = panel.listbox({ label: 'l', items: ['a', 'b'] });
             jest.advanceTimersByTime(1);
 
             range.value = 70;
@@ -219,10 +219,10 @@ describe('basics Panel', () => {
             const { panel } = newPanel();
             const received: unknown[] = [];
             panel.on('change', ({ value }: { value: unknown }) => received.push(value));
-            const range = panel.range({ name: 'r', value: 0 });
-            const checkbox = panel.checkbox({ name: 'c', value: false });
-            const listbox = panel.listbox({ name: 'l', items: ['a', 'b'] });
-            const color = panel.color({ name: 'k', value: '#000000' });
+            const range = panel.range({ label: 'r', value: 0 });
+            const checkbox = panel.checkbox({ label: 'c', value: false });
+            const listbox = panel.listbox({ label: 'l', items: ['a', 'b'] });
+            const color = panel.color({ label: 'k', value: '#000000' });
             jest.advanceTimersByTime(1);
 
             listbox.value = 'b';
@@ -238,7 +238,7 @@ describe('basics Panel', () => {
             const { panel } = newPanel();
             const seen: Array<[string, unknown]> = [];
             panel.on('input change', ({ event, value }: { event: Event, value: unknown }) => seen.push([event.type, value]));
-            const listbox = panel.listbox({ name: 'l', items: ['a', 'b'] });
+            const listbox = panel.listbox({ label: 'l', items: ['a', 'b'] });
             jest.advanceTimersByTime(1);
 
             listbox.value = 'b';
@@ -257,7 +257,7 @@ describe('basics Panel', () => {
     describe('listbox row', () => {
         test('takes the same items as a Listbox, showing the label while the value stays underneath', () => {
             const { host, panel } = newPanel();
-            const row = panel.listbox({ name: 'fruit', items: [{ value: 'apple', label: 'りんご' }, 'banana'] });
+            const row = panel.listbox({ label: 'fruit', items: [{ value: 'apple', label: 'りんご' }, 'banana'] });
             jest.advanceTimersByTime(1);
 
             expect(row.value).toBe('apple');
@@ -269,10 +269,10 @@ describe('basics Panel', () => {
     describe('key', () => {
         test('a row key reaches its control, so xnew.find locates the row by that component', () => {
             const { panel } = newPanel();
-            panel.button({ name: 'go', key: 'go-button' });
-            panel.range({ name: 'data', key: 'data-range' });
-            panel.checkbox({ name: 'flag', key: 'flag-box' });
-            panel.listbox({ name: 'color', items: ['red', 'blue'], key: 'color-list' });
+            panel.button({ label: 'go', key: 'go-button' });
+            panel.range({ label: 'data', key: 'data-range' });
+            panel.checkbox({ label: 'flag', key: 'flag-box' });
+            panel.listbox({ label: 'color', items: ['red', 'blue'], key: 'color-list' });
 
             expect(xnew.find(Button, { key: 'go-button' }).length).toBe(1);
             expect(xnew.find(InputRange, { key: 'data-range' }).length).toBe(1);
@@ -283,7 +283,7 @@ describe('basics Panel', () => {
         test('a group key reaches the group unit through PanelGroup, so a host outside can find it', () => {
             const host = document.createElement('div');
             const panel: any = xnew(host, Panel, { key: 'panel' });
-            const messages = panel.group({ key: 'messages' }, (group: any) => group.button({ name: 'one' }));
+            const messages = panel.group({ key: 'messages' }, (group: any) => group.button({ label: 'one' }));
 
             expect(xnew.find(PanelGroup, { key: 'panel' })[0]).toBe(panel);
             expect(xnew.find(PanelGroup, { ancestor: panel, key: 'messages' })[0]).toBe(messages);
@@ -291,8 +291,8 @@ describe('basics Panel', () => {
 
         test('a group key reaches the group unit itself, so its own components find it', () => {
             const { panel } = newPanel();
-            const group = panel.group({ name: 'settings', open: true, key: 'settings-group' }, (group: any) => {
-                group.button({ name: 'one', key: 'inner-button' });
+            const group = panel.group({ label: 'settings', open: true, key: 'settings-group' }, (group: any) => {
+                group.button({ label: 'one', key: 'inner-button' });
             });
             expect(xnew.find(Accordion, { key: 'settings-group' })[0]).toBe(group);
             expect(xnew.find(Button, { key: 'inner-button', ancestor: group }).length).toBe(1);
@@ -316,9 +316,9 @@ describe('basics Panel', () => {
         test('builds the rows of its inner callback inside the created group', () => {
             const { host, panel } = newPanel();
             // the callback is handed the group unit with the row API already on it
-            panel.group({ name: 'settings', open: true }, (group: any) => {
+            panel.group({ label: 'settings', open: true }, (group: any) => {
                 expect(group.gate).not.toBe(undefined);
-                group.button({ name: 'one' });
+                group.button({ label: 'one' });
                 xnew('<p>', 'two');
             });
             expect(host.querySelectorAll('button').length).toBe(1);
@@ -328,8 +328,8 @@ describe('basics Panel', () => {
 
         test('container wraps the header and the rows, so hiding it hides the group as a whole', () => {
             const { panel } = newPanel();
-            const group = panel.group({ name: 'settings', open: true }, (group: any) => {
-                group.button({ name: 'one' });
+            const group = panel.group({ label: 'settings', open: true }, (group: any) => {
+                group.button({ label: 'one' });
             });
             const wrapper = group.container as HTMLElement;
             expect(wrapper.textContent).toContain('settings');
@@ -341,9 +341,9 @@ describe('basics Panel', () => {
             const host = document.createElement('div');
             const panel: any = xnew(host, Panel);
             const received: boolean[] = [];
-            panel.group({ name: 'outer', open: true }, (group: any) => {
-                group.group({ name: 'inner', open: true }, (subgroup: any) => {
-                    subgroup.checkbox({ name: 'flag', value: true })
+            panel.group({ label: 'outer', open: true }, (group: any) => {
+                group.group({ label: 'inner', open: true }, (subgroup: any) => {
+                    subgroup.checkbox({ label: 'flag', value: true })
                         .on('input', ({ value }: { value: boolean }) => received.push(value));
                 });
             });
