@@ -1,4 +1,4 @@
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import * as THREE from 'three';
 
 /******************************************************************************
@@ -231,64 +231,13 @@ function project(point) {
     const projected = point.clone().project(camera);
     return projected.z > 1 ? null : { x: (projected.x + 1) / 2, y: (1 - projected.y) / 2 };
 }
-function Pin(unit, { point, toward = () => null, gap = 0, margin = 0, frame }) {
-    const css = xnew.css('base', {
-        pin: `
-                position: absolute; left: 0; top: 0;
-                display: flex; flex-direction: column; align-items: center;
-                transform: translate(-50%, -100%);
-                white-space: nowrap; pointer-events: none; user-select: none;
-            `,
-    });
-    xnew.nest({ tag: 'div', className: css.pin });
-    const element = unit.current;
-    let size = { width: 0, height: 0 };
-    let map = { x: 0, y: 0, width: 1, height: 1 };
-    function measure() {
-        const box = element.parentElement;
-        if (box === null || box.clientWidth === 0 || box.clientHeight === 0) {
-            return;
-        }
-        size = { width: element.offsetWidth / box.clientWidth, height: element.offsetHeight / box.clientHeight };
-        if (frame !== undefined && frame !== box) {
-            const outer = box.getBoundingClientRect();
-            const inner = frame.getBoundingClientRect();
-            map = {
-                x: (inner.left - outer.left) / outer.width, y: (inner.top - outer.top) / outer.height,
-                width: inner.width / outer.width, height: inner.height / outer.height,
-            };
-        }
-    }
-    measure();
-    unit.on('resize', measure);
-    unit.on('window.resize', measure);
-    function onBox(at) {
-        return at === null ? null : { x: map.x + at.x * map.width, y: map.y + at.y * map.height };
-    }
-    function spot() {
-        const anchor = point();
-        const from = anchor === null ? null : onBox(project(anchor));
-        if (from === null) {
-            return null;
-        }
-        const tail = toward();
-        const to = tail === null ? null : onBox(project(tail));
-        const limit = size.height + margin + gap;
-        const drop = to === null || from.y >= limit || to.y <= from.y ? 0 : Math.min(1, (limit - from.y) / (to.y - from.y));
-        const x = to === null ? from.x : from.x + (to.x - from.x) * drop;
-        const y = to === null ? from.y : from.y + (to.y - from.y) * drop;
-        return { x: Math.min(1 - size.width / 2, Math.max(size.width / 2, x)), y: y - gap };
-    }
-    function follow() {
-        const at = spot();
-        element.style.visibility = at === null ? 'hidden' : 'visible';
-        if (at !== null) {
-            element.style.left = `${at.x * 100}%`;
-            element.style.top = `${at.y * 100}%`;
-        }
-    }
-    follow();
-    unit.on('update', follow);
+function Pin(unit, _a) {
+    var { point, toward = () => null } = _a, others = __rest(_a, ["point", "toward"]);
+    const projected = (get) => () => {
+        const world = get();
+        return world === null ? null : project(world);
+    };
+    xnew.extend(xbasics.Pin, Object.assign({ point: projected(point), toward: projected(toward) }, others));
 }
 
 export { Pin, project, xthree };

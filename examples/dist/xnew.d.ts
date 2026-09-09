@@ -532,6 +532,19 @@ declare function Popover(unit: xnew.Unit, { gate, anchor, className, style, ...o
     readonly gate: Unit;
 };
 
+interface PinPoint {
+    x: number;
+    y: number;
+}
+interface PinProps {
+    point: () => PinPoint | null;
+    toward?: () => PinPoint | null;
+    gap?: number;
+    margin?: number;
+    frame?: HTMLElement;
+}
+declare function Pin(unit: xnew.Unit, { point, toward, gap, margin, frame }: PinProps): void;
+
 declare function VirtualPad(unit: xnew.Unit, { type, className, style }?: {
     type?: 'analog' | '4way' | '8way';
     className?: string;
@@ -615,6 +628,7 @@ declare const xbasics: {
     Accordion: typeof Accordion;
     ToggleBar: typeof ToggleBar;
     Popover: typeof Popover;
+    Pin: typeof Pin;
     VirtualPad: typeof VirtualPad;
     Panel: typeof Panel;
     PanelGroup: typeof PanelGroup;

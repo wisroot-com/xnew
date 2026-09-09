@@ -1,3 +1,4 @@
+import { xnew } from '@mulsense/xnew';
 import * as PIXI from 'pixi.js';
 
 declare class UnitPromise {
@@ -28,9 +29,33 @@ declare const xpixi: {
     }): UnitPromise;
     nest(transform?: Transform): PIXI.Container;
     add(object: any): any;
+    project: typeof project;
+    Pin: typeof Pin;
     readonly renderer: any;
     readonly scene: PIXI.Container;
     readonly canvas: HTMLCanvasElement;
 };
+declare function project(point: {
+    x: number;
+    y: number;
+}, from?: PIXI.Container): {
+    x: number;
+    y: number;
+} | null;
+interface PinProps {
+    point: () => {
+        x: number;
+        y: number;
+    } | null;
+    toward?: () => {
+        x: number;
+        y: number;
+    } | null;
+    space?: PIXI.Container;
+    gap?: number;
+    margin?: number;
+    frame?: HTMLElement;
+}
+declare function Pin(unit: xnew.Unit, { point, toward, space, ...others }: PinProps): void;
 
-export { xpixi };
+export { Pin, project, xpixi };

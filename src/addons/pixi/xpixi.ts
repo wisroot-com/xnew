@@ -2,9 +2,10 @@
 // xpixi — PixiJS 8 integration: ties the Pixi scene graph to the xnew unit tree
 // nest() makes a group Container and moves the current parent into it (stateful); add(obj) attaches
 // a leaf without moving. Objects are removed and destroyed with their unit (textures kept — may be shared).
+// The bridge to the DOM over the canvas (project / Pin) sits at the bottom, mirroring xthree's.
 //----------------------------------------------------------------------------------------------------
 
-import { xnew } from '@mulsense/xnew';
+import { xnew, xbasics } from '@mulsense/xnew';
 import * as PIXI from 'pixi.js'
 
 // the transform a group is placed with; 2D, so rotation is a single angle
@@ -50,6 +51,10 @@ export const xpixi = {
         xnew(Add, { object });
         return object;
     },
+    // where a local point of the current parent lands on the canvas, as a fraction of it (0,0 top-left / 1,1 bottom-right)
+    project,
+    // a DOM element that rides a point of the scene — see the screen block below
+    Pin,
     get renderer() {
         return xnew.context(Root)?.renderer;
     },
@@ -124,4 +129,49 @@ function Nest(unit: xnew.Unit, { object }: { object: any }) {
 // no pixiObject exposure — the current parent stays unchanged
 function Add(unit: xnew.Unit, { object }: { object: any }) {
     attach(unit, object);
+}
+
+//----------------------------------------------------------------------------------------------------
+// screen — the bridge from the scene to the DOM laid over it
+// Only the projection is 2D-specific: a point in the current parent's space out as a fraction of the
+// canvas. Placing a DOM element on that fraction is xbasics.Pin's job, shared with xthree.
+//----------------------------------------------------------------------------------------------------
+
+// null until the renderer has resolved (its screen size is what the fraction is taken against), so a pin written before init just stays hidden.
+export function project(point: { x: number, y: number }, from?: PIXI.Container): { x: number, y: number } | null {
+    const root = xnew.context(Root);
+    const parent = from ?? xnew.context(Nest)?.pixiObject ?? root.scene;
+    const screen = root.renderer?.screen;
+
+    if (screen === undefined || screen.width === 0 || screen.height === 0) {
+        return null;
+    }
+    const global = parent.toGlobal(point);
+
+    return { x: global.x / screen.width, y: global.y / screen.height };
+}
+
+interface PinProps {
+    // the point the element's bottom edge sits on, in `space`'s coordinates
+    point: () => { x: number, y: number } | null;
+    // the far end of the object: where the element slides to when `point` is off the top of the box
+    toward?: () => { x: number, y: number } | null;
+    // the container the points are read in; the current parent when left out
+    space?: PIXI.Container;
+    // the space kept between the point and the element, as a fraction of the box height
+    gap?: number;
+    // the space kept between the top of the box and the element, likewise
+    margin?: number;
+    // the element the projection lands on (the canvas on screen); omit it when the pin sits in that very box
+    frame?: HTMLElement;
+}
+
+// xbasics.Pin with the projection on it (see there for the box it wants); the points are read in `space`, else in the parent the caller's nest resolves to — so a pin written beside the object it follows reads that object's space.
+export function Pin(unit: xnew.Unit, { point, toward = () => null, space, ...others }: PinProps): void {
+    const projected = (get: () => { x: number, y: number } | null) => () => {
+        const local = get();
+        return local === null ? null : project(local, space);
+    };
+
+    xnew.extend(xbasics.Pin, { point: projected(point), toward: projected(toward), ...others });
 }

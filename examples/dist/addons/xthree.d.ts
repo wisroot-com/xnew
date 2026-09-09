@@ -121,6 +121,6 @@ interface PinProps {
     margin?: number;
     frame?: HTMLElement;
 }
-declare function Pin(unit: xnew.Unit, { point, toward, gap, margin, frame }: PinProps): void;
+declare function Pin(unit: xnew.Unit, { point, toward, ...others }: PinProps): void;
 
 export { Pin, project, xthree };

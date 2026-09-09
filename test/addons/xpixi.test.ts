@@ -10,10 +10,18 @@ jest.mock('pixi.js', () => {
             this.rotation = 0;
         }
         addChild(o) { o.parent = this; this.children.push(o); return o; }
+        // 本物と同じく親を辿って canvas 座標へ。回転は使わないので position / scale だけ畳む
+        toGlobal(point) {
+            let at = { x: point.x, y: point.y };
+            for (let node = this; node !== null; node = node.parent) {
+                at = { x: at.x * node.scale.x + node.position.x, y: at.y * node.scale.y + node.position.y };
+            }
+            return at;
+        }
         removeChild(o) { o.parent = null; this.children = this.children.filter((c) => c !== o); return o; }
         destroy() { this.destroyed = true; }
     }
-    const renderer = { render() {}, destroy() {} };
+    const renderer = { render() {}, destroy() {}, screen: { width: 200, height: 100 } };
     return {
         Container,
         autoDetectRenderer: () => Promise.resolve(renderer),
@@ -23,6 +31,9 @@ jest.mock('pixi.js', () => {
 
 // renderer は autoDetectRenderer の非同期解決後に Root へ入るため、マイクロタスクを流す。
 const flush = () => new Promise((resolve) => setTimeout(resolve));
+
+// jsdom に ResizeObserver は無い。Pin は自分の大きさを測り直すためだけに使う
+global.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
 
 import * as PIXI from 'pixi.js';
 import { xnew } from '../../src/index';
@@ -155,4 +166,69 @@ test('destroy: ユニット破棄でも renderer が destroy される（自動�
 
     expect(destroySpy).toHaveBeenCalled();
     destroySpy.mockRestore();
+});
+
+//----------------------------------------------------------------------------------------------------
+// screen — 現在の親の座標を canvas に対する割合へ落とし、そこへ DOM を置く。
+//   置くところは xbasics.Pin の担当（test/basics/widget/Pin.test.ts）なので、ここで見るのは
+//   投影そのものと、その結果が Pin へ渡っていることだけ。
+//----------------------------------------------------------------------------------------------------
+
+test('project: 現在の親の座標を canvas に対する割合で返す', async () => {
+    const canvas = setup();
+    let root;
+    let at;
+
+    root = xnew(() => { xpixi.init({ canvas }); });
+    await flush();   // renderer が入るまで screen の大きさが分からない
+
+    xnew(root, () => {
+        // 200x100 の画面に対し、(100, 50) はちょうど中央
+        at = xpixi.project({ x: 100, y: 50 });
+    });
+
+    expect(at.x).toBeCloseTo(0.5);
+    expect(at.y).toBeCloseTo(0.5);
+});
+
+test('project: nest の中では、そのグループの座標として読む', async () => {
+    const canvas = setup();
+    let at;
+
+    const root = xnew(() => { xpixi.init({ canvas }); });
+    await flush();
+
+    xnew(root, () => {
+        xpixi.nest({ position: { x: 100, y: 50 } });
+        at = xpixi.project({ x: 0, y: 0 });   // グループの原点 = 画面の中央
+    });
+
+    expect(at.x).toBeCloseTo(0.5);
+    expect(at.y).toBeCloseTo(0.5);
+});
+
+test('project: renderer が来るまでは null（Pin はそのあいだ隠れている）', () => {
+    const canvas = setup();
+    let at;
+
+    xnew(() => {
+        xpixi.init({ canvas });
+        at = xpixi.project({ x: 0, y: 0 });
+    });
+
+    expect(at).toBeNull();
+});
+
+test('Pin: 投影した割合がそのまま left / top に届く', async () => {
+    const canvas = setup();
+    let pin;
+
+    const root = xnew(() => { xpixi.init({ canvas }); });
+    await flush();
+
+    xnew(root, () => { pin = xnew(xpixi.Pin, { point: () => ({ x: 100, y: 50 }) }); });
+
+    expect(pin.current.style.left).toBe('50%');
+    expect(pin.current.style.top).toBe('50%');
+    expect(pin.current.style.visibility).toBe('visible');
 });

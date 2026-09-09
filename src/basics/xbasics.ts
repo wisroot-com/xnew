@@ -20,6 +20,7 @@ import { Gate } from './widget/Gate';
 import { Accordion } from './widget/Accordion';
 import { ToggleBar } from './widget/ToggleBar';
 import { Popover } from './widget/Popover';
+import { Pin } from './widget/Pin';
 import { VirtualPad } from './widget/VirtualPad';
 import { Panel, PanelGroup } from './widget/Panel';
 import { VolumeController } from './widget/VolumeController';
@@ -48,6 +49,7 @@ export const xbasics = {
     Accordion,
     ToggleBar,
     Popover,
+    Pin,
     VirtualPad,
     Panel,
     PanelGroup,
