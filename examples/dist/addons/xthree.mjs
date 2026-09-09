@@ -232,12 +232,12 @@ function project(point) {
     return projected.z > 1 ? null : { x: (projected.x + 1) / 2, y: (1 - projected.y) / 2 };
 }
 function Pin(unit, _a) {
-    var { point, toward = () => null } = _a, others = __rest(_a, ["point", "toward"]);
-    const projected = (get) => () => {
-        const world = get();
+    var { point } = _a, others = __rest(_a, ["point"]);
+    function projected() {
+        const world = point();
         return world === null ? null : project(world);
-    };
-    xnew.extend(xbasics.Pin, Object.assign({ point: projected(point), toward: projected(toward) }, others));
+    }
+    xnew.extend(xbasics.Pin, Object.assign({ point: projected }, others));
 }
 
 export { Pin, project, xthree };

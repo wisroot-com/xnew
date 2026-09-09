@@ -5,7 +5,7 @@ import { xnew, xbasics } from '../../../src/index';
 //----------------------------------------------------------------------------------------------------
 // xbasics.Pin — 枠に対する割合で来た点へ DOM を置く。投影は呼ぶ側（xthree / xpixi）の仕事なので、
 //   ここは three も pixi も要らず、割合と DOM の算数だけを見る。
-//   点が枠の上へ外れたときは toward の方へ線を下って枠の中に入るところまで降ろす。
+//   点が枠の上へ外れたときは、枠の中央へ向かって降り、収まるところで止まる。
 //----------------------------------------------------------------------------------------------------
 
 describe('xbasics.Pin', () => {
@@ -23,8 +23,8 @@ describe('xbasics.Pin', () => {
     it('渡された割合をそのまま left / top に書く', () => {
         const pin = xnew(xbasics.Pin, { point: () => ({ x: 0.5, y: 0.5 }) });
 
-        expect(pin.current.style.left).toBe('50%');
-        expect(pin.current.style.top).toBe('50%');
+        expect(parseFloat(pin.current.style.left)).toBeCloseTo(50);
+        expect(parseFloat(pin.current.style.top)).toBeCloseTo(50);
         expect(pin.current.style.visibility).toBe('visible');
     });
 
@@ -35,17 +35,21 @@ describe('xbasics.Pin', () => {
         expect(pin.current.isConnected).toBe(true);
     });
 
-    it('枠の上へ外れた点は、toward の方へ降りて margin のところで止まる', () => {
-        const above = () => ({ x: 0.5, y: -0.5 });   // 枠の上へ外れた点
-        const below = () => ({ x: 0.5, y: 0.5 });    // 同じ物の足元（枠の中央）
+    it('枠の上へ外れた点は、枠の中央へ向かって収まるところまで降りる', () => {
+        // jsdom にレイアウトが無いので要素の高さは 0。gap のぶんだけ枠の中へ入れば足りる
+        const above = xnew(xbasics.Pin, { point: () => ({ x: 0, y: -1 }), gap: 0.1 });
 
-        const alone = xnew(xbasics.Pin, { point: above, margin: 0.3 });
-        const slid = xnew(xbasics.Pin, { point: above, toward: below, margin: 0.3 });
+        // 上端の外 (0, -1) から中央 (0.5, 0.5) への線を、上端から gap のところまで降りる
+        expect(parseFloat(above.current.style.top)).toBeCloseTo(0);
+        // 縦に降りたぶんだけ横も中央へ寄る（(-1 → 0.1) は道のり 1.5 のうち 1.1）
+        expect(parseFloat(above.current.style.left)).toBeCloseTo(0.5 * (1.1 / 1.5) * 100);
+    });
 
-        // toward が無ければ枠の外に置かれたまま
-        expect(parseFloat(alone.current.style.top)).toBeLessThan(0);
-        // toward があれば、頭と足を結ぶ線を下って margin のところまで降りる
-        expect(parseFloat(slid.current.style.top)).toBeCloseTo(30);
+    it('枠の中に収まっている点は動かさない', () => {
+        const inside = xnew(xbasics.Pin, { point: () => ({ x: 0.2, y: 0.8 }), gap: 0.1 });
+
+        expect(parseFloat(inside.current.style.left)).toBeCloseTo(20);
+        expect(parseFloat(inside.current.style.top)).toBeCloseTo(70);   // gap のぶんだけ上
     });
 
     // fit: 'cover' の再現。800x400 の箱に、canvas が 800x800 で上下 200 ずつはみ出している
@@ -80,7 +84,7 @@ describe('xbasics.Pin', () => {
         const target = { x: 0.5, y: 0.5 };
         const pin = xnew(xbasics.Pin, { point: () => target });
 
-        expect(pin.current.style.left).toBe('50%');
+        expect(parseFloat(pin.current.style.left)).toBeCloseTo(50);
 
         target.x = 1.0;
         jest.advanceTimersByTime(50);

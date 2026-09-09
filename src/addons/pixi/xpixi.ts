@@ -154,24 +154,20 @@ export function project(point: { x: number, y: number }, from?: PIXI.Container):
 interface PinProps {
     // the point the element's bottom edge sits on, in `space`'s coordinates
     point: () => { x: number, y: number } | null;
-    // the far end of the object: where the element slides to when `point` is off the top of the box
-    toward?: () => { x: number, y: number } | null;
-    // the container the points are read in; the current parent when left out
+    // the container the point is read in; the current parent when left out
     space?: PIXI.Container;
     // the space kept between the point and the element, as a fraction of the box height
     gap?: number;
-    // the space kept between the top of the box and the element, likewise
-    margin?: number;
     // the element the projection lands on (the canvas on screen); omit it when the pin sits in that very box
     frame?: HTMLElement;
 }
 
-// xbasics.Pin with the projection on it (see there for the box it wants); the points are read in `space`, else in the parent the caller's nest resolves to — so a pin written beside the object it follows reads that object's space.
-export function Pin(unit: xnew.Unit, { point, toward = () => null, space, ...others }: PinProps): void {
-    const projected = (get: () => { x: number, y: number } | null) => () => {
-        const local = get();
+// xbasics.Pin with the projection on it (see there for the box it wants); the point is read in `space`, else in the parent the caller's nest resolves to — so a pin written beside the object it follows reads that object's space.
+export function Pin(unit: xnew.Unit, { point, space, ...others }: PinProps): void {
+    function projected(): { x: number, y: number } | null {
+        const local = point();
         return local === null ? null : project(local, space);
-    };
+    }
 
-    xnew.extend(xbasics.Pin, { point: projected(point), toward: projected(toward), ...others });
+    xnew.extend(xbasics.Pin, { point: projected, ...others });
 }

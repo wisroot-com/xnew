@@ -228,7 +228,7 @@ test('Pin: 投影した割合がそのまま left / top に届く', async () => 
 
     xnew(root, () => { pin = xnew(xpixi.Pin, { point: () => ({ x: 100, y: 50 }) }); });
 
-    expect(pin.current.style.left).toBe('50%');
-    expect(pin.current.style.top).toBe('50%');
+    expect(parseFloat(pin.current.style.left)).toBeCloseTo(50);
+    expect(parseFloat(pin.current.style.top)).toBeCloseTo(50);
     expect(pin.current.style.visibility).toBe('visible');
 });

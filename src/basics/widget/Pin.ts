@@ -12,21 +12,20 @@ export interface PinPoint {
     y: number;
 }
 
+// where a point off the top of the box slides to; the middle is the one place every object is seen from
+const CENTER: PinPoint = { x: 0.5, y: 0.5 };
+
 export interface PinProps {
     // the point the element's bottom edge sits on; null while it cannot be placed (behind the camera, not loaded yet)
     point: () => PinPoint | null;
-    // the far end of the object: where the element slides to when `point` is off the top of the box
-    toward?: () => PinPoint | null;
     // the space kept between the point and the element, as a fraction of the box height
     gap?: number;
-    // the space kept between the top of the box and the element, likewise
-    margin?: number;
     // the element the point is a fraction of (the canvas on screen); omit it when the pin sits in that very box
     frame?: HTMLElement;
 }
 
 // Create it inside a positioned box — left / top are percentages of that box, and it is the canvas box unless `frame` names another (what fit: 'cover' needs, where the canvas runs past the box it is seen through). The content is the caller's, added into the pin as usual.
-export function Pin(unit: xnew.Unit, { point, toward = () => null, gap = 0, margin = 0, frame }: PinProps): void {
+export function Pin(unit: xnew.Unit, { point, gap = 0, frame }: PinProps): void {
     const css = xnew.css('base', {
         pin: `
                 position: absolute; left: 0; top: 0;
@@ -74,7 +73,7 @@ export function Pin(unit: xnew.Unit, { point, toward = () => null, gap = 0, marg
         return at === null ? null : { x: map.x + at.x * map.width, y: map.y + at.y * map.height };
     }
 
-    // the spot the bottom edge takes: on the point, or slid along the line to `toward` until it is inside the box
+    // the spot the bottom edge takes: on the point, or slid toward the middle until the element is inside the box
     function spot(): PinPoint | null {
         const from = onBox(point());
 
@@ -82,12 +81,12 @@ export function Pin(unit: xnew.Unit, { point, toward = () => null, gap = 0, marg
             return null;
         }
 
-        const to = onBox(toward());
-        const limit = size.height + margin + gap;
-        // sliding along the line keeps the element on its object; stopping at the edge would leave it floating
-        const drop = to === null || from.y >= limit || to.y <= from.y ? 0 : Math.min(1, (limit - from.y) / (to.y - from.y));
-        const x = to === null ? from.x : from.x + (to.x - from.x) * drop;
-        const y = to === null ? from.y : from.y + (to.y - from.y) * drop;
+        // the element stands on the point and grows upward, so it clears the top edge only this far down
+        const limit = size.height + gap;
+        // sliding toward the middle keeps the element over its object; stopping at the edge would leave it floating
+        const drop = from.y >= limit ? 0 : Math.max(0, Math.min(1, (limit - from.y) / (CENTER.y - from.y)));
+        const x = from.x + (CENTER.x - from.x) * drop;
+        const y = from.y + (CENTER.y - from.y) * drop;
 
         // across the frame it is only kept inside; unlike the drop, a small sideways shift costs nothing
         return { x: Math.min(1 - size.width / 2, Math.max(size.width / 2, x)), y: y - gap };
@@ -99,9 +98,11 @@ export function Pin(unit: xnew.Unit, { point, toward = () => null, gap = 0, marg
         // hidden rather than removed, so the size keeps being measurable while the point is unplaceable
         element.style.visibility = at === null ? 'hidden' : 'visible';
 
+        // rounded because CSS has no exponent notation: a value that lands on 1e-15 is rejected outright,
+        // leaving the last frame's position in place. 3 decimals is 0.01px on a 1000px box
         if (at !== null) {
-            element.style.left = `${at.x * 100}%`;
-            element.style.top = `${at.y * 100}%`;
+            element.style.left = `${(at.x * 100).toFixed(3)}%`;
+            element.style.top = `${(at.y * 100).toFixed(3)}%`;
         }
     }
     follow();   // so the first frame is not spent in the corner of the box

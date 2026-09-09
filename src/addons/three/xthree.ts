@@ -144,22 +144,18 @@ export function project(point: THREE.Vector3): { x: number, y: number } | null {
 interface PinProps {
     // the world point the element's bottom edge sits on
     point: () => THREE.Vector3 | null;
-    // the far end of the object: where the element slides to when `point` is off the top of the box
-    toward?: () => THREE.Vector3 | null;
     // the space kept between the point and the element, as a fraction of the box height
     gap?: number;
-    // the space kept between the top of the box and the element, likewise
-    margin?: number;
     // the element the projection lands on (the canvas on screen); omit it when the pin sits in that very box
     frame?: HTMLElement;
 }
 
 // xbasics.Pin with the projection on it (see there for the box it wants); it rides the caller's unit, so the camera is looked up from where the caller sits — inside the xthree.init tree, as world points require anyway.
-export function Pin(unit: xnew.Unit, { point, toward = () => null, ...others }: PinProps): void {
-    const projected = (get: () => THREE.Vector3 | null) => () => {
-        const world = get();
+export function Pin(unit: xnew.Unit, { point, ...others }: PinProps): void {
+    function projected(): { x: number, y: number } | null {
+        const world = point();
         return world === null ? null : project(world);
-    };
+    }
 
-    xnew.extend(xbasics.Pin, { point: projected(point), toward: projected(toward), ...others });
+    xnew.extend(xbasics.Pin, { point: projected, ...others });
 }

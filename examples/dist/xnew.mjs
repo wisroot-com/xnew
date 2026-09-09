@@ -3076,7 +3076,8 @@ function ToggleBar(unit, _a) {
     };
 }
 
-function Pin(unit, { point, toward = () => null, gap = 0, margin = 0, frame }) {
+const CENTER = { x: 0.5, y: 0.5 };
+function Pin(unit, { point, gap = 0, frame }) {
     const css = xnew.css('base', {
         pin: `
                 position: absolute; left: 0; top: 0;
@@ -3115,19 +3116,18 @@ function Pin(unit, { point, toward = () => null, gap = 0, margin = 0, frame }) {
         if (from === null) {
             return null;
         }
-        const to = onBox(toward());
-        const limit = size.height + margin + gap;
-        const drop = to === null || from.y >= limit || to.y <= from.y ? 0 : Math.min(1, (limit - from.y) / (to.y - from.y));
-        const x = to === null ? from.x : from.x + (to.x - from.x) * drop;
-        const y = to === null ? from.y : from.y + (to.y - from.y) * drop;
+        const limit = size.height + gap;
+        const drop = from.y >= limit ? 0 : Math.max(0, Math.min(1, (limit - from.y) / (CENTER.y - from.y)));
+        const x = from.x + (CENTER.x - from.x) * drop;
+        const y = from.y + (CENTER.y - from.y) * drop;
         return { x: Math.min(1 - size.width / 2, Math.max(size.width / 2, x)), y: y - gap };
     }
     function follow() {
         const at = spot();
         element.style.visibility = at === null ? 'hidden' : 'visible';
         if (at !== null) {
-            element.style.left = `${at.x * 100}%`;
-            element.style.top = `${at.y * 100}%`;
+            element.style.left = `${(at.x * 100).toFixed(3)}%`;
+            element.style.top = `${(at.y * 100).toFixed(3)}%`;
         }
     }
     follow();

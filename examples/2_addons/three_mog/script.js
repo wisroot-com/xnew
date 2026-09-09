@@ -126,8 +126,8 @@ function Ground(unit) {
 
 // キャラの頭の上に居座る札。置き場は canvas と同じ箱（Screen の fit は既定の contain なので frame は要らない）
 function Label(unit, { model, text }) {
-  // 頭が画面の上へ外れたら、頭→足の線を下って画面の中まで降りる（上端で止めると体から離れて浮く）
-  xnew.extend(xthree.Pin, { point: () => model.head, toward: () => model.feet, gap: 0.01, margin: 0.03 });
+  // 頭が画面の上へ外れたら、画面の中央へ向かって降りて中に収まる
+  xnew.extend(xthree.Pin, { point: () => model.head, gap: 0.01 });
   xnew('<span class="px-2 py-1 text-sm rounded bg-white/70 text-gray-700 shadow">', text);
 }
 
@@ -154,10 +154,9 @@ function Model(unit, { mogPath, vrmaPath, chamfer = 0.0, position }) {
     loader.load(vrmaPath, (gltf) => resolve(gltf.userData.vrmAnimations[0]));
   }));
 
-  // 頭と足はモデルが載るまで分からない（背丈はモデルごとに違うので測る）
+  // 頭の高さはモデルが載るまで分からない（背丈はモデルごとに違うので測る）
   let model = null;
   let top = 0;
-  let bottom = 0;
 
   xnew.promise(unit).then(({ vrm, vrma }) => {
     vrm.scene.traverse((obj) => {
@@ -170,7 +169,6 @@ function Model(unit, { mogPath, vrmaPath, chamfer = 0.0, position }) {
     // グループの回転もシーンの傾き（ドラッグで動く）もまとめて面倒を見てくれる
     const box = new THREE.Box3().setFromObject(vrm.scene);
     top = box.max.y;
-    bottom = box.min.y;
     model = vrm.scene;
 
     object.add(vrm.scene);
@@ -191,17 +189,14 @@ function Model(unit, { mogPath, vrmaPath, chamfer = 0.0, position }) {
 
   // 投影は Pin の update で読まれるが、行列が更新されるのは Main の composer.render()（子より後）
   // なので、ここで自分の分だけ更新しておかないと札が 1 フレーム遅れる
-  function at(y) {
-    if (model === null) {
-      return null;
-    }
-    model.updateWorldMatrix(true, false);
-    return model.localToWorld(new THREE.Vector3(0, y, 0));
-  }
-
   return {
-    get head() { return at(top); },
-    get feet() { return at(bottom); },
+    get head() {
+      if (model === null) {
+        return null;
+      }
+      model.updateWorldMatrix(true, false);
+      return model.localToWorld(new THREE.Vector3(0, top, 0));
+    },
   };
 }
 

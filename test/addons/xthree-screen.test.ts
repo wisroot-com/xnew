@@ -68,8 +68,8 @@ describe('xthree screen bridge', () => {
 
         inScene(() => { pin = xnew(xthree.Pin, { point: () => new THREE.Vector3(0, 0, -3) }); });
 
-        expect(pin.current.style.left).toBe('50%');
-        expect(pin.current.style.top).toBe('50%');
+        expect(parseFloat(pin.current.style.left)).toBeCloseTo(50);
+        expect(parseFloat(pin.current.style.top)).toBeCloseTo(50);
         expect(pin.current.style.visibility).toBe('visible');
     });
 
@@ -81,22 +81,12 @@ describe('xthree screen bridge', () => {
         expect(pin.current.style.visibility).toBe('hidden');
     });
 
-    it('Pin: toward も投影されて渡る（枠の上へ外れた点が足元の方へ降りる）', () => {
-        const above = () => new THREE.Vector3(0, 2, -3);   // 画面の上へ外れる高さ
-        const below = () => new THREE.Vector3(0, 0, -3);   // 同じ物の足元（画面の中央）
-        let slid;
-
-        inScene(() => { slid = xnew(xthree.Pin, { point: above, toward: below, margin: 0.3 }); });
-
-        expect(parseFloat(slid.current.style.top)).toBeCloseTo(30);
-    });
-
     it('Pin: 点が動けば毎フレーム付いていく', () => {
         const target = new THREE.Vector3(0, 0, -3);
         let pin;
 
         inScene(() => { pin = xnew(xthree.Pin, { point: () => target }); });
-        expect(pin.current.style.left).toBe('50%');
+        expect(parseFloat(pin.current.style.left)).toBeCloseTo(50);
 
         target.x = 1.2426;   // 距離 3 での視野の右端
         jest.advanceTimersByTime(50);

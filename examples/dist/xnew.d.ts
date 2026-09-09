@@ -538,12 +538,10 @@ interface PinPoint {
 }
 interface PinProps {
     point: () => PinPoint | null;
-    toward?: () => PinPoint | null;
     gap?: number;
-    margin?: number;
     frame?: HTMLElement;
 }
-declare function Pin(unit: xnew.Unit, { point, toward, gap, margin, frame }: PinProps): void;
+declare function Pin(unit: xnew.Unit, { point, gap, frame }: PinProps): void;
 
 declare function VirtualPad(unit: xnew.Unit, { type, className, style }?: {
     type?: 'analog' | '4way' | '8way';

@@ -150,12 +150,12 @@ function project(point, from) {
     return { x: global.x / screen.width, y: global.y / screen.height };
 }
 function Pin(unit, _a) {
-    var { point, toward = () => null, space } = _a, others = __rest(_a, ["point", "toward", "space"]);
-    const projected = (get) => () => {
-        const local = get();
+    var { point, space } = _a, others = __rest(_a, ["point", "space"]);
+    function projected() {
+        const local = point();
         return local === null ? null : project(local, space);
-    };
-    xnew.extend(xbasics.Pin, Object.assign({ point: projected(point), toward: projected(toward) }, others));
+    }
+    xnew.extend(xbasics.Pin, Object.assign({ point: projected }, others));
 }
 
 export { Pin, project, xpixi };

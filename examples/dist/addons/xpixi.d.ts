@@ -47,15 +47,10 @@ interface PinProps {
         x: number;
         y: number;
     } | null;
-    toward?: () => {
-        x: number;
-        y: number;
-    } | null;
     space?: PIXI.Container;
     gap?: number;
-    margin?: number;
     frame?: HTMLElement;
 }
-declare function Pin(unit: xnew.Unit, { point, toward, space, ...others }: PinProps): void;
+declare function Pin(unit: xnew.Unit, { point, space, ...others }: PinProps): void;
 
 export { Pin, project, xpixi };
