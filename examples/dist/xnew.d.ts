@@ -521,7 +521,7 @@ declare function ToggleBar(unit: xnew.Unit, { gate, label, marker, className, st
     readonly gate: Unit;
 };
 
-declare function Overlay(unit: xnew.Unit, { gate, anchor, className, style, ...others }: {
+declare function Popover(unit: xnew.Unit, { gate, anchor, className, style, ...others }: {
     gate: xnew.Unit;
     anchor?: HTMLElement;
     className?: string;
@@ -613,7 +613,7 @@ declare const xbasics: {
     Gate: typeof Gate;
     Accordion: typeof Accordion;
     ToggleBar: typeof ToggleBar;
-    Overlay: typeof Overlay;
+    Popover: typeof Popover;
     VirtualPad: typeof VirtualPad;
     Panel: typeof Panel;
     PanelGroup: typeof PanelGroup;

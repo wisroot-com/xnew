@@ -103,7 +103,7 @@ is found. Source of truth is the code in `src/core/` — when in doubt, read it.
   `@layer base` css entry, and the caller's `className` / `style` decorate that element:
   `xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style })`.
   **`...others` always lands on the component's LEADING element (2026-09):** the container for
-  single-element ones (Button, Image, Listbox, InputRadioGroup, ColorPicker, Accordion, Overlay), the
+  single-element ones (Button, Image, Listbox, InputRadioGroup, ColorPicker, Accordion, Popover), the
   hidden native `<input>` for the form controls (InputText / InputNumber / InputRange / InputCheckbox /
   InputSwitch / InputRadio), the inner `<text>` for SVGText — `min` / `placeholder` / `fontSize` only
   mean anything there. `className` / `style` are the exception in the other direction: they always
@@ -648,16 +648,16 @@ the rule, then one line of why.
   at `document` and fires only when the press target is NOT inside `unit.current` **as of registration
   time** — so register it right after nesting the content box you want to protect. DOM listeners attach
   via `setTimeout(0)`, so the same press that opened the popup can't self-close it. Cleaned up on
-  destroy like any listener. `Overlay` deliberately has NO built-in click-to-close (removed 2026-07);
+  destroy like any listener. `Popover` deliberately has NO built-in click-to-close (removed 2026-07);
   the caller wires it (see `examples/1_xnew/basics/gate/index.html`).
 
 - **When two sibling components must share a driver unit (e.g. a Gate), create the driver with `xnew(Gate,
   props)` and pass the SAME unit into each — don't rely on `xnew.context` or a merged control surface.**
   A deferred callback runs in the SCOPE SNAPSHOT from when it was scheduled, so `xnew.context(X)` inside it
   cannot see a component extended onto the unit AFTER the callback was scheduled (bit `InputSelectMenu`,
-  extended before the `Accordion`). **`Accordion` / `Overlay` take `gate` as a Gate UNIT, and it is required
+  extended before the `Accordion`). **`Accordion` / `Popover` take `gate` as a Gate UNIT, and it is required
   (2026-09):** the props form (`gate: { open, duration }`, which had them build a child Gate) is gone, so
-  the caller always owns the Gate — `const gate = xnew(Gate, { … })` then `xnew.extend(Overlay, { gate })`.
+  the caller always owns the Gate — `const gate = xnew(Gate, { … })` then `xnew.extend(Popover, { gate })`.
   That is what a shared Gate looked like anyway (Panel's collapsible, ListboxMenu, the widget example's
   menu all hand one in), and it removes the branch where a component silently owned a Gate nobody else
   could reach. Both still re-expose it as `.gate`. **Listbox does NOT take one at all (2026-09):**

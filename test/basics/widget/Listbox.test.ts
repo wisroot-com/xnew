@@ -53,7 +53,7 @@ describe('basics Listbox', () => {
         return rowsOf(menu);
     }
 
-    // the backdrop is Overlay's fixed container: menu -> anchor tether -> backdrop
+    // the backdrop is Popover's fixed container: menu -> anchor tether -> backdrop
     function backdropOf(menu: HTMLElement): HTMLElement {
         return menu.parentElement!.parentElement as HTMLElement;
     }
@@ -116,12 +116,12 @@ describe('basics Listbox', () => {
         expect(isOpen(button)).toBe(false);
         open(button);
         expect(isOpen(button)).toBe(true);
-        // Overlay's backdrop turns visible and interactive while open
+        // Popover's backdrop turns visible and interactive while open
         expect(backdropOf(menu).style.opacity).toBe('1');
         expect(backdropOf(menu).style.pointerEvents).toBe('auto');
         // empty rows fall back to the value as text
         expect(menu.textContent).toBe('lowmidhigh');
-        // the list hangs under Overlay's anchor-tracking box (absolute, top: 100%) instead of a fixed rect
+        // the list hangs under Popover's anchor-tracking box (absolute, top: 100%) instead of a fixed rect
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
         expect(menu.className).toMatch(/xnew\d+-container/);
         expect(styleText).toContain('position: absolute; top: 100%; left: 0;');

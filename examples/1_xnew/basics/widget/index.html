@@ -99,9 +99,9 @@
     }
 
     function MyModal(unit) {
-      // the caller owns the Gate and hands it to Overlay, so the same one can drive other layers too
+      // the caller owns the Gate and hands it to Popover, so the same one can drive other layers too
       const gate = xnew(xbasics.Gate, { open: false, duration: 200 });
-      xnew.extend(xbasics.Overlay, { gate, className: 'bg-black/10' });
+      xnew.extend(xbasics.Popover, { gate, className: 'bg-black/10' });
       gate.on('-closed', () => unit.destroy());
       gate.open();
 
@@ -119,10 +119,10 @@
     }
 
     function MyMenu(unit, { anchor }) {
-      // Overlay covers the page with a backdrop (so the button can't be re-triggered) and, via anchor,
+      // Popover covers the page with a backdrop (so the button can't be re-triggered) and, via anchor,
       // gives a box tracking the button's rect; destroy this unit once the gate reports closed
       const gate = xnew(xbasics.Gate, { open: false, duration: 200 });
-      xnew.extend(xbasics.Overlay, { gate, anchor });
+      xnew.extend(xbasics.Popover, { gate, anchor });
       gate.on('-closed', () => unit.destroy());
 
       // the dropdown hangs just below the tracked box; Accordion rides the same Gate so both animate together

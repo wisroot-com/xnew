@@ -8,7 +8,7 @@ import { xnew } from '../../core/xnew';
 import { dispatchCommit, surfaceColor } from '../../utils/dom';
 import { ItemDef } from '../../utils/item';
 import { Gate } from './Gate';
-import { Overlay } from './Overlay';
+import { Popover } from './Popover';
 
 //----------------------------------------------------------------------------------------------------
 // Listbox — the fit-to-content host (no frame; ListboxButton draws the trigger)
@@ -146,7 +146,7 @@ export function ListboxButton(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListboxMenu — the floating option list, built on Overlay and riding the Gate the Listbox owns
+// ListboxMenu — the floating option list, built on Popover and riding the Gate the Listbox owns
 //----------------------------------------------------------------------------------------------------
 
 export function ListboxMenu(unit: xnew.Unit,
@@ -164,7 +164,7 @@ export function ListboxMenu(unit: xnew.Unit,
         `,
     });
 
-    xnew.extend(Overlay, { gate: listbox.gate, anchor: listbox.current });
+    xnew.extend(Popover, { gate: listbox.gate, anchor: listbox.current });
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others }) as HTMLElement;
 

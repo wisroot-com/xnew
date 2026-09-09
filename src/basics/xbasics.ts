@@ -19,7 +19,7 @@ import { ColorPicker } from './widget/ColorPicker';
 import { Gate } from './widget/Gate';
 import { Accordion } from './widget/Accordion';
 import { ToggleBar } from './widget/ToggleBar';
-import { Overlay } from './widget/Overlay';
+import { Popover } from './widget/Popover';
 import { VirtualPad } from './widget/VirtualPad';
 import { Panel, PanelGroup } from './widget/Panel';
 import { VolumeController } from './widget/VolumeController';
@@ -47,7 +47,7 @@ export const xbasics = {
     Gate,
     Accordion,
     ToggleBar,
-    Overlay,
+    Popover,
     VirtualPad,
     Panel,
     PanelGroup,

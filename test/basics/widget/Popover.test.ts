@@ -1,9 +1,9 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
 import { Gate } from '../../../src/basics/widget/Gate';
-import { Overlay } from '../../../src/basics/widget/Overlay';
+import { Popover } from '../../../src/basics/widget/Popover';
 
-describe('basics Overlay', () => {
+describe('basics Popover', () => {
     beforeEach(() => {
         jest.useFakeTimers();
         Unit.reset();
@@ -21,8 +21,8 @@ describe('basics Overlay', () => {
     }
 
     it('nests a full-viewport backdrop and ends on it when no anchor is given', () => {
-        const overlay = xnew(Overlay, { gate: xnew(Gate) });
-        const backdrop = overlay.current as HTMLElement;
+        const popover = xnew(Popover, { gate: xnew(Gate) });
+        const backdrop = popover.current as HTMLElement;
         const styleText = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
 
         expect(styleText).toContain('position: fixed; inset: 0; z-index: 1000;');
@@ -34,8 +34,8 @@ describe('basics Overlay', () => {
         const anchor = document.createElement('div');
         mockRect(anchor, { left: 10, top: 20, width: 100, height: 40 });
 
-        const overlay = xnew(Overlay, { gate: xnew(Gate), anchor });
-        const box = overlay.current as HTMLElement; // the body ends on the tether box
+        const popover = xnew(Popover, { gate: xnew(Gate), anchor });
+        const box = popover.current as HTMLElement; // the body ends on the tether box
 
         // the tether carries its positioning inline (no CSS class)
         expect(box.style.position).toBe('absolute');
@@ -62,24 +62,24 @@ describe('basics Overlay', () => {
         const anchor = document.createElement('div');
         mockRect(anchor, { left: 0, top: 0, width: 10, height: 10 });
 
-        const overlay = xnew(Overlay, { gate: xnew(Gate), anchor });
-        const box = overlay.current as HTMLElement;
+        const popover = xnew(Popover, { gate: xnew(Gate), anchor });
+        const box = popover.current as HTMLElement;
         let destroyed = false;
-        overlay.on('destroy', () => { destroyed = true; });
-        overlay.gate.on('-closed', () => overlay.destroy());
+        popover.on('destroy', () => { destroyed = true; });
+        popover.gate.on('-closed', () => popover.destroy());
 
-        overlay.gate.open();
+        popover.gate.open();
         jest.advanceTimersByTime(1000);
 
-        // a press anywhere on the overlay never closes it on its own — the caller wires close (see the gate example)
+        // a press anywhere on the popover never closes it on its own — the caller wires close (see the gate example)
         box.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         jest.advanceTimersByTime(1000);
         expect(destroyed).toBe(false);
     });
 
     it('is click-through while fully closed and interactive once opened', () => {
-        const overlay = xnew(Overlay, { gate: xnew(Gate, { open: false, duration: 200 }) });
-        const backdrop = overlay.current as HTMLElement;
+        const popover = xnew(Popover, { gate: xnew(Gate, { open: false, duration: 200 }) });
+        const backdrop = popover.current as HTMLElement;
 
         // the deferred initial emit lands the closed state: transparent; while closed the backdrop is
         // click-through via its CSS default (pointer-events: none), so the inline override stays empty
@@ -88,13 +88,13 @@ describe('basics Overlay', () => {
         expect(backdrop.style.pointerEvents).toBe('');
 
         // opening turns the backdrop opaque and interactive
-        overlay.gate.open();
+        popover.gate.open();
         jest.advanceTimersByTime(250);
         expect(backdrop.style.opacity).toBe('1');
         expect(backdrop.style.pointerEvents).toBe('auto');
 
-        // closing returns it to click-through so a mounted-but-closed Overlay never eats page clicks
-        overlay.gate.close();
+        // closing returns it to click-through so a mounted-but-closed Popover never eats page clicks
+        popover.gate.close();
         jest.advanceTimersByTime(250);
         expect(backdrop.style.opacity).toBe('0');
         expect(backdrop.style.pointerEvents).toBe('none');

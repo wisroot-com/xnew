@@ -17,7 +17,7 @@ import { Listbox, ListboxButton, ListboxMenu, ListboxItem } from './Listbox';
 import { Accordion } from './Accordion';
 import { Gate } from './Gate';
 import { ToggleBar } from './ToggleBar';
-import { Overlay } from './Overlay';
+import { Popover } from './Popover';
 import { ColorPicker } from './ColorPicker';
 import { ItemDef } from '../../utils/item';
 
@@ -253,9 +253,9 @@ function Color(unit: xnew.Unit, { label = '', value = '#ffffff' }: { label?: str
 }
 
 function ColorPopup(unit: xnew.Unit, { anchor, value, commit }: { anchor: HTMLElement, value: string, commit: (value: string, settled: boolean) => void }) {
-    // Overlay backdrop blocks the page and tracks the swatch rect; close destroys this unit
+    // Popover backdrop blocks the page and tracks the swatch rect; close destroys this unit
     const gate = xnew(Gate, { open: false, duration: 100 });
-    xnew.extend(Overlay, { gate, anchor });
+    xnew.extend(Popover, { gate, anchor });
     gate.on('-closed', () => unit.destroy());
 
     // the picker hangs just below the tracked swatch box, right-aligned

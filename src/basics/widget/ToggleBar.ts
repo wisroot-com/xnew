@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // ToggleBar — a pressable label row that opens / closes a Gate; the marker at its left moves as the gate moves
-// `gate` is the Gate unit to drive — the caller owns it, so the same one also feeds the Accordion (or Overlay)
+// `gate` is the Gate unit to drive — the caller owns it, so the same one also feeds the Accordion (or Popover)
 // holding what the bar reveals — and it is re-exposed as `gate`. `label` fills the row's text; further
 // content composed into the bar lands after it, still inside the pressable row.
 //----------------------------------------------------------------------------------------------------

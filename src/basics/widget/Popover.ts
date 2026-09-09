@@ -1,12 +1,13 @@
 //----------------------------------------------------------------------------------------------------
-// Overlay — full-viewport backdrop that fades in/out with a Gate
+// Popover — the base layer for floating UI: a full-viewport backdrop that fades in/out with a Gate,
+// plus an optional box tracking an anchor element so the content can hang off it.
 // `gate` is the Gate unit to ride — the caller owns it — and is re-exposed as `gate`; `anchor` tracks
 // an element's rect. Fully closed the backdrop is click-through, so it can stay mounted.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 
-export function Overlay(unit: xnew.Unit,
+export function Popover(unit: xnew.Unit,
     { gate, anchor, className = '', style = '', ...others }:
     { gate: xnew.Unit, anchor?: HTMLElement, className?: string, style?: string, [key: string]: any }
 ) {
