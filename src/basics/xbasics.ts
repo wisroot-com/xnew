@@ -6,6 +6,7 @@
 import { Aspect } from './stage/Aspect';
 import { Screen } from './stage/Screen';
 import { Scene } from './stage/Scene';
+import { CPUAgent } from './stage/CPUAgent';
 import { Button } from './element/Button';
 import { Image } from './element/Image';
 import { SVGText } from './element/SVGText';
@@ -27,6 +28,7 @@ export const xbasics = {
     Aspect,
     Screen,
     Scene,
+    CPUAgent,
     Button,
     Image,
     SVGText,

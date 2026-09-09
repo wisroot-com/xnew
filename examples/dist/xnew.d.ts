@@ -319,6 +319,19 @@ declare function Scene(unit: xnew.Unit): {
     add(Component: Function, props?: any): xnew.Unit;
 };
 
+interface CPUMove {
+    type: string;
+    data?: Record<string, any>;
+}
+declare function CPUAgent(unit: xnew.Unit, { turn, think, play, isAgent, delay, attempts }: {
+    turn: () => string;
+    think: (id: string) => CPUMove | null;
+    play: (move: CPUMove, id: string) => void;
+    isAgent?: (id: string) => boolean;
+    delay?: [number, number];
+    attempts?: number;
+}): void;
+
 declare function Button(unit: xnew.Unit, { label, disabled, className, style, ...others }?: {
     label?: string;
     disabled?: boolean;
@@ -581,6 +594,7 @@ declare const xbasics: {
     Aspect: typeof Aspect;
     Screen: typeof Screen;
     Scene: typeof Scene;
+    CPUAgent: typeof CPUAgent;
     Button: typeof Button;
     Image: typeof Image;
     SVGText: typeof SVGText;

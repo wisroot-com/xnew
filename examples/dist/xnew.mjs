@@ -1933,6 +1933,45 @@ function Scene(unit) {
     };
 }
 
+function CPUAgent(unit, { turn, think, play, isAgent = () => true, delay = [600, 1400], attempts = 3 }) {
+    let current = '';
+    let tried = 0;
+    let timer = null;
+    function act() {
+        timer = null;
+        if (turn() !== current || isAgent(current) === false) {
+            return;
+        }
+        const move = think(current);
+        if (move !== null) {
+            play(move, current);
+        }
+        if (turn() === current) {
+            tried++;
+            if (tried < attempts) {
+                schedule();
+            }
+        }
+    }
+    function schedule() {
+        const [min, max] = delay;
+        timer = xnew.timeout(act, min + Math.random() * (max - min));
+    }
+    unit.on('update', () => {
+        const id = turn();
+        if (id === current) {
+            return;
+        }
+        current = id;
+        tried = 0;
+        timer === null || timer === void 0 ? void 0 : timer.clear();
+        timer = null;
+        if (id !== '' && isAgent(id) === true) {
+            schedule();
+        }
+    });
+}
+
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
 
@@ -3754,6 +3793,7 @@ const xbasics = {
     Aspect,
     Screen,
     Scene,
+    CPUAgent,
     Button,
     Image,
     SVGText,
