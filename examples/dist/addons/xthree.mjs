@@ -170,6 +170,8 @@ const xthree = {
         return object;
     },
     material,
+    project,
+    Pin,
     get renderer() {
         var _a;
         return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.renderer;
@@ -222,5 +224,55 @@ function Nest(unit, { object }) {
 function Add(unit, { object }) {
     attach(unit, object);
 }
+function project(point) {
+    var _a;
+    const camera = (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.camera;
+    camera.updateMatrixWorld();
+    const projected = point.clone().project(camera);
+    return projected.z > 1 ? null : { x: (projected.x + 1) / 2, y: (1 - projected.y) / 2 };
+}
+function Pin(unit, { point, toward = () => null, gap = 0, margin = 0 }) {
+    const css = xnew.css('base', {
+        pin: `
+                position: absolute; left: 0; top: 0;
+                display: flex; flex-direction: column; align-items: center;
+                transform: translate(-50%, -100%);
+                white-space: nowrap; pointer-events: none; user-select: none;
+            `,
+    });
+    xnew.nest({ tag: 'div', className: css.pin });
+    const element = unit.current;
+    let size = { width: 0, height: 0 };
+    unit.on('resize', () => {
+        const box = element.parentElement;
+        if (box !== null && box.clientWidth > 0 && box.clientHeight > 0) {
+            size = { width: element.offsetWidth / box.clientWidth, height: element.offsetHeight / box.clientHeight };
+        }
+    });
+    function spot() {
+        const anchor = point();
+        const from = anchor === null ? null : project(anchor);
+        if (from === null) {
+            return null;
+        }
+        const tail = toward();
+        const to = tail === null ? null : project(tail);
+        const limit = size.height + margin + gap;
+        const drop = to === null || from.y >= limit || to.y <= from.y ? 0 : Math.min(1, (limit - from.y) / (to.y - from.y));
+        const x = to === null ? from.x : from.x + (to.x - from.x) * drop;
+        const y = to === null ? from.y : from.y + (to.y - from.y) * drop;
+        return { x: Math.min(1 - size.width / 2, Math.max(size.width / 2, x)), y: y - gap };
+    }
+    function follow() {
+        const at = spot();
+        element.style.visibility = at === null ? 'hidden' : 'visible';
+        if (at !== null) {
+            element.style.left = `${at.x * 100}%`;
+            element.style.top = `${at.y * 100}%`;
+        }
+    }
+    follow();
+    unit.on('update', follow);
+}
 
-export { xthree };
+export { Pin, project, xthree };

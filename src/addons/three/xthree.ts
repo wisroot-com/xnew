@@ -1,8 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // xthree — Three.js integration: ties the Three scene graph to the xnew unit tree
-// The scene graph (Root / Nest / Add and the attach helpers) lives here; the texture-backed materials
-// are in ./material. Ready-made models (畳・ちゃぶ台 など) are not xnew's job — they live in the
-// xnew-gamelab package, built on the public surface below.
+// The scene graph (Root / Nest / Add), and the bridge to the DOM over it (project / Pin), live here;
+// materials are in ./material. Ready-made models are xnew-gamelab's, built on the public surface below.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '@mulsense/xnew';
@@ -59,6 +58,10 @@ export const xthree = {
     // build a three material from an xtextures texture object: material(texture, options), where
     // options.type is 'shader' | 'bake' | 'inject' ('bake' when omitted) — see material.ts
     material,
+    // where a world point lands on the frame, as a fraction of it (0,0 top-left / 1,1 bottom-right); null behind the camera
+    project,
+    // a DOM element that rides a point of the scene — see the screen block below
+    Pin,
     get renderer() {
         return xnew.context(Root)?.renderer;
     },
@@ -120,4 +123,99 @@ function Nest(unit: xnew.Unit, { object }: { object: any }) {
 // no threeObject exposure — the current parent stays unchanged
 function Add(unit: xnew.Unit, { object }: { object: any }) {
     attach(unit, object);
+}
+
+//----------------------------------------------------------------------------------------------------
+// screen — the bridge from the scene to the DOM laid over it
+// Fractions of the frame rather than pixels throughout, so a pin holds its place as the canvas resizes.
+//----------------------------------------------------------------------------------------------------
+
+export function project(point: THREE.Vector3): { x: number, y: number } | null {
+    const camera = xnew.context(Root)?.camera as THREE.PerspectiveCamera;
+
+    camera.updateMatrixWorld();
+    const projected = point.clone().project(camera);
+
+    // behind the camera w turns negative and x / y come back flipped, with z > 1 as the tell
+    return projected.z > 1 ? null : { x: (projected.x + 1) / 2, y: (1 - projected.y) / 2 };
+}
+
+interface PinProps {
+    /** the point the element's bottom edge sits on */
+    point: () => THREE.Vector3 | null;
+    /** the far end of the object: where the element slides to when `point` is off the top of the frame */
+    toward?: () => THREE.Vector3 | null;
+    /** the space kept between the point and the element, as a fraction of the frame height */
+    gap?: number;
+    /** the space kept between the top of the frame and the element, likewise */
+    margin?: number;
+}
+
+/**
+ * A DOM element that rides a point of the scene; the content is the caller's, added into it as usual.
+ * Create it inside the positioned box holding the canvas (xbasics.Aspect's is one): left / top are
+ * written as percentages of the offset parent, and the element measures itself against that same box.
+ */
+export function Pin(unit: xnew.Unit, { point, toward = () => null, gap = 0, margin = 0 }: PinProps): void {
+    const css = xnew.css('base', {
+        pin: `
+                position: absolute; left: 0; top: 0;
+                display: flex; flex-direction: column; align-items: center;
+                transform: translate(-50%, -100%);
+                white-space: nowrap; pointer-events: none; user-select: none;
+            `,
+    });
+
+    xnew.nest({ tag: 'div', className: css.pin });
+
+    // content added afterwards moves unit.current onto itself, so the element to place is caught here
+    const element = unit.current as HTMLElement;
+
+    let size = { width: 0, height: 0 };   // as a fraction of the box
+
+    // measuring every frame would relayout against the left / top just written; the size is set in cq
+    // units, so it only changes with the content, and the fraction survives a resize of the box
+    unit.on('resize', () => {
+        const box = element.parentElement;
+
+        if (box !== null && box.clientWidth > 0 && box.clientHeight > 0) {
+            size = { width: element.offsetWidth / box.clientWidth, height: element.offsetHeight / box.clientHeight };
+        }
+    });
+
+    // the spot the bottom edge takes: on the point, or slid along the line to `toward` until it is inside the frame
+    function spot(): { x: number, y: number } | null {
+        const anchor = point();
+        const from = anchor === null ? null : project(anchor);
+
+        if (from === null) {
+            return null;
+        }
+
+        const tail = toward();
+        const to = tail === null ? null : project(tail);
+        const limit = size.height + margin + gap;
+        // sliding along the line keeps the element on its object; stopping at the edge would leave it floating
+        const drop = to === null || from.y >= limit || to.y <= from.y ? 0 : Math.min(1, (limit - from.y) / (to.y - from.y));
+        const x = to === null ? from.x : from.x + (to.x - from.x) * drop;
+        const y = to === null ? from.y : from.y + (to.y - from.y) * drop;
+
+        // across the frame it is only kept inside; unlike the drop, a small sideways shift costs nothing
+        return { x: Math.min(1 - size.width / 2, Math.max(size.width / 2, x)), y: y - gap };
+    }
+
+    function follow(): void {
+        const at = spot();
+
+        // hidden rather than removed, so the size keeps being measurable while the point is unplaceable
+        element.style.visibility = at === null ? 'hidden' : 'visible';
+
+        if (at !== null) {
+            element.style.left = `${at.x * 100}%`;
+            element.style.top = `${at.y * 100}%`;
+        }
+    }
+    follow();   // so the first frame is not spent in the corner of the box
+
+    unit.on('update', follow);
 }
