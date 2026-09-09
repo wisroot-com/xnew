@@ -99,6 +99,35 @@ describe('xthree screen bridge', () => {
         expect(parseFloat(slid.current.style.top)).toBeCloseTo(30);
     });
 
+    // fit: 'cover' の再現。800x400 の箱に、canvas が 800x800 で上下 200 ずつはみ出している
+    it('Pin: frame を渡すと、canvas の割合を自分の箱の割合へ引き直す', () => {
+        const canvas = document.createElement('canvas');
+
+        canvas.getBoundingClientRect = () => ({ left: 0, top: -200, width: 800, height: 800 }) as DOMRect;
+
+        function place(frame?: HTMLElement): string {
+            let pin!: xnew.Unit;
+
+            inScene(() => {
+                const host = xnew.nest({ tag: 'div' }) as HTMLElement;
+
+                Object.defineProperty(host, 'clientWidth', { value: 800 });
+                Object.defineProperty(host, 'clientHeight', { value: 400 });
+                host.getBoundingClientRect = () => ({ left: 0, top: 0, width: 800, height: 400 }) as DOMRect;
+
+                // 距離 3 での視野の半分の高さ tan(22.5°)*3 の半分 = canvas の上から 1/4 の高さ
+                pin = xnew(xthree.Pin, { point: () => new THREE.Vector3(0, Math.tan(Math.PI / 8) * 3 * 0.5, -3), frame });
+            });
+            return (pin.current as HTMLElement).style.top;
+        }
+
+        // frame 無し = 恒等写像。canvas の 25% をそのまま箱の 25% として書く
+        expect(parseFloat(place())).toBeCloseTo(25);
+
+        // frame 有り = canvas の 25%（= canvas 上端から 200px、箱の上端ちょうど）へ引き直す
+        expect(parseFloat(place(canvas))).toBeCloseTo(0);
+    });
+
     it('Pin: 点が動けば毎フレーム付いていく', () => {
         const target = new THREE.Vector3(0, 0, -3);
         let pin;

@@ -127,7 +127,7 @@ function Add(unit: xnew.Unit, { object }: { object: any }) {
 
 //----------------------------------------------------------------------------------------------------
 // screen — the bridge from the scene to the DOM laid over it
-// Fractions of the frame rather than pixels throughout, so a pin holds its place as the canvas resizes.
+// Fractions of a box rather than pixels throughout, so a pin holds its place as the canvas resizes.
 //----------------------------------------------------------------------------------------------------
 
 export function project(point: THREE.Vector3): { x: number, y: number } | null {
@@ -143,20 +143,23 @@ export function project(point: THREE.Vector3): { x: number, y: number } | null {
 interface PinProps {
     /** the point the element's bottom edge sits on */
     point: () => THREE.Vector3 | null;
-    /** the far end of the object: where the element slides to when `point` is off the top of the frame */
+    /** the far end of the object: where the element slides to when `point` is off the top of the box */
     toward?: () => THREE.Vector3 | null;
-    /** the space kept between the point and the element, as a fraction of the frame height */
+    /** the space kept between the point and the element, as a fraction of the box height */
     gap?: number;
-    /** the space kept between the top of the frame and the element, likewise */
+    /** the space kept between the top of the box and the element, likewise */
     margin?: number;
+    /** the element the projection lands on (the canvas on screen); omit it when the pin sits in that very box */
+    frame?: HTMLElement;
 }
 
 /**
  * A DOM element that rides a point of the scene; the content is the caller's, added into it as usual.
- * Create it inside the positioned box holding the canvas (xbasics.Aspect's is one): left / top are
- * written as percentages of the offset parent, and the element measures itself against that same box.
+ * Create it inside a positioned box: left / top are written as percentages of it and the element measures
+ * itself against it. That box is the canvas box unless `frame` names another, which the projection is then
+ * rescaled onto — what fit: 'cover' needs, where the canvas runs past the box it is seen through.
  */
-export function Pin(unit: xnew.Unit, { point, toward = () => null, gap = 0, margin = 0 }: PinProps): void {
+export function Pin(unit: xnew.Unit, { point, toward = () => null, gap = 0, margin = 0, frame }: PinProps): void {
     const css = xnew.css('base', {
         pin: `
                 position: absolute; left: 0; top: 0;
@@ -171,29 +174,50 @@ export function Pin(unit: xnew.Unit, { point, toward = () => null, gap = 0, marg
     // content added afterwards moves unit.current onto itself, so the element to place is caught here
     const element = unit.current as HTMLElement;
 
-    let size = { width: 0, height: 0 };   // as a fraction of the box
+    let size = { width: 0, height: 0 };              // the element, as a fraction of the box
+    let map = { x: 0, y: 0, width: 1, height: 1 };   // where `frame` sits in the box, likewise
 
-    // measuring every frame would relayout against the left / top just written; the size is set in cq
-    // units, so it only changes with the content, and the fraction survives a resize of the box
-    unit.on('resize', () => {
+    // measuring every frame would relayout against the left / top just written, once per pin at that; the
+    // element only changes size with its content, and the two rects only with the layout around them
+    function measure(): void {
         const box = element.parentElement;
 
-        if (box !== null && box.clientWidth > 0 && box.clientHeight > 0) {
-            size = { width: element.offsetWidth / box.clientWidth, height: element.offsetHeight / box.clientHeight };
+        if (box === null || box.clientWidth === 0 || box.clientHeight === 0) {
+            return;
         }
-    });
+        size = { width: element.offsetWidth / box.clientWidth, height: element.offsetHeight / box.clientHeight };
 
-    // the spot the bottom edge takes: on the point, or slid along the line to `toward` until it is inside the frame
+        if (frame !== undefined && frame !== box) {
+            const outer = box.getBoundingClientRect();
+            const inner = frame.getBoundingClientRect();
+
+            map = {
+                x: (inner.left - outer.left) / outer.width, y: (inner.top - outer.top) / outer.height,
+                width: inner.width / outer.width, height: inner.height / outer.height,
+            };
+        }
+    }
+    measure();
+
+    unit.on('resize', measure);
+    unit.on('window.resize', measure);   // the box can move without this element changing size
+
+    // the projection is a fraction of `frame`; everything below works in fractions of the box
+    function onBox(at: { x: number, y: number } | null): { x: number, y: number } | null {
+        return at === null ? null : { x: map.x + at.x * map.width, y: map.y + at.y * map.height };
+    }
+
+    // the spot the bottom edge takes: on the point, or slid along the line to `toward` until it is inside the box
     function spot(): { x: number, y: number } | null {
         const anchor = point();
-        const from = anchor === null ? null : project(anchor);
+        const from = anchor === null ? null : onBox(project(anchor));
 
         if (from === null) {
             return null;
         }
 
         const tail = toward();
-        const to = tail === null ? null : project(tail);
+        const to = tail === null ? null : onBox(project(tail));
         const limit = size.height + margin + gap;
         // sliding along the line keeps the element on its object; stopping at the edge would leave it floating
         const drop = to === null || from.y >= limit || to.y <= from.y ? 0 : Math.min(1, (limit - from.y) / (to.y - from.y));

@@ -119,7 +119,8 @@ interface PinProps {
     toward?: () => THREE.Vector3 | null;
     gap?: number;
     margin?: number;
+    frame?: HTMLElement;
 }
-declare function Pin(unit: xnew.Unit, { point, toward, gap, margin }: PinProps): void;
+declare function Pin(unit: xnew.Unit, { point, toward, gap, margin, frame }: PinProps): void;
 
 export { Pin, project, xthree };

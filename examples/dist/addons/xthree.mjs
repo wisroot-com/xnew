@@ -231,7 +231,7 @@ function project(point) {
     const projected = point.clone().project(camera);
     return projected.z > 1 ? null : { x: (projected.x + 1) / 2, y: (1 - projected.y) / 2 };
 }
-function Pin(unit, { point, toward = () => null, gap = 0, margin = 0 }) {
+function Pin(unit, { point, toward = () => null, gap = 0, margin = 0, frame }) {
     const css = xnew.css('base', {
         pin: `
                 position: absolute; left: 0; top: 0;
@@ -243,20 +243,36 @@ function Pin(unit, { point, toward = () => null, gap = 0, margin = 0 }) {
     xnew.nest({ tag: 'div', className: css.pin });
     const element = unit.current;
     let size = { width: 0, height: 0 };
-    unit.on('resize', () => {
+    let map = { x: 0, y: 0, width: 1, height: 1 };
+    function measure() {
         const box = element.parentElement;
-        if (box !== null && box.clientWidth > 0 && box.clientHeight > 0) {
-            size = { width: element.offsetWidth / box.clientWidth, height: element.offsetHeight / box.clientHeight };
+        if (box === null || box.clientWidth === 0 || box.clientHeight === 0) {
+            return;
         }
-    });
+        size = { width: element.offsetWidth / box.clientWidth, height: element.offsetHeight / box.clientHeight };
+        if (frame !== undefined && frame !== box) {
+            const outer = box.getBoundingClientRect();
+            const inner = frame.getBoundingClientRect();
+            map = {
+                x: (inner.left - outer.left) / outer.width, y: (inner.top - outer.top) / outer.height,
+                width: inner.width / outer.width, height: inner.height / outer.height,
+            };
+        }
+    }
+    measure();
+    unit.on('resize', measure);
+    unit.on('window.resize', measure);
+    function onBox(at) {
+        return at === null ? null : { x: map.x + at.x * map.width, y: map.y + at.y * map.height };
+    }
     function spot() {
         const anchor = point();
-        const from = anchor === null ? null : project(anchor);
+        const from = anchor === null ? null : onBox(project(anchor));
         if (from === null) {
             return null;
         }
         const tail = toward();
-        const to = tail === null ? null : project(tail);
+        const to = tail === null ? null : onBox(project(tail));
         const limit = size.height + margin + gap;
         const drop = to === null || from.y >= limit || to.y <= from.y ? 0 : Math.min(1, (limit - from.y) / (to.y - from.y));
         const x = to === null ? from.x : from.x + (to.x - from.x) * drop;
