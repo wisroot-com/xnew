@@ -3,7 +3,7 @@ import { xnew } from '../../../src/core/xnew';
 import { Button } from '../../../src/basics/element/Button';
 import { InputCheckbox, InputSwitch } from '../../../src/basics/element/InputCheckbox';
 import { InputRadio, InputRadioGroup } from '../../../src/basics/element/InputRadio';
-import { Listbox, ListboxButton, ListboxItem, ListboxMenu } from '../../../src/basics/element/Listbox';
+import { Listbox, ListboxButton, ListboxItem, ListboxMenu } from '../../../src/basics/widget/Listbox';
 
 // One tint scale across every element: hover 10%, selected 20%, selected while hovered 30%. The last one
 // is what keeps a selected row distinguishable while the pointer is on it — hover and selected used to

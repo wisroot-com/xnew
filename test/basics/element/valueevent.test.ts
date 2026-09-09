@@ -1,12 +1,12 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
-import { ColorPicker } from '../../../src/basics/element/ColorPicker';
+import { ColorPicker } from '../../../src/basics/widget/ColorPicker';
 import { InputCheckbox, InputSwitch } from '../../../src/basics/element/InputCheckbox';
 import { InputNumber } from '../../../src/basics/element/InputNumber';
 import { InputRadio, InputRadioGroup } from '../../../src/basics/element/InputRadio';
 import { InputRange } from '../../../src/basics/element/InputRange';
 import { InputText } from '../../../src/basics/element/InputText';
-import { Listbox } from '../../../src/basics/element/Listbox';
+import { Listbox } from '../../../src/basics/widget/Listbox';
 
 // A `.value` set announces on the component's LEADING element — the hidden native input where there is
 // one, the container where there is none — which is the same element a user's own interaction fires on.

@@ -1,13 +1,13 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
 import { Button } from '../../../src/basics/element/Button';
-import { ColorPicker } from '../../../src/basics/element/ColorPicker';
+import { ColorPicker } from '../../../src/basics/widget/ColorPicker';
 import { InputCheckbox, InputSwitch } from '../../../src/basics/element/InputCheckbox';
 import { InputNumber } from '../../../src/basics/element/InputNumber';
 import { InputRadio, InputRadioGroup } from '../../../src/basics/element/InputRadio';
 import { InputRange } from '../../../src/basics/element/InputRange';
 import { InputText } from '../../../src/basics/element/InputText';
-import { Listbox } from '../../../src/basics/element/Listbox';
+import { Listbox } from '../../../src/basics/widget/Listbox';
 
 // `disabled` is the one prop that does NOT follow the "others go to the leading element" rule: it also has
 // to reach the outer container, which every component marks with data-disabled and dims through one shared

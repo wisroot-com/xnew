@@ -13,12 +13,12 @@ import { xicons } from '../../icons/xicons';
 import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
 import { InputCheckbox } from '../element/InputCheckbox';
-import { Listbox, ListboxButton, ListboxMenu, ListboxItem, ItemDef, itemDef } from '../element/Listbox';
+import { Listbox, ListboxButton, ListboxMenu, ListboxItem, ItemDef, itemDef } from './Listbox';
 import { Accordion } from './Accordion';
 import { Gate } from './Gate';
 import { ToggleBar } from './ToggleBar';
 import { Overlay } from './Overlay';
-import { ColorPicker } from '../element/ColorPicker';
+import { ColorPicker } from './ColorPicker';
 
 // `key` is only read by group(); the rest are shared by Panel and PanelGroup
 interface PanelOptions { label?: string; open?: boolean; key?: any; }

@@ -6,7 +6,7 @@ import { InputNumber } from '../../../src/basics/element/InputNumber';
 import { InputRadioGroup } from '../../../src/basics/element/InputRadio';
 import { InputRange } from '../../../src/basics/element/InputRange';
 import { InputText } from '../../../src/basics/element/InputText';
-import { Listbox, ListboxButton, ListboxItem, ListboxMenu } from '../../../src/basics/element/Listbox';
+import { Listbox, ListboxButton, ListboxItem, ListboxMenu } from '../../../src/basics/widget/Listbox';
 
 // Every element that carries a frame keeps the same box metrics: vertical-only margin (horizontal spacing
 // is the caller's, through flex gap, so a side margin would double it) and, where the box may stretch, the

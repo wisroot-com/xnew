@@ -9,8 +9,8 @@
 
 import { xnew } from '../../core/xnew';
 import { dispatchCommit, surfaceColor } from '../../utils/dom';
-import { Gate } from '../widget/Gate';
-import { Overlay } from '../widget/Overlay';
+import { Gate } from './Gate';
+import { Overlay } from './Overlay';
 
 //----------------------------------------------------------------------------------------------------
 // Listbox — the fit-to-content host (no frame; ListboxButton draws the trigger)

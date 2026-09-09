@@ -4,7 +4,7 @@ import { Panel, PanelGroup } from '../../../src/basics/widget/Panel';
 import { Button } from '../../../src/basics/element/Button';
 import { InputRange } from '../../../src/basics/element/InputRange';
 import { InputCheckbox } from '../../../src/basics/element/InputCheckbox';
-import { Listbox } from '../../../src/basics/element/Listbox';
+import { Listbox } from '../../../src/basics/widget/Listbox';
 import { Accordion } from '../../../src/basics/widget/Accordion';
 
 describe('basics Panel', () => {

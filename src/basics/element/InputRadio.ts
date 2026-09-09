@@ -6,7 +6,7 @@
 
 import { xnew } from '../../core/xnew';
 import { dispatchCommit } from '../../utils/dom';
-import { ItemDef, itemDef } from './Listbox';
+import { ItemDef, itemDef } from '../widget/Listbox';
 
 //----------------------------------------------------------------------------------------------------
 // InputRadioGroup — the framed segment strip; `.value` is the single read / write path for the pick
