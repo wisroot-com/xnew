@@ -415,6 +415,24 @@ socket.on('statusupdate', xnew.scope((payload) => xnew.emit('-update', payload))
 Append here when a mistake is found. Newest at the top. Keep each terse:
 the rule, then one line of why.
 
+- **A DOM-over-the-scene component (`xbasics.Pin` / `xbasics.Plane` and their `xthree` wrappers) reads the
+  camera on ITS OWN update, and `Unit.update` runs children before the parent's own listeners — so anything
+  that moves the camera or the scene must live in a CHILD unit created BEFORE it, not in a parent's
+  `unit.on('update')` (2026-09).** Otherwise the DOM trails the canvas by one frame, visible as the label /
+  panel sliding against the render while dragging. Same reason `xthree.Plane` calls
+  `target.updateWorldMatrix(true, false)` itself and `three_mog`'s `Model.head` calls `updateWorldMatrix` —
+  the renderer refreshes matrices at `render()`, which is the LAST thing in the frame. (Bit
+  `examples/2_addons/three_html`, whose scene / camera update moved into its own `View` unit.)
+
+- **`xbasics.Plane` is the 3D counterpart of `Pin`: Pin puts DOM ON a projected point (flat, facing the
+  viewer), Plane lays DOM INTO the scene with its orientation (2026-09).** The split is the same — the 3D
+  side (`xthree.Plane`) only does the viewing (`camera.matrixWorldInverse * object.matrixWorld`), the DOM
+  side turns that into CSS. Two things are easy to get wrong there: CSS measures y downward, so the view
+  matrix is conjugated with a y flip (negate row 1 AND column 1 — their crossing `e[5]` twice, so not at
+  all); and the CSS eye distance must be `frameHeight / 2 / tan(fov / 2)`, which is exactly what makes one
+  matrix unit one CSS pixel — size a plane's content against its box (`%` / `cq*`) if it must keep a fixed
+  size in the scene. Unlike Pin, a Plane keeps its pointer events (it carries content to press).
+
 - **Every value-bearing `basics/element` component exposes its state as a `.value` get/set define whose
   type mirrors its own `value` prop — `.input` stays only as an escape hatch to the raw element, and is
   never the write path (2026-09).** Writing through `.input` skips the component's own bookkeeping and

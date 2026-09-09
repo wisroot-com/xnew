@@ -105,6 +105,7 @@ declare const xthree: {
     material: typeof material;
     project: typeof project;
     Pin: typeof Pin;
+    Plane: typeof Plane;
     readonly renderer: any;
     readonly camera: THREE.Camera;
     readonly scene: THREE.Scene;
@@ -120,5 +121,12 @@ interface PinProps {
     frame?: HTMLElement;
 }
 declare function Pin(unit: xnew.Unit, { point, ...others }: PinProps): void;
+interface PlaneProps {
+    object: () => THREE.Object3D | null;
+    frame?: HTMLElement;
+    className?: string;
+    style?: string;
+}
+declare function Plane(unit: xnew.Unit, { object, ...others }: PlaneProps): void;
 
-export { Pin, project, xthree };
+export { Pin, Plane, project, xthree };

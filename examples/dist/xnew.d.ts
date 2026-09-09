@@ -543,6 +543,16 @@ interface PinProps {
 }
 declare function Pin(unit: xnew.Unit, { point, gap, frame }: PinProps): void;
 
+interface PlaneProps {
+    matrix: () => number[] | null;
+    fov: () => number;
+    frame?: HTMLElement;
+    className?: string;
+    style?: string;
+    [key: string]: any;
+}
+declare function Plane(unit: xnew.Unit, { matrix, fov, frame, className, style, ...others }: PlaneProps): void;
+
 declare function VirtualPad(unit: xnew.Unit, { type, className, style }?: {
     type?: 'analog' | '4way' | '8way';
     className?: string;
@@ -627,6 +637,7 @@ declare const xbasics: {
     ToggleBar: typeof ToggleBar;
     Popover: typeof Popover;
     Pin: typeof Pin;
+    Plane: typeof Plane;
     VirtualPad: typeof VirtualPad;
     Panel: typeof Panel;
     PanelGroup: typeof PanelGroup;

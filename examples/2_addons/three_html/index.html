@@ -16,22 +16,16 @@
   <script src="../../thirdparty/tailwindcss/playcdn.js"></script>
   
   <style>
-    .target {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      transform-origin: center;
-    }
-    .target > div {
-      justify-content: center;
-      align-items: center;
+    /* xbasics.Plane が置く板。板の中央が置き場の原点に乗るので、大きさだけ決めればいい */
+    .plane {
       width: 85%;
       max-width: 800px;
-      margin: auto;
+    }
+    .card {
       padding: 10px;
       background: #AAA;
     }
-    .target img {
+    .card img {
       width: 40%;
       float: left;
       margin: 0 10px 10px 0;
@@ -75,59 +69,51 @@
 <body style="margin: 0; height: 100vh; overflow: hidden;">
   <div id="screen" style="position: absolute; width: 100%; height: 100%;"></div>
 
-  <div id="targets" style="width: 100%; height: 100%; perspective: 500px; perspective-origin: center; display: none;">
-    <div class="target">
-      <div>
-        <img src="images/iguana.jpg"/>
-        <b>Marine iguana</b> <a href="https://en.wikipedia.org/wiki/Marine_iguana">wiki</a>
-        <p>
-          The marine iguana (Amblyrhynchus cristatus), also known as the sea iguana, saltwater iguana, or Galápagos marine iguana, is a species of iguana found only on the Galápagos Islands (Ecuador).
-          Unique among modern lizards, it is a marine reptile that has the ability to forage in the sea for algae, which makes up almost all of its diet.
-          Marine iguanas are the only extant lizard that spends time in a marine environment.
-          Large males are able to dive to find this food source, while females and smaller males feed during low tide in the intertidal zone.
-          They mainly live in colonies on rocky shores where they bask after visiting the relatively cold water or intertidal zone, but can also be seen in marshes, mangrove swamps and beaches.
-        </p>
-      </div>
+  <div id="targets" style="position: relative; width: 100%; height: 100%; display: none;">
+    <div class="card">
+      <img src="images/iguana.jpg"/>
+      <b>Marine iguana</b> <a href="https://en.wikipedia.org/wiki/Marine_iguana">wiki</a>
+      <p>
+        The marine iguana (Amblyrhynchus cristatus), also known as the sea iguana, saltwater iguana, or Galápagos marine iguana, is a species of iguana found only on the Galápagos Islands (Ecuador).
+        Unique among modern lizards, it is a marine reptile that has the ability to forage in the sea for algae, which makes up almost all of its diet.
+        Marine iguanas are the only extant lizard that spends time in a marine environment.
+        Large males are able to dive to find this food source, while females and smaller males feed during low tide in the intertidal zone.
+        They mainly live in colonies on rocky shores where they bask after visiting the relatively cold water or intertidal zone, but can also be seen in marshes, mangrove swamps and beaches.
+      </p>
     </div>
-    <div class="target">
-      <div>
-        <img src="images/penguin.jpg"/>
-        <b>Galapagos penguin</b> <a href="https://en.wikipedia.org/wiki/Galapagos_penguin">wiki</a>
-        <p>
-          The Galápagos penguin (Spheniscus mendiculus) is a penguin endemic to the Galápagos Islands of Ecuador.
-          It is the only penguin found north of the equator.
-          Most inhabit Fernandina Island and the west coast of Isabela Island.
-          The cool waters of the Humboldt and Cromwell Currents allow it to survive despite the tropical latitude.
-          The Galápagos penguin is one of the banded penguins, the other species of which live mostly on the coasts of Africa and mainland South America. Due to their warm environment, Galápagos penguins have developed techniques to stay cool.
-          The feathers on their back, flippers, and head are black, and they have a white belly and a stripe looping from their eyes down to their neck and chin.
-        </p>
-      </div>
+    <div class="card">
+      <img src="images/penguin.jpg"/>
+      <b>Galapagos penguin</b> <a href="https://en.wikipedia.org/wiki/Galapagos_penguin">wiki</a>
+      <p>
+        The Galápagos penguin (Spheniscus mendiculus) is a penguin endemic to the Galápagos Islands of Ecuador.
+        It is the only penguin found north of the equator.
+        Most inhabit Fernandina Island and the west coast of Isabela Island.
+        The cool waters of the Humboldt and Cromwell Currents allow it to survive despite the tropical latitude.
+        The Galápagos penguin is one of the banded penguins, the other species of which live mostly on the coasts of Africa and mainland South America. Due to their warm environment, Galápagos penguins have developed techniques to stay cool.
+        The feathers on their back, flippers, and head are black, and they have a white belly and a stripe looping from their eyes down to their neck and chin.
+      </p>
     </div>
-    <div class="target">
-        <div>
-        <img src="images/booby.jpg"/>
-        <b>Blue-footed booby</b> <a href="https://en.wikipedia.org/wiki/Blue-footed_booby">wiki</a>
-        <p>
-          The blue-footed booby (Sula nebouxii) is a marine bird native to subtropical and tropical regions of the eastern Pacific Ocean.
-          It is one of six species of the genus Sula – known as boobies. It is easily recognizable by its distinctive bright blue feet, which is a sexually selected trait and a product of their diet.
-          Males display their feet in an elaborate mating ritual by lifting them up and down while strutting before the female. The female is slightly larger than the male and can measure up to 90 cm (35 in) long with a wingspan up to 1.5 m (5 ft).
-          The natural breeding habitats of the blue-footed booby are the tropical and subtropical islands of the Pacific Ocean.
-          It can be found from the Gulf of California south along the western coasts of Central and South America to Peru. About half of all breeding pairs nest on the Galápagos Islands.
-          Its diet mainly consists of fish, which it obtains by diving and sometimes swimming underwater in search of its prey. It sometimes hunts alone, but usually hunts in groups.
-        </p>
-      </div>
+    <div class="card">
+      <img src="images/booby.jpg"/>
+      <b>Blue-footed booby</b> <a href="https://en.wikipedia.org/wiki/Blue-footed_booby">wiki</a>
+      <p>
+        The blue-footed booby (Sula nebouxii) is a marine bird native to subtropical and tropical regions of the eastern Pacific Ocean.
+        It is one of six species of the genus Sula – known as boobies. It is easily recognizable by its distinctive bright blue feet, which is a sexually selected trait and a product of their diet.
+        Males display their feet in an elaborate mating ritual by lifting them up and down while strutting before the female. The female is slightly larger than the male and can measure up to 90 cm (35 in) long with a wingspan up to 1.5 m (5 ft).
+        The natural breeding habitats of the blue-footed booby are the tropical and subtropical islands of the Pacific Ocean.
+        It can be found from the Gulf of California south along the western coasts of Central and South America to Peru. About half of all breeding pairs nest on the Galápagos Islands.
+        Its diet mainly consists of fish, which it obtains by diving and sometimes swimming underwater in search of its prey. It sometimes hunts alone, but usually hunts in groups.
+      </p>
     </div>
-    <div class="target">
-      <div>
-        <img src="images/tortoise.jpg"/>
-        <b>Giant tortoise</b> <a href="https://en.wikipedia.org/wiki/Giant_tortoise">wiki</a>
-        <p>
-          Giant tortoises are any of several species of various large land tortoises, which include a number of extinct species,
-          as well as two extant species with multiple subspecies formerly common on the islands of the western Indian Ocean and on the Galápagos Islands.
-          As of February 2024, two different species of giant tortoise are found on two remote groups of tropical islands: Aldabra Atoll and Fregate Island in the Seychelles and the Galápagos Islands in Ecuador.
-          These tortoises can weigh as much as 417 kg (919 lb) and can grow to be 1.3 m (4 ft 3 in) long. Giant tortoises originally made their way to islands from the mainland via oceanic dispersal. Tortoises are aided in such dispersal by their ability to float with their heads up and to survive for up to six months without food or fresh water.
-        </p>
-      </div>
+    <div class="card">
+      <img src="images/tortoise.jpg"/>
+      <b>Giant tortoise</b> <a href="https://en.wikipedia.org/wiki/Giant_tortoise">wiki</a>
+      <p>
+        Giant tortoises are any of several species of various large land tortoises, which include a number of extinct species,
+        as well as two extant species with multiple subspecies formerly common on the islands of the western Indian Ocean and on the Galápagos Islands.
+        As of February 2024, two different species of giant tortoise are found on two remote groups of tropical islands: Aldabra Atoll and Fregate Island in the Seychelles and the Galápagos Islands in Ecuador.
+        These tortoises can weigh as much as 417 kg (919 lb) and can grow to be 1.3 m (4 ft 3 in) long. Giant tortoises originally made their way to islands from the mainland via oceanic dispersal. Tortoises are aided in such dispersal by their ability to float with their heads up and to survive for up to six months without food or fresh water.
+      </p>
     </div>
   </div>
 

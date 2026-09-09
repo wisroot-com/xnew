@@ -8,25 +8,66 @@ const transform = { rx: 0, ry: 0, rz: 0, tx: 0, ty: 0, tz: 0 };
 const state = { id: 0, moving: false };
 
 xnew(Main);
-  
+
 function Main(unit) {
-  xnew(HtmlMain);
   xnew(document.querySelector('#screen'), ThreeMain);
   xnew(Event);
 }
 
-function HtmlMain(unit) {
-  const targets = xnew(document.querySelector('#targets'));
-  targets.current.style.display = 'block';
+function ThreeMain(unit) {
+  const [width, height] = [1200, 800];
+  xnew.extend(xbasics.Screen, { width, height, fit: 'cover' });
 
-  document.querySelectorAll('.target').forEach((element, index) => {
-    xnew(element, Plane, { id: index });
+  xthree.init({ canvas: unit.canvas });
+
+  // 部屋の壁までの距離を perspective に合わせておくと、Plane が出す視点までの距離もちょうど perspective になる
+  unit.on('resize', () => {
+    xthree.camera.fov = Math.atan2(unit.current.getBoundingClientRect().height / 2, perspective) * 2 * 180 / Math.PI;
+    xthree.camera.updateProjectionMatrix();
+  });
+
+  xnew.promise(unit).then(() => {
+    unit.on('update', () => {
+      xthree.renderer.render(xthree.scene, xthree.camera);
+    });
+
+    // 板は自分より前に更新された値を見るので、視点を動かす View を板より先の子にしておく
+    xnew(View);
+    xnew(ThreeContents);
+    xnew(HtmlCards);
   });
 }
 
-function Plane(unit, { id }) {
+function View(unit) {
+  unit.on('update', () => {
+    xthree.scene.rotation.x = -(transform.rx + offset.rx) * Math.PI / 180;
+    xthree.scene.rotation.y = +(transform.ry + offset.ry) * Math.PI / 180;
+    xthree.camera.position.x = -(transform.tx + offset.tx);
+    xthree.camera.position.y = +(transform.ty + offset.ty);
+  });
+}
+
+// 板を置く箱は canvas の箱ではない（Screen の fit が cover で canvas が画面からはみ出す）ので、枠として canvas を渡す
+function HtmlCards(unit) {
+  const targets = xnew(document.querySelector('#targets'));
+  targets.current.style.display = 'block';
+
+  targets.current.querySelectorAll('.card').forEach((element, index) => {
+    xnew(targets, Card, { element, id: index });
+  });
+}
+
+function Card(unit, { element, id }) {
+  // 板の置き場。壁ごとに 90 度ずつ回して、部屋の中心から壁まで離す
+  const object = xthree.add(new THREE.Object3D());
+  object.rotation.y = id * Math.PI / 2;
+  object.translateZ(-perspective);
+
+  xnew.extend(xthree.Plane, { object: () => object, frame: xthree.canvas, className: 'plane' });
+  unit.current.appendChild(element);
+
   let opacity = id === state.id ? 0.80 : 0.20;
-  unit.on('+planefade', () => {
+  unit.on('+cardfade', () => {
     xnew.transition(({ value }) => {
       opacity = id === state.id ? Math.max(opacity, 0.20 + value * 0.60) : Math.min(opacity, 0.80 - value * 0.60);
     }, 700);
@@ -34,12 +75,6 @@ function Plane(unit, { id }) {
 
   unit.on('update', () => {
     unit.current.style.opacity = opacity;
-    unit.current.style.transform = `
-          translateZ(${perspective}px) 
-          translateX(${(transform.tx + offset.tx)}px) translateY(${(transform.ty + offset.ty)}px)
-          rotateX(${transform.rx + offset.rx}deg) rotateY(${transform.ry + offset.ry + id * 90}deg) 
-          translateZ(${-perspective}px)
-        `;
   });
 }
 
@@ -59,7 +94,7 @@ function Event(unit) {
           transform.ty = backup.ty * (1.0 - p);
           if (value === 1.0) state.moving = false;
         }, 700);
-        xnew.emit('+planefade');
+        xnew.emit('+cardfade');
       }
     });
   }
@@ -68,32 +103,6 @@ function Event(unit) {
     event.preventDefault();
     transform.ty = Math.max(-300, Math.min(+300, transform.ty + delta.y * 0.2));
   }, { passive: false });
-}
-
-function ThreeMain(unit) {
-  const [width, height] = [1200, 800];
-  xnew.extend(xbasics.Screen, { width, height, fit: 'cover' });
-
-  xthree.init({ canvas: unit.canvas });
-
-  unit.on('resize', () => {
-    xthree.camera.fov = Math.atan2(unit.current.getBoundingClientRect().height / 2, perspective) * 2 * 180 / Math.PI;
-    xthree.camera.updateProjectionMatrix();
-  });
-
-  xnew.promise(unit).then(() => {
-    unit.on('update', () => {
-      xthree.renderer.render(xthree.scene, xthree.camera);
-    });
-
-    xnew(ThreeContents);
-    unit.on('update', () => {
-      xthree.scene.rotation.x = -(transform.rx + offset.rx) * Math.PI / 180;
-      xthree.scene.rotation.y = +(transform.ry + offset.ry) * Math.PI / 180;
-      xthree.camera.position.x = -(transform.tx + offset.tx);
-      xthree.camera.position.y = +(transform.ty + offset.ty);
-    });
-  });
 }
 
 function ThreeContents(unit) {

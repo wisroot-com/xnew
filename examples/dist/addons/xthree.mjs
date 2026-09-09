@@ -172,6 +172,7 @@ const xthree = {
     material,
     project,
     Pin,
+    Plane,
     get renderer() {
         var _a;
         return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.renderer;
@@ -239,5 +240,23 @@ function Pin(unit, _a) {
     }
     xnew.extend(xbasics.Pin, Object.assign({ point: projected }, others));
 }
+function Plane(unit, _a) {
+    var { object } = _a, others = __rest(_a, ["object"]);
+    function camera() {
+        var _a;
+        return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.camera;
+    }
+    function matrix() {
+        const target = object();
+        if (target === null) {
+            return null;
+        }
+        const view = camera();
+        view.updateMatrixWorld();
+        target.updateWorldMatrix(true, false);
+        return new THREE.Matrix4().multiplyMatrices(view.matrixWorldInverse, target.matrixWorld).elements;
+    }
+    xnew.extend(xbasics.Plane, Object.assign({ matrix, fov: () => camera().fov }, others));
+}
 
-export { Pin, project, xthree };
+export { Pin, Plane, project, xthree };

@@ -3134,6 +3134,50 @@ function Pin(unit, { point, gap = 0, frame }) {
     unit.on('update', follow);
 }
 
+const FLIP = [1, -1, 1, 1, -1, 1, -1, -1, 1, -1, 1, 1, 1, -1, 1, 1];
+function fixed(value) {
+    return value.toFixed(6);
+}
+function Plane(unit, _a) {
+    var { matrix, fov, frame, className = '', style = '' } = _a, others = __rest(_a, ["matrix", "fov", "frame", "className", "style"]);
+    const css = xnew.css('base', {
+        plane: `
+                position: absolute; left: 0; top: 0;
+                transform-origin: 0 0;
+                user-select: none;
+            `,
+    });
+    xnew.nest(Object.assign({ tag: 'div', className: `${css.plane} ${className}`, style }, others));
+    const element = unit.current;
+    let height = 0;
+    function measure() {
+        const box = element.parentElement;
+        if (box === null || box.clientWidth === 0 || box.clientHeight === 0) {
+            return;
+        }
+        const outer = box.getBoundingClientRect();
+        const inner = frame !== undefined && frame !== box ? frame.getBoundingClientRect() : outer;
+        height = inner.height;
+        element.style.left = `${(((inner.left + inner.width / 2) - outer.left) / outer.width * 100).toFixed(3)}%`;
+        element.style.top = `${(((inner.top + inner.height / 2) - outer.top) / outer.height * 100).toFixed(3)}%`;
+    }
+    measure();
+    unit.on('resize', measure);
+    unit.on('window.resize', measure);
+    function place() {
+        const view = matrix();
+        const eye = height / 2 / Math.tan(fov() * Math.PI / 360);
+        const placeable = view !== null && view[14] < 0 && eye > 0 && Number.isFinite(eye);
+        element.style.visibility = placeable ? 'visible' : 'hidden';
+        if (placeable) {
+            const css = view.map((value, index) => fixed(value * FLIP[index])).join(',');
+            element.style.transform = `perspective(${fixed(eye)}px) translateZ(${fixed(eye)}px) matrix3d(${css}) translate(-50%, -50%)`;
+        }
+    }
+    place();
+    unit.on('update', place);
+}
+
 function VirtualPad(unit, { type = 'analog', className = '', style = '' } = {}) {
     const css = xnew.css('base', {
         container: `
@@ -3881,6 +3925,7 @@ const xbasics = {
     ToggleBar,
     Popover,
     Pin,
+    Plane,
     VirtualPad,
     Panel,
     PanelGroup,
