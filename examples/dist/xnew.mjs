@@ -2540,23 +2540,15 @@ function Listbox(unit, _a = {}) {
     const container = xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined }, others));
     const first = items[0];
     let selected = value !== null && value !== void 0 ? value : (first === undefined ? '' : typeof first === 'object' ? first.value : first);
-    const rows = [];
-    const labels = [];
     const gate = xnew(Gate, { open: false, duration: 200, easing: 'ease' });
-    function text(value) {
-        var _a, _b;
-        return (_b = (_a = rows.find((row) => row.value === value)) === null || _a === void 0 ? void 0 : _a.label) !== null && _b !== void 0 ? _b : value;
+    function rows() {
+        return xnew.find(ListboxItem, { ancestor: unit });
     }
     function apply(value) {
         selected = value;
-        for (const label of labels) {
-            label.current.textContent = text(selected);
-        }
-        for (const row of rows) {
-            row.check(row.value === selected);
-        }
+        xnew.emit('-select', { value });
     }
-    xnew.timeout(() => apply(selected === '' && rows.length > 0 ? rows[0].value : selected));
+    xnew.timeout(() => { var _a, _b; return apply(selected === '' ? (_b = (_a = rows()[0]) === null || _a === void 0 ? void 0 : _a.value) !== null && _b !== void 0 ? _b : '' : selected); });
     xnew.standalone(() => {
         xnew(() => {
             xnew.extend(ListboxButton);
@@ -2578,17 +2570,11 @@ function Listbox(unit, _a = {}) {
             dispatchCommit(container, value);
             gate.close();
         },
+        get items() {
+            return rows().map((row) => ({ value: row.value, label: row.label }));
+        },
         get gate() {
             return gate;
-        },
-        register(row) {
-            rows.push(row);
-            row.on('destroy', () => rows.splice(rows.indexOf(row), 1));
-        },
-        bind(label) {
-            labels.push(label);
-            label.on('destroy', () => labels.splice(labels.indexOf(label), 1));
-            label.current.textContent = text(selected);
         },
     };
 }
@@ -2622,7 +2608,12 @@ function ListboxButton(unit, _a = {}) {
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
     const label = xnew({ tag: 'div', className: css.label });
-    listbox.bind(label);
+    function write() {
+        var _a, _b;
+        label.current.textContent = (_b = (_a = listbox.items.find((item) => item.value === listbox.value)) === null || _a === void 0 ? void 0 : _a.label) !== null && _b !== void 0 ? _b : listbox.value;
+    }
+    write();
+    listbox.on('-select', write);
     unit.on('click', ({ event }) => {
         event.stopPropagation();
         listbox.gate.toggle();
@@ -2654,7 +2645,6 @@ function ListboxMenu(unit, _a = {}) {
 function ListboxItem(unit, _a = {}) {
     var { value = '', label, className = '', style = '' } = _a, others = __rest(_a, ["value", "label", "className", "style"]);
     const listbox = xnew.context(Listbox);
-    listbox.register(unit);
     const css = xnew.css('base', {
         container: `
             height: 2em; padding: 0 0.5em;
@@ -2667,6 +2657,11 @@ function ListboxItem(unit, _a = {}) {
         `,
     });
     xnew.nest(Object.assign({ tag: 'div', className: `${css.container} ${className}`, style }, others));
+    function paint() {
+        unit.current.toggleAttribute('data-checked', listbox.value === value);
+    }
+    paint();
+    listbox.on('-select', paint);
     unit.on('click', ({ event }) => {
         event.stopPropagation();
         listbox.value = value;
@@ -2680,9 +2675,6 @@ function ListboxItem(unit, _a = {}) {
         },
         get label() {
             return label;
-        },
-        check(current) {
-            unit.current.toggleAttribute('data-checked', current);
         },
     };
 }

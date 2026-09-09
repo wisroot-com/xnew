@@ -392,6 +392,24 @@ describe('basics Listbox', () => {
         expect((trigger.firstElementChild as HTMLElement).textContent).toBe('ばなな');
     });
 
+    // `.items` is what a trigger reads to render: the rows as data, composed ones included
+    it('reports the rows as .items, carrying the label a trigger renders', () => {
+        let box!: xnew.Unit;
+        xnew(() => {
+            box = xnew(() => {
+                xnew.extend(Listbox, { value: 'a' });
+                xnew(() => {
+                    xnew.extend(ListboxMenu);
+                    xnew(ListboxItem, { value: 'a', label: 'Apple' });
+                    xnew(ListboxItem, { value: 'b' });
+                });
+            });
+        });
+        jest.advanceTimersByTime(0);
+
+        expect(box.items).toEqual([{ value: 'a', label: 'Apple' }, { value: 'b', label: undefined }]);
+    });
+
     it('leaves the default UI out when the caller composes its own parts', () => {
         const { box } = build({}, ['low', 'mid']);
         jest.advanceTimersByTime(0);
@@ -419,8 +437,8 @@ describe('basics Listbox', () => {
         expect(isOpen(button)).toBe(true);
     });
 
-    // rows / labels are held in registries, so a part that goes away must drop out of them
-    it('drops a destroyed row from the registry, leaving later writes untouched by it', () => {
+    // the host reads its rows off the live unit tree, so a part that goes away simply stops being found
+    it('stops counting a destroyed row, leaving later writes untouched by it', () => {
         let rows!: xnew.Unit[];
         let box!: xnew.Unit;
         xnew(() => {
@@ -442,7 +460,7 @@ describe('basics Listbox', () => {
         expect(survivor.hasAttribute('data-checked')).toBe(true);
     });
 
-    it('drops a destroyed trigger label from the registry, leaving later writes untouched by it', () => {
+    it('stops writing to a destroyed trigger label, leaving later writes untouched by it', () => {
         const { box, button } = build({ value: 'a' }, ['a', 'b']);
         jest.advanceTimersByTime(0);
 

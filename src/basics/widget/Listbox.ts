@@ -1,10 +1,7 @@
 //----------------------------------------------------------------------------------------------------
-// Listbox — a styleable select: Listbox (state + fit-to-content host) + ListboxButton (framed trigger + label) + ListboxMenu (floating list) + ListboxItem (row)
-// The native <select> popup can't be styled, so selection is held in JS (no native control at all).
-// Standalone, `xnew(Listbox, { items })` draws the whole control; a trailing compose fn replaces that
-// default with hand-built parts (xnew.standalone gate). `.value` is the single read / write path — a row press
-// and a host assignment both go through its setter, which fires the native `input` + `change` pair
-// (a selection settles at once, as on a native <select>) and closes the menu.
+// Listbox — a styleable select: Listbox (state) + ListboxButton (trigger) + ListboxMenu (list) + ListboxItem (row)
+// The host owns one state, `selected`; the parts own none — they read the rows off the unit tree and repaint on '-select'.
+// Standalone it draws the whole control from `items`; composed, the caller nests its own parts instead.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
@@ -15,7 +12,6 @@ import { Overlay } from './Overlay';
 
 //----------------------------------------------------------------------------------------------------
 // Listbox — the fit-to-content host (no frame; ListboxButton draws the trigger)
-// Standalone it builds the default trigger + option list out of `items`; composed, the caller nests its own.
 //----------------------------------------------------------------------------------------------------
 
 export function Listbox(unit: xnew.Unit,
@@ -33,39 +29,28 @@ export function Listbox(unit: xnew.Unit,
 
     const container = xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined, ...others }) as HTMLElement;
 
-    // `items` is known right here, so the default lands synchronously and `.value` reads true from tick 0;
-    // the composed path (the caller builds the rows) has none, and falls back to the deferred adoption below
+    // the one state; with `items` in hand the pick lands synchronously, so `.value` reads true from tick 0
     const first = items[0];
     let selected = value ?? (first === undefined ? '' : typeof first === 'object' ? first.value : first);
 
-    const rows: xnew.Unit[] = [];
-    const labels: xnew.Unit[] = [];
-
-    // the menu's Gate is owned here, never injected: the button toggles it and the setter closes it, so its closed start
-    // and its timing are both fixed — a popup opens at one speed, so callers get no knob to detune it
+    // the menu's Gate is owned here, never injected: a popup opens at one fixed speed, so callers get no knob to detune it
     const gate = xnew(Gate, { open: false, duration: 200, easing: 'ease' });
 
-    // the trigger shows the selected row's label, falling back to the value itself when it has none
-    function text(value: string): string {
-        return rows.find((row) => row.value === value)?.label ?? value;
+    // read off the live unit tree rather than a registry, so nothing has to register and a destroyed row cannot linger
+    function rows(): xnew.Unit[] {
+        return xnew.find(ListboxItem, { ancestor: unit });
     }
 
+    // '-select' is the internal repaint signal, separate from the public input / change pair that marks a commit
     function apply(value: string) {
         selected = value;
-        for (const label of labels) {
-            label.current.textContent = text(selected);
-        }
-        for (const row of rows) {
-            row.check(row.value === selected);
-        }
+        xnew.emit('-select', { value });
     }
 
-    // once every row has registered, adopt the first as the default when none was given, and sync checked state either way
-    xnew.timeout(() => apply(selected === '' && rows.length > 0 ? rows[0].value : selected));
+    // once the rows exist, adopt the first as the default when none was given, and repaint either way
+    xnew.timeout(() => apply(selected === '' ? rows()[0]?.value ?? '' : selected));
 
-    // default trigger + option list, drawn only when standalone so a caller can compose its own instead;
-    // xnew.standalone runs it after the defines below are on the unit, which is what lets the parts
-    // reach `.gate` / `.register` / `.bind` from their own bodies
+    // the default UI; xnew.standalone runs it after the defines land, which is what lets the parts read them
     xnew.standalone(() => {
         xnew(() => {
             xnew.extend(ListboxButton);
@@ -84,31 +69,23 @@ export function Listbox(unit: xnew.Unit,
             return selected;
         },
         // the one write path: a row press and a host assignment are the same act, so both announce and close
-        // (the deferred default adoption above calls `apply` directly, so it stays silent)
         set value(value: string) {
             apply(value);
             dispatchCommit(container, value);
             gate.close();
         },
+        // the options as data, read off the rows, so a composed menu describes itself exactly as a standalone one does
+        get items(): { value: string, label?: string }[] {
+            return rows().map((row) => ({ value: row.value, label: row.label }));
+        },
         get gate() {
             return gate;
-        },
-        // both registries drop their entry when the part is destroyed, so a rebuilt menu leaves no stale unit behind
-        register(row: xnew.Unit) {
-            rows.push(row);
-            row.on('destroy', () => rows.splice(rows.indexOf(row), 1));
-        },
-        bind(label: xnew.Unit) {
-            labels.push(label);
-            label.on('destroy', () => labels.splice(labels.indexOf(label), 1));
-            label.current.textContent = text(selected);
         },
     };
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListboxChevron — the default trigger marker drawn beside the label when the Listbox builds its own UI
-// (a local svg rather than xicons, so using a Listbox never drags the whole icon table into a bundle)
+// ListboxChevron — the default trigger marker; a local svg, so a Listbox never drags the icon table into a bundle
 //----------------------------------------------------------------------------------------------------
 
 function ListboxChevron() {
@@ -124,7 +101,7 @@ function ListboxChevron() {
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListboxButton — the framed trigger: draws the border / label, toggles the Listbox gate on click (compose extra content with a trailing function)
+// ListboxButton — the framed trigger: draws the border / label and toggles the Listbox gate on click
 //----------------------------------------------------------------------------------------------------
 
 export function ListboxButton(unit: xnew.Unit,
@@ -151,7 +128,13 @@ export function ListboxButton(unit: xnew.Unit,
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
     const label = xnew({ tag: 'div', className: css.label });
-    listbox.bind(label);
+
+    // the trigger resolves its own text from the host's options, so the host keeps no list of labels to push into
+    function write() {
+        label.current.textContent = listbox.items.find((item: { value: string }) => item.value === listbox.value)?.label ?? listbox.value;
+    }
+    write();
+    listbox.on('-select', write);
 
     // stop the opening click from bubbling to the document, or ListboxMenu's click.outside would self-close it
     unit.on('click', ({ event }: { event: PointerEvent }) => {
@@ -163,7 +146,7 @@ export function ListboxButton(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListboxMenu — the floating option list, built on Overlay and riding the Gate the Listbox owns (`listbox.gate`)
+// ListboxMenu — the floating option list, built on Overlay and riding the Gate the Listbox owns
 //----------------------------------------------------------------------------------------------------
 
 export function ListboxMenu(unit: xnew.Unit,
@@ -185,7 +168,7 @@ export function ListboxMenu(unit: xnew.Unit,
 
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others }) as HTMLElement;
 
-    // one outside-press closer for the whole list, registered right after nesting the menu so the opening press can't self-close it
+    // registered right after nesting the menu, so the press that opened it cannot self-close it
     unit.on('click.outside', () => {
         const state = listbox.gate.state;
         if (state === 'opened' || state === 'opening') {
@@ -198,7 +181,7 @@ export function ListboxMenu(unit: xnew.Unit,
 }
 
 //----------------------------------------------------------------------------------------------------
-// ListboxItem — one option row of a Listbox; a trailing text / function supplies the row content, empty falls back to `label` / the value
+// ListboxItem — one option row; a trailing text / function supplies its content, empty falls back to `label` / the value
 //----------------------------------------------------------------------------------------------------
 
 export function ListboxItem(unit: xnew.Unit,
@@ -206,7 +189,6 @@ export function ListboxItem(unit: xnew.Unit,
     { value?: string, label?: string, className?: string, style?: string, [key: string]: any } = {}
 ) {
     const listbox = xnew.context(Listbox);
-    listbox.register(unit);
 
     const css = xnew.css('base', {
         container: `
@@ -221,11 +203,19 @@ export function ListboxItem(unit: xnew.Unit,
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, ...others });
 
+    // each row tints itself off the host's pick, so the host needs no registry of rows to push state into
+    function paint() {
+        unit.current.toggleAttribute('data-checked', listbox.value === value);
+    }
+    paint();
+    listbox.on('-select', paint);
+
     unit.on('click', ({ event }: { event: PointerEvent }) => {
         event.stopPropagation();
         listbox.value = value;
     });
-    // fall back to the label (or the value) as text when the row is used standalone (no content composed into it)
+
+    // fall back to the label (or the value) as text when nothing is composed into the row
     xnew.standalone(() => {
         unit.current.textContent = label ?? value;
     });
@@ -236,9 +226,6 @@ export function ListboxItem(unit: xnew.Unit,
         },
         get label() {
             return label;
-        },
-        check(current: boolean) {
-            unit.current.toggleAttribute('data-checked', current);
         },
     };
 }

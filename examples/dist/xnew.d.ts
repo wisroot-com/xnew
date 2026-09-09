@@ -439,9 +439,11 @@ declare function Listbox(unit: xnew.Unit, { value, items, disabled, className, s
     [key: string]: any;
 }): {
     value: string;
+    readonly items: {
+        value: string;
+        label?: string;
+    }[];
     readonly gate: Unit;
-    register(row: xnew.Unit): void;
-    bind(label: xnew.Unit): void;
 };
 declare function ListboxButton(unit: xnew.Unit, { className, style, ...others }?: {
     className?: string;
@@ -462,7 +464,6 @@ declare function ListboxItem(unit: xnew.Unit, { value, label, className, style, 
 }): {
     readonly value: string;
     readonly label: string | undefined;
-    check(current: boolean): void;
 };
 
 declare function ColorPicker(unit: xnew.Unit, { value, alpha, disabled, className, style, ...others }?: {
