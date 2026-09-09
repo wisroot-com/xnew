@@ -380,9 +380,7 @@ declare function InputText(unit: xnew.Unit, { value, disabled, className, style,
     [key: string]: any;
 }): {
     value: string;
-    readonly input: HTMLInputElement;
 };
-
 declare function InputNumber(unit: xnew.Unit, { value, disabled, className, style, ...others }?: {
     value?: number;
     disabled?: boolean;
@@ -391,7 +389,6 @@ declare function InputNumber(unit: xnew.Unit, { value, disabled, className, styl
     [key: string]: any;
 }): {
     value: number;
-    readonly input: HTMLInputElement;
 };
 
 type ItemDef<T = string> = T | {

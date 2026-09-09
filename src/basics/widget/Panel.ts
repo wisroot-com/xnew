@@ -12,7 +12,7 @@ import { dispatchChange, dispatchCommit, dispatchInput } from '../../utils/dom';
 import { xicons } from '../../icons/xicons';
 import { Button } from '../element/Button';
 import { InputRange } from '../element/InputRange';
-import { InputCheckbox } from '../element/InputCheckbox';
+import { InputCheckbox } from '../element/InputToggle';
 import { Listbox, ListboxButton, ListboxMenu, ListboxItem } from './Listbox';
 import { Accordion } from './Accordion';
 import { Gate } from './Gate';

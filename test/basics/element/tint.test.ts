@@ -1,7 +1,7 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
 import { Button } from '../../../src/basics/element/Button';
-import { InputCheckbox, InputSwitch } from '../../../src/basics/element/InputCheckbox';
+import { InputCheckbox, InputSwitch } from '../../../src/basics/element/InputToggle';
 import { InputRadio, InputRadioGroup } from '../../../src/basics/element/InputRadio';
 import { Listbox, ListboxButton, ListboxItem, ListboxMenu } from '../../../src/basics/widget/Listbox';
 

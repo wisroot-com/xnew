@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
-import { InputNumber } from '../../../src/basics/element/InputNumber';
+import { InputNumber, InputText } from '../../../src/basics/element/InputField';
 
 describe('basics InputNumber', () => {
     beforeEach(() => {
@@ -143,5 +143,26 @@ describe('basics InputNumber', () => {
 
         expect(container.className).toContain('boxed');
         expect(container.getAttribute('style')).toContain('width: 4em;');
+    });
+
+    // the shared Field core applies the number chrome off `type`, so only a number field carries it
+    it('drops the native spinner and centres the digits, leaving a text field bare', () => {
+        const number = xnew(InputNumber, {});
+        const text = xnew(InputText, {});
+        const styleText = [...document.head.querySelectorAll('style')].map((style) => style.textContent).join('\n');
+
+        // the head of each class rule the input carries; nested rules follow, so stopping at the first brace is enough
+        function inputRules(unit: xnew.Unit): string {
+            const input = (unit.current as HTMLElement).querySelector('input') as HTMLInputElement;
+            return [...input.classList].map((name) => {
+                const start = styleText.indexOf('.' + name + ' {');
+                return start < 0 ? '' : styleText.slice(start, styleText.indexOf('}', start));
+            }).join('\n');
+        }
+
+        expect(inputRules(number)).toContain('appearance: textfield');
+        expect(inputRules(number)).toContain('text-align: center');
+        expect(inputRules(text)).not.toContain('appearance: textfield');
+        expect(inputRules(text)).not.toContain('text-align: center');
     });
 });

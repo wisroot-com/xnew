@@ -1,11 +1,10 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
 import { Button } from '../../../src/basics/element/Button';
-import { InputCheckbox, InputSwitch } from '../../../src/basics/element/InputCheckbox';
-import { InputNumber } from '../../../src/basics/element/InputNumber';
+import { InputCheckbox, InputSwitch } from '../../../src/basics/element/InputToggle';
+import { InputNumber, InputText } from '../../../src/basics/element/InputField';
 import { InputRadioGroup } from '../../../src/basics/element/InputRadio';
 import { InputRange } from '../../../src/basics/element/InputRange';
-import { InputText } from '../../../src/basics/element/InputText';
 import { Listbox, ListboxButton, ListboxItem, ListboxMenu } from '../../../src/basics/widget/Listbox';
 
 // Every element that carries a frame keeps the same box metrics: vertical-only margin (horizontal spacing

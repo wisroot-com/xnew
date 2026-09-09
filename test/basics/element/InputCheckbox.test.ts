@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
-import { InputCheckbox } from '../../../src/basics/element/InputCheckbox';
+import { InputCheckbox } from '../../../src/basics/element/InputToggle';
 
 describe('basics InputCheckbox', () => {
     beforeEach(() => {

@@ -2250,8 +2250,8 @@ function Knob() {
     xnew.nest({ tag: 'div', className: css.container });
 }
 
-function InputText(unit, _a = {}) {
-    var { value, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
+function Field(unit, _a) {
+    var { type, value, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["type", "value", "disabled", "className", "style"]);
     const css = xnew.css('base', {
         container: `
             display: inline-flex; align-items: center;
@@ -2270,65 +2270,47 @@ function InputText(unit, _a = {}) {
             background: transparent; color: inherit; font: inherit;
             border: none; outline: none;
         `,
-    });
-    xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
-    const input = xnew(Object.assign({ tag: 'input', type: 'text', value, disabled, className: css.input }, others));
-    unit.on('click', () => input.current.focus());
-    return {
-        get value() {
-            return input.current.value;
-        },
-        set value(text) {
-            const element = input.current;
-            element.value = text;
-            dispatchCommit(element, text);
-        },
-        get input() {
-            return input.current;
-        },
-    };
-}
-
-function InputNumber(unit, _a = {}) {
-    var { value, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
-    const css = xnew.css('base', {
-        container: `
-            display: inline-flex; align-items: center;
-            box-sizing: border-box;
-            width: 10em; max-width: -webkit-fill-available; max-width: -moz-available; max-width: stretch; height: 1.8em;
-            margin: 0.125em 0; padding: 0 0.5em;
-            border: 1px solid currentColor; border-radius: 0.25em;
-            cursor: text;
-            &:focus-within { background: color-mix(in srgb, currentColor 20%, transparent); }
-            &:focus-visible, &:has(:focus-visible) { outline: 2px solid currentColor; outline-offset: 1px; }
-            &[data-disabled] { opacity: 0.5; cursor: default; pointer-events: none; }
-        `,
-        input: `
-            width: 100%; height: 100%;
-            margin: 0; padding: 0;
+        number: `
             text-align: center;
-            background: transparent; color: inherit; font: inherit;
-            border: none; outline: none;
             -moz-appearance: textfield; appearance: textfield;
             &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
         `,
     });
     xnew.nest({ tag: 'div', className: `${css.container} ${className}`, style, 'data-disabled': disabled === true ? '' : undefined });
-    const input = xnew(Object.assign({ tag: 'input', type: 'number', value, disabled, className: css.input }, others));
+    const input = xnew(Object.assign({ tag: 'input', type, value, disabled, className: `${css.input} ${type === 'number' ? css.number : ''}` }, others));
     unit.on('click', () => input.current.focus());
     return {
+        get input() {
+            return input.current;
+        },
+    };
+}
+function InputText(unit, _a = {}) {
+    var { value, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
+    const field = xnew.extend(Field, Object.assign({ type: 'text', value, disabled, className, style }, others));
+    return {
         get value() {
-            return input.current.valueAsNumber;
+            return field.input.value;
+        },
+        set value(text) {
+            field.input.value = text;
+            dispatchCommit(field.input, text);
+        },
+    };
+}
+function InputNumber(unit, _a = {}) {
+    var { value, disabled = false, className = '', style = '' } = _a, others = __rest(_a, ["value", "disabled", "className", "style"]);
+    const field = xnew.extend(Field, Object.assign({ type: 'number', value, disabled, className, style }, others));
+    return {
+        get value() {
+            return field.input.valueAsNumber;
         },
         set value(number) {
-            const element = input.current;
+            const element = field.input;
             const low = element.min !== '' ? Number(element.min) : -Infinity;
             const high = element.max !== '' ? Number(element.max) : Infinity;
             element.value = String(clamp(number, low, high));
             dispatchCommit(element, element.valueAsNumber);
-        },
-        get input() {
-            return input.current;
         },
     };
 }

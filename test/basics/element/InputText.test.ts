@@ -1,6 +1,6 @@
 import { Unit } from '../../../src/core/unit';
 import { xnew } from '../../../src/core/xnew';
-import { InputText } from '../../../src/basics/element/InputText';
+import { InputText } from '../../../src/basics/element/InputField';
 
 describe('basics InputText', () => {
     beforeEach(() => {
