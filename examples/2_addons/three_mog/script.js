@@ -130,7 +130,7 @@ function Label(unit, { model, text }) {
   xnew.extend(xbasics.Pin, {
     point: () => {
       const head = model.head;
-      return head === null ? null : xthree.project(head.object, head.point);
+      return head === null ? null : xthree.view(head.object, head.point).point2d;
     },
     gap: 0.01,
   });
@@ -193,7 +193,7 @@ function Model(unit, { mogPath, vrmaPath, chamfer = 0.0, position }) {
     });
   });
 
-  // 頭のてっぺんはモデル自身の座標で (0, top, 0)。ワールドへ直すのは xthree.project の仕事で、
+  // 頭のてっぺんはモデル自身の座標で (0, top, 0)。画面へ落とすのは xthree.view の仕事で、
   // 行列の引き直し（Main の composer.render() は子より後なので、任せると札が 1 フレーム遅れる）もそちら
   return {
     get head() {

@@ -170,7 +170,6 @@ const xthree = {
         return object;
     },
     material,
-    project,
     view,
     get renderer() {
         var _a;
@@ -224,22 +223,21 @@ function Nest(unit, { object }) {
 function Add(unit, { object }) {
     attach(unit, object);
 }
-function project(object, point) {
-    var _a;
-    const camera = (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.camera;
-    camera.updateMatrixWorld();
-    const projected = object.localToWorld(point.clone()).project(camera);
-    return projected.z > 1 ? null : { x: (projected.x + 1) / 2, y: (1 - projected.y) / 2 };
-}
-function view(object) {
+const ORIGIN = new THREE.Vector3();
+function view(object, point = ORIGIN) {
     var _a;
     const camera = (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.camera;
     camera.updateMatrixWorld();
     object.updateWorldMatrix(true, false);
+    const matrix = new THREE.Matrix4().multiplyMatrices(camera.matrixWorldInverse, object.matrixWorld);
+    const point3d = point.clone().applyMatrix4(matrix);
+    const projected = point3d.clone().applyMatrix4(camera.projectionMatrix);
     return {
-        matrix: new THREE.Matrix4().multiplyMatrices(camera.matrixWorldInverse, object.matrixWorld).elements,
+        point2d: projected.z > 1 ? null : { x: (projected.x + 1) / 2, y: (1 - projected.y) / 2 },
+        point3d,
+        matrix: matrix.elements,
         fov: camera.fov,
     };
 }
 
-export { project, view, xthree };
+export { view, xthree };

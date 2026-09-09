@@ -419,17 +419,17 @@ the rule, then one line of why.
   and `Unit.update` runs children before the parent's own listeners — so anything that moves the camera or
   the scene must live in a CHILD unit created BEFORE it, not in a parent's `unit.on('update')` (2026-09).**
   Otherwise the DOM trails the canvas by one frame, visible as the label / panel sliding against the render
-  while dragging. Same reason `xthree.view()` calls `object.updateWorldMatrix(true, false)` itself and
-  `xthree.project()` goes through `localToWorld` (which does the same) — the renderer refreshes matrices at
-  `render()`, which is the LAST thing in the frame. (Bit `examples/2_addons/three_html`, whose scene /
-  camera update moved into its own `View` unit.)
+  while dragging. Same reason `xthree.view()` calls `object.updateWorldMatrix(true, false)` itself — the
+  renderer refreshes matrices at `render()`, which is the LAST thing in the frame. (Bit
+  `examples/2_addons/three_html`, whose scene / camera update moved into its own `View` unit.)
 
 - **`xbasics.Plane` is the 3D counterpart of `Pin`: Pin puts DOM ON a projected point (flat, facing the
   viewer), Plane lays DOM INTO the scene with its orientation (2026-09).** The split is the same — the 3D
-  side only does the viewing and is a plain FUNCTION, not a component (`xthree.project(object, point)` for
-  Pin — the point is read in that object's own space, so pass `xthree.scene` for a world one —
-  `xthree.view(object)` for Plane; there is no `xthree.Pin` / `xthree.Plane` — use
-  `xnew.extend(xbasics.Plane, { view: () => xthree.view(object) })`), the DOM side turns that into CSS.
+  side only does the viewing and is a plain FUNCTION, not a component: `xthree.view(object, point?)`
+  returns `{ point2d, point3d, matrix, fov }` — `point2d` is what `xbasics.Pin` takes, `matrix` + `fov`
+  what `xbasics.Plane` takes. The point is read in that object's own space (pass `xthree.scene` for a world
+  one, omit it for the object's origin), and there is no `xthree.Pin` / `xthree.Plane` — use
+  `xnew.extend(xbasics.Plane, { view: () => xthree.view(object) })`. The DOM side turns that into CSS.
   Two things are easy to get wrong there: CSS measures y downward, so the view
   matrix is conjugated with a y flip (negate row 1 AND column 1 — their crossing `e[5]` twice, so not at
   all); and the CSS eye distance must be `frameHeight / 2 / tan(fov / 2)`, which is exactly what makes one

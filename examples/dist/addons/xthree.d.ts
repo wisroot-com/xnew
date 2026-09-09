@@ -102,20 +102,22 @@ declare const xthree: {
     nest(transform?: Transform): THREE.Group;
     add(object: any): any;
     material: typeof material;
-    project: typeof project;
     view: typeof view;
     readonly renderer: any;
     readonly camera: THREE.Camera;
     readonly scene: THREE.Scene;
     readonly canvas: HTMLCanvasElement;
 };
-declare function project(object: THREE.Object3D, point: THREE.Vector3): {
-    x: number;
-    y: number;
-} | null;
-declare function view(object: THREE.Object3D): {
+interface View {
+    point2d: {
+        x: number;
+        y: number;
+    } | null;
+    point3d: THREE.Vector3;
     matrix: number[];
     fov: number;
-};
+}
+declare function view(object: THREE.Object3D, point?: THREE.Vector3): View;
 
-export { project, view, xthree };
+export { view, xthree };
+export type { View };

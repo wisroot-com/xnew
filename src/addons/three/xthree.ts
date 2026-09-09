@@ -58,9 +58,7 @@ export const xthree = {
     // build a three material from an xtextures texture object: material(texture, options), where
     // options.type is 'shader' | 'bake' | 'inject' ('bake' when omitted) — see material.ts
     material,
-    // where a point of an object lands on the frame, as a fraction of it (0,0 top-left / 1,1 bottom-right); null behind the camera — what xbasics.Pin takes
-    project,
-    // how an object is seen from the camera, as a matrix and the fov it is measured against — what xbasics.Plane takes
+    // how the camera sees a point of an object: on the frame (xbasics.Pin), in the camera's space, and as a matrix + fov (xbasics.Plane)
     view,
     get renderer() {
         return xnew.context(Root)?.renderer;
@@ -127,32 +125,42 @@ function Add(unit: xnew.Unit, { object }: { object: any }) {
 
 //----------------------------------------------------------------------------------------------------
 // screen — the bridge from the scene to the DOM laid over it
-// Only the viewing is 3D: a world point becomes a fraction of the canvas, a world transform a view one.
-// Placing DOM on either is plain DOM work, so these two feed xbasics.Pin / xbasics.Plane and stop there.
+// Only the viewing is 3D: a point becomes a fraction of the canvas, a world transform a view one.
+// Placing DOM on either is plain DOM work, so this one feeds xbasics.Pin / xbasics.Plane and stops there.
 //----------------------------------------------------------------------------------------------------
 
-// where a point given in the object's own space lands on the frame; pass xthree.scene as the object for a world point
-export function project(object: THREE.Object3D, point: THREE.Vector3): { x: number, y: number } | null {
-    const camera = xnew.context(Root)?.camera as THREE.PerspectiveCamera;
-
-    camera.updateMatrixWorld();
-    // localToWorld brings the object's own chain up to date first; the renderer only does it at render(), which is the last thing in the frame
-    const projected = object.localToWorld(point.clone()).project(camera);
-
-    // behind the camera w turns negative and x / y come back flipped, with z > 1 as the tell
-    return projected.z > 1 ? null : { x: (projected.x + 1) / 2, y: (1 - projected.y) / 2 };
+// what the frame shows of an object: its point on the screen, the same point in the camera's space, and the placement the two are measured with
+export interface View {
+    // where the point lands on the frame, as a fraction of it (0,0 top-left / 1,1 bottom-right); null behind the camera — what xbasics.Pin takes
+    point2d: { x: number, y: number } | null;
+    // the same point in the camera's space (y up, camera at the origin looking down -z)
+    point3d: THREE.Vector3;
+    // the object-to-view matrix, column-major — this with fov is what xbasics.Plane takes
+    matrix: number[];
+    // the camera's vertical field of view, in degrees
+    fov: number;
 }
 
-// the object's place as xbasics.Plane wants it: an object-to-view matrix and the fov it is measured against, read together so a camera moved mid-frame cannot mix the two
-export function view(object: THREE.Object3D): { matrix: number[], fov: number } {
+// the object's origin, for the callers that place the object itself rather than a point of it
+const ORIGIN = new THREE.Vector3();
+
+// how the camera sees a point given in the object's own space; pass xthree.scene as the object for a world point
+export function view(object: THREE.Object3D, point: THREE.Vector3 = ORIGIN): View {
     const camera = xnew.context(Root)?.camera as THREE.PerspectiveCamera;
 
     camera.updateMatrixWorld();
-    // the scene is rendered after the caller's unit updates, so the object's own chain is brought up to date here or the plane trails a frame
+    // the scene is rendered after the caller's unit updates, so the object's own chain is brought up to date here or whatever is placed from this trails a frame
     object.updateWorldMatrix(true, false);
 
+    const matrix = new THREE.Matrix4().multiplyMatrices(camera.matrixWorldInverse, object.matrixWorld);
+    const point3d = point.clone().applyMatrix4(matrix);
+    const projected = point3d.clone().applyMatrix4(camera.projectionMatrix);
+
     return {
-        matrix: new THREE.Matrix4().multiplyMatrices(camera.matrixWorldInverse, object.matrixWorld).elements,
+        // behind the camera w turns negative and x / y come back flipped, with z > 1 as the tell
+        point2d: projected.z > 1 ? null : { x: (projected.x + 1) / 2, y: (1 - projected.y) / 2 },
+        point3d,
+        matrix: matrix.elements,
         fov: camera.fov,
     };
 }
