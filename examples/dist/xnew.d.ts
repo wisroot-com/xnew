@@ -306,10 +306,11 @@ declare function Aspect(unit: xnew.Unit, { aspect, fit }?: {
     fit?: 'contain' | 'cover';
 }): void;
 
-declare function Screen(unit: xnew.Unit, { width, height, fit }?: {
+declare function Screen(unit: xnew.Unit, { width, height, fit, nest }?: {
     width?: number;
     height?: number;
     fit?: 'contain' | 'cover';
+    nest?: boolean;
 }): {
     readonly canvas: DOMElement;
 };
