@@ -1,4 +1,3 @@
-import { xnew } from '@mulsense/xnew';
 import * as THREE from 'three';
 
 declare class UnitPromise {
@@ -104,29 +103,19 @@ declare const xthree: {
     add(object: any): any;
     material: typeof material;
     project: typeof project;
-    Pin: typeof Pin;
-    Plane: typeof Plane;
+    view: typeof view;
     readonly renderer: any;
     readonly camera: THREE.Camera;
     readonly scene: THREE.Scene;
     readonly canvas: HTMLCanvasElement;
 };
-declare function project(point: THREE.Vector3): {
+declare function project(object: THREE.Object3D, point: THREE.Vector3): {
     x: number;
     y: number;
 } | null;
-interface PinProps {
-    point: () => THREE.Vector3 | null;
-    gap?: number;
-    frame?: HTMLElement;
-}
-declare function Pin(unit: xnew.Unit, { point, ...others }: PinProps): void;
-interface PlaneProps {
-    object: () => THREE.Object3D | null;
-    frame?: HTMLElement;
-    className?: string;
-    style?: string;
-}
-declare function Plane(unit: xnew.Unit, { object, ...others }: PlaneProps): void;
+declare function view(object: THREE.Object3D): {
+    matrix: number[];
+    fov: number;
+};
 
-export { Pin, Plane, project, xthree };
+export { project, view, xthree };

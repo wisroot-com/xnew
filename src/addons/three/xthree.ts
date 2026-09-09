@@ -4,7 +4,7 @@
 // materials are in ./material. Ready-made models are xnew-gamelab's, built on the public surface below.
 //----------------------------------------------------------------------------------------------------
 
-import { xnew, xbasics } from '@mulsense/xnew';
+import { xnew } from '@mulsense/xnew';
 import * as THREE from 'three';
 import { material } from './material';
 
@@ -58,12 +58,10 @@ export const xthree = {
     // build a three material from an xtextures texture object: material(texture, options), where
     // options.type is 'shader' | 'bake' | 'inject' ('bake' when omitted) — see material.ts
     material,
-    // where a world point lands on the frame, as a fraction of it (0,0 top-left / 1,1 bottom-right); null behind the camera
+    // where a point of an object lands on the frame, as a fraction of it (0,0 top-left / 1,1 bottom-right); null behind the camera — what xbasics.Pin takes
     project,
-    // a DOM element that rides a point of the scene — see the screen block below
-    Pin,
-    // a DOM element laid flat into the scene — likewise
-    Plane,
+    // how an object is seen from the camera, as a matrix and the fov it is measured against — what xbasics.Plane takes
+    view,
     get renderer() {
         return xnew.context(Root)?.renderer;
     },
@@ -130,67 +128,31 @@ function Add(unit: xnew.Unit, { object }: { object: any }) {
 //----------------------------------------------------------------------------------------------------
 // screen — the bridge from the scene to the DOM laid over it
 // Only the viewing is 3D: a world point becomes a fraction of the canvas, a world transform a view one.
-// Placing DOM on either is plain DOM work, so it lives in xbasics.Pin / xbasics.Plane and these wrap them.
+// Placing DOM on either is plain DOM work, so these two feed xbasics.Pin / xbasics.Plane and stop there.
 //----------------------------------------------------------------------------------------------------
 
-export function project(point: THREE.Vector3): { x: number, y: number } | null {
+// where a point given in the object's own space lands on the frame; pass xthree.scene as the object for a world point
+export function project(object: THREE.Object3D, point: THREE.Vector3): { x: number, y: number } | null {
     const camera = xnew.context(Root)?.camera as THREE.PerspectiveCamera;
 
     camera.updateMatrixWorld();
-    const projected = point.clone().project(camera);
+    // localToWorld brings the object's own chain up to date first; the renderer only does it at render(), which is the last thing in the frame
+    const projected = object.localToWorld(point.clone()).project(camera);
 
     // behind the camera w turns negative and x / y come back flipped, with z > 1 as the tell
     return projected.z > 1 ? null : { x: (projected.x + 1) / 2, y: (1 - projected.y) / 2 };
 }
 
-interface PinProps {
-    // the world point the element's bottom edge sits on
-    point: () => THREE.Vector3 | null;
-    // the space kept between the point and the element, as a fraction of the box height
-    gap?: number;
-    // the element the projection lands on (the canvas on screen); omit it when the pin sits in that very box
-    frame?: HTMLElement;
-}
+// the object's place as xbasics.Plane wants it: an object-to-view matrix and the fov it is measured against, read together so a camera moved mid-frame cannot mix the two
+export function view(object: THREE.Object3D): { matrix: number[], fov: number } {
+    const camera = xnew.context(Root)?.camera as THREE.PerspectiveCamera;
 
-// xbasics.Pin with the projection on it (see there for the box it wants); it rides the caller's unit, so the camera is looked up from where the caller sits — inside the xthree.init tree, as world points require anyway.
-export function Pin(unit: xnew.Unit, { point, ...others }: PinProps): void {
-    function projected(): { x: number, y: number } | null {
-        const world = point();
-        return world === null ? null : project(world);
-    }
+    camera.updateMatrixWorld();
+    // the scene is rendered after the caller's unit updates, so the object's own chain is brought up to date here or the plane trails a frame
+    object.updateWorldMatrix(true, false);
 
-    xnew.extend(xbasics.Pin, { point: projected, ...others });
-}
-
-interface PlaneProps {
-    // the object whose place in the scene the element takes; null while it cannot be placed
-    object: () => THREE.Object3D | null;
-    // the element the projection lands on (the canvas on screen); omit it when the plane sits in that very box
-    frame?: HTMLElement;
-    className?: string;
-    style?: string;
-}
-
-// xbasics.Plane with the view transform on it (see there for the box it wants); the element is measured in world units, one per CSS pixel of the frame, so size its content against that box to keep a fixed size in the scene.
-export function Plane(unit: xnew.Unit, { object, ...others }: PlaneProps): void {
-    function camera(): THREE.PerspectiveCamera {
-        return xnew.context(Root)?.camera as THREE.PerspectiveCamera;
-    }
-
-    function matrix(): number[] | null {
-        const target = object();
-
-        if (target === null) {
-            return null;
-        }
-
-        const view = camera();
-        view.updateMatrixWorld();
-        // the scene is rendered after this unit updates, so the object's own chain is brought up to date here or the plane trails a frame
-        target.updateWorldMatrix(true, false);
-
-        return new THREE.Matrix4().multiplyMatrices(view.matrixWorldInverse, target.matrixWorld).elements;
-    }
-
-    xnew.extend(xbasics.Plane, { matrix, fov: () => camera().fov, ...others });
+    return {
+        matrix: new THREE.Matrix4().multiplyMatrices(camera.matrixWorldInverse, object.matrixWorld).elements,
+        fov: camera.fov,
+    };
 }

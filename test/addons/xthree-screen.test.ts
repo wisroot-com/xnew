@@ -16,15 +16,13 @@ import { xnew } from '../../src/index';
 import { xthree } from '../../src/addons/three/xthree';
 
 //----------------------------------------------------------------------------------------------------
-// xthree.project / xthree.Pin — 3D の点を画面（canvas に対する割合）へ落とし、そこへ DOM を置く。
-//   置くところは xbasics.Pin の担当（test/basics/stage/Pin.test.ts）なので、ここで見るのは
-//   投影そのものと、その結果が Pin へ渡っていることだけ。
+// xthree.project / xthree.view — シーンを画面から見る 2 つ。点は canvas に対する割合へ（xbasics.Pin
+//   が取る形）、オブジェクトは視点から見た行列 + fov へ（xbasics.Plane が取る形）。
+//   置くところは xbasics 側の担当（test/basics/stage/）なので、ここで見るのは見る計算だけ。
 //----------------------------------------------------------------------------------------------------
 
 describe('xthree screen bridge', () => {
     beforeEach(() => {
-        // jsdom に ResizeObserver は無い。Pin は自分の大きさを測り直すためだけに使う
-        global.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
         jest.useFakeTimers();
         Unit.reset();
     });
@@ -54,8 +52,8 @@ describe('xthree screen bridge', () => {
         let behind;
 
         inScene(() => {
-            center = xthree.project(new THREE.Vector3(0, 0, -3));
-            behind = xthree.project(new THREE.Vector3(0, 0, 3));
+            center = xthree.project(xthree.scene, new THREE.Vector3(0, 0, -3));
+            behind = xthree.project(xthree.scene, new THREE.Vector3(0, 0, 3));
         });
 
         expect(center.x).toBeCloseTo(0.5);
@@ -63,34 +61,64 @@ describe('xthree screen bridge', () => {
         expect(behind).toBeNull();
     });
 
-    it('Pin: 投影した割合がそのまま left / top に届く', () => {
-        let pin;
+    it('project: 点は object の座標で読む（同じ点でも object が動けば行き先が変わる）', () => {
+        let before;
+        let after;
 
-        inScene(() => { pin = xnew(xthree.Pin, { point: () => new THREE.Vector3(0, 0, -3) }); });
+        inScene(() => {
+            const object = xthree.add(new THREE.Object3D());
+            object.position.set(0, 0, -3);
 
-        expect(parseFloat(pin.current.style.left)).toBeCloseTo(50);
-        expect(parseFloat(pin.current.style.top)).toBeCloseTo(50);
-        expect(pin.current.style.visibility).toBe('visible');
+            before = xthree.project(object, new THREE.Vector3(0, 0, 0));
+            object.position.x = 1.2426;   // 距離 3 での視野の右端
+            after = xthree.project(object, new THREE.Vector3(0, 0, 0));
+        });
+
+        expect(before.x).toBeCloseTo(0.5);
+        // 動かした直後でも、そのフレームの位置で読める（localToWorld が行列を引き直すので）
+        expect(after.x).toBeCloseTo(1, 1);
     });
 
-    it('Pin: カメラの後ろの点は置けないので隠れる', () => {
-        let pin;
+    it('view: カメラが原点なら、行列はそのまま置き場のワールド行列（fov はカメラのもの）', () => {
+        let seen;
 
-        inScene(() => { pin = xnew(xthree.Pin, { point: () => new THREE.Vector3(0, 0, 3) }); });
+        inScene(() => {
+            const object = xthree.add(new THREE.Object3D());
+            object.position.set(1, 2, -3);
+            seen = xthree.view(object);
+        });
 
-        expect(pin.current.style.visibility).toBe('hidden');
+        expect(seen.matrix[12]).toBeCloseTo(1);
+        expect(seen.matrix[13]).toBeCloseTo(2);
+        expect(seen.matrix[14]).toBeCloseTo(-3);
+        expect(seen.fov).toBe(45);
     });
 
-    it('Pin: 点が動けば毎フレーム付いていく', () => {
-        const target = new THREE.Vector3(0, 0, -3);
-        let pin;
+    it('view: カメラを動かした分だけ置き場が引かれる（カメラの逆行列が掛かっている）', () => {
+        let seen;
 
-        inScene(() => { pin = xnew(xthree.Pin, { point: () => target }); });
-        expect(parseFloat(pin.current.style.left)).toBeCloseTo(50);
+        inScene(() => {
+            const object = xthree.add(new THREE.Object3D());
+            object.position.set(0, 0, -3);
+            xthree.camera.position.set(0, 0, 2);
+            seen = xthree.view(object);
+        });
 
-        target.x = 1.2426;   // 距離 3 での視野の右端
-        jest.advanceTimersByTime(50);
+        expect(seen.matrix[14]).toBeCloseTo(-5);
+    });
 
-        expect(parseFloat(pin.current.style.left)).toBeCloseTo(100, 0);
+    // ここを落とすと、three が描くのはこのフレームの位置なのに DOM は前のフレームの位置になる
+    it('view: 直前に動かした置き場でも、そのフレームの位置で返る', () => {
+        let seen;
+
+        inScene(() => {
+            const parent = xthree.nest({ position: { x: 10, y: 0, z: 0 } });
+            const object = xthree.add(new THREE.Object3D());
+            object.position.set(0, 0, -3);
+            parent.position.x = 4;   // updateWorldMatrix は呼ばない
+            seen = xthree.view(object);
+        });
+
+        expect(seen.matrix[12]).toBeCloseTo(4);
     });
 });

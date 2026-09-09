@@ -1,4 +1,4 @@
-import { xnew, xbasics } from '@mulsense/xnew';
+import { xnew } from '@mulsense/xnew';
 import * as THREE from 'three';
 
 /******************************************************************************
@@ -171,8 +171,7 @@ const xthree = {
     },
     material,
     project,
-    Pin,
-    Plane,
+    view,
     get renderer() {
         var _a;
         return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.renderer;
@@ -225,38 +224,22 @@ function Nest(unit, { object }) {
 function Add(unit, { object }) {
     attach(unit, object);
 }
-function project(point) {
+function project(object, point) {
     var _a;
     const camera = (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.camera;
     camera.updateMatrixWorld();
-    const projected = point.clone().project(camera);
+    const projected = object.localToWorld(point.clone()).project(camera);
     return projected.z > 1 ? null : { x: (projected.x + 1) / 2, y: (1 - projected.y) / 2 };
 }
-function Pin(unit, _a) {
-    var { point } = _a, others = __rest(_a, ["point"]);
-    function projected() {
-        const world = point();
-        return world === null ? null : project(world);
-    }
-    xnew.extend(xbasics.Pin, Object.assign({ point: projected }, others));
-}
-function Plane(unit, _a) {
-    var { object } = _a, others = __rest(_a, ["object"]);
-    function camera() {
-        var _a;
-        return (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.camera;
-    }
-    function matrix() {
-        const target = object();
-        if (target === null) {
-            return null;
-        }
-        const view = camera();
-        view.updateMatrixWorld();
-        target.updateWorldMatrix(true, false);
-        return new THREE.Matrix4().multiplyMatrices(view.matrixWorldInverse, target.matrixWorld).elements;
-    }
-    xnew.extend(xbasics.Plane, Object.assign({ matrix, fov: () => camera().fov }, others));
+function view(object) {
+    var _a;
+    const camera = (_a = xnew.context(Root)) === null || _a === void 0 ? void 0 : _a.camera;
+    camera.updateMatrixWorld();
+    object.updateWorldMatrix(true, false);
+    return {
+        matrix: new THREE.Matrix4().multiplyMatrices(camera.matrixWorldInverse, object.matrixWorld).elements,
+        fov: camera.fov,
+    };
 }
 
-export { Pin, Plane, project, xthree };
+export { project, view, xthree };

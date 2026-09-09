@@ -344,15 +344,18 @@ interface PinProps {
 }
 declare function Pin(unit: xnew.Unit, { point, gap, frame }: PinProps): void;
 
+interface PlaneView {
+    matrix: number[];
+    fov: number;
+}
 interface PlaneProps {
-    matrix: () => number[] | null;
-    fov: () => number;
+    view: () => PlaneView | null;
     frame?: HTMLElement;
     className?: string;
     style?: string;
     [key: string]: any;
 }
-declare function Plane(unit: xnew.Unit, { matrix, fov, frame, className, style, ...others }: PlaneProps): void;
+declare function Plane(unit: xnew.Unit, { view, frame, className, style, ...others }: PlaneProps): void;
 
 declare function Button(unit: xnew.Unit, { label, disabled, className, style, ...others }?: {
     label?: string;

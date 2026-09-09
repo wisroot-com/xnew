@@ -2078,7 +2078,7 @@ function fixed(value) {
     return value.toFixed(6);
 }
 function Plane(unit, _a) {
-    var { matrix, fov, frame, className = '', style = '' } = _a, others = __rest(_a, ["matrix", "fov", "frame", "className", "style"]);
+    var { view, frame, className = '', style = '' } = _a, others = __rest(_a, ["view", "frame", "className", "style"]);
     const css = xnew.css('base', {
         plane: `
                 position: absolute; left: 0; top: 0;
@@ -2104,12 +2104,12 @@ function Plane(unit, _a) {
     unit.on('resize', measure);
     unit.on('window.resize', measure);
     function place() {
-        const view = matrix();
-        const eye = height / 2 / Math.tan(fov() * Math.PI / 360);
-        const placeable = view !== null && view[14] < 0 && eye > 0 && Number.isFinite(eye);
+        const current = view();
+        const eye = current === null ? 0 : height / 2 / Math.tan(current.fov * Math.PI / 360);
+        const placeable = current !== null && current.matrix[14] < 0 && eye > 0 && Number.isFinite(eye);
         element.style.visibility = placeable ? 'visible' : 'hidden';
         if (placeable) {
-            const css = view.map((value, index) => fixed(value * FLIP[index])).join(',');
+            const css = current.matrix.map((value, index) => fixed(value * FLIP[index])).join(',');
             element.style.transform = `perspective(${fixed(eye)}px) translateZ(${fixed(eye)}px) matrix3d(${css}) translate(-50%, -50%)`;
         }
     }

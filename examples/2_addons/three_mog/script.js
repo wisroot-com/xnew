@@ -127,7 +127,13 @@ function Ground(unit) {
 // キャラの頭の上に居座る札。置き場は canvas と同じ箱（Screen の fit は既定の contain なので frame は要らない）
 function Label(unit, { model, text }) {
   // 頭が画面の上へ外れたら、画面の中央へ向かって降りて中に収まる
-  xnew.extend(xthree.Pin, { point: () => model.head, gap: 0.01 });
+  xnew.extend(xbasics.Pin, {
+    point: () => {
+      const head = model.head;
+      return head === null ? null : xthree.project(head.object, head.point);
+    },
+    gap: 0.01,
+  });
   xnew('<span class="px-2 py-1 text-sm rounded bg-white/70 text-gray-700 shadow">', text);
 }
 
@@ -187,15 +193,11 @@ function Model(unit, { mogPath, vrmaPath, chamfer = 0.0, position }) {
     });
   });
 
-  // 投影は Pin の update で読まれるが、行列が更新されるのは Main の composer.render()（子より後）
-  // なので、ここで自分の分だけ更新しておかないと札が 1 フレーム遅れる
+  // 頭のてっぺんはモデル自身の座標で (0, top, 0)。ワールドへ直すのは xthree.project の仕事で、
+  // 行列の引き直し（Main の composer.render() は子より後なので、任せると札が 1 フレーム遅れる）もそちら
   return {
     get head() {
-      if (model === null) {
-        return null;
-      }
-      model.updateWorldMatrix(true, false);
-      return model.localToWorld(new THREE.Vector3(0, top, 0));
+      return model === null ? null : { object: model, point: new THREE.Vector3(0, top, 0) };
     },
   };
 }

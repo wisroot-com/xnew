@@ -63,7 +63,7 @@ function Card(unit, { element, id }) {
   object.rotation.y = id * Math.PI / 2;
   object.translateZ(-perspective);
 
-  xnew.extend(xthree.Plane, { object: () => object, frame: xthree.canvas, className: 'plane' });
+  xnew.extend(xbasics.Plane, { view: () => xthree.view(object), frame: xthree.canvas, className: 'plane' });
   unit.current.appendChild(element);
 
   let opacity = id === state.id ? 0.80 : 0.20;

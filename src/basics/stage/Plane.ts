@@ -1,16 +1,22 @@
 //----------------------------------------------------------------------------------------------------
 // Plane — a DOM element laid flat into the 3D scene of the canvas under it
-// The placement arrives as an object-to-view matrix, so whoever owns the scene does the viewing
-// (xthree.Plane) and this stays plain DOM: it only turns that matrix into the CSS projection.
+// The view — an object-to-view matrix and the fov it is measured against — arrives from whoever owns
+// the scene (xthree.view), so this stays plain DOM: it only turns that view into the CSS projection.
 //----------------------------------------------------------------------------------------------------
 
 import { xnew } from '../../core/xnew';
 
-export interface PlaneProps {
-    // where the element sits, as a column-major object-to-view matrix (y up, camera at the origin looking down -z); null while it cannot be placed
-    matrix: () => number[] | null;
+// what the element is placed from, read as one piece so the matrix and the fov it is measured against always come from the same frame
+export interface PlaneView {
+    // where the element sits, as a column-major object-to-view matrix (y up, camera at the origin looking down -z)
+    matrix: number[];
     // the camera's vertical field of view in degrees, which is what makes one unit of `matrix` one CSS pixel
-    fov: () => number;
+    fov: number;
+}
+
+export interface PlaneProps {
+    // the view to place from, taken once per frame; null while the element cannot be placed
+    view: () => PlaneView | null;
     // the element the projection lands on (the canvas on screen); omit it when the plane sits in that very box
     frame?: HTMLElement;
     className?: string;
@@ -27,7 +33,7 @@ function fixed(value: number): string {
 }
 
 // Create it inside a positioned box, as Pin wants — left / top are percentages of that box, and it is the canvas box unless `frame` names another (what fit: 'cover' needs, where the canvas runs past the box it is seen through). Unlike Pin the element keeps its pointer events, since a plane carries content to press.
-export function Plane(unit: xnew.Unit, { matrix, fov, frame, className = '', style = '', ...others }: PlaneProps): void {
+export function Plane(unit: xnew.Unit, { view, frame, className = '', style = '', ...others }: PlaneProps): void {
     const css = xnew.css('base', {
         // the corner origin is what lets left / top alone put the projection's center on the frame's center
         plane: `
@@ -67,18 +73,18 @@ export function Plane(unit: xnew.Unit, { matrix, fov, frame, className = '', sty
     unit.on('window.resize', measure);   // the box can move without this element changing size
 
     function place(): void {
-        const view = matrix();
+        const current = view();
         // the eye distance that makes the CSS projection agree with the camera's; it is also what fixes one unit at one pixel
-        const eye = height / 2 / Math.tan(fov() * Math.PI / 360);
+        const eye = current === null ? 0 : height / 2 / Math.tan(current.fov * Math.PI / 360);
 
         // an object at or behind the eye projects to garbage rather than to nothing, so it is dropped here
-        const placeable = view !== null && view[14] < 0 && eye > 0 && Number.isFinite(eye);
+        const placeable = current !== null && current.matrix[14] < 0 && eye > 0 && Number.isFinite(eye);
 
         // hidden rather than removed, so the frame keeps being measurable while the object is unplaceable
         element.style.visibility = placeable ? 'visible' : 'hidden';
 
         if (placeable) {
-            const css = (view as number[]).map((value, index) => fixed(value * FLIP[index])).join(',');
+            const css = (current as PlaneView).matrix.map((value, index) => fixed(value * FLIP[index])).join(',');
             // perspective / translateZ put the eye where the camera is; translate centers the element on the object's origin
             element.style.transform = `perspective(${fixed(eye)}px) translateZ(${fixed(eye)}px) matrix3d(${css}) translate(-50%, -50%)`;
         }

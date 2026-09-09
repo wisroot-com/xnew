@@ -47,7 +47,7 @@ describe('xbasics.Plane', () => {
 
         // 高さ 400 で fov 90 度なら、視点は枠から 200 のところ（tan(45°) = 1）
         inBox(() => {
-            plane = xnew(xbasics.Plane, { matrix: () => at(0, 0, -500), fov: () => 90 });
+            plane = xnew(xbasics.Plane, { view: () => ({ matrix: at(0, 0, -500), fov: 90 }) });
         });
 
         expect(plane.current.style.visibility).toBe('visible');
@@ -62,7 +62,7 @@ describe('xbasics.Plane', () => {
         let plane!: xnew.Unit;
 
         inBox(() => {
-            plane = xnew(xbasics.Plane, { matrix: () => at(30, 100, -500), fov: () => 90 });
+            plane = xnew(xbasics.Plane, { view: () => ({ matrix: at(30, 100, -500), fov: 90 }) });
         });
 
         const elements = numbers(plane.current.style.transform);
@@ -77,7 +77,7 @@ describe('xbasics.Plane', () => {
 
         // x 軸まわり 90 度。y 軸と z 軸が入れ替わる
         inBox(() => {
-            plane = xnew(xbasics.Plane, { matrix: () => [1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, -500, 1], fov: () => 90 });
+            plane = xnew(xbasics.Plane, { view: () => ({ matrix: [1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, -500, 1], fov: 90 }) });
         });
 
         const elements = numbers(plane.current.style.transform);
@@ -92,7 +92,7 @@ describe('xbasics.Plane', () => {
         let plane!: xnew.Unit;
 
         inBox(() => {
-            plane = xnew(xbasics.Plane, { matrix: () => at(100, 50, -500), fov: () => 90 });
+            plane = xnew(xbasics.Plane, { view: () => ({ matrix: at(100, 50, -500), fov: 90 }) });
         });
 
         const transform = plane.current.style.transform;
@@ -112,7 +112,7 @@ describe('xbasics.Plane', () => {
         let plane!: xnew.Unit;
 
         inBox(() => {
-            plane = xnew(xbasics.Plane, { matrix: () => null, fov: () => 90 });
+            plane = xnew(xbasics.Plane, { view: () => null });
         });
 
         expect(plane.current.style.visibility).toBe('hidden');
@@ -124,8 +124,8 @@ describe('xbasics.Plane', () => {
         let on!: xnew.Unit;
 
         inBox(() => {
-            behind = xnew(xbasics.Plane, { matrix: () => at(0, 0, +100), fov: () => 90 });
-            on = xnew(xbasics.Plane, { matrix: () => at(0, 0, 0), fov: () => 90 });
+            behind = xnew(xbasics.Plane, { view: () => ({ matrix: at(0, 0, +100), fov: 90 }) });
+            on = xnew(xbasics.Plane, { view: () => ({ matrix: at(0, 0, 0), fov: 90 }) });
         });
 
         expect(behind.current.style.visibility).toBe('hidden');
@@ -141,7 +141,7 @@ describe('xbasics.Plane', () => {
         let plane!: xnew.Unit;
 
         inBox(() => {
-            plane = xnew(xbasics.Plane, { matrix: () => at(0, 0, -500), fov: () => 90, frame });
+            plane = xnew(xbasics.Plane, { view: () => ({ matrix: at(0, 0, -500), fov: 90 }), frame });
         });
 
         // canvas の中央は箱の上端から 200 のところ = 箱の高さ 400 の 50%
